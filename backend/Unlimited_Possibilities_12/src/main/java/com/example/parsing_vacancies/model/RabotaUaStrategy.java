@@ -1,0 +1,421 @@
+package com.example.parsing_vacancies.model;
+
+import com.example.parsing_vacancies.parameters.City;
+import com.example.parsing_vacancies.parameters.Language;
+import com.example.parsing_vacancies.parameters.TimeDate;
+import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+public class RabotaUaStrategy implements Strategy {
+    private static final String URL_FORMAT = "https://robota.ua/ru/zapros/%s/kyiv?page=%d";
+    private static final String URL_FORMAT_DIAPASON_TIME =
+            "https://robota.ua/%s/zapros/%s/%s?page=%d";
+    @Override
+    public List<Vacancy> getVacancies(String position) {
+        List<Vacancy> vacancies = new ArrayList<>();
+        for (int pageNumber = 1; ;pageNumber++) {
+            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySilenium(position, pageNumber);
+            //System.out.println("vacanciesFromPageNumberSize: " + vacanciesFromPageNumber.size());
+            if (vacanciesFromPageNumber.size() == 0) break;
+            vacancies.addAll(vacanciesFromPageNumber);
+            System.out.println(vacancies.size());
+        }
+        return vacancies;
+    }
+
+    @Override
+    public List<Vacancy> getVacancies(Language language, City city, String position, TimeDate time) {
+        List<Vacancy> vacancies = new ArrayList<>();
+        for (int pageNumber = 1; ;pageNumber++) {
+            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySileniumWithParam(language, city, position, time, pageNumber);
+            //System.out.println("vacanciesFromPageNumberSize: " + vacanciesFromPageNumber.size());
+            if (vacanciesFromPageNumber.size() == 0) break;
+            vacancies.addAll(vacanciesFromPageNumber);
+            System.out.println(vacancies.size());
+        }
+        return vacancies;
+    }
+
+    private List<Vacancy> getVacanciesBySilenium(String position, int page) {
+        List<Vacancy> vacancies = new ArrayList<>();
+        WebDriver driver = null;
+
+        try {
+            String url = String.format(URL_FORMAT, position, page);
+            driver = new ChromeDriver();
+            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+            driver.get(url);
+
+            /*WebElement appRootElement = driver.findElement(By.cssSelector("app-root"));
+            String appRootContent = appRootElement.getAttribute("outerHTML");
+            System.out.println(appRootContent);*/
+
+            /*JavascriptExecutor js = (JavascriptExecutor) driver;
+            long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
+            int scrollStep = 2500;
+            while (true) {
+                js.executeScript("window.scrollBy(0, " + scrollStep + ");");
+                long newHeight = (long) js.executeScript("return document.body.scrollHeight");
+                if (newHeight == lastHeight) {
+                    break;
+                }
+                lastHeight = newHeight;
+                Thread.sleep(400);
+            }*/
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
+            int scrollStep = 2500;
+            int maxWaitTime = 5000; // 5 секунд
+
+            while (true) {
+                js.executeScript("window.scrollBy(0, " + scrollStep + ");");
+                long newHeight = (long) js.executeScript("return document.body.scrollHeight");
+
+                // Ждем изменения высоты страницы в течение maxWaitTime
+                long startTime = System.currentTimeMillis();
+                while (newHeight == lastHeight && (System.currentTimeMillis() - startTime) < maxWaitTime) {
+                    Thread.sleep(300);
+                    newHeight = (long) js.executeScript("return document.body.scrollHeight");
+                }
+
+                if (newHeight == lastHeight) {
+                    // Если высота не изменилась за maxWaitTime, значит мы достигли конца страницы
+                    break;
+                }
+
+                lastHeight = newHeight;
+            }
+
+            List<WebElement> elementVacancies = driver.findElements(By.className("santa--mb-20"));
+            //System.out.println("Total number of vacancies: " + elementVacancies.size());
+            int elementVacanciesSize = elementVacancies.size();
+            if (elementVacanciesSize == 0) {
+                driver.quit();
+                return vacancies;
+            }
+
+            System.out.println("-------------------------");
+            if (elementVacancies.size() == 0) return null;
+            for (WebElement elementVacancy : elementVacancies) {
+                try {
+                    Vacancy vacancy = new Vacancy();
+                    WebElement title = elementVacancy.findElement(By.tagName("h2"));
+                    vacancy.setTitle(title.getText().trim());
+                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c121]"));
+                    int spansSize = spans.size();
+                    //System.out.println("spansSize : " + spansSize);
+                    if (spansSize == 3) {
+                        vacancy.setCompanyName(spans.get(0).getText().trim());
+                        vacancy.setSalary("");
+                        vacancy.setCity(spans.get(1).getText().trim());
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c121]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
+                        vacancy.setSiteName("https://robota.ua/");
+                        printVacance(vacancy);
+                        vacancies.add(vacancy);
+                        continue;
+                    }
+                    if (spansSize == 4) {
+                        String salaryOrCompanyName = spans.get(0).getText().trim();
+                        if (salaryOrCompanyName.matches("\\D+")) {
+                            vacancy.setCompanyName(salaryOrCompanyName);
+                            vacancy.setSalary("");
+                            String strCity = spans.get(1).getText().trim();
+                            if (strCity.matches(".*(Киев).*") || strCity.matches(".*(Київ).*")) {
+                                vacancy.setCity(strCity);
+                            } else {
+                                vacancy.setCity(spans.get(2).getText().trim());
+                            }
+                        } else {
+                            String strCity = spans.get(2).getText().trim();
+                            if (strCity.matches(".*(Киев).*") || strCity.matches(".*(Київ).*")) {
+                                vacancy.setCompanyName(spans.get(1).getText().trim());
+                                vacancy.setSalary(salaryOrCompanyName);
+                                vacancy.setCity(strCity);
+                            } else {
+                                vacancy.setCompanyName(spans.get(0).getText().trim());
+                                vacancy.setSalary(spans.get(2).getText().trim());
+                                vacancy.setCity(spans.get(1).getText().trim());
+                            }
+                        }
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c121]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
+                        vacancy.setSiteName("https://robota.ua/");
+                        printVacance(vacancy);
+                        vacancies.add(vacancy);
+                        continue;
+                    }
+                    if (spansSize == 5) {
+                        String salaryOrCompanyName = spans.get(0).getText().trim();
+                        if (salaryOrCompanyName.matches("\\D+")) {
+                            vacancy.setCompanyName(salaryOrCompanyName);
+                            vacancy.setSalary("");
+                            vacancy.setCity(spans.get(2).getText().trim());
+                        } else {
+                            String strCity = spans.get(2).getText().trim();
+                            if (strCity.matches(".*(Киев).*") || strCity.matches(".*(Київ).*")) {
+                                vacancy.setCompanyName(spans.get(1).getText().trim());
+                                vacancy.setSalary(salaryOrCompanyName);
+                                vacancy.setCity(strCity);
+                            } else {
+                                vacancy.setCompanyName(spans.get(2).getText().trim());
+                                vacancy.setSalary(salaryOrCompanyName);
+                                vacancy.setCity(spans.get(3).getText().trim());
+                            }
+                        }
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c121]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
+                        vacancy.setSiteName("https://robota.ua/");
+                        printVacance(vacancy);
+                        vacancies.add(vacancy);
+                        continue;
+                    }
+                    if (spansSize == 6) {
+                        vacancy.setCompanyName(spans.get(2).getText().trim());
+                        vacancy.setSalary(spans.get(0).getText().trim());
+                        vacancy.setCity(spans.get(3).getText().trim());
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c121]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
+                        vacancy.setSiteName("https://robota.ua/");
+                        printVacance(vacancy);
+                        vacancies.add(vacancy);
+                        continue;
+                    }
+                } catch (Exception e) {
+                    continue;
+                }
+            }
+            driver.quit();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            driver.quit();
+        }
+        return vacancies;
+    }
+
+    private List<Vacancy> getVacanciesBySileniumWithParam(Language language, City city, String position, TimeDate time, int page) {
+        List<Vacancy> vacancies = new ArrayList<>();
+        WebDriver driver = null;
+        RabotaUaStrategy.LanguageRabotaUa languageRabotaUa = null;
+        RabotaUaStrategy.CityRabotaUa cityRabotaUa = null;
+        switch (language) {
+            case RUSSIAN -> languageRabotaUa = RabotaUaStrategy.LanguageRabotaUa.RUSSIAN;
+            case UKRAINIAN -> languageRabotaUa = RabotaUaStrategy.LanguageRabotaUa.UKRAINIAN;
+            default -> languageRabotaUa = RabotaUaStrategy.LanguageRabotaUa.RUSSIAN;
+        }
+        switch (city) {
+            case ODESSA -> cityRabotaUa = RabotaUaStrategy.CityRabotaUa.Odessa;
+            case KHARKOV -> cityRabotaUa = RabotaUaStrategy.CityRabotaUa.Kharkov;
+            case DNEPROPETROVSK -> cityRabotaUa = RabotaUaStrategy.CityRabotaUa.Dnepropetrovsk;
+            default -> cityRabotaUa = RabotaUaStrategy.CityRabotaUa.Kiev;
+        }
+
+        try {
+            String url = String.format(URL_FORMAT_DIAPASON_TIME,
+                    languageRabotaUa.getStr(), position, cityRabotaUa.getStr(), page);
+            driver = new ChromeDriver();
+            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+            driver.get(url);
+
+            /*WebElement appRootElement = driver.findElement(By.cssSelector("app-root"));
+            String appRootContent = appRootElement.getAttribute("outerHTML");
+            System.out.println(appRootContent);*/
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
+            int scrollStep = 2500;
+            int maxWaitTime = 5000; // 5 секунд
+
+            while (true) {
+                js.executeScript("window.scrollBy(0, " + scrollStep + ");");
+                long newHeight = (long) js.executeScript("return document.body.scrollHeight");
+
+                // Ждем изменения высоты страницы в течение maxWaitTime
+                long startTime = System.currentTimeMillis();
+                while (newHeight == lastHeight && (System.currentTimeMillis() - startTime) < maxWaitTime) {
+                    Thread.sleep(300);
+                    newHeight = (long) js.executeScript("return document.body.scrollHeight");
+                }
+
+                if (newHeight == lastHeight) {
+                    // Если высота не изменилась за maxWaitTime, значит мы достигли конца страницы
+                    break;
+                }
+
+                lastHeight = newHeight;
+            }
+
+            List<WebElement> elementVacancies = driver.findElements(By.className("santa--mb-20"));
+            //System.out.println("Total number of vacancies: " + elementVacancies.size());
+            int elementVacanciesSize = elementVacancies.size();
+            if (elementVacanciesSize == 0) {
+                driver.quit();
+                return vacancies;
+            }
+
+            System.out.println("-------------------------");
+            for (WebElement elementVacancy : elementVacancies) {
+                try {
+                    Vacancy vacancy = new Vacancy();
+                    WebElement title = elementVacancy.findElement(By.tagName("h2"));
+                    vacancy.setTitle(title.getText().trim());
+                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c121]"));
+                    int spansSize = spans.size();
+                    //System.out.println("spansSize : " + spansSize);
+                    if (spansSize == 3) {
+                        vacancy.setCompanyName(spans.get(0).getText().trim());
+                        vacancy.setSalary("");
+                        vacancy.setCity(spans.get(1).getText().trim());
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c121]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
+                        vacancy.setSiteName("https://robota.ua/");
+                        printVacance(vacancy);
+                        vacancies.add(vacancy);
+                        continue;
+                    }
+                    if (spansSize == 4) {
+                        String salaryOrCompanyName = spans.get(0).getText().trim();
+                        if (salaryOrCompanyName.matches("\\D+")) {
+                            vacancy.setCompanyName(salaryOrCompanyName);
+                            vacancy.setSalary("");
+                            String strCity = spans.get(1).getText().trim();
+                            if (strCity.matches(".*(" + cityRabotaUa.getNameRus() +  ").*") || strCity.matches(".*(" + cityRabotaUa.nameUkr + ").*")) {
+                                vacancy.setCity(strCity);
+                            } else {
+                                vacancy.setCity(spans.get(2).getText().trim());
+                            }
+                        } else {
+                            String strCity = spans.get(2).getText().trim();
+                            if (strCity.matches(".*(" + cityRabotaUa.getNameRus() +  ").*") || strCity.matches(".*(" + cityRabotaUa.nameUkr + ").*")) {
+                                vacancy.setCompanyName(spans.get(1).getText().trim());
+                                vacancy.setSalary(salaryOrCompanyName);
+                                vacancy.setCity(strCity);
+                            } else {
+                                vacancy.setCompanyName(spans.get(0).getText().trim());
+                                vacancy.setSalary(spans.get(2).getText().trim());
+                                vacancy.setCity(spans.get(1).getText().trim());
+                            }
+                        }
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c121]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
+                        vacancy.setSiteName("https://robota.ua/");
+                        printVacance(vacancy);
+                        vacancies.add(vacancy);
+                        continue;
+                    }
+                    if (spansSize == 5) {
+                        String salaryOrCompanyName = spans.get(0).getText().trim();
+                        if (salaryOrCompanyName.matches("\\D+")) {
+                            vacancy.setCompanyName(salaryOrCompanyName);
+                            vacancy.setSalary("");
+                            vacancy.setCity(spans.get(2).getText().trim());
+                        } else {
+                            String strCity = spans.get(2).getText().trim();
+                            if (strCity.matches(".*(" + cityRabotaUa.getNameRus() +  ").*") || strCity.matches(".*(" + cityRabotaUa.nameUkr + ").*")) {
+                                vacancy.setCompanyName(spans.get(1).getText().trim());
+                                vacancy.setSalary(salaryOrCompanyName);
+                                vacancy.setCity(strCity);
+                            } else {
+                                vacancy.setCompanyName(spans.get(2).getText().trim());
+                                vacancy.setSalary(salaryOrCompanyName);
+                                vacancy.setCity(spans.get(3).getText().trim());
+                            }
+                        }
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c121]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
+                        vacancy.setSiteName("https://robota.ua/");
+                        printVacance(vacancy);
+                        vacancies.add(vacancy);
+                        continue;
+                    }
+                    if (spansSize == 6) {
+                        vacancy.setCompanyName(spans.get(2).getText().trim());
+                        vacancy.setSalary(spans.get(0).getText().trim());
+                        vacancy.setCity(spans.get(3).getText().trim());
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c121]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
+                        vacancy.setSiteName("https://robota.ua/");
+                        printVacance(vacancy);
+                        vacancies.add(vacancy);
+                        continue;
+                    }
+                } catch (Exception e) {
+                    continue;
+                }
+            }
+            driver.quit();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            driver.quit();
+        }
+        return vacancies;
+    }
+
+    private void printVacance(Vacancy vacancy) {
+        System.out.println(vacancy.getTitle());
+        System.out.println(vacancy.getCompanyName());
+        System.out.println(vacancy.getSalary());
+        System.out.println(vacancy.getCity());
+        System.out.println(vacancy.getUrl());
+        System.out.println(vacancy.getSiteName());
+        //System.out.println();
+        System.out.println("-------------------------");
+    }
+
+    public enum LanguageRabotaUa {
+        UKRAINIAN (""),
+        RUSSIAN ("ru");
+
+        private String str;
+
+        LanguageRabotaUa (String str) {
+            this.str = str;
+        }
+
+        public String getStr() {
+            return str;
+        }
+    }
+
+    public enum CityRabotaUa {
+        Kiev ("kyiv", "Киев", "Київ"),
+        Dnepropetrovsk ("dnipro", "Днепр", "Дніпро"),
+        Kharkov ("kharkiv", "Харьков", "Харків"),
+        Odessa("odessa", "Одесса", "Одеса");
+
+        private String str;
+        private String nameRus;
+        private String nameUkr;
+
+        CityRabotaUa (String str, String nameRus, String nameUkr) {
+            this.str = str;
+            this.nameRus = nameRus;
+            this.nameUkr = nameUkr;
+        }
+
+        public String getStr() {
+            return str;
+        }
+
+        public String getNameRus() {
+            return nameRus;
+        }
+
+        public String getNameUkr() {
+            return nameUkr;
+        }
+    }
+}

@@ -1,0 +1,165 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <title th:text="${title} + ' ' + ${title2}"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f2f2f2;
+                padding-top: 0px; /* увеличена верхняя отступ, чтобы учесть высоту шапки */
+            }
+
+            .container {
+                background-color: yellowgreen;
+                padding: 40px;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                max-width: 600px;
+                margin: 0 auto;
+            }
+
+            h2 {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+
+            .form-group {
+                margin-bottom: 20px;
+            }
+
+            .form-check {
+                display: inline-block;
+                margin-right: 20px;
+            }
+
+            .form-check-label {
+                font-weight: normal;
+            }
+
+            .btn-primary {
+                display: block;
+                margin: 0 auto;
+            }
+
+            .dropdown {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+            }
+
+            header {
+                background-color: #d0c1e3; /* изменен цвет шапки на светло-серый */
+                border-bottom: 1px solid #dee2e6;
+                padding: 10px 0; /* добавлен отступ сверху и снизу */
+                margin-bottom: 30px; /* добавлен отступ снизу */
+            }
+
+            .header-container {
+                max-width: 1200px; /* ограничена ширина контейнера шапки */
+                margin: 0 auto; /* центрирование контейнера */
+            }
+
+            .light-maroon-bg {
+                background-color: #d0c1e3;
+                padding: 10px 15px;
+            }
+
+            .light-maroon-bg a.btn {
+                color: #343a40;
+            }
+        </style>
+    </head>
+
+    <body>
+        <header>
+            <div class="header-container">
+                <div class="row flex-nowrap justify-content-between align-items-center">
+                    <div class="col-4 pt-1">
+                        <a class="link-secondary" href="/convenient_website777">На главную</a>
+                    </div>
+                    <div class="col-4 text-center">
+                        <span class="blog-header-logo text-body-emphasis text-decoration-none">Удобный поиск вакансий</span>
+                    </div>
+                    <div class="col-4 d-flex justify-content-end align-items-center">
+                        <a class="btn btn-sm btn-outline-secondary" href="/convenient_website777/job_search_history">Список вакансий всех запросов</a>
+                    </div>
+                </div>
+            </div>
+            <div class="light-maroon-bg">
+                <div class="row justify-content-between align-items-center">
+                    <div class="col-auto">
+                        <a class="btn btn-sm btn-outline-secondary" href="/convenient_website777/communicating_with_a_primitive_ai_model">Общение с примитивной моделью ИИ</a>
+                    </div>
+                    <div class="col-auto">
+                        <a class="btn btn-sm btn-outline-secondary" href="/convenient_website777/communicating_with_a_advanced_ai_model">Общение с продвинутой моделью ИИ</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="container mt-5">
+            <h1 class="text-center">Поиск вакансий</h1>
+            <form th:action="@{/convenient_website777/search}" method="post">
+                <div class="form-group">
+                    <label>Выберите сайт вакансий:</label>
+                    <div class="d-flex justify-content-center">
+                        <div class="form-check">
+                            <div class="form-check-label">
+                                <span>Work.ua</span>
+                                <input class="form-check-input" type="checkbox" name="work-ua" id="work-ua">
+                            </div>
+                        </div>
+                        <div class="form-check">
+                            <div class="form-check-label">
+                                <span>Rabota.ua</span>
+                                <input class="form-check-input" type="checkbox" name="rabota-ua" id="rabota-ua">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputPosition">Должность:</label>
+                    <input type="text" class="form-control" id="inputPosition" name="inputPosition" placeholder="Должность">
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-md-4">
+                        <label for="city-select">Выберите город:</label>
+                        <select class="form-control" id="city-select" name="city">
+                            <option value="">Выберите город</option>
+                            <option value="kiev">Киев</option>
+                            <option value="kharkiv">Харьков</option>
+                            <option value="odesa">Одесса</option>
+                            <option value="dnipro">Днепропетровск</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="language-select">Выберите язык:</label>
+                        <select class="form-control" id="language-select" name="language">
+                            <option value="">Выберите язык</option>
+                            <option value="ru">Русский</option>
+                            <option value="uk">Украинский</option>
+                            <option value="en">Английский</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="timeframe-select">Выберите диапазон времени для Work.Ua:</label>
+                        <select class="form-control" id="timeframe-select" name="timeframe">
+                            <option value="">Выберите диапазон</option>
+                            <option value="1">1 день</option>
+                            <option value="3">3 дня</option>
+                            <option value="7">7 дней</option>
+                            <option value="14">14 дней</option>
+                            <option value="30">30 дней</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Поиск</button>
+                </div>
+            </form>
+        </div>
+    </body>
+</html>
