@@ -45,7 +45,6 @@ public class HuggingFaceChatController {
     @PostMapping("/convenient_website777/communicating_with_a_primitive_ai_model")
     public String sendMessage(@RequestParam(name = "message", required = false) String message, Model model) {
         HttpHeaders headers = new HttpHeaders();
-        System.out.println(API_TOKEN);
         headers.setBearerAuth(API_TOKEN);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
