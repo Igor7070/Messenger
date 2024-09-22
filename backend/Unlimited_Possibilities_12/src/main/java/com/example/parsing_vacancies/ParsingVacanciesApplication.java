@@ -14,9 +14,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,18 +24,6 @@ public class ParsingVacanciesApplication {
     public static List<RecordingMethod> methods;
 
     public static void main(String[] args) {
-        try {
-            Process process = Runtime.getRuntime().exec("google-chrome --version");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         SpringApplication.run(ParsingVacanciesApplication.class, args);
 
         setRecordingMethod(RecordingMethod.HTML, RecordingMethod.DATABASE_BY_JDBS);
