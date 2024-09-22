@@ -403,23 +403,12 @@ public class ResumeController {
         System.out.println("URL запроса: " + request.getRequestURL());
         System.out.println("fileName из URL: " + fileName); // Выводим имя файла
 
-        // Определяем путь к файлу
-        Path file = Paths.get("src/main/resources/static/resumes").resolve(fileName).normalize();
-        System.out.println("Полный путь к файлу: " + file.toString());
+        // Загрузка файла как ресурса
+        Resource resource = new ClassPathResource("static/resumes/" + fileName);
 
-        Resource resource;
-
-        // Используем FileSystemResource для локальной разработки
-        if (Files.exists(file)) {
-            resource = new FileSystemResource(file.toFile());
-        } else {
-            // Используем ClassPathResource для развернутого приложения
-            resource = new ClassPathResource("static/resumes/" + fileName);
-        }
-
-        // Проверяем, доступен ли файл
+        // Проверка существования файла
         if (!resource.exists()) {
-            System.out.println("Файл не найден: " + file.toString());
+            System.out.println("Файл не найден: " + resource.getFilename());
             return ResponseEntity.notFound().build();
         }
 
