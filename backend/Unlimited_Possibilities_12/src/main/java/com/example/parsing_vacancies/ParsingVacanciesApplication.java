@@ -26,10 +26,6 @@ public class ParsingVacanciesApplication {
     public static List<RecordingMethod> methods;
 
     public static void main(String[] args) {
-        System.out.println("HUGGINGFACE_API_TOKEN: " + System.getenv("HUGGINGFACE_API_TOKEN"));
-        System.out.println("MYSQLDATABASE: " + System.getenv("MYSQLDATABASE"));
-        System.out.println("MYSQLUSER: " + System.getenv("MYSQLUSER"));
-        System.out.println("MYSQLPASSWORD: " + System.getenv("MYSQLPASSWORD"));
         SpringApplication.run(ParsingVacanciesApplication.class, args);
 
         setRecordingMethod(RecordingMethod.HTML, RecordingMethod.DATABASE_BY_JDBS);
