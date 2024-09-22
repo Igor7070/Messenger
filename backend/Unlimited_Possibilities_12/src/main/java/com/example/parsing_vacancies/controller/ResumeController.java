@@ -370,7 +370,7 @@ public class ResumeController {
     @GetMapping("/convenient_website777/readyResume/file_resume")
     public ResponseEntity<Resource> serveFile(@RequestParam String fileName,
                                               HttpServletRequest request) {
-        /*// Отладочный вывод для проверки URL и переменной
+        // Отладочный вывод для проверки URL и переменной
         System.out.println("URL запроса: " + request.getRequestURL());
         System.out.println("fileName из URL: " + fileName); // Выводим имя файла
 
@@ -387,28 +387,6 @@ public class ResumeController {
 
         if (!resource.exists()) {
             System.out.println("Файл не найден: " + file.toString());
-            return ResponseEntity.notFound().build();
-        }
-
-        try {
-            String encodedFileName = URLEncoder.encode(resource.getFilename(), StandardCharsets.UTF_8.toString());
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"")
-                    .body(resource);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }*/
-        // Отладочный вывод для проверки URL и переменной
-        System.out.println("URL запроса: " + request.getRequestURL());
-        System.out.println("fileName из URL: " + fileName); // Выводим имя файла
-
-        // Загрузка файла как ресурса
-        Resource resource = new ClassPathResource("static/resumes/" + fileName);
-
-        // Проверка существования файла
-        if (!resource.exists()) {
-            System.out.println("Файл не найден: " + resource.getFilename());
             return ResponseEntity.notFound().build();
         }
 
