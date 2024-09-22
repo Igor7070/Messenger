@@ -8,12 +8,8 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.chrome.ChromeOptions;
 
-
-import java.io.IOException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -54,7 +50,13 @@ public class RabotaUaStrategy implements Strategy {
 
         try {
             String url = String.format(URL_FORMAT, position, page);
-            driver = new ChromeDriver();
+
+            ChromeOptions options = new ChromeOptions();
+            options.addArguments("--headless"); // Запуск без графического интерфейса
+            options.addArguments("--disable-gpu");
+
+            driver = new ChromeDriver(options);
+            //driver = new ChromeDriver();
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
             driver.get(url);
 
@@ -226,7 +228,13 @@ public class RabotaUaStrategy implements Strategy {
         try {
             String url = String.format(URL_FORMAT_DIAPASON_TIME,
                     languageRabotaUa.getStr(), position, cityRabotaUa.getStr(), page);
-            driver = new ChromeDriver();
+
+            ChromeOptions options = new ChromeOptions();
+            options.addArguments("--headless"); // Запуск без графического интерфейса
+            options.addArguments("--disable-gpu");
+
+            driver = new ChromeDriver(options);
+            //driver = new ChromeDriver();
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
             driver.get(url);
 
