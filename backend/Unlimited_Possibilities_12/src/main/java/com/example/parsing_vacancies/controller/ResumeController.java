@@ -12,8 +12,10 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
@@ -368,7 +370,7 @@ public class ResumeController {
     @GetMapping("/convenient_website777/readyResume/file_resume")
     public ResponseEntity<Resource> serveFile(@RequestParam String fileName,
                                               HttpServletRequest request) {
-        // Отладочный вывод для проверки URL и переменной
+        /*// Отладочный вывод для проверки URL и переменной
         System.out.println("URL запроса: " + request.getRequestURL());
         System.out.println("fileName из URL: " + fileName); // Выводим имя файла
 
@@ -383,6 +385,39 @@ public class ResumeController {
             System.out.println("Файл недоступен для чтения.");
         }
 
+        if (!resource.exists()) {
+            System.out.println("Файл не найден: " + file.toString());
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            String encodedFileName = URLEncoder.encode(resource.getFilename(), StandardCharsets.UTF_8.toString());
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }*/
+        // Отладочный вывод для проверки URL и переменной
+        System.out.println("URL запроса: " + request.getRequestURL());
+        System.out.println("fileName из URL: " + fileName); // Выводим имя файла
+
+        // Определяем путь к файлу
+        Path file = Paths.get("src/main/resources/static/resumes").resolve(fileName).normalize();
+        System.out.println("Полный путь к файлу: " + file.toString());
+
+        Resource resource;
+
+        // Используем FileSystemResource для локальной разработки
+        if (Files.exists(file)) {
+            resource = new FileSystemResource(file.toFile());
+        } else {
+            // Используем ClassPathResource для развернутого приложения
+            resource = new ClassPathResource("static/resumes/" + fileName);
+        }
+
+        // Проверяем, доступен ли файл
         if (!resource.exists()) {
             System.out.println("Файл не найден: " + file.toString());
             return ResponseEntity.notFound().build();
