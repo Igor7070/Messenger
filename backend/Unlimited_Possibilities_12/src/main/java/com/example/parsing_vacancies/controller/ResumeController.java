@@ -7,22 +7,22 @@ import com.example.parsing_vacancies.model.resume.WorkExperience;
 import com.example.parsing_vacancies.repo.VacancyRepository;
 import com.example.parsing_vacancies.service.OpenAIService;
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -355,7 +355,7 @@ public class ResumeController {
             long expirationTime = TimeUnit.MINUTES.toMillis(3); // 20 минут
 
             for (File file : files) {
-                if (currentTime - file.lastModified() > expirationTime) {
+                if (!file.getName().equals("README.md") && currentTime - file.lastModified() > expirationTime) {
                     try {
                         Files.delete(file.toPath());
                         System.out.println("Удалён файл: " + file.getName());
