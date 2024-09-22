@@ -26,9 +26,9 @@ public class ParsingVacanciesApplication {
     public static List<RecordingMethod> methods;
 
     public static void main(String[] args) {
-        SpringApplication.run(ParsingVacanciesApplication.class, args);
         System.out.println("MYSQLUSER: " + System.getenv("MYSQLUSER"));
         System.out.println("MYSQLPASSWORD: " + System.getenv("MYSQLPASSWORD"));
+        SpringApplication.run(ParsingVacanciesApplication.class, args);
 
         setRecordingMethod(RecordingMethod.HTML, RecordingMethod.DATABASE_BY_JDBS);
 
