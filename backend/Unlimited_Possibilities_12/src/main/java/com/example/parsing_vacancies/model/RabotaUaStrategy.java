@@ -54,8 +54,12 @@ public class RabotaUaStrategy implements Strategy {
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
+            options.addArguments("--no-sandbox");
+            options.addArguments("--disable-dev-shm-usage");
 
+            System.out.println("Initializing WebDriver...");
             driver = new ChromeDriver(options);
+            System.out.println("WebDriver initialized successfully.");
             //driver = new ChromeDriver();
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
             driver.get(url);
@@ -232,8 +236,12 @@ public class RabotaUaStrategy implements Strategy {
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
+            options.addArguments("--no-sandbox");
+            options.addArguments("--disable-dev-shm-usage");
 
+            System.out.println("Initializing WebDriver...");
             driver = new ChromeDriver(options);
+            System.out.println("WebDriver initialized successfully.");
             //driver = new ChromeDriver();
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
             driver.get(url);
