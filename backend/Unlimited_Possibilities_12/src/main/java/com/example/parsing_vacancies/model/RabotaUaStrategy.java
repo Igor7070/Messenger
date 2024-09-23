@@ -13,17 +13,21 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class RabotaUaStrategy implements Strategy {
     private static final String URL_FORMAT = "https://robota.ua/ru/zapros/%s/kyiv?page=%d";
     private static final String URL_FORMAT_DIAPASON_TIME =
             "https://robota.ua/%s/zapros/%s/%s?page=%d";
+
+    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private static final long TIMEOUT = 37; // Время таймаута в секундах
+
     @Override
     public List<Vacancy> getVacancies(String position) {
         List<Vacancy> vacancies = new ArrayList<>();
         for (int pageNumber = 1; ;pageNumber++) {
-            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySilenium(position, pageNumber);
+            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySileniumWithTimeout(position, pageNumber);
             //System.out.println("vacanciesFromPageNumberSize: " + vacanciesFromPageNumber.size());
             if (vacanciesFromPageNumber.size() == 0) break;
             vacancies.addAll(vacanciesFromPageNumber);
@@ -32,17 +36,51 @@ public class RabotaUaStrategy implements Strategy {
         return vacancies;
     }
 
+    private List<Vacancy> getVacanciesBySileniumWithTimeout(String position, int pageNumber) {
+        Future<List<Vacancy>> future = scheduler.submit(() -> getVacanciesBySilenium(position, pageNumber));
+
+        try {
+            // Ждем завершения задачи с таймаутом
+            return future.get(TIMEOUT, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            System.out.println("Время вышло! Повторная попытка...");
+            // Если время вышло, прерываем выполнение и повторяем попытку
+            future.cancel(true); // Отменяем предыдущую задачу
+            return getVacanciesBySileniumWithTimeout(position, pageNumber); // Рекурсивный вызов
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace(); // Обрабатываем другие исключения
+            return new ArrayList<>(); // Возвращаем пустой список в случае ошибки
+        }
+    }
+
     @Override
     public List<Vacancy> getVacancies(Language language, City city, String position, TimeDate time) {
         List<Vacancy> vacancies = new ArrayList<>();
         for (int pageNumber = 1; ;pageNumber++) {
-            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySileniumWithParam(language, city, position, time, pageNumber);
+            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySileniumWithParamWithTimeout(language, city, position, time, pageNumber);
             //System.out.println("vacanciesFromPageNumberSize: " + vacanciesFromPageNumber.size());
             if (vacanciesFromPageNumber.size() == 0) break;
             vacancies.addAll(vacanciesFromPageNumber);
             System.out.println(vacancies.size());
         }
         return vacancies;
+    }
+
+    private List<Vacancy> getVacanciesBySileniumWithParamWithTimeout(Language language, City city, String position, TimeDate time, int pageNumber) {
+        Future<List<Vacancy>> future = scheduler.submit(() -> getVacanciesBySileniumWithParam(language, city, position, time, pageNumber));
+
+        try {
+            // Ждем завершения задачи с таймаутом
+            return future.get(TIMEOUT, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            System.out.println("Время вышло! Повторная попытка...");
+            // Если время вышло, прерываем выполнение и повторяем попытку
+            future.cancel(true); // Отменяем предыдущую задачу
+            return getVacanciesBySileniumWithTimeout(position, pageNumber); // Рекурсивный вызов
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace(); // Обрабатываем другие исключения
+            return new ArrayList<>(); // Возвращаем пустой список в случае ошибки
+        }
     }
 
     private List<Vacancy> getVacanciesBySilenium(String position, int page) {
