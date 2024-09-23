@@ -52,6 +52,7 @@ public class RabotaUaStrategy implements Strategy {
         try {
             String url = String.format(URL_FORMAT, position, page);
 
+            System.out.println("Initializing WebDriver...");
             //Для Railway
             String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
             ChromeOptions options = new ChromeOptions();
@@ -109,6 +110,7 @@ public class RabotaUaStrategy implements Strategy {
             List<WebElement> elementVacancies = driver.findElements(By.className("santa--mb-20"));
             //System.out.println("Total number of vacancies: " + elementVacancies.size());
             int elementVacanciesSize = elementVacancies.size();
+            System.out.println("elementVacanciesSize: " + elementVacanciesSize);
             if (elementVacanciesSize == 0) {
                 driver.quit();
                 return vacancies;
@@ -202,12 +204,18 @@ public class RabotaUaStrategy implements Strategy {
                         continue;
                     }
                 } catch (Exception e) {
+                    System.out.println("Error in WebElement: " + e.getMessage());
                     continue;
                 }
             }
             driver.quit();
+            if (vacancies.size() == 0) {
+                System.out.println("Failed attempt");
+                vacancies = getVacanciesBySilenium(position, page);
+                return vacancies;
+            }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.out.println("Error: " + e.getMessage());
             driver.quit();
         }
         return vacancies;
@@ -375,8 +383,13 @@ public class RabotaUaStrategy implements Strategy {
                 }
             }
             driver.quit();
+            if (vacancies.size() == 0) {
+                System.out.println("Failed attempt");
+                vacancies = getVacanciesBySileniumWithParam(language, city, position, time, page);
+                return vacancies;
+            }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.out.println("Error: " + e.getMessage());
             driver.quit();
         }
         return vacancies;
