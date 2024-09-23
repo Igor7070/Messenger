@@ -21,7 +21,7 @@ public class RabotaUaStrategy implements Strategy {
             "https://robota.ua/%s/zapros/%s/%s?page=%d";
 
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private static final long TIMEOUT = 37; // Время таймаута в секундах
+    private static final long TIMEOUT = 55; // Время таймаута в секундах
 
     @Override
     public List<Vacancy> getVacancies(String position) {
