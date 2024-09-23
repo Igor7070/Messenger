@@ -53,14 +53,11 @@ public class RabotaUaStrategy implements Strategy {
         try {
             String url = String.format(URL_FORMAT, position, page);
 
-            String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/ui/"; // Замените на ваш URL
+            String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
-            options.addArguments("--no-sandbox");
-            options.addArguments("--disable-dev-shm-usage");
             driver = new RemoteWebDriver(new URL(remoteUrl), options);
-            System.out.println("WebDriver initialized successfully.");
 
             /*ChromeOptions options = new ChromeOptions();
             options.addArguments("--headless"); // Запуск без графического интерфейса
