@@ -7,7 +7,6 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
@@ -53,23 +52,16 @@ public class RabotaUaStrategy implements Strategy {
         try {
             String url = String.format(URL_FORMAT, position, page);
 
+            //Для Railway
             String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
             driver = new RemoteWebDriver(new URL(remoteUrl), options);
 
-            /*ChromeOptions options = new ChromeOptions();
-            options.addArguments("--headless"); // Запуск без графического интерфейса
-            options.addArguments("--disable-gpu");
-            options.addArguments("--no-sandbox");
-            options.addArguments("--disable-dev-shm-usage");
-
-            System.out.println("Initializing WebDriver...");
-            driver = new ChromeDriver(options);*/
-
-            //driver = new ChromeDriver();
+            //driver = new ChromeDriver(); //Для локальной работы
             System.out.println("WebDriver initialized successfully.");
+
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
             driver.get(url);
 
@@ -242,16 +234,17 @@ public class RabotaUaStrategy implements Strategy {
             String url = String.format(URL_FORMAT_DIAPASON_TIME,
                     languageRabotaUa.getStr(), position, cityRabotaUa.getStr(), page);
 
+            System.out.println("Initializing WebDriver...");
+            //Для Railway
+            String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
-            options.addArguments("--no-sandbox");
-            options.addArguments("--disable-dev-shm-usage");
+            driver = new RemoteWebDriver(new URL(remoteUrl), options);
 
-            System.out.println("Initializing WebDriver...");
-            driver = new ChromeDriver(options);
+            //driver = new ChromeDriver(); //Для локальной работы
             System.out.println("WebDriver initialized successfully.");
-            //driver = new ChromeDriver();
+
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
             driver.get(url);
 
