@@ -242,8 +242,11 @@ public class RabotaUaStrategy implements Strategy {
                 return vacancies;
             }
         } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
             driver.quit();
+            System.out.println("Error: " + e.getMessage());
+            System.out.println("Failed attempt");
+            vacancies = getVacanciesBySilenium(position, page);
+            return vacancies;
         }
         return vacancies;
     }
