@@ -13,7 +13,9 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class RabotaUaStrategy implements Strategy {
     private static final String URL_FORMAT = "https://robota.ua/ru/zapros/%s/kyiv?page=%d";
@@ -27,7 +29,7 @@ public class RabotaUaStrategy implements Strategy {
     public List<Vacancy> getVacancies(String position) {
         List<Vacancy> vacancies = new ArrayList<>();
         for (int pageNumber = 1; ;pageNumber++) {
-            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySileniumWithTimeout(position, pageNumber);
+            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySilenium(position, pageNumber);
             //System.out.println("vacanciesFromPageNumberSize: " + vacanciesFromPageNumber.size());
             if (vacanciesFromPageNumber.size() == 0) break;
             vacancies.addAll(vacanciesFromPageNumber);
@@ -36,7 +38,7 @@ public class RabotaUaStrategy implements Strategy {
         return vacancies;
     }
 
-    private List<Vacancy> getVacanciesBySileniumWithTimeout(String position, int pageNumber) {
+    /*private List<Vacancy> getVacanciesBySileniumWithTimeout(String position, int pageNumber) {
         Future<List<Vacancy>> future = scheduler.submit(() -> getVacanciesBySilenium(position, pageNumber));
 
         try {
@@ -51,13 +53,13 @@ public class RabotaUaStrategy implements Strategy {
             e.printStackTrace(); // Обрабатываем другие исключения
             return new ArrayList<>(); // Возвращаем пустой список в случае ошибки
         }
-    }
+    }*/
 
     @Override
     public List<Vacancy> getVacancies(Language language, City city, String position, TimeDate time) {
         List<Vacancy> vacancies = new ArrayList<>();
         for (int pageNumber = 1; ;pageNumber++) {
-            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySileniumWithParamWithTimeout(language, city, position, time, pageNumber);
+            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySileniumWithParam(language, city, position, time, pageNumber);
             //System.out.println("vacanciesFromPageNumberSize: " + vacanciesFromPageNumber.size());
             if (vacanciesFromPageNumber.size() == 0) break;
             vacancies.addAll(vacanciesFromPageNumber);
@@ -66,7 +68,7 @@ public class RabotaUaStrategy implements Strategy {
         return vacancies;
     }
 
-    private List<Vacancy> getVacanciesBySileniumWithParamWithTimeout(Language language, City city, String position, TimeDate time, int pageNumber) {
+    /*private List<Vacancy> getVacanciesBySileniumWithParamWithTimeout(Language language, City city, String position, TimeDate time, int pageNumber) {
         Future<List<Vacancy>> future = scheduler.submit(() -> getVacanciesBySileniumWithParam(language, city, position, time, pageNumber));
 
         try {
@@ -81,7 +83,7 @@ public class RabotaUaStrategy implements Strategy {
             e.printStackTrace(); // Обрабатываем другие исключения
             return new ArrayList<>(); // Возвращаем пустой список в случае ошибки
         }
-    }
+    }*/
 
     private List<Vacancy> getVacanciesBySilenium(String position, int page) {
         List<Vacancy> vacancies = new ArrayList<>();
@@ -107,19 +109,6 @@ public class RabotaUaStrategy implements Strategy {
             /*WebElement appRootElement = driver.findElement(By.cssSelector("app-root"));
             String appRootContent = appRootElement.getAttribute("outerHTML");
             System.out.println(appRootContent);*/
-
-            /*JavascriptExecutor js = (JavascriptExecutor) driver;
-            long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
-            int scrollStep = 2500;
-            while (true) {
-                js.executeScript("window.scrollBy(0, " + scrollStep + ");");
-                long newHeight = (long) js.executeScript("return document.body.scrollHeight");
-                if (newHeight == lastHeight) {
-                    break;
-                }
-                lastHeight = newHeight;
-                Thread.sleep(400);
-            }*/
 
             JavascriptExecutor js = (JavascriptExecutor) driver;
             long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
