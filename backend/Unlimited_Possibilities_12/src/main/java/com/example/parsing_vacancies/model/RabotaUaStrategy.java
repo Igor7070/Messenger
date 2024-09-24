@@ -87,6 +87,7 @@ public class RabotaUaStrategy implements Strategy {
 
     private List<Vacancy> getVacanciesBySilenium(String position, int page) {
         List<Vacancy> vacancies = new ArrayList<>();
+        int elementVacanciesSize = 0;
         WebDriver driver = null;
 
         try {
@@ -122,7 +123,7 @@ public class RabotaUaStrategy implements Strategy {
                 // Ждем изменения высоты страницы в течение maxWaitTime
                 long startTime = System.currentTimeMillis();
                 while (newHeight == lastHeight && (System.currentTimeMillis() - startTime) < maxWaitTime) {
-                    Thread.sleep(300);
+                    Thread.sleep(400);
                     newHeight = (long) js.executeScript("return document.body.scrollHeight");
                 }
 
@@ -136,7 +137,7 @@ public class RabotaUaStrategy implements Strategy {
 
             List<WebElement> elementVacancies = driver.findElements(By.className("santa--mb-20"));
             //System.out.println("Total number of vacancies: " + elementVacancies.size());
-            int elementVacanciesSize = elementVacancies.size();
+            elementVacanciesSize = elementVacancies.size();
             System.out.println("elementVacanciesSize: " + elementVacanciesSize);
             if (elementVacanciesSize == 0) {
                 driver.quit();
@@ -236,7 +237,7 @@ public class RabotaUaStrategy implements Strategy {
                 }
             }
             driver.quit();
-            if (vacancies.size() == 0) {
+            if (vacancies.size() < 11 && elementVacanciesSize == 20) {
                 System.out.println("Failed attempt");
                 vacancies = getVacanciesBySilenium(position, page);
                 return vacancies;
@@ -302,7 +303,7 @@ public class RabotaUaStrategy implements Strategy {
                 // Ждем изменения высоты страницы в течение maxWaitTime
                 long startTime = System.currentTimeMillis();
                 while (newHeight == lastHeight && (System.currentTimeMillis() - startTime) < maxWaitTime) {
-                    Thread.sleep(300);
+                    Thread.sleep(400);
                     newHeight = (long) js.executeScript("return document.body.scrollHeight");
                 }
 
@@ -413,14 +414,17 @@ public class RabotaUaStrategy implements Strategy {
                 }
             }
             driver.quit();
-            if (vacancies.size() == 0) {
+            if (vacancies.size() < 11 && elementVacanciesSize == 20) {
                 System.out.println("Failed attempt");
                 vacancies = getVacanciesBySileniumWithParam(language, city, position, time, page);
                 return vacancies;
             }
         } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
             driver.quit();
+            System.out.println("Error: " + e.getMessage());
+            System.out.println("Failed attempt");
+            vacancies = getVacanciesBySileniumWithParam(language, city, position, time, page);
+            return vacancies;
         }
         return vacancies;
     }
