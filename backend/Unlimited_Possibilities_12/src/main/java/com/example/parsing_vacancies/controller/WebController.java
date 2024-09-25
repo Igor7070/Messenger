@@ -154,6 +154,12 @@ public class WebController {
         return "privacyPolicy";
     }
 
+    @GetMapping("/convenient_website777/terms_of_service")
+    public String termsOfService(Model model) {
+        model.addAttribute("title", "Terms of service");
+        return "termsOfService";
+    }
+
     private static com.example.parsing_vacancies.controller.Controller startConfiguration(Provider... providers) {
         com.example.parsing_vacancies.model.Model model = new com.example.parsing_vacancies.model.Model(providers);
         com.example.parsing_vacancies.controller.Controller controller = new com.example.parsing_vacancies.controller.Controller(model);
