@@ -101,7 +101,8 @@ public class RabotaUaStrategy implements Strategy {
             options.addArguments("--disable-gpu");
             driver = new RemoteWebDriver(new URL(remoteUrl), options);
 
-            //driver = new ChromeDriver(); //Для локальной работы
+            //Для локальной работы
+            //driver = new ChromeDriver();
             System.out.println("WebDriver initialized successfully.");
 
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
@@ -281,7 +282,8 @@ public class RabotaUaStrategy implements Strategy {
             options.addArguments("--disable-gpu");
             driver = new RemoteWebDriver(new URL(remoteUrl), options);
 
-            //driver = new ChromeDriver(); //Для локальной работы
+            //Для локальной работы
+            //driver = new ChromeDriver();
             System.out.println("WebDriver initialized successfully.");
 
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
@@ -410,6 +412,7 @@ public class RabotaUaStrategy implements Strategy {
                         continue;
                     }
                 } catch (Exception e) {
+                    System.out.println("Error in WebElement: " + e.getMessage());
                     continue;
                 }
             }

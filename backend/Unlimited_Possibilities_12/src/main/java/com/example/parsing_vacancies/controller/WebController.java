@@ -148,6 +148,12 @@ public class WebController {
         return "jobSearchHistory";
     }
 
+    @GetMapping("/convenient_website777/privacy-policy")
+    public String privacyPolicy(Model model) {
+        model.addAttribute("title", "Privacy policy");
+        return "privacyPolicy";
+    }
+
     private static com.example.parsing_vacancies.controller.Controller startConfiguration(Provider... providers) {
         com.example.parsing_vacancies.model.Model model = new com.example.parsing_vacancies.model.Model(providers);
         com.example.parsing_vacancies.controller.Controller controller = new com.example.parsing_vacancies.controller.Controller(model);
