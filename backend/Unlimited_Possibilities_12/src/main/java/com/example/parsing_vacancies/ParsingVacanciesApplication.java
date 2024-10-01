@@ -59,7 +59,8 @@ public class ParsingVacanciesApplication {
         return controller;
     }
 
-    public static void getVacanciesKyivPosition(String position, Sites... sites) {
+    public static void getVacanciesKyivPosition(String position, Integer maxVacanciesWorkUa,
+                                                Integer maxVacanciesRabotaUa, Sites... sites) {
         List<Provider> providersList = new ArrayList<>();
         for (Sites site : sites) {
             if (site.equals(Sites.WORK_UA)) {
@@ -73,11 +74,12 @@ public class ParsingVacanciesApplication {
         }
         Provider[] providers = providersList.toArray(new Provider[providersList.size()]);
         Controller controller = startConfiguration(providers);
-        executeTask(controller, position);
+        executeTask(controller, position, maxVacanciesWorkUa, maxVacanciesRabotaUa);
     }
 
     public static void getVacanciesWithParameters(String position, Language language, City city,
-                                                 TimeDate time, Sites... sites) {
+                                                 TimeDate time, Integer maxVacanciesWorkUa,
+                                                  Integer maxVacanciesRabotaUa, Sites... sites) {
         List<Provider> providersList = new ArrayList<>();
         for (Sites site : sites) {
             if (site.equals(Sites.WORK_UA)) {
@@ -91,16 +93,20 @@ public class ParsingVacanciesApplication {
         }
         Provider[] providers = providersList.toArray(new Provider[providersList.size()]);
         Controller controller = startConfiguration(providers);
-        executeTask(controller, language, city, position, time);
+        executeTask(controller, language, city, position, time,
+                maxVacanciesWorkUa, maxVacanciesRabotaUa);
     }
 
-    private static void executeTask(Controller controller, String position) {
-        controller.onPositionSelect(position);
+    private static void executeTask(Controller controller, String position,
+                                    Integer maxVacanciesWorkUa, Integer maxVacanciesRabotaUa) {
+        controller.onPositionSelect(position, maxVacanciesWorkUa, maxVacanciesRabotaUa);
     }
 
     private static void executeTask(Controller controller,
-                                    Language language, City city, String position, TimeDate time) {
-        controller.onParamSelect(language, city, position, time);
+                                    Language language, City city, String position, TimeDate time,
+                                    Integer maxVacanciesWorkUa, Integer maxVacanciesRabotaUa) {
+        controller.onParamSelect(language, city, position, time,
+                maxVacanciesWorkUa, maxVacanciesRabotaUa);
     }
 
     public static void setRecordingMethod(RecordingMethod... methods) {

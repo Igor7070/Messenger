@@ -4,7 +4,6 @@ import com.example.parsing_vacancies.parameters.City;
 import com.example.parsing_vacancies.parameters.Language;
 import com.example.parsing_vacancies.parameters.TimeDate;
 
-import java.util.Collections;
 import java.util.List;
 
 public class Provider {
@@ -22,13 +21,16 @@ public class Provider {
         return strategy;
     }
 
-    public List<Vacancy> getJavaVacancies(String searchString) {
-        List<Vacancy> vacancies = strategy.getVacancies(searchString);
+    public List<Vacancy> getJavaVacancies(String position, Integer maxVacancies) {
+        List<Vacancy> vacancies = strategy.getVacancies(position,
+                maxVacancies);
         return vacancies;
     }
 
-    public List<Vacancy> getJavaVacancies(Language language, City city, String position, TimeDate time) {
-        List<Vacancy> vacancies = strategy.getVacancies(language, city, position, time);
+    public List<Vacancy> getJavaVacancies(Language language, City city, String position, TimeDate time,
+                                          Integer maxVacancies) {
+        List<Vacancy> vacancies = strategy.getVacancies(language, city, position, time,
+                maxVacancies);
         return vacancies;
     }
 }

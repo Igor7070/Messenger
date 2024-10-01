@@ -3,7 +3,6 @@ package com.example.parsing_vacancies.model;
 import com.example.parsing_vacancies.controller.WebController;
 import com.example.parsing_vacancies.parameters.City;
 import com.example.parsing_vacancies.parameters.Language;
-import com.example.parsing_vacancies.parameters.RecordingMethod;
 import com.example.parsing_vacancies.parameters.TimeDate;
 import com.example.parsing_vacancies.view.View;
 
@@ -29,10 +28,15 @@ public class Model {
         this.providers = providers;
     }
 
-    public void selectPosition(String position) {
+    public void selectPosition(String position, Integer maxVacanciesWorkUa, Integer maxVacanciesRabotaUa) {
         List<Vacancy> vacancies = new ArrayList<>();
         for (Provider provider : providers) {
-            List<Vacancy> vacanciesFromSite = provider.getJavaVacancies(position);
+            List<Vacancy> vacanciesFromSite = null;
+            if (provider.getStrategy() instanceof WorkUaStrategy) {
+                vacanciesFromSite = provider.getJavaVacancies(position, maxVacanciesWorkUa);
+            } else if (provider.getStrategy() instanceof RabotaUaStrategy) {
+                vacanciesFromSite = provider.getJavaVacancies(position, maxVacanciesRabotaUa);
+            }
             if (views != null) {
                 for (View view : views) {
                     view.update(vacanciesFromSite, provider);
@@ -44,7 +48,9 @@ public class Model {
                     WebController.setFromRabotaUaVacancies(vacanciesFromSite);
                 }
             }
-            vacancies.addAll(vacanciesFromSite);
+            if (vacanciesFromSite != null) {
+                vacancies.addAll(vacanciesFromSite);
+            }
         }
         if (views != null) {
             for (View view : views) {
@@ -55,10 +61,18 @@ public class Model {
         }
     }
 
-    public void selectParam(Language language, City city, String position, TimeDate time) {
+    public void selectParam(Language language, City city, String position, TimeDate time,
+                            Integer maxVacanciesWorkUa, Integer maxVacanciesRabotaUa) {
         List<Vacancy> vacancies = new ArrayList<>();
         for (Provider provider : providers) {
-            List<Vacancy> vacanciesFromSite = provider.getJavaVacancies(language, city, position, time);
+            List<Vacancy> vacanciesFromSite = null;
+            if (provider.getStrategy() instanceof WorkUaStrategy) {
+                vacanciesFromSite = provider.getJavaVacancies(language, city, position, time,
+                        maxVacanciesWorkUa);
+            } else if (provider.getStrategy() instanceof RabotaUaStrategy) {
+                vacanciesFromSite = provider.getJavaVacancies(language, city, position, time,
+                        maxVacanciesRabotaUa);
+            }
             if (views != null) {
                 for (View view : views) {
                     view.update(vacanciesFromSite, provider);
@@ -70,7 +84,9 @@ public class Model {
                     WebController.setFromRabotaUaVacancies(vacanciesFromSite);
                 }
             }
-            vacancies.addAll(vacanciesFromSite);
+            if (vacanciesFromSite != null) {
+                vacancies.addAll(vacanciesFromSite);
+            }
         }
         if (views != null) {
             for (View view : views) {

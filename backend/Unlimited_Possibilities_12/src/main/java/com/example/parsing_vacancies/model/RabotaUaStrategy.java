@@ -7,10 +7,8 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -21,19 +19,25 @@ public class RabotaUaStrategy implements Strategy {
     private static final String URL_FORMAT = "https://robota.ua/ru/zapros/%s/kyiv?page=%d";
     private static final String URL_FORMAT_DIAPASON_TIME =
             "https://robota.ua/%s/zapros/%s/%s?page=%d";
-
+    private int countRecordedVacancies = 0;
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static final long TIMEOUT = 55; // Время таймаута в секундах
 
     @Override
-    public List<Vacancy> getVacancies(String position) {
+    public List<Vacancy> getVacancies(String position, Integer maxVacancies) {
         List<Vacancy> vacancies = new ArrayList<>();
         for (int pageNumber = 1; ;pageNumber++) {
-            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySilenium(position, pageNumber);
+            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySilenium(position,
+                    maxVacancies, pageNumber);
             //System.out.println("vacanciesFromPageNumberSize: " + vacanciesFromPageNumber.size());
             if (vacanciesFromPageNumber.size() == 0) break;
             vacancies.addAll(vacanciesFromPageNumber);
             System.out.println(vacancies.size());
+            if (maxVacancies != null) {
+                if (countRecordedVacancies == maxVacancies) {
+                    break;
+                }
+            }
         }
         return vacancies;
     }
@@ -56,14 +60,21 @@ public class RabotaUaStrategy implements Strategy {
     }*/
 
     @Override
-    public List<Vacancy> getVacancies(Language language, City city, String position, TimeDate time) {
+    public List<Vacancy> getVacancies(Language language, City city, String position, TimeDate time,
+                                      Integer maxVacancies) {
         List<Vacancy> vacancies = new ArrayList<>();
         for (int pageNumber = 1; ;pageNumber++) {
-            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySileniumWithParam(language, city, position, time, pageNumber);
+            List<Vacancy> vacanciesFromPageNumber = getVacanciesBySileniumWithParam(language, city,
+                    position, time, maxVacancies, pageNumber);
             //System.out.println("vacanciesFromPageNumberSize: " + vacanciesFromPageNumber.size());
             if (vacanciesFromPageNumber.size() == 0) break;
             vacancies.addAll(vacanciesFromPageNumber);
             System.out.println(vacancies.size());
+            if (maxVacancies != null) {
+                if (countRecordedVacancies == maxVacancies) {
+                    break;
+                }
+            }
         }
         return vacancies;
     }
@@ -85,7 +96,7 @@ public class RabotaUaStrategy implements Strategy {
         }
     }*/
 
-    private List<Vacancy> getVacanciesBySilenium(String position, int page) {
+    private List<Vacancy> getVacanciesBySilenium(String position, Integer maxVacancies, int page) {
         List<Vacancy> vacancies = new ArrayList<>();
         int elementVacanciesSize = 0;
         WebDriver driver = null;
@@ -95,14 +106,14 @@ public class RabotaUaStrategy implements Strategy {
 
             System.out.println("Initializing WebDriver...");
             //Для Railway
-            String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
+            /*String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
-            driver = new RemoteWebDriver(new URL(remoteUrl), options);
+            driver = new RemoteWebDriver(new URL(remoteUrl), options);*/
 
             //Для локальной работы
-            //driver = new ChromeDriver();
+            driver = new ChromeDriver();
             System.out.println("WebDriver initialized successfully.");
 
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
@@ -124,7 +135,7 @@ public class RabotaUaStrategy implements Strategy {
                 // Ждем изменения высоты страницы в течение maxWaitTime
                 long startTime = System.currentTimeMillis();
                 while (newHeight == lastHeight && (System.currentTimeMillis() - startTime) < maxWaitTime) {
-                    Thread.sleep(400);
+                    Thread.sleep(300);
                     newHeight = (long) js.executeScript("return document.body.scrollHeight");
                 }
 
@@ -164,6 +175,14 @@ public class RabotaUaStrategy implements Strategy {
                         vacancy.setSiteName("https://robota.ua/");
                         printVacance(vacancy);
                         vacancies.add(vacancy);
+                        if (maxVacancies != null) {
+                            countRecordedVacancies++;
+                        }
+                        if (maxVacancies != null) {
+                            if (countRecordedVacancies == maxVacancies) {
+                                break;
+                            }
+                        }
                         continue;
                     }
                     if (spansSize == 4) {
@@ -194,6 +213,14 @@ public class RabotaUaStrategy implements Strategy {
                         vacancy.setSiteName("https://robota.ua/");
                         printVacance(vacancy);
                         vacancies.add(vacancy);
+                        if (maxVacancies != null) {
+                            countRecordedVacancies++;
+                        }
+                        if (maxVacancies != null) {
+                            if (countRecordedVacancies == maxVacancies) {
+                                break;
+                            }
+                        }
                         continue;
                     }
                     if (spansSize == 5) {
@@ -219,6 +246,14 @@ public class RabotaUaStrategy implements Strategy {
                         vacancy.setSiteName("https://robota.ua/");
                         printVacance(vacancy);
                         vacancies.add(vacancy);
+                        if (maxVacancies != null) {
+                            countRecordedVacancies++;
+                        }
+                        if (maxVacancies != null) {
+                            if (countRecordedVacancies == maxVacancies) {
+                                break;
+                            }
+                        }
                         continue;
                     }
                     if (spansSize == 6) {
@@ -230,6 +265,14 @@ public class RabotaUaStrategy implements Strategy {
                         vacancy.setSiteName("https://robota.ua/");
                         printVacance(vacancy);
                         vacancies.add(vacancy);
+                        if (maxVacancies != null) {
+                            countRecordedVacancies++;
+                        }
+                        if (maxVacancies != null) {
+                            if (countRecordedVacancies == maxVacancies) {
+                                break;
+                            }
+                        }
                         continue;
                     }
                 } catch (Exception e) {
@@ -238,22 +281,29 @@ public class RabotaUaStrategy implements Strategy {
                 }
             }
             driver.quit();
+            if (maxVacancies != null) {
+                if (countRecordedVacancies == maxVacancies) {
+                    return vacancies;
+                }
+            }
             if (vacancies.size() < 11 && elementVacanciesSize == 20) {
                 System.out.println("Failed attempt");
-                vacancies = getVacanciesBySilenium(position, page);
+                vacancies = getVacanciesBySilenium(position, maxVacancies, page);
                 return vacancies;
             }
         } catch (Exception e) {
             driver.quit();
             System.out.println("Error: " + e.getMessage());
             System.out.println("Failed attempt");
-            vacancies = getVacanciesBySilenium(position, page);
+            vacancies = getVacanciesBySilenium(position, maxVacancies, page);
             return vacancies;
         }
         return vacancies;
     }
 
-    private List<Vacancy> getVacanciesBySileniumWithParam(Language language, City city, String position, TimeDate time, int page) {
+    private List<Vacancy> getVacanciesBySileniumWithParam(Language language, City city, String position,
+                                                          TimeDate time,  Integer maxVacancies,
+                                                          int page) {
         List<Vacancy> vacancies = new ArrayList<>();
         WebDriver driver = null;
         RabotaUaStrategy.LanguageRabotaUa languageRabotaUa = null;
@@ -276,14 +326,14 @@ public class RabotaUaStrategy implements Strategy {
 
             System.out.println("Initializing WebDriver...");
             //Для Railway
-            String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
+            /*String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
-            driver = new RemoteWebDriver(new URL(remoteUrl), options);
+            driver = new RemoteWebDriver(new URL(remoteUrl), options);*/
 
             //Для локальной работы
-            //driver = new ChromeDriver();
+            driver = new ChromeDriver();
             System.out.println("WebDriver initialized successfully.");
 
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
@@ -305,7 +355,7 @@ public class RabotaUaStrategy implements Strategy {
                 // Ждем изменения высоты страницы в течение maxWaitTime
                 long startTime = System.currentTimeMillis();
                 while (newHeight == lastHeight && (System.currentTimeMillis() - startTime) < maxWaitTime) {
-                    Thread.sleep(400);
+                    Thread.sleep(300);
                     newHeight = (long) js.executeScript("return document.body.scrollHeight");
                 }
 
@@ -343,6 +393,14 @@ public class RabotaUaStrategy implements Strategy {
                         vacancy.setSiteName("https://robota.ua/");
                         printVacance(vacancy);
                         vacancies.add(vacancy);
+                        if (maxVacancies != null) {
+                            countRecordedVacancies++;
+                        }
+                        if (maxVacancies != null) {
+                            if (countRecordedVacancies == maxVacancies) {
+                                break;
+                            }
+                        }
                         continue;
                     }
                     if (spansSize == 4) {
@@ -351,14 +409,14 @@ public class RabotaUaStrategy implements Strategy {
                             vacancy.setCompanyName(salaryOrCompanyName);
                             vacancy.setSalary("");
                             String strCity = spans.get(1).getText().trim();
-                            if (strCity.matches(".*(" + cityRabotaUa.getNameRus() +  ").*") || strCity.matches(".*(" + cityRabotaUa.nameUkr + ").*")) {
+                            if (strCity.matches(".*(" + cityRabotaUa.getNameRus() + ").*") || strCity.matches(".*(" + cityRabotaUa.nameUkr + ").*")) {
                                 vacancy.setCity(strCity);
                             } else {
                                 vacancy.setCity(spans.get(2).getText().trim());
                             }
                         } else {
                             String strCity = spans.get(2).getText().trim();
-                            if (strCity.matches(".*(" + cityRabotaUa.getNameRus() +  ").*") || strCity.matches(".*(" + cityRabotaUa.nameUkr + ").*")) {
+                            if (strCity.matches(".*(" + cityRabotaUa.getNameRus() + ").*") || strCity.matches(".*(" + cityRabotaUa.nameUkr + ").*")) {
                                 vacancy.setCompanyName(spans.get(1).getText().trim());
                                 vacancy.setSalary(salaryOrCompanyName);
                                 vacancy.setCity(strCity);
@@ -373,6 +431,14 @@ public class RabotaUaStrategy implements Strategy {
                         vacancy.setSiteName("https://robota.ua/");
                         printVacance(vacancy);
                         vacancies.add(vacancy);
+                        if (maxVacancies != null) {
+                            countRecordedVacancies++;
+                        }
+                        if (maxVacancies != null) {
+                            if (countRecordedVacancies == maxVacancies) {
+                                break;
+                            }
+                        }
                         continue;
                     }
                     if (spansSize == 5) {
@@ -383,7 +449,7 @@ public class RabotaUaStrategy implements Strategy {
                             vacancy.setCity(spans.get(2).getText().trim());
                         } else {
                             String strCity = spans.get(2).getText().trim();
-                            if (strCity.matches(".*(" + cityRabotaUa.getNameRus() +  ").*") || strCity.matches(".*(" + cityRabotaUa.nameUkr + ").*")) {
+                            if (strCity.matches(".*(" + cityRabotaUa.getNameRus() + ").*") || strCity.matches(".*(" + cityRabotaUa.nameUkr + ").*")) {
                                 vacancy.setCompanyName(spans.get(1).getText().trim());
                                 vacancy.setSalary(salaryOrCompanyName);
                                 vacancy.setCity(strCity);
@@ -398,6 +464,14 @@ public class RabotaUaStrategy implements Strategy {
                         vacancy.setSiteName("https://robota.ua/");
                         printVacance(vacancy);
                         vacancies.add(vacancy);
+                        if (maxVacancies != null) {
+                            countRecordedVacancies++;
+                        }
+                        if (maxVacancies != null) {
+                            if (countRecordedVacancies == maxVacancies) {
+                                break;
+                            }
+                        }
                         continue;
                     }
                     if (spansSize == 6) {
@@ -409,6 +483,14 @@ public class RabotaUaStrategy implements Strategy {
                         vacancy.setSiteName("https://robota.ua/");
                         printVacance(vacancy);
                         vacancies.add(vacancy);
+                        if (maxVacancies != null) {
+                            countRecordedVacancies++;
+                        }
+                        if (maxVacancies != null) {
+                            if (countRecordedVacancies == maxVacancies) {
+                                break;
+                            }
+                        }
                         continue;
                     }
                 } catch (Exception e) {
@@ -417,16 +499,23 @@ public class RabotaUaStrategy implements Strategy {
                 }
             }
             driver.quit();
+            if (maxVacancies != null) {
+                if (countRecordedVacancies == maxVacancies) {
+                    return vacancies;
+                }
+            }
             if (vacancies.size() < 11 && elementVacanciesSize == 20) {
                 System.out.println("Failed attempt");
-                vacancies = getVacanciesBySileniumWithParam(language, city, position, time, page);
+                vacancies = getVacanciesBySileniumWithParam(language, city, position, time,
+                        maxVacancies, page);
                 return vacancies;
             }
         } catch (Exception e) {
             driver.quit();
             System.out.println("Error: " + e.getMessage());
             System.out.println("Failed attempt");
-            vacancies = getVacanciesBySileniumWithParam(language, city, position, time, page);
+            vacancies = getVacanciesBySileniumWithParam(language, city, position, time,
+                    maxVacancies, page);
             return vacancies;
         }
         return vacancies;

@@ -7,12 +7,16 @@ import com.example.parsing_vacancies.parameters.City;
 import com.example.parsing_vacancies.parameters.Language;
 import com.example.parsing_vacancies.parameters.TimeDate;
 import com.example.parsing_vacancies.repo.VacancyRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,17 +28,25 @@ public class WebController {
     private static List<Vacancy> fromRabotaUaVacancies;
     @Autowired
     private VacancyRepository vacancyRepository;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private EntityManagerFactory entityManagerFactory;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @GetMapping("/convenient_website777")
     public String mainPage(Model model) {
-        model.addAttribute("title", "Сайт поиска вакансий");
-        model.addAttribute("title2", "для соискателей.");
+        model.addAttribute("title", "Развитие и");
+        model.addAttribute("title2", " возможности");
         return "siteVacancies";
     }
 
     @PostMapping("/convenient_website777/search")
     public String handleSearch(@RequestParam(name = "work-ua", required = false) boolean workUa,
                                @RequestParam(name = "rabota-ua", required = false) boolean rabotaUa,
+                               @RequestParam(name = "max-vacancies-work", required = false) Integer maxVacanciesWorkUa,
+                               @RequestParam(name = "max-vacancies-rabota", required = false) Integer maxVacanciesRabotaUa,
                                @RequestParam(name = "inputPosition", required = false) String inputPosition,
                                @RequestParam(name = "city") String city,
                                @RequestParam(name = "language", required = false) String language,
@@ -76,7 +88,7 @@ public class WebController {
         System.out.println("time : "  + timeframe);*/
         if ((city == null || city.isEmpty()) && (language == null || language.isEmpty()) &&
                 (timeframe == null || timeframe.isEmpty())) {
-            controller.onPositionSelect(inputPosition);
+            controller.onPositionSelect(inputPosition, maxVacanciesWorkUa, maxVacanciesRabotaUa);
         } else {
             Language language1 = null;
             City city1 = null;
@@ -108,7 +120,8 @@ public class WebController {
                 case "14" -> timeDate1 = TimeDate.FOURTEEN_DAYS;
                 case "30" -> timeDate1 = TimeDate.THIRTY_DAYS;
             }
-            controller.onParamSelect(language1, city1, inputPosition, timeDate1);
+            controller.onParamSelect(language1, city1, inputPosition, timeDate1,
+                    maxVacanciesWorkUa, maxVacanciesRabotaUa);
         }
         while (true) {
             if (workUa && rabotaUa) {
@@ -146,6 +159,34 @@ public class WebController {
         Iterable<Vacancy> vacanciesFullListHistory = vacancyRepository.findAll();
         model.addAttribute("vacanciesFullListHistory", vacanciesFullListHistory);
         return "jobSearchHistory";
+    }
+
+    @DeleteMapping("/convenient_website777/delete_search_history")
+    @ResponseBody // Позволяет возвращать ответ без представления
+    public ResponseEntity<String> deleteSearchHistory() {
+        try {
+            vacancyRepository.deleteAll(); // Удаляем все записи
+
+            // Получаем EntityManager
+            EntityManager entityManager = entityManagerFactory.createEntityManager();
+            // Получаем имя таблицы
+            String tableName = entityManager.getMetamodel()
+                    .entity(Vacancy.class) // Замените на вашу сущность
+                    .getName(); //Vacancy
+            // Сбрасываем AUTO_INCREMENT
+            jdbcTemplate.execute("ALTER TABLE " + "vacancy" + " AUTO_INCREMENT = 1");
+            //блок кода не сбрасывает id (оставил до разбирательства)
+
+            // Проверяем, что все записи были удалены
+            long count = vacancyRepository.count();
+            if (count == 0) {
+                return ResponseEntity.ok("История поиска очищена");
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при удалении истории поиска");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при удалении истории поиска: " + e.getMessage());
+        }
     }
 
     @GetMapping("/convenient_website777/privacy-policy")

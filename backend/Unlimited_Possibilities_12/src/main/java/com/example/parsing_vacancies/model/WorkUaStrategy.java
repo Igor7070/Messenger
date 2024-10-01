@@ -8,7 +8,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,36 +18,51 @@ public class WorkUaStrategy implements Strategy {
     private static final String URL_FORMAT = "https://www.work.ua/ru/jobs-kyiv-%s/?page=%d";
     private static final String URL_FORMAT_DIAPASON_TIME =
             "https://www.work.ua/%s/jobs-%s-%s/?days=%d&page=%d";
+    private int countRecordedVacancies = 0;
 
     @Override
-    public List<Vacancy> getVacancies(String position) {
+    public List<Vacancy> getVacancies(String position,
+                                      Integer maxVacancies) {
         List<Vacancy> vacancies = new ArrayList<>();
         Document doc = null;
         for (int pageNumber = 1; ;pageNumber++) {
             doc = getDocument(position, pageNumber);
-            List<Vacancy> vacanciesFromPageNumber = getVacanciesFromDocument(doc);
+            List<Vacancy> vacanciesFromPageNumber = getVacanciesFromDocument(doc,
+                    maxVacancies);
             if (vacanciesFromPageNumber.size() == 0) break;
             vacancies.addAll(vacanciesFromPageNumber);
             System.out.println(vacancies.size());
+            if (maxVacancies != null) {
+                if (countRecordedVacancies == maxVacancies) {
+                    break;
+                }
+            }
         }
         return vacancies;
     }
 
     @Override
-    public List<Vacancy> getVacancies(Language language, City city, String position, TimeDate time) {
+    public List<Vacancy> getVacancies(Language language, City city, String position, TimeDate time,
+                                      Integer maxVacancies) {
         List<Vacancy> vacancies = new ArrayList<>();
         Document doc = null;
         for (int pageNumber = 1; ;pageNumber++) {
             doc = getDocumentWithParam(language, city, position, time, pageNumber);
-            List<Vacancy> vacanciesFromPageNumber = getVacanciesFromDocument(doc);
+            List<Vacancy> vacanciesFromPageNumber = getVacanciesFromDocument(doc,
+                    maxVacancies);
             if (vacanciesFromPageNumber.size() == 0) break;
             vacancies.addAll(vacanciesFromPageNumber);
             System.out.println(vacancies.size());
+            if (maxVacancies != null) {
+                if (countRecordedVacancies == maxVacancies) {
+                    break;
+                }
+            }
         }
         return vacancies;
     }
 
-    private List<Vacancy> getVacanciesFromDocument(Document document) {
+    private List<Vacancy> getVacanciesFromDocument(Document document, Integer maxVacancies) {
         List<Vacancy> vacancies = new ArrayList<>();
         Elements elementVacancies = document.getElementsByAttributeValue("tabindex", "0");
         if (elementVacancies.isEmpty()) return vacancies;
@@ -103,10 +117,19 @@ public class WorkUaStrategy implements Strategy {
                 System.out.println(vacancy.getCity());
                 System.out.println(vacancy.getSiteName());
                 vacancies.add(vacancy);
+                if (maxVacancies != null) {
+                    countRecordedVacancies++;
+                }
+                if (maxVacancies != null) {
+                    if (countRecordedVacancies == maxVacancies) {
+                        break;
+                    }
+                }
                 System.out.println("----------------------------");
                 //System.out.println(elementVacancy.outerHtml());
                 //System.out.println("------------------");
             } catch (Exception e) {
+                System.out.println("Error in WebElement: " + e.getMessage());
                 continue;
             }
         }
@@ -126,7 +149,8 @@ public class WorkUaStrategy implements Strategy {
         return doc;
     }
 
-    protected Document getDocumentWithParam(Language language, City city, String position, TimeDate time, int page) {
+    protected Document getDocumentWithParam(Language language, City city, String position,
+                                            TimeDate time, int page) {
         LanguageWorkUa languageWorkUa = null;
         CityWorkUa cityWorkUa = null;
         DaysWorkUa daysWorkUa = null;
