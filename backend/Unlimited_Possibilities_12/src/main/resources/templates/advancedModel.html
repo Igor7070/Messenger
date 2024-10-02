@@ -101,10 +101,10 @@
             <div class="header-container">
                 <div class="row flex-nowrap align-items-start" style="padding-top: 5px;">
                     <div class="col-4" style="padding-left: 0px;">
-                        <a class="link-secondary" href="/convenient_website777">На главную</a>
+                        <a class="link-secondary" href="/convenient_job_search">На главную</a>
                         <div style="margin-top: 5px;"> <!-- Контейнер для кнопок -->
-                            <a class="btn btn-sm btn-outline-secondary" href="/convenient_website777/communicating_with_a_advanced_ai_model">Общение с продвинутой моделью ИИ</a>
-                            <a class="btn btn-sm btn-outline-secondary" href="/convenient_website777/communicating_with_a_primitive_ai_model" style="margin-top: 5px; margin-bottom: 10px;">Общение с примитивной моделью ИИ</a>
+                            <a class="btn btn-sm btn-outline-secondary" href="/communicating_with_a_advanced_ai_model">Общение с продвинутой моделью ИИ</a>
+                            <a class="btn btn-sm btn-outline-secondary" href="/communicating_with_a_primitive_ai_model" style="margin-top: 5px; margin-bottom: 10px;">Общение с примитивной моделью ИИ</a>
                         </div>
                     </div>
                     <div class="col-4 text-center" style="white-space: nowrap;">
@@ -112,7 +112,7 @@
                     </div>
                     <div class="col-4 d-flex justify-content-end align-items-center" style="padding-right: 0px;">
                         <div class="d-flex flex-column align-items-end">
-                            <a class="btn btn-sm btn-outline-secondary" href="/convenient_website777/job_search_history">Список вакансий всех запросов</a>
+                            <a class="btn btn-sm btn-outline-secondary" href="/convenient_job_search/job_search_history">Список вакансий всех запросов</a>
                             <a class="btn btn-sm btn-outline-secondary" href="#" id="delete-history-btn" style="margin-top: 5px;">Удалить историю поиска вакансий</a>
                         </div>
                     </div>
@@ -135,7 +135,7 @@
             </div>
             <div class="row mt-3">
                 <div class="col-12">
-                    <form class="chat-input" id="chat-form" action="#" th:action="@{/convenient_website777/communicating_with_a_advanced_ai_model}" method="post">
+                    <form class="chat-input" id="chat-form" action="#" th:action="@{/communicating_with_a_advanced_ai_model}" method="post">
                         <div class="input-group">
                             <input type="text" class="form-control" name="prompt" placeholder="Введите сообщение" />
                             <div class="input-group-append">
@@ -163,8 +163,8 @@
             <div class="footer-container text-center">
                 <hr class="footer-divider">
                 <p>© 2024 Company Name. Все права защищены.</p>
-                <a href="/convenient_website777/privacy-policy">Политика конфиденциальности</a> ·
-                <a href="/convenient_website777/terms_of_service">Условия обслуживания</a>
+                <a href="/privacy-policy">Политика конфиденциальности</a> ·
+                <a href="/terms_of_service">Условия обслуживания</a>
             </div>
         </footer>
 
@@ -176,7 +176,7 @@
             document.getElementById("delete-history-btn").addEventListener("click", function(event) {
                 event.preventDefault(); // Предотвращаем переход по ссылке
 
-                fetch('/convenient_website777/delete_search_history', {
+                fetch('/convenient_job_search/delete_search_history', {
                     method: 'DELETE',
                 })
                     .then(response => {

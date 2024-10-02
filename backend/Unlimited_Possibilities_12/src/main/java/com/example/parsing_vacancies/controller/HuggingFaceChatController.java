@@ -3,19 +3,19 @@ package com.example.parsing_vacancies.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.ui.Model;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 public class HuggingFaceChatController {
@@ -35,14 +35,14 @@ public class HuggingFaceChatController {
         this.restTemplate = restTemplate;
     }
 
-    @GetMapping("/convenient_website777/communicating_with_a_primitive_ai_model")
+    @GetMapping("/communicating_with_a_primitive_ai_model")
     public String getChat(Model model) {
         model.addAttribute("title", "Примитивная модель");
         model.addAttribute("chatMessages", chatMessages);
         return "primitiveModel";
     }
 
-    @PostMapping("/convenient_website777/communicating_with_a_primitive_ai_model")
+    @PostMapping("/communicating_with_a_primitive_ai_model")
     public String sendMessage(@RequestParam(name = "message", required = false) String message, Model model) {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(API_TOKEN);

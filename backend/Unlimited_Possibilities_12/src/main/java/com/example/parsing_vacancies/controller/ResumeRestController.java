@@ -15,7 +15,7 @@ import java.io.File;
 import java.net.URI;
 
 @RestController
-@RequestMapping("/convenient_website777/readyResume")
+@RequestMapping("/convenient_job_search/readyResume")
 public class ResumeRestController {
 
     @Autowired
@@ -64,7 +64,7 @@ public class ResumeRestController {
 
             // Перенаправление на страницу с успешным сообщением
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create("/convenient_website777/sent?vacancyId=" + vacancyId))
+                    .location(URI.create("/convenient_job_search/sent?vacancyId=" + vacancyId))
                     .build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());

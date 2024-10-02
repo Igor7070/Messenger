@@ -109,10 +109,10 @@
             <div class="header-container">
                 <div class="row flex-nowrap align-items-start" style="padding-top: 5px;">
                     <div class="col-4" style="padding-left: 0px;">
-                        <a class="link-secondary" href="/convenient_website777">На главную</a>
+                        <a class="link-secondary" href="/convenient_job_search">На главную</a>
                         <div style="margin-top: 5px;"> <!-- Контейнер для кнопок -->
-                            <a class="btn btn-sm btn-outline-secondary" href="/convenient_website777/communicating_with_a_advanced_ai_model">Общение с продвинутой моделью ИИ</a>
-                            <a class="btn btn-sm btn-outline-secondary" href="/convenient_website777/communicating_with_a_primitive_ai_model" style="margin-top: 5px; margin-bottom: 10px;">Общение с примитивной моделью ИИ</a>
+                            <a class="btn btn-sm btn-outline-secondary" href="/communicating_with_a_advanced_ai_model">Общение с продвинутой моделью ИИ</a>
+                            <a class="btn btn-sm btn-outline-secondary" href="/communicating_with_a_primitive_ai_model" style="margin-top: 5px; margin-bottom: 10px;">Общение с примитивной моделью ИИ</a>
                         </div>
                     </div>
                     <div class="col-4 text-center" style="white-space: nowrap;">
@@ -120,7 +120,7 @@
                     </div>
                     <div class="col-4 d-flex justify-content-end align-items-center" style="padding-right: 0px;">
                         <div class="d-flex flex-column align-items-end">
-                            <a class="btn btn-sm btn-outline-secondary" href="/convenient_website777/job_search_history">Список вакансий всех запросов</a>
+                            <a class="btn btn-sm btn-outline-secondary" href="/convenient_job_search/job_search_history">Список вакансий всех запросов</a>
                             <a class="btn btn-sm btn-outline-secondary" href="#" id="delete-history-btn" style="margin-top: 5px;">Удалить историю поиска вакансий</a>
                         </div>
                     </div>
@@ -129,7 +129,7 @@
         </header>
         <div class="container mt-5">
             <h1 class="text-center">Поиск вакансий</h1>
-            <form th:action="@{/convenient_website777/search}" method="post">
+            <form th:action="@{/convenient_job_search/search_result}" method="post" onsubmit="return validateForm()">
                 <div class="form-group">
                     <label>Выберите сайт вакансий:</label>
                     <div class="d-flex justify-content-between">
@@ -149,7 +149,7 @@
                 </div>
                 <div class="form-group">
                     <label for="inputPosition">Должность:</label>
-                    <input type="text" class="form-control" id="inputPosition" name="inputPosition" placeholder="Должность">
+                    <input type="text" class="form-control" id="inputPosition" name="inputPosition" placeholder="Должность" required>
                 </div>
 
                 <div class="form-group">
@@ -197,8 +197,8 @@
             <div class="footer-container text-center">
                 <hr class="footer-divider">
                 <p>© 2024 Company Name. Все права защищены.</p>
-                <a href="/convenient_website777/privacy-policy">Политика конфиденциальности</a> ·
-                <a href="/convenient_website777/terms_of_service">Условия обслуживания</a>
+                <a href="/privacy-policy">Политика конфиденциальности</a> ·
+                <a href="/terms_of_service">Условия обслуживания</a>
             </div>
         </footer>
 
@@ -207,10 +207,29 @@
         </div>
 
         <script>
+            function validateForm() {
+                const positionInput = document.getElementById('inputPosition');
+                const workUaChecked = document.getElementById('work-ua').checked();
+                const rabotaUaChecked = document.getElementById('rabota-ua').checked();
+
+                // Если ни одна галочка не выбрана, просто отправляем форму
+                if (!workUaChecked && !rabotaUaChecked) {
+                    return true; // форма будет отправлена
+                }
+
+                // Если поле "Должность" не заполнено
+                if (!positionInput.value) {
+                    alert('Заполните должность'); // Не появляется
+                    return false; // предотвращает отправку формы
+                }
+
+                return true; // отправка формы
+            }
+
             document.getElementById("delete-history-btn").addEventListener("click", function(event) {
                 event.preventDefault(); // Предотвращаем переход по ссылке
 
-                fetch('/convenient_website777/delete_search_history', {
+                fetch('/convenient_job_search/delete_search_history', {
                     method: 'DELETE',
                 })
                     .then(response => {

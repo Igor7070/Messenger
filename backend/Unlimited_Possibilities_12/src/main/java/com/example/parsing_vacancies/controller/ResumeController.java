@@ -236,7 +236,7 @@ public class ResumeController {
             "\n" +
             "---\n";
 
-    @GetMapping("/convenient_website777/createResume")
+    @GetMapping("/convenient_job_search/createResume")
     public String createResume(@ModelAttribute Resume resume, @RequestParam("vacancyId") Integer vacancyId, Model model) {
         // Здесь вы можете обработать данные, например, сохранить в базу данных
         model.addAttribute("title", "Формирование резюме");
@@ -246,7 +246,7 @@ public class ResumeController {
         return "createResume"; // Название представления для подтверждения
     }
 
-    @PostMapping("/convenient_website777/readyResume")
+    @PostMapping("/convenient_job_search/readyResume")
     public String readyResume(@ModelAttribute Resume resume, @RequestParam("vacancyId") Integer vacancyId,
                               @RequestParam(name = "enableAI", required = false) boolean isChatGpt, Model model) {
         // Здесь вы можете обработать данные, например, сохранить в базу данных
@@ -439,7 +439,7 @@ public class ResumeController {
         }
     }
 
-    @GetMapping("/convenient_website777/readyResume/file_resume")
+    @GetMapping("/convenient_job_search/readyResume/file_resume")
     public ResponseEntity<Resource> serveFile(@RequestParam String fileName,
                                               HttpServletRequest request) {
         // Отладочный вывод для проверки URL и переменной
@@ -473,7 +473,7 @@ public class ResumeController {
         }
     }
 
-    @GetMapping("/convenient_website777/sent")
+    @GetMapping("/convenient_job_search/sent")
     public String showSentConfirmation(@RequestParam("vacancyId") Long vacancyId, Model model) {
         System.out.println("метод showSentConfirmation сработал");
         model.addAttribute("vacancyId", vacancyId);

@@ -7,10 +7,8 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -108,14 +106,14 @@ public class RabotaUaStrategy implements Strategy {
 
             System.out.println("Initializing WebDriver...");
             //Для Railway
-            String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
+            /*String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
-            driver = new RemoteWebDriver(new URL(remoteUrl), options);
+            driver = new RemoteWebDriver(new URL(remoteUrl), options);*/
 
             //Для локальной работы
-            //driver = new ChromeDriver();
+            driver = new ChromeDriver();
             System.out.println("WebDriver initialized successfully.");
 
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
@@ -328,14 +326,14 @@ public class RabotaUaStrategy implements Strategy {
 
             System.out.println("Initializing WebDriver...");
             //Для Railway
-            String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
+            /*String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
-            driver = new RemoteWebDriver(new URL(remoteUrl), options);
+            driver = new RemoteWebDriver(new URL(remoteUrl), options);*/
 
             //Для локальной работы
-            //driver = new ChromeDriver();
+            driver = new ChromeDriver();
             System.out.println("WebDriver initialized successfully.");
 
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);

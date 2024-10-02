@@ -18,14 +18,14 @@ public class ChatGPTController {
     private final List<String> chatMessages = new ArrayList<>();
 
 
-    @GetMapping("/convenient_website777/communicating_with_a_advanced_ai_model")
+    @GetMapping("/communicating_with_a_advanced_ai_model")
     public String chatGPT(Model model) {
         model.addAttribute("title", "Продвинутая модель");
         model.addAttribute("chatMessages", chatMessages);
         return "advancedModel";
     }
 
-    @PostMapping("/convenient_website777/communicating_with_a_advanced_ai_model")
+    @PostMapping("/communicating_with_a_advanced_ai_model")
     public String generateCompletion(@RequestParam(name = "prompt") String prompt, Model model) {
         String result = openAIService.generateCompletion(prompt);
         chatMessages.add(prompt);

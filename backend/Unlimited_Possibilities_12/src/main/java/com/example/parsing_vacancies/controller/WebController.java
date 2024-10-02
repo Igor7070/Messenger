@@ -35,14 +35,14 @@ public class WebController {
     @PersistenceContext
     private EntityManager entityManager;
 
-    @GetMapping("/convenient_website777")
+    @GetMapping("/convenient_job_search")
     public String mainPage(Model model) {
         model.addAttribute("title", "Развитие и");
         model.addAttribute("title2", " возможности");
         return "siteVacancies";
     }
 
-    @PostMapping("/convenient_website777/search")
+    @PostMapping("/convenient_job_search/search_result")
     public String handleSearch(@RequestParam(name = "work-ua", required = false) boolean workUa,
                                @RequestParam(name = "rabota-ua", required = false) boolean rabotaUa,
                                @RequestParam(name = "max-vacancies-work", required = false) Integer maxVacanciesWorkUa,
@@ -79,7 +79,7 @@ public class WebController {
             model.addAttribute("title", result);
             System.out.println(result);
         } else if (!workUa && !rabotaUa) {
-            return "redirect:/convenient_website777";
+            return "redirect:/convenient_job_search";
         }
         Provider[] providers = providersList.toArray(new Provider[providersList.size()]);
         com.example.parsing_vacancies.controller.Controller controller = startConfiguration(providers);
@@ -154,14 +154,14 @@ public class WebController {
         return "resultSearchVacancies";
     }
 
-    @GetMapping("/convenient_website777/job_search_history")
+    @GetMapping("/convenient_job_search/job_search_history")
     public String jobSearchHistory(Model model) {
         Iterable<Vacancy> vacanciesFullListHistory = vacancyRepository.findAll();
         model.addAttribute("vacanciesFullListHistory", vacanciesFullListHistory);
         return "jobSearchHistory";
     }
 
-    @DeleteMapping("/convenient_website777/delete_search_history")
+    @DeleteMapping("/convenient_job_search/delete_search_history")
     @ResponseBody // Позволяет возвращать ответ без представления
     public ResponseEntity<String> deleteSearchHistory() {
         try {
@@ -189,13 +189,13 @@ public class WebController {
         }
     }
 
-    @GetMapping("/convenient_website777/privacy-policy")
+    @GetMapping("/privacy-policy")
     public String privacyPolicy(Model model) {
         model.addAttribute("title", "Privacy policy");
         return "privacyPolicy";
     }
 
-    @GetMapping("/convenient_website777/terms_of_service")
+    @GetMapping("/terms_of_service")
     public String termsOfService(Model model) {
         model.addAttribute("title", "Terms of service");
         return "termsOfService";
