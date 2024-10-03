@@ -149,7 +149,7 @@
                 </div>
                 <div class="form-group">
                     <label for="inputPosition">Должность:</label>
-                    <input type="text" class="form-control" id="inputPosition" name="inputPosition" placeholder="Должность" required>
+                    <input type="text" class="form-control" id="inputPosition" name="inputPosition" placeholder="Должность">
                 </div>
 
                 <div class="form-group">
@@ -209,8 +209,8 @@
         <script>
             function validateForm() {
                 const positionInput = document.getElementById('inputPosition');
-                const workUaChecked = document.getElementById('work-ua').checked();
-                const rabotaUaChecked = document.getElementById('rabota-ua').checked();
+                const workUaChecked = document.getElementById('work-ua').checked;
+                const rabotaUaChecked = document.getElementById('rabota-ua').checked;
 
                 // Если ни одна галочка не выбрана, просто отправляем форму
                 if (!workUaChecked && !rabotaUaChecked) {
@@ -219,12 +219,20 @@
 
                 // Если поле "Должность" не заполнено
                 if (!positionInput.value) {
-                    alert('Заполните должность'); // Не появляется
+                    positionInput.setCustomValidity('Заполните должность'); // Устанавливаем сообщение об ошибке
+                    positionInput.reportValidity(); // Отображаем стандартное сообщение
                     return false; // предотвращает отправку формы
+                } else {
+                    positionInput.setCustomValidity(''); // Сбрасываем сообщение об ошибке
                 }
 
                 return true; // отправка формы
             }
+
+            // Сбрасываем сообщение об ошибке при вводе текста
+            document.getElementById('inputPosition').addEventListener('input', function() {
+                this.setCustomValidity('');
+            });
 
             document.getElementById("delete-history-btn").addEventListener("click", function(event) {
                 event.preventDefault(); // Предотвращаем переход по ссылке
