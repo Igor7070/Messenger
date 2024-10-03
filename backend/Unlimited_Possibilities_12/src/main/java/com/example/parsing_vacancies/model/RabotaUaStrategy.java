@@ -116,7 +116,7 @@ public class RabotaUaStrategy implements Strategy {
             driver = new ChromeDriver();
             System.out.println("WebDriver initialized successfully.");
 
-            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+            driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
             driver.get(url);
 
             /*WebElement appRootElement = driver.findElement(By.cssSelector("app-root"));
@@ -128,6 +128,7 @@ public class RabotaUaStrategy implements Strategy {
             int scrollStep = 2500;
             int maxWaitTime = 5000; // 5 секунд
 
+            // Прокрутка вниз
             while (true) {
                 js.executeScript("window.scrollBy(0, " + scrollStep + ");");
                 long newHeight = (long) js.executeScript("return document.body.scrollHeight");
@@ -145,6 +146,22 @@ public class RabotaUaStrategy implements Strategy {
                 }
 
                 lastHeight = newHeight;
+            }
+
+            // Прокрутка вверх
+            scrollStep = 1000;
+            while (true) {
+                // Прокручиваем вверх
+                js.executeScript("window.scrollBy(0, -" + scrollStep + ");");
+
+                // Ждем немного, чтобы дать время на загрузку
+                Thread.sleep(300);
+
+                // Проверяем текущее положение скролла
+                long currentScrollPosition = (long) js.executeScript("return window.scrollY");
+                if (currentScrollPosition == 0) {
+                    break; // Достигли верха страницы
+                }
             }
 
             List<WebElement> elementVacancies = driver.findElements(By.className("santa--mb-20"));
@@ -336,7 +353,7 @@ public class RabotaUaStrategy implements Strategy {
             driver = new ChromeDriver();
             System.out.println("WebDriver initialized successfully.");
 
-            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+            driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
             driver.get(url);
 
             /*WebElement appRootElement = driver.findElement(By.cssSelector("app-root"));
@@ -348,6 +365,7 @@ public class RabotaUaStrategy implements Strategy {
             int scrollStep = 2500;
             int maxWaitTime = 5000; // 5 секунд
 
+            // Прокрутка вниз
             while (true) {
                 js.executeScript("window.scrollBy(0, " + scrollStep + ");");
                 long newHeight = (long) js.executeScript("return document.body.scrollHeight");
@@ -365,6 +383,22 @@ public class RabotaUaStrategy implements Strategy {
                 }
 
                 lastHeight = newHeight;
+            }
+
+            // Прокрутка вверх
+            scrollStep = 1000;
+            while (true) {
+                // Прокручиваем вверх
+                js.executeScript("window.scrollBy(0, -" + scrollStep + ");");
+
+                // Ждем немного, чтобы дать время на загрузку
+                Thread.sleep(300);
+
+                // Проверяем текущее положение скролла
+                long currentScrollPosition = (long) js.executeScript("return window.scrollY");
+                if (currentScrollPosition == 0) {
+                    break; // Достигли верха страницы
+                }
             }
 
             List<WebElement> elementVacancies = driver.findElements(By.className("santa--mb-20"));

@@ -774,6 +774,9 @@ public class ResumeController {
             if (!(line.length() < 4) || line.isEmpty()) {
                 sbEducation.append(line).append("\n");
             }
+            if (line.length() < 4 && line.matches("^[\\p{L} \\-]+$")) { //могут быть буквы, пробелы, тире, двоеточие от одного и больше
+                sbEducation.append(line).append("\n");
+            }
         }
         String education = refinementEducationOrExperience(sbEducation.toString());
         return education.trim();
@@ -791,6 +794,9 @@ public class ResumeController {
             line = line.replaceAll("\\*+", ""); // Удаление выделения
 
             if (!(line.length() < 4) || line.isEmpty()) {
+                sbExperience.append(line).append("\n");
+            }
+            if (line.length() < 4 && line.matches("^[\\p{L} \\-]+$")) { //могут быть буквы, пробелы, тире, двоеточие от одного и больше
                 sbExperience.append(line).append("\n");
             }
         }
@@ -991,5 +997,12 @@ public class ResumeController {
         String input = "Привет, как дела?";
         String transliterated = transliterate(input);
         System.out.println(transliterated);
+
+        String str = "МАУ";
+        if (str.matches("^[\\p{L} \\-:]+$")) {
+            System.out.println("Строка соответствует условию.");
+        } else {
+            System.out.println("Строка не соответствует условию.");
+        }
     }
 }
