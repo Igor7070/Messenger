@@ -162,6 +162,24 @@
                 width: 100%; /* Занимает всю ширину */
                 text-align: center; /* Центрируем текст */
             }
+
+            @keyframes blink {
+                0%, 20%, 100% { opacity: 0; }
+                40%, 60% { opacity: 1; }
+            }
+
+            .dot {
+                color: #007bff; /* Цвет точек */
+                margin: 0 5px; /* Отступ между точками */
+                font-size: 48px; /* Размер точек */
+            }
+
+            .loading-message {
+                font-size: 40px; /* Размер шрифта для сообщения */
+                font-weight: bold; /* Полужирный шрифт */
+                color: #333; /* Цвет текста */
+                margin-top: 20px; /* Отступ сверху */
+            }
         </style>
     </head>
 
@@ -191,7 +209,7 @@
 
         <h1>Введите данные для создания резюме</h1>
         <div class="container">
-            <form th:action="@{/convenient_job_search/readyResume(vacancyId=${vacancyId})}" method="post" th:object="${resume}">
+            <form th:action="@{/convenient_job_search/readyResume(vacancyId=${vacancyId})}" method="post" th:object="${resume}" onsubmit="return validateForm()">
                 <input type="hidden" th:name="vacancyId" th:value="${vacancyId}"/>
 
                 <div class="form-group text-center mb-3">
@@ -289,7 +307,26 @@
             </form>
         </div>
 
+        <div id="notification" class="alert alert-success" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 900px; text-align: center; font-size: 24px;">
+            <strong>Успех!</strong> <span id="notification-message">История поиска вакансий очищена.</span>
+        </div>
+
+        <div id="loading" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.4); z-index: 9999; text-align: center; padding-top: 20%;">
+            <div style="font-size: 48px;">
+                <span class="dot" style="animation: blink 1s infinite;">&#8226;</span>
+                <span class="dot" style="animation: blink 1s infinite 0.2s;">&#8226;</span>
+                <span class="dot" style="animation: blink 1s infinite 0.4s;">&#8226;</span>
+            </div>
+            <p class="loading-message">Выполняется создание резюме.</p>
+        </div>
+
         <script>
+            function validateForm() {
+                // Показать индикатор загрузки
+                document.getElementById("loading").style.display = "block";
+                return true; // отправка формы
+            }
+
             function generateEducationFields() {
                 const count = document.getElementById('educationCount').value;
                 const container = document.getElementById('educationFields');
@@ -329,22 +366,7 @@
                     container.appendChild(workDiv);
                 }
             }
-        </script>
 
-        <footer>
-            <div class="footer-container text-center">
-                <hr class="footer-divider">
-                <p>© 2024 Company Name. Все права защищены.</p>
-                <a href="/privacy-policy">Политика конфиденциальности</a> ·
-                <a href="/terms_of_service">Условия обслуживания</a>
-            </div>
-        </footer>
-
-        <div id="notification" class="alert alert-success" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 900px; text-align: center; font-size: 24px;">
-            <strong>Успех!</strong> <span id="notification-message">История поиска вакансий очищена.</span>
-        </div>
-
-        <script>
             document.getElementById("delete-history-btn").addEventListener("click", function(event) {
                 event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -385,5 +407,14 @@
                     });
             });
         </script>
+
+        <footer>
+            <div class="footer-container text-center">
+                <hr class="footer-divider">
+                <p>© 2024 Company Name. Все права защищены.</p>
+                <a href="/privacy-policy">Политика конфиденциальности</a> ·
+                <a href="/terms_of_service">Условия обслуживания</a>
+            </div>
+        </footer>
     </body>
 </html>

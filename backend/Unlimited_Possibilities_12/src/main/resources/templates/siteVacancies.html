@@ -101,6 +101,24 @@
                 width: 100%; /* Занимает всю ширину */
                 text-align: center; /* Центрируем текст */
             }
+
+            @keyframes blink {
+                0%, 20%, 100% { opacity: 0; }
+                40%, 60% { opacity: 1; }
+            }
+
+            .dot {
+                color: #007bff; /* Цвет точек */
+                margin: 0 5px; /* Отступ между точками */
+                font-size: 48px; /* Размер точек */
+            }
+
+            .loading-message {
+                font-size: 40px; /* Размер шрифта для сообщения */
+                font-weight: bold; /* Полужирный шрифт */
+                color: #333; /* Цвет текста */
+                margin-top: 20px; /* Отступ сверху */
+            }
         </style>
     </head>
 
@@ -193,6 +211,15 @@
             </form>
         </div>
 
+        <div id="loading" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.4); z-index: 9999; text-align: center; padding-top: 20%;">
+            <div style="font-size: 48px;">
+                <span class="dot" style="animation: blink 1s infinite;">&#8226;</span>
+                <span class="dot" style="animation: blink 1s infinite 0.2s;">&#8226;</span>
+                <span class="dot" style="animation: blink 1s infinite 0.4s;">&#8226;</span>
+            </div>
+            <p class="loading-message">Выполняется поиск вакансий. Подождите немного, процесс может занять до нескольких минут.</p>
+        </div>
+
         <footer>
             <div class="footer-container text-center">
                 <hr class="footer-divider">
@@ -225,7 +252,8 @@
                 } else {
                     positionInput.setCustomValidity(''); // Сбрасываем сообщение об ошибке
                 }
-
+                // Показать индикатор загрузки
+                document.getElementById("loading").style.display = "block";
                 return true; // отправка формы
             }
 
