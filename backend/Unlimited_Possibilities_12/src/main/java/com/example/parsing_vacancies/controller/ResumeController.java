@@ -474,7 +474,7 @@ public class ResumeController {
         }
     }
 
-    @GetMapping("/convenient_job_search/sent")
+    @GetMapping("/convenient_job_search/readyResume/sent")
     public String showSentConfirmation(@RequestParam("vacancyId") Long vacancyId,
                                        HttpSession session, Model model) {
         System.out.println("метод showSentConfirmation сработал");

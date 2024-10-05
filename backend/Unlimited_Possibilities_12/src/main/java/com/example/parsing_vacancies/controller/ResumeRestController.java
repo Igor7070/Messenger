@@ -93,7 +93,7 @@ public class ResumeRestController {
                 System.out.println("Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
                 session.setAttribute("message", "Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
                 return ResponseEntity.status(HttpStatus.FOUND)
-                        .location(URI.create("/convenient_job_search/sent?vacancyId=" + vacancyId))
+                        .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
             }
 
@@ -101,13 +101,13 @@ public class ResumeRestController {
             session.setAttribute("message", "Ваше резюме успешно отправлено!");
             session.setAttribute("targetUrl", targetUrl); // Сохраняем targetUrl в сессии
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create("/convenient_job_search/sent?vacancyId=" + vacancyId))
+                    .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                     .build();
         } catch (Exception e) {
             //return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());
             session.setAttribute("message", "Ошибка отправки резюме: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create("/convenient_job_search/sent?vacancyId=" + vacancyId))
+                    .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                     .build();
         }
     }
