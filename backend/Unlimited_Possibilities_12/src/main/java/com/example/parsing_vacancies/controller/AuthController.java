@@ -16,8 +16,8 @@ public class AuthController {
     @GetMapping("/login")
     public String login() {
         // Перенаправление на Google для аутентификации
-        //System.out.println("GOOGLE_CLIENT_ID: " + googleClientId);
-        //System.out.println("GOOGLE_CLIENT_SECRET: " + googleClientSecret);
+        System.out.println("GOOGLE_CLIENT_ID: " + googleClientId);
+        System.out.println("GOOGLE_CLIENT_SECRET: " + googleClientSecret);
         return "redirect:/oauth2/authorization/google";
     }
 
