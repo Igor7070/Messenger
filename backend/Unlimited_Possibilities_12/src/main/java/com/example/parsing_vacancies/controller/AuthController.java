@@ -11,9 +11,9 @@ public class AuthController {
         return "redirect:/oauth2/authorization/google";
     }
 
-    /*@GetMapping("/oauth2/callback")
+    @GetMapping("/oauth2/callback")
     public String oauth2Callback() {
         // Обработка данных пользователя после успешной аутентификации
         return "redirect:/convenient_job_search"; // Перенаправление на домашнюю страницу
-    }*/
+    }
 }
