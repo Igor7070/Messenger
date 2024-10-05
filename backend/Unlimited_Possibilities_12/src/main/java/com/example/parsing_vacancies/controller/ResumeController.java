@@ -7,6 +7,7 @@ import com.example.parsing_vacancies.model.resume.WorkExperience;
 import com.example.parsing_vacancies.repo.VacancyRepository;
 import com.example.parsing_vacancies.service.OpenAIService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
@@ -474,10 +475,23 @@ public class ResumeController {
     }
 
     @GetMapping("/convenient_job_search/sent")
-    public String showSentConfirmation(@RequestParam("vacancyId") Long vacancyId, Model model) {
+    public String showSentConfirmation(@RequestParam("vacancyId") Long vacancyId,
+                                       HttpSession session, Model model) {
         System.out.println("метод showSentConfirmation сработал");
         model.addAttribute("vacancyId", vacancyId);
-        model.addAttribute("message", "Ваше резюме успешно отправлено!");
+
+        // Извлечение сообщения из сессии
+        String message = (String) session.getAttribute("message");
+        model.addAttribute("message", message != null ? message : "Ваше резюме успешно отправлено!");
+
+        // Извлечение targetUrl из сессии
+        String targetUrl = (String) session.getAttribute("targetUrl");
+        model.addAttribute("targetUrl", targetUrl != null ? targetUrl : "URL не доступен");
+
+        // Удаление сообщения и targetUrl из сессии после их использования
+        session.removeAttribute("message");
+        session.removeAttribute("targetUrl");
+
         return "confirmation"; // Имя вашего шаблона для отображения
     }
 
