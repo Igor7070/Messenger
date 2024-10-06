@@ -21,8 +21,14 @@ public class AuthController {
         }
 
         System.out.println("Success authorization");
+        System.out.println("Authentication details: " + authentication.toString());
+
         String email = authentication.getPrincipal().getAttribute("email");
+        String name = authentication.getPrincipal().getAttribute("name");
+
         System.out.println("User email: " + email);
+        System.out.println("User name: " + name);
+
         return "redirect:/convenient_job_search"; // Перенаправление на домашнюю страницу
     }
     //https://unlimitedpossibilities12.org/convenient_job_search
