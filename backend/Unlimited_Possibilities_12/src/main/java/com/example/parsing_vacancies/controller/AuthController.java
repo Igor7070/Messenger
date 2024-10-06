@@ -17,7 +17,8 @@ public class AuthController {
     public String oauth2Callback(OAuth2AuthenticationToken authentication) {
         if (authentication == null) {
             System.out.println("Authentication is null");
-            return "redirect:/login"; // Перенаправление на страницу логина
+            //return "redirect:/login"; // Перенаправление на страницу логина
+            return "redirect:/convenient_job_search";
         }
 
         System.out.println("Success authorization");
