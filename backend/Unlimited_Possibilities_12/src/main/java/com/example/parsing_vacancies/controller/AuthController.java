@@ -15,9 +15,15 @@ public class AuthController {
 
     @GetMapping("/oauth2/callback")
     public String oauth2Callback(OAuth2AuthenticationToken authentication) {
-        // Обработка данных пользователя после успешной аутентификации
-        System.out.println("Success autorization");
-        System.out.println("User email: " + authentication.getPrincipal().getAttribute("email"));
+        if (authentication == null) {
+            System.out.println("Authentication is null");
+            return "redirect:/login"; // Перенаправление на страницу логина
+        }
+
+        System.out.println("Success authorization");
+        String email = authentication.getPrincipal().getAttribute("email");
+        System.out.println("User email: " + email);
         return "redirect:/convenient_job_search"; // Перенаправление на домашнюю страницу
     }
+    //https://unlimitedpossibilities12.org/convenient_job_search
 }
