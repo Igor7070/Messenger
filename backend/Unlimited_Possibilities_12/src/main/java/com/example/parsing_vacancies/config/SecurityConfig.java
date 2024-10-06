@@ -16,8 +16,9 @@ public class SecurityConfig {
                         .requestMatchers("/", "/login", "/oauth2/**").permitAll() // Разрешаем доступ к этим URL
                         .anyRequest().authenticated() // Все остальные запросы требуют аутентификации
                 )
-                .oauth2Login(oauth2 -> oauth2 // Настройка OAuth 2.0
+                .oauth2Login(oauth2 -> oauth2
                         .loginPage("/login") // Укажите страницу логина
+                        .defaultSuccessUrl("/oauth2/callback", true) // Перенаправление на колбек после успешной аутентификации
                 );
 
         return http.build();
