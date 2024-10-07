@@ -12,13 +12,27 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Отключаем защиту CSRF
+                .csrf(csrf -> csrf.disable()) // Отключаем защиту CSRF для теста
                 .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().permitAll() // Разрешаем доступ ко всем URL
+                        .requestMatchers("/login", "/oauth2/**").permitAll() // Разрешаем доступ ко всем URL, связанным с OAuth2 аутентификацией
+                        .anyRequest().permitAll() // Разрешаем доступ ко всем остальным URL
                 )
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/login") // Укажите страницу логина
-                        .defaultSuccessUrl("/convenient_job_search", true) // Перенаправление на колбек после успешной аутентификации
+                        .loginPage("/login")
+                        .authorizationEndpoint(a -> a
+                                .baseUri("/oauth2/authorization")
+                        )
+                        .redirectionEndpoint(r -> r
+                                .baseUri("/oauth2/callback/*")
+                        )
+                        .successHandler((request, response, authentication) -> {
+                            System.out.println("Authentication Success: " + authentication.getName());
+                            response.sendRedirect("/convenient_job_search");
+                        })
+                        .failureHandler((request, response, exception) -> {
+                            System.out.println("Authentication Failure: " + exception.getMessage());
+                            response.sendRedirect("/login?error");
+                        })
                 );
 
         return http.build();

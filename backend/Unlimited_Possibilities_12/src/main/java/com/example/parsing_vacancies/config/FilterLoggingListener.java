@@ -15,5 +15,5 @@ public class FilterLoggingListener implements ApplicationListener<ContextRefresh
                 System.out.println("Filter: " + filter.getClass().getName());
             });
         });
-    }//
+    }
 }
