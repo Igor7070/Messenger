@@ -61,7 +61,7 @@ public class ResumeRestController {
                 session.setAttribute("message", "Удалена история поиска вакансий и данная вакансия недоступна теперь. Попробуйте снова.");
                 // Перенаправление на страницу с успешным сообщением
                 return ResponseEntity.status(HttpStatus.FOUND)
-                        .location(URI.create("/convenient_job_search/sent?vacancyId=" + vacancyId))
+                        .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
             }
             Vacancy vacancy = res.get(0);

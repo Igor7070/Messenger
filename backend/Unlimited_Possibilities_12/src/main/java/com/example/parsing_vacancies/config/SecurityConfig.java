@@ -18,7 +18,7 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .loginPage("/login") // Укажите страницу логина
-                        .defaultSuccessUrl("/oauth2/callback", true) // Перенаправление на колбек после успешной аутентификации
+                        .defaultSuccessUrl("/convenient_job_search", true) // Перенаправление на колбек после успешной аутентификации
                 );
 
         return http.build();
