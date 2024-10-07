@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Login</title>
+    </head>
+    <body>
+        <h1>Вход</h1>
+        <form action="/oauth2/authorization/google" method="get">
+            <button type="submit">Войти через Google</button>
+        </form>
+
+        <!-- Отображение сообщения об ошибке -->
+        <div th:if="${errorMessage}" style="color: red;">
+            <p th:text="${errorMessage}"></p>
+        </div>
+    </body>
+</html>

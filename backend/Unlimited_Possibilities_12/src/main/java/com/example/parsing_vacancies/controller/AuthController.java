@@ -2,14 +2,30 @@ package com.example.parsing_vacancies.controller;
 
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class AuthController {
-    @GetMapping("/login")
+    /*@GetMapping("/login")
     public String login() {
         // Перенаправление на Google для аутентификации
         System.out.println("Autorization");
+        return "redirect:/oauth2/authorization/google";
+    }*/
+
+    @GetMapping("/login")
+    public String login(@RequestParam(value = "error", required = false) String error, Model model) {
+        if (error != null) {
+            model.addAttribute("errorMessage", "Ошибка аутентификации. Попробуйте еще раз.");
+        }
+        return "login"; // Возвращаем шаблон login.html
+    }
+
+    @GetMapping("/login/google")
+    public String loginWithGoogle() {
+        // Перенаправление на Google для аутентификации
         return "redirect:/oauth2/authorization/google";
     }
 
