@@ -19,6 +19,11 @@ public class SecurityConfig {
                 .oauth2Login(oauth2 -> oauth2
                         .loginPage("/login") // Укажите страницу логина
                         .defaultSuccessUrl("/oauth2/callback", true) // Перенаправление на колбек после успешной аутентификации
+                        .failureUrl("/login?error") // Обработка ошибок
+                        .authorizationEndpoint(authorization -> authorization
+                                .baseUri("/oauth2/authorize"))
+                        .redirectionEndpoint(redirection -> redirection
+                                .baseUri("/oauth2/callback"))
                 );
 
         return http.build();
