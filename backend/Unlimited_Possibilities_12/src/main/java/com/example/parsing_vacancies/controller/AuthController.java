@@ -1,11 +1,16 @@
 package com.example.parsing_vacancies.controller;
 
+import com.example.parsing_vacancies.config.AuthenticationDebugService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class AuthController {
+    @Autowired
+    private AuthenticationDebugService authDebugService;
+
     @GetMapping("/login")
     public String login() {
         // Перенаправление на Google для аутентификации
@@ -15,6 +20,9 @@ public class AuthController {
 
     @GetMapping("/oauth2/callback")
     public String oauth2Callback(OAuth2AuthenticationToken authentication) {
+        // Проверяем текущую аутентификацию
+        authDebugService.logCurrentAuthentication();
+
         if (authentication == null) {
             System.out.println("Authentication is null");
             return "redirect:/login"; // Перенаправление на страницу логина
@@ -23,10 +31,8 @@ public class AuthController {
 
         System.out.println("Success authorization");
         System.out.println("Authentication details: " + authentication.toString());
-
         String email = authentication.getPrincipal().getAttribute("email");
         String name = authentication.getPrincipal().getAttribute("name");
-
         System.out.println("User email: " + email);
         System.out.println("User name: " + name);
 
