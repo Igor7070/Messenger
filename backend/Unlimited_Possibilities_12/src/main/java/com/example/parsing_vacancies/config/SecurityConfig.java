@@ -12,9 +12,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .csrf(csrf -> csrf.disable()) // Отключаем защиту CSRF
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/", "/login", "/oauth2/**").permitAll() // Разрешаем доступ к этим URL
-                        .anyRequest().authenticated() // Все остальные запросы требуют аутентификации
+                        .anyRequest().permitAll() // Разрешаем доступ ко всем URL
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .loginPage("/login") // Укажите страницу логина

@@ -164,6 +164,7 @@ public class WebController {
     @DeleteMapping("/convenient_job_search/delete_search_history")
     @ResponseBody // Позволяет возвращать ответ без представления
     public ResponseEntity<String> deleteSearchHistory() {
+        System.out.println("метод deleteSearchHistory сработал");
         try {
             vacancyRepository.deleteAll(); // Удаляем все записи
 
@@ -185,6 +186,7 @@ public class WebController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при удалении истории поиска");
             }
         } catch (Exception e) {
+            System.out.println(e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при удалении истории поиска: " + e.getMessage());
         }
     }
