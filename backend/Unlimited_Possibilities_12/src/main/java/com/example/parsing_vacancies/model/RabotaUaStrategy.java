@@ -22,6 +22,7 @@ public class RabotaUaStrategy implements Strategy {
     private static final String URL_FORMAT_DIAPASON_TIME =
             "https://robota.ua/%s/zapros/%s/%s?page=%d";
     private int countRecordedVacancies = 0;
+    private static int countFromRemoteDriver = 0; //для удаленного WebDriver
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static final long TIMEOUT = 55; // Время таймаута в секундах
 
@@ -118,7 +119,7 @@ public class RabotaUaStrategy implements Strategy {
             //driver = new ChromeDriver();
             System.out.println("WebDriver initialized successfully.");
 
-            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+            driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
             driver.get(url);
 
             /*WebElement appRootElement = driver.findElement(By.cssSelector("app-root"));
@@ -171,6 +172,14 @@ public class RabotaUaStrategy implements Strategy {
             elementVacanciesSize = elementVacancies.size();
             System.out.println("elementVacanciesSize: " + elementVacanciesSize);
             if (elementVacanciesSize == 0) {
+                //для удаленного WebDriver
+                if (countFromRemoteDriver < 3) {
+                    driver.quit();
+                    vacancies = getVacanciesBySilenium(position, maxVacancies, page);
+                    countFromRemoteDriver++;
+                    return vacancies;
+                }
+
                 driver.quit();
                 return vacancies;
             }
@@ -355,7 +364,7 @@ public class RabotaUaStrategy implements Strategy {
             //driver = new ChromeDriver();
             System.out.println("WebDriver initialized successfully.");
 
-            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+            driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
             driver.get(url);
 
             /*WebElement appRootElement = driver.findElement(By.cssSelector("app-root"));
@@ -407,6 +416,15 @@ public class RabotaUaStrategy implements Strategy {
             //System.out.println("Total number of vacancies: " + elementVacancies.size());
             int elementVacanciesSize = elementVacancies.size();
             if (elementVacanciesSize == 0) {
+                //для удаленного WebDriver
+                if (countFromRemoteDriver < 3) {
+                    driver.quit();
+                    vacancies = getVacanciesBySileniumWithParam(language, city, position, time,
+                            maxVacancies, page);
+                    countFromRemoteDriver++;
+                    return vacancies;
+                }
+
                 driver.quit();
                 return vacancies;
             }
