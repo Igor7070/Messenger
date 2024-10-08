@@ -424,6 +424,8 @@ public class RabotaUaStrategy implements Strategy {
                     countFromRemoteDriver++;
                     return vacancies;
                 }
+                System.out.println(countFromRemoteDriver);
+                countFromRemoteDriver = 0;
 
                 driver.quit();
                 return vacancies;
