@@ -174,10 +174,11 @@ public class RabotaUaStrategy implements Strategy {
             System.out.println("elementVacanciesSize: " + elementVacanciesSize);
             if (elementVacanciesSize == 0) {
                 //для удаленного WebDriver
+                countFromRemoteDriver++;
+                System.out.println("countFromRemoteDriver: " + countFromRemoteDriver);
                 if (countFromRemoteDriver < 3) {
                     driver.quit();
                     vacancies = getVacanciesBySilenium(position, maxVacancies, page);
-                    countFromRemoteDriver++;
                     return vacancies;
                 }
 
@@ -185,6 +186,8 @@ public class RabotaUaStrategy implements Strategy {
                 return vacancies;
             }
 
+            System.out.println("countFromRemoteDriver: " + countFromRemoteDriver);
+            countFromRemoteDriver = 0;
             System.out.println("-------------------------");
             if (elementVacancies.size() == 0) return null;
             for (WebElement elementVacancy : elementVacancies) {
@@ -421,7 +424,7 @@ public class RabotaUaStrategy implements Strategy {
                 //для удаленного WebDriver
                 countFromRemoteDriver++;
                 System.out.println("countFromRemoteDriver: " + countFromRemoteDriver);
-                if (countFromRemoteDriver < 4) {
+                if (countFromRemoteDriver < 3) {
                     driver.quit();
                     vacancies = getVacanciesBySileniumWithParam(language, city, position, time,
                             maxVacancies, page);
