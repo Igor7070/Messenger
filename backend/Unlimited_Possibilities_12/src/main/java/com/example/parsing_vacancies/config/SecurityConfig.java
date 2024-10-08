@@ -23,7 +23,7 @@ public class SecurityConfig {
                                 .baseUri("/oauth2/authorization")
                         )
                         .redirectionEndpoint(r -> r
-                                .baseUri("/oauth2/callback/*")
+                                .baseUri("/oauth2/callback")
                         )
                         .successHandler((request, response, authentication) -> {
                             System.out.println("Authentication Success: " + authentication.getName());
