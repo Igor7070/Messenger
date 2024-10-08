@@ -1,6 +1,6 @@
 package com.example.parsing_vacancies.controller;
 
-import com.example.parsing_vacancies.config.AuthenticationDebugService;
+import com.example.parsing_vacancies.service.AuthenticationDebugService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;

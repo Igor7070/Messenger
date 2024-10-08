@@ -119,6 +119,17 @@
                 color: #333; /* Цвет текста */
                 margin-top: 20px; /* Отступ сверху */
             }
+
+            #authMessage {
+                display: none;
+                background-color: #4CAF50; /* Зеленый фон */
+                color: white; /* Белый текст */
+                padding: 15px;
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+            }
         </style>
     </head>
 
@@ -231,18 +242,11 @@
             <p class="loading-message">Выполняется поиск вакансий. Подождите немного, процесс может занять до нескольких минут.</p>
         </div>
 
-        <footer>
-            <div class="footer-container text-center">
-                <hr class="footer-divider">
-                <p>© 2024 Company Name. Все права защищены.</p>
-                <a href="/privacy-policy">Политика конфиденциальности</a> ·
-                <a href="/terms_of_service">Условия обслуживания</a>
-            </div>
-        </footer>
-
         <div id="notification" class="alert alert-success" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 900px; text-align: center; font-size: 24px;">
             <strong>Успех!</strong> <span id="notification-message">История поиска вакансий очищена.</span>
         </div>
+
+        <div id="authMessage">Авторизация прошла успешно!</div>
 
         <script>
             function validateForm() {
@@ -313,6 +317,30 @@
                         }, 5000);
                     });
             });
+
+            // Функция для отображения сообщения
+            function showAuthMessage() {
+                const params = new URLSearchParams(window.location.search);
+                if (params.has('authSuccess')) {
+                    const messageDiv = document.getElementById('authMessage');
+                    messageDiv.style.display = 'block'; // Показываем сообщение
+                    setTimeout(() => {
+                        messageDiv.style.display = 'none'; // Скрываем сообщение через 5 секунд
+                    }, 5000);
+                }
+            }
+
+            // Вызываем функцию при загрузке страницы
+            window.onload = showAuthMessage;
         </script>
+
+        <footer>
+            <div class="footer-container text-center">
+                <hr class="footer-divider">
+                <p>© 2024 Company Name. Все права защищены.</p>
+                <a href="/privacy-policy">Политика конфиденциальности</a> ·
+                <a href="/terms_of_service">Условия обслуживания</a>
+            </div>
+        </footer>
     </body>
 </html>
