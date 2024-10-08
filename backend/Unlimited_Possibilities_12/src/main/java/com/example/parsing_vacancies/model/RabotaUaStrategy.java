@@ -419,12 +419,12 @@ public class RabotaUaStrategy implements Strategy {
             int elementVacanciesSize = elementVacancies.size();
             if (elementVacanciesSize == 0) {
                 //для удаленного WebDriver
-                if (countFromRemoteDriver < 3) {
+                countFromRemoteDriver++;
+                if (countFromRemoteDriver < 4) {
                     System.out.println("countFromRemoteDriver: " + countFromRemoteDriver);
                     driver.quit();
                     vacancies = getVacanciesBySileniumWithParam(language, city, position, time,
                             maxVacancies, page);
-                    countFromRemoteDriver++;
                     return vacancies;
                 }
 
