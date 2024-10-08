@@ -118,7 +118,8 @@ public class ResumeRestController {
     private String pageForSendingResume(Vacancy vacancy) {
         String targetUrl = null;
         String targetUrlWorkUaFormat = "https://www.work.ua/ru/jobseeker/my/resumes/send/?id=%s";
-        String targetUrlRabotaUaFormat = "https://robota.ua/ru/company%s/vacancy%s/apply";
+        //String targetUrlRabotaUaFormat = "https://robota.ua/ru/company%s/vacancy%s/apply";
+        String targetUrlRabotaUaFormat = "https://robota.ua/ru/company%s/vacancy%s/apply?newApply=true";
         String site = vacancy.getSiteName();
         String url = vacancy.getUrl();
 
