@@ -167,6 +167,7 @@ public class RabotaUaStrategy implements Strategy {
                 }
             }
 
+            System.out.println("Page: " + page);
             List<WebElement> elementVacancies = driver.findElements(By.className("santa--mb-20"));
             //System.out.println("Total number of vacancies: " + elementVacancies.size());
             elementVacanciesSize = elementVacancies.size();
@@ -412,6 +413,7 @@ public class RabotaUaStrategy implements Strategy {
                 }
             }
 
+            System.out.println("Page: " + page);
             List<WebElement> elementVacancies = driver.findElements(By.className("santa--mb-20"));
             //System.out.println("Total number of vacancies: " + elementVacancies.size());
             int elementVacanciesSize = elementVacancies.size();
