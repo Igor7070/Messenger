@@ -173,7 +173,7 @@ public class RabotaUaStrategy implements Strategy {
             elementVacanciesSize = elementVacancies.size();
             System.out.println("elementVacanciesSize: " + elementVacanciesSize);
             if (elementVacanciesSize == 0) {
-                //для удаленного WebDriver
+                //для Railway
                 countFromRemoteDriver++;
                 System.out.println("countFromRemoteDriver: " + countFromRemoteDriver);
                 if (countFromRemoteDriver < 3) {
@@ -421,7 +421,7 @@ public class RabotaUaStrategy implements Strategy {
             //System.out.println("Total number of vacancies: " + elementVacancies.size());
             int elementVacanciesSize = elementVacancies.size();
             if (elementVacanciesSize == 0) {
-                //для удаленного WebDriver
+                //для Railway
                 countFromRemoteDriver++;
                 System.out.println("countFromRemoteDriver: " + countFromRemoteDriver);
                 if (countFromRemoteDriver < 3) {

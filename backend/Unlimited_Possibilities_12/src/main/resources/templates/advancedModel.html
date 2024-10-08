@@ -71,11 +71,6 @@
                 color: goldenrod !important;
             }
 
-            .light-maroon-bg {
-                background-color: #d0c1e3;
-                padding: 10px 15px;
-            }
-
             .light-maroon-bg a.btn {
                 color: #343a40;
             }
@@ -92,6 +87,42 @@
                 padding: 0 0 20px 0; /* Отступы сверху и снизу */
                 width: 100%; /* Занимает всю ширину */
                 text-align: center; /* Центрируем текст */
+            }
+
+            .modal {
+                display: none; /* Скрываем модальное окно по умолчанию */
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                overflow: auto; /* Включаем прокрутку, если нужно */
+                background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон */
+            }
+
+            .modal-content {
+                background-color: #fff;
+                margin: 15% auto; /* Отступ сверху и автоматически снизу */
+                padding: 20px;
+                border: 1px solid #888;
+                width: 80%; /* Ширина модального окна */
+                max-width: 500px; /* Максимальная ширина */
+                text-align: center; /* Центрируем текст */
+            }
+
+            .close-button {
+                color: #aaa;
+                float: right;
+                font-size: 28px;
+                font-weight: bold;
+            }
+
+            .close-button:hover,
+            .close-button:focus {
+                color: black;
+                text-decoration: none;
+                cursor: pointer;
             }
         </style>
     </head>
@@ -162,14 +193,57 @@
             <strong>Успех!</strong> <span id="notification-message">История поиска вакансий очищена.</span>
         </div>
 
+        <div id="message-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <p>Вы достигли лимита в 3 сообщений за час. Пожалуйста, попробуйте позже.</p>
+            </div>
+        </div>
+
         <script>
             const form = document.querySelector('.chat-input');
+            const modal = document.getElementById('message-modal');
+            const closeButton = document.querySelector('.close-button');
+
+            // Функция для получения данных из LocalStorage
+            function getMessageCount() {
+                const data = JSON.parse(localStorage.getItem('chatData')) || { count: 0, lastReset: Date.now() };
+                const now = Date.now();
+                const hoursSinceLastReset = (now - data.lastReset) / (1000 * 60 * 60);
+                if (hoursSinceLastReset >= 1) {
+                    return { count: 0, lastReset: now }; // Сброс счётчика через 1 час
+                }
+                return data; // Возвращаем текущие данные
+            }
+
+            // Функция для показа модального окна
+            function showModal() {
+                modal.style.display = 'block';
+            }
+
+            // Закрытие модального окна
+            closeButton.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            // Закрытие модального окна при клике вне него
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
 
             form.addEventListener('submit', (event) => {
                 event.preventDefault();
                 const message = event.target.elements.prompt.value.trim();
-                if (message) {
-                    event.target.submit();
+                const chatData = getMessageCount();
+
+                if (chatData.count < 3 && message) {
+                    chatData.count += 1; // Увеличиваем счётчик
+                    localStorage.setItem('chatData', JSON.stringify(chatData)); // Сохраняем обновлённые данные
+                    event.target.submit(); // Отправляем форму
+                } else if (chatData.count >= 3) {
+                    showModal(); // Показываем модальное окно
                 }
             });
 
