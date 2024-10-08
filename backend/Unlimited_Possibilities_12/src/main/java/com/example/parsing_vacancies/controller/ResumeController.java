@@ -482,7 +482,7 @@ public class ResumeController {
 
         // Извлечение сообщения из сессии
         String message = (String) session.getAttribute("message");
-        model.addAttribute("message", message != null ? message : "Ваше резюме успешно отправлено!");
+        model.addAttribute("message", message != null ? message : "Ошибка при отправке резюме!");
 
         // Извлечение targetUrl из сессии
         String targetUrl = (String) session.getAttribute("targetUrl");

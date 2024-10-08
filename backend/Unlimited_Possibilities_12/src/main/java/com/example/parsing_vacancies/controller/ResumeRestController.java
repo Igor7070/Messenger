@@ -71,8 +71,7 @@ public class ResumeRestController {
             System.out.println(vacancy.getCity());
             System.out.println(vacancy.getSiteName());
             System.out.println(vacancy.getUrl());
-            String targetUrl = pageForSendingResume(vacancy);
-            //targetUrl = "https://www.work.ua/ru/jobseeker/my/resumes/send/?id=5831808"; // Укажите конечный URL
+            String targetUrl = pageForSendingResume(vacancy); // Укажите конечный URL
             System.out.println(targetUrl);
 
             // Отправка POST-запроса
@@ -89,6 +88,10 @@ public class ResumeRestController {
                 ResponseEntity<String> redirectedResponse = customRestTemplate.exchange(location, HttpMethod.GET, redirectRequestEntity, String.class);
                 // Обработка ответа от перенаправленного URL
                 System.out.println("Ответ от перенаправленного URL: " + redirectedResponse.getBody());
+                session.setAttribute("message", "Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
+                        .build();
             } else {
                 System.out.println("Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
                 session.setAttribute("message", "Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
