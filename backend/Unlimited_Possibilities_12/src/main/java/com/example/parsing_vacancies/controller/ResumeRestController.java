@@ -65,7 +65,7 @@ public class ResumeRestController {
 
             // Путь к файлу резюме в папке static/resume
             System.out.println("Получен POST-запрос на загрузку резюме");
-            String filePath = "src/main/resources/static/resumes/" + resumeFile; // Укажите имя файла
+            String filePath = "src/main/resources/static/resumes/" + resumeFile; // Укажите имя файла.
             //Path filePath = Paths.get("src/main/resources/static/resumes").resolve(resumeFile).normalize();
             //System.out.println(filePath);
             File file = new File(filePath.toString());
