@@ -74,9 +74,10 @@ public class ResumeRestController {
             System.out.println(vacancy.getUrl());
             String targetUrl = pageForSendingResume(vacancy); // Укажите конечный URL
             System.out.println("targetUrl: " + targetUrl);
-            /*if (vacancy.getSiteName().contains("robota.ua")) {
-                headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
-            }*/
+            if (vacancy.getSiteName().contains("robota.ua")) {
+                headers.add("Accept", "application/json, text/plain, */*");
+                headers.add("Referer", "https://robota.ua/");
+            }
 
             // Отправка POST-запроса
             ResponseEntity<String> response = customRestTemplate.postForEntity(targetUrl, requestEntity, String.class);
