@@ -98,7 +98,8 @@ public class ResumeRestController {
             System.out.println(vacancy.getCity());
             System.out.println(vacancy.getSiteName());
             System.out.println(vacancy.getUrl());
-            String targetUrl = pageForSendingResume(vacancy); // Конечный URL
+            //String targetUrl = pageForSendingResume(vacancy); // Конечный URL
+            String targetUrl = "https://robota.ua/ru/company11206845/vacancy10237735/apply?ref=recom_similar&cre=sauron&pos=spa_thanks_similar_profile&newApply=true";
             System.out.println("targetUrl: " + targetUrl);
             if (vacancy.getSiteName().contains("robota.ua")) {
                 headers.add("Authorization", "Bearer " + accessToken); // Добавление токена
