@@ -55,7 +55,7 @@ public class ResumeRestController {
 
             // Проверка, был ли токен получен
             if (accessToken == null) {
-                session.setAttribute("message", "Ошибка: не удалось получить токен доступа. Вам необходимо автоизироваться.");
+                session.setAttribute("message", "Ошибка: не удалось получить токен доступа. Вам необходимо авторизироваться.");
                 // Перенаправление на страницу с успешным сообщением
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
@@ -101,6 +101,7 @@ public class ResumeRestController {
             String targetUrl = pageForSendingResume(vacancy); // Конечный URL
             System.out.println("targetUrl: " + targetUrl);
             if (vacancy.getSiteName().contains("robota.ua")) {
+                System.out.println("Vacancy from robota.ua: YES");
                 headers.add("Authorization", "Bearer " + accessToken); // Добавление токена
                 headers.add("Accept", "application/json, text/plain, */*");
                 headers.add("Referer", "https://robota.ua/");
