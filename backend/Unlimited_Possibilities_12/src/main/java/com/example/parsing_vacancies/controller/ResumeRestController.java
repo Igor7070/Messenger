@@ -52,8 +52,6 @@ public class ResumeRestController {
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("resume", resource);
 
-            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
             Optional<Vacancy> vacancyOpt = vacancyRepository.findById(Math.toIntExact(vacancyId));
             ArrayList<Vacancy> res = new ArrayList<>();
             vacancyOpt.ifPresent(res::add);
@@ -77,7 +75,10 @@ public class ResumeRestController {
             if (vacancy.getSiteName().contains("robota.ua")) {
                 headers.add("Accept", "application/json, text/plain, */*");
                 headers.add("Referer", "https://robota.ua/");
+                headers.add("Origin", "https://robota.ua/");
             }
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
             // Отправка POST-запроса
             ResponseEntity<String> response = customRestTemplate.postForEntity(targetUrl, requestEntity, String.class);
