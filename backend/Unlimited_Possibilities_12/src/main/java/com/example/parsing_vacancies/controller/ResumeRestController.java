@@ -55,8 +55,11 @@ public class ResumeRestController {
 
             // Проверка, был ли токен получен
             if (accessToken == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body("Ошибка: не удалось получить токен доступа.");
+                session.setAttribute("message", "Ошибка: не удалось получить токен доступа. Вам необходимо автоизироваться.");
+                // Перенаправление на страницу с успешным сообщением
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
+                        .build();
             }
             System.out.println("accessToken: " + accessToken);
 
