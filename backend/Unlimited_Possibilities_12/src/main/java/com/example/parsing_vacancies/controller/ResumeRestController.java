@@ -6,6 +6,11 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,12 +34,32 @@ public class ResumeRestController {
     private RestTemplate customRestTemplate;
     @Autowired
     private VacancyRepository vacancyRepository;
+    @Autowired
+    private OAuth2AuthorizedClientService authorizedClientService;
 
     @PostMapping("/upload")
     public ResponseEntity<String> uploadResume(@RequestParam("vacancyId") Long vacancyId,
                                                @RequestParam("resumeFile") String resumeFile,
                                                HttpSession session) {
         try {
+            // Получение текущей аутентификации
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String accessToken = null;
+
+            if (authentication instanceof OAuth2AuthenticationToken) {
+                OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+                OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
+                        oauthToken.getAuthorizedClientRegistrationId(), oauthToken.getName());
+                accessToken = client.getAccessToken().getTokenValue();
+            }
+
+            // Проверка, был ли токен получен
+            if (accessToken == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("Ошибка: не удалось получить токен доступа.");
+            }
+            System.out.println("accessToken: " + accessToken);
+
             // Путь к файлу резюме в папке static/resume
             System.out.println("Получен POST-запрос на загрузку резюме");
             String filePath = "src/main/resources/static/resumes/" + resumeFile; // Укажите имя файла
@@ -70,9 +95,10 @@ public class ResumeRestController {
             System.out.println(vacancy.getCity());
             System.out.println(vacancy.getSiteName());
             System.out.println(vacancy.getUrl());
-            String targetUrl = pageForSendingResume(vacancy); // Укажите конечный URL
+            String targetUrl = pageForSendingResume(vacancy); // Конечный URL
             System.out.println("targetUrl: " + targetUrl);
             if (vacancy.getSiteName().contains("robota.ua")) {
+                headers.add("Authorization", "Bearer " + accessToken); // Добавление токена
                 headers.add("Accept", "application/json, text/plain, */*");
                 headers.add("Referer", "https://robota.ua/");
                 headers.add("Origin", "https://robota.ua/");
