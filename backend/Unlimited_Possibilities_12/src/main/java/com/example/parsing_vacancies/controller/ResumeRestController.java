@@ -107,7 +107,7 @@ public class ResumeRestController {
                 HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
                 // Отправка POST-запроса через прокси
-                ResponseEntity<String> response = customRestTemplate.postForEntity("/api/proxy/send-resume?apiUrl=" + targetUrl, requestEntity, String.class);
+                ResponseEntity<String> response = customRestTemplate.postForEntity("https://unlimitedpossibilities12.org/api/proxy/send-resume?apiUrl=" + targetUrl, requestEntity, String.class);
                 // Проверка ответа
                 if (response.getStatusCode() == HttpStatus.OK) {
                     System.out.println("Резюме успешно отправлено");
