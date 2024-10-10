@@ -74,7 +74,7 @@ public class ResumeRestController {
 
             // Подготовка запроса
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            //headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             //headers.add("User-Agent", "ResumeSubmitter/1.0 (Windows 10; Java 11)");
             headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
 
@@ -140,6 +140,8 @@ public class ResumeRestController {
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
             }
+
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
