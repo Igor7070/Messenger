@@ -41,6 +41,7 @@ public class ResumeRestController {
     public ResponseEntity<String> uploadResume(@RequestParam("vacancyId") Long vacancyId,
                                                @RequestParam("resumeFile") String resumeFile,
                                                HttpSession session) {
+        String targetUrl = "";
         try {
             // Получение текущей аутентификации
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -98,7 +99,7 @@ public class ResumeRestController {
             System.out.println(vacancy.getCity());
             System.out.println(vacancy.getSiteName());
             System.out.println(vacancy.getUrl());
-            String targetUrl = pageForSendingResume(vacancy); // Конечный URL.
+            targetUrl = pageForSendingResume(vacancy); // Конечный URL.
             System.out.println("targetUrl: " + targetUrl);
             if (vacancy.getSiteName().contains("robota.ua")) {
                 headers.add("Authorization", "Bearer " + accessToken); // Добавление токена
@@ -120,12 +121,14 @@ public class ResumeRestController {
                     // Обработка ответа от перенаправленного URL
                     System.out.println("Ответ от перенаправленного URL: " + redirectedResponse.getBody());
                     session.setAttribute("message", "Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
+                    session.setAttribute("targetUrl", targetUrl); // Сохраняем targetUrl в сессии
                     return ResponseEntity.status(HttpStatus.FOUND)
                             .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                             .build();
                 } else {
                     System.out.println("Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
                     session.setAttribute("message", "Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
+                    session.setAttribute("targetUrl", targetUrl); // Сохраняем targetUrl в сессии
                     return ResponseEntity.status(HttpStatus.FOUND)
                             .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                             .build();
@@ -155,12 +158,14 @@ public class ResumeRestController {
                 // Обработка ответа от перенаправленного URL
                 System.out.println("Ответ от перенаправленного URL: " + redirectedResponse.getBody());
                 session.setAttribute("message", "Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
+                session.setAttribute("targetUrl", targetUrl); // Сохраняем targetUrl в сессии
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
             } else {
                 System.out.println("Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
                 session.setAttribute("message", "Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
+                session.setAttribute("targetUrl", targetUrl); // Сохраняем targetUrl в сессии
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
@@ -174,6 +179,7 @@ public class ResumeRestController {
         } catch (Exception e) {
             //return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());
             session.setAttribute("message", "Ошибка отправки резюме: " + e.getMessage());
+            session.setAttribute("targetUrl", targetUrl); // Сохраняем targetUrl в сессии
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                     .build();

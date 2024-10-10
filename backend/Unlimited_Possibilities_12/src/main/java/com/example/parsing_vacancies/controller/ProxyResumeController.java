@@ -18,6 +18,7 @@ public class ProxyResumeController {
     public ResponseEntity<String> sendResume(@RequestHeader("Authorization") String token,
                                              @RequestBody MultiValueMap<String, Object> body,
                                              @RequestParam("apiUrl") String apiUrl) {
+        System.out.println("apiUrl: " + apiUrl);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", token);
         headers.add("Content-Type", "multipart/form-data");
