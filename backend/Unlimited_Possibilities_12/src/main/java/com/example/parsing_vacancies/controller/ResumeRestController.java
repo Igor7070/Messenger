@@ -21,7 +21,9 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -102,9 +104,17 @@ public class ResumeRestController {
             targetUrl = pageForSendingResume(vacancy); // Конечный URL
             System.out.println("targetUrl: " + targetUrl);
             if (vacancy.getSiteName().contains("robota.ua")) {
-                headers.add("Authorization", "Bearer " + accessToken); // Добавление токена
+                // Чтение файла и преобразование в Base64
+                byte[] fileBytes = Files.readAllBytes(file.toPath());
+                String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
+                // Формирование JSON-строки
+                String jsonBody = String.format("{\"vacancyId\":%d,\"resumeContent\":\"%s\"}", vacancyId, encodedFile);
 
-                HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+                headers.add("Authorization", "Bearer " + accessToken); // Добавление токена
+                headers.add("Content-Type", "application/json");
+
+                //HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+                HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, headers);
 
                 // Отправка POST-запроса через прокси
                 ResponseEntity<String> response = customRestTemplate.postForEntity("https://unlimitedpossibilities12.org/api/proxy/send-resume?apiUrl=" + targetUrl, requestEntity, String.class);

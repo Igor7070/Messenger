@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -16,7 +15,7 @@ public class ProxyResumeController {
 
     @PostMapping("/send-resume")
     public ResponseEntity<String> sendResume(@RequestHeader("Authorization") String token,
-                                             @RequestBody MultiValueMap<String, Object> body,
+                                             @RequestBody String jsonBody,
                                              @RequestParam("apiUrl") String apiUrl) {
         System.out.println("apiUrl: " + apiUrl);
         HttpHeaders headers = new HttpHeaders();
@@ -28,7 +27,7 @@ public class ProxyResumeController {
         headers.add("Referer", "https://robota.ua/");
         headers.add("Origin", "https://robota.ua/");
 
-        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+        HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, headers);
         return restTemplate.postForEntity(apiUrl, requestEntity, String.class);
     }
 }
