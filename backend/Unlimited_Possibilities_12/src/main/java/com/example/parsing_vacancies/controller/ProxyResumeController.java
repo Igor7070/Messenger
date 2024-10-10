@@ -21,7 +21,8 @@ public class ProxyResumeController {
         System.out.println("apiUrl: " + apiUrl);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", token);
-        headers.add("Content-Type", "multipart/form-data");
+        //headers.add("Content-Type", "multipart/form-data");
+        headers.add("Content-Type", "application/json");
         // Добавление дополнительных заголовков
         headers.add("Accept", "application/json, text/plain, */*");
         headers.add("Referer", "https://robota.ua/");
