@@ -71,7 +71,7 @@ public class ResumeRestController {
             String filePath = "src/main/resources/static/resumes/" + resumeFile; // Укажите имя файла
             //Path filePath = Paths.get("src/main/resources/static/resumes").resolve(resumeFile).normalize();
             //System.out.println(filePath);
-            File file = new File(filePath.toString());
+            File file = new File(filePath);
             FileSystemResource resource = new FileSystemResource(file);
 
             // Подготовка запроса
@@ -104,20 +104,22 @@ public class ResumeRestController {
             targetUrl = pageForSendingResume(vacancy); // Конечный URL
             System.out.println("targetUrl: " + targetUrl);
             if (vacancy.getSiteName().contains("robota.ua")) {
-                // Чтение файла и преобразование в Base64
+                //headers.add("Authorization", "Bearer " + accessToken); // Добавление токена
+                //headers.add("Content-Type", "application/json");
+                //HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+                //HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, headers);
+
                 byte[] fileBytes = Files.readAllBytes(file.toPath());
                 String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
-                // Формирование JSON-строки
-                String jsonBody = String.format("{\"vacancyId\":%d,\"resumeContent\":\"%s\"}", vacancyId, "");
 
-                headers.add("Authorization", "Bearer " + accessToken); // Добавление токена
-                headers.add("Content-Type", "application/json");
-
-                //HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-                HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, headers);
+                String email = "uytre7878@gmail.com"; // Укажите нужный email
+                String targetProxyUrl = "https://unlimitedpossibilities12.org/api/proxy/send-resume";
+                // Создание объекта запроса для прокси
+                ProxyRequest proxyRequest = new ProxyRequest(accessToken, filePath, vacancyId, email, encodedFile, targetUrl);
 
                 // Отправка POST-запроса через прокси
-                ResponseEntity<String> response = customRestTemplate.postForEntity("https://unlimitedpossibilities12.org/api/proxy/send-resume?apiUrl=" + targetUrl, requestEntity, String.class);
+                ResponseEntity<String> response = customRestTemplate.postForEntity(targetProxyUrl, proxyRequest, String.class);
+
                 // Проверка ответа
                 if (response.getStatusCode() == HttpStatus.OK) {
                     System.out.println("Резюме успешно отправлено");
@@ -223,5 +225,49 @@ public class ResumeRestController {
         }
 
         return targetUrl;
+    }
+
+    // Вспомогательный класс для передачи данных в прокси
+    private static class ProxyRequest {
+        private String token;
+        private String filePath;
+        private Long vacancyId;
+        private String email;
+        private String resumeContent;
+        private String targetUrl; // Добавлено поле apiUrl
+
+        public ProxyRequest(String token, String filePath, Long vacancyId, String email, String resumeContent, String targetUrl) {
+            this.token = token;
+            this.filePath = filePath;
+            this.vacancyId = vacancyId;
+            this.email = email;
+            this.resumeContent = resumeContent;
+            this.targetUrl = targetUrl; // Инициализация
+        }
+
+        // Геттеры
+        public String getToken() {
+            return token;
+        }
+
+        public String getFilePath() {
+            return filePath;
+        }
+
+        public Long getVacancyId() {
+            return vacancyId;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public String getResumeContent() {
+            return resumeContent;
+        }
+
+        public String getTargetUrl() {
+            return targetUrl; // Геттер для apiUrl
+        }
     }
 }
