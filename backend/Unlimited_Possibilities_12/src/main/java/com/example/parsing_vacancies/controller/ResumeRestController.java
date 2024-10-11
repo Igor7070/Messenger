@@ -11,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,14 +48,11 @@ public class ResumeRestController {
         try {
             // Получение текущей аутентификации
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String accessToken = null;
-
-            if (authentication instanceof OAuth2AuthenticationToken) {
-                OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
-                OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
-                        oauthToken.getAuthorizedClientRegistrationId(), oauthToken.getName());
-                accessToken = client.getAccessToken().getTokenValue();
-            }
+            // Получение токена, маил, firstName и lastName
+            String accessToken = extractGoogleAccessToken(authentication);
+            String email = extractEmail(authentication);
+            String firstName = extractFirstName(authentication);
+            String lastName = extractLastName(authentication);
 
             // Проверка, был ли токен получен
             if (accessToken == null) {
@@ -65,6 +63,9 @@ public class ResumeRestController {
                         .build();
             }
             System.out.println("accessToken: " + accessToken);
+            System.out.println("eMail: " + email);
+            System.out.println("firstName: " + firstName);
+            System.out.println("lastName: " + lastName);
 
             // Путь к файлу резюме в папке static/resume
             System.out.println("Получен POST-запрос на загрузку резюме");
@@ -112,14 +113,13 @@ public class ResumeRestController {
                 byte[] fileBytes = Files.readAllBytes(file.toPath());
                 String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
 
-                String email = "ijijij7070@gmail.com"; // Укажите нужный email
                 String targetProxyUrl = "https://unlimitedpossibilities12.org/api/proxy/send-resume";
                 String vacancyIdRabotaUa = extractIdVacancy(vacancy.getUrl());
                 long vacancyIdRabotaUaLong = Long.parseLong(vacancyIdRabotaUa);
 
                 // Создание объекта запроса для прокси
                 ProxyRequest proxyRequest = new ProxyRequest(accessToken, filePath,
-                        vacancyIdRabotaUaLong, email, encodedFile, targetUrl);
+                        vacancyIdRabotaUaLong, email, firstName, lastName, encodedFile, targetUrl);
 
                 // Отправка POST-запроса через прокси
                 ResponseEntity<String> response = customRestTemplate.postForEntity(targetProxyUrl, proxyRequest, String.class);
@@ -204,6 +204,45 @@ public class ResumeRestController {
         }
     }
 
+    private String extractGoogleAccessToken(Authentication authentication) {
+        String accessToken = null;
+        if (authentication instanceof OAuth2AuthenticationToken) {
+            OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+            OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
+                    oauthToken.getAuthorizedClientRegistrationId(), oauthToken.getName());
+            accessToken = client.getAccessToken().getTokenValue();
+        }
+        return accessToken;
+    }
+
+    public String extractEmail(Authentication authentication) {
+        String email = null;
+        if (authentication instanceof OAuth2AuthenticationToken) {
+            OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+            OAuth2User user = oauthToken.getPrincipal();
+            email = user.getAttribute("email");
+        }
+        return email;
+    }
+
+    public String extractFirstName(Authentication authentication) {
+        if (authentication instanceof OAuth2AuthenticationToken) {
+            OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+            OAuth2User user = oauthToken.getPrincipal();
+            return user.getAttribute("given_name");
+        }
+        return null;
+    }
+
+    public String extractLastName(Authentication authentication) {
+        if (authentication instanceof OAuth2AuthenticationToken) {
+            OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+            OAuth2User user = oauthToken.getPrincipal();
+            return user.getAttribute("family_name");
+        }
+        return null;
+    }
+
     private String pageForSendingResume(Vacancy vacancy) {
         String targetUrl = null;
         String targetUrlWorkUaFormat = "https://www.work.ua/ru/jobseeker/my/resumes/send/?id=%s";
@@ -247,14 +286,19 @@ public class ResumeRestController {
         private String filePath;
         private Long vacancyIdRabotaUa;
         private String email;
+        private String firstName;
+        private String lastName;
         private String resumeContent;
         private String targetUrl; // Добавлено поле apiUrl
 
-        public ProxyRequest(String token, String filePath, Long vacancyIdRabotaUa, String email, String resumeContent, String targetUrl) {
+        public ProxyRequest(String token, String filePath, Long vacancyIdRabotaUa, String email,
+                            String firstName, String lastName, String resumeContent, String targetUrl) {
             this.token = token;
             this.filePath = filePath;
             this.vacancyIdRabotaUa = vacancyIdRabotaUa;
             this.email = email;
+            this.firstName = firstName;
+            this.lastName = lastName;
             this.resumeContent = resumeContent;
             this.targetUrl = targetUrl; // Инициализация
         }
@@ -274,6 +318,14 @@ public class ResumeRestController {
 
         public String getEmail() {
             return email;
+        }
+
+        public String getFirstName() {
+            return firstName;
+        }
+
+        public String getLastName() {
+            return lastName;
         }
 
         public String getResumeContent() {

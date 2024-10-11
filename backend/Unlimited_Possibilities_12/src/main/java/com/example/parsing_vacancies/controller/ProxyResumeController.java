@@ -23,16 +23,25 @@ public class ProxyResumeController {
         try {
             // Получение параметров из запроса
             String token = proxyRequest.getToken();
-            long vacancyId = proxyRequest.getVacancyIdRabotaUa();
+            long vacancyIdRabotaUa = proxyRequest.getVacancyIdRabotaUa();
             String email = proxyRequest.getEmail();
+            String firstName = proxyRequest.firstName;
+            String lastName = proxyRequest.lastName;
             String targetUrl = proxyRequest.getTargetUrl();
             String resumeContent = proxyRequest.getResumeContent();
+
+            System.out.println("token: " + token);
+            System.out.println("vacancyIdRabotaUa: " + vacancyIdRabotaUa);
+            System.out.println("email: " + email);
+            System.out.println("firstName: " + firstName);
+            System.out.println("lastName: " + lastName);
+            System.out.println("targetUrl: " + targetUrl);
 
             // Формирование JSON-строки
             /*String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"И.Ж.\",\"lastName\":\"И.Ж.\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d,\"resumeContent\":\"%s\"}",
                     email, vacancyId, resumeContent);*/
-            String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"И.Ж.\",\"lastName\":\"И.Ж.\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d}",
-                    email, vacancyId);
+            String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"%s\",\"lastName\":\"%s\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d}",
+                    firstName, lastName, email, vacancyIdRabotaUa);
 
             // Настройка заголовков
             HttpHeaders headers = new HttpHeaders();
@@ -69,15 +78,20 @@ public class ProxyResumeController {
         private String filePath;
         private Long vacancyIdRabotaUa;
         private String email;
+        private String firstName;
+        private String lastName;
         private String resumeContent;
         private String targetUrl; // Добавлено поле apiUrl
 
         // Конструктор и геттеры
-        public ProxyRequest(String token, String filePath, Long vacancyIdRabotaUa, String email, String resumeContent, String targetUrl) {
+        public ProxyRequest(String token, String filePath, Long vacancyIdRabotaUa, String email,
+                            String firstName, String lastName, String resumeContent, String targetUrl) {
             this.token = token;
             this.filePath = filePath;
             this.vacancyIdRabotaUa = vacancyIdRabotaUa;
             this.email = email;
+            this.firstName = firstName;
+            this.lastName = lastName;
             this.resumeContent = resumeContent;
             this.targetUrl = targetUrl; // Инициализация
         }
@@ -96,6 +110,14 @@ public class ProxyResumeController {
 
         public String getEmail() {
             return email;
+        }
+
+        public String getFirstName() {
+            return firstName;
+        }
+
+        public String getLastName() {
+            return lastName;
         }
 
         public String getResumeContent() {
