@@ -33,7 +33,7 @@ public class ProxyResumeController {
             System.out.println("token: " + token);
             System.out.println("vacancyIdRabotaUa: " + vacancyIdRabotaUa);
             System.out.println("email: " + email);
-            System.out.println("firstName: " + firstName);
+            System.out.println("firstName: " + firstName);//
             System.out.println("lastName: " + lastName);
             System.out.println("targetUrl: " + targetUrl);
 
