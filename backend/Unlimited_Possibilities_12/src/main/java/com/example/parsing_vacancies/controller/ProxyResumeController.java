@@ -36,7 +36,7 @@ public class ProxyResumeController {
 
             // Настройка заголовков
             HttpHeaders headers = new HttpHeaders();
-            headers.add("Authorization", "Bearer " + token);
+            headers.add("Authorization", "Bearer " + token);//
             headers.add("Content-Type", "application/*+json");
             headers.add("Accept", "text/plain");
             headers.add("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,uk;q=0.6");
