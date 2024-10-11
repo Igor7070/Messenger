@@ -52,13 +52,9 @@ public class ProxyResumeController {
             ResponseEntity<String> response = restTemplate.postForEntity(targetUrl, requestEntity, String.class);
 
             return response;
-        } catch (HttpClientErrorException e) {
-            // Обработка ошибок HTTP (например, 4xx)
-            System.out.println(e.getMessage());
-            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
-        } catch (HttpServerErrorException e) {
-            // Обработка ошибок сервера (например, 5xx)
-            System.out.println(e.getMessage());
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            // Логирование полной информации об ошибке
+            System.out.println("Ошибка при обращении к API: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
             // Обработка других исключений
