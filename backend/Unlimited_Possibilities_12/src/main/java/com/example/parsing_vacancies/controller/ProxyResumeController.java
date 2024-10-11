@@ -29,8 +29,10 @@ public class ProxyResumeController {
             String resumeContent = proxyRequest.getResumeContent();
 
             // Формирование JSON-строки
-            String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"И.Ж.\",\"lastName\":\"И.Ж.\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d,\"resumeContent\":\"%s\"}",
-                    email, vacancyId, resumeContent);
+            /*String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"И.Ж.\",\"lastName\":\"И.Ж.\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d,\"resumeContent\":\"%s\"}",
+                    email, vacancyId, resumeContent);*/
+            String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"И.Ж.\",\"lastName\":\"И.Ж.\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d}",
+                    email, vacancyId);
 
             // Настройка заголовков
             HttpHeaders headers = new HttpHeaders();
