@@ -12,10 +12,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Base64;
-
 @RestController
 @RequestMapping("/api/proxy")
 public class ProxyResumeController {
@@ -27,17 +23,14 @@ public class ProxyResumeController {
         try {
             // Получение параметров из запроса
             String token = proxyRequest.getToken();
-            long vacancyId = proxyRequest.getVacancyId();
+            long vacancyId = proxyRequest.getVacancyIdRabotaUa();
             String email = proxyRequest.getEmail();
             String targetUrl = proxyRequest.getTargetUrl(); // Используйте proxyRequest.getApiUrl() если нужно
-
-            // Чтение файла и его кодирование в Base64
-            byte[] fileBytes = Files.readAllBytes(Path.of(proxyRequest.getFilePath()));
-            String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
+            String resumeContent = proxyRequest.getResumeContent();
 
             // Формирование JSON-строки
             String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"И.Ж.\",\"lastName\":\"И.Ж.\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d,\"resumeContent\":\"%s\"}",
-                    email, vacancyId, encodedFile);
+                    email, vacancyId, resumeContent);
 
             // Настройка заголовков
             HttpHeaders headers = new HttpHeaders();
@@ -73,16 +66,16 @@ public class ProxyResumeController {
     private static class ProxyRequest {
         private String token;
         private String filePath;
-        private Long vacancyId;
+        private Long vacancyIdRabotaUa;
         private String email;
         private String resumeContent;
         private String targetUrl; // Добавлено поле apiUrl
 
         // Конструктор и геттеры
-        public ProxyRequest(String token, String filePath, Long vacancyId, String email, String resumeContent, String targetUrl) {
+        public ProxyRequest(String token, String filePath, Long vacancyIdRabotaUa, String email, String resumeContent, String targetUrl) {
             this.token = token;
             this.filePath = filePath;
-            this.vacancyId = vacancyId;
+            this.vacancyIdRabotaUa = vacancyIdRabotaUa;
             this.email = email;
             this.resumeContent = resumeContent;
             this.targetUrl = targetUrl; // Инициализация
@@ -96,8 +89,8 @@ public class ProxyResumeController {
             return filePath;
         }
 
-        public Long getVacancyId() {
-            return vacancyId;
+        public Long getVacancyIdRabotaUa() {
+            return vacancyIdRabotaUa;
         }
 
         public String getEmail() {
