@@ -35,7 +35,7 @@ public class ProxyResumeController {
 
             // Формирование JSON-строки
             /*String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"И.Ж.\",\"lastName\":\"И.Ж.\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d,\"resumeContent\":\"%s\"}",
-                    email, vacancyId, encodedFile);*/
+                    email, vacancyId, encodedFile);*///
             String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"И.Ж.\",\"lastName\":\"И.Ж.\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d}",
                     email, vacancyId);
 
