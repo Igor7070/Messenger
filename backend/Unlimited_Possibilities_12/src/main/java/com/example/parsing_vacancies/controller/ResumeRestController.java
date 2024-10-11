@@ -108,7 +108,7 @@ public class ResumeRestController {
                 byte[] fileBytes = Files.readAllBytes(file.toPath());
                 String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
                 // Формирование JSON-строки
-                String jsonBody = String.format("{\"vacancyId\":%d,\"resumeContent\":\"%s\"}", vacancyId, escapeJson(encodedFile));
+                String jsonBody = String.format("{\"vacancyId\":%d,\"resumeContent\":\"%s\"}", vacancyId, "");
 
                 headers.add("Authorization", "Bearer " + accessToken); // Добавление токена
                 headers.add("Content-Type", "application/json");
@@ -223,18 +223,5 @@ public class ResumeRestController {
         }
 
         return targetUrl;
-    }
-
-    public static String escapeJson(String input) {
-        if (input == null) {
-            return null;
-        }
-        return input.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\b", "\\b")
-                .replace("\f", "\\f")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t");
     }
 }
