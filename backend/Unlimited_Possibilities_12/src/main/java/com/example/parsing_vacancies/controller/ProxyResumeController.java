@@ -25,7 +25,7 @@ public class ProxyResumeController {
             String token = proxyRequest.getToken();
             long vacancyId = proxyRequest.getVacancyIdRabotaUa();
             String email = proxyRequest.getEmail();
-            String targetUrl = proxyRequest.getTargetUrl(); // Используйте proxyRequest.getApiUrl() если нужно..
+            String targetUrl = proxyRequest.getTargetUrl();
             String resumeContent = proxyRequest.getResumeContent();
 
             // Формирование JSON-строки
