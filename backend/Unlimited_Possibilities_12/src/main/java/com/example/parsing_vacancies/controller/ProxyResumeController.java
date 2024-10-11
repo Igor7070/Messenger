@@ -22,7 +22,7 @@ public class ProxyResumeController {
 
     @PostMapping("/send-resume")
     public ResponseEntity<String> sendResume(@RequestBody ProxyRequest proxyRequest) {
-        try {
+        //try {
             // Получение параметров из запроса
             String token = proxyRequest.getToken();
             long vacancyId = proxyRequest.getVacancyId();
@@ -34,10 +34,10 @@ public class ProxyResumeController {
             String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
 
             // Формирование JSON-строки
-            /*String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"И.Ж.\",\"lastName\":\"И.Ж.\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d,\"resumeContent\":\"%s\"}",
-                    email, vacancyId, encodedFile);*///
-            String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"И.Ж.\",\"lastName\":\"И.Ж.\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d}",
-                    email, vacancyId);
+            String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"И.Ж.\",\"lastName\":\"И.Ж.\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d,\"resumeContent\":\"%s\"}",
+                    email, vacancyId, encodedFile);
+            /*String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"И.Ж.\",\"lastName\":\"И.Ж.\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d}",
+                    email, vacancyId);*/
 
             // Настройка заголовков
             HttpHeaders headers = new HttpHeaders();
@@ -56,10 +56,10 @@ public class ProxyResumeController {
             ResponseEntity<String> response = restTemplate.postForEntity(targetUrl, requestEntity, String.class);
 
             return response;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("Ошибка при отправке резюме: " + e.getMessage());
-        }
+        //} catch (Exception e) {
+            //e.printStackTrace();
+            //return ResponseEntity.status(500).body("Ошибка при отправке резюме: " + e.getMessage());
+        //}
     }
 
     // Вспомогательный класс для передачи данных в прокси
