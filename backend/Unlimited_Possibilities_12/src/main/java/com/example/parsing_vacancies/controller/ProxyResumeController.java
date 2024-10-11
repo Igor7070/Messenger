@@ -65,7 +65,7 @@ public class ProxyResumeController {
         } catch (Exception e) {
             // Обработка других исключений
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Ошибка при отправке резюме: " + e.getMessage());
+            return ResponseEntity.status(500).body("Ошибка при отправке резюме1: " + e.getMessage());
         }
     }
 
