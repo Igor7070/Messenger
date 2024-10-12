@@ -83,27 +83,11 @@ public class ProxyResumeController {
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             // Логирование полной информации об ошибке
             System.out.println("Ошибка при обращении к API: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
-            //return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
-
-            System.out.println("ResponseLoad: " + response.getBody());
-            // Предположим, что ответ содержит идентификатор:
-            String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора
-            // Запускаем polling для проверки статуса
-            startPolling(requestId, targetLoadUrl);
-
-            return response;
+            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
             // Обработка других исключений
             e.printStackTrace();
-            //return ResponseEntity.status(500).body("Ошибка при загрузке резюме1.1: " + e.getMessage());
-
-            System.out.println("ResponseLoad: " + response.getBody());
-            // Предположим, что ответ содержит идентификатор:
-            String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора
-            // Запускаем polling для проверки статуса
-            startPolling(requestId, targetLoadUrl);
-
-            return response;
+            return ResponseEntity.status(500).body("Ошибка при загрузке резюме1.1: " + e.getMessage());
         }
     }
 
