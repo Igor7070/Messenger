@@ -1,5 +1,8 @@
 package com.example.parsing_vacancies.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
@@ -92,6 +95,8 @@ public class ProxyResumeController {
             String targetSendUrl = proxyRequest.getTargetSendUrl();
             String resumeContent = proxyRequest.getResumeContent();
 
+            System.out.println("targetSendUrl: " + targetSendUrl);
+
             System.out.println("token: " + token);
             System.out.println("vacancyIdRabotaUa: " + vacancyIdRabotaUa);
             System.out.println("email: " + email);
@@ -121,6 +126,7 @@ public class ProxyResumeController {
 
             // Отправка POST-запроса через прокси
             ResponseEntity<String> response = restTemplate.postForEntity(targetSendUrl, requestEntity, String.class);
+            System.out.println("Ответ сервера: " + response.getBody());
 
             return response;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
@@ -133,6 +139,20 @@ public class ProxyResumeController {
             return ResponseEntity.status(500).body("Ошибка при отправке резюме1.2: " + e.getMessage());
         }
     }
+
+    // Метод для извлечения идентификатора из ответа
+    private String extractRequestId(String responseBody) {
+        // Пример для JSON-ответа, который содержит поле requestId
+        // Используйте библиотеку для парсинга JSON, например, Jackson или Gson
+        JsonNode jsonNode = null;
+        try {
+            jsonNode = new ObjectMapper().readTree(responseBody);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        return jsonNode.get("requestId").asText(); // Измените путь в зависимости от структуры ответа
+    }
+
 
     // Вспомогательный класс для передачи данных в прокси
     private static class ProxyRequest {
