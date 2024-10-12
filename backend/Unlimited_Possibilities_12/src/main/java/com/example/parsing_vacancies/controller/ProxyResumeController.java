@@ -126,7 +126,7 @@ public class ProxyResumeController {
 
             // Отправка POST-запроса через прокси
             ResponseEntity<String> response = restTemplate.postForEntity(targetSendUrl, requestEntity, String.class);
-            System.out.println("Ответ сервера: " + response.getBody());
+            System.out.println("Responce: " + response.getBody());
 
             // Предположим, что ответ содержит идентификатор:
             String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора
