@@ -128,6 +128,12 @@ public class ProxyResumeController {
             ResponseEntity<String> response = restTemplate.postForEntity(targetSendUrl, requestEntity, String.class);
             System.out.println("Ответ сервера: " + response.getBody());
 
+            // Предположим, что ответ содержит идентификатор:
+            String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора
+
+            // Запускаем polling для проверки статуса
+            startPolling(requestId);
+
             return response;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             // Логирование полной информации об ошибке
@@ -151,6 +157,35 @@ public class ProxyResumeController {
             throw new RuntimeException(e);
         }
         return jsonNode.get("requestId").asText(); // Измените путь в зависимости от структуры ответа
+    }
+
+    // Метод для опроса статуса
+    private void startPolling(String requestId) {
+        new Thread(() -> {
+            try {
+                while (true) {
+                    ResponseEntity<String> statusResponse = checkStatus(requestId);
+
+                    // Обработка статуса
+                    if (statusResponse.getStatusCode() == HttpStatus.OK) {
+                        System.out.println("Статус: " + statusResponse.getBody());
+                        // Если статус успешный, можно остановить опрос
+                        break;
+                    }
+
+                    // Задержка перед следующим опросом
+                    Thread.sleep(5000); // 5 секунд
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }).start();
+    }
+
+    // Метод для проверки статуса
+    private ResponseEntity<String> checkStatus(String requestId) {
+        String statusUrl = "https://api.example.com/status/" + requestId; // URL для проверки статуса
+        return restTemplate.getForEntity(statusUrl, String.class);
     }
 
 
