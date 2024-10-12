@@ -102,50 +102,56 @@ public class ResumeRestController {
             System.out.println(vacancy.getCity());
             System.out.println(vacancy.getSiteName());
             System.out.println(vacancy.getUrl());
-            submitPageUrl = pageForSendingResume(vacancy); // Конечный URL
+            submitPageUrl = pageForSendingResume(vacancy); // URL страницы где происходит отправка резюме
             System.out.println("submitPageUrl: " + submitPageUrl);
-            if (vacancy.getSiteName().contains("robota.ua")) {
-                //headers.add("Authorization", "Bearer " + accessToken); // Добавление токена
-                //headers.add("Content-Type", "application/json");
-                //HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-                //HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, headers);
 
+            if (vacancy.getSiteName().contains("robota.ua")) {
                 byte[] fileBytes = Files.readAllBytes(file.toPath());
                 String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
 
-                String targetProxyUrl = "https://unlimitedpossibilities12.org/api/proxy/send-resume";
+                String targetProxyLoadUrl = "https://unlimitedpossibilities12.org/api/proxy/upload-resume";
+                String targetProxySendUrl = "https://unlimitedpossibilities12.org/api/proxy/send-resume";
                 String vacancyIdRabotaUa = extractIdVacancy(vacancy.getUrl());
                 long vacancyIdRabotaUaLong = Long.parseLong(vacancyIdRabotaUa);
-                String targetUrl = "https://apply-api.robota.ua/attach-repeated-application";
+                String targetLoadUrl = "https://apply-api.robota.ua/attach-application";
+                String targetSendUrl = "https://apply-api.robota.ua/attach-repeated-application";
 
                 // Создание объекта запроса для прокси
                 ProxyRequest proxyRequest = new ProxyRequest(accessToken, filePath,
-                        vacancyIdRabotaUaLong, email, firstName, lastName, encodedFile, targetUrl);
+                        vacancyIdRabotaUaLong, email, firstName, lastName, encodedFile,
+                        targetLoadUrl, targetSendUrl);
 
-                // Отправка POST-запроса через прокси
-                ResponseEntity<String> response = customRestTemplate.postForEntity(targetProxyUrl, proxyRequest, String.class);
+                // Отправка POST-запросов через прокси
+                ResponseEntity<String> responseLoad = customRestTemplate.postForEntity(targetProxyLoadUrl, proxyRequest, String.class);
+                ResponseEntity<String> responseSend = customRestTemplate.postForEntity(targetProxySendUrl, proxyRequest, String.class);
 
                 // Проверка ответа
-                if (response.getStatusCode() == HttpStatus.OK) {
+                if ((responseLoad.getStatusCode() == HttpStatus.OK) && (responseSend.getStatusCode() == HttpStatus.OK)) {
                     System.out.println("Резюме успешно отправлено");
-                } else if (response.getStatusCode() == HttpStatus.FOUND) {
-                    String location = response.getHeaders().getLocation().toString();
-                    System.out.println("Перенаправление на: " + location);
+                } else if (responseSend.getStatusCode() == HttpStatus.FOUND) {
+                    String locationSend = responseSend.getHeaders().getLocation().toString();
+                    System.out.println("Перенаправление на: " + locationSend);
 
                     // Выполнение нового запроса по новому адресу
                     HttpEntity<Void> redirectRequestEntity = new HttpEntity<>(headers);
-                    ResponseEntity<String> redirectedResponse = customRestTemplate.exchange(location, HttpMethod.GET, redirectRequestEntity, String.class);
+                    ResponseEntity<String> redirectedResponse = customRestTemplate.exchange(locationSend, HttpMethod.GET, redirectRequestEntity, String.class);
                     // Обработка ответа от перенаправленного URL
                     System.out.println("Ответ от перенаправленного URL: " + redirectedResponse.getBody());
-                    session.setAttribute("message", "Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
+                    session.setAttribute("message", "Ошибка отправки резюме: " + responseSend.getStatusCode() + " - " + responseSend.getBody());
                     session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
                     return ResponseEntity.status(HttpStatus.FOUND)
                             .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                             .build();
-                } else {
-                    System.out.println("Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
-                    session.setAttribute("message", "Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
-                    session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
+                } else if (responseLoad.getStatusCode() != HttpStatus.OK) {
+                    String message = "";
+                    if (responseSend.getStatusCode() != HttpStatus.OK) {
+                        message = "Ошибка загрузки резюме: " + responseSend.getStatusCode() + " - " + responseSend.getBody() + "\n";
+                        System.out.println(message);
+                    }
+                    message = message + "Ошибка отправки резюме: " + responseLoad.getStatusCode() + " - " + responseLoad.getBody();
+                    System.out.println("Ошибка отправки резюме: " + responseLoad.getStatusCode() + " - " + responseLoad.getBody());
+                    session.setAttribute("message", message);
+                    session.setAttribute("submitPageUrl", submitPageUrl);
                     return ResponseEntity.status(HttpStatus.FOUND)
                             .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                             .build();
@@ -290,10 +296,12 @@ public class ResumeRestController {
         private String firstName;
         private String lastName;
         private String resumeContent;
-        private String targetUrl; // Добавлено поле apiUrl
+        private String targetLoadUrl;
+        private String targetSendUrl;
 
         public ProxyRequest(String token, String filePath, Long vacancyIdRabotaUa, String email,
-                            String firstName, String lastName, String resumeContent, String targetUrl) {
+                            String firstName, String lastName, String resumeContent,
+                            String targetLoadUrl, String targetSendUrl) {
             this.token = token;
             this.filePath = filePath;
             this.vacancyIdRabotaUa = vacancyIdRabotaUa;
@@ -301,7 +309,8 @@ public class ResumeRestController {
             this.firstName = firstName;
             this.lastName = lastName;
             this.resumeContent = resumeContent;
-            this.targetUrl = targetUrl; // Инициализация
+            this.targetLoadUrl = targetLoadUrl;
+            this.targetSendUrl = targetSendUrl;
         }
 
         // Геттеры
@@ -333,8 +342,12 @@ public class ResumeRestController {
             return resumeContent;
         }
 
-        public String getTargetUrl() {
-            return targetUrl; // Геттер для apiUrl
+        public String getTargetLoadUrl() {
+            return targetLoadUrl;
+        }
+
+        public String getTargetSendUrl() {
+            return targetSendUrl;
         }
     }
 }
