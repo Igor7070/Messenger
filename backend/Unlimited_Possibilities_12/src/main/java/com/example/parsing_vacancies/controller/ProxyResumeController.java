@@ -33,7 +33,7 @@ public class ProxyResumeController {
             System.out.println("token: " + token);
             System.out.println("vacancyIdRabotaUa: " + vacancyIdRabotaUa);
             System.out.println("email: " + email);
-            System.out.println("firstName: " + firstName);//
+            System.out.println("firstName: " + firstName);
             System.out.println("lastName: " + lastName);
             System.out.println("targetUrl: " + targetUrl);
 
@@ -47,7 +47,7 @@ public class ProxyResumeController {
             HttpHeaders headers = new HttpHeaders();
             headers.add("Authorization", "Bearer " + token);
             //headers.add("Content-Type", "application/*+json");
-            headers.add("Content-Type", "application/json");
+            headers.add("Content-Type", "application/*+json");
             headers.add("Accept", "text/plain");
             headers.add("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,uk;q=0.6");
             headers.add("sec-fetch-dest", "empty");

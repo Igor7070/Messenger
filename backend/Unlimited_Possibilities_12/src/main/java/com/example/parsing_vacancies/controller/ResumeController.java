@@ -485,12 +485,12 @@ public class ResumeController {
         model.addAttribute("message", message != null ? message : "Ошибка при отправке резюме!");
 
         // Извлечение targetUrl из сессии
-        String targetUrl = (String) session.getAttribute("targetUrl");
-        model.addAttribute("targetUrl", targetUrl != null ? targetUrl : "URL не доступен");
+        String submitPageUrl = (String) session.getAttribute("submitPageUrl");
+        model.addAttribute("submitPageUrl", submitPageUrl != null ? submitPageUrl : "URL не доступен");
 
         // Удаление сообщения и targetUrl из сессии после их использования
         session.removeAttribute("message");
-        session.removeAttribute("targetUrl");
+        session.removeAttribute("submitPageUrl");
 
         return "confirmation"; // Имя вашего шаблона для отображения
     }
