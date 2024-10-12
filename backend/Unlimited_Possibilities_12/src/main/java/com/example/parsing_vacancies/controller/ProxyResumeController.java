@@ -30,6 +30,8 @@ public class ProxyResumeController {
     // Метод для загрузки резюме
     @PostMapping("/upload-resume")
     public ResponseEntity<String> uploadResume(@RequestBody ProxyRequest proxyRequest) {
+        ResponseEntity<String> response = null;
+        String targetLoadUrl = "";
         try {
             // Получение параметров из запроса
             String token = proxyRequest.getToken();
@@ -38,7 +40,7 @@ public class ProxyResumeController {
             String email = proxyRequest.getEmail();
             String firstName = proxyRequest.getFirstName();
             String lastName = proxyRequest.getLastName();
-            String targetLoadUrl = proxyRequest.targetLoadUrl;
+            targetLoadUrl = proxyRequest.targetLoadUrl;
 
             System.out.println("targetLoadUrl: " + targetLoadUrl);
 
@@ -69,12 +71,11 @@ public class ProxyResumeController {
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
             // Отправка POST-запроса через прокси
-            ResponseEntity<String> response = restTemplate.postForEntity(targetLoadUrl, requestEntity, String.class);
-            System.out.println("ResponseLoad: " + response.getBody());
+            response = restTemplate.postForEntity(targetLoadUrl, requestEntity, String.class);
 
+            System.out.println("ResponseLoad: " + response.getBody());
             // Предположим, что ответ содержит идентификатор:
             String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора
-
             // Запускаем polling для проверки статуса
             startPolling(requestId, targetLoadUrl);
 
@@ -82,11 +83,27 @@ public class ProxyResumeController {
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             // Логирование полной информации об ошибке
             System.out.println("Ошибка при обращении к API: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
-            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
+            //return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
+
+            System.out.println("ResponseLoad: " + response.getBody());
+            // Предположим, что ответ содержит идентификатор:
+            String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора
+            // Запускаем polling для проверки статуса
+            startPolling(requestId, targetLoadUrl);
+
+            return response;
         } catch (Exception e) {
             // Обработка других исключений
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Ошибка при загрузке резюме1.1: " + e.getMessage());
+            //return ResponseEntity.status(500).body("Ошибка при загрузке резюме1.1: " + e.getMessage());
+
+            System.out.println("ResponseLoad: " + response.getBody());
+            // Предположим, что ответ содержит идентификатор:
+            String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора
+            // Запускаем polling для проверки статуса
+            startPolling(requestId, targetLoadUrl);
+
+            return response;
         }
     }
 
