@@ -208,7 +208,7 @@ public class ProxyResumeController {
 
     // Метод для проверки статуса
     private ResponseEntity<String> checkStatus(String requestId, String targetUrl) {
-        String statusUrl = targetUrl  + "/" + requestId; // URL для проверки статуса
+        String statusUrl = targetUrl  + "/status/" + requestId; // URL для проверки статуса
         return restTemplate.getForEntity(statusUrl, String.class);
     }
 
