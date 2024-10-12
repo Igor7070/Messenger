@@ -176,6 +176,7 @@ public class ProxyResumeController {
             try {
                 while (true) {
                     ResponseEntity<String> statusResponse = checkStatus(requestId, targetUrl);
+                    System.out.println("Working startPolling...");
 
                     // Обработка статуса
                     if (statusResponse.getStatusCode() == HttpStatus.OK) {
