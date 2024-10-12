@@ -154,7 +154,6 @@ public class ProxyResumeController {
 
             // Предположим, что ответ содержит идентификатор:
             String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора
-
             // Запускаем polling для проверки статуса
             startPolling(requestId, targetSendUrl);
 
@@ -174,13 +173,17 @@ public class ProxyResumeController {
     private String extractRequestId(String responseBody) {
         // Пример для JSON-ответа, который содержит поле requestId
         // Используйте библиотеку для парсинга JSON, например, Jackson или Gson
+        String requestId = "";
         JsonNode jsonNode = null;
         try {
             jsonNode = new ObjectMapper().readTree(responseBody);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        return jsonNode.get("id").asText(); // Измените путь в зависимости от структуры ответа
+        requestId = jsonNode.get("id").asText();
+        System.out.println("requestId: " + requestId);
+
+        return requestId; // Измените путь в зависимости от структуры ответа
     }
 
     // Метод для опроса статуса
