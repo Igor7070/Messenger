@@ -76,7 +76,7 @@ public class ProxyResumeController {
             String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора
 
             // Запускаем polling для проверки статуса
-            startPolling(requestId);
+            startPolling(requestId, targetLoadUrl);
 
             return response;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
@@ -139,7 +139,7 @@ public class ProxyResumeController {
             String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора
 
             // Запускаем polling для проверки статуса
-            startPolling(requestId);
+            startPolling(requestId, targetSendUrl);
 
             return response;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
@@ -163,15 +163,15 @@ public class ProxyResumeController {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        return jsonNode.get("requestId").asText(); // Измените путь в зависимости от структуры ответа
+        return jsonNode.get("id").asText(); // Измените путь в зависимости от структуры ответа
     }
 
     // Метод для опроса статуса
-    private void startPolling(String requestId) {
+    private void startPolling(String requestId, String targetUrl) {
         new Thread(() -> {
             try {
                 while (true) {
-                    ResponseEntity<String> statusResponse = checkStatus(requestId);
+                    ResponseEntity<String> statusResponse = checkStatus(requestId, targetUrl);
 
                     // Обработка статуса
                     if (statusResponse.getStatusCode() == HttpStatus.OK) {
@@ -190,8 +190,8 @@ public class ProxyResumeController {
     }
 
     // Метод для проверки статуса
-    private ResponseEntity<String> checkStatus(String requestId) {
-        String statusUrl = "https://api.example.com/status/" + requestId; // URL для проверки статуса
+    private ResponseEntity<String> checkStatus(String requestId, String targetUrl) {
+        String statusUrl = targetUrl  + "/" + requestId; // URL для проверки статуса
         return restTemplate.getForEntity(statusUrl, String.class);
     }
 
