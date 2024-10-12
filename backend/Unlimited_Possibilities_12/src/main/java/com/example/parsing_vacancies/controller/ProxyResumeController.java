@@ -70,6 +70,13 @@ public class ProxyResumeController {
 
             // Отправка POST-запроса через прокси
             ResponseEntity<String> response = restTemplate.postForEntity(targetLoadUrl, requestEntity, String.class);
+            System.out.println("ResponseLoad: " + response.getBody());
+
+            // Предположим, что ответ содержит идентификатор:
+            String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора
+
+            // Запускаем polling для проверки статуса
+            startPolling(requestId);
 
             return response;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
@@ -126,7 +133,7 @@ public class ProxyResumeController {
 
             // Отправка POST-запроса через прокси
             ResponseEntity<String> response = restTemplate.postForEntity(targetSendUrl, requestEntity, String.class);
-            System.out.println("Responce: " + response.getBody());
+            System.out.println("ResponseSend: " + response.getBody());
 
             // Предположим, что ответ содержит идентификатор:
             String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора

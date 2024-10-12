@@ -124,7 +124,6 @@ public class ResumeRestController {
                 // Отправка POST-запросов через прокси
                 ResponseEntity<String> responseLoad = customRestTemplate.postForEntity(targetProxyLoadUrl, proxyRequest, String.class);
                 ResponseEntity<String> responseSend = customRestTemplate.postForEntity(targetProxySendUrl, proxyRequest, String.class);
-                System.out.println("ResponceSend: " + responseSend.getBody());
 
                 // Проверка ответа
                 if ((responseLoad.getStatusCode() == HttpStatus.OK) && (responseSend.getStatusCode() == HttpStatus.OK)) {
