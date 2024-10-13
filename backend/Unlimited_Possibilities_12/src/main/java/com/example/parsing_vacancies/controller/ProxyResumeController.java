@@ -24,6 +24,8 @@ public class ProxyResumeController {
     // Метод для загрузки резюме work.ua
     @PostMapping("/upload-send-resume-work-ua")
     public ResponseEntity<String> uploadResumeWorkUa(@RequestBody ProxyRequest proxyRequest) {
+        System.out.println("Method uploadResumeWorkUa working...");
+        System.out.println(proxyRequest);
         ResponseEntity<String> response = null;
         String targetLoadSendUrl = "";
         try {
@@ -42,7 +44,7 @@ public class ProxyResumeController {
             // Чтение файла резюме
             File resumeFile = new File(filePath);
             if (!resumeFile.exists()) {
-                System.out.println("Файл резюме не найден по пути: " + filePath);
+                System.out.println("Resume file not found at path: " + filePath);
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Файл резюме не найден по пути: " + filePath);
             }
 
