@@ -72,7 +72,8 @@ public class ProxyResumeController {
             ResponseEntity<String> statusResponse = checkStatus(token);
             System.out.println("ResponseStatus: " + statusResponse.getBody());
 
-            return response;
+            return ResponseEntity.ok("Резюме отправлено. Статус: " + statusResponse.getBody());
+            //return response;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             // Логирование полной информации об ошибке
             System.out.println("Ошибка при обращении к API: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
@@ -129,8 +130,12 @@ public class ProxyResumeController {
             ResponseEntity<String> response = restTemplate.postForEntity(targetSendUrl, requestEntity, String.class);
             System.out.println("ResponseSend: " + response.getBody());
 
+            // Проверка статуса после отправки
+            ResponseEntity<String> statusResponse = checkStatus(token);
+            System.out.println("ResponseStatus: " + statusResponse.getBody());
 
-            return response;
+            return ResponseEntity.ok("Резюме отправлено. Статус: " + statusResponse.getBody());
+            //return response;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             // Логирование полной информации об ошибке
             System.out.println("Ошибка при обращении к API: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
