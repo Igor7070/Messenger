@@ -2,10 +2,7 @@ package com.example.parsing_vacancies.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -72,7 +69,7 @@ public class ProxyResumeController {
             System.out.println("ResponseLoad: " + response.getBody());
 
             // Проверка статуса после отправки
-            ResponseEntity<String> statusResponse = checkStatus();
+            ResponseEntity<String> statusResponse = checkStatus(token);
             System.out.println("ResponseStatus: " + statusResponse.getBody());
 
             return response;
@@ -146,10 +143,28 @@ public class ProxyResumeController {
     }
 
     // Метод для проверки статуса
-    private ResponseEntity<String> checkStatus() {
+    private ResponseEntity<String> checkStatus(String token) {
         System.out.println("Working checkStatus...");
         String statusUrl = "https://api.robota.ua/resume"; // URL для проверки статуса
-        return restTemplate.getForEntity(statusUrl, String.class);
+
+        // Настройка заголовков
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Accept", "application/json, text/plain, */*");
+        headers.add("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,uk;q=0.6");
+        headers.add("Authorization", "Bearer " + token);
+        headers.add("Priority", "u=1, i");
+        headers.add("Sec-CH-UA", "\"Google Chrome\";v=\"129\", \"Not=A?Brand\";v=\"8\", \"Chromium\";v=\"129\"");
+        headers.add("Sec-CH-UA-Mobile", "?0");
+        headers.add("Sec-CH-UA-Platform", "\"Windows\"");
+        headers.add("Sec-Fetch-Dest", "empty");
+        headers.add("Sec-Fetch-Mode", "cors");
+        headers.add("Sec-Fetch-Site", "same-site");
+
+        // Создание запроса
+        HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+        // Выполнение GET-запроса
+        return restTemplate.exchange(statusUrl, HttpMethod.GET, requestEntity, String.class);
+        //return restTemplate.getForEntity(statusUrl, String.class);
     }
 
 
