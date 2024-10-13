@@ -113,6 +113,7 @@ public class RabotaUaStrategy implements Strategy {
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
+            options.addArguments("--lang=" + "ru"); // Установка языка в зависимости от параметра, например, "ru" или "en"
             driver = new RemoteWebDriver(new URL(remoteUrl), options);
 
             //Для локальной работы
@@ -362,6 +363,13 @@ public class RabotaUaStrategy implements Strategy {
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
+            String langDriver = "";
+            switch (language) {
+                case ENGLISH -> langDriver = "en";
+                case UKRAINIAN -> langDriver = "uk";
+                default -> langDriver = "ru";
+            }
+            options.addArguments("--lang=" + langDriver); // Установка языка в зависимости от параметра, например, "ru","en" или uk
             driver = new RemoteWebDriver(new URL(remoteUrl), options);
 
             //Для локальной работы
