@@ -79,13 +79,14 @@ public class ProxyResumeController {
             }
 
             bodyBuilder.append(new String(fileContent, StandardCharsets.UTF_8)).append("\r\n");
-            bodyBuilder.append(boundary).append("--\r\n");//
+            bodyBuilder.append(boundary).append("--\r\n");
 
             // Создание HttpEntity
             HttpEntity<String> requestEntity = new HttpEntity<>(bodyBuilder.toString(), headers);
 
             // Выполнение POST-запроса
             response = restTemplate.exchange(targetLoadSendUrl, HttpMethod.POST, requestEntity, String.class);
+            System.out.println("ResponseLoadSend: " + response.getBody());
 
             // Формирование тела запроса
             /*MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
