@@ -73,7 +73,7 @@ public class ProxyResumeController {
 
             // Проверка статуса после отправки
             ResponseEntity<String> statusResponse = checkStatus(targetLoadUrl);
-            System.out.println("ResponseStatus: " + statusResponse.getBody());
+            System.out.println("ResponseStatus: " + statusResponse.getBody());//
 
             return response;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
