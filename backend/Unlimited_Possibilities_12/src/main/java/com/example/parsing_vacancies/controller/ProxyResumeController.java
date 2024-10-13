@@ -68,11 +68,7 @@ public class ProxyResumeController {
             response = restTemplate.postForEntity(targetLoadUrl, requestEntity, String.class);
             System.out.println("ResponseLoad: " + response.getBody());
 
-            // Проверка статуса после отправки
-            ResponseEntity<String> statusResponse = checkStatus(token);
-            System.out.println("ResponseStatus: " + statusResponse.getBody());
-
-            return ResponseEntity.ok("Резюме отправлено. Статус: " + statusResponse.getBody());
+            return ResponseEntity.ok("Резюме загружено и отправлено.");
             //return response;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             // Логирование полной информации об ошибке
