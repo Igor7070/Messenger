@@ -171,7 +171,7 @@ public class ResumeRestController {
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
             // Отправка POST-запроса
-            ResponseEntity<String> response = customRestTemplate.postForEntity(targetLoadSendUrl, requestEntity, String.class);
+            //ResponseEntity<String> response = customRestTemplate.postForEntity(targetLoadSendUrl, requestEntity, String.class);
             // Проверка ответа
             if (responseLoadAndSend.getStatusCode() == HttpStatus.OK) {
                 System.out.println("Резюме успешно отправлено");
@@ -184,13 +184,13 @@ public class ResumeRestController {
                 ResponseEntity<String> redirectedResponse = customRestTemplate.exchange(location, HttpMethod.GET, redirectRequestEntity, String.class);
                 // Обработка ответа от перенаправленного URL
                 System.out.println("Ответ от перенаправленного URL: " + redirectedResponse.getBody());
-                session.setAttribute("message", "Ошибка отправки резюме: " + response.getStatusCode() + " - " + responseLoadAndSend.getBody());
+                session.setAttribute("message", "Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
                 session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
             } else {
-                System.out.println("Ошибка отправки резюме: " + response.getStatusCode() + " - " + responseLoadAndSend.getBody());
+                System.out.println("Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
                 session.setAttribute("message", "Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
                 session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
                 return ResponseEntity.status(HttpStatus.FOUND)
