@@ -42,6 +42,7 @@ public class ProxyResumeController {
             // Чтение файла резюме
             File resumeFile = new File(filePath);
             if (!resumeFile.exists()) {
+                System.out.println("Файл резюме не найден по пути: " + filePath);
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Файл резюме не найден по пути: " + filePath);
             }
 
