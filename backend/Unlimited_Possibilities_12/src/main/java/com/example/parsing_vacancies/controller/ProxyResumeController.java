@@ -89,6 +89,7 @@ public class ProxyResumeController {
     // Метод для загрузки резюме rabota.ua
     @PostMapping("/upload-send-resume-rabota-ua")
     public ResponseEntity<String> uploadResumeRabotaUa(@RequestBody ProxyRequest proxyRequest) {
+        System.out.println("Method uploadResumeRabotaUa working...");
         ResponseEntity<String> response = null;
         String targetLoadSendUrl = "";
         try {

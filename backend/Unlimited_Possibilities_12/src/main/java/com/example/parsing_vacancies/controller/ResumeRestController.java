@@ -101,7 +101,7 @@ public class ResumeRestController {
                 String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
 
                 String targetProxyLoadSendUrl = "https://unlimitedpossibilities12.org/api/proxy/upload-send-resume-rabota-ua";
-                String vacancyIdRabotaUa = extractIdVacancy(vacancy.getUrl());
+                String vacancyIdRabotaUa = extractIdVacancyRabotaUa(vacancy.getUrl());
                 long vacancyIdRabotaUaLong = Long.parseLong(vacancyIdRabotaUa);
                 String targetLoadSendUrl = "https://apply-api.robota.ua/attach-application";
 
@@ -137,10 +137,10 @@ public class ResumeRestController {
             // Подготовка запроса
             String targetProxyLoadSendUrl = "https://unlimitedpossibilities12.org/api/proxy/upload-send-resume-work-ua";
             String targetLoadSendUrl = "https://www.work.ua/ajax/my/resumes/upload/";
+            String vacancyIdWorkUa = extractIdVacancyWorkUa(vacancy.getUrl());
+            long vacancyIdWorkUaLong = Long.parseLong(vacancyIdWorkUa);
             byte[] fileBytes = Files.readAllBytes(file.toPath());
             String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
-            String vacancyIdWorkUa = extractIdVacancy(vacancy.getUrl());
-            long vacancyIdWorkUaLong = Long.parseLong(vacancyIdWorkUa);
 
             // Создание объекта запроса для прокси
             ProxyRequest proxyRequest = new ProxyRequest(accessToken, filePath,
@@ -243,7 +243,17 @@ public class ResumeRestController {
         return targetUrl;
     }
 
-    private String extractIdVacancy(String targetUrl) {
+    private static String extractIdVacancyWorkUa(String targetUrl) {
+        String regex = "jobs/(\\d+)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(targetUrl);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return "";
+    }
+
+    private String extractIdVacancyRabotaUa(String targetUrl) {
         String regex = "vacancy(\\d+)";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(targetUrl);
