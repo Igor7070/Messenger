@@ -75,15 +75,6 @@ public class ResumeRestController {
             File file = new File(filePath);
             FileSystemResource resource = new FileSystemResource(file);
 
-            // Подготовка запроса
-            HttpHeaders headers = new HttpHeaders();
-            //headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            //headers.add("User-Agent", "ResumeSubmitter/1.0 (Windows 10; Java 11)");
-            headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
-
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("resume", resource);
-
             Optional<Vacancy> vacancyOpt = vacancyRepository.findById(Math.toIntExact(vacancyId));
             ArrayList<Vacancy> res = new ArrayList<>();
             vacancyOpt.ifPresent(res::add);
@@ -126,20 +117,6 @@ public class ResumeRestController {
                 // Проверка ответа
                 if (responseLoadAndSend.getStatusCode() == HttpStatus.OK) {
                     System.out.println("Резюме успешно отправлено");
-                } else if (responseLoadAndSend.getStatusCode() == HttpStatus.FOUND) {
-                    String location = responseLoadAndSend.getHeaders().getLocation().toString();
-                    System.out.println("Перенаправление на: " + location);
-
-                    // Выполнение нового запроса по новому адресу
-                    HttpEntity<Void> redirectRequestEntity = new HttpEntity<>(headers);
-                    ResponseEntity<String> redirectedResponse = customRestTemplate.exchange(location, HttpMethod.GET, redirectRequestEntity, String.class);
-                    // Обработка ответа от перенаправленного URL
-                    System.out.println("Ответ от перенаправленного URL: " + redirectedResponse.getBody());
-                    session.setAttribute("message", "Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
-                    session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
-                    return ResponseEntity.status(HttpStatus.FOUND)
-                            .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
-                            .build();
                 } else {
                     System.out.println("Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
                     session.setAttribute("message", "Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
@@ -156,12 +133,21 @@ public class ResumeRestController {
                         .build();
             }
 
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            // Подготовка запроса
+            String targetLoadSendUrl = "https://www.work.ua/ajax/my/resumes/upload/";
+            HttpHeaders headers = new HttpHeaders();
+            //headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
+            headers.add("Accept", "application/json, text/javascript, */*; q=0.01");
+            headers.add("Content-Type", "multipart/form-data");
+            //headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", resource);
 
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
             // Отправка POST-запроса
-            ResponseEntity<String> response = customRestTemplate.postForEntity(submitPageUrl, requestEntity, String.class);
+            ResponseEntity<String> response = customRestTemplate.postForEntity(targetLoadSendUrl, requestEntity, String.class);
             // Проверка ответа
             if (response.getStatusCode() == HttpStatus.OK) {
                 System.out.println("Резюме успешно отправлено");
