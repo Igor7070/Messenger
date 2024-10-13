@@ -14,6 +14,8 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/proxy")
@@ -60,16 +62,39 @@ public class ProxyResumeController {
             headers.add("X-Requested-With", "XMLHttpRequest");
             headers.add("Referer", submitPageUrl);
 
-            // Формирование тела запроса
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", new FileSystemResource(resumeFile));
+            File file = new File(filePath);
+            String fileName = file.getName();
 
+            // Формирование тела запроса
+            String boundary = "----WebKitFormBoundaryBHMUC5o8EfkniAtw";
+            StringBuilder bodyBuilder = new StringBuilder();
+            bodyBuilder.append(boundary).append("\r\n");
+            bodyBuilder.append("Content-Disposition: form-data; name=\"file\"; filename=\"").append(fileName).append("\"\r\n");
+            bodyBuilder.append("Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document\r\n\r\n");
+
+            // Чтение файла
+            byte[] fileContent = new byte[(int) file.length()];
+            try (FileInputStream fis = new FileInputStream(file)) {
+                fis.read(fileContent);
+            }
+
+            bodyBuilder.append(new String(fileContent, StandardCharsets.UTF_8)).append("\r\n");
+            bodyBuilder.append(boundary).append("--\r\n");
+
+            // Создание HttpEntity
+            HttpEntity<String> requestEntity = new HttpEntity<>(bodyBuilder.toString(), headers);
+
+            // Выполнение POST-запроса
+            response = restTemplate.exchange(targetLoadSendUrl, HttpMethod.POST, requestEntity, String.class);
+
+            // Формирование тела запроса
+            /*MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", new FileSystemResource(resumeFile));
             // Создание запроса
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
             // Отправка POST-запроса через прокси
             response = restTemplate.postForEntity(targetLoadSendUrl, requestEntity, String.class);
-            System.out.println("ResponseLoadSend: " + response.getBody());
+            System.out.println("ResponseLoadSend: " + response.getBody());*/
 
             //return ResponseEntity.ok("Резюме загружено и отправлено.");
             return response;
