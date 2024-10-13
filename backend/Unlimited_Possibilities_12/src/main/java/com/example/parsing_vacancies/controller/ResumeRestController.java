@@ -122,36 +122,30 @@ public class ResumeRestController {
                         targetLoadUrl, targetSendUrl);
 
                 // Отправка POST-запросов через прокси
-                ResponseEntity<String> responseLoad = customRestTemplate.postForEntity(targetProxyLoadUrl, proxyRequest, String.class);
-                ResponseEntity<String> responseSend = customRestTemplate.postForEntity(targetProxySendUrl, proxyRequest, String.class);
+                ResponseEntity<String> responseLoadAndSend = customRestTemplate.postForEntity(targetProxyLoadUrl, proxyRequest, String.class);
+                //ResponseEntity<String> responseSend = customRestTemplate.postForEntity(targetProxySendUrl, proxyRequest, String.class);
 
                 // Проверка ответа
-                if ((responseLoad.getStatusCode() == HttpStatus.OK) && (responseSend.getStatusCode() == HttpStatus.OK)) {
+                if (responseLoadAndSend.getStatusCode() == HttpStatus.OK) {
                     System.out.println("Резюме успешно отправлено");
-                } else if (responseSend.getStatusCode() == HttpStatus.FOUND) {
-                    String locationSend = responseSend.getHeaders().getLocation().toString();
-                    System.out.println("Перенаправление на: " + locationSend);
+                } else if (responseLoadAndSend.getStatusCode() == HttpStatus.FOUND) {
+                    String location = responseLoadAndSend.getHeaders().getLocation().toString();
+                    System.out.println("Перенаправление на: " + location);
 
                     // Выполнение нового запроса по новому адресу
                     HttpEntity<Void> redirectRequestEntity = new HttpEntity<>(headers);
-                    ResponseEntity<String> redirectedResponse = customRestTemplate.exchange(locationSend, HttpMethod.GET, redirectRequestEntity, String.class);
+                    ResponseEntity<String> redirectedResponse = customRestTemplate.exchange(location, HttpMethod.GET, redirectRequestEntity, String.class);
                     // Обработка ответа от перенаправленного URL
                     System.out.println("Ответ от перенаправленного URL: " + redirectedResponse.getBody());
-                    session.setAttribute("message", "Ошибка отправки резюме: " + responseSend.getStatusCode() + " - " + responseSend.getBody());
+                    session.setAttribute("message", "Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
                     session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
                     return ResponseEntity.status(HttpStatus.FOUND)
                             .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                             .build();
-                } else if (responseLoad.getStatusCode() != HttpStatus.OK) {
-                    String message = "";
-                    if (responseSend.getStatusCode() != HttpStatus.OK) {
-                        message = "Ошибка загрузки резюме: " + responseSend.getStatusCode() + " - " + responseSend.getBody() + "\n";
-                        System.out.println(message);
-                    }
-                    message = message + "Ошибка отправки резюме: " + responseLoad.getStatusCode() + " - " + responseLoad.getBody();
-                    System.out.println("Ошибка отправки резюме: " + responseLoad.getStatusCode() + " - " + responseLoad.getBody());
-                    session.setAttribute("message", message);
-                    session.setAttribute("submitPageUrl", submitPageUrl);
+                } else {
+                    System.out.println("Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
+                    session.setAttribute("message", "Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
+                    session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
                     return ResponseEntity.status(HttpStatus.FOUND)
                             .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                             .build();
