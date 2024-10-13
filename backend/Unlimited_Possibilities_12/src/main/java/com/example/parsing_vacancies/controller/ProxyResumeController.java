@@ -79,7 +79,7 @@ public class ProxyResumeController {
             }
 
             bodyBuilder.append(new String(fileContent, StandardCharsets.UTF_8)).append("\r\n");
-            bodyBuilder.append(boundary).append("--\r\n");
+            bodyBuilder.append(boundary).append("--\r\n");//
 
             // Создание HttpEntity
             HttpEntity<String> requestEntity = new HttpEntity<>(bodyBuilder.toString(), headers);
