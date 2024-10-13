@@ -138,8 +138,16 @@ public class ResumeRestController {
             HttpHeaders headers = new HttpHeaders();
             //headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
             headers.add("Accept", "application/json, text/javascript, */*; q=0.01");
-            headers.add("Content-Type", "multipart/form-data");
+            headers.add("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,uk;q=0.6");
+            headers.add("Content-Type", "multipart/form-data; boundary=----WebKitFormBoundaryTFguMWUy81CHqY4m");
             //headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.add("Priority", "u=1, i");
+            headers.add("Sec-CH-UA", "\"Google Chrome\";v=\"129\", \"Not=A?Brand\";v=\"8\", \"Chromium\";v=\"129\"");
+            headers.add("Sec-CH-UA-Mobile", "?0");
+            headers.add("Sec-CH-UA-Platform", "\"Windows\"");
+            headers.add("Sec-Fetch-Dest", "empty");
+            headers.add("Sec-Fetch-Mode", "cors");
+            headers.add("Sec-Fetch-Site", "same-origin");
 
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("file", resource);
