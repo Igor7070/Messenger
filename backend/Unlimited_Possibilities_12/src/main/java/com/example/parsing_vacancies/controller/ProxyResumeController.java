@@ -1,8 +1,5 @@
 package com.example.parsing_vacancies.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
@@ -72,12 +69,11 @@ public class ProxyResumeController {
 
             // Отправка POST-запроса через прокси
             response = restTemplate.postForEntity(targetLoadUrl, requestEntity, String.class);
-
             System.out.println("ResponseLoad: " + response.getBody());
-            // Предположим, что ответ содержит идентификатор:
-            String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора
-            // Запускаем polling для проверки статуса
-            startPolling(requestId, targetLoadUrl);
+
+            // Проверка статуса после отправки
+            ResponseEntity<String> statusResponse = checkStatus(targetLoadUrl);
+            System.out.println("ResponseStatus: " + statusResponse.getBody());
 
             return response;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
@@ -136,10 +132,6 @@ public class ProxyResumeController {
             ResponseEntity<String> response = restTemplate.postForEntity(targetSendUrl, requestEntity, String.class);
             System.out.println("ResponseSend: " + response.getBody());
 
-            // Предположим, что ответ содержит идентификатор:
-            String requestId = extractRequestId(response.getBody()); // Метод для извлечения идентификатора
-            // Запускаем polling для проверки статуса
-            startPolling(requestId, targetSendUrl);
 
             return response;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
@@ -153,51 +145,10 @@ public class ProxyResumeController {
         }
     }
 
-    // Метод для извлечения идентификатора из ответа
-    private String extractRequestId(String responseBody) {
-        // Пример для JSON-ответа, который содержит поле requestId
-        // Используйте библиотеку для парсинга JSON, например, Jackson или Gson
-        String requestId = "";
-        JsonNode jsonNode = null;
-        try {
-            jsonNode = new ObjectMapper().readTree(responseBody);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-        requestId = jsonNode.get("id").asText();
-        System.out.println("requestId: " + requestId);
-
-        return requestId; // Измените путь в зависимости от структуры ответа
-    }
-
-    // Метод для опроса статуса
-    private void startPolling(String requestId, String targetUrl) {
-        new Thread(() -> {
-            try {
-                while (true) {
-                    ResponseEntity<String> statusResponse = checkStatus(requestId, targetUrl);
-                    System.out.println("Working startPolling...");
-
-                    // Обработка статуса
-                    if (statusResponse.getStatusCode() == HttpStatus.OK) {
-                        System.out.println("Статус: " + statusResponse.getBody());
-                        // Если статус успешный, можно остановить опрос
-                        break;
-                    }
-
-                    // Задержка перед следующим опросом
-                    Thread.sleep(5000); // 5 секунд
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }).start();
-    }
-
     // Метод для проверки статуса
-    private ResponseEntity<String> checkStatus(String requestId, String targetUrl) {
+    private ResponseEntity<String> checkStatus(String targetUrl) {
         System.out.println("Working checkStatus...");
-        String statusUrl = targetUrl +  "?id=" + requestId; // URL для проверки статуса
+        String statusUrl = targetUrl +  "/resume"; // URL для проверки статуса
         return restTemplate.getForEntity(statusUrl, String.class);
     }
 
