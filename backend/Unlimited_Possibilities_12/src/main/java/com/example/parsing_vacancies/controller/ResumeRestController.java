@@ -96,6 +96,7 @@ public class ResumeRestController {
             System.out.println("submitPageUrl: " + submitPageUrl);
 
             if (vacancy.getSiteName().contains("robota.ua")) {
+                System.out.println("Site is robota.ua");
                 byte[] fileBytes = Files.readAllBytes(file.toPath());
                 String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
 
@@ -132,6 +133,7 @@ public class ResumeRestController {
                         .build();
             }
 
+            System.out.println("Site is work.ua");
             // Подготовка запроса
             String targetProxyLoadSendUrl = "https://unlimitedpossibilities12.org/api/proxy/upload-send-resume-work-ua";
             String targetLoadSendUrl = "https://www.work.ua/ajax/my/resumes/upload/";
