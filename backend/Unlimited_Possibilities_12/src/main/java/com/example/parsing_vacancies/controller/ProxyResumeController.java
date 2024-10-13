@@ -21,9 +21,69 @@ public class ProxyResumeController {
     @Autowired
     private RestTemplate restTemplate;
 
-    // Метод для загрузки резюме
-    @PostMapping("/upload-send-resume")
-    public ResponseEntity<String> uploadResume(@RequestBody ProxyRequest proxyRequest) {
+    // Метод для загрузки резюме work.ua
+    @PostMapping("/upload-send-resume-work-ua")
+    public ResponseEntity<String> uploadResumeWorkUa(@RequestBody ProxyRequest proxyRequest) {
+        ResponseEntity<String> response = null;
+        String targetLoadSendUrl = "";
+        try {
+            // Получение параметров из запроса
+            String token = proxyRequest.getToken();
+            String filePath = proxyRequest.getFilePath();
+            long vacancyIdRabotaUa = proxyRequest.getVacancyIdRabotaUa();
+            String email = proxyRequest.getEmail();
+            String firstName = proxyRequest.getFirstName();
+            String lastName = proxyRequest.getLastName();
+            targetLoadSendUrl = proxyRequest.getTargetLoadSendUrl();
+
+            System.out.println("targetLoadSendUrl: " + targetLoadSendUrl);
+
+            // Чтение файла резюме
+            File resumeFile = new File(filePath);
+            if (!resumeFile.exists()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Файл резюме не найден по пути: " + filePath);
+            }
+
+            // Настройка заголовков
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Authorization", "Bearer " + token);
+            headers.add("Accept", "text/plain");
+            headers.add("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,uk;q=0.6");
+            headers.add("Content-Type", "multipart/form-data");
+
+            // Формирование тела запроса
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", new FileSystemResource(resumeFile));
+            body.add("firstName", firstName);
+            body.add("lastName", lastName);
+            body.add("email", email);
+            body.add("vacancyId", vacancyIdRabotaUa);
+            body.add("addAlert", true);
+            body.add("letter", "");
+
+            // Создание запроса
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+            // Отправка POST-запроса через прокси
+            response = restTemplate.postForEntity(targetLoadSendUrl, requestEntity, String.class);
+            System.out.println("ResponseLoadSend: " + response.getBody());
+
+            return ResponseEntity.ok("Резюме загружено и отправлено.");
+            //return response;
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            // Логирование полной информации об ошибке
+            System.out.println("Ошибка при обращении к API: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
+            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
+        } catch (Exception e) {
+            // Обработка других исключений
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Ошибка при загрузке резюме1.1: " + e.getMessage());
+        }
+    }
+
+    // Метод для загрузки резюме rabota.ua
+    @PostMapping("/upload-send-resume-rabota-ua")
+    public ResponseEntity<String> uploadResumeRabotaUa(@RequestBody ProxyRequest proxyRequest) {
         ResponseEntity<String> response = null;
         String targetLoadSendUrl = "";
         try {

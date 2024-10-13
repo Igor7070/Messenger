@@ -100,7 +100,7 @@ public class ResumeRestController {
                 byte[] fileBytes = Files.readAllBytes(file.toPath());
                 String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
 
-                String targetProxyLoadSendUrl = "https://unlimitedpossibilities12.org/api/proxy/upload-send-resume";
+                String targetProxyLoadSendUrl = "https://unlimitedpossibilities12.org/api/proxy/upload-send-resume-rabota-ua";
                 String vacancyIdRabotaUa = extractIdVacancy(vacancy.getUrl());
                 long vacancyIdRabotaUaLong = Long.parseLong(vacancyIdRabotaUa);
                 String targetLoadSendUrl = "https://apply-api.robota.ua/attach-application";
@@ -134,10 +134,11 @@ public class ResumeRestController {
             }
 
             // Подготовка запроса
+            String targetProxyLoadSendUrl = "";
             String targetLoadSendUrl = "https://www.work.ua/ajax/my/resumes/upload/";
             HttpHeaders headers = new HttpHeaders();
             headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
-            headers.add("Authorization", "Bearer " + accessToken);
+            //headers.add("Authorization", "Bearer " + accessToken);
             headers.add("Accept", "application/json, text/javascript, */*; q=0.01");
             headers.add("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,uk;q=0.6");
             headers.add("Content-Type", "multipart/form-data; boundary=----WebKitFormBoundaryTFguMWUy81CHqY4m");
@@ -149,6 +150,7 @@ public class ResumeRestController {
             headers.add("Sec-Fetch-Dest", "empty");
             headers.add("Sec-Fetch-Mode", "cors");
             headers.add("Sec-Fetch-Site", "same-origin");
+            headers.add("Referer", submitPageUrl);
 
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("file", resource);
