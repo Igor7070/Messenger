@@ -5,15 +5,14 @@ import com.example.parsing_vacancies.repo.VacancyRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -108,7 +107,7 @@ public class ResumeRestController {
                 // Создание объекта запроса для прокси
                 ProxyRequest proxyRequest = new ProxyRequest(accessToken, filePath,
                         vacancyIdRabotaUaLong, email, firstName, lastName, encodedFile,
-                        targetLoadSendUrl);
+                        targetLoadSendUrl, submitPageUrl);
 
                 // Отправка POST-запросов через прокси
                 ResponseEntity<String> responseLoadAndSend = customRestTemplate.postForEntity(targetProxyLoadSendUrl, proxyRequest, String.class);
@@ -144,51 +143,14 @@ public class ResumeRestController {
             // Создание объекта запроса для прокси
             ProxyRequest proxyRequest = new ProxyRequest(accessToken, filePath,
                     vacancyIdWorkUaLong, email, firstName, lastName, encodedFile,
-                    targetLoadSendUrl);
+                    targetLoadSendUrl, submitPageUrl);
 
             // Отправка POST-запросов через прокси
             ResponseEntity<String> responseLoadAndSend = customRestTemplate.postForEntity(targetProxyLoadSendUrl, proxyRequest, String.class);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
-            //headers.add("Authorization", "Bearer " + accessToken);
-            headers.add("Accept", "application/json, text/javascript, */*; q=0.01");
-            headers.add("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,uk;q=0.6");
-            headers.add("Content-Type", "multipart/form-data; boundary=----WebKitFormBoundaryTFguMWUy81CHqY4m");
-            //headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            headers.add("Priority", "u=1, i");
-            headers.add("Sec-CH-UA", "\"Google Chrome\";v=\"129\", \"Not=A?Brand\";v=\"8\", \"Chromium\";v=\"129\"");
-            headers.add("Sec-CH-UA-Mobile", "?0");
-            headers.add("Sec-CH-UA-Platform", "\"Windows\"");
-            headers.add("Sec-Fetch-Dest", "empty");
-            headers.add("Sec-Fetch-Mode", "cors");
-            headers.add("Sec-Fetch-Site", "same-origin");
-            //headers.add("Referer", submitPageUrl);
-
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", resource);
-
-            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
-            // Отправка POST-запроса
-            //ResponseEntity<String> response = customRestTemplate.postForEntity(targetLoadSendUrl, requestEntity, String.class);
             // Проверка ответа
             if (responseLoadAndSend.getStatusCode() == HttpStatus.OK) {
                 System.out.println("Резюме успешно отправлено");
-            } else if (responseLoadAndSend.getStatusCode() == HttpStatus.FOUND) {
-                String location = responseLoadAndSend.getHeaders().getLocation().toString();
-                System.out.println("Перенаправление на: " + location);
-
-                // Выполнение нового запроса по новому адресу
-                HttpEntity<Void> redirectRequestEntity = new HttpEntity<>(headers);
-                ResponseEntity<String> redirectedResponse = customRestTemplate.exchange(location, HttpMethod.GET, redirectRequestEntity, String.class);
-                // Обработка ответа от перенаправленного URL
-                System.out.println("Ответ от перенаправленного URL: " + redirectedResponse.getBody());
-                session.setAttribute("message", "Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
-                session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
-                return ResponseEntity.status(HttpStatus.FOUND)
-                        .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
-                        .build();
             } else {
                 System.out.println("Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
                 session.setAttribute("message", "Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
@@ -299,10 +261,11 @@ public class ResumeRestController {
         private String lastName;
         private String resumeContent;
         private String targetLoadSendUrl;
+        private String submitPageUrl;
 
         public ProxyRequest(String token, String filePath, Long vacancyIdRabotaUa, String email,
                             String firstName, String lastName, String resumeContent,
-                            String targetLoadSendUrl) {
+                            String targetLoadSendUrl, String submitPageUrl) {
             this.token = token;
             this.filePath = filePath;
             this.vacancyIdRabotaUa = vacancyIdRabotaUa;
@@ -311,6 +274,7 @@ public class ResumeRestController {
             this.lastName = lastName;
             this.resumeContent = resumeContent;
             this.targetLoadSendUrl = targetLoadSendUrl;
+            this.submitPageUrl = submitPageUrl;
         }
 
         // Геттеры
@@ -344,6 +308,10 @@ public class ResumeRestController {
 
         public String getTargetLoadSendUrl() {
             return targetLoadSendUrl;
+        }
+
+        public String getSubmitPageUrl() {
+            return submitPageUrl;
         }
     }
 }

@@ -35,6 +35,7 @@ public class ProxyResumeController {
             String firstName = proxyRequest.getFirstName();
             String lastName = proxyRequest.getLastName();
             targetLoadSendUrl = proxyRequest.getTargetLoadSendUrl();
+            String submitPageUrl = proxyRequest.getSubmitPageUrl();
 
             System.out.println("targetLoadSendUrl: " + targetLoadSendUrl);
 
@@ -46,12 +47,9 @@ public class ProxyResumeController {
 
             // Настройка заголовков
             HttpHeaders headers = new HttpHeaders();
-            headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
-            //headers.add("Authorization", "Bearer " + accessToken);
             headers.add("Accept", "application/json, text/javascript, */*; q=0.01");
             headers.add("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,uk;q=0.6");
-            headers.add("Content-Type", "multipart/form-data; boundary=----WebKitFormBoundaryTFguMWUy81CHqY4m");
-            //headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.add("Content-Type", "multipart/form-data; boundary=----WebKitFormBoundaryBHMUC5o8EfkniAtw");
             headers.add("Priority", "u=1, i");
             headers.add("Sec-CH-UA", "\"Google Chrome\";v=\"129\", \"Not=A?Brand\";v=\"8\", \"Chromium\";v=\"129\"");
             headers.add("Sec-CH-UA-Mobile", "?0");
@@ -59,7 +57,8 @@ public class ProxyResumeController {
             headers.add("Sec-Fetch-Dest", "empty");
             headers.add("Sec-Fetch-Mode", "cors");
             headers.add("Sec-Fetch-Site", "same-origin");
-            //headers.add("Referer", submitPageUrl);
+            headers.add("X-Requested-With", "XMLHttpRequest");
+            headers.add("Referer", submitPageUrl);
 
             // Формирование тела запроса
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
@@ -182,11 +181,12 @@ public class ProxyResumeController {
         private String lastName;
         private String resumeContent;
         private String targetLoadSendUrl;
+        private String submitPageUrl;
 
         // Конструктор и геттеры
         public ProxyRequest(String token, String filePath, Long vacancyIdRabotaUa, String email,
                             String firstName, String lastName, String resumeContent,
-                            String targetLoadSendUrl) {
+                            String targetLoadSendUrl, String submitPageUrl) {
             this.token = token;
             this.filePath = filePath;
             this.vacancyIdRabotaUa = vacancyIdRabotaUa;
@@ -195,6 +195,7 @@ public class ProxyResumeController {
             this.lastName = lastName;
             this.resumeContent = resumeContent;
             this.targetLoadSendUrl = targetLoadSendUrl;
+            this.submitPageUrl = submitPageUrl;
         }
 
         public String getToken() {
@@ -227,6 +228,10 @@ public class ProxyResumeController {
 
         public String getTargetLoadSendUrl() {
             return targetLoadSendUrl;
+        }
+
+        public String getSubmitPageUrl() {
+            return submitPageUrl;
         }
     }
 }
