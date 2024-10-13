@@ -109,20 +109,18 @@ public class ResumeRestController {
                 byte[] fileBytes = Files.readAllBytes(file.toPath());
                 String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
 
-                String targetProxyLoadUrl = "https://unlimitedpossibilities12.org/api/proxy/upload-resume";
-                String targetProxySendUrl = "https://unlimitedpossibilities12.org/api/proxy/send-resume";
+                String targetProxyLoadSendUrl = "https://unlimitedpossibilities12.org/api/proxy/upload-send-resume";
                 String vacancyIdRabotaUa = extractIdVacancy(vacancy.getUrl());
                 long vacancyIdRabotaUaLong = Long.parseLong(vacancyIdRabotaUa);
-                String targetLoadUrl = "https://apply-api.robota.ua/attach-application";
-                String targetSendUrl = "https://apply-api.robota.ua/attach-repeated-application";
+                String targetLoadSendUrl = "https://apply-api.robota.ua/attach-application";
 
                 // Создание объекта запроса для прокси
                 ProxyRequest proxyRequest = new ProxyRequest(accessToken, filePath,
                         vacancyIdRabotaUaLong, email, firstName, lastName, encodedFile,
-                        targetLoadUrl, targetSendUrl);
+                        targetLoadSendUrl);
 
                 // Отправка POST-запросов через прокси
-                ResponseEntity<String> responseLoadAndSend = customRestTemplate.postForEntity(targetProxyLoadUrl, proxyRequest, String.class);
+                ResponseEntity<String> responseLoadAndSend = customRestTemplate.postForEntity(targetProxyLoadSendUrl, proxyRequest, String.class);
                 //ResponseEntity<String> responseSend = customRestTemplate.postForEntity(targetProxySendUrl, proxyRequest, String.class);
 
                 // Проверка ответа
@@ -290,12 +288,11 @@ public class ResumeRestController {
         private String firstName;
         private String lastName;
         private String resumeContent;
-        private String targetLoadUrl;
-        private String targetSendUrl;
+        private String targetLoadSendUrl;
 
         public ProxyRequest(String token, String filePath, Long vacancyIdRabotaUa, String email,
                             String firstName, String lastName, String resumeContent,
-                            String targetLoadUrl, String targetSendUrl) {
+                            String targetLoadSendUrl) {
             this.token = token;
             this.filePath = filePath;
             this.vacancyIdRabotaUa = vacancyIdRabotaUa;
@@ -303,8 +300,7 @@ public class ResumeRestController {
             this.firstName = firstName;
             this.lastName = lastName;
             this.resumeContent = resumeContent;
-            this.targetLoadUrl = targetLoadUrl;
-            this.targetSendUrl = targetSendUrl;
+            this.targetLoadSendUrl = targetLoadSendUrl;
         }
 
         // Геттеры
@@ -336,12 +332,8 @@ public class ResumeRestController {
             return resumeContent;
         }
 
-        public String getTargetLoadUrl() {
-            return targetLoadUrl;
-        }
-
-        public String getTargetSendUrl() {
-            return targetSendUrl;
+        public String getTargetLoadSendUrl() {
+            return targetLoadSendUrl;
         }
     }
 }

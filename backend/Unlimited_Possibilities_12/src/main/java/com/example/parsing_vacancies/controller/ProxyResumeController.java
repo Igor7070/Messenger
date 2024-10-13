@@ -22,10 +22,10 @@ public class ProxyResumeController {
     private RestTemplate restTemplate;
 
     // Метод для загрузки резюме
-    @PostMapping("/upload-resume")
+    @PostMapping("/upload-send-resume")
     public ResponseEntity<String> uploadResume(@RequestBody ProxyRequest proxyRequest) {
         ResponseEntity<String> response = null;
-        String targetLoadUrl = "";
+        String targetLoadSendUrl = "";
         try {
             // Получение параметров из запроса
             String token = proxyRequest.getToken();
@@ -34,9 +34,9 @@ public class ProxyResumeController {
             String email = proxyRequest.getEmail();
             String firstName = proxyRequest.getFirstName();
             String lastName = proxyRequest.getLastName();
-            targetLoadUrl = proxyRequest.targetLoadUrl;
+            targetLoadSendUrl = proxyRequest.getTargetLoadSendUrl();
 
-            System.out.println("targetLoadUrl: " + targetLoadUrl);
+            System.out.println("targetLoadSendUrl: " + targetLoadSendUrl);
 
             // Чтение файла резюме
             File resumeFile = new File(filePath);
@@ -65,8 +65,8 @@ public class ProxyResumeController {
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
             // Отправка POST-запроса через прокси
-            response = restTemplate.postForEntity(targetLoadUrl, requestEntity, String.class);
-            System.out.println("ResponseLoad: " + response.getBody());
+            response = restTemplate.postForEntity(targetLoadSendUrl, requestEntity, String.class);
+            System.out.println("ResponseLoadSend: " + response.getBody());
 
             return ResponseEntity.ok("Резюме загружено и отправлено.");
             //return response;
@@ -78,68 +78,6 @@ public class ProxyResumeController {
             // Обработка других исключений
             e.printStackTrace();
             return ResponseEntity.status(500).body("Ошибка при загрузке резюме1.1: " + e.getMessage());
-        }
-    }
-
-    @PostMapping("/send-resume")
-    public ResponseEntity<String> sendResume(@RequestBody ProxyRequest proxyRequest) {
-        try {
-            // Получение параметров из запроса
-            String token = proxyRequest.getToken();
-            long vacancyIdRabotaUa = proxyRequest.getVacancyIdRabotaUa();
-            String email = proxyRequest.getEmail();
-            String firstName = proxyRequest.firstName;
-            String lastName = proxyRequest.lastName;
-            String targetSendUrl = proxyRequest.getTargetSendUrl();
-            String resumeContent = proxyRequest.getResumeContent();
-
-            System.out.println("targetSendUrl: " + targetSendUrl);
-
-            System.out.println("token: " + token);
-            System.out.println("vacancyIdRabotaUa: " + vacancyIdRabotaUa);
-            System.out.println("email: " + email);
-            System.out.println("firstName: " + firstName);
-            System.out.println("lastName: " + lastName);
-            System.out.println("targetUrl: " + targetSendUrl);
-
-            // Формирование JSON-строки
-            /*String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"И.Ж.\",\"lastName\":\"И.Ж.\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d,\"resumeContent\":\"%s\"}",
-                    email, vacancyId, resumeContent);*/
-            String jsonBody = String.format("{\"addAlert\":true,\"attachId\":22403002,\"firstName\":\"%s\",\"lastName\":\"%s\",\"email\":\"%s\",\"letter\":\"\",\"vacancyId\":%d}",
-                    firstName, lastName, email, vacancyIdRabotaUa);
-
-            // Настройка заголовков
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Authorization", "Bearer " + token);
-            //headers.add("Content-Type", "application/*+json");
-            headers.add("Content-Type", "application/*+json");
-            headers.add("Accept", "text/plain");
-            headers.add("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,uk;q=0.6");
-            headers.add("sec-fetch-dest", "empty");
-            headers.add("sec-fetch-mode", "cors");
-            headers.add("sec-fetch-site", "same-site");
-
-            // Создание запроса
-            HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, headers);
-
-            // Отправка POST-запроса через прокси
-            ResponseEntity<String> response = restTemplate.postForEntity(targetSendUrl, requestEntity, String.class);
-            System.out.println("ResponseSend: " + response.getBody());
-
-            // Проверка статуса после отправки
-            ResponseEntity<String> statusResponse = checkStatus(token);
-            System.out.println("ResponseStatus: " + statusResponse.getBody());
-
-            return ResponseEntity.ok("Резюме отправлено. Статус: " + statusResponse.getBody());
-            //return response;
-        } catch (HttpClientErrorException | HttpServerErrorException e) {
-            // Логирование полной информации об ошибке
-            System.out.println("Ошибка при обращении к API: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
-            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
-        } catch (Exception e) {
-            // Обработка других исключений
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("Ошибка при отправке резюме1.2: " + e.getMessage());
         }
     }
 
@@ -178,13 +116,12 @@ public class ProxyResumeController {
         private String firstName;
         private String lastName;
         private String resumeContent;
-        private String targetLoadUrl;
-        private String targetSendUrl;
+        private String targetLoadSendUrl;
 
         // Конструктор и геттеры
         public ProxyRequest(String token, String filePath, Long vacancyIdRabotaUa, String email,
                             String firstName, String lastName, String resumeContent,
-                            String targetLoadUrl, String targetSendUrl) {
+                            String targetLoadSendUrl) {
             this.token = token;
             this.filePath = filePath;
             this.vacancyIdRabotaUa = vacancyIdRabotaUa;
@@ -192,8 +129,7 @@ public class ProxyResumeController {
             this.firstName = firstName;
             this.lastName = lastName;
             this.resumeContent = resumeContent;
-            this.targetLoadUrl = targetLoadUrl;
-            this.targetSendUrl = targetSendUrl;
+            this.targetLoadSendUrl = targetLoadSendUrl;
         }
 
         public String getToken() {
@@ -224,12 +160,8 @@ public class ProxyResumeController {
             return resumeContent;
         }
 
-        public String getTargetLoadUrl() {
-            return targetLoadUrl;
-        }
-
-        public String getTargetSendUrl() {
-            return targetSendUrl;
+        public String getTargetLoadSendUrl() {
+            return targetLoadSendUrl;
         }
     }
 }
