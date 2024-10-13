@@ -72,8 +72,8 @@ public class ProxyResumeController {
             System.out.println("ResponseLoad: " + response.getBody());
 
             // Проверка статуса после отправки
-            ResponseEntity<String> statusResponse = checkStatus(targetLoadUrl);
-            System.out.println("ResponseStatus: " + statusResponse.getBody());////
+            ResponseEntity<String> statusResponse = checkStatus();
+            System.out.println("ResponseStatus: " + statusResponse.getBody());
 
             return response;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
@@ -146,9 +146,9 @@ public class ProxyResumeController {
     }
 
     // Метод для проверки статуса
-    private ResponseEntity<String> checkStatus(String targetUrl) {
+    private ResponseEntity<String> checkStatus() {
         System.out.println("Working checkStatus...");
-        String statusUrl = targetUrl +  "/resume"; // URL для проверки статуса
+        String statusUrl = "https://api.robota.ua/resume"; // URL для проверки статуса
         return restTemplate.getForEntity(statusUrl, String.class);
     }
 
