@@ -217,17 +217,19 @@
 
                     // Функция для создания "фейерверков"
                     function createFirework() {
-                        const firework = document.createElement("div");
-                        firework.className = "firework";
-                        firework.style.left = Math.random() * 100 + "vw"; // Случайная позиция по горизонтали
-                        firework.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`; // Яркий цвет
-                        firework.style.animation = `launch 1s forwards, explode 0.5s forwards`;
-                        fireworksContainer.appendChild(firework);
+                        for (let i = 0; i < 5; i++) { // Создаем несколько фейерверков
+                            const firework = document.createElement("div");
+                            firework.className = "firework";
+                            firework.style.left = (Math.random() * 100) + "vw"; // Случайная позиция по горизонтали
+                            firework.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`; // Яркий цвет
+                            firework.style.animation = `launch 1s forwards ${i * 0.1}s, explode 0.5s forwards ${i * 0.1}s`; // С задержкой
+                            fireworksContainer.appendChild(firework);
 
-                        // Удаляем элемент после анимации
-                        setTimeout(() => {
-                            firework.remove();
-                        }, 1500); // Увеличиваем время удаления, чтобы анимация завершилась
+                            // Удаляем элемент после анимации
+                            setTimeout(() => {
+                                firework.remove();
+                            }, 1500); // Увеличиваем время удаления, чтобы анимация завершилась
+                        }
                     }
 
                     // Запускаем фейерверки
