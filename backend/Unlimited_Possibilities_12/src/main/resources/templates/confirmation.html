@@ -217,19 +217,22 @@
 
                     // Функция для создания "фейерверков"
                     function createFirework() {
-                        for (let i = 0; i < 5; i++) { // Создаем несколько фейерверков
-                            const firework = document.createElement("div");
-                            firework.className = "firework";
-                            firework.style.left = (Math.random() * 100) + "vw"; // Случайная позиция по горизонтали
-                            firework.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`; // Яркий цвет
-                            firework.style.animation = `launch 1s forwards ${i * 0.1}s, explode 0.5s forwards ${i * 0.1}s`; // С задержкой
-                            fireworksContainer.appendChild(firework);
+                        const firework = document.createElement("div");
+                        firework.className = "firework";
 
-                            // Удаляем элемент после анимации
-                            setTimeout(() => {
-                                firework.remove();
-                            }, 1500); // Увеличиваем время удаления, чтобы анимация завершилась
-                        }
+                        // Случайная позиция по горизонтали
+                        firework.style.left = (Math.random() * 100) + "vw";
+                        firework.style.bottom = "0"; // Начинаем с низа экрана
+                        firework.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`; // Яркий цвет
+
+                        // Задаем анимации
+                        firework.style.animation = `launch 1s forwards, explode 0.5s forwards 1s`; // Взлет и взрыв с задержкой
+                        fireworksContainer.appendChild(firework);
+
+                        // Удаляем элемент после анимации
+                        setTimeout(() => {
+                            firework.remove();
+                        }, 2500); // Увеличиваем время удаления, чтобы анимация завершилась
                     }
 
                     // Запускаем фейерверки
