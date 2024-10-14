@@ -83,31 +83,17 @@
                 height: 10px;
                 border-radius: 50%;
                 opacity: 0;
-                animation: launch 1s forwards, explode 0.5s forwards;
+                animation: launch 1s forwards, explode 0.5s forwards 1s; /* Взрыв через 1 секунду после запуска */
             }
 
             @keyframes launch {
                 0% {
-                    transform: translateY(0); /* Начало внизу экрана */
+                    transform: translateY(0); /* Начинаем с низа экрана */
                     opacity: 1;
                 }
                 100% {
-                    transform: translateY(-300px); /* Взрыв выше верхнего края */
+                    transform: translateY(-200px); /* Взрыв чуть ниже верхнего края */
                     opacity: 1;
-                }
-            }
-
-            @keyframes explode {
-                0% {
-                    transform: scale(1);
-                    opacity: 1;
-                }
-                50% {
-                    opacity: 0.8;
-                }
-                100% {
-                    opacity: 0;
-                    transform: scale(3);
                 }
             }
         </style>
@@ -217,21 +203,22 @@
 
                     // Функция для создания "фейерверков"
                     function createFirework() {
-                        const firework = document.createElement("div");
-                        firework.className = "firework";
+                        for (let i = 0; i < 5; i++) { // Создаем пучок из 5 фейерверков
+                            const firework = document.createElement("div");
+                            firework.className = "firework";
+                            firework.style.left = (Math.random() * 100) + "vw"; // Случайная позиция по горизонтали
+                            firework.style.bottom = "0"; // Начинаем с низа экрана
+                            firework.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`; // Яркий цвет
 
-                        // Случайная позиция по горизонтали
-                        firework.style.left = (Math.random() * 100) + "vw";
-                        firework.style.bottom = "0"; // Начинаем с низа экрана
-                        firework.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`; // Яркий цвет
+                            // Задаем анимацию
+                            firework.style.animation = `launch 1s forwards, explode 0.5s forwards 1s`; // Взрыв с задержкой
+                            fireworksContainer.appendChild(firework);
+                        }
 
-                        // Задаем анимации
-                        firework.style.animation = `launch 1s forwards, explode 0.5s forwards 1s`; // Взлет и взрыв с задержкой
-                        fireworksContainer.appendChild(firework);
-
-                        // Удаляем элемент после анимации
+                        // Удаляем элементы после анимации
                         setTimeout(() => {
-                            firework.remove();
+                            const fireworks = document.querySelectorAll('.firework');
+                            fireworks.forEach(firework => firework.remove());
                         }, 2500); // Увеличиваем время удаления, чтобы анимация завершилась
                     }
 
