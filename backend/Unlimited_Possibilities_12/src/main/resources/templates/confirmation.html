@@ -99,16 +99,32 @@
 
             @keyframes explode {
                 0% {
-                    transform: scale(1) translateY(-100vh); /* Начинаем взрыв на верхней границе */
+                    transform: scale(1);
                     opacity: 1;
-                }
-                50% {
-                    opacity: 0.8;
-                    transform: scale(1.5) translateY(-100vh); /* Увеличиваем масштаб во время взрыва */
                 }
                 100% {
                     opacity: 0;
-                    transform: scale(3) translateY(-100vh); /* Увеличиваем масштаб до 3 */
+                    transform: scale(3) translateY(-100vh); /* Увеличиваем масштаб и остаемся на месте */
+                }
+            }
+
+            .particle {
+                position: absolute;
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                opacity: 0;
+                animation: particle-explode 0.5s forwards; /* Анимация разлета частиц */
+            }
+
+            @keyframes particle-explode {
+                0% {
+                    transform: translate(0, 0);
+                    opacity: 1;
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(var(--x), var(--y)); /* Разлетаемся в стороны */
                 }
             }
         </style>
@@ -228,12 +244,36 @@
                             // Задаем анимацию
                             firework.style.animation = `launch 1s forwards, explode 0.5s forwards 1s`; // Взрыв с задержкой
                             fireworksContainer.appendChild(firework);
+
+                            // Создание частиц
+                            for (let j = 0; j < 20; j++) { // 20 частиц для каждого фейерверка
+                                const particle = document.createElement("div");
+                                particle.className = "particle";
+                                particle.style.background = firework.style.background; // Цвет частицы совпадает с фейерверком
+
+                                // Задаем случайные направления разлета
+                                const angle = Math.random() * 2 * Math.PI; // Случайный угол
+                                const radius = Math.random() * 100; // Случайное расстояние
+                                const x = Math.cos(angle) * radius;
+                                const y = Math.sin(angle) * radius;
+
+                                particle.style.setProperty('--x', `${x}px`);
+                                particle.style.setProperty('--y', `${y}px`);
+
+                                // Анимация разлета частиц
+                                particle.style.animation = `particle-explode 0.5s forwards ${Math.random() * 0.5}s`;
+                                particle.style.left = firework.style.left; // Позиция появления частицы
+                                particle.style.bottom = 'calc(100vh - 10px)'; // Позиция появления чуть ниже верхней границы
+                                fireworksContainer.appendChild(particle);
+                            }
                         }
 
                         // Удаляем элементы после анимации
                         setTimeout(() => {
                             const fireworks = document.querySelectorAll('.firework');
                             fireworks.forEach(firework => firework.remove());
+                            const particles = document.querySelectorAll('.particle');
+                            particles.forEach(particle => particle.remove());
                         }, 2500); // Увеличиваем время удаления, чтобы анимация завершилась
                     }
 
