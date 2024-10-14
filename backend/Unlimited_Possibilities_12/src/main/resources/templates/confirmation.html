@@ -92,23 +92,23 @@
                     opacity: 1;
                 }
                 100% {
-                    transform: translateY(-300px); /* Взлет на 300 пикселей до взрыва */
+                    transform: translateY(-100vh); /* Взлет до верхней границы экрана */
                     opacity: 1;
                 }
             }
 
             @keyframes explode {
                 0% {
-                    transform: scale(1);
+                    transform: scale(1) translateY(-100vh); /* Начинаем взрыв на верхней границе */
                     opacity: 1;
                 }
                 50% {
                     opacity: 0.8;
-                    transform: scale(1.5); /* Увеличиваем масштаб во время взрыва */
+                    transform: scale(1.5) translateY(-100vh); /* Увеличиваем масштаб во время взрыва */
                 }
                 100% {
                     opacity: 0;
-                    transform: scale(3); /* Увеличиваем масштаб до 3 */
+                    transform: scale(3) translateY(-100vh); /* Увеличиваем масштаб до 3 */
                 }
             }
         </style>
