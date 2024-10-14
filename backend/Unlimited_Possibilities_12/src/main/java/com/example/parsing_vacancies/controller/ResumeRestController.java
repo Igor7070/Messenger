@@ -155,7 +155,7 @@ public class ResumeRestController {
             if (response.getStatusCode() == HttpStatus.OK) {
                 System.out.println("Резюме успешно отправлено");
             } else {
-                //из за того что самый первый запрос всегда с ошибкой 302
+                //из за того что самый первый запрос всегда с ошибкой 302.
                 if (countRequestWorkUa == 1) {
                     response = customRestTemplate.postForEntity(submitPageUrl, requestEntity, String.class);
                     if (response.getStatusCode() == HttpStatus.OK) {
