@@ -39,7 +39,7 @@ public class ResumeRestController {
     private VacancyRepository vacancyRepository;
     @Autowired
     private OAuth2AuthorizedClientService authorizedClientService;
-    private int countRequestWorkUa = 0;
+    private static int countRequestWorkUa = 0;
 
     @PostMapping("/upload")
     public ResponseEntity<String> uploadResume(@RequestParam("vacancyId") Long vacancyId,
@@ -155,7 +155,7 @@ public class ResumeRestController {
             if (response.getStatusCode() == HttpStatus.OK) {
                 System.out.println("Резюме успешно отправлено");
             } else {
-                //из за того что самый первый запрос всегда с ошибкой 302.
+                //из за того что самый первый запрос всегда с ошибкой 302
                 if (countRequestWorkUa == 1) {
                     response = customRestTemplate.postForEntity(submitPageUrl, requestEntity, String.class);
                     if (response.getStatusCode() == HttpStatus.OK) {

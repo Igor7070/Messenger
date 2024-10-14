@@ -134,16 +134,24 @@
         </header>
 
         <h2>Ваше резюме готово!</h2>
-        <p>Имя файла: <span th:text="${resumeFile}"></span></p>
+
         <div class="centered-link">
              <a th:href="@{/convenient_job_search/readyResume/file_resume(fileName=${resumeFile})}" download>Скачать резюме</a>
         </div>
 
-        <form action="/convenient_job_search/readyResume/upload" method="post" onsubmit="return validateForm()">
-            <input type="hidden" name="vacancyId" th:value="${vacancyId}">
-            <input type="hidden" name="resumeFile" th:value="${resumeFile}">
-            <button type="submit">Отправить резюме</button>
-        </form>
+        <div class="text-center" style="margin-top: 20px;">
+            <form action="/convenient_job_search/readyResume/upload" method="post" onsubmit="return validateForm()">
+                <input type="hidden" name="vacancyId" th:value="${vacancyId}">
+                <input type="hidden" name="resumeFile" th:value="${resumeFile}">
+                <button type="submit" style="background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                    Отправить резюме
+                </button>
+            </form>
+        </div>
+
+        <div class="text-center" style="margin-top: 20px;">
+            <p style="margin-left: 0;">Имя файла: <span th:text="${resumeFile}"></span></p>
+        </div>
 
         <div id="notification" class="alert alert-success" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 900px; text-align: center; font-size: 24px;">
             <strong>Успех!</strong> <span id="notification-message">История поиска вакансий очищена.</span>
