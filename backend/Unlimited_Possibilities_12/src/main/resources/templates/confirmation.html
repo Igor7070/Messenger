@@ -68,16 +68,48 @@
             }
 
             .fireworks {
-                position: fixed;
-                bottom: 0;
+                position: absolute;
+                top: 0;
+                left: 0;
                 width: 100%;
                 height: 100%;
-                z-index: 9999; /* Чтоб фейерверки отображались поверх всех элементов */
-                pointer-events: none; /* Не позволяет фейерверку блокировать клики */
+                pointer-events: none; /* Чтобы не мешать кликам */
+                display: none; /* Скрываем по умолчанию */
+            }
+
+            .firework {
+                position: absolute;
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                opacity: 0;
+            }
+
+            @keyframes launch {
+                0% {
+                    transform: translateY(100vh); /* Начало внизу экрана */
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateY(-50px); /* Взрыв чуть ниже верхнего края */
+                    opacity: 1;
+                }
+            }
+
+            @keyframes explode {
+                0% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.8;
+                }
+                100% {
+                    opacity: 0;
+                    transform: scale(3);
+                }
             }
         </style>
-
-        <script src="https://cdn.jsdelivr.net/npm/fireworks-js/dist/index.umd.min.js"></script>
     </head>
 
     <body>
@@ -176,33 +208,32 @@
                     });
             });
 
-            document.addEventListener('DOMContentLoaded', function() {
-                // Здесь предполагается, что переменная message получена сервером и встраивается в HTML.
-                // Если планируете получать значение из другого источника, измените эту часть.
-                const messageElement = document.querySelector('[th\\:text="${message}"]');
-                const message = messageElement ? messageElement.textContent : '';
+            document.addEventListener("DOMContentLoaded", function() {
+                const message = /*[[${message}]]*/ "Ваше резюме успешно отправлено!"; // Получите сообщение из сервера
+                if (message === "Ваше резюме успешно отправлено!") {
+                    const fireworksContainer = document.getElementById("fireworks");
+                    fireworksContainer.style.display = "block"; // Показываем контейнер
 
-                if (message.trim() === 'Ваше резюме успешно отправлено!') {
-                    // Создаем экземпляр Fireworks
-                    const container = document.getElementById('fireworks');
-                    const fireworks = new Fireworks(container, {
-                        rocketsPoint: 50, // Точка запуска ракет по вертикали
-                        speed: 2,
-                        acceleration: 1.05,
-                        friction: 0.95,
-                        gravity: 1.5,
-                        particleCount: 50, // Количество частиц в одном фейерверке
-                        traceLength: 3, // Длина следа фейерверка
-                        flickering: 50, // Мерцание
-                        intensity: 30 // Интенсивность
-                    });
+                    // Функция для создания "фейерверков"
+                    function createFirework() {
+                        const firework = document.createElement("div");
+                        firework.className = "firework";
+                        firework.style.left = Math.random() * 100 + "vw"; // Случайная позиция по горизонтали
+                        firework.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`; // Яркий цвет
+                        firework.style.animation = `launch 1s forwards, explode 0.5s forwards`;
+                        fireworksContainer.appendChild(firework);
 
-                    // Запуск фейерверка
-                    fireworks.start();
+                        // Удаляем элемент после анимации
+                        setTimeout(() => {
+                            firework.remove();
+                        }, 1500); // Увеличиваем время удаления, чтобы анимация завершилась
+                    }
 
-                    // Остановка через 7 секунд
+                    // Запускаем фейерверки
+                    const interval = setInterval(createFirework, 300);
                     setTimeout(() => {
-                        fireworks.stop();
+                        clearInterval(interval); // Останавливаем через 7 секунд
+                        fireworksContainer.style.display = "none"; // Скрываем контейнер
                     }, 7000);
                 }
             });
