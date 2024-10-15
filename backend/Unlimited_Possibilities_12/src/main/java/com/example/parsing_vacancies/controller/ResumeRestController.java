@@ -78,7 +78,7 @@ public class ResumeRestController {
 
             Optional<Vacancy> vacancyOpt = vacancyRepository.findById(Math.toIntExact(vacancyId));
             ArrayList<Vacancy> res = new ArrayList<>();
-            vacancyOpt.ifPresent(res::add);//
+            vacancyOpt.ifPresent(res::add);
             if (res.isEmpty()) {
                 // Сохранение сообщения об ошибке в сессии
                 session.setAttribute("message", "Удалена история поиска вакансий и данная вакансия недоступна теперь. Попробуйте снова.");
