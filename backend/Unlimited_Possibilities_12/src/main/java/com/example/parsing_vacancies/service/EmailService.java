@@ -5,8 +5,6 @@ import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Message;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.stereotype.Service;
 
 import javax.mail.MessagingException;
@@ -22,8 +20,6 @@ import java.util.Properties;
 
 @Service
 public class EmailService {
-    @Autowired
-    private OAuth2AuthorizedClientService authorizedClientService;
 
     public void sendSimpleMessage(String to, String subject, String body, String accessToken) {
         try {
@@ -64,7 +60,7 @@ public class EmailService {
             e.printStackTrace();
             throw new RuntimeException("Messaging exception: " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();//
+            e.printStackTrace();
         }
     }
 }
