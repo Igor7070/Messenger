@@ -11,6 +11,7 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeUtility;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -41,8 +42,8 @@ public class EmailService {
             // Указываем адрес отправителя
             email.setFrom(new InternetAddress("uunlimitedpossibilities@gmail.com"));
             email.addRecipient(javax.mail.Message.RecipientType.TO, new InternetAddress(to));
-            email.setSubject(subject);
-            email.setText(body);
+            email.setSubject(MimeUtility.encodeText(subject, "UTF-8", "B")); // Кодировка темы
+            email.setText(body, "UTF-8"); // Кодировка тела сообщения
 
             // Отправка сообщения
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -53,7 +54,7 @@ public class EmailService {
             Message message = new Message();
             message.setRaw(encodedEmail);
 
-            // Убедитесь, что адрес отправителя разрешен в настройках Gmail
+            // Отправка сообщения
             service.users().messages().send("me", message).execute();
         } catch (GeneralSecurityException e) {
             e.printStackTrace();
