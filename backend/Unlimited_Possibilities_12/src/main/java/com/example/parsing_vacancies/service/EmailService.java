@@ -64,7 +64,7 @@ public class EmailService {
             e.printStackTrace();
             throw new RuntimeException("Messaging exception: " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace();//
         }
     }
 }
