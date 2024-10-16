@@ -53,6 +53,7 @@ public class ResumeRestController {
         String firstName = "";
         String lastName = "";
         String submitPageUrl = "";
+        EmailRequest emailRequest = new EmailRequest();
         try {
             // Получение текущей аутентификации
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -129,7 +130,10 @@ public class ResumeRestController {
                     System.out.println("Error sending resume: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
                     session.setAttribute("message", "Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
                     session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
-                    sendEmail(email, "Отправка резюме", "Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
+                    emailRequest.setTo(email);
+                    emailRequest.setSubject("Отправка резюме");
+                    emailRequest.setBody("Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
+                    sendEmail(emailRequest, accessToken);
                     return ResponseEntity.status(HttpStatus.FOUND)
                             .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                             .build();
@@ -137,7 +141,10 @@ public class ResumeRestController {
                 // Перенаправление на страницу с успешным сообщением
                 session.setAttribute("message", "Ваше резюме успешно отправлено!");
                 session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
-                sendEmail(email, "Отправка резюме", "Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
+                emailRequest.setTo(email);
+                emailRequest.setSubject("Отправка резюме");
+                emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
+                sendEmail(emailRequest, accessToken);
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
@@ -178,7 +185,10 @@ public class ResumeRestController {
                 System.out.println("Error sending resume: " + response.getStatusCode() + " - " + response.getBody());
                 session.setAttribute("message", "Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
                 session.setAttribute("submitPageUrl", submitPageUrl);
-                sendEmail(email, "Отправка резюме", "Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
+                emailRequest.setTo(email);
+                emailRequest.setSubject("Отправка резюме");
+                emailRequest.setBody("Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
+                sendEmail(emailRequest, accessToken);
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
@@ -186,7 +196,10 @@ public class ResumeRestController {
             // Перенаправление на страницу с успешным сообщением
             session.setAttribute("message", "Ваше резюме успешно отправлено!");
             session.setAttribute("submitPageUrl", submitPageUrl); // Сохранение submitPageUrl в сессии
-            sendEmail(email, "Отправка резюме", "Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
+            emailRequest.setTo(email);
+            emailRequest.setSubject("Отправка резюме");
+            emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
+            sendEmail(emailRequest, accessToken);
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                     .build();
@@ -195,7 +208,10 @@ public class ResumeRestController {
             System.out.println("Error sending resume: " + e.getMessage());
             session.setAttribute("message", "Ошибка отправки резюме: " + e.getMessage());
             session.setAttribute("submitPageUrl", submitPageUrl);
-            sendEmail(email, "Отправка резюме", "Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Причина ошибки отправки резюме: " + e.getMessage());
+            emailRequest.setTo(email);
+            emailRequest.setSubject("Отправка резюме");
+            emailRequest.setBody("Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Причина ошибки отправки резюме: " + e.getMessage());
+            sendEmail(emailRequest, accessToken);
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                     .build();
@@ -288,8 +304,9 @@ public class ResumeRestController {
         return "";
     }
 
-    public String sendEmail(String to, String subject, String text) {
-        emailService.sendSimpleMessage(to, subject, text);
+    public String sendEmail(EmailRequest emailRequest, String accessToken) {
+        emailService.sendSimpleMessage(emailRequest.getTo(), emailRequest.getSubject(),
+                emailRequest.getBody(), accessToken);
         return "Email sent successfully!";
     }
 
@@ -354,6 +371,36 @@ public class ResumeRestController {
 
         public String getSubmitPageUrl() {
             return submitPageUrl;
+        }
+    }
+
+    class EmailRequest {
+        private String to;
+        private String subject;
+        private String body;
+
+        public String getTo() {
+            return to;
+        }
+
+        public void setTo(String to) {
+            this.to = to;
+        }
+
+        public String getSubject() {
+            return subject;
+        }
+
+        public void setSubject(String subject) {
+            this.subject = subject;
+        }
+
+        public String getBody() {
+            return body;
+        }
+
+        public void setBody(String body) {
+            this.body = body;
         }
     }
 }
