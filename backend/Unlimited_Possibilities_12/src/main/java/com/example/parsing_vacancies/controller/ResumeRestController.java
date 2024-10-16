@@ -218,7 +218,7 @@ public class ResumeRestController {
         }
     }
 
-    private String extractGoogleAccessToken(Authentication authentication) {
+    private String extractGoogleAccessToken(Authentication authentication) {//
         String accessToken = null;
         if (authentication instanceof OAuth2AuthenticationToken) {
             OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
