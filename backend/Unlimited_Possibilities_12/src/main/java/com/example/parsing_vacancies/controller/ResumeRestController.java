@@ -125,12 +125,12 @@ public class ResumeRestController {
 
                 // Проверка ответа
                 if (responseLoadAndSend.getStatusCode() == HttpStatus.OK) {
-                    System.out.println("Резюме успешно отправлено");
+                    System.out.println("Resume successfully sent");
                 } else {
-                    System.out.println("Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
+                    System.out.println("Error sending resume: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
                     session.setAttribute("message", "Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
                     session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
-                    sendEmail(email, "Отправка резюме", "Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
+                    //sendEmail(email, "Отправка резюме", "Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
                     return ResponseEntity.status(HttpStatus.FOUND)
                             .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                             .build();
@@ -138,7 +138,7 @@ public class ResumeRestController {
                 // Перенаправление на страницу с успешным сообщением
                 session.setAttribute("message", "Ваше резюме успешно отправлено!");
                 session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
-                sendEmail(email, "Отправка резюме", "Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
+                //sendEmail(email, "Отправка резюме", "Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
@@ -162,13 +162,13 @@ public class ResumeRestController {
 
             // Проверка ответа
             if (response.getStatusCode() == HttpStatus.OK) {
-                System.out.println("Резюме успешно отправлено");
+                System.out.println("Resume successfully sent");
             } else {
                 //из за того что самый первый запрос всегда с ошибкой 302
                 if (countRequestWorkUa == 1) {
                     response = customRestTemplate.postForEntity(submitPageUrl, requestEntity, String.class);
                     if (response.getStatusCode() == HttpStatus.OK) {
-                        System.out.println("Резюме успешно отправлено");
+                        System.out.println("Resume successfully sent");
                         session.setAttribute("message", "Ваше резюме успешно отправлено!");
                         session.setAttribute("submitPageUrl", submitPageUrl);
                         return ResponseEntity.status(HttpStatus.FOUND)
@@ -176,10 +176,10 @@ public class ResumeRestController {
                                 .build();
                     }
                 }
-                System.out.println("Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
+                System.out.println("Error sending resume: " + response.getStatusCode() + " - " + response.getBody());
                 session.setAttribute("message", "Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
                 session.setAttribute("submitPageUrl", submitPageUrl);
-                sendEmail(email, "Отправка резюме", "Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
+                //sendEmail(email, "Отправка резюме", "Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
@@ -187,15 +187,16 @@ public class ResumeRestController {
             // Перенаправление на страницу с успешным сообщением
             session.setAttribute("message", "Ваше резюме успешно отправлено!");
             session.setAttribute("submitPageUrl", submitPageUrl); // Сохранение submitPageUrl в сессии
-            sendEmail(email, "Отправка резюме", "Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
+            //sendEmail(email, "Отправка резюме", "Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                     .build();
         } catch (Exception e) {
             //return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());
+            System.out.println("Error sending resume: " + e.getMessage());
             session.setAttribute("message", "Ошибка отправки резюме: " + e.getMessage());
             session.setAttribute("submitPageUrl", submitPageUrl);
-            sendEmail(email, "Отправка резюме", "Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Причина ошибки отправки резюме: " + e.getMessage());
+            //sendEmail(email, "Отправка резюме", "Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Причина ошибки отправки резюме: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                     .build();
