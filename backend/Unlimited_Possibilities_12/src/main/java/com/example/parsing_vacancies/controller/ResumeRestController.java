@@ -2,6 +2,7 @@ package com.example.parsing_vacancies.controller;
 
 import com.example.parsing_vacancies.model.Vacancy;
 import com.example.parsing_vacancies.repo.VacancyRepository;
+import com.example.parsing_vacancies.service.EmailService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
@@ -39,21 +40,27 @@ public class ResumeRestController {
     private VacancyRepository vacancyRepository;
     @Autowired
     private OAuth2AuthorizedClientService authorizedClientService;
+    @Autowired
+    private EmailService emailService;
     private static int countRequestWorkUa = 0;
 
     @PostMapping("/upload")
     public ResponseEntity<String> uploadResume(@RequestParam("vacancyId") Long vacancyId,
                                                @RequestParam("resumeFile") String resumeFile,
                                                HttpSession session) {
+        String accessToken = "";
+        String email = "";
+        String firstName = "";
+        String lastName = "";
         String submitPageUrl = "";
         try {
             // Получение текущей аутентификации
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             // Получение токена, маил, firstName и lastName
-            String accessToken = extractGoogleAccessToken(authentication);
-            String email = extractEmail(authentication);
-            String firstName = extractFirstName(authentication);
-            String lastName = extractLastName(authentication);
+            accessToken = extractGoogleAccessToken(authentication);
+            email = extractEmail(authentication);
+            firstName = extractFirstName(authentication);
+            lastName = extractLastName(authentication);
 
             // Проверка, был ли токен получен
             if (accessToken == null) {
@@ -123,6 +130,7 @@ public class ResumeRestController {
                     System.out.println("Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
                     session.setAttribute("message", "Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
                     session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
+                    sendEmail(email, "Отправка резюме", "Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
                     return ResponseEntity.status(HttpStatus.FOUND)
                             .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                             .build();
@@ -130,6 +138,7 @@ public class ResumeRestController {
                 // Перенаправление на страницу с успешным сообщением
                 session.setAttribute("message", "Ваше резюме успешно отправлено!");
                 session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
+                sendEmail(email, "Отправка резюме", "Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
@@ -170,6 +179,7 @@ public class ResumeRestController {
                 System.out.println("Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
                 session.setAttribute("message", "Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody());
                 session.setAttribute("submitPageUrl", submitPageUrl);
+                sendEmail(email, "Отправка резюме", "Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
@@ -177,6 +187,7 @@ public class ResumeRestController {
             // Перенаправление на страницу с успешным сообщением
             session.setAttribute("message", "Ваше резюме успешно отправлено!");
             session.setAttribute("submitPageUrl", submitPageUrl); // Сохранение submitPageUrl в сессии
+            sendEmail(email, "Отправка резюме", "Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                     .build();
@@ -184,6 +195,7 @@ public class ResumeRestController {
             //return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());
             session.setAttribute("message", "Ошибка отправки резюме: " + e.getMessage());
             session.setAttribute("submitPageUrl", submitPageUrl);
+            sendEmail(email, "Отправка резюме", "Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Причина ошибки отправки резюме: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                     .build();
@@ -274,6 +286,11 @@ public class ResumeRestController {
            return matcher.group(1);
         }
         return "";
+    }
+
+    public String sendEmail(String to, String subject, String text) {
+        emailService.sendSimpleMessage(to, subject, text);
+        return "Email sent successfully!";
     }
 
     // Вспомогательный класс для передачи данных в прокси
