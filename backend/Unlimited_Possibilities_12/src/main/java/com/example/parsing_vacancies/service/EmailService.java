@@ -38,8 +38,10 @@ public class EmailService {
                     .build();
 
             // Создание сообщения
-            MimeMessage email = new MimeMessage(Session.getDefaultInstance(new Properties(), null));
-            email.setFrom(new InternetAddress(to));
+            Properties props = new Properties();
+            Session session = Session.getInstance(props, null);
+            MimeMessage email = new MimeMessage(session);
+            email.setFrom(new InternetAddress("your_email@gmail.com"));  // Укажите свой email
             email.addRecipient(javax.mail.Message.RecipientType.TO, new InternetAddress(to));
             email.setSubject(subject);
             email.setText(body);
@@ -52,9 +54,15 @@ public class EmailService {
             Message message = new Message();
             message.setRaw(encodedEmail);
             service.users().messages().send("me", message).execute();
-        } catch (GeneralSecurityException | IOException | MessagingException e) {
+        } catch (GeneralSecurityException e) {
             e.printStackTrace();
-            throw new RuntimeException(e);
+            throw new RuntimeException("Security exception: " + e.getMessage());
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("IO exception: " + e.getMessage());
+        } catch (MessagingException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Messaging exception: " + e.getMessage());
         }
     }
 }
