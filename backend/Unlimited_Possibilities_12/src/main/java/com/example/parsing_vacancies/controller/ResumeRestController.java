@@ -133,7 +133,7 @@ public class ResumeRestController {
                     emailRequest.setTo(email);
                     emailRequest.setSubject("Отправка резюме");
                     emailRequest.setBody("Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
-                    sendEmail(emailRequest, accessToken);
+                    sendEmail(emailRequest, accessToken, resumeFile);
                     return ResponseEntity.status(HttpStatus.FOUND)
                             .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                             .build();
@@ -144,7 +144,7 @@ public class ResumeRestController {
                 emailRequest.setTo(email);
                 emailRequest.setSubject("Отправка резюме");
                 emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
-                sendEmail(emailRequest, accessToken);
+                sendEmail(emailRequest, accessToken, resumeFile);
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
@@ -188,7 +188,7 @@ public class ResumeRestController {
                 emailRequest.setTo(email);
                 emailRequest.setSubject("Отправка резюме");
                 emailRequest.setBody("Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
-                sendEmail(emailRequest, accessToken);
+                sendEmail(emailRequest, accessToken, resumeFile);
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                         .build();
@@ -199,7 +199,7 @@ public class ResumeRestController {
             emailRequest.setTo(email);
             emailRequest.setSubject("Отправка резюме");
             emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
-            sendEmail(emailRequest, accessToken);
+            sendEmail(emailRequest, accessToken, resumeFile);
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                     .build();
@@ -211,7 +211,7 @@ public class ResumeRestController {
             emailRequest.setTo(email);
             emailRequest.setSubject("Отправка резюме");
             emailRequest.setBody("Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Причина ошибки отправки резюме: " + e.getMessage());
-            sendEmail(emailRequest, accessToken);
+            sendEmail(emailRequest, accessToken, resumeFile);
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                     .build();
@@ -304,9 +304,9 @@ public class ResumeRestController {
         return "";
     }
 
-    public String sendEmail(EmailRequest emailRequest, String accessToken) {
+    public String sendEmail(EmailRequest emailRequest, String accessToken, String fileNameResume) {
         emailService.sendSimpleMessage(emailRequest.getTo(), emailRequest.getSubject(),
-                emailRequest.getBody(), accessToken);
+                emailRequest.getBody(), accessToken, fileNameResume);
         return "Email sent successfully!";
     }
 
