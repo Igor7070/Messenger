@@ -143,7 +143,7 @@ public class ResumeRestController {
                 session.setAttribute("submitPageUrl", submitPageUrl); // Сохраняем targetUrl в сессии
                 emailRequest.setTo(email);
                 emailRequest.setSubject("Отправка резюме");
-                emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
+                emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено в компанию " + vacancy.getCompanyName() + "! Успешного отклика и дальнейшего поднятия бабла!");
                 sendEmail(emailRequest, accessToken, resumeFile);
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
@@ -198,7 +198,7 @@ public class ResumeRestController {
             session.setAttribute("submitPageUrl", submitPageUrl); // Сохранение submitPageUrl в сессии
             emailRequest.setTo(email);
             emailRequest.setSubject("Отправка резюме");
-            emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено работодателю! Успешного отклика и дальнейшего поднятия бабла!");
+            emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено в компанию " + vacancy.getCompanyName() + "! Успешного отклика и дальнейшего поднятия бабла!");
             sendEmail(emailRequest, accessToken, resumeFile);
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
