@@ -168,7 +168,7 @@
                     <div class="card">
                         <div class="card-header">Chat</div>
                         <div class="card-body">
-                            <div class="chat-container">
+                            <div class="chat-container" id="chat-container-advanced">
                                 <div class="chat-message" th:each="chatMessage : ${chatMessages}" th:text="${chatMessage}"></div>
                             </div>
                         </div>
@@ -202,8 +202,14 @@
 
         <script>
             const form = document.querySelector('.chat-input');
+            const chatContainer = document.getElementById('chat-container-advanced');
             const modal = document.getElementById('message-modal');
             const closeButton = document.querySelector('.close-button');
+
+            // Функция для прокрутки вниз
+            function scrollToBottom() {
+                chatContainer.scrollTop = chatContainer.scrollHeight; // Прокрутка вниз
+            }
 
             // Функция для получения данных из LocalStorage
             function getMessageCount() {
@@ -242,10 +248,14 @@
                     chatData.count += 1; // Увеличиваем счётчик
                     localStorage.setItem('chatData', JSON.stringify(chatData)); // Сохраняем обновлённые данные
                     event.target.submit(); // Отправляем форму
+                    scrollToBottom(); // Прокрутка вниз после отправки
                 } else if (chatData.count >= 12) {
                     showModal(); // Показываем модальное окно
                 }
             });
+
+            // Прокрутка вниз при загрузке страницы
+            document.addEventListener('DOMContentLoaded', scrollToBottom);
 
             document.getElementById("delete-history-btn").addEventListener("click", function(event) {
                 event.preventDefault(); // Предотвращаем переход по ссылке

@@ -44,6 +44,7 @@ public class HuggingFaceChatController {
 
     @PostMapping("/communicating_with_a_primitive_ai_model")
     public String sendMessage(@RequestParam(name = "message", required = false) String message, Model model) {
+        model.addAttribute("title", "Примитивная модель");
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(API_TOKEN);
         headers.setContentType(MediaType.APPLICATION_JSON);

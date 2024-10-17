@@ -71,11 +71,6 @@
                 color: goldenrod !important;
             }
 
-            .light-maroon-bg {
-                background-color: #d0c1e3;
-                padding: 10px 15px;
-            }
-
             .light-maroon-bg a.btn {
                 color: #343a40;
             }
@@ -137,7 +132,7 @@
                     <div class="card">
                         <div class="card-header">Chat</div>
                         <div class="card-body">
-                            <div class="chat-container">
+                            <div class="chat-container" id="chat-container">
                                 <div class="chat-message" th:each="chatMessage : ${chatMessages}" th:text="${chatMessage}"></div>
                             </div>
                         </div>
@@ -164,14 +159,23 @@
 
         <script>
             const form = document.querySelector('.chat-input');
+            const chatContainer = document.getElementById('chat-container');
 
             form.addEventListener('submit', (event) => {
-                event.preventDefault();
                 const message = event.target.elements.message.value.trim();
                 if (message) {
+                    // Отправка формы
                     event.target.submit();
                 }
             });
+            // Функция для прокрутки вниз
+            function scrollToBottom() {
+                chatContainer.scrollTop = chatContainer.scrollHeight; // Прокрутка вниз
+            }
+            // Прокрутка вниз после загрузки страницы
+            document.addEventListener('DOMContentLoaded', scrollToBottom);
+            // Прокрутка вниз после отправки сообщения
+            form.addEventListener('submit', scrollToBottom);
 
             document.getElementById("delete-history-btn").addEventListener("click", function(event) {
                 event.preventDefault(); // Предотвращаем переход по ссылке
