@@ -177,6 +177,10 @@ public class ResumeRestController {
                         System.out.println("Resume successfully sent");
                         session.setAttribute("message", "Ваше резюме успешно отправлено!");
                         session.setAttribute("submitPageUrl", submitPageUrl);
+                        emailRequest.setTo(email);
+                        emailRequest.setSubject("Отправка резюме");
+                        emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено в компанию " + vacancy.getCompanyName() + "! Успешного отклика и дальнейшего поднятия бабла!");
+                        sendEmail(emailRequest, accessToken, resumeFile);
                         return ResponseEntity.status(HttpStatus.FOUND)
                                 .location(URI.create("/convenient_job_search/readyResume/sent?vacancyId=" + vacancyId))
                                 .build();
