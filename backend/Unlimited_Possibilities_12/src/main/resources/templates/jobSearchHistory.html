@@ -114,7 +114,7 @@
                 <p th:text="${el.salary}"/>
                 <p th:text="${el.city}"/>
                 <p th:text="${el.siteName}"/>
-                <a th:href="${el.url}">Детальнее</a>
+                <a th:href="${el.url}" target="_blank">Детальнее</a>
 
                 <div class="text-center mt-3">
                     <a th:href="@{/convenient_job_search/createResume(vacancyId=${el.id})}" class="btn btn-primary">Создать резюме</a>
