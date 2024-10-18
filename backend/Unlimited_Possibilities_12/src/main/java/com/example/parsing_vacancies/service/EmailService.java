@@ -52,7 +52,7 @@ public class EmailService {
 
             // Создание части для вложения
             MimeBodyPart attachmentBodyPart = new MimeBodyPart();
-            String filename = "src/main/resources/static/resumes/" + fileNameResume; // Путь к файлу
+            String filename = "src/main/resources/static/resumes/" + fileNameResume; // Путь к файлу//
             attachmentBodyPart.attachFile(new File(filename));
 
             // Создание контейнера для частей сообщения
