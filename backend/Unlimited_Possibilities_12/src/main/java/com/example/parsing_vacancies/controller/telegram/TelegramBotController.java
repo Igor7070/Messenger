@@ -1,7 +1,6 @@
 package com.example.parsing_vacancies.controller.telegram;
 
 import com.example.parsing_vacancies.model.telegram.UserData;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -11,12 +10,10 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
 @Component
 public class TelegramBotController extends TelegramLongPollingBot {
 
-    private static final Logger logger = (Logger) LoggerFactory.getLogger(TelegramBotController.class);
     private final String botUsername;
     private final String botToken;
     private final Map<Long, UserData> userDataMap = new HashMap<>();
@@ -32,7 +29,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
             long chatId = update.getMessage().getChatId();
             String messageText = update.getMessage().getText();
-            logger.info(String.format("Received message: {%s} from chatId: {%d}", messageText,
+            System.out.println(String.format("Received message: {%s} from chatId: {%d}", messageText,
                     chatId));
 
             userDataMap.putIfAbsent(chatId, new UserData());
