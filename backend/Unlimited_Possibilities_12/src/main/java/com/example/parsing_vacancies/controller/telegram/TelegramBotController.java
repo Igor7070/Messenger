@@ -1,9 +1,8 @@
 package com.example.parsing_vacancies.controller.telegram;
 
-/*import com.example.parsing_vacancies.model.telegram.UserData;
+import com.example.parsing_vacancies.model.telegram.UserData;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -113,4 +112,4 @@ public class TelegramBotController extends TelegramLongPollingBot {
     public String getBotToken() {
         return botToken;
     }
-}*/
+}
