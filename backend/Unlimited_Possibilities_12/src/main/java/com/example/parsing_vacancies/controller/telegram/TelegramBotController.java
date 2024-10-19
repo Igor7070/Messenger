@@ -1,7 +1,7 @@
 package com.example.parsing_vacancies.controller.telegram;
 
+import com.example.parsing_vacancies.config.BotConfig;
 import com.example.parsing_vacancies.model.telegram.UserData;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -14,14 +14,11 @@ import java.util.Map;
 @Component
 public class TelegramBotController extends TelegramLongPollingBot {
 
-    private final String botUsername;
-    private final String botToken;
+    final BotConfig config;
     private final Map<Long, UserData> userDataMap = new HashMap<>();
 
-    public TelegramBotController(@Value("${telegrambots.username}") String botUsername,
-                                 @Value("${telegrambots.api.token}") String botToken) {
-        this.botUsername = botUsername;
-        this.botToken = botToken;
+    public TelegramBotController(BotConfig config) {
+        this.config = config;
     }
 
     @Override
@@ -103,15 +100,5 @@ public class TelegramBotController extends TelegramLongPollingBot {
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
-    }
-
-    @Override
-    public String getBotUsername() {
-        return botUsername;
-    }
-
-    @Override
-    public String getBotToken() {
-        return botToken;
     }
 }
