@@ -12,4 +12,12 @@ public class BotConfig {
 
     @Value("${telegrambot.api.token}")
     String token;
+
+    public String getBotName() {
+        return botName;
+    }
+
+    public String getToken() {
+        return token;
+    }
 }

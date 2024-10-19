@@ -101,4 +101,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
             e.printStackTrace();
         }
     }
+
+    @Override
+    public String getBotUsername() {
+        return config.getBotName();
+    }
 }
