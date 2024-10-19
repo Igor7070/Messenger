@@ -110,4 +110,8 @@ public class TelegramBotController extends TelegramLongPollingBot {
     public String getBotUsername() {
         return config.getBotName();
     }
+
+    public String getBotToken() {
+        return config.getToken();
+    }
 }
