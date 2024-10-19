@@ -26,7 +26,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        if (update.hasMessage() && update.getMessage().hasText()) {
+        if (update.hasMessage() && update.getMessage().hasText()) {//
             long chatId = update.getMessage().getChatId();
             String messageText = update.getMessage().getText();
             System.out.println(String.format("Received message: {%s} from chatId: {%d}", messageText,
