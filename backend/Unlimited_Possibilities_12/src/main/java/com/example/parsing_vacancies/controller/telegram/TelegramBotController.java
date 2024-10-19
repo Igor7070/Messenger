@@ -19,6 +19,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     public TelegramBotController(BotConfig config) {
         this.config = config;
+        // Вывод информации о боте
+        System.out.println("Bot name: " + config.getBotName());
+        System.out.println("Bot token: " + config.getToken());
     }
 
     @Override
