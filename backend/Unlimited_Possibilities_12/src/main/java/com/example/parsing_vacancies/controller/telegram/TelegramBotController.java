@@ -33,6 +33,10 @@ public class TelegramBotController extends TelegramLongPollingBot {
             System.out.println(String.format("Received message: {%s} from chatId: {%d}", messageText,
                     chatId));
 
+            if (messageText.equals("/start")) {
+                sendMessage(chatId, "Hello");
+            }
+
             userDataMap.putIfAbsent(chatId, new UserData());
 
             UserData userData = userDataMap.get(chatId);
