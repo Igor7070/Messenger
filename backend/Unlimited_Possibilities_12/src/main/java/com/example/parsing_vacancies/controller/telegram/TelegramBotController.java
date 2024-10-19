@@ -16,7 +16,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     private final String botUsername;
     private final String botToken;
-    private final Map<Long, UserData> userDataMap = new HashMap<>();
+    private final Map<Long, UserData> userDataMap = new HashMap<>();//
 
     public TelegramBotController(@Value("${telegrambots.username}") String botUsername,
                                  @Value("${telegrambots.api.token}") String botToken) {
