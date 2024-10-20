@@ -32,6 +32,7 @@ public class AuthController {
 
     @GetMapping("/oauth2/callback")
     public String oauth2Callback(OAuth2AuthenticationToken authentication, HttpSession session) {
+        System.out.println("Method oauth2Callback working...");
         // Проверяем текущую аутентификацию
         authDebugService.logCurrentAuthentication();
 
