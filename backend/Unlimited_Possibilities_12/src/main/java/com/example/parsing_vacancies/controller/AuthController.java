@@ -2,13 +2,13 @@ package com.example.parsing_vacancies.controller;
 
 import com.example.parsing_vacancies.controller.telegram.TelegramBotController;
 import com.example.parsing_vacancies.service.AuthenticationDebugService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class AuthController {
@@ -20,15 +20,15 @@ public class AuthController {
     private TelegramBotController telegramBotController;
 
     @GetMapping("/login")
-    public String login() {
+    public String login(HttpSession session, String chatId) {
+        session.setAttribute("chatId", chatId);
         // Перенаправление на Google для аутентификации
         System.out.println("Autorization");
         return "redirect:/oauth2/authorization/google";
     }
 
     @GetMapping("/oauth2/callback")
-    public String oauth2Callback(OAuth2AuthenticationToken authentication,
-                                 @RequestParam(required = false) String chatId) {
+    public String oauth2Callback(OAuth2AuthenticationToken authentication, HttpSession session) {
         // Проверяем текущую аутентификацию
         authDebugService.logCurrentAuthentication();
 
@@ -45,7 +45,9 @@ public class AuthController {
         System.out.println("User email: " + email);
         System.out.println("User name: " + name);
 
+        String chatId = (String) session.getAttribute("chatId");
         if (chatId != null) {
+            System.out.println("chatId: " + chatId);
             OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
                     authentication.getAuthorizedClientRegistrationId(), authentication.getName());
             if (client != null) {

@@ -9,15 +9,11 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @Component
 public class TelegramBotController extends TelegramLongPollingBot {
-
     final BotConfig config;
     private final Map<Long, UserData> userDataMap = new HashMap<>();
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
@@ -111,18 +107,12 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     private void startAutorization(long chatId) {
         //userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_SITE);
-        String authUrl = null;
-        try {
-            authUrl = generateGoogleAuthUrl(chatId);
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        String authUrl = "https://unlimitedpossibilities12.org/login?chatId=" + chatId;
         sendMessage(chatId, "Теперь вам необходимо авторизироваться в Google. Перейдите по предложенной ссылке для авторизации: \n" +
                 authUrl);
-
     }
 
-    private String generateGoogleAuthUrl(long chatId) throws UnsupportedEncodingException {
+    /*private String generateGoogleAuthUrl(long chatId) throws UnsupportedEncodingException {
         String redirectUri = "https://unlimitedpossibilities12.org/oauth2/callback?chatId=" + chatId; // Добавьте chatId
         String scope = "https://www.googleapis.com/auth/gmail.send email profile";
         String encodedScope = URLEncoder.encode(scope, "UTF-8"); // Кодирование scope
@@ -130,7 +120,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
         return String.format("https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s",
                 clientId, URLEncoder.encode(redirectUri, "UTF-8"), encodedScope, state);
-    }
+    }*/
 
     public void sendMessage(long chatId, String text) {
         SendMessage message = new SendMessage();
