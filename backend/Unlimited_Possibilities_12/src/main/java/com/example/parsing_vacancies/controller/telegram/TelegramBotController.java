@@ -8,7 +8,9 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -50,7 +52,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     handleCountSelection(chatId, messageText);
                     break;
                 case WAITING_FOR_AUTHORIZATION:
-                    startAutorization(chatId);
+                    handleAuthorizationResponse(chatId, messageText);
                     break;
                 default:
                     startConversation(chatId);
@@ -65,25 +67,56 @@ public class TelegramBotController extends TelegramLongPollingBot {
     }
 
     private void handleSiteSelection(long chatId, String messageText) {
-        if (messageText.equalsIgnoreCase("Work.ua") || messageText.equalsIgnoreCase("Rabota.ua")) {
-            userDataMap.get(chatId).setSite(messageText);
+        // Очищаем строку от лишних пробелов и знаков
+        String cleanedMessage = messageText.trim()
+                .replaceAll("[\\s]+", " ") // Заменяем несколько пробелов на один
+                .replaceAll("([.,;])+\\s*", " ") // Заменяем последовательности знаков (.,;) на пробел
+                .replaceAll("\\s*([.,;])\\s*", " ") // Убираем пробелы вокруг знаков (.,;)
+                .replaceAll("(?<!\\w)([.,;])+", "") // Убираем знаки в начале строки
+                .replaceAll("(Work\\.+ua|Rabota\\.+ua)", "$1") // Оставляем строки с много точками
+                .replaceAll("(Work\\.+)(ua)", "Work.ua") // Заменяем много точек на одну
+                .replaceAll("(Rabota\\.+)(ua)", "Rabota.ua"); // Заменяем много точек на одну
+
+        // Проверяем наличие "Work.ua" и "Rabota.ua"
+        boolean hasWork = cleanedMessage.toLowerCase().contains("work.ua");
+        boolean hasRabota = cleanedMessage.toLowerCase().contains("rabota.ua");
+
+        if (hasWork || hasRabota) {
+            // Сохраняем данные
+            userDataMap.get(chatId).setSite(cleanedMessage);
             userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_POSITION);
             sendMessage(chatId, "Какую должность вы ищете?");
         } else {
-            sendMessage(chatId, "Пожалуйста, напишите 'Work.ua' или(и) 'Rabota.ua'");
+            sendMessage(chatId, "Вы ввели некорректные данные. Пожалуйста, напишите 'Work.ua' или(и) 'Rabota.ua'.");
         }
     }
 
     private void handlePositionSelection(long chatId, String messageText) {
         userDataMap.get(chatId).setPosition(messageText);
         userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_CITY);
-        sendMessage(chatId, "В каком городе вы хотите искать вакансии?");
+        sendMessage(chatId, "Введите один из городов поиска вакансий: Киев, Харьков, Одесса, Днепр.");
     }
 
     private void handleCitySelection(long chatId, String messageText) {
-        userDataMap.get(chatId).setCity(messageText);
-        userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_COUNT);
-        sendMessage(chatId, "Сколько вакансий вы хотите получить?");
+        // Очищаем строку от лишних пробелов и знаков препинания
+        String cleanedMessage = messageText.trim()
+                .replaceAll("^[\\W_]+|[\\W_]+$", ""); // Удаляем знаки препинания до и после слова
+
+        // Список допустимых городов на украинском и английском
+        List<String> validCities = Arrays.asList(
+                "Киев", "Харьков", "Одесса", "Днепр",
+                "Київ", "Харків", "Одеса", "Дніпро",
+                "Kyiv", "Kharkiv", "Odesa", "Dnipro"
+        );
+
+        // Проверка, соответствует ли введенный город одному из допустимых
+        if (validCities.stream().anyMatch(city -> city.equalsIgnoreCase(cleanedMessage))) {
+            userDataMap.get(chatId).setCity(cleanedMessage);
+            userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_COUNT);
+            sendMessage(chatId, "Сколько вакансий вы хотите получить?");
+        } else {
+            sendMessage(chatId, "Вы ввели некорректные данные. Пожалуйста, введите один из предложенных городов.");
+        }
     }
 
     private void handleCountSelection(long chatId, String messageText) {
@@ -91,18 +124,44 @@ public class TelegramBotController extends TelegramLongPollingBot {
             int countVacancies = Integer.parseInt(messageText);
             userDataMap.get(chatId).setCountVacancies(countVacancies);
             userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_AUTHORIZATION);
-            sendMessage(chatId, "Ваш запрос собран: " + userDataMap.get(chatId));
+            sendMessage(chatId, "Теперь вам необходимо авторизироваться через Google. При согласии введите 'Да' или 'Нет' в случае отказа");
+            //sendMessage(chatId, "Ваш запрос собран: " + userDataMap.get(chatId));
             //userDataMap.remove(chatId); // Удаляем данные после завершения
         } catch (NumberFormatException e) {
             sendMessage(chatId, "Пожалуйста, введите число.");
         }
     }
 
+    private void handleAuthorizationResponse(long chatId, String messageText) {
+        // Очищаем строку от лишних пробелов и знаков препинания
+        String cleanedMessage = messageText.trim().replaceAll("^[\\W_]+|[\\W_]+$", "");
+
+        // Список допустимых ответов
+        List<String> validResponses = Arrays.asList(
+                "да", "нет", "да", "нет", // на русском
+                "yes", "no", // на английском
+                "так", "ні" // на украинском
+        );
+
+        // Проверяем, соответствует ли введенный ответ одному из допустимых
+        if (validResponses.stream().anyMatch(response -> response.equalsIgnoreCase(cleanedMessage))) {
+            if (cleanedMessage.equalsIgnoreCase("да") || cleanedMessage.equalsIgnoreCase("yes") || cleanedMessage.equalsIgnoreCase("так")) {
+                // Логика для авторизации через Google
+                sendMessage(chatId, "Вы выбрали авторизацию через Google.");
+                startAutorization(chatId);
+            } else {
+                sendMessage(chatId, "Вы отказались от авторизации.");
+                // Здесь можно добавить логику для обработки отказа
+            }
+        } else {
+            sendMessage(chatId, "Вы ввели некорректные данные. Пожалуйста, введите 'Да', 'Нет', 'Yes', 'No', 'Так' или 'Ні'.");
+        }
+    }
+
     private void startAutorization(long chatId) {
         //userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_SITE);
         String authUrl = "https://unlimitedpossibilities12.org/login?chatId=" + chatId;
-        sendMessage(chatId, "Теперь вам необходимо авторизироваться в Google. Перейдите по предложенной ссылке для авторизации: \n" +
-                authUrl);
+        sendMessage(chatId, "Перейдите по предложенной ссылке для авторизации: \n" + authUrl);
     }
 
     public void sendMessage(long chatId, String text) {
