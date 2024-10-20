@@ -22,6 +22,8 @@ public class AuthController {
 
     @GetMapping("/login")
     public String login(HttpSession session, @RequestParam(required = false) String chatId) {
+        System.out.println("Method login working...");
+        System.out.println("chatId: " + chatId);
         session.setAttribute("chatId", chatId);
         // Перенаправление на Google для аутентификации
         System.out.println("Autorization");
