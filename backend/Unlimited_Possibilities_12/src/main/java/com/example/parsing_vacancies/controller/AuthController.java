@@ -9,6 +9,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class AuthController {
@@ -20,7 +21,7 @@ public class AuthController {
     private TelegramBotController telegramBotController;
 
     @GetMapping("/login")
-    public String login(HttpSession session, String chatId) {
+    public String login(HttpSession session, @RequestParam(required = false) String chatId) {
         session.setAttribute("chatId", chatId);
         // Перенаправление на Google для аутентификации
         System.out.println("Autorization");
@@ -46,8 +47,8 @@ public class AuthController {
         System.out.println("User name: " + name);
 
         String chatId = (String) session.getAttribute("chatId");
+        System.out.println("chatId: " + chatId);
         if (chatId != null) {
-            System.out.println("chatId: " + chatId);
             OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
                     authentication.getAuthorizedClientRegistrationId(), authentication.getName());
             if (client != null) {
