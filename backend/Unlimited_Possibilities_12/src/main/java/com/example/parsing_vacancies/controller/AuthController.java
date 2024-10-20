@@ -2,6 +2,7 @@ package com.example.parsing_vacancies.controller;
 
 import com.example.parsing_vacancies.controller.telegram.TelegramBotController;
 import com.example.parsing_vacancies.service.AuthenticationDebugService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -10,6 +11,8 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.io.IOException;
 
 @Controller
 public class AuthController {
@@ -31,15 +34,21 @@ public class AuthController {
     }
 
     @GetMapping("/autorization_success")
-    public String oauth2Callback(OAuth2AuthenticationToken authentication, HttpSession session) {
+    public void oauth2Callback(OAuth2AuthenticationToken authentication, HttpSession session,
+                                 HttpServletResponse response) {
         System.out.println("Method oauth2Callback working...");
         // Проверяем текущую аутентификацию
         authDebugService.logCurrentAuthentication();
 
         if (authentication == null) {
             System.out.println("Authentication is null");
-            return "redirect:/login"; // Перенаправление на страницу логина
-            //return "redirect:/convenient_job_search";
+            //return "redirect:/login"; // Перенаправление на страницу логина
+            try {
+                response.sendRedirect("/login"); // Перенаправление на страницу логина
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
         }
 
         System.out.println("Success authorization");
@@ -62,10 +71,16 @@ public class AuthController {
             }
             long chatIdLong = Long.parseLong(chatId);
             telegramBotController.sendMessage(chatIdLong, "Вы успешно авторизовались!\nEmail: " + email + "\nИмя: " + name);
-            return "";
+            //return "";
+            return;
         }
 
-        return "redirect:/convenient_job_search?authSuccess=true"; // Перенаправление на домашнюю страницу
+        try {
+            response.sendRedirect("/convenient_job_search?authSuccess=true"); // Перенаправление на домашнюю страницу
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //return "redirect:/convenient_job_search?authSuccess=true"; // Перенаправление на домашнюю страницу
     }
     //https://unlimitedpossibilities12.org/convenient_job_search
 }

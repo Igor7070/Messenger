@@ -2,7 +2,6 @@ package com.example.parsing_vacancies.controller.telegram;
 
 import com.example.parsing_vacancies.config.BotConfig;
 import com.example.parsing_vacancies.model.telegram.UserData;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -16,8 +15,6 @@ import java.util.Map;
 public class TelegramBotController extends TelegramLongPollingBot {
     final BotConfig config;
     private final Map<Long, UserData> userDataMap = new HashMap<>();
-    @Value("${spring.security.oauth2.client.registration.google.client-id}")
-    private String clientId;
 
     public TelegramBotController(BotConfig config) {
         this.config = config;
@@ -31,10 +28,6 @@ public class TelegramBotController extends TelegramLongPollingBot {
             String messageText = update.getMessage().getText();
             System.out.println(String.format("Received message: {%s} from chatId: {%d}", messageText,
                     chatId));
-
-            if (messageText.equals("/start")) {
-                sendMessage(chatId, "Привет!");
-            }
 
             userDataMap.putIfAbsent(chatId, new UserData());
 
@@ -77,7 +70,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
             userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_POSITION);
             sendMessage(chatId, "Какую должность вы ищете?");
         } else {
-            sendMessage(chatId, "Пожалуйста, напишите 'Work.ua' или 'Rabota.ua'");
+            sendMessage(chatId, "Пожалуйста, напишите 'Work.ua' или(и) 'Rabota.ua'");
         }
     }
 
