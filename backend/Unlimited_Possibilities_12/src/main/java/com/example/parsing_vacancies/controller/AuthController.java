@@ -30,7 +30,7 @@ public class AuthController {
         return "redirect:/oauth2/authorization/google";
     }
 
-    @GetMapping("/oauth2/callback")
+    @GetMapping("/autorization_success")
     public String oauth2Callback(OAuth2AuthenticationToken authentication, HttpSession session) {
         System.out.println("Method oauth2Callback working...");
         // Проверяем текущую аутентификацию
@@ -65,7 +65,7 @@ public class AuthController {
             return "";
         }
 
-        return "redirect:/convenient_job_search"; // Перенаправление на домашнюю страницу
+        return "redirect:/convenient_job_search?authSuccess=true"; // Перенаправление на домашнюю страницу
     }
     //https://unlimitedpossibilities12.org/convenient_job_search
 }

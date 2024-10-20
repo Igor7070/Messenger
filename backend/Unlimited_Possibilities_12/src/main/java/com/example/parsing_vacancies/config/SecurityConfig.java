@@ -27,7 +27,7 @@ public class SecurityConfig {
                         )
                         .successHandler((request, response, authentication) -> {
                             System.out.println("Authentication Success: " + authentication.getName());
-                            response.sendRedirect("/convenient_job_search?authSuccess=true");
+                            response.sendRedirect("/autorization_success");
                         })
                         .failureHandler((request, response, exception) -> {
                             System.out.println("Authentication Failure: " + exception.getMessage());
