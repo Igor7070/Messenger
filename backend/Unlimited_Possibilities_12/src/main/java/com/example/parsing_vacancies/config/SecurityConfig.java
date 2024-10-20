@@ -27,7 +27,7 @@ public class SecurityConfig {
                         )
                         .successHandler((request, response, authentication) -> {
                             System.out.println("Authentication Success: " + authentication.getName());
-                            response.sendRedirect("/oauth2/callback?authSuccess=true");
+                            response.sendRedirect("/oauth2/callback");
                         })
                         .failureHandler((request, response, exception) -> {
                             System.out.println("Authentication Failure: " + exception.getMessage());
