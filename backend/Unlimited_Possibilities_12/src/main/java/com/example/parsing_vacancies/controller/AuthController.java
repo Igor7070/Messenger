@@ -4,7 +4,9 @@ import com.example.parsing_vacancies.controller.telegram.TelegramBotController;
 import com.example.parsing_vacancies.service.AuthenticationDebugService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,7 +30,7 @@ public class AuthController {
         return "redirect:/oauth2/authorization/google";
     }
 
-    /*@GetMapping("/oauth2/callback")
+    @GetMapping("/oauth2/callback")
     public String oauth2Callback(OAuth2AuthenticationToken authentication, HttpSession session) {
         System.out.println("Method oauth2Callback working...");
         // Проверяем текущую аутентификацию
@@ -64,6 +66,6 @@ public class AuthController {
         }
 
         return "redirect:/convenient_job_search"; // Перенаправление на домашнюю страницу
-    }*/
+    }
     //https://unlimitedpossibilities12.org/convenient_job_search
 }
