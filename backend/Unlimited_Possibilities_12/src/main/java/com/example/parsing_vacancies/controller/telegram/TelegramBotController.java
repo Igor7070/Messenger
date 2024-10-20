@@ -2,26 +2,29 @@ package com.example.parsing_vacancies.controller.telegram;
 
 import com.example.parsing_vacancies.config.BotConfig;
 import com.example.parsing_vacancies.model.telegram.UserData;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class TelegramBotController extends TelegramLongPollingBot {
 
     final BotConfig config;
     private final Map<Long, UserData> userDataMap = new HashMap<>();
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    private String clientId;
 
     public TelegramBotController(BotConfig config) {
         this.config = config;
-        // Вывод информации о боте
-        System.out.println("Bot name: " + config.getBotName());
-        System.out.println("Bot token: " + config.getToken());
     }
 
     @Override
@@ -34,7 +37,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     chatId));
 
             if (messageText.equals("/start")) {
-                sendMessage(chatId, "Hello");
+                sendMessage(chatId, "Привет!");
             }
 
             userDataMap.putIfAbsent(chatId, new UserData());
@@ -42,6 +45,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
             UserData userData = userDataMap.get(chatId);
 
             switch (userData.getState()) {
+                case WAITING_FOR_START:
+                    startConversation(chatId);
+                    break;
                 case WAITING_FOR_SITE:
                     handleSiteSelection(chatId, messageText);
                     break;
@@ -54,6 +60,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 case WAITING_FOR_COUNT:
                     handleCountSelection(chatId, messageText);
                     break;
+                case WAITING_FOR_AUTHORIZATION:
+                    startAutorization(chatId);
+                    break;
                 default:
                     startConversation(chatId);
                     break;
@@ -63,7 +72,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     private void startConversation(long chatId) {
         userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_SITE);
-        sendMessage(chatId, "Привет! С какого сайта вы хотите искать вакансии? (Work.ua или Rabota.ua)");
+        sendMessage(chatId, "Привет! С какого сайта(ов) вы хотите искать вакансии? (Work.ua или(и) Rabota.ua)");
     }
 
     private void handleSiteSelection(long chatId, String messageText) {
@@ -92,14 +101,38 @@ public class TelegramBotController extends TelegramLongPollingBot {
         try {
             int countVacancies = Integer.parseInt(messageText);
             userDataMap.get(chatId).setCountVacancies(countVacancies);
+            userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_AUTHORIZATION);
             sendMessage(chatId, "Ваш запрос собран: " + userDataMap.get(chatId));
-            userDataMap.remove(chatId); // Удаляем данные после завершения
+            //userDataMap.remove(chatId); // Удаляем данные после завершения
         } catch (NumberFormatException e) {
             sendMessage(chatId, "Пожалуйста, введите число.");
         }
     }
 
-    private void sendMessage(long chatId, String text) {
+    private void startAutorization(long chatId) {
+        //userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_SITE);
+        String authUrl = null;
+        try {
+            authUrl = generateGoogleAuthUrl(chatId);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        sendMessage(chatId, "Теперь вам необходимо авторизироваться в Google. Перейдите по предложенной ссылке для авторизации: \n" +
+                authUrl);
+
+    }
+
+    private String generateGoogleAuthUrl(long chatId) throws UnsupportedEncodingException {
+        String redirectUri = "https://unlimitedpossibilities12.org/oauth2/callback?chatId=" + chatId; // Добавьте chatId
+        String scope = "https://www.googleapis.com/auth/gmail.send email profile";
+        String encodedScope = URLEncoder.encode(scope, "UTF-8"); // Кодирование scope
+        String state = UUID.randomUUID().toString(); // Генерация уникального состояния для безопасности
+
+        return String.format("https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s",
+                clientId, URLEncoder.encode(redirectUri, "UTF-8"), encodedScope, state);
+    }
+
+    public void sendMessage(long chatId, String text) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
         message.setText(text);
