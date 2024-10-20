@@ -65,7 +65,8 @@ public class AuthController {
             return "";
         }
 
-        return "redirect:/convenient_job_search"; // Перенаправление на домашнюю страницу
+        //return "redirect:/convenient_job_search"; // Перенаправление на домашнюю страницу
+        return "";
     }
     //https://unlimitedpossibilities12.org/convenient_job_search
 }
