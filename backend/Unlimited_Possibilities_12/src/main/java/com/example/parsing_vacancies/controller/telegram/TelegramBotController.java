@@ -112,16 +112,6 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 authUrl);
     }
 
-    /*private String generateGoogleAuthUrl(long chatId) throws UnsupportedEncodingException {
-        String redirectUri = "https://unlimitedpossibilities12.org/oauth2/callback?chatId=" + chatId; // Добавьте chatId
-        String scope = "https://www.googleapis.com/auth/gmail.send email profile";
-        String encodedScope = URLEncoder.encode(scope, "UTF-8"); // Кодирование scope
-        String state = UUID.randomUUID().toString(); // Генерация уникального состояния для безопасности
-
-        return String.format("https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s",
-                clientId, URLEncoder.encode(redirectUri, "UTF-8"), encodedScope, state);
-    }*/
-
     public void sendMessage(long chatId, String text) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
