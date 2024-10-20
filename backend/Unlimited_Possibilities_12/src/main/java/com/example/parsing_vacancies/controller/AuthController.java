@@ -12,8 +12,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.io.IOException;
-
 @Controller
 public class AuthController {
     @Autowired
@@ -34,7 +32,7 @@ public class AuthController {
     }
 
     @GetMapping("/autorization_success")
-    public void oauth2Callback(OAuth2AuthenticationToken authentication, HttpSession session,
+    public String oauth2Callback(OAuth2AuthenticationToken authentication, HttpSession session,
                                  HttpServletResponse response) {
         System.out.println("Method oauth2Callback working...");
         // Проверяем текущую аутентификацию
@@ -42,13 +40,7 @@ public class AuthController {
 
         if (authentication == null) {
             System.out.println("Authentication is null");
-            //return "redirect:/login"; // Перенаправление на страницу логина
-            try {
-                response.sendRedirect("/login"); // Перенаправление на страницу логина
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return;
+            return "redirect:/login"; // Перенаправление на страницу логина
         }
 
         System.out.println("Success authorization");
@@ -71,16 +63,10 @@ public class AuthController {
             }
             long chatIdLong = Long.parseLong(chatId);
             telegramBotController.sendMessage(chatIdLong, "Вы успешно авторизовались!\nEmail: " + email + "\nИмя: " + name);
-            //return "";
-            return;
+            return "autorizationSuccess";
         }
 
-        try {
-            response.sendRedirect("/convenient_job_search?authSuccess=true"); // Перенаправление на домашнюю страницу
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        //return "redirect:/convenient_job_search?authSuccess=true"; // Перенаправление на домашнюю страницу
+        return "redirect:/convenient_job_search?authSuccess=true"; // Перенаправление на домашнюю страницу
     }
     //https://unlimitedpossibilities12.org/convenient_job_search
 }
