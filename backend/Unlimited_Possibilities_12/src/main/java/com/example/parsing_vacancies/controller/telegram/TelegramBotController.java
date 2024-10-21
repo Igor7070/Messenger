@@ -184,7 +184,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
         } else {
             sendMessage(chatId, "Вы ввели некорректные данные. Пожалуйста, введите 'Да', 'Нет', 'Yes', 'No', 'Так' или 'Ні'.");
         }
-    }
+    }//
 
     private void startAutorization(long chatId) {
         //userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_SITE);
