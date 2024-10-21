@@ -70,21 +70,23 @@ public class TelegramBotController extends TelegramLongPollingBot {
         // Очищаем строку от лишних пробелов и знаков
         String cleanedMessage = messageText.trim()
                 .replaceAll("[\\s]+", " ") // Заменяем несколько пробелов на один
-                .replaceAll("([.,;:_])+\\s*", " ") // Заменяем последовательности знаков (.,;) на пробел
-                .replaceAll("\\s*([.,;:_])\\s*", " ") // Убираем пробелы вокруг знаков (.,;)
-                .replaceAll("(?<!\\w)([.,;:_])+", "") // Убираем знаки в начале строки
-                .replaceAll("(Work\\.+ua|Rabota\\.+ua)", "$1") // Оставляем строки с много точками
-                .replaceAll("(Work\\.+)(ua)", "Work.ua") // Заменяем много точек на одну
-                .replaceAll("(Rabota\\.+)(ua)", "Rabota.ua"); // Заменяем много точек на одну
+                .replaceAll("(?i)([.,;:_])+\\s*", " ") // Заменяем последовательности знаков (.,;) на пробел, игнорируя регистр
+                .replaceAll("\\s*(?i)([.,;:_])\\s*", " ") // Убираем пробелы вокруг знаков (.,;:), игнорируя регистр
+                .replaceAll("(?i)(?<!\\w)([.,;:_])+", "") // Убираем знаки в начале строки, игнорируя регистр
+                .replaceAll("(?i)(Work\\.+ua|Rabota\\.+ua)", "$1") // Оставляем строки с много точками, игнорируя регистр
+                .replaceAll("(?i)(Work\\.+)(ua)", "Work.ua") // Заменяем много точек на одну, игнорируя регистр
+                .replaceAll("(?i)(Rabota\\.+)(ua)", "Rabota.ua"); // Заменяем много точек на одну, игнорируя регистр
 
-        // Заменяем пробелы между Work и ua, и между Rabota и ua на точку
-        cleanedMessage = cleanedMessage.replaceAll("(Work)\\s+(ua)", "$1.ua")
-                .replaceAll("(Rabota)\\s+(ua)", "$1.ua").trim();
-        // Заменяем множественные пробелы между Work.ua и Rabota.ua на один пробел
-        cleanedMessage = cleanedMessage.replaceAll("(Work\\.ua)\\s+(Rabota\\.ua)", "$1 $2");
-        // Добавляем точки, если они отсутствуют
-        cleanedMessage = cleanedMessage.replaceAll("(Work)(ua)", "Work.ua")
-                .replaceAll("(Rabota)(ua)", "Rabota.ua");
+// Заменяем пробелы между Work и ua, и между Rabota и ua на точку, игнорируя регистр
+        cleanedMessage = cleanedMessage.replaceAll("(?i)(Work)\\s+(ua)", "$1.ua")
+                .replaceAll("(?i)(Rabota)\\s+(ua)", "$1.ua").trim();
+
+// Заменяем множественные пробелы между Work.ua и Rabota.ua на один пробел, игнорируя регистр
+        cleanedMessage = cleanedMessage.replaceAll("(?i)(Work\\.ua)\\s+(Rabota\\.ua)", "$1 $2");
+
+// Добавляем точки, если они отсутствуют, игнорируя регистр
+        cleanedMessage = cleanedMessage.replaceAll("(?i)(Work)(ua)", "Work.ua")
+                .replaceAll("(?i)(Rabota)(ua)", "Rabota.ua");
 
         // Проверяем наличие "Work.ua" и "Rabota.ua"
         boolean hasWork = cleanedMessage.toLowerCase().contains("work.ua");
@@ -165,7 +167,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
         String[] words = cleanedMessage.split(" ");
         if (words.length != 1) {
-            sendMessage(chatId, "Пожалуйста, введите что то одно.");//
+            sendMessage(chatId, "Пожалуйста, введите что то одно.");
             return;
         }
 
