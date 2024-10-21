@@ -165,7 +165,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
         String[] words = cleanedMessage.split(" ");
         if (words.length != 1) {
-            sendMessage(chatId, "Пожалуйста, введите что то одно.");
+            sendMessage(chatId, "Пожалуйста, введите что то одно.");//
             return;
         }
 
