@@ -65,9 +65,9 @@ public class AuthController {
                 telegramBotController.getUserDataMap().get(chatIdLong).setState(UserData.State.WAITING_FOR_SUCCESS);
             } else {
                 System.out.println("Client is null, unable to retrieve access token.");
-                return "autorizationFailed";
+                return "telegram/autorizationFailed";
             }
-            return "autorizationSuccess";
+            return "telegram/autorizationSuccess";
         }
 
         return "redirect:/convenient_job_search?authSuccess=true"; // Перенаправление на домашнюю страницу
