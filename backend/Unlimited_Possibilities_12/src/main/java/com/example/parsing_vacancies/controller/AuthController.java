@@ -58,11 +58,24 @@ public class AuthController {
                     authentication.getAuthorizedClientRegistrationId(), authentication.getName());
             if (client != null) {
                 String accessToken = client.getAccessToken().getTokenValue();
+                String emailGoogle = authentication.getPrincipal().getAttribute("email");
+                String firstName = authentication.getPrincipal().getAttribute("given_name");
+                String lastName = authentication.getPrincipal().getAttribute("family_name");
+
                 System.out.println("Access Token: " + accessToken);
+                System.out.println("email Google: " + emailGoogle);
+                System.out.println("firstName: " + firstName);
+                System.out.println("lastName: " + lastName);
+
                 long chatIdLong = Long.parseLong(chatId);
-                telegramBotController.sendMessage(chatIdLong, "Вы успешно авторизовались!\nEmail: " + email + "\nИмя: " + name);
                 telegramBotController.getUserDataMap().get(chatIdLong).setAccessToken(accessToken);
-                telegramBotController.getUserDataMap().get(chatIdLong).setState(UserData.State.WAITING_FOR_SUCCESS);
+                telegramBotController.getUserDataMap().get(chatIdLong).setEmailGoogle(emailGoogle);
+                telegramBotController.getUserDataMap().get(chatIdLong).setFirstName(firstName);
+                telegramBotController.getUserDataMap().get(chatIdLong).setLastName(lastName);
+                telegramBotController.getUserDataMap().get(chatIdLong).setState(UserData.State.WAITING_FOR_RESUME_ENABLE_AI);
+                telegramBotController.sendMessage(chatIdLong, "Вы успешно авторизовались!\nEmail: " + email + "\nИмя: " + name);
+                telegramBotController.sendMessage(chatIdLong, "Теперь необходимы ваши данные для создания резюме. Будут заданы несклоько вопросов. Итак...\n" +
+                        "Желаете ли вы подключить ИИ для создания резюме? При согласии введите 'Да' или 'Нет' в случае отказа.");
             } else {
                 System.out.println("Client is null, unable to retrieve access token.");
                 return "telegram/autorizationFailed";

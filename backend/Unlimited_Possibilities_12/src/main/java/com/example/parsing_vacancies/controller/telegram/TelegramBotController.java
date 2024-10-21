@@ -54,8 +54,8 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 case WAITING_FOR_AUTHORIZATION:
                     handleAuthorizationResponse(chatId, messageText);
                     break;
-                case WAITING_FOR_SUCCESS:
-                    success(chatId);
+                case WAITING_FOR_RESUME_ENABLE_AI:
+                    handleResumeEnableAI(chatId, messageText);
                     break;
                 default:
                     startConversation(chatId);
@@ -66,7 +66,12 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     private void startConversation(long chatId) {
         userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_SITE);
-        sendMessage(chatId, "Привет! С какого сайта(ов) вы хотите искать вакансии? (Work.ua или(и) Rabota.ua)");
+        sendMessage(chatId, "Вас приветствует бот UnlimitedPossibilities12!" +
+                " Я предназначен для помощи в поиске работы, все за вас сделаю," +
+                " от вас только несколько минут времени для сбора информации и найдем вам работу." +
+                " Потому начнем...");
+        sendMessage(chatId, "С какого сайта(ов) вы хотите искать вакансии? (Work.ua или(и)" +
+                " Rabota.ua)");
     }
 
     private void handleSiteSelection(long chatId, String messageText) {
@@ -146,7 +151,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
             int countVacancies = Integer.parseInt(messageText);
             userDataMap.get(chatId).setCountVacancies(countVacancies);
             userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_AUTHORIZATION);
-            sendMessage(chatId, "Теперь вам необходимо авторизироваться через Google. При согласии введите 'Да' или 'Нет' в случае отказа");
+            sendMessage(chatId, "Теперь вам необходимо авторизироваться через Google. При согласии введите 'Да' или 'Нет' в случае отказа.");
             //sendMessage(chatId, "Ваш запрос собран: " + userDataMap.get(chatId));
             //userDataMap.remove(chatId); // Удаляем данные после завершения
         } catch (NumberFormatException e) {
@@ -184,7 +189,6 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 sendMessage(chatId, "Вы отказались от авторизации.");
                 finishSession(chatId);
                 userDataMap.remove(chatId); // Удаление данных после завершения
-
             }
         } else {
             sendMessage(chatId, "Вы ввели некорректные данные. Пожалуйста, введите 'Да', 'Нет', 'Yes', 'No', 'Так' или 'Ні'.");
@@ -197,8 +201,40 @@ public class TelegramBotController extends TelegramLongPollingBot {
         sendMessage(chatId, "Перейдите по предложенной ссылке для авторизации: \n" + authUrl);
     }
 
-    private void success(long chatId){
-        sendMessage(chatId, "Шикарно! Ваш токен доступа: " + userDataMap.get(chatId).getAccessToken());
+    private void handleResumeEnableAI(long chatId, String messageText){
+        // Очищаем строку от лишних пробелов и знаков препинания
+        String cleanedMessage = messageText.trim()
+                .replaceAll("[\\s,;:_]+", " ") // Заменяем пробелы и знаки на пробел
+                .replaceAll("[^\\w\\u0400-\\u04FF]", "") // Удаляем все, кроме букв и цифр
+                .replaceAll("[\\s]+", " "); // Удаляем лишние пробелы
+
+        // Список допустимых ответов
+        List<String> validResponses = Arrays.asList(
+                "да", "нет", "да", "нет", // на русском
+                "yes", "no", // на английском
+                "так", "ні" // на украинском
+        );
+
+        String[] words = cleanedMessage.split(" ");
+        if (words.length != 1) {
+            sendMessage(chatId, "Пожалуйста, введите что то одно.");
+            return;
+        }
+
+        // Проверяем, соответствует ли введенный ответ одному из допустимых
+        if (validResponses.stream().anyMatch(response -> response.equalsIgnoreCase(cleanedMessage))) {
+            if (cleanedMessage.equalsIgnoreCase("да") || cleanedMessage.equalsIgnoreCase("yes") || cleanedMessage.equalsIgnoreCase("так")) {
+                userDataMap.get(chatId).setEnableAI(true);
+                userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_FULLNAME);
+                sendMessage(chatId, "Отличный выбор! Благодаря участию ИИ ваше резюме будет бесподобно и полноценно!");
+            } else {
+                userDataMap.get(chatId).setEnableAI(true);
+                userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_FULLNAME);
+                sendMessage(chatId, "Вы отказались от участия ИИ. Ничего, разберемся и без него!");
+            }
+        } else {
+            sendMessage(chatId, "Вы ввели некорректные данные. Пожалуйста, введите 'Да', 'Нет', 'Yes', 'No', 'Так' или 'Ні'.");
+        }
     }
 
     public void sendMessage(long chatId, String text) {
