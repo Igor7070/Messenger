@@ -179,12 +179,14 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 startAutorization(chatId);
             } else {
                 sendMessage(chatId, "Вы отказались от авторизации.");
-                // Здесь можно добавить логику для обработки отказа
+                finishSession(chatId);
+                userDataMap.remove(chatId); // Удаление данных после завершения
+
             }
         } else {
             sendMessage(chatId, "Вы ввели некорректные данные. Пожалуйста, введите 'Да', 'Нет', 'Yes', 'No', 'Так' или 'Ні'.");
         }
-    }//
+    }
 
     private void startAutorization(long chatId) {
         //userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_SITE);
@@ -201,6 +203,13 @@ public class TelegramBotController extends TelegramLongPollingBot {
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
+    }
+
+    private void finishSession(long chatId) {
+        sendMessage(chatId, "Прощайте, спасибо за использование!");
+
+        // Здесь можно добавить логику для отключения пользователя, если требуется
+        // Например, можно записать это в базу данных или журнал
     }
 
     @Override

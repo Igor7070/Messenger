@@ -44,7 +44,7 @@ public class AuthController {
         }
 
         System.out.println("Success authorization");
-        System.out.println("Authentication details: " + authentication.toString());
+        System.out.println("Authentication details: " + authentication);
         String email = authentication.getPrincipal().getAttribute("email");
         String name = authentication.getPrincipal().getAttribute("name");
         System.out.println("User email: " + email);
