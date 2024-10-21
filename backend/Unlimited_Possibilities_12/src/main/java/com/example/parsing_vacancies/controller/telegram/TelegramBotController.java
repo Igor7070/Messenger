@@ -1,6 +1,6 @@
 package com.example.parsing_vacancies.controller.telegram;
 
-import com.example.parsing_vacancies.config.BotConfig;
+import com.example.parsing_vacancies.config.telegram.BotConfig;
 import com.example.parsing_vacancies.model.telegram.UserData;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -16,7 +16,7 @@ import java.util.Map;
 @Component
 public class TelegramBotController extends TelegramLongPollingBot {
     final BotConfig config;
-    private final Map<Long, UserData> userDataMap = new HashMap<>();
+    private static final Map<Long, UserData> userDataMap = new HashMap<>();
 
     public TelegramBotController(BotConfig config) {
         this.config = config;
@@ -53,6 +53,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     break;
                 case WAITING_FOR_AUTHORIZATION:
                     handleAuthorizationResponse(chatId, messageText);
+                    break;
+                case WAITING_FOR_SUCCESS:
+                    success(chatId);
                     break;
                 default:
                     startConversation(chatId);
@@ -194,6 +197,10 @@ public class TelegramBotController extends TelegramLongPollingBot {
         sendMessage(chatId, "Перейдите по предложенной ссылке для авторизации: \n" + authUrl);
     }
 
+    private void success(long chatId){
+        sendMessage(chatId, "Шикарно! Ваш токен доступа: " + userDataMap.get(chatId).getAccessToken());
+    }
+
     public void sendMessage(long chatId, String text) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
@@ -219,5 +226,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
     @Override
     public String getBotToken() {
         return config.getToken();
+    }
+
+    public Map<Long, UserData> getUserDataMap() {
+        return userDataMap;
     }
 }

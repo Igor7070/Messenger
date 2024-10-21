@@ -1,6 +1,7 @@
 package com.example.parsing_vacancies.controller;
 
 import com.example.parsing_vacancies.controller.telegram.TelegramBotController;
+import com.example.parsing_vacancies.model.telegram.UserData;
 import com.example.parsing_vacancies.service.AuthenticationDebugService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -57,12 +58,15 @@ public class AuthController {
                     authentication.getAuthorizedClientRegistrationId(), authentication.getName());
             if (client != null) {
                 String accessToken = client.getAccessToken().getTokenValue();
-                System.out.println("Access Token: " + accessToken); // Вывод токена в консоль
+                System.out.println("Access Token: " + accessToken);
+                long chatIdLong = Long.parseLong(chatId);
+                telegramBotController.sendMessage(chatIdLong, "Вы успешно авторизовались!\nEmail: " + email + "\nИмя: " + name);
+                telegramBotController.getUserDataMap().get(chatIdLong).setAccessToken(accessToken);
+                telegramBotController.getUserDataMap().get(chatIdLong).setState(UserData.State.WAITING_FOR_SUCCESS);
             } else {
                 System.out.println("Client is null, unable to retrieve access token.");
+                return "autorizationFailed";
             }
-            long chatIdLong = Long.parseLong(chatId);
-            telegramBotController.sendMessage(chatIdLong, "Вы успешно авторизовались!\nEmail: " + email + "\nИмя: " + name);
             return "autorizationSuccess";
         }
 

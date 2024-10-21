@@ -1,4 +1,4 @@
-package com.example.parsing_vacancies.config;
+package com.example.parsing_vacancies.config.telegram;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;

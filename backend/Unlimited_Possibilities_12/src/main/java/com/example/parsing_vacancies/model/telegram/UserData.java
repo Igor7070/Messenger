@@ -5,7 +5,7 @@ public class UserData {
     private String position;
     private String city;
     private int countVacancies;
-    private boolean autorization;
+    private String accessToken;
     private State state;
 
     public enum State {
@@ -14,7 +14,8 @@ public class UserData {
         WAITING_FOR_POSITION,
         WAITING_FOR_CITY,
         WAITING_FOR_COUNT,
-        WAITING_FOR_AUTHORIZATION
+        WAITING_FOR_AUTHORIZATION,
+        WAITING_FOR_SUCCESS
     }
 
     public UserData() {
@@ -50,12 +51,12 @@ public class UserData {
         this.countVacancies = countVacancies;
     }
 
-    public boolean isAutorization() {
-        return autorization;
+    public String getAccessToken() {
+        return accessToken;
     }
 
-    public void setAutorization(boolean autorization) {
-        this.autorization = autorization;
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
     }
 
     public State getState() { return state;

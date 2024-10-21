@@ -1,4 +1,4 @@
-package com.example.parsing_vacancies.config;
+package com.example.parsing_vacancies.config.telegram;
 
 import com.example.parsing_vacancies.controller.telegram.TelegramBotController;
 import org.springframework.beans.factory.annotation.Autowired;
