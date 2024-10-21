@@ -100,29 +100,6 @@ public class TelegramBotController extends TelegramLongPollingBot {
         }
     }
 
-    public static void main(String[] args) {
-        String messageText = "____ .....  Work.ua ....;;;;:::___и   Rabota.ua ..... ___  ";
-        String cleanedMessage = messageText.trim()
-                .replaceAll("[\\s]+", " ") // Заменяем несколько пробелов на один
-                .replaceAll("([.,;:_])+\\s*", " ") // Заменяем последовательности знаков (.,;) на пробел
-                .replaceAll("\\s*([.,;:_])\\s*", " ") // Убираем пробелы вокруг знаков (.,;)
-                .replaceAll("(?<!\\w)([.,;:_])+", "") // Убираем знаки в начале строки
-                .replaceAll("(Work\\.+ua|Rabota\\.+ua)", "$1") // Оставляем строки с много точками
-                .replaceAll("(Work\\.+)(ua)", "Work.ua") // Заменяем много точек на одну
-                .replaceAll("(Rabota\\.+)(ua)", "Rabota.ua"); // Заменяем много точек на одну
-
-        // Заменяем пробелы между Work и ua, и между Rabota и ua на точку
-        cleanedMessage = cleanedMessage.replaceAll("(Work)\\s+(ua)", "$1.ua")
-                .replaceAll("(Rabota)\\s+(ua)", "$1.ua").trim();
-        // Заменяем множественные пробелы между Work.ua и Rabota.ua на один пробел
-        cleanedMessage = cleanedMessage.replaceAll("(Work\\.ua)\\s+(Rabota\\.ua)", "$1 $2");
-        // Добавляем точки, если они отсутствуют
-        cleanedMessage = cleanedMessage.replaceAll("(Work)(ua)", "Work.ua")
-                .replaceAll("(Rabota)(ua)", "Rabota.ua");
-
-        System.out.println(cleanedMessage);
-    }
-
     private void handlePositionSelection(long chatId, String messageText) {
         userDataMap.get(chatId).setPosition(messageText);
         userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_CITY);
@@ -132,14 +109,22 @@ public class TelegramBotController extends TelegramLongPollingBot {
     private void handleCitySelection(long chatId, String messageText) {
         // Очищаем строку от лишних пробелов и знаков препинания
         String cleanedMessage = messageText.trim()
-                .replaceAll("^[\\W_]+|[\\W_]+$", ""); // Удаляем знаки препинания до и после слова
+                .replaceAll("[\\s,;:_]+", " ") // Заменяем пробелы и знаки на пробел
+                .replaceAll("[^\\w\\u0400-\\u04FF]", "") // Удаляем все, кроме букв и цифр
+                .replaceAll("[\\s]+", " "); // Удаляем лишние пробелы
 
         // Список допустимых городов на украинском и английском
         List<String> validCities = Arrays.asList(
                 "Киев", "Харьков", "Одесса", "Днепр",
                 "Київ", "Харків", "Одеса", "Дніпро",
-                "Kyiv", "Kharkiv", "Odesa", "Dnipro"
+                "Kiev", "Kyiv", "Kharkiv", "Odesa", "Dnipro"
         );
+
+        String[] words = cleanedMessage.split(" ");
+        if (words.length != 1) {
+            sendMessage(chatId, "Пожалуйста, введите только один город.");
+            return;
+        }
 
         // Проверка, соответствует ли введенный город одному из допустимых
         if (validCities.stream().anyMatch(city -> city.equalsIgnoreCase(cleanedMessage))) {
@@ -166,7 +151,10 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     private void handleAuthorizationResponse(long chatId, String messageText) {
         // Очищаем строку от лишних пробелов и знаков препинания
-        String cleanedMessage = messageText.trim().replaceAll("^[\\W_]+|[\\W_]+$", "");
+        String cleanedMessage = messageText.trim()
+                .replaceAll("[\\s,;:_]+", " ") // Заменяем пробелы и знаки на пробел
+                .replaceAll("[^\\w\\u0400-\\u04FF]", "") // Удаляем все, кроме букв и цифр
+                .replaceAll("[\\s]+", " "); // Удаляем лишние пробелы
 
         // Список допустимых ответов
         List<String> validResponses = Arrays.asList(
@@ -174,6 +162,12 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 "yes", "no", // на английском
                 "так", "ні" // на украинском
         );
+
+        String[] words = cleanedMessage.split(" ");
+        if (words.length != 1) {
+            sendMessage(chatId, "Пожалуйста, введите что то одно.");
+            return;
+        }
 
         // Проверяем, соответствует ли введенный ответ одному из допустимых
         if (validResponses.stream().anyMatch(response -> response.equalsIgnoreCase(cleanedMessage))) {
