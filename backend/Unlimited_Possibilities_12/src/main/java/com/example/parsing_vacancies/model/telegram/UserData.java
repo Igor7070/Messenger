@@ -15,6 +15,8 @@ public class UserData {
     private boolean enableAI;
     private int numberEducationalInstitutions;
     private int currentEducationalInstitution; // Индекс текущего учебного заведения
+    private int numberJobs;
+    private int currentJob; // Индекс текущего места работы
     private Resume resume;
 
     public enum State {
@@ -34,7 +36,10 @@ public class UserData {
         WAITING_FOR_RESUME_EDUCATION_NAME,
         WAITING_FOR_RESUME_EDUCATION_SPECIALITY,
         WAITING_FOR_RESUME_EDUCATION_YEARS,
-        WAITING_FOR_RESUME_EXPERIENCE,
+        WAITING_FOR_RESUME_EXPERIENCE_QUANTITY,
+        WAITING_FOR_RESUME_EXPERIENCE_NAME,
+        WAITING_FOR_RESUME_EXPERIENCE_POSITION,
+        WAITING_FOR_RESUME_EXPERIENCE_YEARS,
         WAITING_FOR_RESUME_LANGUAGES,
         WAITING_FOR_RESUME_SKILLS_AND_ABILITIES,
         WAITING_FOR_RESUME_ACHIEVEMENTS
@@ -134,6 +139,22 @@ public class UserData {
 
     public void setCurrentEducationalInstitution(int currentEducationalInstitution) {
         this.currentEducationalInstitution = currentEducationalInstitution;
+    }
+
+    public int getNumberJobs() {
+        return numberJobs;
+    }
+
+    public void setNumberJobs(int numberJobs) {
+        this.numberJobs = numberJobs;
+    }
+
+    public int getCurrentJob() {
+        return currentJob;
+    }
+
+    public void setCurrentJob(int currentJob) {
+        this.currentJob = currentJob;
     }
 
     public Resume getResume() {

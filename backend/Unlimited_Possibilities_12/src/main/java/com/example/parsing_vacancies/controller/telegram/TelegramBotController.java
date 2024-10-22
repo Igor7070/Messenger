@@ -3,6 +3,7 @@ package com.example.parsing_vacancies.controller.telegram;
 import com.example.parsing_vacancies.config.telegram.BotConfig;
 import com.example.parsing_vacancies.model.resume.Education;
 import com.example.parsing_vacancies.model.resume.Resume;
+import com.example.parsing_vacancies.model.resume.WorkExperience;
 import com.example.parsing_vacancies.model.telegram.UserData;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -93,6 +94,18 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     break;
                 case WAITING_FOR_RESUME_EDUCATION_YEARS:
                     handleResumeEducationYears(chatId, messageText);
+                    break;
+                case WAITING_FOR_RESUME_EXPERIENCE_QUANTITY:
+                    handleResumeExperienceQuantity(chatId, messageText);
+                    break;
+                case WAITING_FOR_RESUME_EXPERIENCE_NAME:
+                    handleResumeExperienceName(chatId, messageText);
+                    break;
+                case WAITING_FOR_RESUME_EXPERIENCE_POSITION:
+                    handleResumeExperiencePosition(chatId, messageText);
+                    break;
+                case WAITING_FOR_RESUME_EXPERIENCE_YEARS:
+                    handleResumeExperienceYears(chatId, messageText);
                     break;
                 default:
                     startConversation(chatId);
@@ -375,8 +388,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
             int numberEducationalInstitutions = Integer.parseInt(messageText);
             userDataMap.get(chatId).setNumberEducationalInstitutions(numberEducationalInstitutions);
             if (numberEducationalInstitutions == 0) {
-                userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_EXPERIENCE);
+                userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_EXPERIENCE_QUANTITY);
                 sendMessage(chatId, "Понял, вы не окончили ни одного учебного заведения. Принято!");
+                sendMessage(chatId, "Укажите количество мест работы где вы работали?");
             } else {
                 userDataMap.get(chatId).setCurrentEducationalInstitution(0); // Начинаем с первого учебного заведения
                 userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_EDUCATION_NAME);
@@ -396,7 +410,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
         userDataMap.get(chatId).getResume().getEducationList().add(education); // Добавляем учебное заведение
 
         userData.setState(UserData.State.WAITING_FOR_RESUME_EDUCATION_SPECIALITY);
-        sendMessage(chatId, "Какая специальность заведения номер "
+        sendMessage(chatId, "Укажите вашу специальность в учебном заведении номер "
                 + (userDataMap.get(chatId).getCurrentEducationalInstitution() + 1) + "?");
     }
 
@@ -406,7 +420,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
         education.setSpecialization(messageText);
 
         userData.setState(UserData.State.WAITING_FOR_RESUME_EDUCATION_YEARS);
-        sendMessage(chatId, "Укажите годы обучения заведения номер " + (userData.getCurrentEducationalInstitution() + 1) + "?");
+        sendMessage(chatId, "Укажите годы обучения в учебном заведении номер " + (userData.getCurrentEducationalInstitution() + 1) + "?");
     }
 
     private void handleResumeEducationYears(long chatId, String messageText) {
@@ -422,8 +436,78 @@ public class TelegramBotController extends TelegramLongPollingBot {
             userData.setState(UserData.State.WAITING_FOR_RESUME_EDUCATION_NAME);
             sendMessage(chatId, "Введите название учебного заведения номер " + (userData.getCurrentEducationalInstitution() + 1) + ", которое вы окончили:");
         } else {
-            userData.setState(UserData.State.WAITING_FOR_RESUME_EXPERIENCE);
-            sendMessage(chatId, "Спасибо! Информация о вашем образовании сохранена. Переходим к следующему этапу.");
+            userData.setState(UserData.State.WAITING_FOR_RESUME_EXPERIENCE_QUANTITY);
+            sendMessage(chatId, "Спасибо! Информация о вашем образовании сохранена. Переходим к вашему опыту работы.");
+            sendMessage(chatId, "Укажите количество мест работы где вы работали?");
+        }
+    }
+
+    private void handleResumeExperienceQuantity(long chatId, String messageText) {
+        try {
+            int numberJobs = Integer.parseInt(messageText);
+            userDataMap.get(chatId).setNumberJobs(numberJobs);
+            if (numberJobs == 0) {
+                userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_LANGUAGES);
+                sendMessage(chatId, "Понятно, вы еще нигде не работали. Принял! " +
+                        "Теперь разберемся с вашими навыками и опытом. " +
+                        "Если вы выбрали создание резюме при участии ИИ, то можете и не заполнять " +
+                        "дальнейшие пункты, если доверяете технологиям. Здесь на ваше усмотрение.");
+                sendMessage(chatId, "Итак переходим к последнему этапу касающегося ваших способностей. " +
+                        "Укажите языки которыми вы владеете? Если желаете пропустить для автоматического " +
+                        "заполнения нажмите 'N'.");
+            } else {
+                userDataMap.get(chatId).setCurrentJob(0); // Начинаем с первого места работы
+                userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_EXPERIENCE_NAME);
+                sendMessage(chatId, "Введите название компании номер "
+                        + (userDataMap.get(chatId).getCurrentJob() + 1) +
+                        ", где вы работали:");
+            }
+        } catch (NumberFormatException e) {
+            sendMessage(chatId, "Пожалуйста, введите число.");
+        }
+    }
+
+    private void handleResumeExperienceName(long chatId, String messageText) {
+        UserData userData = userDataMap.get(chatId);
+        WorkExperience workExperience = new WorkExperience();
+        workExperience.setCompanyName(messageText);
+        userDataMap.get(chatId).getResume().getWorkExperienceList().add(workExperience); // Добавляем место работы
+
+        userData.setState(UserData.State.WAITING_FOR_RESUME_EXPERIENCE_POSITION);
+        sendMessage(chatId, "Укажите вашу должность в компании номер "
+                + (userDataMap.get(chatId).getCurrentJob() + 1) + "?");
+    }
+
+    private void handleResumeExperiencePosition(long chatId, String messageText) {
+        UserData userData = userDataMap.get(chatId);
+        WorkExperience workExperience = userData.getResume().getWorkExperienceList().get(userData.getCurrentJob());
+        workExperience.setPosition(messageText);
+
+        userData.setState(UserData.State.WAITING_FOR_RESUME_EXPERIENCE_YEARS);
+        sendMessage(chatId, "Укажите годы работы в компании номер " + (userData.getCurrentJob() + 1) + "?");
+    }
+
+    private void handleResumeExperienceYears(long chatId, String messageText) {
+        UserData userData = userDataMap.get(chatId);
+        WorkExperience workExperience = userData.getResume().getWorkExperienceList().get(userData.getCurrentJob());
+        workExperience.setPeriod(messageText); // Сохраняем годы работы
+
+        // Увеличиваем индекс текущего места работы
+        userData.setCurrentJob(userData.getCurrentJob() + 1);
+
+        // Проверяем, есть ли еще места работы для ввода
+        if (userData.getCurrentJob() < userData.getNumberJobs()) {
+            userData.setState(UserData.State.WAITING_FOR_RESUME_EXPERIENCE_NAME);
+            sendMessage(chatId, "Введите название компании номер " + (userData.getCurrentJob() + 1) + ", где вы работали:");
+        } else {
+            userData.setState(UserData.State.WAITING_FOR_RESUME_LANGUAGES);
+            sendMessage(chatId, "Отлично! Информация о вашем опыте работы сохранена. " +
+                    "Теперь разберемся с вашими навыками и опытом. " +
+                    "Если вы выбрали создание резюме при участии ИИ, то можете и не заполнять дальнейшие" +
+                    "пункты, если доверяете технологиям. Здесь на ваше усмотрение.");
+            sendMessage(chatId, "Итак переходим к последнему этапу касающегося ваших способностей. " +
+                    "Укажите языки которыми вы владеете? Если желаете пропустить для автоматического " +
+                    "заполнения нажмите 'N'.");
         }
     }
 
