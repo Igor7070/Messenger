@@ -4,14 +4,15 @@ import com.example.parsing_vacancies.config.telegram.BotConfig;
 import com.example.parsing_vacancies.model.telegram.UserData;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class TelegramBotController extends TelegramLongPollingBot {
@@ -25,7 +26,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update) {
         System.out.println("Method onUpdateReceived is working...");
-        if (update.hasMessage() && update.getMessage().hasText()) {
+        if (update.hasCallbackQuery()) {
+            handleCallbackQuery(update.getCallbackQuery());
+        } else if (update.hasMessage() && update.getMessage().hasText()) {
             long chatId = update.getMessage().getChatId();
             String messageText = update.getMessage().getText();
             System.out.println(String.format("Received message: {%s} from chatId: {%d}", messageText,
@@ -34,6 +37,11 @@ public class TelegramBotController extends TelegramLongPollingBot {
             userDataMap.putIfAbsent(chatId, new UserData());
 
             UserData userData = userDataMap.get(chatId);
+
+            if ("/start".equals(messageText)) {
+                sendWelcomeMessage(chatId);
+                return;
+            }
 
             switch (userData.getState()) {
                 case WAITING_FOR_START:
@@ -64,11 +72,52 @@ public class TelegramBotController extends TelegramLongPollingBot {
         }
     }
 
+    private void sendWelcomeMessage(long chatId) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> buttons = new ArrayList<>();
+
+        InlineKeyboardButton searchJobButton = new InlineKeyboardButton();
+        searchJobButton.setText("Поиск работы");
+        searchJobButton.setCallbackData("start_job_search"); // Идентификатор для обработки
+
+        List<InlineKeyboardButton> row = new ArrayList<>();
+        row.add(searchJobButton);
+        buttons.add(row);
+
+        markup.setKeyboard(buttons);
+
+        sendMessage(chatId, "Вас приветствует бот UnlimitedPossibilities12! Выберите кнопку ниже для выполнения интересующей вас функции.");
+    }
+
+    private void handleCallbackQuery(CallbackQuery callbackQuery) {
+        long chatId = callbackQuery.getMessage().getChatId();
+        String callbackData = callbackQuery.getData();
+
+        if ("start_job_search".equals(callbackData)) {
+            // Начинаем диалог
+            startConversation(chatId);
+            answerCallbackQuery(callbackQuery.getId(), "Вы начали поиск работы.");
+        }
+    }
+
+    private void answerCallbackQuery(String callbackQueryId, String text) {
+        AnswerCallbackQuery answer = new AnswerCallbackQuery();
+        answer.setCallbackQueryId(callbackQueryId);
+        answer.setText(text);
+        answer.setShowAlert(false);
+
+        try {
+            execute(answer);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void startConversation(long chatId) {
         userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_SITE);
-        sendMessage(chatId, "Вас приветствует бот UnlimitedPossibilities12!" +
-                " Я предназначен для помощи в поиске работы, все за вас сделаю," +
-                " от вас только несколько минут времени для сбора информации и найдем вам работу." +
+        sendMessage(chatId, "Вы выбрали опцию 'Поиск работы'!" +
+                " Я помогу вам в поиске работы, все за вас сделаю," +
+                " от вас нужно только несколько минут времени для сбора информации и найдем вам работу." +
                 " Потому начнем...");
         sendMessage(chatId, "С какого сайта(ов) вы хотите искать вакансии? (Work.ua или(и)" +
                 " Rabota.ua)");
@@ -215,7 +264,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 "так", "ні" // на украинском
         );
 
-        String[] words = cleanedMessage.split(" ");//
+        String[] words = cleanedMessage.split(" ");
         if (words.length != 1) {
             sendMessage(chatId, "Пожалуйста, введите что то одно.");
             return;
