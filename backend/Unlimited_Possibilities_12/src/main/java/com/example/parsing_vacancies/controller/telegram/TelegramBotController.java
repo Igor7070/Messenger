@@ -215,7 +215,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 "так", "ні" // на украинском
         );
 
-        String[] words = cleanedMessage.split(" ");
+        String[] words = cleanedMessage.split(" ");//
         if (words.length != 1) {
             sendMessage(chatId, "Пожалуйста, введите что то одно.");
             return;
