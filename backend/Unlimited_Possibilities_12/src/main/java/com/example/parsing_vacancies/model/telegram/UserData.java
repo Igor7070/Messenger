@@ -1,5 +1,7 @@
 package com.example.parsing_vacancies.model.telegram;
 
+import com.example.parsing_vacancies.model.resume.Resume;
+
 public class UserData {
     private String site;
     private String position;
@@ -11,6 +13,7 @@ public class UserData {
     private String firstName;
     private String lastName;
     private boolean enableAI;
+    private Resume resume = new Resume();
 
     public enum State {
         WAITING_FOR_START,
@@ -110,6 +113,14 @@ public class UserData {
 
     public void setEnableAI(boolean enableAI) {
         this.enableAI = enableAI;
+    }
+
+    public Resume getResume() {
+        return resume;
+    }
+
+    public void setResume(Resume resume) {
+        this.resume = resume;
     }
 
     @Override

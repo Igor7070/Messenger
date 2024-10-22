@@ -65,6 +65,15 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 case WAITING_FOR_RESUME_ENABLE_AI:
                     handleResumeEnableAI(chatId, messageText);
                     break;
+                case WAITING_FOR_RESUME_FULLNAME:
+                    handleResumeFullName(chatId, messageText);
+                    break;
+                case WAITING_FOR_RESUME_EMAIL:
+                    handleResumeEmail(chatId, messageText);
+                    break;
+                case WAITING_FOR_RESUME_PHONE:
+                    handleResumePhone(chatId, messageText);
+                    break;
                 default:
                     startConversation(chatId);
                     break;
@@ -86,21 +95,33 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
         markup.setKeyboard(buttons);
 
-        sendMessage(chatId, "Вас приветствует бот UnlimitedPossibilities12! Выберите кнопку ниже для выполнения интересующей вас функции.");
+        SendMessage message = new SendMessage();
+        message.setChatId(String.valueOf(chatId));
+        message.setText("Вас приветствует бот UnlimitedPossibilities12! Выберите кнопку ниже для выполнения интересующей вас функции.");
+        message.setReplyMarkup(markup);
+
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
     }
 
     private void handleCallbackQuery(CallbackQuery callbackQuery) {
+        System.out.println("Method handleCallbackQuery is working...");
         long chatId = callbackQuery.getMessage().getChatId();
         String callbackData = callbackQuery.getData();
 
         if ("start_job_search".equals(callbackData)) {
             // Начинаем диалог
+            System.out.println("The job search button has been pressed");
             startConversation(chatId);
             answerCallbackQuery(callbackQuery.getId(), "Вы начали поиск работы.");
         }
     }
 
     private void answerCallbackQuery(String callbackQueryId, String text) {
+        System.out.println("Method answerCallbackQuery is working...");
         AnswerCallbackQuery answer = new AnswerCallbackQuery();
         answer.setCallbackQueryId(callbackQueryId);
         answer.setText(text);
@@ -276,13 +297,43 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 userDataMap.get(chatId).setEnableAI(true);
                 userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_FULLNAME);
                 sendMessage(chatId, "Отличный выбор! Благодаря участию ИИ ваше резюме будет бесподобно и полноценно!");
+                sendMessage(chatId, "Теперь нужны данные для резюме. Укажите ваше полное имя?");
             } else {
                 userDataMap.get(chatId).setEnableAI(true);
                 userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_FULLNAME);
                 sendMessage(chatId, "Вы отказались от участия ИИ. Ничего, разберемся и без него!");
+                sendMessage(chatId, "Теперь нужны данные для резюме. Укажите ваше полное имя?");
             }
         } else {
             sendMessage(chatId, "Вы ввели некорректные данные. Пожалуйста, введите 'Да', 'Нет', 'Yes', 'No', 'Так' или 'Ні'.");
+        }
+    }
+
+    private void handleResumeFullName(long chatId, String messageText) {
+        userDataMap.get(chatId).getResume().setFullName(messageText);
+        userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_EMAIL);
+        sendMessage(chatId, "Отлично, теперь перейдем к контактным данным. Укажите ваш mail?");
+    }
+
+    private void handleResumeEmail(long chatId, String messageText) {
+        String emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
+        if (messageText.matches(emailRegex)) {
+            userDataMap.get(chatId).getResume().setEmail(messageText);
+            userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_PHONE);
+            sendMessage(chatId, "Укажите ваш контактный телефон?");
+        } else {
+            sendMessage(chatId, "Пожалуйста, введите корректный адрес электронной почты.");
+        }
+    }
+
+    private void handleResumePhone(long chatId, String messageText) {
+        String phoneRegex = "^\\+?38?\\s*\\(?0\\d{2}\\)?[\\s-]?\\d{3}[\\s-]?\\d{2}[\\s-]?\\d{2}$";
+        if (messageText.trim().matches(phoneRegex)) {
+            userDataMap.get(chatId).getResume().setEmail(messageText);
+            userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_CITY);
+            sendMessage(chatId, "Укажите ваш город проживания?");
+        } else {
+            sendMessage(chatId, "Пожалуйста, введите корректный номер телефона.");
         }
     }
 
