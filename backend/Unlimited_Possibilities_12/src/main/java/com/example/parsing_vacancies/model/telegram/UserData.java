@@ -13,7 +13,7 @@ public class UserData {
     private String firstName;
     private String lastName;
     private boolean enableAI;
-    private Resume resume = new Resume();
+    private Resume resume;
 
     public enum State {
         WAITING_FOR_START,

@@ -1,6 +1,8 @@
 package com.example.parsing_vacancies.controller.telegram;
 
 import com.example.parsing_vacancies.config.telegram.BotConfig;
+import com.example.parsing_vacancies.model.resume.Education;
+import com.example.parsing_vacancies.model.resume.Resume;
 import com.example.parsing_vacancies.model.telegram.UserData;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -73,6 +75,15 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     break;
                 case WAITING_FOR_RESUME_PHONE:
                     handleResumePhone(chatId, messageText);
+                    break;
+                case WAITING_FOR_RESUME_CITY:
+                    handleResumeCity(chatId, messageText);
+                    break;
+                case WAITING_FOR_RESUME_PURPOSE_JOB_SEARCH:
+                    handleResumePurposeJobSearch(chatId, messageText);
+                    break;
+                case WAITING_FOR_RESUME_EDUCATION:
+                    handleResumeEducation(chatId, messageText);
                     break;
                 default:
                     startConversation(chatId);
@@ -310,6 +321,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
     }
 
     private void handleResumeFullName(long chatId, String messageText) {
+        userDataMap.get(chatId).setResume(new Resume());
         userDataMap.get(chatId).getResume().setFullName(messageText);
         userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_EMAIL);
         sendMessage(chatId, "Отлично, теперь перейдем к контактным данным. Укажите ваш mail?");
@@ -329,11 +341,40 @@ public class TelegramBotController extends TelegramLongPollingBot {
     private void handleResumePhone(long chatId, String messageText) {
         String phoneRegex = "^\\+?38?\\s*\\(?0\\d{2}\\)?[\\s-]?\\d{3}[\\s-]?\\d{2}[\\s-]?\\d{2}$";
         if (messageText.trim().matches(phoneRegex)) {
-            userDataMap.get(chatId).getResume().setEmail(messageText);
+            userDataMap.get(chatId).getResume().setPhone(messageText);
             userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_CITY);
             sendMessage(chatId, "Укажите ваш город проживания?");
         } else {
             sendMessage(chatId, "Пожалуйста, введите корректный номер телефона.");
+        }
+    }
+
+    private void handleResumeCity(long chatId, String messageText) {
+        userDataMap.get(chatId).getResume().setCity(messageText);
+        userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_PURPOSE_JOB_SEARCH);
+        sendMessage(chatId, "Контактные данные собраны. Теперь укажите вашу цель поиска работы?");
+    }
+
+    private void handleResumePurposeJobSearch(long chatId, String messageText) {
+        userDataMap.get(chatId).getResume().setObjective(messageText);
+        userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_EDUCATION);
+        sendMessage(chatId, "Ваша цель ясна. Теперь займемся вашим образованием. Укажите количество" +
+                " учебных заведений, которые вы окончили?");
+    }
+
+    private void handleResumeEducation(long chatId, String messageText) {
+        try {
+            int numberEducationalInstitutions = Integer.parseInt(messageText);
+            if (numberEducationalInstitutions == 0) {
+                userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_EXPERIENCE);
+                sendMessage(chatId, "Понял, вы не окончили ни одного учебного заведения. Принято!");
+            }
+            for (int i = 0; i < numberEducationalInstitutions; i++) {
+                Education education = new Education();
+
+            }
+        } catch (NumberFormatException e) {
+            sendMessage(chatId, "Пожалуйста, введите число.");
         }
     }
 
