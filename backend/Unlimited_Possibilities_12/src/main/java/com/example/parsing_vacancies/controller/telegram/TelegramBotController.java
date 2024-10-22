@@ -82,8 +82,14 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 case WAITING_FOR_RESUME_PURPOSE_JOB_SEARCH:
                     handleResumePurposeJobSearch(chatId, messageText);
                     break;
-                case WAITING_FOR_RESUME_EDUCATION:
-                    handleResumeEducation(chatId, messageText);
+                case WAITING_FOR_RESUME_EDUCATION_QUANTITY:
+                    handleResumeEducationQuantity(chatId, messageText);
+                    break;
+                case WAITING_FOR_RESUME_EDUCATION_NAME:
+                    handleResumeEducationName(chatId, messageText);
+                    break;
+                case WAITING_FOR_RESUME_EDUCATION_SPECIALITY:
+                    handleResumeEducationSpeciality(chatId, messageText);
                     break;
                 default:
                     startConversation(chatId);
@@ -147,8 +153,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     private void startConversation(long chatId) {
         userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_SITE);
-        sendMessage(chatId, "Вы выбрали опцию 'Поиск работы'!" +
-                " Я помогу вам в поиске работы, все за вас сделаю," +
+        sendMessage(chatId, "Я помогу вам в поиске работы, все за вас сделаю," +
                 " от вас нужно только несколько минут времени для сбора информации и найдем вам работу." +
                 " Потому начнем...");
         sendMessage(chatId, "С какого сайта(ов) вы хотите искать вакансии? (Work.ua или(и)" +
@@ -357,24 +362,65 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     private void handleResumePurposeJobSearch(long chatId, String messageText) {
         userDataMap.get(chatId).getResume().setObjective(messageText);
-        userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_EDUCATION);
+        userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_EDUCATION_QUANTITY);
         sendMessage(chatId, "Ваша цель ясна. Теперь займемся вашим образованием. Укажите количество" +
                 " учебных заведений, которые вы окончили?");
     }
 
-    private void handleResumeEducation(long chatId, String messageText) {
+    private void handleResumeEducationQuantity(long chatId, String messageText) {
         try {
             int numberEducationalInstitutions = Integer.parseInt(messageText);
+            userDataMap.get(chatId).setNumberEducationalInstitutions(numberEducationalInstitutions);
             if (numberEducationalInstitutions == 0) {
                 userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_EXPERIENCE);
                 sendMessage(chatId, "Понял, вы не окончили ни одного учебного заведения. Принято!");
-            }
-            for (int i = 0; i < numberEducationalInstitutions; i++) {
-                Education education = new Education();
-
+            } else {
+                userDataMap.get(chatId).setCurrentEducationalInstitution(0); // Начинаем с первого учебного заведения
+                userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_EDUCATION_NAME);
+                sendMessage(chatId, "Введите название учебного заведения номер "
+                        + (userDataMap.get(chatId).getCurrentEducationalInstitution() + 1) +
+                        ", которое вы окончили:");
             }
         } catch (NumberFormatException e) {
             sendMessage(chatId, "Пожалуйста, введите число.");
+        }
+    }
+
+    private void handleResumeEducationName(long chatId, String messageText) {
+        UserData userData = userDataMap.get(chatId);
+        Education education = new Education();
+        education.setInstitutionName(messageText);
+        userDataMap.get(chatId).getResume().getEducationList().add(education); // Добавляем учебное заведение
+
+        userData.setState(UserData.State.WAITING_FOR_RESUME_EDUCATION_SPECIALITY);
+        sendMessage(chatId, "Какая специальность заведения номер "
+                + (userDataMap.get(chatId).getCurrentEducationalInstitution() + 1) + "?");
+    }
+
+    private void handleResumeEducationSpeciality(long chatId, String messageText) {
+        UserData userData = userDataMap.get(chatId);
+        Education education = userData.getResume().getEducationList().get(userData.getCurrentEducationalInstitution());
+        education.setSpecialization(messageText);
+
+        userData.setState(UserData.State.WAITING_FOR_RESUME_EDUCATION_YEARS);
+        sendMessage(chatId, "Укажите годы обучения заведения номер " + (userData.getCurrentEducationalInstitution() + 1) + "?");
+    }
+
+    private void handleResumeEducationYears(long chatId, String messageText) {
+        UserData userData = userDataMap.get(chatId);
+        Education education = userData.getResume().getEducationList().get(userData.getCurrentEducationalInstitution());
+        education.setYears(messageText); // Сохраняем годы обучения
+
+        // Увеличиваем индекс текущего учебного заведения
+        userData.setCurrentEducationalInstitution(userData.getCurrentEducationalInstitution() + 1);
+
+        // Проверяем, есть ли еще учебные заведения для ввода
+        if (userData.getCurrentEducationalInstitution() < userData.getNumberEducationalInstitutions()) {
+            userData.setState(UserData.State.WAITING_FOR_RESUME_EDUCATION_NAME);
+            sendMessage(chatId, "Введите название учебного заведения номер " + (userData.getCurrentEducationalInstitution() + 1) + ", которое вы окончили:");
+        } else {
+            userData.setState(UserData.State.WAITING_FOR_RESUME_EXPERIENCE);
+            sendMessage(chatId, "Спасибо! Информация о вашем образовании сохранена. Переходим к следующему этапу.");
         }
     }
 

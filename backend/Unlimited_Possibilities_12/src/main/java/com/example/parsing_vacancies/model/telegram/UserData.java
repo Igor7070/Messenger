@@ -13,6 +13,8 @@ public class UserData {
     private String firstName;
     private String lastName;
     private boolean enableAI;
+    private int numberEducationalInstitutions;
+    private int currentEducationalInstitution; // Индекс текущего учебного заведения
     private Resume resume;
 
     public enum State {
@@ -28,7 +30,10 @@ public class UserData {
         WAITING_FOR_RESUME_PHONE,
         WAITING_FOR_RESUME_CITY,
         WAITING_FOR_RESUME_PURPOSE_JOB_SEARCH,
-        WAITING_FOR_RESUME_EDUCATION,
+        WAITING_FOR_RESUME_EDUCATION_QUANTITY,
+        WAITING_FOR_RESUME_EDUCATION_NAME,
+        WAITING_FOR_RESUME_EDUCATION_SPECIALITY,
+        WAITING_FOR_RESUME_EDUCATION_YEARS,
         WAITING_FOR_RESUME_EXPERIENCE,
         WAITING_FOR_RESUME_LANGUAGES,
         WAITING_FOR_RESUME_SKILLS_AND_ABILITIES,
@@ -113,6 +118,22 @@ public class UserData {
 
     public void setEnableAI(boolean enableAI) {
         this.enableAI = enableAI;
+    }
+
+    public int getNumberEducationalInstitutions() {
+        return numberEducationalInstitutions;
+    }
+
+    public void setNumberEducationalInstitutions(int numberEducationalInstitutions) {
+        this.numberEducationalInstitutions = numberEducationalInstitutions;
+    }
+
+    public int getCurrentEducationalInstitution() {
+        return currentEducationalInstitution;
+    }
+
+    public void setCurrentEducationalInstitution(int currentEducationalInstitution) {
+        this.currentEducationalInstitution = currentEducationalInstitution;
     }
 
     public Resume getResume() {
