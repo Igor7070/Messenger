@@ -91,6 +91,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 case WAITING_FOR_RESUME_EDUCATION_SPECIALITY:
                     handleResumeEducationSpeciality(chatId, messageText);
                     break;
+                case WAITING_FOR_RESUME_EDUCATION_YEARS:
+                    handleResumeEducationYears(chatId, messageText);
+                    break;
                 default:
                     startConversation(chatId);
                     break;
