@@ -94,4 +94,20 @@ public class Resume {
     public void setAchievements(String achievements) {
         this.achievements = achievements;
     }
+
+    @Override
+    public String toString() {
+        return "Resume{" +
+                "fullName='" + fullName + '\'' +
+                ", email='" + email + '\'' +
+                ", phone='" + phone + '\'' +
+                ", city='" + city + '\'' +
+                ", objective='" + objective + '\'' +
+                ", educationList=" + educationList +
+                ", workExperienceList=" + workExperienceList +
+                ", languages='" + languages + '\'' +
+                ", skills='" + skills + '\'' +
+                ", achievements='" + achievements + '\'' +
+                '}';
+    }
 }

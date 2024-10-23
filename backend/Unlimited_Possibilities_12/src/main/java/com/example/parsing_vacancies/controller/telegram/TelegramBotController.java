@@ -107,6 +107,15 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 case WAITING_FOR_RESUME_EXPERIENCE_YEARS:
                     handleResumeExperienceYears(chatId, messageText);
                     break;
+                case WAITING_FOR_RESUME_LANGUAGES:
+                    handleResumeLanguages(chatId, messageText);
+                    break;
+                case WAITING_FOR_RESUME_SKILLS_AND_ABILITIES:
+                    handleResumeSkillsAndAbilities(chatId, messageText);
+                    break;
+                case WAITING_FOR_RESUME_ACHIEVEMENTS:
+                    handleResumeAchievements(chatId, messageText);
+                    break;
                 default:
                     startConversation(chatId);
                     break;
@@ -503,12 +512,33 @@ public class TelegramBotController extends TelegramLongPollingBot {
             userData.setState(UserData.State.WAITING_FOR_RESUME_LANGUAGES);
             sendMessage(chatId, "Отлично! Информация о вашем опыте работы сохранена. " +
                     "Теперь разберемся с вашими навыками и опытом. " +
-                    "Если вы выбрали создание резюме при участии ИИ, то можете и не заполнять дальнейшие" +
+                    "Если вы выбрали создание резюме при участии ИИ, то можете и не заполнять дальнейшие " +
                     "пункты, если доверяете технологиям. Здесь на ваше усмотрение.");
             sendMessage(chatId, "Итак переходим к последнему этапу касающегося ваших способностей. " +
                     "Укажите языки которыми вы владеете? Если желаете пропустить для автоматического " +
                     "заполнения нажмите 'N'.");
         }
+    }
+
+    private void handleResumeLanguages(long chatId, String messageText) {
+        userDataMap.get(chatId).getResume().setLanguages(messageText);
+        userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_SKILLS_AND_ABILITIES);
+        sendMessage(chatId, "С языками ясно. Теперь опишите ваши навыки и способности? Если желаете " +
+                "пропустить для автоматического заполнения нажмите 'N'.");
+    }
+
+    private void handleResumeSkillsAndAbilities(long chatId, String messageText) {
+        userDataMap.get(chatId).getResume().setSkills(messageText);
+        userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_ACHIEVEMENTS);
+        sendMessage(chatId, "Понятно. Теперь опишите ваши личные достижения и награды если есть? " +
+                "Если желаете пропустить для автоматического заполнения нажмите 'N'.");
+    }
+
+    private void handleResumeAchievements(long chatId, String messageText) {
+        userDataMap.get(chatId).getResume().setAchievements(messageText);
+        userDataMap.get(chatId).setState(UserData.State.WAITING_SUCCESS_IN_COMPLETE_INFORMATION_COLLECTION);
+        sendMessage(chatId, "Отлично, вся необходимая информация собрана. Общая информация userData c chatId = " + chatId + ":" +
+                userDataMap.get(chatId));
     }
 
     public void sendMessage(long chatId, String text) {

@@ -305,7 +305,8 @@ public class ResumeController {
                         " Дополнительная информация) для улучшения." +
                         " Перед названиями учебного заведения и названией компании работы" +
                         " пусть всегда будет пустая строка." +
-                        " Резюме можно улучшить не нарушая структуру описанную.",
+                        " Резюме можно улучшить не нарушая структуру описанную. В случае отсутствия" +
+                        " определенных данных, заполни на свое усмотрение соблюдая выше шаблон.",
                 vacancy.getTitle(), vacancy.getCompanyName(), vacancy.getCity(), resume.getFullName(),
                 resume.getPhone(), resume.getCity(), resume.getEmail(), resume.getObjective(),
                 sbEducation, sbWorkExperience, resume.getLanguages(),
@@ -313,6 +314,7 @@ public class ResumeController {
         System.out.println(finalResultQuery);
 
         String responce = "";
+        String purposeWork = "";
         String education = "";
         String workExperience = "";
         String languages = "";
@@ -323,6 +325,7 @@ public class ResumeController {
             responce = openAIService.generateCompletion(finalResultQuery);
             //responce = responceTimeVar;
             System.out.println(responce);
+            purposeWork = extractPurposeWorkSection(responce);
             education = extractEducationSection(responce);
             workExperience = extractExperienceSection(responce);
             languages = extractLanguagesSection(responce);
@@ -346,7 +349,11 @@ public class ResumeController {
 
         // Цель
         addSectionTitle(document, "Цель:", true);
-        addContentToDocument(resume.getObjective(), document, false);
+        if (isChatGpt) {
+            addPurposeWorkFromChatGpt(document, purposeWork);
+        } else {
+            addContentToDocument(resume.getObjective(), document, false);
+        }
 
         // Образование
         addSectionTitle(document, "Образование:", true);
@@ -561,6 +568,21 @@ public class ResumeController {
         }
     }
 
+    private void addPurposeWorkFromChatGpt(XWPFDocument document, String purposeWork) {
+        String[] purposeWorkLines = purposeWork.split("\n");
+        int i = 0;
+        for (String purposeWorkLine : purposeWorkLines) {
+            XWPFParagraph paragraph = document.createParagraph();
+            if (i != purposeWorkLines.length - 1) {
+                paragraph.setSpacingAfter(0);
+            }
+            XWPFRun run = paragraph.createRun();
+            run.setText(purposeWorkLine.trim());
+            run.setFontSize(12); // Размер шрифта для навыков
+            i++;
+        }
+    }
+
     private void addEducation(XWPFDocument document, List<Education> educationList) {
         int counter = 1;
         for (Education education : educationList) {
@@ -772,6 +794,26 @@ public class ResumeController {
             run.setFontSize(12); // Размер шрифта для навыков
             i++;
         }
+    }
+
+    private static String extractPurposeWorkSection(String resume) {
+        String[] sections = resume.split("Цель");
+        String[] lines = sections[1].split("\n");
+        StringBuilder achievements = new StringBuilder();
+
+        for (String line : lines) {
+            if (line.contains("Образование"))
+                break;
+            if (line.contains("---")) {
+                continue;
+            }
+            line = line.trim();
+            line = line.replace("**", ""); // Удаление выделения
+            if (!(line.length() < 4)) {
+                achievements.append(line).append("\n");
+            }
+        }
+        return achievements.toString().trim();
     }
 
     private static String extractEducationSection(String resume) {

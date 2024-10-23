@@ -42,7 +42,8 @@ public class UserData {
         WAITING_FOR_RESUME_EXPERIENCE_YEARS,
         WAITING_FOR_RESUME_LANGUAGES,
         WAITING_FOR_RESUME_SKILLS_AND_ABILITIES,
-        WAITING_FOR_RESUME_ACHIEVEMENTS
+        WAITING_FOR_RESUME_ACHIEVEMENTS,
+        WAITING_SUCCESS_IN_COMPLETE_INFORMATION_COLLECTION
     }
 
     public UserData() {
@@ -167,10 +168,22 @@ public class UserData {
 
     @Override
     public String toString() {
-        return "Запрос: " +
-                "Сайт='" + site + '\'' +
-                ", Должность='" + position + '\'' +
-                ", Город='" + city + '\'' +
-                ", Количество=" + countVacancies;
+        return "UserData{" +
+                "site='" + site + '\'' +
+                ", position='" + position + '\'' +
+                ", city='" + city + '\'' +
+                ", countVacancies=" + countVacancies +
+                ", state=" + state +
+                ", accessToken='" + accessToken + '\'' +
+                ", emailGoogle='" + emailGoogle + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", enableAI=" + enableAI +
+                ", numberEducationalInstitutions=" + numberEducationalInstitutions +
+                ", currentEducationalInstitution=" + currentEducationalInstitution +
+                ", numberJobs=" + numberJobs +
+                ", currentJob=" + currentJob +
+                ", resume=" + resume +
+                '}';
     }
 }

@@ -28,4 +28,13 @@ public class WorkExperience {
     public void setPeriod(String period) {
         this.period = period;
     }
+
+    @Override
+    public String toString() {
+        return "WorkExperience{" +
+                "companyName='" + companyName + '\'' +
+                ", position='" + position + '\'' +
+                ", period='" + period + '\'' +
+                '}';
+    }
 }

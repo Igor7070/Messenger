@@ -28,4 +28,13 @@ public class Education {
     public void setYears(String years) {
         this.years = years;
     }
+
+    @Override
+    public String toString() {
+        return "Education{" +
+                "institutionName='" + institutionName + '\'' +
+                ", specialization='" + specialization + '\'' +
+                ", years='" + years + '\'' +
+                '}';
+    }
 }
