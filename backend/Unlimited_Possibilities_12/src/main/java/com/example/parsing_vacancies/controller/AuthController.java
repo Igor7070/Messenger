@@ -76,11 +76,12 @@ public class AuthController {
                 telegramBotController.sendMessage(chatIdLong, "Вы успешно авторизовались!\nEmail: " + email + "\nИмя: " + name);
                 telegramBotController.sendMessage(chatIdLong, "Теперь необходимы ваши данные для создания резюме. Будут заданы несклоько вопросов. Итак...\n" +
                         "Желаете ли вы подключить ИИ для создания резюме? При согласии введите 'Да' или 'Нет' в случае отказа.");
+
+                return "telegram/autorizationSuccess";
             } else {
                 System.out.println("Client is null, unable to retrieve access token.");
                 return "telegram/autorizationFailed";
             }
-            return "telegram/autorizationSuccess";
         }
 
         return "redirect:/convenient_job_search?authSuccess=true"; // Перенаправление на домашнюю страницу
