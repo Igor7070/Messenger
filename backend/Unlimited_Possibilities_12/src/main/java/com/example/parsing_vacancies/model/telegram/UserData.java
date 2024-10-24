@@ -18,6 +18,7 @@ public class UserData {
     private int numberJobs;
     private int currentJob; // Индекс текущего места работы
     private Resume resume;
+    private int choiceMethod;
 
     public enum State {
         WAITING_FOR_START,
@@ -43,7 +44,9 @@ public class UserData {
         WAITING_FOR_RESUME_LANGUAGES,
         WAITING_FOR_RESUME_SKILLS_AND_ABILITIES,
         WAITING_FOR_RESUME_ACHIEVEMENTS,
-        WAITING_SUCCESS_IN_COMPLETE_INFORMATION_COLLECTION
+        WAITING_CHOICE_METHOD,
+        WAITING_METHOD1,
+        WAITING_METHOD2
     }
 
     public UserData() {
@@ -164,6 +167,14 @@ public class UserData {
 
     public void setResume(Resume resume) {
         this.resume = resume;
+    }
+
+    public int getChoiceMethod() {
+        return choiceMethod;
+    }
+
+    public void setChoiceMethod(int choiceMethod) {
+        this.choiceMethod = choiceMethod;
     }
 
     @Override

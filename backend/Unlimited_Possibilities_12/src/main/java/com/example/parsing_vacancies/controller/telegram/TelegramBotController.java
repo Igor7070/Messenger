@@ -1,6 +1,7 @@
 package com.example.parsing_vacancies.controller.telegram;
 
 import com.example.parsing_vacancies.config.telegram.BotConfig;
+import com.example.parsing_vacancies.model.Vacancy;
 import com.example.parsing_vacancies.model.resume.Education;
 import com.example.parsing_vacancies.model.resume.Resume;
 import com.example.parsing_vacancies.model.resume.WorkExperience;
@@ -115,6 +116,15 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     break;
                 case WAITING_FOR_RESUME_ACHIEVEMENTS:
                     handleResumeAchievements(chatId, messageText);
+                    break;
+                case WAITING_CHOICE_METHOD:
+                    handleChoiceMethod(chatId, messageText);
+                    break;
+                case WAITING_METHOD1:
+                    handleMethod1(chatId, userData);
+                    break;
+                case WAITING_METHOD2:
+                    handleMethod2(chatId, userData);
                     break;
                 default:
                     startConversation(chatId);
@@ -251,7 +261,8 @@ public class TelegramBotController extends TelegramLongPollingBot {
         if (validCities.stream().anyMatch(city -> city.equalsIgnoreCase(cleanedMessage))) {
             userDataMap.get(chatId).setCity(cleanedMessage);
             userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_COUNT);
-            sendMessage(chatId, "Сколько вакансий вы хотите получить?");
+            sendMessage(chatId, "Сколько вакансий вы хотите получить? Если при выборе поиска сайта " +
+                    "вы указали два сайта, вы получите данное количество вакансий с каждого сайта.");
         } else {
             sendMessage(chatId, "Вы ввели некорректные данные. Пожалуйста, введите один из предложенных городов.");
         }
@@ -259,7 +270,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     private void handleCountSelection(long chatId, String messageText) {
         try {
-            int countVacancies = Integer.parseInt(messageText);
+            int countVacancies = Integer.parseInt(messageText.trim());
             userDataMap.get(chatId).setCountVacancies(countVacancies);
             userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_AUTHORIZATION);
             sendMessage(chatId, "Теперь вам необходимо авторизироваться через Google. При согласии введите 'Да' или 'Нет' в случае отказа.");
@@ -394,7 +405,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     private void handleResumeEducationQuantity(long chatId, String messageText) {
         try {
-            int numberEducationalInstitutions = Integer.parseInt(messageText);
+            int numberEducationalInstitutions = Integer.parseInt(messageText.trim());
             userDataMap.get(chatId).setNumberEducationalInstitutions(numberEducationalInstitutions);
             if (numberEducationalInstitutions == 0) {
                 userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_EXPERIENCE_QUANTITY);
@@ -453,7 +464,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     private void handleResumeExperienceQuantity(long chatId, String messageText) {
         try {
-            int numberJobs = Integer.parseInt(messageText);
+            int numberJobs = Integer.parseInt(messageText.trim());
             userDataMap.get(chatId).setNumberJobs(numberJobs);
             if (numberJobs == 0) {
                 userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_LANGUAGES);
@@ -536,9 +547,72 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     private void handleResumeAchievements(long chatId, String messageText) {
         userDataMap.get(chatId).getResume().setAchievements(messageText);
-        userDataMap.get(chatId).setState(UserData.State.WAITING_SUCCESS_IN_COMPLETE_INFORMATION_COLLECTION);
-        sendMessage(chatId, "Отлично, вся необходимая информация собрана. Общая информация userData c chatId = " + chatId + ":" +
-                userDataMap.get(chatId));
+        userDataMap.get(chatId).setState(UserData.State.WAITING_CHOICE_METHOD);
+        sendMessage(chatId, "Отлично, вся необходимая информация собрана и сохранена. " +
+                "Общая информация userData c chatId = " + chatId + ":" + userDataMap.get(chatId));
+        sendMessage(chatId, "Теперь сделайти выбор, желаете ли вы просмотреть список выбранных " +
+                "вакансий и отправить резюме на конкретно выбранную вакансию, либо автоматически " +
+                "отправить резюме на все полученные вакансии не просматривая их? Если вы выбрали " +
+                "вариант с самостоятельным предварительным просмотром и выбором вакансии для " +
+                "отправки резюме нажмите '1', если вариант автоматической отправки нажмите '2'.");
+    }
+
+    private void handleChoiceMethod(long chatId, String messageText) {
+        try {
+            int choiceMethod = Integer.parseInt(messageText.trim());
+            if (choiceMethod == 1 || choiceMethod == 2) {
+                userDataMap.get(chatId).setChoiceMethod(choiceMethod);
+                if (choiceMethod == 1) {
+                    userDataMap.get(chatId).setState(UserData.State.WAITING_METHOD1);
+                    sendMessage(chatId, "Выбор принят. Ожидайте списка заявленных вакансий. " +
+                            "Подождите немного, процесс может занять до нескольких минут...");
+                } else if (choiceMethod == 2) {
+                    userDataMap.get(chatId).setState(UserData.State.WAITING_METHOD2);
+                }
+            } else {
+                throw new NumberFormatException();
+            }
+        } catch (NumberFormatException e) {
+            sendMessage(chatId, "Пожалуйста, введите '1' или '2' для выбора.");
+        }
+    }
+
+    private void handleMethod1(long chatId, UserData userData) {
+        List<Vacancy> vacancies = new ArrayList<>();
+
+        int countVacancies = userData.getCountVacancies();
+        String site = userData.getSite();
+        String position = userData.getPosition();
+        String city = userData.getCity();
+
+        boolean hasWork = site.toLowerCase().contains("work.ua");
+        boolean hasRabota = site.toLowerCase().contains("rabota.ua");
+
+        if (hasWork && hasRabota) {
+            vacancies = TelegramJobSearch.handleSearch(true, true, countVacancies,
+                    countVacancies, position, city);
+        } else if (hasWork) {
+            vacancies = TelegramJobSearch.handleSearch(true, false, countVacancies,
+                    null, position, city);
+        } else if (hasRabota) {
+            vacancies = TelegramJobSearch.handleSearch(false, true, null,
+                    countVacancies, position, city);
+        }
+
+        sendMessage(chatId, "Заявленный список вакансий:");
+        for (Vacancy vacancy : vacancies) {
+            sendMessage(chatId, "id = " + vacancy.getId() + "\n" +
+                    "Название: " + vacancy.getTitle() + "\n" +
+                    "Компания: " + vacancy.getCompanyName() + "\n" +
+                    "Город, место: " + vacancy.getCity() + "\n" +
+                    "Зарплата: " + vacancy.getSalary() + "\n" +
+                    "Сайт размещения: " + vacancy.getSiteName() + "\n" +
+                    "Ссылка на вакансию: " + vacancy.getUrl());
+        }
+    }
+
+    private void handleMethod2(long chatId, UserData userData) {
+
     }
 
     public void sendMessage(long chatId, String text) {

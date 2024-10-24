@@ -48,13 +48,14 @@ public class WebController {
                                @RequestParam(name = "max-vacancies-work", required = false) Integer maxVacanciesWorkUa,
                                @RequestParam(name = "max-vacancies-rabota", required = false) Integer maxVacanciesRabotaUa,
                                @RequestParam(name = "inputPosition", required = false) String inputPosition,
-                               @RequestParam(name = "city") String city,
+                               @RequestParam(name = "city", required = false) String city,
                                @RequestParam(name = "language", required = false) String language,
                                @RequestParam(name = "timeframe", required = false) String timeframe,
                                Model model) {
-        // Здесь вы можете проверить значения чекбоксов и сформировать результат
+
         List<Provider> providersList = new ArrayList<>();
         String result = "";
+
         if (workUa && rabotaUa) {
             // Обработка выбора Work.ua и Rabota.ua
             Provider providerWorkUa = new Provider(new WorkUaStrategy());
@@ -81,11 +82,13 @@ public class WebController {
         } else if (!workUa && !rabotaUa) {
             return "redirect:/convenient_job_search";
         }
+
         Provider[] providers = providersList.toArray(new Provider[providersList.size()]);
         com.example.parsing_vacancies.controller.Controller controller = startConfiguration(providers);
         /*System.out.println("language : "  + language);
         System.out.println("city : "  + city);
         System.out.println("time : "  + timeframe);*/
+
         if ((city == null || city.isEmpty()) && (language == null || language.isEmpty()) &&
                 (timeframe == null || timeframe.isEmpty())) {
             controller.onPositionSelect(inputPosition, maxVacanciesWorkUa, maxVacanciesRabotaUa);
@@ -123,6 +126,7 @@ public class WebController {
             controller.onParamSelect(language1, city1, inputPosition, timeDate1,
                     maxVacanciesWorkUa, maxVacanciesRabotaUa);
         }
+
         while (true) {
             if (workUa && rabotaUa) {
                 if (fullVacancies != null) {
@@ -150,7 +154,7 @@ public class WebController {
                 }
             }
         }
-        // Остальная логика обработки формы
+
         return "resultSearchVacancies";
     }
 
