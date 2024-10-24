@@ -25,7 +25,7 @@ import java.util.Map;
 @Component
 public class TelegramCreateResume {
     @Autowired
-    private static OpenAIService openAIService;
+    private OpenAIService openAIService;
 
     private static Map<Character, String> transliterationMap = new HashMap<>();
 
@@ -100,7 +100,7 @@ public class TelegramCreateResume {
         transliterationMap.put('Я', "Ya");
     }
 
-    protected static String createResume(UserData userData) {
+    protected String createResume(UserData userData) {
         System.out.println("Working method TelegramCreateResume.createResume");
         int vacancyId = userData.getIdVacancyForResume();
         Vacancy vacancy = userData.getReceivedVacancies().get(vacancyId - 1);

@@ -642,15 +642,15 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
         } catch (NumberFormatException e) {
             sendMessage(chatId, "Укажите корректные данные. Это должно быть число от 1 до " +
-                    + userDataMap.get(chatId).getCountVacancies());
+                    + userDataMap.get(chatId).getReceivedVacancies().size());
         }
     }
 
     private void handleCreateResume(long chatId, UserData userData) {
         System.out.println("Working method handleCreateResume");
-        String resumeFile = TelegramCreateResume.createResume(userData);
+        String resumeFile = new TelegramCreateResume().createResume(userData);
         String filePath = "src/main/resources/static/resumes/" + resumeFile;
-        sendMessage(chatId, "езюме готово! Принимайте..");
+        sendMessage(chatId, "Резюме готово! Принимайте..");
         sendFile(chatId, filePath);
     }
 
