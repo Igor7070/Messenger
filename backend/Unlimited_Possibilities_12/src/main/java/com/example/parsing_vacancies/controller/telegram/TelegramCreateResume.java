@@ -101,6 +101,7 @@ public class TelegramCreateResume {
     }
 
     protected static String createResume(UserData userData) {
+        System.out.println("Working method TelegramCreateResume.createResume");
         int vacancyId = userData.getIdVacancyForResume();
         Vacancy vacancy = userData.getReceivedVacancies().get(vacancyId - 1);
         Resume resume = userData.getResume();

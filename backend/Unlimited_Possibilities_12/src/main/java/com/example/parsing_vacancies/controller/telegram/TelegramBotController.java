@@ -629,6 +629,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
     }
 
     private void handleIdVacancy(long chatId, String messageText) {
+        System.out.println("Working method handleIdVacancy");
         try {
             int idVacancy = Integer.parseInt(messageText.trim());
             if ((idVacancy <= 0) || (idVacancy > userDataMap.get(chatId).getReceivedVacancies().size())) {
@@ -646,6 +647,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
     }
 
     private void handleCreateResume(long chatId, UserData userData) {
+        System.out.println("Working method handleCreateResume");
         String resumeFile = TelegramCreateResume.createResume(userData);
         String filePath = "src/main/resources/static/resumes/" + resumeFile;
         sendMessage(chatId, "езюме готово! Принимайте..");
