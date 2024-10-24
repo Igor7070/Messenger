@@ -631,7 +631,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
     private void handleIdVacancy(long chatId, String messageText) {
         try {
             int idVacancy = Integer.parseInt(messageText.trim());
-            if ((idVacancy <= 0) && (idVacancy > userDataMap.get(chatId).getReceivedVacancies().size())) {
+            if ((idVacancy <= 0) || (idVacancy > userDataMap.get(chatId).getReceivedVacancies().size())) {
                 throw new NumberFormatException();
             }
             userDataMap.get(chatId).setState(UserData.State.WAITING_CREATE_RESUME);
