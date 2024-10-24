@@ -17,6 +17,7 @@ public class TelegramJobSearch {
     protected static List<Vacancy> handleSearch(boolean workUa, boolean rabotaUa,
                                          Integer maxVacanciesWorkUa, Integer maxVacanciesRabotaUa,
                                          String inputPosition, String city) {
+        System.out.println("Working method TelegramJobSearch.handleSearch...");
         List<Vacancy> listVacancies = new ArrayList<>();
         List<Provider> providersList = new ArrayList<>();
         String result = "";

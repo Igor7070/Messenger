@@ -578,6 +578,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
     }
 
     private void handleMethod1(long chatId, UserData userData) {
+        System.out.println("Working method handleMethod1...");
         List<Vacancy> vacancies = new ArrayList<>();
 
         int countVacancies = userData.getCountVacancies();
