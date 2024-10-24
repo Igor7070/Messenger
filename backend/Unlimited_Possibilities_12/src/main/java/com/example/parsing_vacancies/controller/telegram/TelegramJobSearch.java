@@ -21,6 +21,7 @@ public class TelegramJobSearch {
         List<Vacancy> listVacancies = new ArrayList<>();
         List<Provider> providersList = new ArrayList<>();
         String result = "";
+        int id = 0;
 
         if (workUa && rabotaUa) {
             // Обработка выбора Work.ua и Rabota.ua
@@ -75,6 +76,8 @@ public class TelegramJobSearch {
             if (workUa && rabotaUa) {
                 if (WebController.getFullVacancies() != null) {
                     for (Vacancy vacancy : WebController.getFullVacancies()) {
+                        id++;
+                        vacancy.setId(id);
                         listVacancies.add(vacancy);
                     }
                     break;
@@ -82,6 +85,8 @@ public class TelegramJobSearch {
             } else if (workUa) {
                 if (WebController.getFromWorkUaVacancies() != null) {
                     for (Vacancy vacancy : WebController.getFromWorkUaVacancies()) {
+                        id++;
+                        vacancy.setId(id);
                         listVacancies.add(vacancy);
                     }
                     break;
@@ -89,6 +94,8 @@ public class TelegramJobSearch {
             } else if (rabotaUa) {
                 if (WebController.getFromRabotaUaVacancies() != null) {
                     for (Vacancy vacancy : WebController.getFromRabotaUaVacancies()) {
+                        id++;
+                        vacancy.setId(id);
                         listVacancies.add(vacancy);
                     }
                     break;

@@ -120,12 +120,6 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 case WAITING_CHOICE_METHOD:
                     handleChoiceMethod(chatId, messageText);
                     break;
-                case WAITING_METHOD1:
-                    handleMethod1(chatId, userData);
-                    break;
-                case WAITING_METHOD2:
-                    handleMethod2(chatId, userData);
-                    break;
                 default:
                     startConversation(chatId);
                     break;
@@ -563,11 +557,13 @@ public class TelegramBotController extends TelegramLongPollingBot {
             if (choiceMethod == 1 || choiceMethod == 2) {
                 userDataMap.get(chatId).setChoiceMethod(choiceMethod);
                 if (choiceMethod == 1) {
-                    userDataMap.get(chatId).setState(UserData.State.WAITING_METHOD1);
+                    //userDataMap.get(chatId).setState(UserData.State.WAITING_METHOD1);
                     sendMessage(chatId, "Выбор принят. Ожидайте списка заявленных вакансий. " +
                             "Подождите немного, процесс может занять до нескольких минут...");
+                    handleMethod1(chatId, userDataMap.get(chatId));
                 } else if (choiceMethod == 2) {
-                    userDataMap.get(chatId).setState(UserData.State.WAITING_METHOD2);
+                    //userDataMap.get(chatId).setState(UserData.State.WAITING_METHOD2);
+                    handleMethod2(chatId, userDataMap.get(chatId));
                 }
             } else {
                 throw new NumberFormatException();
