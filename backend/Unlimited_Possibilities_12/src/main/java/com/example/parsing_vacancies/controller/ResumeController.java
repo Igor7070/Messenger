@@ -81,7 +81,7 @@ public class ResumeController {
         transliterationMap.put('ю', "yu");
         transliterationMap.put('я', "ya");
 
-        // Добавьте заглавные буквы
+        // Добавление заглавных букв
         transliterationMap.put('А', "A");
         transliterationMap.put('Б', "B");
         transliterationMap.put('В', "V");
@@ -250,7 +250,6 @@ public class ResumeController {
     @PostMapping("/convenient_job_search/readyResume")
     public String readyResume(@ModelAttribute Resume resume, @RequestParam("vacancyId") Integer vacancyId,
                               @RequestParam(name = "enableAI", required = false) boolean isChatGpt, Model model) {
-        // Здесь вы можете обработать данные, например, сохранить в базу данных
         model.addAttribute("title", "Готовое резюме");
         model.addAttribute("vacancyId", vacancyId);
         model.addAttribute("resume", resume);
@@ -421,7 +420,7 @@ public class ResumeController {
 
         System.out.println("Имя файла: " + fileName);
 
-        return "readyResume"; // Название представления для подтверждения
+        return "readyResume";
     }
 
     @Scheduled(fixedRate = 60000) // Каждую минуту

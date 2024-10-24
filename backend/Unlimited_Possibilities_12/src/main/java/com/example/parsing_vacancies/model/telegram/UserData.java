@@ -1,6 +1,9 @@
 package com.example.parsing_vacancies.model.telegram;
 
+import com.example.parsing_vacancies.model.Vacancy;
 import com.example.parsing_vacancies.model.resume.Resume;
+
+import java.util.List;
 
 public class UserData {
     private String site;
@@ -19,6 +22,8 @@ public class UserData {
     private int currentJob; // Индекс текущего места работы
     private Resume resume;
     private int choiceMethod;
+    private List<Vacancy> receivedVacancies;
+    private int idVacancyForResume;
 
     public enum State {
         WAITING_FOR_START,
@@ -44,7 +49,9 @@ public class UserData {
         WAITING_FOR_RESUME_LANGUAGES,
         WAITING_FOR_RESUME_SKILLS_AND_ABILITIES,
         WAITING_FOR_RESUME_ACHIEVEMENTS,
-        WAITING_CHOICE_METHOD
+        WAITING_CHOICE_METHOD,
+        WAITING_ID_VACANCY,
+        WAITING_CREATE_RESUME
     }
 
     public UserData() {
@@ -173,6 +180,22 @@ public class UserData {
 
     public void setChoiceMethod(int choiceMethod) {
         this.choiceMethod = choiceMethod;
+    }
+
+    public int getIdVacancyForResume() {
+        return idVacancyForResume;
+    }
+
+    public void setIdVacancyForResume(int idVacancyForResume) {
+        this.idVacancyForResume = idVacancyForResume;
+    }
+
+    public List<Vacancy> getReceivedVacancies() {
+        return receivedVacancies;
+    }
+
+    public void setReceivedVacancies(List<Vacancy> receivedVacancies) {
+        this.receivedVacancies = receivedVacancies;
     }
 
     @Override

@@ -9,8 +9,10 @@ import com.example.parsing_vacancies.model.telegram.UserData;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -119,6 +121,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     break;
                 case WAITING_CHOICE_METHOD:
                     handleChoiceMethod(chatId, messageText);
+                    break;
+                case WAITING_ID_VACANCY:
+                    handleIdVacancy(chatId, messageText);
                     break;
                 default:
                     startConversation(chatId);
@@ -557,12 +562,10 @@ public class TelegramBotController extends TelegramLongPollingBot {
             if (choiceMethod == 1 || choiceMethod == 2) {
                 userDataMap.get(chatId).setChoiceMethod(choiceMethod);
                 if (choiceMethod == 1) {
-                    //userDataMap.get(chatId).setState(UserData.State.WAITING_METHOD1);
                     sendMessage(chatId, "Выбор принят. Ожидайте списка заявленных вакансий. " +
                             "Подождите немного, процесс может занять до нескольких минут...");
                     handleMethod1(chatId, userDataMap.get(chatId));
                 } else if (choiceMethod == 2) {
-                    //userDataMap.get(chatId).setState(UserData.State.WAITING_METHOD2);
                     handleMethod2(chatId, userDataMap.get(chatId));
                 }
             } else {
@@ -596,6 +599,13 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     countVacancies, position, city);
         }
 
+        if (vacancies.isEmpty()) {
+            startConversation(chatId);
+            sendMessage(chatId, "По вашему запросу не найдено ни одной вакансии. Не " +
+                    "расстраивайтесь, пробуйте дальше!");
+        }
+
+        userDataMap.get(chatId).setReceivedVacancies(vacancies);
         sendMessage(chatId, "Заявленный список вакансий:");
         for (Vacancy vacancy : vacancies) {
             sendMessage(chatId, "id = " + vacancy.getId() + "\n" +
@@ -606,10 +616,40 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     "Сайт размещения: " + vacancy.getSiteName() + "\n" +
                     "Ссылка на вакансию: " + vacancy.getUrl());
         }
+
+        userDataMap.get(chatId).setState(UserData.State.WAITING_ID_VACANCY);
+        sendMessage(chatId, "Посмотрите, поизучайте, повыбирайте теперь. Когда найдете свой " +
+                "вариант, укажите id вакансии, просто введите число и под данную вакансию вам будет " +
+                "создано резюме. Резюме вы сможете посмотреть предварительно и подтвердите только " +
+                "отправку. Поэтому жду от вас число id вакансии...");
     }
 
     private void handleMethod2(long chatId, UserData userData) {
 
+    }
+
+    private void handleIdVacancy(long chatId, String messageText) {
+        try {
+            int idVacancy = Integer.parseInt(messageText.trim());
+            if ((idVacancy <= 0) && (idVacancy > userDataMap.get(chatId).getReceivedVacancies().size())) {
+                throw new NumberFormatException();
+            }
+            userDataMap.get(chatId).setState(UserData.State.WAITING_CREATE_RESUME);
+            userDataMap.get(chatId).setIdVacancyForResume(idVacancy);
+            sendMessage(chatId, "Прекрасно! Для вас создается резюме, ожидайте...");
+            handleCreateResume(chatId, userDataMap.get(chatId));
+
+        } catch (NumberFormatException e) {
+            sendMessage(chatId, "Укажите корректные данные. Это должно быть число от 1 до " +
+                    + userDataMap.get(chatId).getCountVacancies());
+        }
+    }
+
+    private void handleCreateResume(long chatId, UserData userData) {
+        String resumeFile = TelegramCreateResume.createResume(userData);
+        String filePath = "src/main/resources/static/resumes/" + resumeFile;
+        sendMessage(chatId, "езюме готово! Принимайте..");
+        sendFile(chatId, filePath);
     }
 
     public void sendMessage(long chatId, String text) {
@@ -618,6 +658,18 @@ public class TelegramBotController extends TelegramLongPollingBot {
         message.setText(text);
         try {
             execute(message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendFile(long chatId, String fileName) {
+        SendDocument sendDocument = new SendDocument();
+        sendDocument.setChatId(String.valueOf(chatId));
+        sendDocument.setDocument(new InputFile(fileName)); // Указываем полный путь к файлу
+
+        try {
+            execute(sendDocument); // Отправляем файл
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
