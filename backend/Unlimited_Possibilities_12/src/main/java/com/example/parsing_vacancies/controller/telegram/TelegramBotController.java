@@ -6,6 +6,7 @@ import com.example.parsing_vacancies.model.resume.Education;
 import com.example.parsing_vacancies.model.resume.Resume;
 import com.example.parsing_vacancies.model.resume.WorkExperience;
 import com.example.parsing_vacancies.model.telegram.UserData;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
@@ -22,6 +23,8 @@ import java.util.*;
 
 @Component
 public class TelegramBotController extends TelegramLongPollingBot {
+    @Autowired
+    private TelegramCreateResume telegramCreateResume; // Инъекция
     final BotConfig config;
     private static final Map<Long, UserData> userDataMap = new HashMap<>();
 
@@ -648,7 +651,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     private void handleCreateResume(long chatId, UserData userData) {
         System.out.println("Working method handleCreateResume");
-        String resumeFile = new TelegramCreateResume().createResume(userData);
+        String resumeFile = telegramCreateResume.createResume(userData);
         String filePath = "src/main/resources/static/resumes/" + resumeFile;
         sendMessage(chatId, "Резюме готово! Принимайте..");
         sendFile(chatId, filePath);
