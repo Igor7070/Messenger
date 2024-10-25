@@ -383,7 +383,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
     }
 
     private void handleResumePhone(long chatId, String messageText) {
-        String phoneRegex = "^\\+?38?\\s*\\(?0\\d{2}\\)?[\\s-]?\\d{3}[\\s-]?\\d{2}[\\s-]?\\d{2}$";
+        String phoneRegex = "^(\\+?38)?\\s*\\(?0\\d{2}\\)?[\\s-]?\\d{3}[\\s-]?\\d{2}[\\s-]?\\d{2}$";
         if (messageText.trim().matches(phoneRegex)) {
             userDataMap.get(chatId).getResume().setPhone(messageText);
             userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_CITY);
@@ -535,6 +535,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
     }
 
     private void handleResumeLanguages(long chatId, String messageText) {
+        if (messageText.trim().equals("N")) {
+            messageText = "";
+        }
         userDataMap.get(chatId).getResume().setLanguages(messageText);
         userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_SKILLS_AND_ABILITIES);
         sendMessage(chatId, "С языками ясно. Теперь опишите ваши навыки и способности? Если желаете " +
@@ -542,6 +545,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
     }
 
     private void handleResumeSkillsAndAbilities(long chatId, String messageText) {
+        if (messageText.trim().equals("N")) {
+            messageText = "";
+        }
         userDataMap.get(chatId).getResume().setSkills(messageText);
         userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_ACHIEVEMENTS);
         sendMessage(chatId, "Понятно. Теперь опишите ваши личные достижения и награды если есть? " +
@@ -549,6 +555,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
     }
 
     private void handleResumeAchievements(long chatId, String messageText) {
+        if (messageText.trim().equals("N")) {
+            messageText = "";
+        }
         userDataMap.get(chatId).getResume().setAchievements(messageText);
         userDataMap.get(chatId).setState(UserData.State.WAITING_CHOICE_METHOD);
         sendMessage(chatId, "Отлично, вся необходимая информация собрана и сохранена. " +
