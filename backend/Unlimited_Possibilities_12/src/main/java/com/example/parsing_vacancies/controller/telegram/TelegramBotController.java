@@ -19,6 +19,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.File;
 import java.util.*;
 
 @Component
@@ -668,10 +669,19 @@ public class TelegramBotController extends TelegramLongPollingBot {
         }
     }
 
-    public void sendFile(long chatId, String fileName) {
+    public void sendFile(long chatId, String filePath) {
+        File file = new File(filePath);
+
+        // Проверка существования файла
+        if (!file.exists()) {
+            sendMessage(chatId, "Файл не найден: " + filePath);
+            return;
+        }
+
+        // Создаем объект для отправки документа
         SendDocument sendDocument = new SendDocument();
         sendDocument.setChatId(String.valueOf(chatId));
-        sendDocument.setDocument(new InputFile(fileName)); // Указываем полный путь к файлу
+        sendDocument.setDocument(new InputFile(file)); // Используем InputFile с объектом File
 
         try {
             execute(sendDocument); // Отправляем файл
