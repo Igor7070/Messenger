@@ -103,8 +103,8 @@ public class TelegramSendingResumeAndReport {
                     sendEmail(emailRequest, accessToken, resumeFile);
                     return result;
                 }
-                result = "Ваше резюме успешно отправлено! \n " +
-                        "submitPageUrl: " + submitPageUrl;
+                result = "Ваше резюме успешно отправлено! На ваш mail также пришло подтверждение об " +
+                        "отправке с прикрепленным резюме. Удачи!";
                 emailRequest.setTo(email);
                 emailRequest.setSubject("Отправка резюме");
                 emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено в компанию " + vacancy.getCompanyName() + "! Успешного отклика и дальнейшего поднятия бабла!");
@@ -137,8 +137,8 @@ public class TelegramSendingResumeAndReport {
                     response = customRestTemplate.postForEntity(submitPageUrl, requestEntity, String.class);
                     if (response.getStatusCode() == HttpStatus.OK) {
                         System.out.println("Resume successfully sent");
-                        result = "Ваше резюме успешно отправлено! \n " +
-                                "submitPageUrl: " + submitPageUrl;
+                        result = "Ваше резюме успешно отправлено! На ваш mail также пришло " +
+                                "подтверждение об отправке с прикрепленным резюме. Удачи!";
                         emailRequest.setTo(email);
                         emailRequest.setSubject("Отправка резюме");
                         emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено в компанию " + vacancy.getCompanyName() + "! Успешного отклика и дальнейшего поднятия бабла!");
@@ -155,8 +155,8 @@ public class TelegramSendingResumeAndReport {
                 sendEmail(emailRequest, accessToken, resumeFile);
                 return result;
             }
-            result = "Ваше резюме успешно отправлено! \n " +
-                    "submitPageUrl: " + submitPageUrl;
+            result = "Ваше резюме успешно отправлено! На ваш mail также пришло подтверждение об " +
+                    "отправке с прикрепленным резюме. Удачи!";
             emailRequest.setTo(email);
             emailRequest.setSubject("Отправка резюме");
             emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено в компанию " + vacancy.getCompanyName() + "! Успешного отклика и дальнейшего поднятия бабла!");
