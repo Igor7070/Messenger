@@ -26,6 +26,8 @@ import java.util.*;
 public class TelegramBotController extends TelegramLongPollingBot {
     @Autowired
     private TelegramCreateResume telegramCreateResume; // Инъекция
+    @Autowired
+    private TelegramSendingResumeAndReport telegramSendingResumeAndReport;
     final BotConfig config;
     private static final Map<Long, UserData> userDataMap = new HashMap<>();
 
@@ -128,6 +130,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     break;
                 case WAITING_ID_VACANCY:
                     handleIdVacancy(chatId, messageText);
+                    break;
+                case WAITING_SEND_RESUME:
+                    handleSendResume(chatId, messageText);
                     break;
                 default:
                     startConversation(chatId);
@@ -293,7 +298,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
         // Список допустимых ответов
         List<String> validResponses = Arrays.asList(
-                "да", "нет", "да", "нет", // на русском
+                "да", "нет", // на русском
                 "yes", "no", // на английском
                 "так", "ні" // на украинском
         );
@@ -335,7 +340,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
         // Список допустимых ответов
         List<String> validResponses = Arrays.asList(
-                "да", "нет", "да", "нет", // на русском
+                "да", "нет", // на русском
                 "yes", "no", // на английском
                 "так", "ні" // на украинском
         );
@@ -354,7 +359,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 sendMessage(chatId, "Отличный выбор! Благодаря участию ИИ ваше резюме будет бесподобно и полноценно!");
                 sendMessage(chatId, "Теперь нужны данные для резюме. Укажите ваше полное имя?");
             } else {
-                userDataMap.get(chatId).setEnableAI(true);
+                userDataMap.get(chatId).setEnableAI(false);
                 userDataMap.get(chatId).setState(UserData.State.WAITING_FOR_RESUME_FULLNAME);
                 sendMessage(chatId, "Вы отказались от участия ИИ. Ничего, разберемся и без него!");
                 sendMessage(chatId, "Теперь нужны данные для резюме. Укажите ваше полное имя?");
@@ -613,9 +618,10 @@ public class TelegramBotController extends TelegramLongPollingBot {
         }
 
         if (vacancies.isEmpty()) {
-            startConversation(chatId);
             sendMessage(chatId, "По вашему запросу не найдено ни одной вакансии. Не " +
                     "расстраивайтесь, пробуйте дальше!");
+            startConversation(chatId);
+            return;
         }
 
         userDataMap.get(chatId).setReceivedVacancies(vacancies);
@@ -652,6 +658,8 @@ public class TelegramBotController extends TelegramLongPollingBot {
             userDataMap.get(chatId).setIdVacancyForResume(idVacancy);
             sendMessage(chatId, "Прекрасно! Для вас создается резюме, ожидайте...");
             handleCreateResume(chatId, userDataMap.get(chatId));
+            sendMessage(chatId, "Теперь принимайте решение об отправке данного резюме " +
+                    "работодателю. Смелее, решайтесь! Вы подтверждаете отправку? Введите 'Да' или 'Нет'.");
 
         } catch (NumberFormatException e) {
             sendMessage(chatId, "Укажите корректные данные. Это должно быть число от 1 до " +
@@ -662,9 +670,48 @@ public class TelegramBotController extends TelegramLongPollingBot {
     private void handleCreateResume(long chatId, UserData userData) {
         System.out.println("Working method handleCreateResume");
         String resumeFile = telegramCreateResume.createResume(userData);
+        userData.setResumeFile(resumeFile);
         String filePath = "src/main/resources/static/resumes/" + resumeFile;
         sendMessage(chatId, "Резюме готово! Принимайте..");
         sendFile(chatId, filePath);
+        userData.setState(UserData.State.WAITING_SEND_RESUME);
+    }
+
+    private void handleSendResume(long chatId, String messageText) {
+        // Очищаем строку от лишних пробелов и знаков препинания
+        String cleanedMessage = messageText.trim()
+                .replaceAll("[\\s,;:_]+", " ") // Заменяем пробелы и знаки на пробел
+                .replaceAll("[^\\w\\u0400-\\u04FF]", "") // Удаляем все, кроме букв и цифр
+                .replaceAll("[\\s]+", " "); // Удаляем лишние пробелы
+
+        // Список допустимых ответов
+        List<String> validResponses = Arrays.asList(
+                "да", "нет", // на русском
+                "yes", "no", // на английском
+                "так", "ні" // на украинском
+        );
+
+        String[] words = cleanedMessage.split(" ");
+        if (words.length != 1) {
+            sendMessage(chatId, "Пожалуйста, введите что то одно.");
+            return;
+        }
+
+        // Проверяем, соответствует ли введенный ответ одному из допустимых
+        if (validResponses.stream().anyMatch(response -> response.equalsIgnoreCase(cleanedMessage))) {
+            if (cleanedMessage.equalsIgnoreCase("да") || cleanedMessage.equalsIgnoreCase("yes") || cleanedMessage.equalsIgnoreCase("так")) {
+                String result = telegramSendingResumeAndReport.uploadResume(userDataMap.get(chatId));
+                userDataMap.get(chatId).setState(UserData.State.WAITING_RESULT_SENDING_RESUME);
+                sendMessage(chatId, result);
+            } else {
+                sendMessage(chatId,"Ну и хрен с вами, как хотите, гуляйте, отдыхайте... " +
+                        "Когда снова решитесь обращайтесь.");
+                startConversation(chatId);
+
+            }
+        } else {
+            sendMessage(chatId, "Вы ввели некорректные данные. Пожалуйста, введите 'Да', 'Нет', 'Yes', 'No', 'Так' или 'Ні'.");
+        }
     }
 
     public void sendMessage(long chatId, String text) {
@@ -684,6 +731,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
         // Проверка существования файла
         if (!file.exists()) {
             sendMessage(chatId, "Файл не найден: " + filePath);
+            sendMessage(chatId, "Что то произошло не так при формировании резюме, не отчаивайтесь, " +
+                    "попробуйте снова.");
+            startConversation(chatId);
             return;
         }
 

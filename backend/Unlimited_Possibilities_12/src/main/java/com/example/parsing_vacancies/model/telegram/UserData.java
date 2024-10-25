@@ -24,6 +24,7 @@ public class UserData {
     private int choiceMethod;
     private List<Vacancy> receivedVacancies;
     private int idVacancyForResume;
+    private String resumeFile;
 
     public enum State {
         WAITING_FOR_START,
@@ -51,7 +52,9 @@ public class UserData {
         WAITING_FOR_RESUME_ACHIEVEMENTS,
         WAITING_CHOICE_METHOD,
         WAITING_ID_VACANCY,
-        WAITING_CREATE_RESUME
+        WAITING_CREATE_RESUME,
+        WAITING_SEND_RESUME,
+        WAITING_RESULT_SENDING_RESUME
     }
 
     public UserData() {
@@ -196,6 +199,14 @@ public class UserData {
 
     public void setReceivedVacancies(List<Vacancy> receivedVacancies) {
         this.receivedVacancies = receivedVacancies;
+    }
+
+    public String getResumeFile() {
+        return resumeFile;
+    }
+
+    public void setResumeFile(String resumeFile) {
+        this.resumeFile = resumeFile;
     }
 
     @Override
