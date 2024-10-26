@@ -128,6 +128,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 case WAITING_CHOICE_METHOD:
                     handleChoiceMethod(chatId, messageText);
                     break;
+                case WAITING_SEND_RESUME_TO_ALL_VACANCIES:
+                    handleSendResumeToAllVacancies(chatId, messageText);
+                    break;
                 case WAITING_ID_VACANCY:
                     handleIdVacancy(chatId, messageText);
                     break;
@@ -568,10 +571,10 @@ public class TelegramBotController extends TelegramLongPollingBot {
         sendMessage(chatId, "Отлично, вся необходимая информация собрана и сохранена. " +
                 "Общая информация userData c chatId = " + chatId + ":" + userDataMap.get(chatId));
         sendMessage(chatId, "Теперь сделайти выбор, желаете ли вы просмотреть список выбранных " +
-                "вакансий и отправить резюме на конкретно выбранную вакансию, либо автоматически " +
-                "отправить резюме на все полученные вакансии не просматривая их? Если вы выбрали " +
-                "вариант с самостоятельным предварительным просмотром и выбором вакансии для " +
-                "отправки резюме нажмите '1', если вариант автоматической отправки нажмите '2'.");
+                "вакансий и отправить резюме на конкретно выбранную вакансию, либо отправить " +
+                "резюме на все полученные вакансии сразу после ознакомления с ними и полученния " +
+                "резюме? Если вы выбрали вариант с выбором конкретной вакансии для отправки резюме " +
+                "нажмите '1', если вариант отправки на все полученные вакансии нажмите '2'.");
     }
 
     private void handleChoiceMethod(long chatId, String messageText) {
@@ -582,9 +585,11 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 if (choiceMethod == 1) {
                     sendMessage(chatId, "Выбор принят. Ожидайте списка заявленных вакансий. " +
                             "Подождите немного, процесс может занять до нескольких минут...");
-                    handleMethod1(chatId, userDataMap.get(chatId));
+                    handleMethod(chatId, userDataMap.get(chatId), 1);
                 } else if (choiceMethod == 2) {
-                    handleMethod2(chatId, userDataMap.get(chatId));
+                    sendMessage(chatId, "Выбор принят. Ожидайте списка заявленных вакансий. " +
+                            "Подождите немного, процесс может занять до нескольких минут...");
+                    handleMethod(chatId, userDataMap.get(chatId), 2);
                 }
             } else {
                 throw new NumberFormatException();
@@ -594,8 +599,8 @@ public class TelegramBotController extends TelegramLongPollingBot {
         }
     }
 
-    private void handleMethod1(long chatId, UserData userData) {
-        System.out.println("Working method handleMethod1...");
+    private void handleMethod(long chatId, UserData userData, int choiceOption) {
+        System.out.println("Working method handleMethod...");
         List<Vacancy> vacancies = new ArrayList<>();
 
         int countVacancies = userData.getCountVacancies();
@@ -636,15 +641,85 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     "Ссылка на вакансию: " + vacancy.getUrl());
         }
 
-        userDataMap.get(chatId).setState(UserData.State.WAITING_ID_VACANCY);
-        sendMessage(chatId, "Посмотрите, поизучайте, повыбирайте теперь. Когда найдете свой " +
-                "вариант, укажите id вакансии, просто введите число и под данную вакансию вам будет " +
-                "создано резюме. Резюме вы сможете посмотреть предварительно и подтвердите только " +
-                "отправку. Поэтому жду от вас число id вакансии...");
+        if (choiceOption == 1) {
+            userDataMap.get(chatId).setState(UserData.State.WAITING_ID_VACANCY);
+            sendMessage(chatId, "Посмотрите, поизучайте, повыбирайте теперь. Когда найдете свой " +
+                    "вариант, укажите id вакансии, просто введите число и под данную вакансию вам будет " +
+                    "создано резюме. Резюме вы сможете посмотреть предварительно и подтвердите только " +
+                    "отправку. Поэтому жду от вас число id вакансии...");
+        } else if(choiceOption == 2) {
+            userDataMap.get(chatId).setState(UserData.State.WAITING_SEND_RESUME_TO_ALL_VACANCIES);
+            String resumeFile = telegramCreateResume.createResume(userDataMap.get(chatId), choiceOption);
+            userDataMap.get(chatId).setResumeFile(resumeFile);
+            String filePath = "src/main/resources/static/resumes/" + resumeFile;
+            sendFile(chatId, filePath);
+            sendMessage(chatId, "У вас теперь есть список вакансий и резюме, оцените все при " +
+                    "желании и подтвердите отправку резюме на все данные вакансии. В случае отправки " +
+                    "введите 'Да', в случае отказа 'Нет'.");
+        }
     }
 
-    private void handleMethod2(long chatId, UserData userData) {
+    private void handleSendResumeToAllVacancies(long chatId, String messageText) {
+        String cleanedMessage = messageText.trim()
+                .replaceAll("[\\s,;:_]+", " ") // Заменяем пробелы и знаки на пробел
+                .replaceAll("[^\\w\\u0400-\\u04FF]", "") // Удаляем все, кроме букв и цифр
+                .replaceAll("[\\s]+", " "); // Удаляем лишние пробелы
 
+        // Список допустимых ответов
+        List<String> validResponses = Arrays.asList(
+                "да", "нет", // на русском
+                "yes", "no", // на английском
+                "так", "ні" // на украинском
+        );
+
+        String[] words = cleanedMessage.split(" ");
+        if (words.length != 1) {
+            sendMessage(chatId, "Пожалуйста, введите что то одно.");
+            return;
+        }
+
+        // Проверяем, соответствует ли введенный ответ одному из допустимых
+        if (validResponses.stream().anyMatch(response -> response.equalsIgnoreCase(cleanedMessage))) {
+            if (cleanedMessage.equalsIgnoreCase("да") || cleanedMessage.equalsIgnoreCase("yes") || cleanedMessage.equalsIgnoreCase("так")) {
+                sendMessage(chatId, "Шикарный выбор, ожидайте подтверждения об отправке...");
+                List<Vacancy> vacancies = userDataMap.get(chatId).getReceivedVacancies();
+                StringBuilder sbResult = new StringBuilder();
+                int countErrorSend = 0;
+                for (int i = 0; i < vacancies.size(); i++) {
+                    String result = telegramSendingResumeAndReport.uploadResume(userDataMap.get(chatId),
+                            i + 1);
+                    if (!result.contains("Ваше резюме успешно отправлено!")) {
+                        if (countErrorSend == 1) {
+                            sbResult.append("Ошибка при отправке резюме на вакансии с id: ");
+                        }
+                        sbResult.append(vacancies.get(i).getId() + ", ");
+                        countErrorSend++;
+                    }
+                }
+                if (countErrorSend == 0) {
+                    sbResult.append("Резюме отправлено на все вакансии. Подтверждение об отправке " +
+                            "также на вашем email с прикрепленным резюме. Удачи!");
+                } else {
+                    String sbResultStr = sbResult.toString();
+                    if (sbResultStr.endsWith(", ")) {
+                        // Заменяем на ". " с помощью substring
+                        sbResultStr = sbResultStr.substring(0, sbResultStr.length() - 2) + ". ";
+                        userDataMap.get(chatId).setState(UserData.State.WAITING_RESULT_SENDING_RESUME);
+                        sendMessage(chatId, sbResult.toString());
+                        return;
+                    }
+                }
+                userDataMap.get(chatId).setState(UserData.State.WAITING_RESULT_SENDING_RESUME);
+                sendMessage(chatId, sbResult.toString());
+            } else {
+                sendMessage(chatId,"Все с вами ясно, на нет и разговору нет. Собирайтесь силами " +
+                        "дальше, когда надумаете обращайтесь...");
+                startConversation(chatId);
+
+            }
+        } else {
+            sendMessage(chatId, "Вы ввели некорректные данные. Пожалуйста, введите 'Да', 'Нет', 'Yes', 'No', 'Так' или 'Ні'.");
+        }
     }
 
     private void handleIdVacancy(long chatId, String messageText) {
@@ -669,7 +744,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
     private void handleCreateResume(long chatId, UserData userData) {
         System.out.println("Working method handleCreateResume");
-        String resumeFile = telegramCreateResume.createResume(userData);
+        String resumeFile = telegramCreateResume.createResume(userData, 1);
         userData.setResumeFile(resumeFile);
         String filePath = "src/main/resources/static/resumes/" + resumeFile;
         sendMessage(chatId, "Резюме готово! Принимайте..");
@@ -700,7 +775,8 @@ public class TelegramBotController extends TelegramLongPollingBot {
         // Проверяем, соответствует ли введенный ответ одному из допустимых
         if (validResponses.stream().anyMatch(response -> response.equalsIgnoreCase(cleanedMessage))) {
             if (cleanedMessage.equalsIgnoreCase("да") || cleanedMessage.equalsIgnoreCase("yes") || cleanedMessage.equalsIgnoreCase("так")) {
-                String result = telegramSendingResumeAndReport.uploadResume(userDataMap.get(chatId));
+                String result = telegramSendingResumeAndReport.uploadResume(userDataMap.get(chatId),
+                        userDataMap.get(chatId).getIdVacancyForResume());
                 userDataMap.get(chatId).setState(UserData.State.WAITING_RESULT_SENDING_RESUME);
                 sendMessage(chatId, result);
             } else {

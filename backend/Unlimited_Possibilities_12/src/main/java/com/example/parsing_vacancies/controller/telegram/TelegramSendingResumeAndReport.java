@@ -26,7 +26,7 @@ public class TelegramSendingResumeAndReport {
     private EmailService emailService;
     private static int countRequestWorkUa = 0;
 
-    public String uploadResume(UserData userData) {
+    public String uploadResume(UserData userData, int vacancyId) {
         String result = "";
         String accessToken = "";
         String email = "";
@@ -41,7 +41,6 @@ public class TelegramSendingResumeAndReport {
             firstName = userData.getFirstName();
             lastName = userData.getLastName();
             resumeFile = userData.getResumeFile();
-            int vacancyId = userData.getIdVacancyForResume();
 
             // Проверка, был ли токен получен
             if (accessToken == null) {
@@ -62,6 +61,7 @@ public class TelegramSendingResumeAndReport {
             FileSystemResource resource = new FileSystemResource(file);
 
             Vacancy vacancy = userData.getReceivedVacancies().get(vacancyId - 1);
+
 
             System.out.println(vacancy.getId());
             System.out.println(vacancy.getTitle());

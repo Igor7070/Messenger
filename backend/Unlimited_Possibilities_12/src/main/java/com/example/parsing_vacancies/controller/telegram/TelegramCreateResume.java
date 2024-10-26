@@ -100,7 +100,7 @@ public class TelegramCreateResume {
         transliterationMap.put('Я', "Ya");
     }
 
-    protected String createResume(UserData userData) {
+    protected String createResume(UserData userData, int choiceOption) {
         System.out.println("Working method TelegramCreateResume.createResume");
         int vacancyId = userData.getIdVacancyForResume();
         Vacancy vacancy = userData.getReceivedVacancies().get(vacancyId - 1);
@@ -139,26 +139,50 @@ public class TelegramCreateResume {
             }
         }
 
-        String finalResultQuery = String.format("Привет, создай мне резюме для вакансии %s," +
-                        " компании %s, города %s. Мои данные: ФИО - %s, номер телефона - %s, город - %s" +
-                        " электронная почта - %s, цель поиска работы - %s," +
-                        " образование {%s}, опыт работы {%s}, " +
-                        " я владею такими языками - %s, мои навыки и способности - %s," +
-                        " мои личные достижения и награды - %s. Пусть в таком порядке будет:" +
-                        " Контактная информация, Цель, Образование, Опыт работы," +
-                        " Навыки и способности, Владение языками," +
-                        " Личные достижения и награды." +
-                        " Пусть резюме начинается и завершается строкой \"---\"." +
-                        " Добавь дополнительное содержимое (пусть после ключевого слова" +
-                        " Дополнительная информация) для улучшения." +
-                        " Перед названиями учебного заведения и названией компании работы" +
-                        " пусть всегда будет пустая строка." +
-                        " Резюме можно улучшить не нарушая структуру описанную. В случае отсутствия" +
-                        " определенных данных, заполни на свое усмотрение соблюдая выше шаблон.",
-                vacancy.getTitle(), vacancy.getCompanyName(), vacancy.getCity(), resume.getFullName(),
-                resume.getPhone(), resume.getCity(), resume.getEmail(), resume.getObjective(),
-                sbEducation, sbWorkExperience, resume.getLanguages(),
-                resume.getSkills(), resume.getAchievements());
+        String finalResultQuery = "";
+        if (choiceOption == 1) {
+            finalResultQuery = String.format("Привет, создай мне резюме для вакансии %s," +
+                            " компании %s, города %s. Мои данные: ФИО - %s, номер телефона - %s, город - %s" +
+                            " электронная почта - %s, цель поиска работы - %s," +
+                            " образование {%s}, опыт работы {%s}, " +
+                            " я владею такими языками - %s, мои навыки и способности - %s," +
+                            " мои личные достижения и награды - %s. Пусть в таком порядке будет:" +
+                            " Контактная информация, Цель, Образование, Опыт работы," +
+                            " Навыки и способности, Владение языками," +
+                            " Личные достижения и награды." +
+                            " Пусть резюме начинается и завершается строкой \"---\"." +
+                            " Добавь дополнительное содержимое (пусть после ключевого слова" +
+                            " Дополнительная информация) для улучшения." +
+                            " Перед названиями учебного заведения и названией компании работы" +
+                            " пусть всегда будет пустая строка." +
+                            " Резюме можно улучшить не нарушая структуру описанную. В случае отсутствия" +
+                            " определенных данных, заполни на свое усмотрение соблюдая выше шаблон.",
+                    vacancy.getTitle(), vacancy.getCompanyName(), vacancy.getCity(), resume.getFullName(),
+                    resume.getPhone(), resume.getCity(), resume.getEmail(), resume.getObjective(),
+                    sbEducation, sbWorkExperience, resume.getLanguages(),
+                    resume.getSkills(), resume.getAchievements());
+        } else if (choiceOption == 2) {
+            finalResultQuery = String.format("Привет, создай мне резюме для вакансии на должность %s," +
+                            " города %s. Мои данные: ФИО - %s, номер телефона - %s, город - %s" +
+                            " электронная почта - %s, цель поиска работы - %s," +
+                            " образование {%s}, опыт работы {%s}, " +
+                            " я владею такими языками - %s, мои навыки и способности - %s," +
+                            " мои личные достижения и награды - %s. Пусть в таком порядке будет:" +
+                            " Контактная информация, Цель, Образование, Опыт работы," +
+                            " Навыки и способности, Владение языками," +
+                            " Личные достижения и награды." +
+                            " Пусть резюме начинается и завершается строкой \"---\"." +
+                            " Добавь дополнительное содержимое (пусть после ключевого слова" +
+                            " Дополнительная информация) для улучшения." +
+                            " Перед названиями учебного заведения и названией компании работы" +
+                            " пусть всегда будет пустая строка." +
+                            " Резюме можно улучшить не нарушая структуру описанную. В случае отсутствия" +
+                            " определенных данных, заполни на свое усмотрение соблюдая выше шаблон.",
+                    userData.getPosition(), vacancy.getCity(), resume.getFullName(),
+                    resume.getPhone(), resume.getCity(), resume.getEmail(), resume.getObjective(),
+                    sbEducation, sbWorkExperience, resume.getLanguages(),
+                    resume.getSkills(), resume.getAchievements());
+        }
         System.out.println(finalResultQuery);
 
         String responce = "";
