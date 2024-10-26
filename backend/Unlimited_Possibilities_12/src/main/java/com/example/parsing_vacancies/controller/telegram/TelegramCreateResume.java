@@ -102,8 +102,11 @@ public class TelegramCreateResume {
 
     protected String createResume(UserData userData, int choiceOption) {
         System.out.println("Working method TelegramCreateResume.createResume");
-        int vacancyId = userData.getIdVacancyForResume();
-        Vacancy vacancy = userData.getReceivedVacancies().get(vacancyId - 1);
+        Vacancy vacancy = null;
+        if (choiceOption == 1) {
+            int vacancyId = userData.getIdVacancyForResume();
+            vacancy = userData.getReceivedVacancies().get(vacancyId - 1);
+        }
         Resume resume = userData.getResume();
         boolean isChatGpt = userData.isEnableAI();
 
@@ -178,7 +181,7 @@ public class TelegramCreateResume {
                             " пусть всегда будет пустая строка." +
                             " Резюме можно улучшить не нарушая структуру описанную. В случае отсутствия" +
                             " определенных данных, заполни на свое усмотрение соблюдая выше шаблон.",
-                    userData.getPosition(), vacancy.getCity(), resume.getFullName(),
+                    userData.getPosition(), userData.getCity(), resume.getFullName(),
                     resume.getPhone(), resume.getCity(), resume.getEmail(), resume.getObjective(),
                     sbEducation, sbWorkExperience, resume.getLanguages(),
                     resume.getSkills(), resume.getAchievements());
