@@ -144,6 +144,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 case WAITING_RESULT_SENDING_RESUME:
                     handleResultChattingWithTheBot(chatId, messageText);
                     break;
+                case WAITING_APOLOGY:
+                    handleApology(chatId, messageText);
+                    break;
                 default:
                     startConversation(chatId);
                     break;
@@ -809,6 +812,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
             String responceFromFilterProfanity = ProfanityFilter.reactionToSwearing(userData);
             if (userData.getCountBadMessage() == 4) {
                 userData.setCountBadMessage(0);
+                userData.setWorkedMethodHandleApology(false);
                 sendMessage(chatId, responceFromFilterProfanity);
                 userData.setState(UserData.State.END);
                 return;
@@ -817,11 +821,15 @@ public class TelegramBotController extends TelegramLongPollingBot {
             return;
         }
 
-        if (userData.getCountBadMessage() == 3 && userData.isPresenceApologySwearing3()) {
+        if (userData.getCountBadMessage() == 3 && userData.isPresenceApologySwearing3() &&
+                !userData.isWorkedMethodHandleApology()) {
             sendMessage(chatId, "Другое дело! Чтобы больше не слышал подобного... Теперь готов " +
                     "дальше общаться, если вы только не исчерпали свой лимит в 5 вопросов мне, который " +
                     "я вам подарил..");
             userData.setPresenceApologySwearing3(false);
+            return;
+        } else if (userData.getCountBadMessage() == 3 && !userData.isPresenceApologySwearing3()) {
+            userData.setState(UserData.State.WAITING_APOLOGY);
             return;
         }
 
@@ -839,6 +847,28 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     "отозветься, обращайтесь снова, помогу!");
             userDataMap.get(chatId).setState(UserData.State.END);
             userData.setCountQuestionToBot(0);
+            userData.setWorkedMethodHandleApology(false);
+        }
+    }
+
+    private void handleApology(long chatId, String messageText) {
+        UserData userData = userDataMap.get(chatId);
+        if (ProfanityFilter.containsProfanity(messageText, userData)) {
+            String responceFromFilterProfanity = ProfanityFilter.reactionToSwearing(userData);
+            userData.setCountBadMessage(0);
+            userData.setWorkedMethodHandleApology(false);
+            sendMessage(chatId, responceFromFilterProfanity);
+            userData.setState(UserData.State.END);
+            return;
+        }
+        if (!userData.isPresenceApologySwearing3()) {
+            sendMessage(chatId, "Извиняйся нах..! До этих пор общаться с тобой не буду!");
+        } else {
+            userData.setState(UserData.State.WAITING_RESULT_SENDING_RESUME);
+            userData.setWorkedMethodHandleApology(true);
+            sendMessage(chatId, "Другое дело! Чтобы больше не слышал подобного... Теперь готов " +
+                    "дальше общаться, если вы только не исчерпали свой лимит в 5 вопросов мне, который " +
+                    "я вам подарил..");
         }
     }
 

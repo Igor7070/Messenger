@@ -28,6 +28,7 @@ public class UserData {
     private int countQuestionToBot = 0;
     private int countBadMessage = 0;
     private boolean presenceApologySwearing3 = false;
+    private boolean workedMethodHandleApology = false;
 
     public enum State {
         WAITING_FOR_START,
@@ -59,6 +60,7 @@ public class UserData {
         WAITING_CREATE_RESUME,
         WAITING_SEND_RESUME,
         WAITING_RESULT_SENDING_RESUME,
+        WAITING_APOLOGY,
         END
     }
 
@@ -236,6 +238,14 @@ public class UserData {
 
     public void setPresenceApologySwearing3(boolean presenceApologySwearing3) {
         this.presenceApologySwearing3 = presenceApologySwearing3;
+    }
+
+    public boolean isWorkedMethodHandleApology() {
+        return workedMethodHandleApology;
+    }
+
+    public void setWorkedMethodHandleApology(boolean workedMethodHandleApology) {
+        this.workedMethodHandleApology = workedMethodHandleApology;
     }
 
     @Override
