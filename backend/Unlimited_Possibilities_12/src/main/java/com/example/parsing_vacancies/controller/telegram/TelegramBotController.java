@@ -829,12 +829,14 @@ public class TelegramBotController extends TelegramLongPollingBot {
             sendMessage(chatId, responce);
             userData.setCountQuestionToBot(userData.getCountQuestionToBot() + 1);
         }
-        sendMessage(chatId, "Все достаточно, я ж сказал 5 вопросов, не больше! Не хочу более. " +
-                "Если отправите новые резюме на другие вакансии, может захочу пообщаться " +
-                "с вами еще.. А так удачного отклика и поднятия денег! Конечно если никто не " +
-                "отозветься, обращайтесь снова, помогу!");
-        userDataMap.get(chatId).setState(UserData.State.END);
-        userData.setCountQuestionToBot(0);
+        if (userData.getCountQuestionToBot() == 5) {
+            sendMessage(chatId, "Все достаточно, я ж сказал 5 вопросов, не больше! Не хочу более. " +
+                    "Если отправите новые резюме на другие вакансии, может захочу пообщаться " +
+                    "с вами еще.. А так удачного отклика и поднятия денег! Конечно если никто не " +
+                    "отозветься, обращайтесь снова, помогу!");
+            userDataMap.get(chatId).setState(UserData.State.END);
+            userData.setCountQuestionToBot(0);
+        }
     }
 
     public void sendMessage(long chatId, String text) {
