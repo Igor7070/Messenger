@@ -830,6 +830,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
             return;
         } else if (userData.getCountBadMessage() == 3 && !userData.isPresenceApologySwearing3()) {
             userData.setState(UserData.State.WAITING_APOLOGY);
+            sendMessage(chatId, "Извиняйся нах..! До этих пор общаться с тобой не буду!");
             return;
         }
 
