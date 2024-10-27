@@ -814,6 +814,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 return;
             }
             sendMessage(chatId, responceFromFilterProfanity);
+            return;
         }
 
         if (userData.getCountBadMessage() == 3 && userData.isPresenceApologySwearing3()) {
