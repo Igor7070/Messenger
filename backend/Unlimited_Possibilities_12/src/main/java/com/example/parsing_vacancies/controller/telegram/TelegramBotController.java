@@ -828,7 +828,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
             userData.setCountBadMessage(userData.getCountMessageSwearing3() + 1);
         }
 
-        if (userData.getCountMessageSwearing3() == 1) {
+        if (userData.getCountMessageSwearing3() == 0) {
             if (userData.getCountBadMessage() == 3 && userData.isPresenceApologySwearing3() &&
                     !userData.isWorkedMethodHandleApology()) {
                 sendMessage(chatId, "Другое дело! Чтобы больше не слышал подобного... Теперь готов " +
