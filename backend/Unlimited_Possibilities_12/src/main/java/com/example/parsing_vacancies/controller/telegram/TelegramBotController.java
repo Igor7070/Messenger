@@ -815,6 +815,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 userData.setCountQuestionToBot(0);
                 userData.setWorkedMethodHandleApology(false);
                 userData.setPresenceApologySwearing3(false);
+                userData.setCountMessageSwearing3(0);
                 sendMessage(chatId, responceFromFilterProfanity);
                 userData.setState(UserData.State.END);
                 return;
@@ -859,6 +860,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
             userData.setCountBadMessage(0);
             userData.setWorkedMethodHandleApology(false);
             userData.setPresenceApologySwearing3(false);
+            userData.setCountMessageSwearing3(0);
         }
     }
 
@@ -870,6 +872,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
             userData.setCountBadMessage(0);
             userData.setWorkedMethodHandleApology(false);
             userData.setPresenceApologySwearing3(false);
+            userData.setCountMessageSwearing3(0);
             sendMessage(chatId, responceFromFilterProfanity);
             userData.setState(UserData.State.END);
             return;
