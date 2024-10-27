@@ -716,7 +716,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
                         sbResultStr = sbResultStr.substring(0, sbResultStr.length() - 2) + ". ";
                         userDataMap.get(chatId).setState(UserData.State.WAITING_RESULT_SENDING_RESUME);
                         sendMessage(chatId, sbResult.toString());
-                        sendMessage(chatId, "Теперь если у вас есть какие либо вопросы, завайте! " +
+                        sendMessage(chatId, "Теперь если у вас есть какие либо вопросы, задавайте! " +
                                 "На 5 вопросов готов ответить, на большее извиняйте..");
                         return;
                     }
@@ -793,7 +793,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
                         userDataMap.get(chatId).getIdVacancyForResume());
                 userDataMap.get(chatId).setState(UserData.State.WAITING_RESULT_SENDING_RESUME);
                 sendMessage(chatId, result);
-                sendMessage(chatId, "Теперь если у вас есть какие либо вопросы, завайте! " +
+                sendMessage(chatId, "Теперь если у вас есть какие либо вопросы, задавайте! " +
                         "На 5 вопросов готов ответить, на большее извиняйте..");
             } else {
                 sendMessage(chatId,"Ну и хрен с вами, как хотите, гуляйте, отдыхайте... " +
@@ -812,7 +812,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
             String responceFromFilterProfanity = ProfanityFilter.reactionToSwearing(userData);
             if (userData.getCountBadMessage() == 4) {
                 userData.setCountBadMessage(0);
+                userData.setCountQuestionToBot(0);
                 userData.setWorkedMethodHandleApology(false);
+                userData.setPresenceApologySwearing3(false);
                 sendMessage(chatId, responceFromFilterProfanity);
                 userData.setState(UserData.State.END);
                 return;
@@ -848,7 +850,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     "отозветься, обращайтесь снова, помогу!");
             userDataMap.get(chatId).setState(UserData.State.END);
             userData.setCountQuestionToBot(0);
+            userData.setCountBadMessage(0);
             userData.setWorkedMethodHandleApology(false);
+            userData.setPresenceApologySwearing3(false);
         }
     }
 
@@ -856,8 +860,10 @@ public class TelegramBotController extends TelegramLongPollingBot {
         UserData userData = userDataMap.get(chatId);
         if (ProfanityFilter.containsProfanity(messageText, userData)) {
             String responceFromFilterProfanity = ProfanityFilter.reactionToSwearing(userData);
+            userData.setCountQuestionToBot(0);
             userData.setCountBadMessage(0);
             userData.setWorkedMethodHandleApology(false);
+            userData.setPresenceApologySwearing3(false);
             sendMessage(chatId, responceFromFilterProfanity);
             userData.setState(UserData.State.END);
             return;
