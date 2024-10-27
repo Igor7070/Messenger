@@ -823,16 +823,18 @@ public class TelegramBotController extends TelegramLongPollingBot {
             return;
         }
 
-        if (userData.getCountBadMessage() == 3 && userData.isPresenceApologySwearing3() &&
-                !userData.isWorkedMethodHandleApology()) {
-            sendMessage(chatId, "Другое дело! Чтобы больше не слышал подобного... Теперь готов " +
-                    "дальше общаться, если вы только не исчерпали свой лимит в 5 вопросов мне, который " +
-                    "я вам подарил..");
-            return;
-        } else if (userData.getCountBadMessage() == 3 && !userData.isPresenceApologySwearing3()) {
-            userData.setState(UserData.State.WAITING_APOLOGY);
-            sendMessage(chatId, "Извиняйся нах..! До этих пор общаться с тобой не буду!");
-            return;
+        if (!userData.isPresenceApologySwearing3()) {
+            if (userData.getCountBadMessage() == 3 && userData.isPresenceApologySwearing3() &&
+                    !userData.isWorkedMethodHandleApology()) {
+                sendMessage(chatId, "Другое дело! Чтобы больше не слышал подобного... Теперь готов " +
+                        "дальше общаться, если вы только не исчерпали свой лимит в 5 вопросов мне, который " +
+                        "я вам подарил..");
+                return;
+            } else if (userData.getCountBadMessage() == 3 && !userData.isPresenceApologySwearing3()) {
+                userData.setState(UserData.State.WAITING_APOLOGY);
+                sendMessage(chatId, "Извиняйся нах..! До этих пор общаться с тобой не буду!");
+                return;
+            }
         }
 
         String responce = "";
