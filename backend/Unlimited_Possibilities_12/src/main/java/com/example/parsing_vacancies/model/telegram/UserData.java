@@ -25,6 +25,9 @@ public class UserData {
     private List<Vacancy> receivedVacancies;
     private int idVacancyForResume;
     private String resumeFile;
+    private int countQuestionToBot = 0;
+    private int countBadMessage = 0;
+    private boolean presenceApologySwearing3 = false;
 
     public enum State {
         WAITING_FOR_START,
@@ -55,7 +58,8 @@ public class UserData {
         WAITING_SEND_RESUME_TO_ALL_VACANCIES,
         WAITING_CREATE_RESUME,
         WAITING_SEND_RESUME,
-        WAITING_RESULT_SENDING_RESUME
+        WAITING_RESULT_SENDING_RESUME,
+        END
     }
 
     public UserData() {
@@ -208,6 +212,30 @@ public class UserData {
 
     public void setResumeFile(String resumeFile) {
         this.resumeFile = resumeFile;
+    }
+
+    public int getCountQuestionToBot() {
+        return countQuestionToBot;
+    }
+
+    public void setCountQuestionToBot(int countQuestionToBot) {
+        this.countQuestionToBot = countQuestionToBot;
+    }
+
+    public int getCountBadMessage() {
+        return countBadMessage;
+    }
+
+    public void setCountBadMessage(int countBadMessage) {
+        this.countBadMessage = countBadMessage;
+    }
+
+    public boolean isPresenceApologySwearing3() {
+        return presenceApologySwearing3;
+    }
+
+    public void setPresenceApologySwearing3(boolean presenceApologySwearing3) {
+        this.presenceApologySwearing3 = presenceApologySwearing3;
     }
 
     @Override

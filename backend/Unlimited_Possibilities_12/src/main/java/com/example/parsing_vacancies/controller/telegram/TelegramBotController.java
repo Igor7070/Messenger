@@ -5,7 +5,9 @@ import com.example.parsing_vacancies.model.Vacancy;
 import com.example.parsing_vacancies.model.resume.Education;
 import com.example.parsing_vacancies.model.resume.Resume;
 import com.example.parsing_vacancies.model.resume.WorkExperience;
+import com.example.parsing_vacancies.model.telegram.ProfanityFilter;
 import com.example.parsing_vacancies.model.telegram.UserData;
+import com.example.parsing_vacancies.service.OpenAIService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -28,6 +30,8 @@ public class TelegramBotController extends TelegramLongPollingBot {
     private TelegramCreateResume telegramCreateResume; // Инъекция
     @Autowired
     private TelegramSendingResumeAndReport telegramSendingResumeAndReport;
+    @Autowired
+    private OpenAIService openAIService;
     final BotConfig config;
     private static final Map<Long, UserData> userDataMap = new HashMap<>();
 
@@ -136,6 +140,9 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     break;
                 case WAITING_SEND_RESUME:
                     handleSendResume(chatId, messageText);
+                    break;
+                case WAITING_RESULT_SENDING_RESUME:
+                    handleResultChattingWithTheBot(chatId, messageText);
                     break;
                 default:
                     startConversation(chatId);
@@ -706,11 +713,15 @@ public class TelegramBotController extends TelegramLongPollingBot {
                         sbResultStr = sbResultStr.substring(0, sbResultStr.length() - 2) + ". ";
                         userDataMap.get(chatId).setState(UserData.State.WAITING_RESULT_SENDING_RESUME);
                         sendMessage(chatId, sbResult.toString());
+                        sendMessage(chatId, "Теперь если у вас есть какие либо вопросы, завайте! " +
+                                "На 5 вопросов готов ответить, на большее извиняйте..");
                         return;
                     }
                 }
                 userDataMap.get(chatId).setState(UserData.State.WAITING_RESULT_SENDING_RESUME);
                 sendMessage(chatId, sbResult.toString());
+                sendMessage(chatId, "Теперь если у вас есть какие либо вопросы, завайте! " +
+                        "На 5 вопросов готов ответить, на большее извиняйте..");
             } else {
                 sendMessage(chatId,"Все с вами ясно, на нет и разговору нет. Собирайтесь силами " +
                         "дальше, когда надумаете обращайтесь...");
@@ -779,6 +790,8 @@ public class TelegramBotController extends TelegramLongPollingBot {
                         userDataMap.get(chatId).getIdVacancyForResume());
                 userDataMap.get(chatId).setState(UserData.State.WAITING_RESULT_SENDING_RESUME);
                 sendMessage(chatId, result);
+                sendMessage(chatId, "Теперь если у вас есть какие либо вопросы, завайте! " +
+                        "На 5 вопросов готов ответить, на большее извиняйте..");
             } else {
                 sendMessage(chatId,"Ну и хрен с вами, как хотите, гуляйте, отдыхайте... " +
                         "Когда снова решитесь обращайтесь.");
@@ -788,6 +801,40 @@ public class TelegramBotController extends TelegramLongPollingBot {
         } else {
             sendMessage(chatId, "Вы ввели некорректные данные. Пожалуйста, введите 'Да', 'Нет', 'Yes', 'No', 'Так' или 'Ні'.");
         }
+    }
+
+    private void handleResultChattingWithTheBot(long chatId, String messageText) {
+        UserData userData = userDataMap.get(chatId);
+        if (ProfanityFilter.containsProfanity(messageText, userData)) {
+            String responceFromFilterProfanity = ProfanityFilter.reactionToSwearing(userData);
+            if (userData.getCountBadMessage() == 4) {
+                userData.setCountBadMessage(0);
+                sendMessage(chatId, responceFromFilterProfanity);
+                userData.setState(UserData.State.END);
+                return;
+            }
+            sendMessage(chatId, responceFromFilterProfanity);
+        }
+
+        if (userData.getCountBadMessage() == 3 && userData.isPresenceApologySwearing3()) {
+            sendMessage(chatId, "Другое дело! Чтобы больше не слышал подобного... Теперь готов " +
+                    "дальше общаться, если вы только не исчерпали свой лимит в 5 вопросов мне, который " +
+                    "я вам подарил..");
+        }
+
+        String responce = "";
+
+        while (userData.getCountQuestionToBot() < 5) {
+            responce = openAIService.generateCompletion(messageText);
+            sendMessage(chatId, responce);
+            userData.setCountQuestionToBot(userData.getCountQuestionToBot() + 1);
+        }
+        sendMessage(chatId, "Все достаточно, я ж сказал 5 вопросов, не больше! Не хочу более. " +
+                "Если отправите новые резюме на другие вакансии, может захочу пообщаться " +
+                "с вами еще.. А так удачного отклика и поднятия денег! Конечно если никто не " +
+                "отозветься, обращайтесь снова, помогу!");
+        userDataMap.get(chatId).setState(UserData.State.END);
+        userData.setCountQuestionToBot(0);
     }
 
     public void sendMessage(long chatId, String text) {
