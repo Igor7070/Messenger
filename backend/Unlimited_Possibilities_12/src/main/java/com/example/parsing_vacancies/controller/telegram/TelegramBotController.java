@@ -824,7 +824,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
 
         String responce = "";
 
-        while (userData.getCountQuestionToBot() < 5) {
+        if (userData.getCountQuestionToBot() < 5) {
             responce = openAIService.generateCompletion(messageText);
             sendMessage(chatId, responce);
             userData.setCountQuestionToBot(userData.getCountQuestionToBot() + 1);
