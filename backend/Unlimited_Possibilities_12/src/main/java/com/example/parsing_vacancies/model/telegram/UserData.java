@@ -29,6 +29,7 @@ public class UserData {
     private int countBadMessage = 0;
     private boolean presenceApologySwearing3 = false;
     private boolean workedMethodHandleApology = false;
+    private int countMessageSwearing3 = 0;
 
     public enum State {
         WAITING_FOR_START,
@@ -246,6 +247,14 @@ public class UserData {
 
     public void setWorkedMethodHandleApology(boolean workedMethodHandleApology) {
         this.workedMethodHandleApology = workedMethodHandleApology;
+    }
+
+    public int getCountMessageSwearing3() {
+        return countMessageSwearing3;
+    }
+
+    public void setCountMessageSwearing3(int countMessageSwearing3) {
+        this.countMessageSwearing3 = countMessageSwearing3;
     }
 
     @Override

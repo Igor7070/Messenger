@@ -823,7 +823,12 @@ public class TelegramBotController extends TelegramLongPollingBot {
             return;
         }
 
-        if (!userData.isPresenceApologySwearing3()) {
+        //счет сообщений при третьем счете мата
+        if (userData.getCountBadMessage() == 3) {
+            userData.setCountBadMessage(userData.getCountMessageSwearing3() + 1);
+        }
+
+        if (userData.getCountMessageSwearing3() == 1) {
             if (userData.getCountBadMessage() == 3 && userData.isPresenceApologySwearing3() &&
                     !userData.isWorkedMethodHandleApology()) {
                 sendMessage(chatId, "Другое дело! Чтобы больше не слышал подобного... Теперь готов " +
@@ -869,6 +874,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
             userData.setState(UserData.State.END);
             return;
         }
+        userData.setCountBadMessage(userData.getCountMessageSwearing3() + 1);
         if (!userData.isPresenceApologySwearing3()) {
             sendMessage(chatId, "Извиняйся нах..! До этих пор общаться с тобой не буду!");
         } else {
