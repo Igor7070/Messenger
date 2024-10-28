@@ -30,6 +30,7 @@ public class UserData {
     private boolean presenceApologySwearing3 = false;
     private boolean workedMethodHandleApology = false;
     private int countMessageSwearing3 = 0;
+    private int currentIndexDemandApology = 0;
 
     public enum State {
         WAITING_FOR_START,
@@ -255,6 +256,14 @@ public class UserData {
 
     public void setCountMessageSwearing3(int countMessageSwearing3) {
         this.countMessageSwearing3 = countMessageSwearing3;
+    }
+
+    public int getCurrentIndexDemandApology() {
+        return currentIndexDemandApology;
+    }
+
+    public void setCurrentIndexDemandApology(int currentIndexDemandApology) {
+        this.currentIndexDemandApology = currentIndexDemandApology;
     }
 
     @Override

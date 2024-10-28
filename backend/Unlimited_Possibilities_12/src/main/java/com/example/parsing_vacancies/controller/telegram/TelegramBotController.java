@@ -816,6 +816,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 userData.setWorkedMethodHandleApology(false);
                 userData.setPresenceApologySwearing3(false);
                 userData.setCountMessageSwearing3(0);
+                userData.setCurrentIndexDemandApology(0);
                 sendMessage(chatId, responceFromFilterProfanity);
                 userData.setState(UserData.State.END);
                 return;
@@ -838,7 +839,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
                 return;
             } else if (userData.getCountBadMessage() == 3 && !userData.isPresenceApologySwearing3()) {
                 userData.setState(UserData.State.WAITING_APOLOGY);
-                sendMessage(chatId, "Извиняйся нах..! До этих пор общаться с тобой не буду!");
+                sendMessage(chatId, getNextStringDemandApology(userData));
                 return;
             }
         }
@@ -861,6 +862,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
             userData.setWorkedMethodHandleApology(false);
             userData.setPresenceApologySwearing3(false);
             userData.setCountMessageSwearing3(0);
+            userData.setCurrentIndexDemandApology(0);
         }
     }
 
@@ -873,13 +875,14 @@ public class TelegramBotController extends TelegramLongPollingBot {
             userData.setWorkedMethodHandleApology(false);
             userData.setPresenceApologySwearing3(false);
             userData.setCountMessageSwearing3(0);
+            userData.setCurrentIndexDemandApology(0);
             sendMessage(chatId, responceFromFilterProfanity);
             userData.setState(UserData.State.END);
             return;
         }
         userData.setCountMessageSwearing3(userData.getCountMessageSwearing3() + 1);
         if (!userData.isPresenceApologySwearing3()) {
-            sendMessage(chatId, "Извиняйся нах..! До этих пор общаться с тобой не буду!");
+            sendMessage(chatId, getNextStringDemandApology(userData));
         } else {
             userData.setState(UserData.State.WAITING_RESULT_SENDING_RESUME);
             userData.setWorkedMethodHandleApology(true);
@@ -887,6 +890,26 @@ public class TelegramBotController extends TelegramLongPollingBot {
                     "дальше общаться, если вы только не исчерпали свой лимит в 5 вопросов мне, который " +
                     "я вам подарил..");
         }
+    }
+
+    public String getNextStringDemandApology(UserData userData) {
+        String result;
+        switch (userData.getCurrentIndexDemandApology()) {
+            case 0:
+                result = "Извиняйся нах..! До этих пор общаться с тобой не буду!";
+                break;
+            case 1:
+                result = "Где извинения блять, не вижу?!";
+                break;
+            case 2:
+                result = "Хватит писать хуйню, жду извинений..!";
+                break;
+            default:
+                result = "Извиняйся нах..! До этих пор общаться с тобой не буду!";
+                break;
+        }
+        userData.setCurrentIndexDemandApology((userData.getCurrentIndexDemandApology() + 1)% 3);
+        return result;
     }
 
     public void sendMessage(long chatId, String text) {
