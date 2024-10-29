@@ -896,7 +896,7 @@ public class TelegramBotController extends TelegramLongPollingBot {
         String result;
         switch (userData.getCurrentIndexDemandApology()) {
             case 0:
-                result = "Извиняйся нах..! До этих пор общаться с тобой не буду!";
+                result = "Извиняйся нах..! До этих пор общаться с тобой не буду!";//
                 break;
             case 1:
                 result = "Где извинения блять, не вижу?!";
