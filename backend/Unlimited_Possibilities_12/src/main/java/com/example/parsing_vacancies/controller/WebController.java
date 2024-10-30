@@ -158,6 +158,121 @@ public class WebController {
         return "resultSearchVacancies";
     }
 
+    // Новый метод для Android
+    @PostMapping("/api/convenient_job_search/search_result")
+    @ResponseBody
+    public ResponseEntity<List<Vacancy>> handleApiSearch(@RequestParam(name = "work-ua", required = false) boolean workUa,
+                               @RequestParam(name = "rabota-ua", required = false) boolean rabotaUa,
+                               @RequestParam(name = "max-vacancies-work", required = false) Integer maxVacanciesWorkUa,
+                               @RequestParam(name = "max-vacancies-rabota", required = false) Integer maxVacanciesRabotaUa,
+                               @RequestParam(name = "inputPosition", required = false) String inputPosition,
+                               @RequestParam(name = "city", required = false) String city,
+                               @RequestParam(name = "language", required = false) String language,
+                               @RequestParam(name = "timeframe", required = false) String timeframe) {
+
+        List<Vacancy> vacancies = new ArrayList<>();
+        List<Provider> providersList = new ArrayList<>();
+        String result = "";
+
+        if (workUa && rabotaUa) {
+            // Обработка выбора Work.ua и Rabota.ua
+            Provider providerWorkUa = new Provider(new WorkUaStrategy());
+            Provider providerRabotaUa = new Provider(new RabotaUaStrategy());
+            providersList.add(providerWorkUa);
+            providersList.add(providerRabotaUa);
+            result = "Выбран Work.ua и Rabota.ua";
+            System.out.println(result);
+        } else if (workUa) {
+            // Обработка выбора Work.ua
+            Provider providerWorkUa = new Provider(new WorkUaStrategy());
+            providersList.add(providerWorkUa);
+            result = "Выбран Work.ua";
+            System.out.println(result);
+        } else if (rabotaUa) {
+            // Обработка выбора Rabota.ua
+            Provider providerRabotaUa = new Provider(new RabotaUaStrategy());
+            providersList.add(providerRabotaUa);
+            result = "Выбран Rabota.ua";
+            System.out.println(result);
+        } else if (!workUa && !rabotaUa) {
+            return ResponseEntity.ok(vacancies);
+        }
+
+        Provider[] providers = providersList.toArray(new Provider[providersList.size()]);
+        com.example.parsing_vacancies.controller.Controller controller = startConfiguration(providers);
+        /*System.out.println("language : "  + language);
+        System.out.println("city : "  + city);
+        System.out.println("time : "  + timeframe);*/
+
+        if ((city == null || city.isEmpty()) && (language == null || language.isEmpty()) &&
+                (timeframe == null || timeframe.isEmpty())) {
+            controller.onPositionSelect(inputPosition, maxVacanciesWorkUa, maxVacanciesRabotaUa);
+        } else {
+            Language language1 = null;
+            City city1 = null;
+            TimeDate timeDate1 = null;
+            if (city == null || city.isEmpty()) {
+                city1 = City.KIEV;
+            }
+            if (language == null || language.isEmpty()) {
+                language1 = Language.RUSSIAN;
+            }
+            if (timeframe == null || timeframe.isEmpty()) {
+                timeDate1 = TimeDate.THIRTY_DAYS;
+            }
+            switch (language) {
+                case "ru" -> language1 = Language.RUSSIAN;
+                case "uk" -> language1 = Language.UKRAINIAN;
+                case "en" -> language1 = Language.ENGLISH;
+            }
+            switch (city) {
+                case "kiev" -> city1 = City.KIEV;
+                case "kharkiv" -> city1 = City.KHARKOV;
+                case "odesa" -> city1 = City.ODESSA;
+                case "dnipro" -> city1 = City.DNEPROPETROVSK;
+            }
+            switch (timeframe) {
+                case "1" -> timeDate1 = TimeDate.ONE_DAY;
+                case "3" -> timeDate1 = TimeDate.THREE_DAYS;
+                case "7" -> timeDate1 = TimeDate.SEVEN_DAYS;
+                case "14" -> timeDate1 = TimeDate.FOURTEEN_DAYS;
+                case "30" -> timeDate1 = TimeDate.THIRTY_DAYS;
+            }
+            controller.onParamSelect(language1, city1, inputPosition, timeDate1,
+                    maxVacanciesWorkUa, maxVacanciesRabotaUa);
+        }
+
+        while (true) {
+            if (workUa && rabotaUa) {
+                if (fullVacancies != null) {
+                    for (Vacancy vacancy : fullVacancies) {
+                        vacancyRepository.save(vacancy);
+                    }
+                    vacancies = fullVacancies;
+                    break;
+                }
+            } else if (workUa) {
+                if (fromWorkUaVacancies != null) {
+                    for (Vacancy vacancy : fromWorkUaVacancies) {
+                        vacancyRepository.save(vacancy);
+                    }
+                    vacancies = fromWorkUaVacancies;
+                    break;
+                }
+            } else if (rabotaUa) {
+                if (fromRabotaUaVacancies != null) {
+                    for (Vacancy vacancy : fromRabotaUaVacancies) {
+                        vacancyRepository.save(vacancy);
+                    }
+                    vacancies = fromRabotaUaVacancies;
+                    break;
+                }
+            }
+        }
+
+        return ResponseEntity.ok(vacancies);
+    }
+
     @GetMapping("/convenient_job_search/job_search_history")
     public String jobSearchHistory(Model model) {
         Iterable<Vacancy> vacanciesFullListHistory = vacancyRepository.findAll();
