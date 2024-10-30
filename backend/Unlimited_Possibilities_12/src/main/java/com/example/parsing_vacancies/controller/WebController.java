@@ -39,7 +39,7 @@ public class WebController {
     public String mainPage(Model model) {
         model.addAttribute("title", "Развитие и");
         model.addAttribute("title2", " возможности");
-        return "siteVacancies";
+        return "siteVacancies";//
     }
 
     @PostMapping("/convenient_job_search/search_result")
