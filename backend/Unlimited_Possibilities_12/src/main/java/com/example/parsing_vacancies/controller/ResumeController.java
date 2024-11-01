@@ -244,7 +244,7 @@ public class ResumeController {
         model.addAttribute("resume", resume);
         model.addAttribute("vacancyId", vacancyId);
         System.out.println(vacancyId);
-        return "createResume"; // Название представления для подтверждения
+        return "createResume"; // Название представления для подтверждения//
     }
 
     @PostMapping("/convenient_job_search/readyResume")
