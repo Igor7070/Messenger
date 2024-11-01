@@ -1,6 +1,8 @@
 package com.example.parsing_vacancies.model.resume;
 
-public class WorkExperience {
+import java.io.Serializable;
+
+public class WorkExperience implements Serializable {
     private String companyName;
     private String position;
     private String period;

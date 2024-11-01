@@ -20,15 +20,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -116,126 +110,6 @@ public class ResumeController {
         transliterationMap.put('Ю', "Yu");
         transliterationMap.put('Я', "Ya");
     }
-    private static String responceTimeVar = "---\n" +
-            "\n" +
-            "**Резюме**\n" +
-            "\n" +
-            "**Алишер Балибурды Магоммедов**\n" +
-            "\n" +
-            "---\n" +
-            "\n" +
-            "**Контактная информация:**\n" +
-            "- **Телефон:** +38 (077) 127 99 00\n" +
-            "- **Электронная почта:** ijijij7070@gmail.com\n" +
-            "- **Город:** Киев\n" +
-            "\n" +
-            "---\n" +
-            "\n" +
-            "**Цель поиска работы:**\n" +
-            "Рост, развитие и карьера.\n" +
-            "\n" +
-            "---\n" +
-            "\n" +
-            "**Образование:**\n" +
-            "\n" +
-            "- **Киевский Политехнический Институт**\n" +
-            "  - **Специальность:** Автоматика\n" +
-            "  - **Годы обучения:** 1995-2001\n" +
-            "\n" +
-            "- **КИСИ (Киевский Институт Строительства и Архитектуры)**\n" +
-            "  - **Специальность:** Экономика\n" +
-            "  - **Годы обучения:** 2002-2007\n" +
-            "\n" +
-            "---\n" +
-            "\n" +
-            "**Опыт работы:**\n" +
-            "\n" +
-            "- **РомТорг**\n" +
-            "  - **Должность:** Менеджер\n" +
-            "  - **Период работы:** 2007-2010\n" +
-            "  - **Обязанности:**\n" +
-            "    - Управление продажами и взаимодействие с клиентами\n" +
-            "    - Разработка и внедрение стратегий продаж\n" +
-            "\n" +
-            "- **ЧатырЕнерго**\n" +
-            "  - **Должность:** Инженер\n" +
-            "  - **Период работы:** 2010-2015\n" +
-            "  - **Обязанности:**\n" +
-            "    - Проектирование и сборка шкафов автоматики для технологических процессов\n" +
-            "    - Поддержка существующих систем автоматизации\n" +
-            "\n" +
-            "- **Google**\n" +
-            "  - **Должность:** Программист\n" +
-            "  - **Период работы:** 2015-2023\n" +
-            "  - **Обязанности:**\n" +
-            "    - Разработка и поддержка программного обеспечения\n" +
-            "    - Работа с различными языками программирования и базами данных\n" +
-            "    - Участие в проектах по разработке ИИ\n" +
-            "\n" +
-            "---\n" +
-            "\n" +
-            "**Навыки и способности:**\n" +
-            "\n" +
-            "- **Технические навыки:**\n" +
-            "  - Опыт проектирования и сборки шкафов автоматики для технологических процессов, а также продаж\n" +
-            "  - Знания и опыт работы с языками программирования: Java, JavaScript, Python, C++, C#, Kotlin, HTML\n" +
-            "  - Опыт работы с SQL и базами данных\n" +
-            "  - Работа со множеством библиотек и фреймворков\n" +
-            "\n" +
-            "- **Мягкие навыки:**\n" +
-            "  - Способность развиваться и быстро решать задачи\n" +
-            "  - Отличные коммуникативные способности\n" +
-            "  - Умение работать в команде и самостоятельность в выполнении задач\n" +
-            "\n" +
-            "---\n" +
-            "\n" +
-            "**Языки:**\n" +
-            "- Английский - Продвинутый\n" +
-            "- Французский - Продвинутый\n" +
-            "- Немецкий - Средний\n" +
-            "- Фарси - Средний\n" +
-            "- Русский - Родной\n" +
-            "\n" +
-            "---\n" +
-            "\n" +
-            "**Личные достижения и награды:**\n" +
-            "- Золотая медаль на олимпиаде 2017 года по разработке ИИ в Евразии.\n" +
-            "\n" +
-            "---\n" +
-            "\n" +
-            "**Дополнительные сведения:**\n" +
-            "\n" +
-            "- **Участие в проектах:**\n" +
-            "  - Участие в международных проектах по разработке программного обеспечения и систем автоматизации\n" +
-            "  - Руководство небольшими командами разработчиков\n" +
-            "  - Участие в конференциях и семинарах по новым технологиям и разработке ПО\n" +
-            "\n" +
-            "- **Личные качества:**\n" +
-            "  - Высокая мотивация и целеустремленность\n" +
-            "  - Ответственность и внимание к деталям\n" +
-            "  - Гибкость и адаптивность в условиях быстро меняющейся среды\n" +
-            "\n" +
-            "- **Интересы и хобби:**\n" +
-            "  - Искусственный интеллект и машинное обучение\n" +
-            "  - Чтение литературы по новейшим технологиям\n" +
-            "  - Занятия спортом\n" +
-            "\n" +
-            "---\n" +
-            "\n" +
-            "**Ссылки на профессиональные профили:**\n" +
-            "- LinkedIn: [Ваш профиль LinkedIn]\n" +
-            "- GitHub: [Ваш профиль GitHub]\n" +
-            "\n" +
-            "---\n" +
-            "\n" +
-            "**Примечание:** Готов предоставить рекомендации по запросу.\n" +
-            "\n" +
-            "---\n" +
-            "\n" +
-            "С уважением,  \n" +
-            "Алишер Балибурды Магоммедов\n" +
-            "\n" +
-            "---\n";
 
     @GetMapping("/convenient_job_search/createResume")
     public String createResume(@ModelAttribute Resume resume, @RequestParam("vacancyId") Integer vacancyId, Model model) {
@@ -244,7 +118,7 @@ public class ResumeController {
         model.addAttribute("resume", resume);
         model.addAttribute("vacancyId", vacancyId);
         System.out.println(vacancyId);
-        return "createResume"; // Название представления для подтверждения//
+        return "createResume"; // Название представления для подтверждения
     }
 
     @PostMapping("/convenient_job_search/readyResume")
@@ -421,6 +295,189 @@ public class ResumeController {
         System.out.println("Имя файла: " + fileName);
 
         return "readyResume";
+    }
+
+    @PostMapping("/api/convenient_job_search/readyResume")
+    @ResponseBody
+    public ResponseEntity<byte[]> apiReadyResume(@RequestBody Resume resume,
+                                                        @RequestBody Vacancy vacancy,
+                                                        @RequestParam(name = "enableAI", required = false) boolean isChatGpt) {
+        StringBuilder sbEducation = new StringBuilder();
+        StringBuilder sbWorkExperience = new StringBuilder();
+        for (int i = 0; i < resume.getEducationList().size(); i++) {
+            String institutionName = resume.getEducationList().get(i).getInstitutionName();
+            String specialization = resume.getEducationList().get(i).getSpecialization();
+            String years = resume.getEducationList().get(i).getYears();
+            String result = String.format("учебное заведение №%d - %s," +
+                            " специальность учебного заведения №%d - %s," +
+                            " годы обучения учебного заведения №%d - %s", i + 1, institutionName,
+                    i + 1, specialization, i + 1, years);
+            if (i != resume.getEducationList().size() - 1) {
+                sbEducation.append(result).append("; ");
+            } else {
+                sbEducation.append(result).append(".");
+            }
+        }
+
+        for (int i = 0; i < resume.getWorkExperienceList().size(); i++) {
+            String companyName = resume.getWorkExperienceList().get(i).getCompanyName();
+            String position = resume.getWorkExperienceList().get(i).getPosition();
+            String period = resume.getWorkExperienceList().get(i).getPeriod();
+            String result = String.format("компания №%d - %s," +
+                            " должность компании №%d - %s," +
+                            " период работы в компании №%d - %s", i + 1, companyName,
+                    i + 1, position, i + 1, period);
+            if (i != resume.getWorkExperienceList().size() - 1) {
+                sbWorkExperience.append(result).append("; ");
+            } else {
+                sbWorkExperience.append(result).append(".");
+            }
+        }
+
+        String finalResultQuery = String.format("Привет, создай мне резюме для вакансии %s," +
+                        " компании %s, города %s. Мои данные: ФИО - %s, номер телефона - %s, город - %s" +
+                        " электронная почта - %s, цель поиска работы - %s," +
+                        " образование {%s}, опыт работы {%s}, " +
+                        " я владею такими языками - %s, мои навыки и способности - %s," +
+                        " мои личные достижения и награды - %s. Пусть в таком порядке будет:" +
+                        " Контактная информация, Цель, Образование, Опыт работы," +
+                        " Навыки и способности, Владение языками," +
+                        " Личные достижения и награды." +
+                        " Пусть резюме начинается и завершается строкой \"---\"." +
+                        " Добавь дополнительное содержимое (пусть после ключевого слова" +
+                        " Дополнительная информация) для улучшения." +
+                        " Перед названиями учебного заведения и названией компании работы" +
+                        " пусть всегда будет пустая строка." +
+                        " Резюме можно улучшить не нарушая структуру описанную. В случае отсутствия" +
+                        " определенных данных, заполни на свое усмотрение соблюдая выше шаблон.",
+                vacancy.getTitle(), vacancy.getCompanyName(), vacancy.getCity(), resume.getFullName(),
+                resume.getPhone(), resume.getCity(), resume.getEmail(), resume.getObjective(),
+                sbEducation, sbWorkExperience, resume.getLanguages(),
+                resume.getSkills(), resume.getAchievements());
+        System.out.println(finalResultQuery);
+
+        String responce = "";
+        String purposeWork = "";
+        String education = "";
+        String workExperience = "";
+        String languages = "";
+        String skills = "";
+        String achievements = "";
+        String addition = "";
+        if (isChatGpt) {
+            responce = openAIService.generateCompletion(finalResultQuery);
+            //responce = responceTimeVar;
+            System.out.println(responce);
+            purposeWork = extractPurposeWorkSection(responce);
+            education = extractEducationSection(responce);
+            workExperience = extractExperienceSection(responce);
+            languages = extractLanguagesSection(responce);
+            skills = extractSkillsSection(responce);
+            achievements = extractAchievementsSection(responce);
+            addition = extractAdditionSection(responce);
+        }
+
+        // Создание документа Word
+        XWPFDocument document = new XWPFDocument();
+
+        // Заголовок "Резюме"
+        addHeader(document, "Резюме");
+
+        // Заголовок полное имя
+        addTitle(document, resume.getFullName());
+
+        // Контактная информация
+        addSectionTitle(document, "Контактная информация:", true);
+        addContactInfo(document, resume);
+
+        // Цель
+        addSectionTitle(document, "Цель:", true);
+        if (isChatGpt) {
+            addPurposeWorkFromChatGpt(document, purposeWork);
+        } else {
+            addContentToDocument(resume.getObjective(), document, false);
+        }
+
+        // Образование
+        addSectionTitle(document, "Образование:", true);
+        if (isChatGpt) {
+            addEducationFromChatGpt(document, education);
+        } else {
+            addEducation(document, resume.getEducationList());
+        }
+
+        // Опыт работы
+        addSectionTitle(document, "Опыт работы:", true);
+        if (isChatGpt) {
+            addWorkExperienceFromChatGpt(document, workExperience);
+        } else {
+            addWorkExperience(document, resume.getWorkExperienceList());
+        }
+
+        // Навыки и способности
+        addSectionTitle(document, "Навыки и способности:", true);
+        if (isChatGpt) {
+            addSkillsFromChatGpt(document, skills);
+        } else {
+            addSkills(document, resume.getSkills());
+        }
+
+        // Владение языками
+        addSectionTitle(document, "Владение языками:", true);
+        if (isChatGpt) {
+            if (languages.isEmpty()) {
+                addLanguages(document, resume.getLanguages());
+            } else {
+                addLanguagesFromChatGpt(document, languages);
+            }
+        } else {
+            addLanguages(document, resume.getLanguages());
+        }
+
+        // Личные достижения и награды
+        addSectionTitle(document, "Личные достижения и награды:", true);
+        if (isChatGpt) {
+            addAchievementsFromChatGpt(document, achievements);
+        } else {
+            addAchievements(document, resume.getAchievements());
+        }
+
+        if (isChatGpt) {
+            addSectionTitle(document, "Дополнительная информация:", true);
+            addAdditionFromChatGpt(document, addition);
+        }
+
+        Path pathFile = Paths.get("src/main/resources/static/resumes/").toAbsolutePath();
+        String fullNameInLatin = transliterate(resume.getFullName().replace(" ", "_")).trim();
+        String fileName = "resume_" + fullNameInLatin + ".docx";
+        FileOutputStream out;
+        ByteArrayOutputStream outputStream;
+        byte[] documentBytes;
+
+        try {
+            out = new FileOutputStream(new File(pathFile.toString(), fileName));
+            document.write(out);
+            out.close();
+
+            // Сохранение документа в байтовый массив
+            outputStream = new ByteArrayOutputStream();
+            document.write(outputStream);
+            documentBytes = outputStream.toByteArray();
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        System.out.println("Имя файла: " + fileName);
+
+        // Установка заголовков для ответа
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+        headers.add("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+
+        // Возврат документа
+        return new ResponseEntity<>(documentBytes, headers, HttpStatus.OK);
     }
 
     @Scheduled(fixedRate = 60000) // Каждую минуту
