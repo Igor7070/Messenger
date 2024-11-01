@@ -3,6 +3,7 @@ package com.example.parsing_vacancies.controller;
 import com.example.parsing_vacancies.model.Vacancy;
 import com.example.parsing_vacancies.model.resume.Education;
 import com.example.parsing_vacancies.model.resume.Resume;
+import com.example.parsing_vacancies.model.resume.ResumeRequest;
 import com.example.parsing_vacancies.model.resume.WorkExperience;
 import com.example.parsing_vacancies.repo.VacancyRepository;
 import com.example.parsing_vacancies.service.OpenAIService;
@@ -299,9 +300,11 @@ public class ResumeController {
 
     @PostMapping("/api/convenient_job_search/readyResume")
     @ResponseBody
-    public ResponseEntity<byte[]> apiReadyResume(@RequestBody Resume resume,
-                                                        @RequestBody Vacancy vacancy,
-                                                        @RequestParam(name = "enableAI", required = false) boolean isChatGpt) {
+    public ResponseEntity<byte[]> apiReadyResume(@RequestBody ResumeRequest request) {
+        Resume resume = request.getResume();
+        Vacancy vacancy = request.getVacancy();
+        boolean isChatGpt = request.isEnableAI();
+
         StringBuilder sbEducation = new StringBuilder();
         StringBuilder sbWorkExperience = new StringBuilder();
         for (int i = 0; i < resume.getEducationList().size(); i++) {
