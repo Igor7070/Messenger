@@ -300,7 +300,7 @@ public class ResumeController {
 
     @PostMapping("/api/convenient_job_search/readyResume")
     @ResponseBody
-    public ResponseEntity<byte[]> apiReadyResume(@RequestBody ResumeRequest request) {//
+    public ResponseEntity<byte[]> apiReadyResume(@RequestBody ResumeRequest request) {
         Resume resume = request.getResume();
         Vacancy vacancy = request.getVacancy();
         boolean isChatGpt = request.isEnableAI();
@@ -491,7 +491,7 @@ public class ResumeController {
 
         if (files != null) {
             long currentTime = System.currentTimeMillis();
-            long expirationTime = TimeUnit.MINUTES.toMillis(3); // 20 минут
+            long expirationTime = TimeUnit.MINUTES.toMillis(21); // 20 минут
 
             for (File file : files) {
                 if (!file.getName().equals("README.md") && currentTime - file.lastModified() > expirationTime) {
