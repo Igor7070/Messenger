@@ -300,7 +300,7 @@ public class ResumeController {
 
     @PostMapping("/api/convenient_job_search/readyResume")
     @ResponseBody
-    public ResponseEntity<byte[]> apiReadyResume(@RequestBody ResumeRequest request) {
+    public ResponseEntity<byte[]> apiReadyResume(@RequestBody ResumeRequest request) {//
         Resume resume = request.getResume();
         Vacancy vacancy = request.getVacancy();
         boolean isChatGpt = request.isEnableAI();
