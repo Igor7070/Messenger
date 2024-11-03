@@ -3,8 +3,10 @@ package com.example.parsing_vacancies.controller;
 import com.example.parsing_vacancies.controller.telegram.TelegramBotController;
 import com.example.parsing_vacancies.model.telegram.UserData;
 import com.example.parsing_vacancies.service.AuthenticationDebugService;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -153,6 +155,9 @@ public class AuthController {
         String idToken = body.get("idToken");
         String authCode = body.get("authCode"); // Получение authorization code
 
+        System.out.println("idToken: " + idToken);
+        System.out.println("authCode: " + authCode);
+
         // Проверка idToken
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
                 .setAudience(Collections.singletonList(clientId))
@@ -170,8 +175,8 @@ public class AuthController {
             GoogleIdToken.Payload payload = token.getPayload();
             String email = payload.getEmail();
 
-            //String accessToken = exchangeCodeForAccessToken(authCode);
-            String accessToken = "";
+            String accessToken = exchangeCodeForAccessToken(authCode);
+            //String accessToken = "";
             return ResponseEntity.ok(Map.of("message", "Успешная аутентификация", "accessToken", accessToken));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Недействительный токен");
@@ -179,7 +184,8 @@ public class AuthController {
     }
 
     // Метод для обмена authorization code на access token
-    /*public String exchangeCodeForAccessToken(String code) {
+    public String exchangeCodeForAccessToken(String code) {
+        System.out.println("Method exchangeCodeForAccessToken is working...");
         try {
             GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
                     transport, jsonFactory,
@@ -198,5 +204,5 @@ public class AuthController {
             e.printStackTrace();
             return null; // Обработка ошибок
         }
-    }*/
+    }
 }
