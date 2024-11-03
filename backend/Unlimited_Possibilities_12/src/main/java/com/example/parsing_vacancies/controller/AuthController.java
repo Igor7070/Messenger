@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
@@ -192,7 +193,11 @@ public class AuthController {
                     "https://oauth2.googleapis.com/token",
                     clientId,
                     Collections.singletonList(clientSecret))
-                    .setScopes(Collections.singletonList("https://www.googleapis.com/auth/userinfo.email"))
+                    .setScopes(Arrays.asList(
+                            "https://www.googleapis.com/auth/userinfo.email",
+                            "https://www.googleapis.com/auth/gmail.send",
+                            "email",
+                            "profile"))
                     .build();
 
             GoogleTokenResponse tokenResponse = flow.newTokenRequest(code)
