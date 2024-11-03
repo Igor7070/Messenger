@@ -177,6 +177,7 @@ public class AuthController {
             String email = payload.getEmail();
 
             String accessToken = exchangeCodeForAccessToken(authCode);
+            System.out.println("accessToken: " + accessToken);
             //String accessToken = "";
             return ResponseEntity.ok(Map.of("message", "Успешная аутентификация", "accessToken", accessToken));
         } else {
@@ -189,12 +190,11 @@ public class AuthController {
         System.out.println("Method exchangeCodeForAccessToken is working...");
         try {
             GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-                    transport, jsonFactory,
-                    "https://oauth2.googleapis.com/token",
-                    "700417838593-m7o2cpuriob059nre37ckgb2u8d8rtld.apps.googleusercontent.com",
-                    Collections.singletonList("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"))
-                    .setScopes(Arrays.asList(
-                            "https://www.googleapis.com/auth/userinfo.email",
+                    transport,
+                    jsonFactory,
+                    clientId,
+                    clientSecret, // Используем clientSecret в конструкторе
+                    Arrays.asList("https://www.googleapis.com/auth/userinfo.email",
                             "https://www.googleapis.com/auth/gmail.send",
                             "email",
                             "profile"))
