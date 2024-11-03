@@ -169,6 +169,9 @@ public class AuthController {
 
         if (token != null) {
             // Получение access token через authorization code
+            GoogleIdToken.Payload payload = token.getPayload();
+            String email = payload.getEmail();
+
             String accessToken = exchangeCodeForAccessToken(authCode);
             return ResponseEntity.ok(Map.of("message", "Успешная аутентификация", "accessToken", accessToken));
         } else {
