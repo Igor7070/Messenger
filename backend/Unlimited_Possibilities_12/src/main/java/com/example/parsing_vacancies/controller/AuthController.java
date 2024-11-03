@@ -196,7 +196,7 @@ public class AuthController {
                     .build();
 
             GoogleTokenResponse tokenResponse = flow.newTokenRequest(code)
-                    .setRedirectUri("YOUR_REDIRECT_URI") // Это может быть любое значение, так как для мобильных приложений это не используется
+                    .setRedirectUri("https://unlimitedpossibilities12.org/oauth2/callback") // Это может быть любое значение, так как для мобильных приложений это не используется
                     .execute();
 
             return tokenResponse.getAccessToken();
