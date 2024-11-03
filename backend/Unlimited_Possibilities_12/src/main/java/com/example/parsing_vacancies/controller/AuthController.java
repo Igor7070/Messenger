@@ -3,8 +3,10 @@ package com.example.parsing_vacancies.controller;
 import com.example.parsing_vacancies.controller.telegram.TelegramBotController;
 import com.example.parsing_vacancies.model.telegram.UserData;
 import com.example.parsing_vacancies.service.AuthenticationDebugService;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -12,10 +14,9 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -40,6 +41,12 @@ public class AuthController {
     private TelegramBotController telegramBotController;
     private final HttpTransport transport = new NetHttpTransport();
     private final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    private String clientId;
+
+    @Value("${spring.security.oauth2.client.registration.google.client-secret}")
+    private String clientSecret;
 
     @GetMapping("/login")
     public String login(HttpSession session, @RequestParam(required = false) String chatId) {
@@ -107,7 +114,7 @@ public class AuthController {
     }
     //https://unlimitedpossibilities12.org/convenient_job_search
 
-    @PostMapping("/api/login")
+    /*@PostMapping("/api/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         String idToken = body.get("idToken");
 
@@ -140,6 +147,54 @@ public class AuthController {
             return ResponseEntity.ok(Map.of("message", "Успешная аутентификация", "accessToken", accessToken));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Недействительный токен");
+        }
+    }*/
+
+    @PostMapping("/api/login")
+    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
+        String idToken = body.get("idToken");
+        String authCode = body.get("authCode"); // Получение authorization code
+
+        // Проверка idToken
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+                .setAudience(Collections.singletonList(clientId))
+                .build();
+
+        GoogleIdToken token;
+        try {
+            token = verifier.verify(idToken);
+        } catch (GeneralSecurityException | IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при проверке токена");
+        }
+
+        if (token != null) {
+            // Получение access token через authorization code
+            String accessToken = exchangeCodeForAccessToken(authCode);
+            return ResponseEntity.ok(Map.of("message", "Успешная аутентификация", "accessToken", accessToken));
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Недействительный токен");
+        }
+    }
+
+    // Метод для обмена authorization code на access token
+    public String exchangeCodeForAccessToken(String code) {
+        try {
+            GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+                    transport, jsonFactory,
+                    "https://oauth2.googleapis.com/token",
+                    clientId,
+                    Collections.singletonList(clientSecret))
+                    .setScopes(Collections.singletonList("https://www.googleapis.com/auth/userinfo.email"))
+                    .build();
+
+            GoogleTokenResponse tokenResponse = flow.newTokenRequest(code)
+                    .setRedirectUri("YOUR_REDIRECT_URI") // Это может быть любое значение, так как для мобильных приложений это не используется
+                    .execute();
+
+            return tokenResponse.getAccessToken();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null; // Обработка ошибок
         }
     }
 }
