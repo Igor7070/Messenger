@@ -3,15 +3,32 @@ package com.example.parsing_vacancies.controller;
 import com.example.parsing_vacancies.controller.telegram.TelegramBotController;
 import com.example.parsing_vacancies.model.telegram.UserData;
 import com.example.parsing_vacancies.service.AuthenticationDebugService;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.util.Collections;
+import java.util.Map;
 
 @Controller
 public class AuthController {
@@ -21,6 +38,8 @@ public class AuthController {
     private OAuth2AuthorizedClientService authorizedClientService; // Сервис для получения токена
     @Autowired
     private TelegramBotController telegramBotController;
+    private final HttpTransport transport = new NetHttpTransport();
+    private final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 
     @GetMapping("/login")
     public String login(HttpSession session, @RequestParam(required = false) String chatId) {
@@ -87,4 +106,40 @@ public class AuthController {
         return "redirect:/convenient_job_search?authSuccess=true"; // Перенаправление на домашнюю страницу
     }
     //https://unlimitedpossibilities12.org/convenient_job_search
+
+    @PostMapping("/api/login")
+    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
+        String idToken = body.get("idToken");
+
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+                .setAudience(Collections.singletonList("700417838593-m7o2cpuriob059nre37ckgb2u8d8rtld.apps.googleusercontent.com"))
+                .build();
+
+        GoogleIdToken token = null;
+        try {
+            token = verifier.verify(idToken);
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        if (token != null) {
+            GoogleIdToken.Payload payload = token.getPayload();
+            String email = payload.getEmail();
+
+            // Получение access token из SecurityContext
+            String accessToken = "";
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication instanceof OAuth2AuthenticationToken) {
+                OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+                OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
+                        oauthToken.getAuthorizedClientRegistrationId(), oauthToken.getName());
+                accessToken = client.getAccessToken().getTokenValue();
+            }
+
+            return ResponseEntity.ok(Map.of("message", "Успешная аутентификация", "accessToken", accessToken));
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Недействительный токен");
+        }
+    }
 }
