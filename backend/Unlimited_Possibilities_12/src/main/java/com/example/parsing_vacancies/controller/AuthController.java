@@ -191,8 +191,8 @@ public class AuthController {
             GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
                     transport, jsonFactory,
                     "https://oauth2.googleapis.com/token",
-                    clientId,
-                    Collections.singletonList(clientSecret))
+                    "700417838593-m7o2cpuriob059nre37ckgb2u8d8rtld.apps.googleusercontent.com",
+                    Collections.singletonList("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"))
                     .setScopes(Arrays.asList(
                             "https://www.googleapis.com/auth/userinfo.email",
                             "https://www.googleapis.com/auth/gmail.send",
