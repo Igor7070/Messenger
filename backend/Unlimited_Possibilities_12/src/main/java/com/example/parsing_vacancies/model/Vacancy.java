@@ -88,4 +88,17 @@ public class Vacancy implements Serializable {
     public int hashCode() {
         return Objects.hash(title, salary, city, companyName, siteName, url);
     }
+
+    @Override
+    public String toString() {
+        return "Vacancy{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", salary='" + salary + '\'' +
+                ", city='" + city + '\'' +
+                ", companyName='" + companyName + '\'' +
+                ", siteName='" + siteName + '\'' +
+                ", url='" + url + '\'' +
+                '}';
+    }
 }

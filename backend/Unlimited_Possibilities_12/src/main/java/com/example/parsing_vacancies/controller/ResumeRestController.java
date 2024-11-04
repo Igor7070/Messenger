@@ -1,6 +1,7 @@
 package com.example.parsing_vacancies.controller;
 
 import com.example.parsing_vacancies.model.Vacancy;
+import com.example.parsing_vacancies.model.resume.ResumeSendRequest;
 import com.example.parsing_vacancies.repo.VacancyRepository;
 import com.example.parsing_vacancies.service.EmailService;
 import jakarta.servlet.http.HttpSession;
@@ -15,10 +16,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
@@ -405,6 +403,153 @@ public class ResumeRestController {
 
         public void setBody(String body) {
             this.body = body;
+        }
+    }
+
+    //для андроид
+    @PostMapping("/api/upload")
+    @ResponseBody
+    public ResponseEntity<String> uploadResumeAndroid(@RequestBody ResumeSendRequest request) {
+        String resultMessage = "";
+        String accessToken = "";
+        String email = "";
+        String firstName = "";
+        String lastName = "";
+        String submitPageUrl = "";
+        EmailRequest emailRequest = new EmailRequest();
+        try {
+            // Получение токена, маил, firstName и lastName
+            accessToken = request.getAccessToken();
+            email = request.getEmail();
+            firstName = request.getFirstName();
+            lastName = request.getLastName();
+
+            // Проверка, был ли токен получен
+            if (accessToken == null) {
+                resultMessage = "Ошибка: не удалось получить токен доступа. Вам необходимо авторизироваться.";
+                // Перенаправление на страницу с успешным сообщением
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(resultMessage); // Возвращаем 401 Unauthorized
+            }
+
+            System.out.println("accessToken: " + accessToken);
+            System.out.println("eMail: " + email);
+            System.out.println("firstName: " + firstName);
+            System.out.println("lastName: " + lastName);
+
+            // Путь к файлу резюме в папке static/resume
+            System.out.println("Получен POST-запрос на загрузку резюме");
+            String filePath = "src/main/resources/static/resumes/" + request.getFileName(); // Укажите имя файла
+            //Path filePath = Paths.get("src/main/resources/static/resumes").resolve(resumeFile).normalize();
+            //System.out.println(filePath);
+            File file = new File(filePath);
+            FileSystemResource resource = new FileSystemResource(file);
+
+            Vacancy vacancy = request.getVacancy();
+            System.out.println(vacancy.getId());
+            System.out.println(vacancy.getTitle());
+            System.out.println(vacancy.getCompanyName());
+            System.out.println(vacancy.getCity());
+            System.out.println(vacancy.getSiteName());
+            System.out.println(vacancy.getUrl());
+            submitPageUrl = pageForSendingResume(vacancy); // URL страницы где происходит отправка резюме
+            System.out.println("submitPageUrl: " + submitPageUrl);
+
+            if (vacancy.getSiteName().contains("robota.ua")) {
+                System.out.println("Site is robota.ua");
+                byte[] fileBytes = Files.readAllBytes(file.toPath());
+                String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
+
+                String targetProxyLoadSendUrl = "https://unlimitedpossibilities12.org/api/proxy/upload-send-resume-rabota-ua";
+                String vacancyIdRabotaUa = extractIdVacancyRabotaUa(vacancy.getUrl());
+                long vacancyIdRabotaUaLong = Long.parseLong(vacancyIdRabotaUa);
+                String targetLoadSendUrl = "https://apply-api.robota.ua/attach-application";
+
+                // Создание объекта запроса для прокси
+                ProxyRequest proxyRequest = new ProxyRequest(accessToken, filePath,
+                        vacancyIdRabotaUaLong, email, firstName, lastName, encodedFile,
+                        targetLoadSendUrl, submitPageUrl);
+
+                // Отправка POST-запросов через прокси
+                ResponseEntity<String> responseLoadAndSend = customRestTemplate.postForEntity(targetProxyLoadSendUrl, proxyRequest, String.class);
+
+                // Проверка ответа
+                if (responseLoadAndSend.getStatusCode() == HttpStatus.OK) {
+                    System.out.println("Resume successfully sent");
+                } else {
+                    System.out.println("Error sending resume: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody());
+                    resultMessage = "Ошибка отправки резюме: " + responseLoadAndSend.getStatusCode() + " - " + responseLoadAndSend.getBody();
+                    emailRequest.setTo(email);
+                    emailRequest.setSubject("Отправка резюме");
+                    emailRequest.setBody("Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
+                    sendEmail(emailRequest, accessToken, request.getFileName());
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultMessage); // Возвращаем 500 Internal Server Error с сообщением об ошибке
+                }
+
+                resultMessage = "Ваше резюме успешно отправлено!";
+                emailRequest.setTo(email);
+                emailRequest.setSubject("Отправка резюме");
+                emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено в компанию " + vacancy.getCompanyName() + "! Успешного отклика и дальнейшего поднятия бабла!");
+                sendEmail(emailRequest, accessToken, request.getFileName());
+                return ResponseEntity.ok(resultMessage); // Возвращаем 200 OK и сообщение об успехе
+            }
+
+            System.out.println("Site is work.ua");
+
+            //Без прокси, отправка на URL страницы где загрузка и отправка резюме
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("resume", resource);
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+            // Отправка POST-запроса
+            ResponseEntity<String> response = customRestTemplate.postForEntity(submitPageUrl, requestEntity, String.class);
+            countRequestWorkUa++;
+
+            // Проверка ответа
+            if (response.getStatusCode() == HttpStatus.OK) {
+                System.out.println("Resume successfully sent");
+            } else {
+                //из за того что самый первый запрос всегда с ошибкой 302
+                if (countRequestWorkUa == 1) {
+                    response = customRestTemplate.postForEntity(submitPageUrl, requestEntity, String.class);
+                    if (response.getStatusCode() == HttpStatus.OK) {
+                        System.out.println("Resume successfully sent");
+                        resultMessage = "Ваше резюме успешно отправлено!";
+                        emailRequest.setTo(email);
+                        emailRequest.setSubject("Отправка резюме");
+                        emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено в компанию " + vacancy.getCompanyName() + "! Успешного отклика и дальнейшего поднятия бабла!");
+                        sendEmail(emailRequest, accessToken, request.getFileName());
+                        return ResponseEntity.ok(resultMessage); // Возвращаем 200 OK и сообщение об успехе
+                    }
+                }
+                System.out.println("Error sending resume: " + response.getStatusCode() + " - " + response.getBody());
+                resultMessage = "Ошибка отправки резюме: " + response.getStatusCode() + " - " + response.getBody();
+                emailRequest.setTo(email);
+                emailRequest.setSubject("Отправка резюме");
+                emailRequest.setBody("Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Попробуйте снова.");
+                sendEmail(emailRequest, accessToken, request.getFileName());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultMessage); // Возвращаем 500 Internal Server Error
+            }
+
+            resultMessage = "Ваше резюме успешно отправлено!";
+            emailRequest.setTo(email);
+            emailRequest.setSubject("Отправка резюме");
+            emailRequest.setBody("Поздравляем, ваше резюме успешно отправлено в компанию " + vacancy.getCompanyName() + "! Успешного отклика и дальнейшего поднятия бабла!");
+            sendEmail(emailRequest, accessToken, request.getFileName());
+            return ResponseEntity.ok(resultMessage); // Возвращаем 200 OK и сообщение об успехе
+        } catch (Exception e) {
+            //return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());
+            System.out.println("Error sending resume: " + e.getMessage());
+            resultMessage = "Ошибка отправки резюме: " + e.getMessage();
+            emailRequest.setTo(email);
+            emailRequest.setSubject("Отправка резюме");
+            emailRequest.setBody("Вынуждены вас огорчить, ваше резюме не доставлено работодателю. Причина ошибки отправки резюме: " + e.getMessage());
+            sendEmail(emailRequest, accessToken, request.getFileName());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultMessage); // Возвращаем 500 Internal Server Error
         }
     }
 }
