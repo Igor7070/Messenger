@@ -139,11 +139,24 @@ public class AuthController {
             // Получение access token через authorization code
             GoogleIdToken.Payload payload = token.getPayload();
             String email = payload.getEmail();
+            String firstName = (String) payload.get("given_name");
+            String lastName = (String) payload.get("family_name");
 
             String accessToken = exchangeCodeForAccessToken(authCode);
+
             System.out.println("accessToken: " + accessToken);
-            //String accessToken = "";
-            return ResponseEntity.ok(Map.of("message", "Успешная аутентификация", "accessToken", accessToken));
+            System.out.println("email: " + email);
+            System.out.println("firstName: " + firstName);
+            System.out.println("lastName: " + lastName);
+
+            // Формирование ответа
+            return ResponseEntity.ok(Map.of(
+                    "message", "Успешная аутентификация",
+                    "accessToken", accessToken,
+                    "email", email,
+                    "firstName", firstName,
+                    "lastName", lastName
+            ));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Недействительный токен");
         }
