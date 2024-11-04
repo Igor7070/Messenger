@@ -115,42 +115,6 @@ public class AuthController {
     }
     //https://unlimitedpossibilities12.org/convenient_job_search
 
-    /*@PostMapping("/api/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
-        String idToken = body.get("idToken");
-
-        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
-                .setAudience(Collections.singletonList("700417838593-m7o2cpuriob059nre37ckgb2u8d8rtld.apps.googleusercontent.com"))
-                .build();
-
-        GoogleIdToken token = null;
-        try {
-            token = verifier.verify(idToken);
-        } catch (GeneralSecurityException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        if (token != null) {
-            GoogleIdToken.Payload payload = token.getPayload();
-            String email = payload.getEmail();
-
-            // Получение access token из SecurityContext
-            String accessToken = "";
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication instanceof OAuth2AuthenticationToken) {
-                OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
-                OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
-                        oauthToken.getAuthorizedClientRegistrationId(), oauthToken.getName());
-                accessToken = client.getAccessToken().getTokenValue();
-            }
-
-            return ResponseEntity.ok(Map.of("message", "Успешная аутентификация", "accessToken", accessToken));
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Недействительный токен");
-        }
-    }*/
-
     @PostMapping("/api/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         String idToken = body.get("idToken");
