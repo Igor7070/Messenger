@@ -37,8 +37,8 @@ public class WebController {
 
     @GetMapping("/convenient_job_search")
     public String mainPage(Model model) {
-        model.addAttribute("title", "Развитие и");
-        model.addAttribute("title2", " возможности");
+        model.addAttribute("title", "Безграничные ");
+        model.addAttribute("title2", "возможности");
         return "siteVacancies";
     }
 
