@@ -245,12 +245,12 @@
                 const message = event.target.elements.prompt.value.trim();
                 const chatData = getMessageCount();
 
-                if (chatData.count < 12 && message) {
+                if (chatData.count < 7 && message) {
                     chatData.count += 1; // Увеличиваем счётчик
                     localStorage.setItem('chatData', JSON.stringify(chatData)); // Сохраняем обновлённые данные
                     event.target.submit(); // Отправляем форму
                     scrollToBottom(); // Прокрутка вниз после отправки
-                } else if (chatData.count >= 12) {
+                } else if (chatData.count >= 7) {
                     showModal(); // Показываем модальное окно
                 }
             });
