@@ -1,12 +1,12 @@
 package com.example.parsing_vacancies.controller;
 
+import com.example.parsing_vacancies.model.chat_ai.MessageRequest;
 import com.example.parsing_vacancies.service.OpenAIService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,5 +32,12 @@ public class ChatGPTController {
         chatMessages.add(result);
         model.addAttribute("chatMessages", chatMessages);
         return "advancedModel";
+    }
+
+    @PostMapping("/api/communicating_with_a_advanced_ai_model")
+    @ResponseBody
+    public ResponseEntity<String> generateApiCompletion(@RequestBody MessageRequest request) {
+        String result = openAIService.generateCompletion(request.getPrompt());
+        return ResponseEntity.ok(result);
     }
 }
