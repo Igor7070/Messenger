@@ -101,7 +101,7 @@ public class AuthController {
                 telegramBotController.getUserDataMap().get(chatIdLong).setLastName(lastName);
                 telegramBotController.getUserDataMap().get(chatIdLong).setState(UserData.State.WAITING_FOR_RESUME_ENABLE_AI);
                 telegramBotController.sendMessage(chatIdLong, "Вы успешно авторизовались!\nEmail: " + email + "\nИмя: " + name);
-                telegramBotController.sendMessage(chatIdLong, "Теперь необходимы ваши данные для создания резюме. Будут заданы несклоько вопросов. Итак...\n" +
+                telegramBotController.sendMessage(chatIdLong, "Теперь необходимы ваши данные для создания резюме. Будут заданы несколько вопросов. Итак...\n" +
                         "Желаете ли вы подключить ИИ для создания резюме? При согласии введите 'Да' или 'Нет' в случае отказа.");
 
                 return "telegram/autorizationSuccess";
