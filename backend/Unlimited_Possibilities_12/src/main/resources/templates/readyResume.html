@@ -25,24 +25,6 @@
                 margin-bottom: 30px;
             }
 
-            header {
-                background-color: #d0c1e3; /* изменен цвет шапки на светло-серый */
-                border-bottom: 1px solid #dee2e6;
-                padding: 10px 0; /* добавлен отступ сверху и снизу */
-                margin-bottom: 30px; /* добавлен отступ снизу */
-            }
-
-            .header-container {
-                max-width: 1200px; /* ограничена ширина контейнера шапки */
-                margin: 0 auto; /* центрирование контейнера */
-            }
-
-            .header-title {
-                font-family: 'Roboto', sans-serif; /* Применение нового шрифта */
-                font-size: 30px;
-                color: goldenrod !important;
-            }
-
             .light-maroon-bg {
                 background-color: #d0c1e3;
                 padding: 10px 15px;
@@ -86,39 +68,8 @@
     </head>
 
     <body>
-        <header>
-            <div class="header-container">
-                <div class="row flex-nowrap align-items-start" style="padding-top: 5px;">
-                    <div class="col-4" style="padding-left: 0px;">
-                        <a class="link-secondary" href="/convenient_job_search">На главную</a>
-                        <div style="margin-top: 5px;"> <!-- Контейнер для кнопок -->
-                            <a class="btn btn-sm btn-outline-secondary" href="/communicating_with_a_advanced_ai_model">Общение с продвинутой моделью ИИ</a>
-                            <a class="btn btn-sm btn-outline-secondary" href="/communicating_with_a_primitive_ai_model" style="margin-top: 5px; margin-bottom: 10px;">Общение с примитивной моделью ИИ</a>
-                        </div>
-                    </div>
-                    <div class="col-4 text-center" style="white-space: nowrap;">
-                        <span class="header-title text-body-emphasis text-decoration-none">Безграничные возможности</span>
-                    </div>
-                    <div class="col-4 d-flex justify-content-end align-items-center" style="padding-right: 0px;">
-                        <div class="d-flex flex-column align-items-end">
-                            <a class="btn btn-sm btn-outline-secondary" href="/convenient_job_search/job_search_history">Список вакансий всех запросов</a>
-                            <a class="btn btn-sm btn-outline-secondary" href="#" id="delete-history-btn" style="margin-top: 5px;">Удалить историю поиска вакансий</a>
-                            <a href="/login" id="google-auth-btn" class="btn btn-sm btn-outline-secondary" style="margin-top: 5px; text-decoration: none; display: inline-flex; align-items: center;">
-                                <span style="color: #4285F4;">G</span>
-                                <span style="color: #EA4335;">o</span>
-                                <span style="color: #FBBC05;">o</span>
-                                <span style="color: #4285F4;">g</span>
-                                <span style="color: #34A853;">l</span>
-                                <span style="color: #4285F4;">e</span>
-                                <span style="color: #000;">&nbsp;</span>
-                                <span style="color: #000;">&nbsp;</span>
-                                <span>авторизация</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
+        <!-- Включаем header -->
+        <div th:replace="header.html"></div>
 
         <h2>Ваше резюме готово!</h2>
 
