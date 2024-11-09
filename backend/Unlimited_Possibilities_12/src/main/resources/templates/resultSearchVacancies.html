@@ -53,20 +53,6 @@
             .light-maroon-bg a.btn {
                 color: #343a40;
             }
-
-            .footer-divider {
-                margin: 0 0 20px 0; /* Убирает отступы сверху и снизу */
-                border: none; /* Убирает стандартные стили */
-                border-top: 2px solid gray; /* Устанавливает серую линию */
-            }
-
-            .footer-container {
-                background-color: white; /* Белый фон для футера */
-                line-height: 0.7; /* Уменьшает межстрочный интервал между строками */
-                padding: 0 0 20px 0; /* Отступы сверху и снизу */
-                width: 100%; /* Занимает всю ширину */
-                text-align: center; /* Центрируем текст */
-            }
         </style>
     </head>
     <body>
@@ -122,14 +108,8 @@
             </div>
         </div>
 
-        <footer>
-            <div class="footer-container text-center">
-                <hr class="footer-divider">
-                <p>© 2024 Company Name. Все права защищены.</p>
-                <a href="/privacy-policy">Политика конфиденциальности</a> ·
-                <a href="/terms_of_service">Условия обслуживания</a>
-            </div>
-        </footer>
+        <!-- Включаем футер -->
+        <div th:replace="footer.html"></div>
 
         <div id="notification" class="alert alert-success" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 900px; text-align: center; font-size: 24px;">
             <strong>Успех!</strong> <span id="notification-message">История поиска вакансий очищена.</span>

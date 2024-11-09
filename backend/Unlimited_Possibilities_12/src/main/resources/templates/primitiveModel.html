@@ -75,53 +75,6 @@
             .light-maroon-bg a.btn {
                 color: #343a40;
             }
-
-            footer {
-                background-color: white; /* Белый фон для футера */
-                width: 100%; /* Занимает всю ширину */
-                text-align: center; /* Центрируем текст */
-            }
-
-            .footer-divider {
-                margin: 0; /* Убираем отступы сверху и снизу */
-                border: none; /* Убирает стандартные стили */
-                border-top: 2px solid gray; /* Устанавливает серую линию */
-            }
-
-            .footer-container {
-                padding: 15px 0; /* Отступы сверху и снизу внутри футера */
-            }
-
-            .app-links {
-                display: flex;
-                justify-content: center; /* Центрируем логотипы */
-                margin-bottom: 10px; /* Отступ снизу между логотипами и текстом */
-            }
-
-            .app-logo {
-                width: 24px; /* Уменьшаем размер логотипа */
-                height: auto;
-                margin: 0 10px; /* Отступы между логотипами */
-            }
-
-            .footer-text {
-                margin-bottom: 5px; /* Уменьшаем отступ снизу */
-                line-height: 1; /* Уменьшаем межстрочный интервал */
-            }
-
-            .footer-links {
-                margin-top: 0; /* Убираем отступ сверху для ссылок */
-            }
-
-            @media (max-width: 600px) {
-                .app-links {
-                    flex-direction: column; /* Вертикальное расположение на узких экранах */
-                    align-items: center; /* Центрируем логотипы */
-                }
-                .app-logo {
-                    margin: 0.5rem 0; /* Отступы между логотипами в колонке */
-                }
-            }
         </style>
     </head>
 
@@ -252,23 +205,7 @@
             });
         </script>
 
-        <footer>
-            <hr class="footer-divider"> <!-- Серая линия верхней границей футера -->
-            <div class="footer-container">
-                <div class="app-links">
-                    <a href="https://t.me/UnlimitedPossibilities12_bot" target="_blank">
-                        <img src="/icons/telegram_icon.png" alt="Telegram" class="app-logo">
-                    </a>
-                    <a href="/android_app/android_app.apk" target="_blank" download>
-                        <img src="/icons/android_app.png" alt="Android App" class="app-logo">
-                    </a>
-                </div>
-                <p class="footer-text">© 2024 Company Name. Все права защищены.</p>
-                <div class="footer-links">
-                    <a href="/privacy-policy">Политика конфиденциальности</a> ·
-                    <a href="/terms_of_service">Условия обслуживания</a>
-                </div>
-            </div>
-        </footer>
+        <!-- Включаем футер -->
+        <div th:replace="footer.html"></div>
     </body>
 </html>
