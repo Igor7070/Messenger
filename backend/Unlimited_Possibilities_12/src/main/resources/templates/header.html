@@ -80,3 +80,29 @@
         Очистка БД
     </button>
 </header>
+
+<script>
+    document.getElementById('clear-db-btn').addEventListener('click', function() {
+        // Запрос пароля
+        const password = prompt("Введите пароль для очистки БД:");
+        if (password === "unlpos12") {
+            // Если пароль верный, отправляем запрос на сервер
+            fetch('/convenient_job_search/full_clear_database', {
+                method: 'DELETE' // или 'POST', если вы используете этот метод
+            })
+                .then(response => {
+                    if (response.ok) {
+                        alert("База данных успешно очищена!");
+                    } else {
+                        alert("Ошибка при очистке базы данных.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Ошибка:", error);
+                    alert("Произошла ошибка при очистке базы данных.");
+                });
+        } else {
+            alert("Введен неверный пароль.");
+        }
+    });
+</script>
