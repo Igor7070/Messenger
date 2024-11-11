@@ -301,6 +301,34 @@ public class WebController {
 
     @DeleteMapping("/convenient_job_search/delete_search_history")
     @ResponseBody // Позволяет возвращать ответ без представления
+    public ResponseEntity<String> deleteSearchHistory(HttpServletRequest request) {
+        System.out.println("метод deleteSearchHistory сработал");
+        try {
+            HttpSession session = request.getSession();
+            String sessionId = session.getId(); // Получаем идентификатор сессии
+            System.out.println("sessionId: " + sessionId);
+
+            // Удаляем все вакансии, соответствующие sessionId
+            List<Vacancy> vacanciesToDelete = vacancyRepository.findBySessionId(sessionId);
+            if (!vacanciesToDelete.isEmpty()) {
+                vacancyRepository.deleteAll(vacanciesToDelete); // Удаляем вакансии
+            }
+
+            // Проверяем, что все записи были удалены
+            long count = vacancyRepository.countBySessionId(sessionId);
+            if (count == 0) {
+                return ResponseEntity.ok("История поиска очищена для текущей сессии");
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при удалении истории поиска");
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при удалении истории поиска: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/convenient_job_search/full_clear_database")
+    @ResponseBody // Позволяет возвращать ответ без представления
     public ResponseEntity<String> deleteSearchHistory() {
         System.out.println("метод deleteSearchHistory сработал");
         try {
@@ -310,7 +338,7 @@ public class WebController {
             EntityManager entityManager = entityManagerFactory.createEntityManager();
             // Получаем имя таблицы
             String tableName = entityManager.getMetamodel()
-                    .entity(Vacancy.class) // Замените на вашу сущность
+                    .entity(Vacancy.class)
                     .getName(); //Vacancy
             // Сбрасываем AUTO_INCREMENT
             jdbcTemplate.execute("ALTER TABLE " + "vacancy" + " AUTO_INCREMENT = 1");
