@@ -13,6 +13,7 @@ public class Vacancy implements Serializable {
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
     private int id;
+    private String sessionId;
     private String title;
     private String salary;
     private String city;
@@ -74,6 +75,14 @@ public class Vacancy implements Serializable {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
     }
 
     @Override

@@ -10,6 +10,8 @@ import com.example.parsing_vacancies.repo.VacancyRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -51,7 +53,11 @@ public class WebController {
                                @RequestParam(name = "city", required = false) String city,
                                @RequestParam(name = "language", required = false) String language,
                                @RequestParam(name = "timeframe", required = false) String timeframe,
-                               Model model) {
+                               Model model, HttpServletRequest request) {
+
+        HttpSession session = request.getSession();
+        String sessionId = session.getId(); // Получаем идентификатор сессии
+        System.out.println("sessionId: " + sessionId);
 
         List<Provider> providersList = new ArrayList<>();
         String result = "";
@@ -131,6 +137,7 @@ public class WebController {
             if (workUa && rabotaUa) {
                 if (fullVacancies != null) {
                     for (Vacancy vacancy : fullVacancies) {
+                        vacancy.setSessionId(sessionId);
                         vacancyRepository.save(vacancy);
                     }
                     model.addAttribute("vacancies", fullVacancies);
@@ -139,6 +146,7 @@ public class WebController {
             } else if (workUa) {
                 if (fromWorkUaVacancies != null) {
                     for (Vacancy vacancy : fromWorkUaVacancies) {
+                        vacancy.setSessionId(sessionId);
                         vacancyRepository.save(vacancy);
                     }
                     model.addAttribute("vacancies", fromWorkUaVacancies);
@@ -147,6 +155,7 @@ public class WebController {
             } else if (rabotaUa) {
                 if (fromRabotaUaVacancies != null) {
                     for (Vacancy vacancy : fromRabotaUaVacancies) {
+                        vacancy.setSessionId(sessionId);
                         vacancyRepository.save(vacancy);
                     }
                     model.addAttribute("vacancies", fromRabotaUaVacancies);
@@ -246,6 +255,7 @@ public class WebController {
             if (workUa && rabotaUa) {
                 if (fullVacancies != null) {
                     for (Vacancy vacancy : fullVacancies) {
+                        vacancy.setSessionId("");
                         vacancyRepository.save(vacancy);
                     }
                     vacancies = fullVacancies;
@@ -254,6 +264,7 @@ public class WebController {
             } else if (workUa) {
                 if (fromWorkUaVacancies != null) {
                     for (Vacancy vacancy : fromWorkUaVacancies) {
+                        vacancy.setSessionId("");
                         vacancyRepository.save(vacancy);
                     }
                     vacancies = fromWorkUaVacancies;
@@ -262,6 +273,7 @@ public class WebController {
             } else if (rabotaUa) {
                 if (fromRabotaUaVacancies != null) {
                     for (Vacancy vacancy : fromRabotaUaVacancies) {
+                        vacancy.setSessionId("");
                         vacancyRepository.save(vacancy);
                     }
                     vacancies = fromRabotaUaVacancies;
@@ -274,8 +286,15 @@ public class WebController {
     }
 
     @GetMapping("/convenient_job_search/job_search_history")
-    public String jobSearchHistory(Model model) {
-        Iterable<Vacancy> vacanciesFullListHistory = vacancyRepository.findAll();
+    public String jobSearchHistory(HttpServletRequest request, Model model) {
+        HttpSession session = request.getSession();
+        String sessionId = session.getId(); // Получаем идентификатор сессии
+        System.out.println("sessionId: " + sessionId);
+
+        //Iterable<Vacancy> vacanciesFullListHistory = vacancyRepository.findAll();
+
+        // Извлекаем вакансии по sessionId
+        List<Vacancy> vacanciesFullListHistory = vacancyRepository.findBySessionId(sessionId);
         model.addAttribute("vacanciesFullListHistory", vacanciesFullListHistory);
         return "jobSearchHistory";
     }
