@@ -109,6 +109,8 @@
 
 <script>
     document.getElementById('clear-db-btn').addEventListener('click', function() {
+        // Очистка поля ввода пароля перед открытием модального окна
+        document.getElementById('passwordInput').value = '';
         // Показать модальное окно для ввода пароля
         document.getElementById('passwordModal').style.display = 'block';
     });
