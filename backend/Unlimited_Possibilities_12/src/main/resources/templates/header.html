@@ -41,6 +41,22 @@
     .light-maroon-bg a.btn {
         color: #343a40;
     }
+
+    .clear-db-btn {
+        font-family: 'Roboto', sans-serif;
+        font-weight: 500; /* Полужирный шрифт */
+        font-size: 16px; /* Уменьшенный размер текста */
+        color: #333; /* Темно-серый цвет текста */
+        background-color: #d75b5b; /* Умеренно светлый красный фон */
+        border: none; /* Без рамки */
+        padding: 8px 16px; /* Уменьшенные отступы */
+        border-radius: 8px; /* Скругленные углы */
+        transition: background-color 0.3s; /* Плавный переход */
+    }
+
+    .clear-db-btn:hover {
+        background-color: #e06e6e; /* Легкий оттенок при наведении */
+    }
 </style>
 
 <header>
@@ -75,8 +91,8 @@
             </div>
         </div>
     </div>
-    <div style="text-align: center; margin-top: -38px;"> <!-- Установлен отступ сверху -->
-        <button id="clear-db-btn" class="btn btn-danger" style="font-family: 'Roboto', sans-serif; font-size: 16px;">
+    <div style="text-align: center; margin-top: -38px;">
+        <button id="clear-db-btn" class="btn clear-db-btn">
             Очистка БД
         </button>
     </div>
