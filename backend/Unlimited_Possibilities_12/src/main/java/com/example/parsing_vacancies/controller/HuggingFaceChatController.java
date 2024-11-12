@@ -2,6 +2,7 @@ package com.example.parsing_vacancies.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -31,21 +32,28 @@ public class HuggingFaceChatController {
     @Value("${huggingFace.api.token}")
     private String API_TOKEN;
     private final RestTemplate restTemplate;
-    private final List<String> chatMessages = new ArrayList<>();
 
     public HuggingFaceChatController(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
     @GetMapping("/communicating_with_a_primitive_ai_model")
-    public String getChat(Model model) {
+    public String getChat(HttpSession session, Model model) {
+        // Извлекаем историю чата из сессии или создаем новую, если ее нет
+        List<String> chatMessages = (List<String>) session.getAttribute("chatMessages");
+        if (chatMessages == null) {
+            chatMessages = new ArrayList<>();
+            session.setAttribute("chatMessages", chatMessages);
+        }
+
         model.addAttribute("title", "Примитивная модель");
         model.addAttribute("chatMessages", chatMessages);
         return "primitiveModel";
     }
 
     @PostMapping("/communicating_with_a_primitive_ai_model")
-    public String sendMessage(@RequestParam(name = "message", required = false) String message, Model model) {
+    public String sendMessage(@RequestParam(name = "message", required = false) String message,
+                              HttpSession session, Model model) {
         model.addAttribute("title", "Примитивная модель");
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(API_TOKEN);
@@ -71,6 +79,8 @@ public class HuggingFaceChatController {
             e.printStackTrace();
         }
 
+        // Извлекаем историю чата из сессии
+        List<String> chatMessages = (List<String>) session.getAttribute("chatMessages");
         chatMessages.add(message);
         chatMessages.add(responseText);
         model.addAttribute("chatMessages", chatMessages);
