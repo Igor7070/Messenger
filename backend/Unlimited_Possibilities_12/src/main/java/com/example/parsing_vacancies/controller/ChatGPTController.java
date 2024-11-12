@@ -16,8 +16,6 @@ import java.util.List;
 public class ChatGPTController {
     @Autowired
     private OpenAIService openAIService;
-    //private final List<String> chatMessages = new ArrayList<>();
-
 
     @GetMapping("/communicating_with_a_advanced_ai_model")
     public String chatGPT(HttpSession session, Model model) {
