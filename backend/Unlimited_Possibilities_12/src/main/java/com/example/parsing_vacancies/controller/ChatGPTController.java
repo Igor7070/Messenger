@@ -20,10 +20,10 @@ public class ChatGPTController {
     @GetMapping("/communicating_with_a_advanced_ai_model")
     public String chatGPT(HttpSession session, Model model) {
         // Извлекаем историю чата из сессии или создаем новую, если ее нет
-        List<String> chatMessages = (List<String>) session.getAttribute("chatMessages");
+        List<String> chatMessages = (List<String>) session.getAttribute("chatMessagesGpt");
         if (chatMessages == null) {
             chatMessages = new ArrayList<>();
-            session.setAttribute("chatMessages", chatMessages);
+            session.setAttribute("chatMessagesGpt", chatMessages);
         }
 
         model.addAttribute("title", "Продвинутая модель");
@@ -37,7 +37,7 @@ public class ChatGPTController {
         String result = openAIService.generateCompletion(prompt);
 
         // Извлекаем историю чата из сессии
-        List<String> chatMessages = (List<String>) session.getAttribute("chatMessages");
+        List<String> chatMessages = (List<String>) session.getAttribute("chatMessagesGpt");
         chatMessages.add(prompt);
         chatMessages.add(result);
         model.addAttribute("chatMessages", chatMessages);

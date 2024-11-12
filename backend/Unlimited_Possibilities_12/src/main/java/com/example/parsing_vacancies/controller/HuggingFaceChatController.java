@@ -40,10 +40,10 @@ public class HuggingFaceChatController {
     @GetMapping("/communicating_with_a_primitive_ai_model")
     public String getChat(HttpSession session, Model model) {
         // Извлекаем историю чата из сессии или создаем новую, если ее нет
-        List<String> chatMessages = (List<String>) session.getAttribute("chatMessages");
+        List<String> chatMessages = (List<String>) session.getAttribute("chatMessagesHuggingFace");
         if (chatMessages == null) {
             chatMessages = new ArrayList<>();
-            session.setAttribute("chatMessages", chatMessages);
+            session.setAttribute("chatMessagesHuggingFace", chatMessages);
         }
 
         model.addAttribute("title", "Примитивная модель");
@@ -80,7 +80,7 @@ public class HuggingFaceChatController {
         }
 
         // Извлекаем историю чата из сессии
-        List<String> chatMessages = (List<String>) session.getAttribute("chatMessages");
+        List<String> chatMessages = (List<String>) session.getAttribute("chatMessagesHuggingFace");
         chatMessages.add(message);
         chatMessages.add(responseText);
         model.addAttribute("chatMessages", chatMessages);
