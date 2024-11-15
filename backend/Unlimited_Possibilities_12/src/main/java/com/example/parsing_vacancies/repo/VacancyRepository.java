@@ -1,6 +1,6 @@
 package com.example.parsing_vacancies.repo;
 
-import com.example.parsing_vacancies.model.Vacancy;
+import com.example.parsing_vacancies.model.job_search.Vacancy;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.List;

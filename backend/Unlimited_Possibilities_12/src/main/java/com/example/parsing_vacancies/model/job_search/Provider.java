@@ -1,4 +1,4 @@
-package com.example.parsing_vacancies.model;
+package com.example.parsing_vacancies.model.job_search;
 
 import com.example.parsing_vacancies.parameters.City;
 import com.example.parsing_vacancies.parameters.Language;

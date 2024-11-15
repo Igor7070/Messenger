@@ -1,7 +1,7 @@
 package com.example.parsing_vacancies.model.telegram;
 
-import com.example.parsing_vacancies.model.Vacancy;
-import com.example.parsing_vacancies.model.resume.Resume;
+import com.example.parsing_vacancies.model.job_search.Vacancy;
+import com.example.parsing_vacancies.model.job_search.resume.Resume;
 
 import java.util.List;
 

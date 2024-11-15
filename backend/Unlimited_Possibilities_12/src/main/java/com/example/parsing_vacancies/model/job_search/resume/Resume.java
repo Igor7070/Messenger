@@ -1,4 +1,4 @@
-package com.example.parsing_vacancies.model.resume;
+package com.example.parsing_vacancies.model.job_search.resume;
 
 import java.io.Serializable;
 import java.util.ArrayList;

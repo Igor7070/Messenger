@@ -1,10 +1,10 @@
-package com.example.parsing_vacancies.controller;
+package com.example.parsing_vacancies.controller.job_search;
 
-import com.example.parsing_vacancies.model.Vacancy;
-import com.example.parsing_vacancies.model.resume.Education;
-import com.example.parsing_vacancies.model.resume.Resume;
-import com.example.parsing_vacancies.model.resume.ResumeRequest;
-import com.example.parsing_vacancies.model.resume.WorkExperience;
+import com.example.parsing_vacancies.model.job_search.Vacancy;
+import com.example.parsing_vacancies.model.job_search.resume.Education;
+import com.example.parsing_vacancies.model.job_search.resume.Resume;
+import com.example.parsing_vacancies.model.job_search.resume.ResumeRequest;
+import com.example.parsing_vacancies.model.job_search.resume.WorkExperience;
 import com.example.parsing_vacancies.repo.VacancyRepository;
 import com.example.parsing_vacancies.service.OpenAIService;
 import jakarta.servlet.http.HttpServletRequest;

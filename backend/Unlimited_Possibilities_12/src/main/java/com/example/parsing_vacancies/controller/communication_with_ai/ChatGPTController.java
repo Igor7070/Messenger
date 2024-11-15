@@ -1,4 +1,4 @@
-package com.example.parsing_vacancies.controller;
+package com.example.parsing_vacancies.controller.communication_with_ai;
 
 import com.example.parsing_vacancies.model.chat_ai.MessageRequest;
 import com.example.parsing_vacancies.service.OpenAIService;

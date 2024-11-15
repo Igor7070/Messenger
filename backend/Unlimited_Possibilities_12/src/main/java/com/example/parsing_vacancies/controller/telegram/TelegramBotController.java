@@ -1,10 +1,10 @@
 package com.example.parsing_vacancies.controller.telegram;
 
 import com.example.parsing_vacancies.config.telegram.BotConfig;
-import com.example.parsing_vacancies.model.Vacancy;
-import com.example.parsing_vacancies.model.resume.Education;
-import com.example.parsing_vacancies.model.resume.Resume;
-import com.example.parsing_vacancies.model.resume.WorkExperience;
+import com.example.parsing_vacancies.model.job_search.Vacancy;
+import com.example.parsing_vacancies.model.job_search.resume.Education;
+import com.example.parsing_vacancies.model.job_search.resume.Resume;
+import com.example.parsing_vacancies.model.job_search.resume.WorkExperience;
 import com.example.parsing_vacancies.model.telegram.ProfanityFilter;
 import com.example.parsing_vacancies.model.telegram.UserData;
 import com.example.parsing_vacancies.service.OpenAIService;

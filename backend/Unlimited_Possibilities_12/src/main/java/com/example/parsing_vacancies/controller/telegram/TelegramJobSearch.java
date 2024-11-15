@@ -1,10 +1,8 @@
 package com.example.parsing_vacancies.controller.telegram;
 
-import com.example.parsing_vacancies.controller.WebController;
-import com.example.parsing_vacancies.model.Provider;
-import com.example.parsing_vacancies.model.RabotaUaStrategy;
-import com.example.parsing_vacancies.model.Vacancy;
-import com.example.parsing_vacancies.model.WorkUaStrategy;
+import com.example.parsing_vacancies.controller.job_search.Controller;
+import com.example.parsing_vacancies.controller.job_search.WebController;
+import com.example.parsing_vacancies.model.job_search.*;
 import com.example.parsing_vacancies.parameters.City;
 import com.example.parsing_vacancies.parameters.Language;
 import com.example.parsing_vacancies.parameters.TimeDate;
@@ -46,7 +44,7 @@ public class TelegramJobSearch {
         }
 
         Provider[] providers = providersList.toArray(new Provider[providersList.size()]);
-        com.example.parsing_vacancies.controller.Controller controller = startConfiguration(providers);
+        Controller controller = startConfiguration(providers);
 
         Language language1 = Language.RUSSIAN;
         City city1 = null;
@@ -106,9 +104,9 @@ public class TelegramJobSearch {
         return listVacancies;
     }
 
-    private static com.example.parsing_vacancies.controller.Controller startConfiguration(Provider... providers) {
-        com.example.parsing_vacancies.model.Model model = new com.example.parsing_vacancies.model.Model(providers);
-        com.example.parsing_vacancies.controller.Controller controller = new com.example.parsing_vacancies.controller.Controller(model);
+    private static Controller startConfiguration(Provider... providers) {
+        Model model = new Model(providers);
+        Controller controller = new Controller(model);
         return controller;
     }
 }

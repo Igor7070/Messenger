@@ -1,4 +1,4 @@
-package com.example.parsing_vacancies.controller;
+package com.example.parsing_vacancies.controller.communication_with_ai;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

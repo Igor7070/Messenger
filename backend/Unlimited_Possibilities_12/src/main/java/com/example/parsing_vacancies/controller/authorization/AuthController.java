@@ -1,4 +1,4 @@
-package com.example.parsing_vacancies.controller;
+package com.example.parsing_vacancies.controller.authorization;
 
 import com.example.parsing_vacancies.controller.telegram.TelegramBotController;
 import com.example.parsing_vacancies.model.telegram.UserData;

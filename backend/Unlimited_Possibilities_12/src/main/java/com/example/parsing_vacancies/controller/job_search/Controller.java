@@ -1,6 +1,6 @@
-package com.example.parsing_vacancies.controller;
+package com.example.parsing_vacancies.controller.job_search;
 
-import com.example.parsing_vacancies.model.Model;
+import com.example.parsing_vacancies.model.job_search.Model;
 import com.example.parsing_vacancies.parameters.City;
 import com.example.parsing_vacancies.parameters.Language;
 import com.example.parsing_vacancies.parameters.TimeDate;

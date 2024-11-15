@@ -1,10 +1,10 @@
 package com.example.parsing_vacancies;
 
-import com.example.parsing_vacancies.controller.Controller;
-import com.example.parsing_vacancies.model.Model;
-import com.example.parsing_vacancies.model.Provider;
-import com.example.parsing_vacancies.model.RabotaUaStrategy;
-import com.example.parsing_vacancies.model.WorkUaStrategy;
+import com.example.parsing_vacancies.controller.job_search.Controller;
+import com.example.parsing_vacancies.model.job_search.Model;
+import com.example.parsing_vacancies.model.job_search.Provider;
+import com.example.parsing_vacancies.model.job_search.RabotaUaStrategy;
+import com.example.parsing_vacancies.model.job_search.WorkUaStrategy;
 import com.example.parsing_vacancies.parameters.*;
 import com.example.parsing_vacancies.view.View;
 import com.example.parsing_vacancies.view.databases.DataBaseJdbsView;

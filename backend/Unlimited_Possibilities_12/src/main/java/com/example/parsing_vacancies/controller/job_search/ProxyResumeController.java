@@ -1,4 +1,4 @@
-package com.example.parsing_vacancies.controller;
+package com.example.parsing_vacancies.controller.job_search;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;

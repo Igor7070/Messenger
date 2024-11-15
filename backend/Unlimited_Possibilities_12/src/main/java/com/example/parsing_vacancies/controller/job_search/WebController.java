@@ -1,8 +1,8 @@
-package com.example.parsing_vacancies.controller;
-import com.example.parsing_vacancies.model.Provider;
-import com.example.parsing_vacancies.model.RabotaUaStrategy;
-import com.example.parsing_vacancies.model.Vacancy;
-import com.example.parsing_vacancies.model.WorkUaStrategy;
+package com.example.parsing_vacancies.controller.job_search;
+import com.example.parsing_vacancies.model.job_search.Provider;
+import com.example.parsing_vacancies.model.job_search.RabotaUaStrategy;
+import com.example.parsing_vacancies.model.job_search.Vacancy;
+import com.example.parsing_vacancies.model.job_search.WorkUaStrategy;
 import com.example.parsing_vacancies.parameters.City;
 import com.example.parsing_vacancies.parameters.Language;
 import com.example.parsing_vacancies.parameters.TimeDate;
@@ -90,7 +90,7 @@ public class WebController {
         }
 
         Provider[] providers = providersList.toArray(new Provider[providersList.size()]);
-        com.example.parsing_vacancies.controller.Controller controller = startConfiguration(providers);
+        com.example.parsing_vacancies.controller.job_search.Controller controller = startConfiguration(providers);
         /*System.out.println("language : "  + language);
         System.out.println("city : "  + city);
         System.out.println("time : "  + timeframe);*/
@@ -208,7 +208,7 @@ public class WebController {
         }
 
         Provider[] providers = providersList.toArray(new Provider[providersList.size()]);
-        com.example.parsing_vacancies.controller.Controller controller = startConfiguration(providers);
+        com.example.parsing_vacancies.controller.job_search.Controller controller = startConfiguration(providers);
         /*System.out.println("language : "  + language);
         System.out.println("city : "  + city);
         System.out.println("time : "  + timeframe);*/
@@ -369,9 +369,9 @@ public class WebController {
         return "termsOfService";
     }
 
-    private static com.example.parsing_vacancies.controller.Controller startConfiguration(Provider... providers) {
-        com.example.parsing_vacancies.model.Model model = new com.example.parsing_vacancies.model.Model(providers);
-        com.example.parsing_vacancies.controller.Controller controller = new com.example.parsing_vacancies.controller.Controller(model);
+    private static com.example.parsing_vacancies.controller.job_search.Controller startConfiguration(Provider... providers) {
+        com.example.parsing_vacancies.model.job_search.Model model = new com.example.parsing_vacancies.model.job_search.Model(providers);
+        com.example.parsing_vacancies.controller.job_search.Controller controller = new com.example.parsing_vacancies.controller.job_search.Controller(model);
         return controller;
     }
 

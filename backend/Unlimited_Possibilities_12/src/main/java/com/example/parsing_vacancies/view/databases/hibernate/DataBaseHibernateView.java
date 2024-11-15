@@ -1,7 +1,7 @@
 package com.example.parsing_vacancies.view.databases.hibernate;
 
-import com.example.parsing_vacancies.controller.Controller;
-import com.example.parsing_vacancies.model.*;
+import com.example.parsing_vacancies.controller.job_search.Controller;
+import com.example.parsing_vacancies.model.job_search.*;
 import com.example.parsing_vacancies.view.View;
 import com.example.parsing_vacancies.view.databases.hibernate.vac_ent.VacancyEntityHibernate;
 import com.example.parsing_vacancies.view.databases.hibernate.vac_ent.VacancyForFullListTable;

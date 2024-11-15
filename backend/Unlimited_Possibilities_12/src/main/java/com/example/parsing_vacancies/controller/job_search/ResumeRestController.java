@@ -1,7 +1,7 @@
-package com.example.parsing_vacancies.controller;
+package com.example.parsing_vacancies.controller.job_search;
 
-import com.example.parsing_vacancies.model.Vacancy;
-import com.example.parsing_vacancies.model.resume.ResumeSendRequest;
+import com.example.parsing_vacancies.model.job_search.Vacancy;
+import com.example.parsing_vacancies.model.job_search.resume.ResumeSendRequest;
 import com.example.parsing_vacancies.repo.VacancyRepository;
 import com.example.parsing_vacancies.service.EmailService;
 import jakarta.servlet.http.HttpSession;

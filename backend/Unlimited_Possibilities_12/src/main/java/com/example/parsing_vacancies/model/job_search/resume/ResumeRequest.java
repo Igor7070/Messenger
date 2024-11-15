@@ -1,6 +1,6 @@
-package com.example.parsing_vacancies.model.resume;
+package com.example.parsing_vacancies.model.job_search.resume;
 
-import com.example.parsing_vacancies.model.Vacancy;
+import com.example.parsing_vacancies.model.job_search.Vacancy;
 
 public class ResumeRequest {
     private Resume resume;

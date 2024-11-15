@@ -1,8 +1,8 @@
 package com.example.parsing_vacancies.view;
 
-import com.example.parsing_vacancies.controller.Controller;
-import com.example.parsing_vacancies.model.Provider;
-import com.example.parsing_vacancies.model.Vacancy;
+import com.example.parsing_vacancies.controller.job_search.Controller;
+import com.example.parsing_vacancies.model.job_search.Provider;
+import com.example.parsing_vacancies.model.job_search.Vacancy;
 
 import java.util.List;
 

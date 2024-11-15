@@ -1,7 +1,7 @@
 package com.example.parsing_vacancies.view.html;
 
-import com.example.parsing_vacancies.controller.Controller;
-import com.example.parsing_vacancies.model.*;
+import com.example.parsing_vacancies.controller.job_search.Controller;
+import com.example.parsing_vacancies.model.job_search.*;
 import com.example.parsing_vacancies.view.View;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -11,7 +11,6 @@ import org.jsoup.select.Elements;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
