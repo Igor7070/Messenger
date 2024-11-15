@@ -48,7 +48,7 @@ public class HuggingFaceChatController {
 
         model.addAttribute("title", "Примитивная модель");
         model.addAttribute("chatMessages", chatMessages);
-        return "primitiveModel";
+        return "communication_with_ai/primitiveModel";
     }
 
     @PostMapping("/communicating_with_a_primitive_ai_model")
@@ -84,6 +84,6 @@ public class HuggingFaceChatController {
         chatMessages.add(message);
         chatMessages.add(responseText);
         model.addAttribute("chatMessages", chatMessages);
-        return "primitiveModel";
+        return "communication_with_ai/primitiveModel";
     }
 }

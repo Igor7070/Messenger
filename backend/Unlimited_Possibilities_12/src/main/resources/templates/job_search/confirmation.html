@@ -101,7 +101,7 @@
 
     <body>
         <!-- Включаем header -->
-        <div th:replace="header.html"></div>
+        <div th:replace="job_search/header.html"></div>
 
         <h2>Подтверждение</h2>
         <p style="margin-left: 20px;" th:text="${message}"></p>
@@ -111,7 +111,7 @@
         <div class="fireworks" id="fireworks"></div>
 
         <!-- Включаем футер -->
-        <div th:replace="footer.html"></div>
+        <div th:replace="job_search/footer.html"></div>
 
         <div id="notification" class="alert alert-success" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 900px; text-align: center; font-size: 24px;">
             <strong>Успех!</strong> <span id="notification-message">История поиска вакансий очищена.</span>

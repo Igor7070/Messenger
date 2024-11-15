@@ -41,7 +41,7 @@ public class WebController {
     public String mainPage(Model model) {
         model.addAttribute("title", "Безграничные ");
         model.addAttribute("title2", "возможности");
-        return "siteVacancies";
+        return "job_search/siteVacancies";
     }
 
     @PostMapping("/convenient_job_search/search_result")
@@ -164,7 +164,7 @@ public class WebController {
             }
         }
 
-        return "resultSearchVacancies";
+        return "job_search/resultSearchVacancies";
     }
 
     // Новый метод для Android
@@ -296,7 +296,7 @@ public class WebController {
         // Извлекаем вакансии по sessionId
         List<Vacancy> vacanciesFullListHistory = vacancyRepository.findBySessionId(sessionId);
         model.addAttribute("vacanciesFullListHistory", vacanciesFullListHistory);
-        return "jobSearchHistory";
+        return "job_search/jobSearchHistory";
     }
 
     @DeleteMapping("/convenient_job_search/delete_search_history")

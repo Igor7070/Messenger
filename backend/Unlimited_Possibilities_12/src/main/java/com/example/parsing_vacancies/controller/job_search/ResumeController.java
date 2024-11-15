@@ -119,7 +119,7 @@ public class ResumeController {
         model.addAttribute("resume", resume);
         model.addAttribute("vacancyId", vacancyId);
         System.out.println(vacancyId);
-        return "createResume"; // Название представления для подтверждения
+        return "job_search/createResume"; // Название представления для подтверждения
     }
 
     @PostMapping("/convenient_job_search/readyResume")
@@ -295,7 +295,7 @@ public class ResumeController {
 
         System.out.println("Имя файла: " + fileName);
 
-        return "readyResume";
+        return "job_search/readyResume";
     }
 
     @PostMapping("/api/convenient_job_search/readyResume")
@@ -558,7 +558,7 @@ public class ResumeController {
         session.removeAttribute("message");
         session.removeAttribute("submitPageUrl");
 
-        return "confirmation"; // Имя вашего шаблона для отображения
+        return "job_search/confirmation"; // Имя вашего шаблона для отображения
     }
 
     private void addHeader(XWPFDocument document, String header) {

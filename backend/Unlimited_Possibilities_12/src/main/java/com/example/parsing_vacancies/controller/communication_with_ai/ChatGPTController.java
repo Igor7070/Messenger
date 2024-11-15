@@ -28,7 +28,7 @@ public class ChatGPTController {
 
         model.addAttribute("title", "Продвинутая модель");
         model.addAttribute("chatMessages", chatMessages);
-        return "advancedModel";
+        return "communication_with_ai/advancedModel";
     }
 
     @PostMapping("/communicating_with_a_advanced_ai_model")
@@ -41,7 +41,7 @@ public class ChatGPTController {
         chatMessages.add(prompt);
         chatMessages.add(result);
         model.addAttribute("chatMessages", chatMessages);
-        return "advancedModel";
+        return "communication_with_ai/advancedModel";
     }
 
     @PostMapping("/api/communicating_with_a_advanced_ai_model")
