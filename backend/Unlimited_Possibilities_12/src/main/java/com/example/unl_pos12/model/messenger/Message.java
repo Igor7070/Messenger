@@ -1,6 +1,10 @@
 package com.example.unl_pos12.model.messenger;
 
-/*@Entity
+import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
+
+@Entity
 public class Message {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,4 +45,4 @@ public class Message {
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
     }
-}*/
+}
