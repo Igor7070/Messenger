@@ -11,8 +11,8 @@
     <groupId>com.example</groupId>
     <artifactId>UP12</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Parsing_Vacancies</name>
-    <description>Parsing_Vacancies</description>
+    <name>Unlimited_Possibilities_12</name>
+    <description>Unlimited_Possibilities_12</description>
     <url/>
     <licenses>
         <license/>
@@ -221,6 +221,11 @@
             <groupId>com.google.apis</groupId>
             <artifactId>google-api-services-oauth2</artifactId>
             <version>v2-rev157-1.25.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
     </dependencies>
 
