@@ -491,7 +491,7 @@ public class ResumeController {
 
         if (files != null) {
             long currentTime = System.currentTimeMillis();
-            long expirationTime = TimeUnit.MINUTES.toMillis(21); // 20 минут
+            long expirationTime = TimeUnit.MINUTES.toMillis(23); // 20 минут
 
             for (File file : files) {
                 if (!file.getName().equals("README.md") && currentTime - file.lastModified() > expirationTime) {
