@@ -15,6 +15,7 @@ public class WebSocketMessageController {
     @MessageMapping("/sendMessage")  // Обрабатывает сообщения, отправленные на /app/sendMessage
     @SendTo("/topic/messages")       // Отправляет сообщение всем подписчикам на /topic/messages
     public Message sendMessage(Message message) {
+        System.out.println("Working method sendMessage...");
         return messageService.saveMessage(message); // Сохраняем сообщение и отправляем его назад
     }
 }
