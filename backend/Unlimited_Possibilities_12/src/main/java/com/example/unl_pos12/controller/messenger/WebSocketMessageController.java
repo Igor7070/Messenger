@@ -18,6 +18,6 @@ public class WebSocketMessageController {
         System.out.println("Working method sendMessage...");
         System.out.println("Received message: " + message.getContent() +
                 " from user: " + message.getSender().getUsername());
-        return messageService.saveMessage(message); // Сохраняем сообщение и отправляем его назад
+        return messageService.saveMessage(message); // Сохраняем сообщение и отправляем его назад...
     }
 }
