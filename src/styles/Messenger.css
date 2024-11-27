@@ -1,0 +1,61 @@
+.messenger {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-creation {
+    margin-bottom: 10px; /* Отступ снизу для отделения от списка сообщений */
+    display: flex;
+    gap: 10px; /* Отступ между полями ввода и кнопкой */
+}
+
+.input-username,
+.input-password {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    flex: 1; /* Занимает оставшееся пространство */
+}
+
+.create-user-button {
+    padding: 10px;
+    background-color: #28a745; /* Зеленый цвет для кнопки создания пользователя */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.create-user-button:hover {
+    background-color: #218838; /* Более темный зеленый при наведении */
+}
+
+.message-list {
+    border: 1px solid #ccc;
+    padding: 10px;
+    height: 400px;
+    overflow-y: scroll;
+    margin-bottom: 10px;
+    background-color: white;
+    border-radius: 5px;
+}
+
+.input-message {
+    width: calc(100% - 100px);
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.send-button {
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.send-button:hover {
+    background-color: #0056b3;
+}
