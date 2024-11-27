@@ -196,14 +196,14 @@ public class RabotaUaStrategy implements Strategy {
                     Vacancy vacancy = new Vacancy();
                     WebElement title = elementVacancy.findElement(By.tagName("h2"));
                     vacancy.setTitle(title.getText().trim());
-                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c119]"));
+                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c97]"));
                     int spansSize = spans.size();
                     //System.out.println("spansSize : " + spansSize);
                     if (spansSize == 3) {
                         vacancy.setCompanyName(spans.get(0).getText().trim());
                         vacancy.setSalary("");
                         vacancy.setCity(spans.get(1).getText().trim());
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c119]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c97]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                         vacancy.setSiteName("https://robota.ua/");
                         printVacancy(vacancy);
@@ -241,7 +241,7 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(1).getText().trim());
                             }
                         }
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c119]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c97]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                         vacancy.setSiteName("https://robota.ua/");
                         printVacancy(vacancy);
@@ -274,7 +274,7 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(3).getText().trim());
                             }
                         }
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c119]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c97]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                         vacancy.setSiteName("https://robota.ua/");
                         printVacancy(vacancy);
@@ -293,7 +293,7 @@ public class RabotaUaStrategy implements Strategy {
                         vacancy.setCompanyName(spans.get(2).getText().trim());
                         vacancy.setSalary(spans.get(0).getText().trim());
                         vacancy.setCity(spans.get(3).getText().trim());
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c119]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c97]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                         vacancy.setSiteName("https://robota.ua/");
                         printVacancy(vacancy);
@@ -451,14 +451,14 @@ public class RabotaUaStrategy implements Strategy {
                     Vacancy vacancy = new Vacancy();
                     WebElement title = elementVacancy.findElement(By.tagName("h2"));
                     vacancy.setTitle(title.getText().trim());
-                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c119]"));
+                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c97]"));
                     int spansSize = spans.size();
                     //System.out.println("spansSize : " + spansSize);
                     if (spansSize == 3) {
                         vacancy.setCompanyName(spans.get(0).getText().trim());
                         vacancy.setSalary("");
                         vacancy.setCity(spans.get(1).getText().trim());
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c119]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c97]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                         vacancy.setSiteName("https://robota.ua/");
                         printVacancy(vacancy);
@@ -496,7 +496,7 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(1).getText().trim());
                             }
                         }
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c119]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c97]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                         vacancy.setSiteName("https://robota.ua/");
                         printVacancy(vacancy);
@@ -529,7 +529,7 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(3).getText().trim());
                             }
                         }
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c119]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c97]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                         vacancy.setSiteName("https://robota.ua/");
                         printVacancy(vacancy);
@@ -548,7 +548,7 @@ public class RabotaUaStrategy implements Strategy {
                         vacancy.setCompanyName(spans.get(2).getText().trim());
                         vacancy.setSalary(spans.get(0).getText().trim());
                         vacancy.setCity(spans.get(3).getText().trim());
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c119]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c97]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                         vacancy.setSiteName("https://robota.ua/");
                         printVacancy(vacancy);
