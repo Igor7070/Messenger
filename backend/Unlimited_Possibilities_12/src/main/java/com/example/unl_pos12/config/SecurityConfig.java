@@ -49,7 +49,7 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(Arrays.asList("https://igor7070.github.io/Messenger")); // Укажите адрес вашего клиента
+        config.setAllowedOrigins(Arrays.asList("https://igor7070.github.io")); // Укажите адрес вашего клиента
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         source.registerCorsConfiguration("/api/**", config); // Разрешаем CORS для API
