@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title th:text="${title}">Безграничные возможности</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        <style>
+            body {
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh; /* Минимальная высота на весь экран */
+                font-family: 'Arial', sans-serif;
+                margin: 0;
+                padding: 0;
+                background: linear-gradient(to right, #6a11cb, #2575fc);
+                color: #f0f0f0;
+            }
+            header {
+                text-align: center;
+                padding: 50px;
+                background-color: rgba(0, 0, 0, 0.5);
+            }
+            h1 {
+                font-size: 3em;
+                margin: 0;
+            }
+            nav {
+                margin-top: 20px;
+            }
+            nav a {
+                color: #ffdd57;
+                text-decoration: none;
+                margin: 0 15px;
+                font-size: 1.5em;
+                padding: 10px 15px;
+                border: 2px solid #ffdd57;
+                border-radius: 5px;
+                transition: background-color 0.3s, color 0.3s, transform 0.3s;
+            }
+            nav a:hover {
+                background-color: #ffdd57;
+                color: black;
+                transform: scale(1.1);
+            }
+            section {
+                padding: 20px;
+                text-align: center;
+                background-color: rgba(0, 0, 0, 0.7);
+                margin-top: 20px;
+                margin-left: 20px;
+                margin-right: 20px;
+                border-radius: 15px;
+                opacity: 0;
+                transform: translateY(20px);
+                animation: fadeInUp 0.5s forwards;
+            }
+            @keyframes fadeInUp {
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            .description {
+                margin: 20px 0;
+                font-size: 1.1em;
+                line-height: 1.6;
+                color: #d0d0d0;
+                text-shadow: none;
+            }
+            footer {
+                text-align: center;
+                padding: 20px;
+                background-color: rgba(0, 0, 0, 0.5);
+                margin-top: auto; /* Это позволяет футеру оставаться внизу */
+                color: #f0f0f0;
+            }
+        </style>
+    </head>
+
+    <body>
+        <header>
+            <h1>Безграничные возможности</h1>
+            <nav>
+                <a href="/convenient_job_search"><i class="fas fa-briefcase"></i> Поиск работы</a>
+                <a href="https://igor7070.github.io/Messenger/"><i class="fas fa-comments"></i> Мессенджер</a>
+            </nav>
+        </header>
+
+        <section>
+            <h2>Поиск работы</h2>
+            <div class="description">
+                Откройте для себя новые горизонты с нашим удобным и быстрым поиском работы.
+                Создайте резюме с помощью ИИ и отправляйте его в считанные минуты.
+                Найдите работу своей мечты без лишних усилий!
+            </div>
+        </section>
+
+        <section>
+            <h2>Мессенджер</h2>
+            <div class="description">
+                Общайтесь с уверенностью! Наш мессенджер обеспечивает безопасность и удобство,
+                предлагая уникальные функции для общения с друзьями и коллегами.
+                Исследуйте новые возможности общения!
+            </div>
+        </section>
+
+        <footer>
+            © 2024 Безграничные возможности. Все права защищены. | Политика конфиденциальности | Условия обслуживания
+        </footer>
+    </body>
+</html>
