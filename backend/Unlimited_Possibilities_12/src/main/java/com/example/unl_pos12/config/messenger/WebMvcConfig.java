@@ -7,7 +7,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("https://igor7070.github.io") // Ваш новый адрес...
+                .allowedOrigins("https://igor7070.github.io") // Ваш новый адрес
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowCredentials(true);
     }
