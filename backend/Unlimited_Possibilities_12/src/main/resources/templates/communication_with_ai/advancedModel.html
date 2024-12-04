@@ -1,84 +1,179 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org">
     <head>
-        <title th:text="${title}"/>
+        <title th:text="${title}">Чат с ИИ</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet"> <!-- Подключение шрифта -->
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"> <!-- Подключение шрифта -->
         <link rel="icon" href="/favicon.ico" type="image/x-icon">
         <style>
             html, body {
-                height: 100%; /* Задает высоту для html и body */
-                margin: 0; /* Убирает отступы по умолчанию */
+                height: 100%;
+                margin: 0;
+                font-family: 'Roboto', sans-serif;
+                background: linear-gradient(to right, #6a11cb, #2575fc); /* Градиентный фон */
+                color: #fff; /* Цвет текста */
             }
 
-            body {
-                display: flex;
-                flex-direction: column; /* Устанавливает вертикальное расположение элементов */
+            header {
+                background-color: #4a90e2; /* Цвет фона для header */
+                padding: 10px 20px; /* Отступы в header */
+                margin-bottom: 20px; /* Отступ снизу */
+                display: flex; /* Используем флекс-контейнер */
+                justify-content: space-between; /* Разделяем элементы */
+                align-items: center; /* Центрируем элементы по вертикали */
+            }
+
+            .home-link {
+                color: #ffcc00; /* Цвет ссылки */
+                font-weight: bold; /* Жирный шрифт */
+                text-decoration: none; /* Убираем подчеркивание */
+                padding: 5px 10px; /* Отступы вокруг ссылки */
+                border: 2px solid #ffcc00; /* Граница вокруг ссылки */
+                border-radius: 5px; /* Скругленные углы */
+                transition: background-color 0.3s, color 0.3s; /* Плавный переход */
+                position: absolute; /* Абсолютное позиционирование */
+                left: 20px; /* Отступ от левого края */
+                top: 80px; /* Положение по центру по вертикали */
+            }
+
+            .home-link:hover {
+                background-color: #ffcc00; /* Цвет фона при наведении */
+                color: #4a90e2; /* Цвет текста при наведении */
+            }
+
+            footer {
+                background-color: #343a40; /* Цвет фона для footer */
+                padding: 10px; /* Отступы в footer */
+                position: fixed; /* Фиксированное положение */
+                bottom: 0; /* Прикрепляем к низу */
+                width: 100%; /* Ширина на всю страницу */
+                text-align: center; /* Центрируем текст */
+                margin-top: 20px;
             }
 
             .container {
-                flex: 1; /* Заставляет контейнер занимать всё доступное пространство */
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                padding: 20px;
+                margin: 0 auto; /* Центрируем контейнер */
+            }
+
+            .card {
+                background-color: #d0e1f9; /* Темнее светло-голубой цвет для карточки */
+                border-radius: 15px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); /* Тень для карточки */
+                transition: transform 0.3s; /* Эффект при наведении */
+            }
+
+            .card:hover {
+                transform: scale(1.02); /* Увеличение карточки при наведении */
             }
 
             .chat-container {
                 height: 400px;
-                overflow-y: scroll;
+                overflow-y: auto; /* Прокрутка, если содержимое превышает высоту */
                 padding: 20px;
-                border: 1px solid #ccc;
-                background-color: #f5f5f5;
+                border-radius: 10px;
+                background-color: #f8f9fa; /* Светлый фон для области чата */
+                margin-bottom: 20px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* Тень для области чата */
             }
+
             .chat-message {
                 margin-bottom: 10px;
                 padding: 10px;
-                background-color: #fff;
                 border-radius: 5px;
+                background-color: #e0e0e0; /* Теплый серый для сообщения */
                 box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                position: relative;
             }
+
+            .chat-message:before {
+                content: '';
+                position: absolute;
+                left: -10px; /* Положение точки */
+                top: 10px; /* Положение точки */
+                width: 10px; /* Ширина точки */
+                height: 10px; /* Высота точки */
+                border-radius: 50%; /* Круглая форма */
+                background-color: #6a11cb; /* Цвет точки */
+            }
+
             .chat-input {
                 display: flex;
-                margin-top: 10px;
+                margin-top: 10px; /* Отступ сверху */
             }
+
             .chat-input input {
-                flex-grow: 1;
-                padding: 10px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
+                flex-grow: 1; /* Поле ввода занимает всё доступное пространство */
+                padding: 10px; /* Отступы внутри поля ввода */
+                border: 1px solid #ccc; /* Граница поля ввода */
+                border-radius: 5px; /* Сглаженные углы */
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Тень для поля ввода */
             }
+
             .chat-input button {
-                margin-left: 10px;
-                padding: 10px 20px;
-                background-color: #4CAF50;
-                color: #fff;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
+                margin-left: 10px; /* Отступ слева */
+                padding: 10px 20px; /* Отступы внутри кнопки */
+                background-color: #4CAF50; /* Цвет кнопки */
+                color: #fff; /* Цвет текста кнопки */
+                border: none; /* Без границы */
+                border-radius: 5px; /* Сглаженные углы */
+                cursor: pointer; /* Курсор при наведении */
+                transition: background-color 0.3s, transform 0.2s; /* Плавный переход */
             }
 
-            .light-maroon-bg a.btn {
-                color: #343a40;
+            .chat-input button:hover {
+                background-color: #45a049; /* Темный цвет при наведении */
+                transform: scale(1.05); /* Увеличение кнопки при наведении */
             }
 
-            .modal {
-                display: none; /* Скрываем модальное окно по умолчанию */
+            #notification {
                 position: fixed;
-                z-index: 1000;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                overflow: auto; /* Включаем прокрутку, если нужно */
-                background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон */
+                top: 50%; /* Центр по вертикали */
+                left: 50%; /* Центр по горизонтали */
+                transform: translate(-50%, -50%); /* Центрирование */
+                z-index: 1000; /* Поверх остальных элементов */
+                width: 400px; /* Ширина уведомления */
+                text-align: center; /* Выравнивание текста */
+                font-size: 20px; /* Размер шрифта */
+                display: none; /* Скрыто по умолчанию */
+            }
+
+            .toggle-container {
+                margin-bottom: 20px; /* Отступ снизу */
+                display: flex; /* Устанавливаем флекс-контейнер */
+                justify-content: space-between; /* Разделяем элементы */
+                align-items: center; /* Выравнивание по центру */
+            }
+
+            .form-select {
+                background-color: #C0C0C0; /* Светло-серый фон для переключателя */
+                border: 1px solid #ccc; /* Граница для переключателя */
+            }
+
+            h2 {
+                color: #F0E68C; /* Цвет заголовка */
+                text-align: center; /* Центрируем заголовок */
+                margin-bottom: 20px; /* Отступ снизу */
             }
 
             .modal-content {
-                background-color: #fff;
-                margin: 15% auto; /* Отступ сверху и автоматически снизу */
+                background-color: #fff; /* Белый фон */
+                margin: 15% auto;
                 padding: 20px;
                 border: 1px solid #888;
-                width: 80%; /* Ширина модального окна */
-                max-width: 500px; /* Максимальная ширина */
+                width: 80%;
+                max-width: 500px;
                 text-align: center; /* Центрируем текст */
+            }
+
+            .modal-content p {
+                color: black; /* Обязательно черный цвет текста */
+                font-size: 16px; /* Убедитесь, что размер шрифта достаточный */
             }
 
             .close-button {
@@ -98,38 +193,33 @@
     </head>
 
     <body>
-        <!-- Включаем header -->
-        <div th:replace="job_search/header.html"></div>
+        <header>
+            <a href="/" class="home-link">На главную</a>
+            <div class="container d-flex align-items-center justify-content-between">
+                    <h2 class="text-center flex-grow-1">Продвинутая модель ИИ</h2> <!-- Заголовок по центру -->
+                <div class="toggle-container">
+                    <label for="model-toggle" class="form-label text-white">Выберите модель:</label>
+                    <select id="model-toggle" class="form-select" onchange="toggleModel()">
+                        <option value="primitive">Общение с примитивной моделью ИИ</option>
+                        <option value="advanced" selected>Общение с продвинутой моделью ИИ</option>
+                    </select>
+                </div>
+            </div>
+        </header>
 
-        <div class="container my-5">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">Chat</div>
-                        <div class="card-body">
-                            <div class="chat-container" id="chat-container-advanced">
-                                <div class="chat-message" th:each="chatMessage : ${chatMessages}" th:text="${chatMessage}"></div>
-                            </div>
-                        </div>
+        <div class="container mt-4">
+            <div class="card">
+                <div class="card-header text-center">Чат с ИИ</div>
+                <div class="card-body">
+                    <div class="chat-container" id="chat-container-advanced">
+                        <div class="chat-message" th:each="chatMessage : ${chatMessages}" th:text="${chatMessage}"></div>
                     </div>
                 </div>
             </div>
-            <div class="row mt-3">
-                <div class="col-12">
-                    <form class="chat-input" id="chat-form" action="#" th:action="@{/communicating_with_a_advanced_ai_model}" method="post">
-                        <div class="input-group">
-                            <input type="text" class="form-control" name="prompt" placeholder="Введите сообщение" />
-                            <div class="input-group-append">
-                                <button class="btn btn-primary" type="submit">Отправить</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <div id="notification" class="alert alert-success" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 900px; text-align: center; font-size: 24px;">
-            <strong>Успех!</strong> <span id="notification-message">История поиска вакансий очищена.</span>
+            <form class="chat-input" id="chat-form" action="#" th:action="@{/communicating_with_a_advanced_ai_model}" method="post">
+                <input type="text" class="form-control" name="prompt" placeholder="Введите сообщение" required />
+                <button class="btn btn-primary" type="submit">Отправить</button>
+            </form>
         </div>
 
         <div id="message-modal" class="modal">
@@ -138,6 +228,10 @@
                 <p>Вы достигли лимита в 7 сообщений за час. Пожалуйста, попробуйте позже.</p>
             </div>
         </div>
+
+        <footer>
+            <p class="text-white mb-0">© 2024 Чат с ИИ. Все права защищены.</p>
+        </footer>
 
         <script>
             const form = document.querySelector('.chat-input');
@@ -193,51 +287,23 @@
                 }
             });
 
+            function toggleModel() {
+                const selectedModel = document.getElementById('model-toggle').value;
+                let url = '';
+
+                if (selectedModel === 'primitive') {
+                    url = '/communicating_with_a_primitive_ai_model';
+                } else if (selectedModel === 'advanced') {
+                    url = '/communicating_with_a_advanced_ai_model';
+                }
+
+                // Перенаправление на соответствующую страницу
+                window.location.href = url;
+            }
+
             // Прокрутка вниз при загрузке страницы
             document.addEventListener('DOMContentLoaded', scrollToBottom);
-
-            document.getElementById("delete-history-btn").addEventListener("click", function(event) {
-                event.preventDefault(); // Предотвращаем переход по ссылке
-
-                fetch('/convenient_job_search/delete_search_history', {
-                    method: 'DELETE',
-                })
-                    .then(response => {
-                        if (response.ok) {
-                            return response.text();
-                        } else {
-                            throw new Error('Ошибка при удалении истории поиска');
-                        }
-                    })
-                    .then(message => {
-                        // Показываем уведомление
-                        const notification = document.getElementById("notification");
-                        const messageSpan = document.getElementById("notification-message");
-                        messageSpan.innerHTML = message; // обновляем текст уведомления
-                        notification.style.display = "block";
-
-                        // Скрываем уведомление через 5 секунд
-                        setTimeout(() => {
-                            notification.style.display = "none";
-                        }, 5000);
-                    })
-                    .catch(error => {
-                        // Показываем ошибку
-                        const notification = document.getElementById("notification");
-                        notification.className = "alert alert-danger"; // Меняем стиль на ошибку
-                        const messageSpan = document.getElementById("notification-message");
-                        messageSpan.innerHTML = error.message; // обновляем текст уведомления
-                        notification.style.display = "block";
-
-                        // Скрываем уведомление через 5 секунд
-                        setTimeout(() => {
-                            notification.style.display = "none";
-                        }, 5000);
-                    });
-            });
+            form.addEventListener('submit', scrollToBottom);
         </script>
-
-        <!-- Включаем футер -->
-        <div th:replace="job_search/footer.html"></div>
     </body>
 </html>

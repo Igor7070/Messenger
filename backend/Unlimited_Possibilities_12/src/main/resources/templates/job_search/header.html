@@ -1,4 +1,4 @@
-<style>
+<style xmlns:margin-top="http://www.w3.org/1999/xhtml">
     html, body {
         height: 100%; /* Задает высоту для html и body */
         margin: 0; /* Убирает отступы по умолчанию */
@@ -57,17 +57,23 @@
     .clear-db-btn:hover {
         background-color: #e06e6e; /* Легкий оттенок при наведении */
     }
+
+    .margin-top-10 {
+        margin-top: 10px;
+    }
 </style>
 
 <header>
     <div class="header-container">
         <div class="row flex-nowrap align-items-start" style="padding-top: 5px;">
             <div class="col-4" style="padding-left: 0px;">
-                <a class="link-secondary" href="/convenient_job_search">На главную</a>
+                <a class="link-secondary" href="/">На главную</a>
                 <div style="margin-top: 5px;"> <!-- Контейнер для кнопок -->
-                    <a class="btn btn-sm btn-outline-secondary" href="/communicating_with_a_advanced_ai_model">Общение с продвинутой моделью ИИ</a>
-                    <a class="btn btn-sm btn-outline-secondary" href="/communicating_with_a_primitive_ai_model" style="margin-top: 5px; margin-bottom: 10px;">Общение с примитивной моделью ИИ</a>
+                    <a class="link-secondary" href="/convenient_job_search">К поиску работы</a>
                 </div>
+                <button id="clear-db-btn" class="btn clear-db-btn margin-top-10">
+                    Очистка БД
+                </button>
             </div>
             <div class="col-4 text-center" style="white-space: nowrap;">
                 <span class="header-title text-body-emphasis text-decoration-none">Безграничные возможности</span>
@@ -90,11 +96,6 @@
                 </div>
             </div>
         </div>
-    </div>
-    <div style="text-align: center; margin-top: -38px;">
-        <button id="clear-db-btn" class="btn clear-db-btn">
-            Очистка БД
-        </button>
     </div>
 </header>
 
