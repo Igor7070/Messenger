@@ -75,6 +75,8 @@ public class ResumeController {
         transliterationMap.put('э', "e");
         transliterationMap.put('ю', "yu");
         transliterationMap.put('я', "ya");
+        transliterationMap.put('ї', "yi");
+        transliterationMap.put('і', "i");
 
         // Добавление заглавных букв
         transliterationMap.put('А', "A");
@@ -110,6 +112,8 @@ public class ResumeController {
         transliterationMap.put('Э', "E");
         transliterationMap.put('Ю', "Yu");
         transliterationMap.put('Я', "Ya");
+        transliterationMap.put('Ї', "Yi");
+        transliterationMap.put('І', "I");
     }
 
     @GetMapping("/convenient_job_search/createResume")

@@ -1,4 +1,4 @@
-<style xmlns:margin-top="http://www.w3.org/1999/xhtml">
+<style>
     html, body {
         height: 100%; /* Задает высоту для html и body */
         margin: 0; /* Убирает отступы по умолчанию */
@@ -58,8 +58,9 @@
         background-color: #e06e6e; /* Легкий оттенок при наведении */
     }
 
-    .margin-top-10 {
-        margin-top: 10px;
+    .clear-db-btn {
+        position: relative; /* Установите относительное позиционирование */
+        top: 7px; /* Сдвиньте кнопку на 10 пикселей вверх */
     }
 </style>
 
@@ -71,7 +72,7 @@
                 <div style="margin-top: 5px;"> <!-- Контейнер для кнопок -->
                     <a class="link-secondary" href="/convenient_job_search">К поиску работы</a>
                 </div>
-                <button id="clear-db-btn" class="btn clear-db-btn margin-top-10">
+                <button id="clear-db-btn" class="btn clear-db-btn">
                     Очистка БД
                 </button>
             </div>
@@ -99,26 +100,10 @@
     </div>
 </header>
 
-<div id="passwordModal" style="display:none; position:fixed; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); z-index:1000;">
-    <div style="position:relative; margin:auto; padding:20px; background:#ffffff; width:300px; top:50%; transform:translateY(-50%); border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1), 0 6px 20px rgba(0,0,0,0.1); text-align:center;">
-        <h3 style="margin-bottom:20px;">Введите пароль для очистки БД:</h3>
-        <input type="password" id="passwordInput" style="width:100%; padding:8px; margin-bottom:12px; border:1px solid #ccc; border-radius:4px;" />
-        <button id="confirmPasswordBtn" style="padding:10px 20px; background-color:#007BFF; color:white; border:none; border-radius:4px; cursor:pointer;">Подтвердить</button>
-        <button id="cancelPasswordBtn" style="padding:10px 20px; background-color:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer; margin-left:10px;">Отмена</button>
-    </div>
-</div>
-
 <script>
     document.getElementById('clear-db-btn').addEventListener('click', function() {
-        // Очистка поля ввода пароля перед открытием модального окна
-        document.getElementById('passwordInput').value = '';
-        // Показать модальное окно для ввода пароля
-        document.getElementById('passwordModal').style.display = 'block';
-    });
-
-    document.getElementById('confirmPasswordBtn').addEventListener('click', function() {
-        // Получить введенный пароль
-        const password = document.getElementById('passwordInput').value;
+        // Запрос пароля
+        const password = prompt("Введите пароль для очистки БД:");
         if (password === "unlpos12") {
             // Если пароль верный, отправляем запрос на сервер
             fetch('/convenient_job_search/full_clear_database', {
@@ -138,13 +123,5 @@
         } else {
             alert("Введен неверный пароль.");
         }
-
-        // Скрыть модальное окно
-        document.getElementById('passwordModal').style.display = 'none';
-    });
-
-    document.getElementById('cancelPasswordBtn').addEventListener('click', function() {
-        // Скрыть модальное окно без действия
-        document.getElementById('passwordModal').style.display = 'none';
     });
 </script>
