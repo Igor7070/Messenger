@@ -1,8 +1,6 @@
 package com.example.unl_pos12.controller.messenger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,14 +22,7 @@ public class ProxyController {
     @GetMapping("/**")
     public ResponseEntity<String> proxyResources(@PathVariable(value = "path") String path) {
         String resourceUrl = "https://igor7070.github.io/Messenger/" + path;
-
-        // Получаем ресурс
-        ResponseEntity<String> responseEntity = restTemplate.exchange(resourceUrl, HttpMethod.GET, null, String.class);
-
-        // Создаем новый ответ с правильными заголовками
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(responseEntity.getHeaders().getContentType());
-        return new ResponseEntity<>(responseEntity.getBody(), headers, responseEntity.getStatusCode());
+        return restTemplate.getForEntity(resourceUrl, String.class);
     }
 
     @GetMapping
