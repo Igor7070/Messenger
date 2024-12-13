@@ -26,6 +26,6 @@ public class ProxyController {
     @ResponseBody
     public ResponseEntity<String> proxyHome() {
         String resourceUrl = "https://igor7070.github.io/Messenger/";
-        return restTemplate.getForEntity(resourceUrl, String.class);//
+        return restTemplate.getForEntity(resourceUrl, String.class);
     }
 }
