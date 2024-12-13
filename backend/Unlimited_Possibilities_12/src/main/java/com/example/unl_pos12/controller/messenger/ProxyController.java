@@ -19,6 +19,20 @@ public class ProxyController {
         this.restTemplate = restTemplate;
     }
 
+    @GetMapping("/static/**")
+    public ResponseEntity<String> proxyStaticResources(@PathVariable(value = "path") String path) {
+        String resourceUrl = "https://igor7070.github.io/Messenger/static/" + path;
+        System.out.println("Requesting static resource: " + resourceUrl);
+
+        try {
+            ResponseEntity<String> response = restTemplate.getForEntity(resourceUrl, String.class);
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        } catch (Exception e) {
+            System.err.println("Error fetching static resource: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error fetching static resource");
+        }
+    }
+
     @GetMapping("/**")
     public ResponseEntity<String> proxyResources(@PathVariable(value = "path") String path) {
         String resourceUrl = "https://igor7070.github.io/Messenger/" + path;
@@ -26,8 +40,7 @@ public class ProxyController {
 
         try {
             ResponseEntity<String> response = restTemplate.getForEntity(resourceUrl, String.class);
-            System.out.println("Response status: " + response.getStatusCode());
-            return response;
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
         } catch (Exception e) {
             System.err.println("Error fetching resource: " + e.getMessage());
             return ResponseEntity.status(500).body("Error fetching resource");
