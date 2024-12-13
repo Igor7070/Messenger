@@ -15,14 +15,20 @@ public class ProxyController {
     private final RestTemplate restTemplate;
 
     @Autowired
-    public ProxyController(RestTemplate customRestTemplate) {
-        this.restTemplate = customRestTemplate;
+    public ProxyController(RestTemplate simpleRestTemplate) {
+        this.restTemplate = simpleRestTemplate;
     }
 
     @GetMapping("/**")
     public ResponseEntity<String> proxyResources(@PathVariable(value = "path") String path) {
         String resourceUrl = "https://igor7070.github.io/Messenger/" + path;
-        return restTemplate.getForEntity(resourceUrl, String.class);
+
+        try {
+            ResponseEntity<String> response = restTemplate.getForEntity(resourceUrl, String.class);
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error fetching resource");
+        }
     }
 
     @GetMapping
