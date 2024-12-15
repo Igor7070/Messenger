@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { getMessages, sendMessage as apiSendMessage } from '../api/messages';
+import { getMessages, sendMessage as apiSendMessage, loginUser } from '../api/messages';
 import { createUser } from '../api/users';
 import '../styles/Messenger.css';
 
