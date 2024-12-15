@@ -12,6 +12,8 @@ const Messenger = () => {
     const [password, setPassword] = useState('');
     const [userId, setUserId] = useState(null);
     const [client, setClient] = useState(null);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -73,8 +75,24 @@ const Messenger = () => {
                 setUserId(newUser.id);
                 setUsername(newUser.username); // Убедитесь, что username правильно установлен
                 setPassword('');
+                setIsLoggedIn(true);
+            setErrorMessage('');
             } catch (error) {
                 console.error('Failed to create user:', error);
+                setErrorMessage(error.message);
+            }
+        }
+    };
+
+    const handleLogin = async () => {
+        if (username && password) {
+            try {
+                const loggedUser = await loginUser({ username, password });
+                setUserId(loggedUser.id);
+                setIsLoggedIn(true);
+                setErrorMessage('');
+            } catch (error) {
+                setErrorMessage(error.message);
             }
         }
     };
@@ -97,7 +115,9 @@ const Messenger = () => {
                     className="input-password"
                 />
                 <button onClick={handleCreateUser} className="create-user-button">Create User</button>
+                <button onClick={handleLogin} className="login-button">Login</button>
             </div>
+            {errorMessage && <div className="error-message">{errorMessage}</div>}
             <div className="message-list">
                 {messages.map((msg, index) => (
                     <div key={index} className="message">
