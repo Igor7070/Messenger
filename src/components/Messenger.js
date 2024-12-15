@@ -4,6 +4,8 @@ import SockJS from 'sockjs-client';
 import { getMessages, sendMessage as apiSendMessage, loginUser } from '../api/messages';
 import { createUser } from '../api/users';
 import '../styles/Messenger.css';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Messenger = () => {
     const [messages, setMessages] = useState([]);
@@ -71,15 +73,18 @@ const Messenger = () => {
             const user = { username, password };
             try {
                 const newUser = await createUser(user);
-                console.log('User created:', newUser);
                 setUserId(newUser.id);
-                setUsername(newUser.username); // Убедитесь, что username правильно установлен
+                setUsername(newUser.username);
                 setPassword('');
-                setIsLoggedIn(true);
-            setErrorMessage('');
+                toast.success('Пользователь успешно создан!');
             } catch (error) {
-                console.error('Failed to create user:', error);
-                setErrorMessage(error.message);
+                if (error.message.includes('User already exists')) {
+                    toast.error('Пользователь с таким именем уже существует. Пожалуйста, выберите другое имя.');
+                } else if (error.message.includes('Password must be at least 9 characters')) {
+                    toast.error('Пароль должен содержать минимум 9 символов, включая буквы и цифры.');
+                } else {
+                    toast.error('Не удалось создать пользователя. Пожалуйста, попробуйте снова.');
+                }
             }
         }
     };
@@ -134,6 +139,7 @@ const Messenger = () => {
                 className="input-message"
             />
             <button onClick={sendMessage} className="send-button">Send</button>
+            <ToastContainer />
         </div>
     );
 };
