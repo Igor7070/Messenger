@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -18,5 +20,12 @@ public class UserController {
     public User createUser(@RequestBody User user) {
         System.out.println("Created user: " + user.getUsername());
         return userService.createUser(user);
+    }
+
+    @PostMapping("/login")
+    public User loginUser(@RequestBody Map<String, String> loginRequest) {
+        String username = loginRequest.get("username");
+        String password = loginRequest.get("password");
+        return userService.loginUser(username, password);
     }
 }
