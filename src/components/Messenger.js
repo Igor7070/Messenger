@@ -78,14 +78,18 @@ const Messenger = () => {
                 setPassword('');
                 toast.success('Пользователь успешно создан!');
             } catch (error) {
+                // Обработка ошибок с более конкретными сообщениями
                 if (error.message.includes('User already exists')) {
                     toast.error('Пользователь с таким именем уже существует. Пожалуйста, выберите другое имя.');
                 } else if (error.message.includes('Password must be at least 9 characters')) {
                     toast.error('Пароль должен содержать минимум 9 символов, включая буквы и цифры.');
                 } else {
+                    // Общее сообщение для других ошибок
                     toast.error('Не удалось создать пользователя. Пожалуйста, попробуйте снова.');
                 }
             }
+        } else {
+            toast.error('Пожалуйста, заполните все поля.');
         }
     };
 
