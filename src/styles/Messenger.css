@@ -50,14 +50,15 @@
 }
 
 .input-message {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    padding: 10px; /* Отступы внутри текстового поля */
+    border: 1px solid #ccc; 
+    border-radius: 5px; 
     margin-bottom: 10px; 
     flex: 1; /* Занимает оставшееся пространство */
     min-width: 0; /* Позволяет полю ввода сжиматься при необходимости */
     overflow: hidden; /* Скрываем скролл */
     resize: none; /* Убираем возможность изменения размера вручную */
+    box-sizing: border-box; /* Учитываем отступы в общей ширине */
 }
 
 .send-button {
