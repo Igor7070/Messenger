@@ -1,6 +1,7 @@
 .messenger {
     display: flex;
     flex-direction: column;
+    padding: 20px; /* Отступ для всего контейнера */
 }
 
 .user-creation {
@@ -45,6 +46,7 @@
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
+    margin-bottom: 10px; /* Отступ внизу поля ввода */
 }
 
 .send-button {
