@@ -33,6 +33,12 @@ export const loginUser = async (user) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(user),
     });
-    if (!response.ok) throw new Error('Failed to log in');
+
+    if (!response.ok) {
+        // Получаем текст ошибки от сервера
+        const errorText = await response.text();
+        throw new Error(errorText); // Выбрасываем ошибку с текстом
+    }
+    
     return await response.json();
 };
