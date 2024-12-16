@@ -6,6 +6,12 @@ export const createUser = async (user) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(user),
     });
-    if (!response.ok) throw new Error('Failed to create user');
+    
+    if (!response.ok) {
+        // Получаем текст ошибки от сервера
+        const errorText = await response.text();
+        throw new Error(errorText); // Выбрасываем ошибку с текстом
+    }
+
     return await response.json();
 };
