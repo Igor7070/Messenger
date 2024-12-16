@@ -78,15 +78,18 @@ const Messenger = () => {
                 setPassword('');
                 toast.success('Пользователь успешно создан!');
             } catch (error) {
-                // Обработка ошибок с более конкретными сообщениями
+                let errorMessage = 'Не удалось создать пользователя. Пожалуйста, попробуйте снова.';
+        
+                console.warn(error.message);
+    
+                // Проверьте на точное сообщение об ошибке
                 if (error.message.includes('User already exists')) {
-                    toast.error('Пользователь с таким именем уже существует. Пожалуйста, выберите другое имя.');
-                } else if (error.message.includes('Password must be at least 9 characters')) {
-                    toast.error('Пароль должен содержать минимум 9 символов, включая буквы и цифры.');
-                } else {
-                    // Общее сообщение для других ошибок
-                    toast.error('Не удалось создать пользователя. Пожалуйста, попробуйте снова.');
+                    errorMessage = 'Пользователь с таким именем уже существует. Пожалуйста, выберите другое имя.';
+                } else if (error.message.includes('Password must be at least 9 characters long, contain letters and numbers')) {
+                    errorMessage = 'Пароль должен содержать минимум 9 символов, включая буквы и цифры.';
                 }
+    
+                toast.error(errorMessage);
             }
         } else {
             toast.error('Пожалуйста, заполните все поля.');
