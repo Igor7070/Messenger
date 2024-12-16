@@ -121,6 +121,13 @@ const Messenger = () => {
         }
     };
 
+    const handleInputChange = (e) => {
+        const target = e.target;
+        target.style.height = 'auto'; // Сбрасываем высоту
+        target.style.height = `${target.scrollHeight}px`; // Устанавливаем высоту на основе содержимого
+        setContent(target.value);
+    };
+
     return (
         <div className="messenger">
             <div className="user-creation">
@@ -150,12 +157,13 @@ const Messenger = () => {
                     </div>
                 ))}
             </div>
-            <input
-                type="text"
+            <textarea
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
+                onChange={handleInputChange}
                 placeholder="Enter your message"
                 className="input-message"
+                rows={1}
+                style={{ resize: 'none' }} // Убираем возможность изменения размера вручную
             />
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
