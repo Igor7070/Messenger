@@ -50,11 +50,12 @@
 }
 
 .input-message {
-    width: calc(100% - 100px);
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
     margin-bottom: 10px; 
+    flex: 1; /* Занимает оставшееся пространство */
+    min-width: 0; /* Позволяет полю ввода сжиматься при необходимости */
 }
 
 .send-button {

@@ -150,14 +150,16 @@ const Messenger = () => {
                     </div>
                 ))}
             </div>
-            <input
-                type="text"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Enter your message"
-                className="input-message"
-            />
-            <button onClick={sendMessage} className="send-button">Send</button>
+            <div style={{ display: 'flex', gap: '10px' }}> {/* Добавляем контейнер для поля ввода и кнопки */}
+                <input
+                    type="text"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="Enter your message"
+                    className="input-message"
+                />
+                <button onClick={sendMessage} className="send-button">Send</button>
+            </div>
             <ToastContainer />
         </div>
     );
