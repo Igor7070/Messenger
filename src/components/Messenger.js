@@ -103,9 +103,21 @@ const Messenger = () => {
                 setUserId(loggedUser.id);
                 setIsLoggedIn(true);
                 setErrorMessage('');
+                toast.success('Вы успешно вошли в систему!');
             } catch (error) {
-                setErrorMessage(error.message);
+                // Обрабатываем ошибку, чтобы показать конкретное сообщение
+                let errorMessage = 'Не удалось войти. Пожалуйста, попробуйте снова.';
+                console.warn(error.message); // Вывод сообщения об ошибке в консоль
+    
+                // Проверяем текст ошибки
+                if (error.message.includes('Invalid username or password')) {
+                    errorMessage = 'Неверное имя пользователя или пароль.';
+                }
+    
+                toast.error(errorMessage); // Отображаем сообщение об ошибке
             }
+        } else {
+            toast.error('Пожалуйста, заполните все поля.');
         }
     };
 
