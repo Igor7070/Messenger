@@ -162,7 +162,7 @@ const Messenger = () => {
                 onChange={handleInputChange}
                 placeholder="Enter your message"
                 className="input-message"
-                rows={1}
+                rows={3}
                 style={{ resize: 'none' }} // Убираем возможность изменения размера вручную
             />
             <button onClick={sendMessage} className="send-button">Send</button>
