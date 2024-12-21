@@ -132,7 +132,7 @@ const Messenger = () => {
     const calculateRows = (value) => {
         if (textAreaRef.current) {
             const lineHeight = 24; // Высота строки
-            textAreaHeight = textAreaRef.current.scrollHeight; // Высота текстового поля
+            const textAreaHeight = textAreaRef.current.scrollHeight; // Высота текстового поля
             const tempElement = document.createElement('div'); // Создаем временный элемент
             tempElement.style.width = `${textAreaRef.current.clientWidth}px`; // Устанавливаем ширину
             tempElement.style.font = getComputedStyle(textAreaRef.current).font; // Копируем стиль шрифта
