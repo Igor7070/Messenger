@@ -161,8 +161,8 @@ const Messenger = () => {
                 onChange={handleInputChange}
                 placeholder="Enter your message"
                 className="input-message"
-                rows={3}
-                style={{ resize: 'none' }} // Убираем возможность изменения размера вручную
+                rows={1} // Установите начальное количество строк
+                style={{ resize: 'none', overflow: 'hidden' }} // Убираем возможность изменения размера вручную
             />
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
