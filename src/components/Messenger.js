@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getMessages, sendMessage as apiSendMessage, loginUser } from '../api/messages';
@@ -16,6 +16,7 @@ const Messenger = () => {
     const [client, setClient] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const textareaRef = useRef(null); // Ссылка на текстовое поле
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -49,17 +50,17 @@ const Messenger = () => {
 
     const sendMessage = async () => {
         if (content && userId) {
-            const currentUsername = username; // Получаем текущее значение username
+            const currentUsername = username;
             const message = {
                 content,
-                sender: { id: userId, username: currentUsername } // Используем текущее значение username
+                sender: { id: userId, username: currentUsername }
             };
-            console.log('Sending message:', message); // Лог сообщения
+            console.log('Sending message:', message);
     
             if (client && client.connected) {
                 client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
                 setContent('');
-                console.log('Message sent'); // Подтверждение отправки
+                console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
             }
@@ -79,16 +80,12 @@ const Messenger = () => {
                 toast.success('Пользователь успешно создан!');
             } catch (error) {
                 let errorMessage = 'Не удалось создать пользователя. Пожалуйста, попробуйте снова.';
-        
                 console.warn(error.message);
-    
-                // Проверьте на точное сообщение об ошибке
                 if (error.message.includes('User already exists')) {
                     errorMessage = 'Пользователь с таким именем уже существует. Пожалуйста, выберите другое имя.';
                 } else if (error.message.includes('Password must be at least 9 characters long, contain letters and numbers')) {
                     errorMessage = 'Пароль должен содержать минимум 9 символов, включая буквы и цифры.';
                 }
-    
                 toast.error(errorMessage);
             }
         } else {
@@ -105,16 +102,12 @@ const Messenger = () => {
                 setErrorMessage('');
                 toast.success('Вы успешно вошли в систему!');
             } catch (error) {
-                // Обрабатываем ошибку, чтобы показать конкретное сообщение
                 let errorMessage = 'Не удалось войти. Пожалуйста, попробуйте снова.';
-                console.warn(error.message); // Вывод сообщения об ошибке в консоль
-    
-                // Проверяем текст ошибки
+                console.warn(error.message);
                 if (error.message.includes('Invalid username or password')) {
                     errorMessage = 'Неверное имя пользователя или пароль.';
                 }
-    
-                toast.error(errorMessage); // Отображаем сообщение об ошибке
+                toast.error(errorMessage);
             }
         } else {
             toast.error('Пожалуйста, заполните все поля.');
@@ -122,11 +115,16 @@ const Messenger = () => {
     };
 
     const handleInputChange = (e) => {
-        const target = e.target;
-        target.style.height = 'auto'; // Сбрасываем высоту
-        //target.style.height = `${target.scrollHeight}px`; // Устанавливаем высоту на основе содержимого
-        setContent(target.value);
+        setContent(e.target.value);
     };
+
+    useEffect(() => {
+        const target = textareaRef.current;
+        if (target) {
+            target.style.height = 'auto'; // Сброс высоты
+            target.style.height = `${target.scrollHeight}px`; // Установка высоты
+        }
+    }, [content]); // Запускается при изменении content
 
     return (
         <div className="messenger">
@@ -158,6 +156,7 @@ const Messenger = () => {
                 ))}
             </div>
             <textarea
+                ref={textareaRef} // Привязка рефа к textarea
                 value={content}
                 onChange={handleInputChange}
                 placeholder="Enter your message"
