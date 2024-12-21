@@ -16,7 +16,7 @@ const Messenger = () => {
     const [client, setClient] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
 
-    const textAreaRef = useRef(null);
+    const textAreaRef = useRef(null); // Создаем ссылку на текстовое поле
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -59,7 +59,6 @@ const Messenger = () => {
             if (client && client.connected) {
                 client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
                 setContent('');
-                adjustTextAreaHeight(); // Сбрасываем высоту текстового поля
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
@@ -120,24 +119,16 @@ const Messenger = () => {
 
     const handleInputChange = (e) => {
         setContent(e.target.value);
-        adjustTextAreaHeight(); // Регулируем высоту при вводе текста
+        adjustTextAreaRows(); // Обновляем количество строк при изменении текста
     };
 
-    const adjustTextAreaHeight = () => {
-        if (textAreaRef.current) {
-            textAreaRef.current.style.height = 'auto'; // Сбрасываем высоту
-            textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`; // Устанавливаем высоту в зависимости от содержимого
-        }
-    };
-
-    // Функция для вычисления количества строк
-    const calculateRows = () => {
+    const adjustTextAreaRows = () => {
         if (textAreaRef.current) {
             const lineHeight = parseInt(getComputedStyle(textAreaRef.current).lineHeight, 10);
             const textAreaHeight = textAreaRef.current.scrollHeight;
-            return Math.max(1, Math.floor(textAreaHeight / lineHeight)); // Минимум 1 строка
+            const rows = Math.max(1, Math.floor(textAreaHeight / lineHeight));
+            textAreaRef.current.rows = rows; // Устанавливаем количество строк
         }
-        return 1; // Если текстовое поле не доступно, возвращаем 1
     };
 
     return (
@@ -175,7 +166,7 @@ const Messenger = () => {
                 onChange={handleInputChange}
                 placeholder="Enter your message"
                 className="input-message"
-                rows={calculateRows()} // Динамическое изменение количества строк
+                rows={1} // Начальное значение строк
                 style={{ resize: 'none', overflow: 'hidden' }} // Убираем возможность изменения размера вручную
             />
             <button onClick={sendMessage} className="send-button">Send</button>
