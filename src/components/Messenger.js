@@ -116,15 +116,15 @@ const Messenger = () => {
 
     const handleInputChange = (e) => {
         setContent(e.target.value);
+        
+        // Использование setTimeout для изменения высоты
+        setTimeout(() => {
+            if (textareaRef.current) {
+                textareaRef.current.style.height = 'auto'; // Сброс высоты
+                textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Установка высоты
+            }
+        }, 0);
     };
-
-    useEffect(() => {
-        const target = textareaRef.current;
-        if (target) {
-            target.style.height = 'auto'; // Сброс высоты
-            target.style.height = `${target.scrollHeight}px`; // Установка высоты
-        }
-    }, [content]); // Запускается при изменении content
 
     return (
         <div className="messenger">
@@ -156,7 +156,7 @@ const Messenger = () => {
                 ))}
             </div>
             <textarea
-                ref={textareaRef} // Привязка рефа к textarea
+                ref={textareaRef}
                 value={content}
                 onChange={handleInputChange}
                 placeholder="Enter your message"
