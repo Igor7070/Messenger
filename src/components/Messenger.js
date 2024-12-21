@@ -124,7 +124,9 @@ const Messenger = () => {
     const handleInputChange = (e) => {
         const target = e.target;
         target.style.height = 'auto'; // Сбрасываем высоту
-        target.style.height = `${target.scrollHeight}px`; // Устанавливаем высоту на основе содержимого
+        setTimeout(() => {
+            target.style.height = `${target.scrollHeight}px`; // Установка новой высоты
+        }, 0); // Отложенное выполнение // Устанавливаем высоту на основе содержимого
         setContent(target.value);
     };
 
