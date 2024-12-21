@@ -124,7 +124,6 @@ const Messenger = () => {
 
     const handleInputChange = (e) => {
         setContent(e.target.value); // Обновляем состояние содержимого
-        setRows(calculateRows()); // Обновляем количество строк
     };
 
     // Функция для вычисления количества строк
@@ -137,6 +136,17 @@ const Messenger = () => {
         return 1; // Если текстовое поле не доступно, возвращаем 1
     };
 
+    useEffect(() => {
+        const updateRows = () => {
+            setRows(calculateRows());
+        };
+
+        // Используем setTimeout, чтобы дождаться обновления DOM
+        const timeoutId = setTimeout(updateRows, 0);
+
+        return () => clearTimeout(timeoutId); // Очистка таймера
+    }, [content]); // Вызываем каждый раз при изменении содержимого
+    
     return (
         <div className="messenger">
             <div className="user-creation">
