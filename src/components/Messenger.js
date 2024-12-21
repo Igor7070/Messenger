@@ -131,8 +131,9 @@ const Messenger = () => {
     // Функция для вычисления количества строк
     const calculateRows = (value) => {
         if (textAreaRef.current) {
-            const lineHeight = 24; // Высота строки
+            //const lineHeight = 24; // Высота строки
             //const textAreaHeight = textAreaRef.current.scrollHeight; // Высота текстового поля
+            const lineHeight = parseInt(getComputedStyle(textAreaRef.current).lineHeight, 10); // Используем line-height
             const tempElement = document.createElement('div'); // Создаем временный элемент
             tempElement.style.width = `${textAreaRef.current.clientWidth}px`; // Устанавливаем ширину
             tempElement.style.font = getComputedStyle(textAreaRef.current).font; // Копируем стиль шрифта
