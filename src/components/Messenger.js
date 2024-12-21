@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { getMessages, loginUser } from '../api/messages';
+import { getMessages, sendMessage as apiSendMessage, loginUser } from '../api/messages';
 import { createUser } from '../api/users';
 import '../styles/Messenger.css';
 import { ToastContainer, toast } from 'react-toastify';
@@ -14,9 +14,11 @@ const Messenger = () => {
     const [password, setPassword] = useState('');
     const [userId, setUserId] = useState(null);
     const [client, setClient] = useState(null);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [rows, setRows] = useState(1); // Состояние для количества строк
 
-    const textAreaRef = useRef(null); // Ссылка на текстовое поле
+    const textAreaRef = useRef(null);
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -50,15 +52,17 @@ const Messenger = () => {
 
     const sendMessage = async () => {
         if (content && userId) {
+            const currentUsername = username;
             const message = {
                 content,
-                sender: { id: userId, username }
+                sender: { id: userId, username: currentUsername }
             };
             console.log('Sending message:', message);
     
             if (client && client.connected) {
                 client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
                 setContent('');
+                setRows(1); // Сбрасываем строки при отправке
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
@@ -79,6 +83,7 @@ const Messenger = () => {
                 toast.success('Пользователь успешно создан!');
             } catch (error) {
                 let errorMessage = 'Не удалось создать пользователя. Пожалуйста, попробуйте снова.';
+        
                 console.warn(error.message);
 
                 if (error.message.includes('User already exists')) {
@@ -99,6 +104,7 @@ const Messenger = () => {
             try {
                 const loggedUser = await loginUser({ username, password });
                 setUserId(loggedUser.id);
+                setIsLoggedIn(true);
                 setErrorMessage('');
                 toast.success('Вы успешно вошли в систему!');
             } catch (error) {
@@ -117,23 +123,16 @@ const Messenger = () => {
     };
 
     const handleInputChange = (e) => {
-        setContent(e.target.value);
-        adjustTextAreaHeight(); // Обновляем высоту текстового поля
-    };
-
-    const adjustTextAreaHeight = () => {
-        if (textAreaRef.current) {
-            textAreaRef.current.style.height = 'auto'; // Сбрасываем высоту
-            textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`; // Устанавливаем высоту в зависимости от содержимого
-        }
+        setContent(e.target.value); // Обновляем состояние содержимого
+        setRows(calculateRows()); // Обновляем количество строк
     };
 
     // Функция для вычисления количества строк
     const calculateRows = () => {
         if (textAreaRef.current) {
-            const lineHeight = parseInt(getComputedStyle(textAreaRef.current).lineHeight, 10);
-            const textAreaHeight = textAreaRef.current.scrollHeight;
-            return Math.max(1, Math.floor(textAreaHeight / lineHeight));
+            const lineHeight = 24; // Высота строки
+            const textAreaHeight = textAreaRef.current.scrollHeight; // Высота текстового поля
+            return Math.max(1, Math.floor(textAreaHeight / lineHeight)); // Минимум 1 строка
         }
         return 1; // Если текстовое поле не доступно, возвращаем 1
     };
@@ -173,8 +172,8 @@ const Messenger = () => {
                 onChange={handleInputChange}
                 placeholder="Enter your message"
                 className="input-message"
-                rows={calculateRows()} // Динамическое изменение количества строк
-                style={{ resize: 'none', overflow: 'hidden' }} // Убираем возможность изменения размера вручную
+                rows={rows} // Используем состояние для количества строк
+                style={{ resize: 'none' }} // Убираем возможность изменения размера вручную
             />
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
