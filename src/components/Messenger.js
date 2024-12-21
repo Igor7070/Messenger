@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { getMessages, sendMessage as apiSendMessage, loginUser } from '../api/messages';
+import { getMessages, loginUser } from '../api/messages';
 import { createUser } from '../api/users';
 import '../styles/Messenger.css';
 import { ToastContainer, toast } from 'react-toastify';
@@ -14,10 +14,9 @@ const Messenger = () => {
     const [password, setPassword] = useState('');
     const [userId, setUserId] = useState(null);
     const [client, setClient] = useState(null);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
-    const textAreaRef = useRef(null); // Создаем ссылку на текстовое поле
+    const textAreaRef = useRef(null);
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -51,16 +50,16 @@ const Messenger = () => {
 
     const sendMessage = async () => {
         if (content && userId) {
-            const currentUsername = username; 
             const message = {
                 content,
-                sender: { id: userId, username: currentUsername }
+                sender: { id: userId, username }
             };
             console.log('Sending message:', message);
     
             if (client && client.connected) {
                 client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
-                setContent('');
+                setContent(''); // Сбрасываем содержимое
+                adjustTextAreaHeight(); // Сбрасываем высоту текстового поля
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
@@ -102,7 +101,6 @@ const Messenger = () => {
             try {
                 const loggedUser = await loginUser({ username, password });
                 setUserId(loggedUser.id);
-                setIsLoggedIn(true);
                 setErrorMessage('');
                 toast.success('Вы успешно вошли в систему!');
             } catch (error) {
@@ -122,16 +120,14 @@ const Messenger = () => {
 
     const handleInputChange = (e) => {
         setContent(e.target.value);
+        adjustTextAreaHeight(); // Регулируем высоту при вводе текста
     };
 
-    // Функция для вычисления количества строк
-    const calculateRows = () => {
+    const adjustTextAreaHeight = () => {
         if (textAreaRef.current) {
-            const lineHeight = 24; // Высота строки
-            const textAreaHeight = textAreaRef.current.scrollHeight; // Высота текстового поля
-            return Math.max(1, Math.floor(textAreaHeight / lineHeight)); // Минимум 1 строка
+            textAreaRef.current.style.height = 'auto'; // Сбрасываем высоту
+            textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`; // Устанавливаем высоту в зависимости от содержимого
         }
-        return 1; // Если текстовое поле не доступно, возвращаем 1
     };
 
     return (
@@ -164,13 +160,12 @@ const Messenger = () => {
                 ))}
             </div>
             <textarea
-                ref={textAreaRef} // Устанавливаем ссылку на текстовое поле
+                ref={textAreaRef}
                 value={content}
                 onChange={handleInputChange}
                 placeholder="Enter your message"
                 className="input-message"
-                rows={calculateRows()} // Динамическое изменение количества строк
-                style={{ resize: 'none' }} // Убираем возможность изменения размера вручную
+                style={{ resize: 'none', overflow: 'hidden' }} // Убираем возможность изменения размера вручную
             />
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
