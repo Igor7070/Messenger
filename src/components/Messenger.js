@@ -131,7 +131,7 @@ const Messenger = () => {
     // Функция для вычисления количества строк
     const calculateRows = (value) => {
         if (textAreaRef.current) {
-            const lineHeight = parseInt(getComputedStyle(textAreaRef.current).lineHeight, 10); // Высота строки
+            const lineHeight = 24; // Высота строки
             const tempElement = document.createElement('div'); // Создаем временный элемент
             tempElement.style.width = `${textAreaRef.current.clientWidth}px`; // Устанавливаем ширину
             tempElement.style.font = getComputedStyle(textAreaRef.current).font; // Копируем стиль шрифта
@@ -142,7 +142,7 @@ const Messenger = () => {
             const height = tempElement.scrollHeight; // Получаем высоту
             document.body.removeChild(tempElement); // Удаляем элемент
 
-            return Math.ceil(height / lineHeight); // Округляем до ближайшего целого
+            return Math.max(1, Math.floor(height / lineHeight)); // Минимум 1 строка
         }
         return 1; // Если текстовое поле не доступно, возвращаем 1
     };
