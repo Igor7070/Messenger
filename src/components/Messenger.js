@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { getMessages, sendMessage as apiSendMessage, loginUser } from '../api/messages';
-import { createUser } from '../api/users';
-import '../styles/Messenger.css';
+import { getMessages, loginUser, createUser } from '../api/messages';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import '../styles/Messenger.css';
 
 const Messenger = () => {
     const [messages, setMessages] = useState([]);
@@ -13,10 +12,7 @@ const Messenger = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [userId, setUserId] = useState(null);
-    const [client, setClient] = useState(null);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
-    const textareaRef = useRef(null); // Ссылка на текстовое поле
+    const textareaRef = useRef(null);
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -38,9 +34,7 @@ const Messenger = () => {
             },
         });
 
-        setClient(stompClient);
         stompClient.activate();
-
         fetchMessages();
 
         return () => {
@@ -50,22 +44,27 @@ const Messenger = () => {
 
     const sendMessage = async () => {
         if (content && userId) {
-            const currentUsername = username;
             const message = {
                 content,
-                sender: { id: userId, username: currentUsername }
+                sender: { id: userId, username },
             };
-            console.log('Sending message:', message);
-    
+
             if (client && client.connected) {
                 client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
                 setContent('');
-                console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
             }
         } else {
-            console.warn('Content or userId is missing');
+            toast.error('Введите сообщение!');
+        }
+    };
+
+    const handleInputChange = (e) => {
+        setContent(e.target.value);
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto'; // Сброс высоты
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Установка новой высоты
         }
     };
 
@@ -79,14 +78,7 @@ const Messenger = () => {
                 setPassword('');
                 toast.success('Пользователь успешно создан!');
             } catch (error) {
-                let errorMessage = 'Не удалось создать пользователя. Пожалуйста, попробуйте снова.';
-                console.warn(error.message);
-                if (error.message.includes('User already exists')) {
-                    errorMessage = 'Пользователь с таким именем уже существует. Пожалуйста, выберите другое имя.';
-                } else if (error.message.includes('Password must be at least 9 characters long, contain letters and numbers')) {
-                    errorMessage = 'Пароль должен содержать минимум 9 символов, включая буквы и цифры.';
-                }
-                toast.error(errorMessage);
+                toast.error('Не удалось создать пользователя. Пожалуйста, попробуйте снова.');
             }
         } else {
             toast.error('Пожалуйста, заполните все поля.');
@@ -98,32 +90,13 @@ const Messenger = () => {
             try {
                 const loggedUser = await loginUser({ username, password });
                 setUserId(loggedUser.id);
-                setIsLoggedIn(true);
-                setErrorMessage('');
                 toast.success('Вы успешно вошли в систему!');
             } catch (error) {
-                let errorMessage = 'Не удалось войти. Пожалуйста, попробуйте снова.';
-                console.warn(error.message);
-                if (error.message.includes('Invalid username or password')) {
-                    errorMessage = 'Неверное имя пользователя или пароль.';
-                }
-                toast.error(errorMessage);
+                toast.error('Не удалось войти. Пожалуйста, попробуйте снова.');
             }
         } else {
             toast.error('Пожалуйста, заполните все поля.');
         }
-    };
-
-    const handleInputChange = (e) => {
-        setContent(e.target.value);
-        
-        // Использование setTimeout для изменения высоты
-        setTimeout(() => {
-            if (textareaRef.current) {
-                textareaRef.current.style.height = 'auto'; // Сброс высоты
-                textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Установка высоты
-            }
-        }, 0);
     };
 
     return (
@@ -146,7 +119,6 @@ const Messenger = () => {
                 <button onClick={handleCreateUser} className="create-user-button">Create User</button>
                 <button onClick={handleLogin} className="login-button">Login</button>
             </div>
-            {errorMessage && <div className="error-message">{errorMessage}</div>}
             <div className="message-list">
                 {messages.map((msg, index) => (
                     <div key={index} className="message">
@@ -161,7 +133,7 @@ const Messenger = () => {
                 onChange={handleInputChange}
                 placeholder="Enter your message"
                 className="input-message"
-                rows={1} // Установите начальное количество строк
+                rows={1}
                 style={{ resize: 'none', overflow: 'hidden' }} // Убираем возможность изменения размера вручную
             />
             <button onClick={sendMessage} className="send-button">Send</button>
