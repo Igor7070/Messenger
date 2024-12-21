@@ -122,10 +122,14 @@ const Messenger = () => {
     };
 
     const handleInputChange = (e) => {
-        const target = e.target;
-        target.style.height = 'auto'; // Сбрасываем высоту
-        target.style.height = `${target.scrollHeight}px`; // Устанавливаем высоту на основе содержимого
-        setContent(target.value);
+        setContent(e.target.value); // Обновляем состояние содержимого
+    };
+
+    // Функция для вычисления количества строк
+    const calculateRows = () => {
+        const lineHeight = 24; // Высота строки (примерно)
+        const textAreaHeight = document.querySelector('.input-message').scrollHeight; // Высота текстового поля
+        return Math.max(1, Math.floor(textAreaHeight / lineHeight)); // Минимум 1 строка
     };
 
     return (
@@ -162,7 +166,7 @@ const Messenger = () => {
                 onChange={handleInputChange}
                 placeholder="Enter your message"
                 className="input-message"
-                rows={3}
+                rows={calculateRows()} // Динамическое изменение количества строк
                 style={{ resize: 'none' }} // Убираем возможность изменения размера вручную
             />
             <button onClick={sendMessage} className="send-button">Send</button>
