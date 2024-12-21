@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getMessages, sendMessage as apiSendMessage, loginUser } from '../api/messages';
@@ -16,6 +16,8 @@ const Messenger = () => {
     const [client, setClient] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+
+    const textAreaRef = useRef(null); // Создаем ссылку на текстовое поле
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -49,17 +51,17 @@ const Messenger = () => {
 
     const sendMessage = async () => {
         if (content && userId) {
-            const currentUsername = username; // Получаем текущее значение username
+            const currentUsername = username; 
             const message = {
                 content,
-                sender: { id: userId, username: currentUsername } // Используем текущее значение username
+                sender: { id: userId, username: currentUsername }
             };
-            console.log('Sending message:', message); // Лог сообщения
+            console.log('Sending message:', message);
     
             if (client && client.connected) {
                 client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
                 setContent('');
-                console.log('Message sent'); // Подтверждение отправки
+                console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
             }
@@ -81,8 +83,7 @@ const Messenger = () => {
                 let errorMessage = 'Не удалось создать пользователя. Пожалуйста, попробуйте снова.';
         
                 console.warn(error.message);
-    
-                // Проверьте на точное сообщение об ошибке
+
                 if (error.message.includes('User already exists')) {
                     errorMessage = 'Пользователь с таким именем уже существует. Пожалуйста, выберите другое имя.';
                 } else if (error.message.includes('Password must be at least 9 characters long, contain letters and numbers')) {
@@ -105,16 +106,14 @@ const Messenger = () => {
                 setErrorMessage('');
                 toast.success('Вы успешно вошли в систему!');
             } catch (error) {
-                // Обрабатываем ошибку, чтобы показать конкретное сообщение
                 let errorMessage = 'Не удалось войти. Пожалуйста, попробуйте снова.';
-                console.warn(error.message); // Вывод сообщения об ошибке в консоль
+                console.warn(error.message);
     
-                // Проверяем текст ошибки
                 if (error.message.includes('Invalid username or password')) {
                     errorMessage = 'Неверное имя пользователя или пароль.';
                 }
     
-                toast.error(errorMessage); // Отображаем сообщение об ошибке
+                toast.error(errorMessage);
             }
         } else {
             toast.error('Пожалуйста, заполните все поля.');
@@ -122,14 +121,17 @@ const Messenger = () => {
     };
 
     const handleInputChange = (e) => {
-        setContent(e.target.value); // Обновляем состояние содержимого
+        setContent(e.target.value);
     };
 
     // Функция для вычисления количества строк
     const calculateRows = () => {
-        const lineHeight = 24; // Высота строки (примерно)
-        const textAreaHeight = document.querySelector('.input-message').scrollHeight; // Высота текстового поля
-        return Math.max(1, Math.floor(textAreaHeight / lineHeight)); // Минимум 1 строка
+        if (textAreaRef.current) {
+            const lineHeight = 24; // Высота строки
+            const textAreaHeight = textAreaRef.current.scrollHeight; // Высота текстового поля
+            return Math.max(1, Math.floor(textAreaHeight / lineHeight)); // Минимум 1 строка
+        }
+        return 1; // Если текстовое поле не доступно, возвращаем 1
     };
 
     return (
@@ -162,6 +164,7 @@ const Messenger = () => {
                 ))}
             </div>
             <textarea
+                ref={textAreaRef} // Устанавливаем ссылку на текстовое поле
                 value={content}
                 onChange={handleInputChange}
                 placeholder="Enter your message"
