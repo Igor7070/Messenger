@@ -17,6 +17,7 @@ const Messenger = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [rows, setRows] = useState(1); // Состояние для количества строк
+    const [charPerLine, setCharPerLine] = useState(30); // Предполагаемое количество символов на строку
 
     const textAreaRef = useRef(null);
 
@@ -130,21 +131,30 @@ const Messenger = () => {
         textAreaRef.current.style.height = 'auto'; 
     
         // Обновляем количество строк
-        const newRows = calculateRows(); 
+        const newRows = calculateRows(newValue); 
         setRows(newRows); 
     
         // Устанавливаем новую высоту текстового поля
-        textAreaRef.current.style.height = `${newRows * 24}px`; // Замените 24 на реальную высоту строки, если нужно
+        textAreaRef.current.style.height = `${newRows * 24}px`; // Замените 24 на реальную высоту строки
     
         console.log("Content state:", newValue); // Лог нового содержимого
     };
     
     // Функция для вычисления количества строк
-    const calculateRows = () => {
+    const calculateRows = (text) => {
         if (textAreaRef.current) {
-            const textAreaHeight = textAreaRef.current.scrollHeight; // Высота текстового поля
-            console.log("TextArea height:", textAreaHeight); // Лог текущей высоты
-            return Math.max(1, Math.floor(textAreaHeight / 24)); // Минимум 1 строка
+            const textHeight = textAreaRef.current.scrollHeight; // Высота текстового поля
+            const currentScrollHeight = textHeight > 0 ? textHeight : 1; // Обрабатываем случай, когда высота 0
+            const linesCount = Math.floor(currentScrollHeight / 24); // Высчитываем количество строк
+    
+            // Если текст добавляется, используем текущую логику
+            if (text.length > 0) {
+                return linesCount;
+            } else {
+                // Если текст удаляется, подсчитываем строки по символам
+                const charCount = text.length;
+                return Math.max(1, Math.ceil(charCount / charPerLine)); // Минимум 1 строка
+            }
         }
         return 1; // Если текстовое поле не доступно, возвращаем 1
     };
