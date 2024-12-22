@@ -125,6 +125,8 @@ const Messenger = () => {
     const handleInputChange = (e) => {
         setContent(e.target.value); // Обновляем состояние содержимого
         setRows(calculateRows()); // Обновляем количество строк
+
+        console.log("Content state:", content);
     };
 
     // Функция для вычисления количества строк
