@@ -123,30 +123,19 @@ const Messenger = () => {
     };
 
     const handleInputChange = (e) => {
-        const newValue = e.target.value; // Получаем новое значение
-        setContent(newValue); // Обновляем состояние содержимого
-        setRows(calculateRows(newValue)); // Обновляем количество строк
+        setContent(e.target.value); // Обновляем состояние содержимого
+        setRows(calculateRows()); // Обновляем количество строк
     };
 
     // Функция для вычисления количества строк
-    const calculateRows = (value) => {
+    const calculateRows = () => {
         if (textAreaRef.current) {
             const lineHeight = 24; // Высота строки
-            const tempElement = document.createElement('div'); // Создаем временный элемент
-            tempElement.style.width = `${textAreaRef.current.clientWidth}px`; // Устанавливаем ширину
-            tempElement.style.font = getComputedStyle(textAreaRef.current).font; // Копируем стиль шрифта
-            tempElement.style.visibility = 'hidden'; // Скрываем элемент
-            tempElement.style.overflowWrap = 'break-word'; // Устанавливаем перенос слов
-            tempElement.innerText = value || ' '; // Устанавливаем текст
-            document.body.appendChild(tempElement); // Добавляем в DOM
-            const height = tempElement.scrollHeight; // Получаем высоту
-            document.body.removeChild(tempElement); // Удаляем элемент
-
-            return Math.max(1, Math.floor(height / lineHeight)); // Минимум 1 строка
+            const textAreaHeight = textAreaRef.current.scrollHeight; // Высота текстового поля
+            return Math.max(1, Math.floor(textAreaHeight / lineHeight)); // Минимум 1 строка
         }
         return 1; // Если текстовое поле не доступно, возвращаем 1
     };
-
 
     return (
         <div className="messenger">
