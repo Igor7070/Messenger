@@ -123,20 +123,28 @@ const Messenger = () => {
     };
 
     const handleInputChange = (e) => {
-        setContent(e.target.value); // Обновляем состояние содержимого
-        setRows(calculateRows()); // Обновляем количество строк
-
-        console.log("Content state:", content);
+        const newValue = e.target.value; // Получаем новое значение
+        setContent(newValue); // Обновляем состояние содержимого
+    
+        // Сбрасываем высоту перед пересчетом
+        textAreaRef.current.style.height = 'auto'; 
+    
+        // Обновляем количество строк
+        const newRows = calculateRows(); 
+        setRows(newRows); 
+    
+        // Устанавливаем новую высоту текстового поля
+        textAreaRef.current.style.height = `${newRows * 24}px`; // Замените 24 на реальную высоту строки, если нужно
+    
+        console.log("Content state:", newValue); // Лог нового содержимого
     };
-
+    
     // Функция для вычисления количества строк
     const calculateRows = () => {
         if (textAreaRef.current) {
-            const lineHeight = 24; // Высота строки
             const textAreaHeight = textAreaRef.current.scrollHeight; // Высота текстового поля
-
             console.log("TextArea height:", textAreaHeight); // Лог текущей высоты
-            return Math.max(1, Math.floor(textAreaHeight / lineHeight)); // Минимум 1 строка
+            return Math.max(1, Math.floor(textAreaHeight / 24)); // Минимум 1 строка
         }
         return 1; // Если текстовое поле не доступно, возвращаем 1
     };
