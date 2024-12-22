@@ -168,7 +168,7 @@ const Messenger = () => {
     };
 
     return (
-        <div className="messenger" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        <div className="messenger">
             <div className="user-creation">
                 <input
                     type="text"
@@ -188,7 +188,7 @@ const Messenger = () => {
                 <button onClick={handleLogin} className="login-button">Login</button>
             </div>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
-            <div className="message-list" style={{ overflowY: 'auto', maxHeight: '400px', flexGrow: 1 }}> {/* Устанавливаем ограничение высоты */}
+            <div className="message-list" style={{ overflowY: 'auto', maxHeight: '400px' }}> {/* Устанавливаем ограничение высоты */}
                 {messages.map((msg, index) => (
                     <div key={index} className="message">
                         <strong>{msg.sender.username}: </strong>
@@ -197,18 +197,16 @@ const Messenger = () => {
                 ))}
                 <div ref={messagesEndRef} /> {/* Ссылка для прокрутки */}
             </div>
-            <div style={{ display: 'flex', alignItems: 'flex-start' }}> {/* Контейнер для текстового поля и кнопки */}
-                <textarea
-                    ref={textAreaRef}
-                    value={content}
-                    onChange={handleInputChange}
-                    placeholder="Enter your message"
-                    className="input-message"
-                    rows={rows}
-                    style={{ resize: 'none', width: '100%' }} // Убираем возможность изменения размера вручную
-                />
-                <button onClick={sendMessage} className="send-button" style={{ marginLeft: '10px' }}>Send</button>
-            </div>
+            <textarea
+                ref={textAreaRef}
+                value={content}
+                onChange={handleInputChange}
+                placeholder="Enter your message"
+                className="input-message"
+                rows={rows} // Используем состояние для количества строк
+                style={{ resize: 'none' }} // Убираем возможность изменения размера вручную
+            />
+            <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
         </div>
     );
