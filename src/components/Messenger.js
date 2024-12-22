@@ -134,6 +134,8 @@ const Messenger = () => {
         if (textAreaRef.current) {
             const lineHeight = 24; // Высота строки
             const textAreaHeight = textAreaRef.current.scrollHeight; // Высота текстового поля
+
+            console.log("TextArea height:", textAreaHeight); // Лог текущей высоты
             return Math.max(1, Math.floor(textAreaHeight / lineHeight)); // Минимум 1 строка
         }
         return 1; // Если текстовое поле не доступно, возвращаем 1
