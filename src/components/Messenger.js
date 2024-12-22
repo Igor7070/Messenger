@@ -16,10 +16,11 @@ const Messenger = () => {
     const [client, setClient] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-    const [rows, setRows] = useState(1); // Состояние для количества строк
-    const [charPerLine, setCharPerLine] = useState(30); // Предполагаемое количество символов на строку
+    const [rows, setRows] = useState(1);
+    const [charPerLine, setCharPerLine] = useState(30); 
 
     const textAreaRef = useRef(null);
+    const messagesEndRef = useRef(null); // Реф для конца списка сообщений
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -50,6 +51,13 @@ const Messenger = () => {
             stompClient.deactivate();
         };
     }, []);
+
+    useEffect(() => {
+        // Прокручиваем вниз, когда добавляется новое сообщение
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [messages]); // Запускаем эффект при изменении массива сообщений
 
     const sendMessage = async () => {
         if (content && userId) {
@@ -180,13 +188,14 @@ const Messenger = () => {
                 <button onClick={handleLogin} className="login-button">Login</button>
             </div>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
-            <div className="message-list">
+            <div className="message-list" style={{ overflowY: 'auto', maxHeight: '400px' }}> {/* Устанавливаем ограничение высоты */}
                 {messages.map((msg, index) => (
                     <div key={index} className="message">
                         <strong>{msg.sender.username}: </strong>
                         {msg.content}
                     </div>
                 ))}
+                <div ref={messagesEndRef} /> {/* Ссылка для прокрутки */}
             </div>
             <textarea
                 ref={textAreaRef}
