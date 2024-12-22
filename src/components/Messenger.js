@@ -127,17 +127,20 @@ const Messenger = () => {
         setContent(newValue); // Обновляем состояние содержимого
     
         // Сбрасываем высоту перед пересчетом
-        textAreaRef.current.style.height = 'auto'; 
+        if (textAreaRef.current) {
+            textAreaRef.current.style.height = 'auto'; // Сбрасываем высоту
     
-        // Обновляем количество строк
-        const newRows = calculateRows(); 
-        setRows(newRows); 
+            // Получаем новую высоту и обновляем количество строк
+            const newHeight = calculateRows(); 
+            setRows(newHeight); 
     
-        // Устанавливаем новую высоту текстового поля
-        textAreaRef.current.style.height = `${newRows * 24}px`; // Замените 24 на реальную высоту строки, если нужно
+            // Устанавливаем новую высоту текстового поля
+            textAreaRef.current.style.height = `${newHeight * 24}px`; // Замените 24 на реальную высоту строки
+        }
     
         console.log("Content state:", newValue); // Лог нового содержимого
     };
+    
     
     // Функция для вычисления количества строк
     const calculateRows = () => {
