@@ -23,7 +23,6 @@ const Messenger = () => {
     const messagesEndRef = useRef(null); // Реф для конца списка сообщений
 
     useEffect(() => {
-        // Восстановление данных пользователя из localStorage
         const storedUserId = localStorage.getItem('userId');
         const storedUsername = localStorage.getItem('username');
 
@@ -62,7 +61,6 @@ const Messenger = () => {
         };
     }, []);
 
-    // Прокрутка вниз, когда добавляется новое сообщение
     useEffect(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -145,6 +143,18 @@ const Messenger = () => {
         }
     };
 
+    const handleLogout = () => {
+        // Очистка localStorage
+        localStorage.removeItem('userId');
+        localStorage.removeItem('username');
+        
+        // Сброс состояния
+        setUserId(null);
+        setUsername('');
+        setIsLoggedIn(false);
+        toast.success('Вы вышли из системы!');
+    };
+
     const handleInputChange = (e) => {
         const newValue = e.target.value; // Получаем новое значение
         setContent(newValue); // Обновляем состояние содержимого
@@ -196,7 +206,11 @@ const Messenger = () => {
                     className="input-password"
                 />
                 <button onClick={handleCreateUser} className="create-user-button">Create User</button>
-                <button onClick={handleLogin} className="login-button">Login</button>
+                {isLoggedIn ? (
+                    <button onClick={handleLogout} className="logout-button">Logout</button>
+                ) : (
+                    <button onClick={handleLogin} className="login-button">Login</button>
+                )}
             </div>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
             <div className="message-list" style={{ overflowY: 'auto', maxHeight: '400px' }}>
