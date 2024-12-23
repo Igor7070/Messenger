@@ -167,6 +167,23 @@ const Messenger = () => {
         return 1; // Если текстовое поле не доступно, возвращаем 1
     };
 
+    // Фиксируем нижнюю границу контейнера
+    useEffect(() => {
+        const messengerContainer = document.querySelector('.messenger');
+        const handleScroll = () => {
+            const rect = messengerContainer.getBoundingClientRect();
+            if (rect.bottom > window.innerHeight) {
+                messengerContainer.style.position = 'fixed';
+                messengerContainer.style.bottom = '0';
+            } else {
+                messengerContainer.style.position = 'relative';
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
     return (
         <div className="messenger">
             <div className="user-creation">
