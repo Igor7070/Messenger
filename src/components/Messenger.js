@@ -98,6 +98,11 @@ const Messenger = () => {
                 setUsername(newUser.username);
                 setPassword('');
                 setIsLoggedIn(true); // Устанавливаем состояние входа
+
+                // Сохраняем данные нового пользователя в localStorage
+                localStorage.setItem('userId', newUser.id);
+                localStorage.setItem('username', newUser.username);
+
                 toast.success('Пользователь успешно создан!');
             } catch (error) {
                 let errorMessage = 'Не удалось создать пользователя. Пожалуйста, попробуйте снова.';
@@ -124,11 +129,12 @@ const Messenger = () => {
                 setUserId(loggedUser.id);
                 setIsLoggedIn(true);
                 setErrorMessage('');
-                toast.success('Вы успешно вошли в систему!');
 
                 // Сохраняем данные пользователя в localStorage
                 localStorage.setItem('userId', loggedUser.id);
                 localStorage.setItem('username', loggedUser.username);
+
+                toast.success('Вы успешно вошли в систему!');
             } catch (error) {
                 let errorMessage = 'Не удалось войти. Пожалуйста, попробуйте снова.';
                 console.warn(error.message);
