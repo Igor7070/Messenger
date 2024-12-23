@@ -82,3 +82,13 @@
     color: red;
     margin-top: 10px;
 }
+
+.message {
+    word-wrap: break-word; /* Перенос слов на новую строку */
+    overflow-wrap: break-word; /* Поддержка для современных браузеров */
+    max-width: 100%; /* Ограничиваем максимальную ширину */
+    padding: 5px; /* Отступы внутри сообщения */
+    margin-bottom: 5px; /* Отступ между сообщениями */
+    background-color: #e9ecef; /* Цвет фона для сообщений */
+    border-radius: 5px; /* Скругление углов */
+}
