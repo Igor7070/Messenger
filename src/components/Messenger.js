@@ -97,6 +97,7 @@ const Messenger = () => {
                 setUserId(newUser.id);
                 setUsername(newUser.username);
                 setPassword('');
+                setIsLoggedIn(true); // Устанавливаем состояние входа
                 toast.success('Пользователь успешно создан!');
             } catch (error) {
                 let errorMessage = 'Не удалось создать пользователя. Пожалуйста, попробуйте снова.';
