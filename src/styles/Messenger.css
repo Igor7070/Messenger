@@ -5,7 +5,7 @@
     border-radius: 10px; 
     background-color: #ffffff; 
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
-    /*height: 100%;*/ /* Убедитесь, что высота установлена */
+    position: relative; /* Устанавливаем позицию для дочерних элементов */
     
 }
 
@@ -49,6 +49,8 @@
     margin-bottom: 15px;
     background-color: #f9f9f9; 
     border-radius: 5px;
+    max-height: calc(100vh - 100px); /* Оставляем место для текстового поля и кнопки */
+    overflow-y: auto; /* Прокрутка */
 }
 
 .input-message {
