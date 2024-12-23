@@ -23,6 +23,16 @@ const Messenger = () => {
     const messagesEndRef = useRef(null); // Реф для конца списка сообщений
 
     useEffect(() => {
+        // Восстановление данных пользователя из localStorage
+        const storedUserId = localStorage.getItem('userId');
+        const storedUsername = localStorage.getItem('username');
+
+        if (storedUserId && storedUsername) {
+            setUserId(storedUserId);
+            setUsername(storedUsername);
+            setIsLoggedIn(true);
+        }
+
         const fetchMessages = async () => {
             const messages = await getMessages();
             setMessages(messages);
@@ -52,12 +62,12 @@ const Messenger = () => {
         };
     }, []);
 
+    // Прокрутка вниз, когда добавляется новое сообщение
     useEffect(() => {
-        // Прокручиваем вниз, когда добавляется новое сообщение
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
         }
-    }, [messages]); // Запускаем эффект при изменении массива сообщений
+    }, [messages]);
 
     const sendMessage = async () => {
         if (content && userId) {
@@ -116,6 +126,10 @@ const Messenger = () => {
                 setIsLoggedIn(true);
                 setErrorMessage('');
                 toast.success('Вы успешно вошли в систему!');
+
+                // Сохраняем данные пользователя в localStorage
+                localStorage.setItem('userId', loggedUser.id);
+                localStorage.setItem('username', loggedUser.username);
             } catch (error) {
                 let errorMessage = 'Не удалось войти. Пожалуйста, попробуйте снова.';
                 console.warn(error.message);
@@ -148,18 +162,15 @@ const Messenger = () => {
         console.log("Content state:", newValue); // Лог нового содержимого
     };
     
-    // Функция для вычисления количества строк
     const calculateRows = (text) => {
         if (textAreaRef.current) {
             const textHeight = textAreaRef.current.scrollHeight; // Высота текстового поля
             const currentScrollHeight = textHeight > 0 ? textHeight : 1; // Обрабатываем случай, когда высота 0
             const linesCount = Math.floor(currentScrollHeight / 24); // Высчитываем количество строк
     
-            // Если текст добавляется, используем текущую логику
             if (text.length > 0) {
                 return linesCount;
             } else {
-                // Если текст удаляется, подсчитываем строки по символам
                 const charCount = text.length;
                 return Math.max(1, Math.ceil(charCount / charPerLine)); // Минимум 1 строка
             }
@@ -188,7 +199,7 @@ const Messenger = () => {
                 <button onClick={handleLogin} className="login-button">Login</button>
             </div>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
-            <div className="message-list" style={{ overflowY: 'auto', maxHeight: '400px' }}> {/* Устанавливаем ограничение высоты */}
+            <div className="message-list" style={{ overflowY: 'auto', maxHeight: '400px' }}>
                 {messages.map((msg, index) => (
                     <div key={index} className="message">
                         <strong>{msg.sender.username}: </strong>
