@@ -119,7 +119,7 @@
 }
 
 .other-user {
-    background-color: #ffffff; /* Цвет фона для сообщений других пользователей */
+    background-color: #90EE90; /* Цвет фона для сообщений других пользователей */
     align-self: flex-start; /* Выравнивание влево */
     border-radius: 10px 10px 10px 0; /* Скругление углов */
     margin-right: auto; /* Отодвигаем сообщение к левому краю */
