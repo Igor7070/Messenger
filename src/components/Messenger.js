@@ -17,6 +17,7 @@ const Messenger = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [rows, setRows] = useState(1);
+    const [charPerLine, setCharPerLine] = useState(30); // Определяем переменную
     const [editingMessageId, setEditingMessageId] = useState(null); // ID редактируемого сообщения
 
     const textAreaRef = useRef(null);
