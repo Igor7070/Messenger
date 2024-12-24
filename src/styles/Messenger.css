@@ -57,6 +57,8 @@
     margin-bottom: 15px;
     background-color: #f1f8e9; /* Светлый фон для списка сообщений */
     border-radius: 5px;
+    display: flex;
+    flex-direction: column; /* Обеспечиваем вертикальное выравнивание */
 }
 
 .input-message {
@@ -103,9 +105,22 @@
 .message {
     word-wrap: break-word; 
     overflow-wrap: break-word; 
-    max-width: 100%; 
-    padding: 5px; 
+    max-width: 80%; /* Ограничиваем ширину сообщений */
+    padding: 10px; 
     margin-bottom: 5px; 
-    background-color: #E6E6FA; /* Цвет фона для сообщений */
-    border-radius: 5px; 
+    border-radius: 10px; 
+}
+
+.current-user {
+    background-color: #dcf8c6; /* Цвет фона для сообщений текущего пользователя */
+    align-self: flex-end; /* Выравнивание вправо */
+    border-radius: 10px 10px 0 10px; /* Скругление углов */
+    margin-left: auto; /* Отодвигаем сообщение к правому краю */
+}
+
+.other-user {
+    background-color: #ffffff; /* Цвет фона для сообщений других пользователей */
+    align-self: flex-start; /* Выравнивание влево */
+    border-radius: 10px 10px 10px 0; /* Скругление углов */
+    margin-right: auto; /* Отодвигаем сообщение к левому краю */
 }

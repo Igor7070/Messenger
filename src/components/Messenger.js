@@ -222,7 +222,7 @@ const Messenger = () => {
             {errorMessage && <div className="error-message">{errorMessage}</div>}
             <div className="message-list">
                 {messages.map((msg, index) => (
-                    <div key={index} className="message">
+                    <div key={index} className={`message ${msg.sender.username === username ? 'current-user' : 'other-user'}`}>
                         <strong>{msg.sender.username}: </strong>
                         {msg.content}
                     </div>
