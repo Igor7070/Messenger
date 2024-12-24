@@ -220,7 +220,7 @@ const Messenger = () => {
                 )}
             </div>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
-            <div className="message-list" style={{ overflowY: 'auto', maxHeight: '400px' }}>
+            <div className="message-list">
                 {messages.map((msg, index) => (
                     <div key={index} className="message">
                         <strong>{msg.sender.username}: </strong>
@@ -236,7 +236,6 @@ const Messenger = () => {
                 placeholder="Enter your message"
                 className="input-message"
                 rows={rows} // Используем состояние для количества строк
-                style={{ resize: 'none' }} // Убираем возможность изменения размера вручную
             />
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />

@@ -3,39 +3,50 @@
     flex-direction: column;
     padding: 20px; 
     border-radius: 10px; 
-    background-color: #ffffff; 
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff; /* Белый фон для мессенджера */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s; /* Плавный переход */
 }
 
 .user-creation {
     margin-bottom: 15px; 
     display: flex;
     gap: 10px; 
-    flex-wrap: wrap; /* Позволяет кнопкам оставаться внутри контейнера */
+    flex-wrap: wrap; 
 }
 
 .input-username,
 .input-password {
     padding: 10px; 
-    border: 1px solid #ccc; 
+    border: 1px solid #007bff; /* Цвет рамки */
     border-radius: 5px; 
     flex: 1; 
-    min-width: 150px; /* Минимальная ширина для полей ввода */
+    min-width: 150px; 
+    transition: border-color 0.3s; /* Плавный переход для рамки */
+}
+
+.input-username:focus,
+.input-password:focus {
+    border-color: #0056b3; /* Цвет рамки при фокусе */
+    outline: none; /* Убираем обводку */
 }
 
 .create-user-button,
-.login-button {
+.login-button,
+.logout-button {
     padding: 10px;
     background-color: #28a745; 
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    flex-shrink: 0; /* Убираем возможность сжатия кнопок */
+    flex-shrink: 0; 
+    transition: background-color 0.3s; /* Плавный переход */
 }
 
 .create-user-button:hover,
-.login-button:hover {
+.login-button:hover,
+.logout-button:hover {
     background-color: #218838; 
 }
 
@@ -45,23 +56,29 @@
     height: 400px;
     overflow-y: scroll;
     margin-bottom: 15px;
-    background-color: #f9f9f9; 
+    background-color: #f8f9fa; /* Светлый фон для списка сообщений */
     border-radius: 5px;
 }
 
 .input-message {
-    padding: 10px; /* Отступы внутри текстового поля */
-    border: 1px solid #ccc; 
+    padding: 10px; 
+    border: 1px solid #007bff; 
     border-radius: 5px; 
     margin-bottom: 10px; 
-    flex: 1; /* Занимает оставшееся пространство */
-    min-width: 0; /* Позволяет полю ввода сжиматься при необходимости */
-    overflow: hidden; /* Скрываем скролл */
-    resize: none; /* Убираем возможность изменения размера вручную */
-    box-sizing: border-box; /* Учитываем отступы в общей ширине */
-    height: auto; /* Устанавливаем начальную высоту */
-    min-height: 40px; /* Установите минимальную высоту для текстового поля */
+    flex: 1; 
+    min-width: 0; 
+    overflow: hidden; 
+    resize: none; 
+    box-sizing: border-box; 
+    height: auto; 
+    min-height: 40px; 
     font-size: 18px;
+    transition: border-color 0.3s; /* Плавный переход для рамки */
+}
+
+.input-message:focus {
+    border-color: #0056b3; /* Цвет рамки при фокусе */
+    outline: none; 
 }
 
 .send-button {
@@ -71,7 +88,8 @@
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    margin-top: 10px; /* Отступ сверху для кнопки Send */
+    margin-top: 10px; 
+    transition: background-color 0.3s; /* Плавный переход */
 }
 
 .send-button:hover {
@@ -84,11 +102,11 @@
 }
 
 .message {
-    word-wrap: break-word; /* Перенос слов на новую строку */
-    overflow-wrap: break-word; /* Поддержка для современных браузеров */
-    max-width: 100%; /* Ограничиваем максимальную ширину */
-    padding: 5px; /* Отступы внутри сообщения */
-    margin-bottom: 5px; /* Отступ между сообщениями */
-    background-color: #e9ecef; /* Цвет фона для сообщений */
-    border-radius: 5px; /* Скругление углов */
+    word-wrap: break-word; 
+    overflow-wrap: break-word; 
+    max-width: 100%; 
+    padding: 5px; 
+    margin-bottom: 5px; 
+    background-color: #e2e3e5; /* Цвет фона для сообщений */
+    border-radius: 5px; 
 }

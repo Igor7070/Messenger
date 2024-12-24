@@ -1,18 +1,18 @@
 .app {
   max-width: 600px;
-  margin: 20px auto; /* Отступы сверху и снизу по 20px */
+  margin: 20px auto; 
   padding: 20px;
-  background-color: #f7f9fc; /* Светлый фон для контраста */
+  background-color: #e9ecef; /* Мягкий серый фон */
   border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  font-family: 'Roboto', sans-serif; /* Используем новый шрифт */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Более выраженная тень */
+  font-family: 'Roboto', sans-serif; 
   height: 100%;
-  overflow: auto; /* Добавляем прокрутку, если контент превышает высоту */
+  overflow: auto; 
 }
 
 h1 {
   text-align: center;
-  color: #333; /* Темный цвет для заголовка */
+  color: #343a40; /* Темный цвет для заголовка */
   margin-bottom: 20px;
-  font-weight: 700; /* Жирный шрифт для заголовка */
+  font-weight: 700; 
 }
