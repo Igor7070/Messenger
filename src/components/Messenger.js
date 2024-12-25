@@ -89,10 +89,16 @@ const Messenger = () => {
                 sender: { id: userId, username: currentUsername },
             };
             console.log('Sending message:', message);
-    
+
             if (client && client.connected) {
                 if (editingMessageId) {
-                    client.publish({ destination: '/app/editMessage', body: JSON.stringify(message) });
+                    const existingMessage = messages.find(msg => msg.id === editingMessageId);
+                    if (existingMessage && existingMessage.sender.username === username) {
+                        client.publish({ destination: '/app/editMessage', body: JSON.stringify(message) });
+                    } else {
+                        toast.error('Вы можете редактировать только свои сообщения.');
+                        return;
+                    }
                 } else {
                     client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
                 }
@@ -127,6 +133,11 @@ const Messenger = () => {
     };
 
     const handleMenuAction = (action) => {
+        if (contextMenu.message.sender.username !== username) {
+            toast.error('Вы можете редактировать или удалять только свои сообщения.');
+            return; // Если сообщение не ваше, ничего не делаем
+        }
+
         if (action === 'edit') {
             setContent(contextMenu.message.content);
             setEditingMessageId(contextMenu.message.id);
@@ -268,10 +279,10 @@ const Messenger = () => {
             </div>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
             <div className="message-list">
-                {messages.map((msg, index) => (
+                {messages.map((msg) => (
                     msg.sender ? ( // Проверка на существование sender
                         <div 
-                            key={msg.id} // Лучше использовать id как ключ
+                            key={msg.id} // Используйте id как ключ
                             className={`message ${msg.sender.username === username ? 'current-user' : 'other-user'}`} 
                             onContextMenu={(e) => handleRightClick(e, msg)}
                         >
