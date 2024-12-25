@@ -17,11 +17,12 @@ const Messenger = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [rows, setRows] = useState(1);
-    const [charPerLine, setCharPerLine] = useState(30); // Определяем переменную
-    const [editingMessageId, setEditingMessageId] = useState(null); // ID редактируемого сообщения
+    const [charPerLine, setCharPerLine] = useState(30);
+    const [editingMessageId, setEditingMessageId] = useState(null);
+    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
 
     const textAreaRef = useRef(null);
-    const messagesEndRef = useRef(null); // Реф для конца списка сообщений
+    const messagesEndRef = useRef(null);
 
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
@@ -72,7 +73,7 @@ const Messenger = () => {
         if (content && userId) {
             const currentUsername = username;
             const message = {
-                id: editingMessageId || Date.now(), // Используем ID для редактирования
+                id: editingMessageId || Date.now(),
                 content,
                 sender: { id: userId, username: currentUsername }
             };
@@ -81,8 +82,9 @@ const Messenger = () => {
             if (client && client.connected) {
                 client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
                 setContent('');
-                setRows(1); // Сбрасываем строки при отправке
-                setEditingMessageId(null); // Сбрасываем ID редактируемого сообщения
+                setRows(1);
+                setEditingMessageId(null);
+                setContextMenu({ visible: false }); // Скрываем контекстное меню после отправки
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
@@ -94,13 +96,22 @@ const Messenger = () => {
 
     const handleRightClick = (e, message) => {
         e.preventDefault();
-        const action = window.confirm("Выберите действие: редактировать или удалить?\nНажмите 'ОК' для редактирования, 'Отмена' для удаления.");
-        if (action) {
-            setContent(message.content);
-            setEditingMessageId(message.id);
-        } else {
-            deleteMessage(message.id);
+        setContextMenu({
+            visible: true,
+            x: e.pageX,
+            y: e.pageY,
+            message,
+        });
+    };
+
+    const handleMenuAction = (action) => {
+        if (action === 'edit') {
+            setContent(contextMenu.message.content);
+            setEditingMessageId(contextMenu.message.id);
+        } else if (action === 'delete') {
+            deleteMessage(contextMenu.message.id);
         }
+        setContextMenu({ visible: false }); // Скрываем меню после выбора действия
     };
 
     const deleteMessage = (id) => {
@@ -120,12 +131,9 @@ const Messenger = () => {
                 setUserId(newUser.id);
                 setUsername(newUser.username);
                 setPassword('');
-                setIsLoggedIn(true); // Устанавливаем состояние входа
-
-                // Сохраняем данные нового пользователя в localStorage
+                setIsLoggedIn(true);
                 localStorage.setItem('userId', newUser.id);
                 localStorage.setItem('username', newUser.username);
-
                 toast.success('Пользователь успешно создан!');
             } catch (error) {
                 let errorMessage = 'Не удалось создать пользователя. Пожалуйста, попробуйте снова.';
@@ -151,11 +159,8 @@ const Messenger = () => {
                 setUserId(loggedUser.id);
                 setIsLoggedIn(true);
                 setErrorMessage('');
-
-                // Сохраняем данные пользователя в localStorage
                 localStorage.setItem('userId', loggedUser.id);
                 localStorage.setItem('username', loggedUser.username);
-
                 toast.success('Вы успешно вошли в систему!');
             } catch (error) {
                 let errorMessage = 'Не удалось войти. Пожалуйста, попробуйте снова.';
@@ -173,11 +178,8 @@ const Messenger = () => {
     };
 
     const handleLogout = () => {
-        // Очистка localStorage
         localStorage.removeItem('userId');
         localStorage.removeItem('username');
-
-        // Сброс состояния
         setUserId(null);
         setUsername('');
         setIsLoggedIn(false);
@@ -185,36 +187,29 @@ const Messenger = () => {
     };
 
     const handleInputChange = (e) => {
-        const newValue = e.target.value; // Получаем новое значение
-        setContent(newValue); // Обновляем состояние содержимого
-
-        // Сбрасываем высоту перед пересчетом
+        const newValue = e.target.value;
+        setContent(newValue);
         textAreaRef.current.style.height = 'auto';
-
-        // Обновляем количество строк
         const newRows = calculateRows(newValue);
         setRows(newRows);
-
-        // Устанавливаем новую высоту текстового поля
-        textAreaRef.current.style.height = `${newRows * 24}px`; // Замените 24 на реальную высоту строки
-
-        console.log("Content state:", newValue); // Лог нового содержимого
+        textAreaRef.current.style.height = `${newRows * 24}px`;
+        console.log("Content state:", newValue);
     };
 
     const calculateRows = (text) => {
         if (textAreaRef.current) {
-            const textHeight = textAreaRef.current.scrollHeight; // Высота текстового поля
-            const currentScrollHeight = textHeight > 0 ? textHeight : 1; // Обрабатываем случай, когда высота 0
-            const linesCount = Math.floor(currentScrollHeight / 24); // Высчитываем количество строк
+            const textHeight = textAreaRef.current.scrollHeight;
+            const currentScrollHeight = textHeight > 0 ? textHeight : 1;
+            const linesCount = Math.floor(currentScrollHeight / 24);
 
             if (text.length > 0) {
                 return linesCount;
             } else {
                 const charCount = text.length;
-                return Math.max(1, Math.ceil(charCount / charPerLine)); // Минимум 1 строка
+                return Math.max(1, Math.ceil(charCount / charPerLine));
             }
         }
-        return 1; // Если текстовое поле не доступно, возвращаем 1
+        return 1;
     };
 
     return (
@@ -253,7 +248,7 @@ const Messenger = () => {
                         {msg.content}
                     </div>
                 ))}
-                <div ref={messagesEndRef} /> {/* Ссылка для прокрутки */}
+                <div ref={messagesEndRef} />
             </div>
             <textarea
                 ref={textAreaRef}
@@ -261,10 +256,20 @@ const Messenger = () => {
                 onChange={handleInputChange}
                 placeholder="Enter your message"
                 className="input-message"
-                rows={rows} // Используем состояние для количества строк
+                rows={rows}
             />
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
+            {contextMenu.visible && (
+                <div 
+                    className="context-menu" 
+                    style={{ top: contextMenu.y, left: contextMenu.x }}
+                    onMouseLeave={() => setContextMenu({ visible: false })} // Скрываем меню при уходе мыши
+                >
+                    <button onClick={() => handleMenuAction('edit')}>Edit</button>
+                    <button onClick={() => handleMenuAction('delete')}>Delete</button>
+                </div>
+            )}
         </div>
     );
 };
