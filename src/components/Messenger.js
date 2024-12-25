@@ -84,7 +84,7 @@ const Messenger = () => {
                 setContent('');
                 setRows(1);
                 setEditingMessageId(null);
-                setContextMenu({ visible: false }); // Скрываем контекстное меню после отправки
+                setContextMenu({ visible: false });
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
@@ -111,7 +111,7 @@ const Messenger = () => {
         } else if (action === 'delete') {
             deleteMessage(contextMenu.message.id);
         }
-        setContextMenu({ visible: false }); // Скрываем меню после выбора действия
+        setContextMenu({ visible: false });
     };
 
     const deleteMessage = (id) => {
@@ -242,7 +242,7 @@ const Messenger = () => {
                     <div 
                         key={index} 
                         className={`message ${msg.sender.username === username ? 'current-user' : 'other-user'}`} 
-                        onContextMenu={(e) => handleRightClick(e, msg)} // Обработчик правого клика
+                        onContextMenu={(e) => handleRightClick(e, msg)}
                     >
                         <strong>{msg.sender.username}: </strong>
                         {msg.content}
@@ -264,7 +264,7 @@ const Messenger = () => {
                 <div 
                     className="context-menu" 
                     style={{ top: contextMenu.y, left: contextMenu.x }}
-                    onMouseLeave={() => setContextMenu({ visible: false })} // Скрываем меню при уходе мыши
+                    onMouseLeave={() => setContextMenu({ visible: false })}
                 >
                     <button onClick={() => handleMenuAction('edit')}>Edit</button>
                     <button onClick={() => handleMenuAction('delete')}>Delete</button>

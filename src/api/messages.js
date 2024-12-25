@@ -16,9 +16,8 @@ export const sendMessage = async (message) => {
     return await response.json();
 };
 
-// Функция для создания пользователя
 export const createUser = async (user) => {
-    const response = await fetch('https://unlimitedpossibilities12.org/api/users', { // Убедитесь, что URL правильный
+    const response = await fetch('https://unlimitedpossibilities12.org/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(user),
@@ -35,9 +34,8 @@ export const loginUser = async (user) => {
     });
 
     if (!response.ok) {
-        // Получаем текст ошибки от сервера
         const errorText = await response.text();
-        throw new Error(errorText); // Выбрасываем ошибку с текстом
+        throw new Error(errorText);
     }
     
     return await response.json();
