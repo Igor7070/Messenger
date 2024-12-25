@@ -45,14 +45,7 @@ const Messenger = () => {
                 console.log('Connected to WebSocket');
                 stompClient.subscribe('/topic/messages', (message) => {
                     const newMessage = JSON.parse(message.body);
-                    setMessages((prevMessages) => {
-                        // Проверяем, если сообщение содержит ID
-                        if (newMessage.id) {
-                            return prevMessages.map((msg) => (msg.id === newMessage.id ? newMessage : msg));
-                        } else {
-                            return prevMessages.filter((msg) => msg.id !== newMessage);
-                        }
-                    });
+                    setMessages((prevMessages) => [...prevMessages, newMessage]);
                 });
             },
             onWebSocketError: (error) => {
@@ -122,10 +115,12 @@ const Messenger = () => {
     };
 
     const deleteMessage = (id) => {
-        if (client && client.connected) {
-            client.publish({ destination: '/app/deleteMessage', body: JSON.stringify(id) });
-            toast.success('Сообщение удалено!');
-        }
+        setMessages((prevMessages) => 
+            prevMessages.map(msg => 
+                msg.id === id ? { ...msg, content: "Сообщение удалено" } : msg
+            )
+        );
+        toast.success('Сообщение удалено!');
     };
 
     const handleCreateUser = async () => {
