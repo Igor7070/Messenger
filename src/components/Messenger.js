@@ -142,8 +142,10 @@ const Messenger = () => {
                 destination: '/app/deleteMessage',
                 body: JSON.stringify(id),
             });
+
+            // Удаляем сообщение из состояния
             setMessages((prevMessages) => 
-                prevMessages.filter(msg => msg.id !== id) // Удаляем сообщение из состояния
+                prevMessages.filter(msg => msg.id !== id)
             );
             toast.success('Сообщение удалено!');
         } else {
@@ -267,14 +269,16 @@ const Messenger = () => {
             {errorMessage && <div className="error-message">{errorMessage}</div>}
             <div className="message-list">
                 {messages.map((msg, index) => (
-                    <div 
-                        key={index} 
-                        className={`message ${msg.sender.username === username ? 'current-user' : 'other-user'}`} 
-                        onContextMenu={(e) => handleRightClick(e, msg)}
-                    >
-                        <strong>{msg.sender.username}: </strong>
-                        {msg.content}
-                    </div>
+                    msg.sender ? ( // Проверка на существование sender
+                        <div 
+                            key={msg.id} // Лучше использовать id как ключ
+                            className={`message ${msg.sender.username === username ? 'current-user' : 'other-user'}`} 
+                            onContextMenu={(e) => handleRightClick(e, msg)}
+                        >
+                            <strong>{msg.sender.username}: </strong>
+                            {msg.content}
+                        </div>
+                    ) : null // Если sender не существует, ничего не выводим
                 ))}
                 <div ref={messagesEndRef} />
             </div>
