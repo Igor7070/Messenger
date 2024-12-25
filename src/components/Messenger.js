@@ -45,9 +45,20 @@ const Messenger = () => {
                 console.log('Connected to WebSocket');
                 stompClient.subscribe('/topic/messages', (message) => {
                     const newMessage = JSON.parse(message.body);
-                    // Если это обновление, заменяем старое сообщение
+
+                    // Обновляем состояние сообщений
                     setMessages((prevMessages) => {
-                        return prevMessages.map(msg => msg.id === newMessage.id ? newMessage : msg);
+                        // Проверяем, существует ли сообщение с таким ID
+                        const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
+                        if (existingMessageIndex !== -1) {
+                            // Если сообщение существует, обновляем его
+                            const updatedMessages = [...prevMessages];
+                            updatedMessages[existingMessageIndex] = newMessage;
+                            return updatedMessages;
+                        } else {
+                            // Если сообщение новое, добавляем его
+                            return [...prevMessages, newMessage];
+                        }
                     });
                 });
             },
