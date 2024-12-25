@@ -136,13 +136,19 @@ const Messenger = () => {
         setContextMenu({ visible: false });
     };
 
-    const deleteMessage = (id) => {
-        setMessages((prevMessages) => 
-            prevMessages.map(msg => 
-                msg.id === id ? { ...msg, content: "Сообщение удалено" } : msg
-            )
-        );
-        toast.success('Сообщение удалено!');
+    const deleteMessage = async (id) => {
+        if (client && client.connected) {
+            client.publish({
+                destination: '/app/deleteMessage',
+                body: JSON.stringify(id),
+            });
+            setMessages((prevMessages) => 
+                prevMessages.filter(msg => msg.id !== id) // Удаляем сообщение из состояния
+            );
+            toast.success('Сообщение удалено!');
+        } else {
+            toast.error('Не удалось удалить сообщение. Попробуйте снова.');
+        }
     };
 
     const handleCreateUser = async () => {

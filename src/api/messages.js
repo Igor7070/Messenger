@@ -16,6 +16,14 @@ export const sendMessage = async (message) => {
     return await response.json();
 };
 
+// Добавляем функцию для удаления сообщения
+export const deleteMessage = async (id) => {
+    const response = await fetch(`${API_URL}/${id}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete message');
+};
+
 export const createUser = async (user) => {
     const response = await fetch('https://unlimitedpossibilities12.org/api/users', {
         method: 'POST',
