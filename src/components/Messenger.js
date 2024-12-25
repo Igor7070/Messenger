@@ -48,15 +48,12 @@ const Messenger = () => {
 
                     // Обновляем состояние сообщений
                     setMessages((prevMessages) => {
-                        // Проверяем, существует ли сообщение с таким ID
                         const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
                         if (existingMessageIndex !== -1) {
-                            // Если сообщение существует, обновляем его
                             const updatedMessages = [...prevMessages];
                             updatedMessages[existingMessageIndex] = newMessage;
                             return updatedMessages;
                         } else {
-                            // Если сообщение новое, добавляем его
                             return [...prevMessages, newMessage];
                         }
                     });
@@ -94,7 +91,6 @@ const Messenger = () => {
             console.log('Sending message:', message);
     
             if (client && client.connected) {
-                // Если редактируем сообщение, отправляем его с текущим ID
                 if (editingMessageId) {
                     client.publish({ destination: '/app/editMessage', body: JSON.stringify(message) });
                 } else {
@@ -110,6 +106,13 @@ const Messenger = () => {
             }
         } else {
             console.warn('Content or userId is missing');
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
         }
     };
 
@@ -273,6 +276,7 @@ const Messenger = () => {
                 ref={textAreaRef}
                 value={content}
                 onChange={handleInputChange}
+                onKeyDown={handleKeyDown} // Добавляем обработчик нажатий клавиш
                 placeholder="Enter your message"
                 className="input-message"
                 rows={rows}
