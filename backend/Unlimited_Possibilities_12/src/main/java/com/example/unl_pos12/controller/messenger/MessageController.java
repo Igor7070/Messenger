@@ -34,4 +34,15 @@ public class MessageController {
         message.setTimestamp(LocalDateTime.now()); // Установка временной метки
         return messageService.saveMessage(message);
     }
+
+    @PutMapping("/{id}")
+    public Message editMessage(@PathVariable Long id, @RequestBody Message message) {
+        message.setId(id);
+        return messageService.updateMessage(message);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteMessage(@PathVariable Long id) {
+        messageService.deleteMessage(id);
+    }
 }

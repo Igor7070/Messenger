@@ -20,4 +20,18 @@ public class WebSocketMessageController {
                 " from user: " + message.getSender().getUsername());
         return messageService.saveMessage(message); // Сохраняем сообщение и отправляем его назад
     }
+
+    @MessageMapping("/editMessage")
+    @SendTo("/topic/messages")
+    public Message editMessage(Message message) {
+        System.out.println("Editing message: " + message.getId());
+        return messageService.updateMessage(message); // Обновляем сообщение в базе данных
+    }
+
+    @MessageMapping("/deleteMessage")
+    @SendTo("/topic/messages")
+    public Long deleteMessage(Long id) {
+        messageService.deleteMessage(id); // Удаляем сообщение из базы данных
+        return id; // Возвращаем ID удаленного сообщения
+    }
 }

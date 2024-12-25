@@ -21,4 +21,12 @@ public class MessageService {
         message.setTimestamp(LocalDateTime.now()); // Устанавливаем временную метку
         return messageRepository.save(message);
     }
+
+    public Message updateMessage(Message message) {
+        return messageRepository.save(message);
+    }
+
+    public void deleteMessage(Long id) {
+        messageRepository.deleteById(id);
+    }
 }
