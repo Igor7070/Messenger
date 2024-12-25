@@ -31,6 +31,7 @@ public class WebSocketMessageController {
     @MessageMapping("/deleteMessage")
     @SendTo("/topic/messages")
     public Long deleteMessage(Long id) {
+        System.out.println("Deleting message with ID: " + id);
         messageService.deleteMessage(id); // Удаляем сообщение из базы данных
         return id; // Возвращаем ID удаленного сообщения
     }
