@@ -43,14 +43,10 @@ const Messenger = () => {
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
                 console.log('Connected to WebSocket');
-            stompClient.subscribe('/topic/messages', (message) => {
-                const newMessage = JSON.parse(message.body);
-                
-                // Если это обновление, заменяем старое сообщение
-                setMessages((prevMessages) => {
-                    return prevMessages.map(msg => msg.id === newMessage.id ? newMessage : msg);
+                stompClient.subscribe('/topic/messages', (message) => {
+                    const newMessage = JSON.parse(message.body);
+                    setMessages((prevMessages) => [...prevMessages, newMessage]);
                 });
-            });
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
