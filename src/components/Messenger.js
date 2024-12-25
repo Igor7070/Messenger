@@ -43,10 +43,14 @@ const Messenger = () => {
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
                 console.log('Connected to WebSocket');
-                stompClient.subscribe('/topic/messages', (message) => {
-                    const newMessage = JSON.parse(message.body);
-                    setMessages((prevMessages) => [...prevMessages, newMessage]);
+            stompClient.subscribe('/topic/messages', (message) => {
+                const newMessage = JSON.parse(message.body);
+                
+                // Если это обновление, заменяем старое сообщение
+                setMessages((prevMessages) => {
+                    return prevMessages.map(msg => msg.id === newMessage.id ? newMessage : msg);
                 });
+            });
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
@@ -75,12 +79,17 @@ const Messenger = () => {
             const message = {
                 id: editingMessageId || Date.now(),
                 content,
-                sender: { id: userId, username: currentUsername }
+                sender: { id: userId, username: currentUsername },
             };
             console.log('Sending message:', message);
-
+    
             if (client && client.connected) {
-                client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
+                // Если редактируем сообщение, отправляем его с текущим ID
+                if (editingMessageId) {
+                    client.publish({ destination: '/app/editMessage', body: JSON.stringify(message) });
+                } else {
+                    client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
+                }
                 setContent('');
                 setRows(1);
                 setEditingMessageId(null);
