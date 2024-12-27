@@ -45,18 +45,7 @@ const Messenger = () => {
                 console.log('Connected to WebSocket');
                 stompClient.subscribe('/topic/messages', (message) => {
                     const newMessage = JSON.parse(message.body);
-
-                    // Обновляем состояние сообщений
-                    setMessages((prevMessages) => {
-                        const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
-                        if (existingMessageIndex !== -1) {
-                            const updatedMessages = [...prevMessages];
-                            updatedMessages[existingMessageIndex] = newMessage;
-                            return updatedMessages;
-                        } else {
-                            return [...prevMessages, newMessage];
-                        }
-                    });
+                    updateMessages(newMessage);
                 });
             },
             onWebSocketError: (error) => {
@@ -73,6 +62,25 @@ const Messenger = () => {
             stompClient.deactivate();
         };
     }, []);
+
+    const updateMessages = (newMessage) => {
+        if (newMessage.content === "Message deleted") {
+            // Удаляем сообщение из состояния
+            setMessages((prevMessages) => prevMessages.filter(msg => msg.id !== newMessage.id));
+        } else {
+            // Обновляем или добавляем сообщение
+            setMessages((prevMessages) => {
+                const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
+                if (existingMessageIndex !== -1) {
+                    const updatedMessages = [...prevMessages];
+                    updatedMessages[existingMessageIndex] = newMessage;
+                    return updatedMessages;
+                } else {
+                    return [...prevMessages, newMessage];
+                }
+            });
+        }
+    };
 
     useEffect(() => {
         if (messagesEndRef.current) {
@@ -153,11 +161,6 @@ const Messenger = () => {
                 destination: '/app/deleteMessage',
                 body: JSON.stringify(id),
             });
-
-            // Удаляем сообщение из состояния
-            setMessages((prevMessages) => 
-                prevMessages.filter(msg => msg.id !== id)
-            );
             toast.success('Сообщение удалено!');
         } else {
             toast.error('Не удалось удалить сообщение. Попробуйте снова.');
@@ -280,16 +283,16 @@ const Messenger = () => {
             {errorMessage && <div className="error-message">{errorMessage}</div>}
             <div className="message-list">
                 {messages.map((msg) => (
-                    msg.sender ? ( // Проверка на существование sender
+                    msg.sender ? (
                         <div 
-                            key={msg.id} // Используйте id как ключ
+                            key={msg.id}
                             className={`message ${msg.sender.username === username ? 'current-user' : 'other-user'}`} 
                             onContextMenu={(e) => handleRightClick(e, msg)}
                         >
                             <strong>{msg.sender.username}: </strong>
                             {msg.content}
                         </div>
-                    ) : null // Если sender не существует, ничего не выводим
+                    ) : null
                 ))}
                 <div ref={messagesEndRef} />
             </div>
@@ -297,7 +300,7 @@ const Messenger = () => {
                 ref={textAreaRef}
                 value={content}
                 onChange={handleInputChange}
-                onKeyDown={handleKeyDown} // Добавляем обработчик нажатий клавиш
+                onKeyDown={handleKeyDown}
                 placeholder="Enter your message"
                 className="input-message"
                 rows={rows}
