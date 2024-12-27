@@ -65,22 +65,20 @@ const Messenger = () => {
 
     const updateMessages = (newMessage) => {
         console.log("Received message:", newMessage); // Отладка
-        if (newMessage.content === "Message deleted") {
-            // Удаляем сообщение из состояния
-            setMessages((prevMessages) => prevMessages.filter(msg => msg.id !== newMessage.id));
-        } else {
-            // Обновляем или добавляем сообщение
-            setMessages((prevMessages) => {
-                const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
-                if (existingMessageIndex !== -1) {
-                    const updatedMessages = [...prevMessages];
-                    updatedMessages[existingMessageIndex] = newMessage; // Обновляем сообщение
-                    return updatedMessages;
-                } else {
-                    return [...prevMessages, newMessage]; // Добавляем новое сообщение
-                }
-            });
-        }
+        setMessages((prevMessages) => {
+            const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
+            if (existingMessageIndex !== -1) {
+                // Обновляем существующее сообщение
+                const updatedMessages = [...prevMessages];
+                updatedMessages[existingMessageIndex] = newMessage; // Обновляем сообщение
+                return updatedMessages;
+            } else if (newMessage.content !== "Message deleted") {
+                // Добавляем новое сообщение, если это не сообщение об удалении
+                return [...prevMessages, newMessage];
+            }
+            // Если сообщение удалено, ничего не делаем
+            return prevMessages;
+        });
     };
 
     useEffect(() => {
