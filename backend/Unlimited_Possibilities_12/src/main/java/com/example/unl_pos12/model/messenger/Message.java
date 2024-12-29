@@ -10,6 +10,7 @@ public class Message {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String content;
+    private String fileUrl; // URL файла
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sender_id")
     private User sender;
@@ -45,5 +46,13 @@ public class Message {
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public String getFileUrl() {
+        return fileUrl;
+    }
+
+    public void setFileUrl(String fileUrl) {
+        this.fileUrl = fileUrl;
     }
 }
