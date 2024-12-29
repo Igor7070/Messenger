@@ -10,6 +10,7 @@ import 'react-toastify/dist/ReactToastify.css';
 const Messenger = () => {
     const [messages, setMessages] = useState([]);
     const [content, setContent] = useState('');
+    const [selectedFile, setSelectedFile] = useState(null); // Новое состояние для файла
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [userId, setUserId] = useState(null);
@@ -68,15 +69,12 @@ const Messenger = () => {
         setMessages((prevMessages) => {
             const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
-                // Обновляем существующее сообщение
                 const updatedMessages = [...prevMessages];
-                updatedMessages[existingMessageIndex] = newMessage; // Обновляем сообщение
+                updatedMessages[existingMessageIndex] = newMessage; 
                 return updatedMessages;
             } else if (newMessage.content !== "Message deleted") {
-                // Добавляем новое сообщение, если это не сообщение об удалении
                 return [...prevMessages, newMessage];
             }
-            // Если сообщение удалено, ничего не делаем
             return prevMessages;
         });
     };
@@ -94,6 +92,7 @@ const Messenger = () => {
                 id: editingMessageId || Date.now(),
                 content,
                 sender: { id: userId, username: currentUsername },
+                fileUrl: selectedFile ? URL.createObjectURL(selectedFile) : null // URL для файла
             };
             console.log('Sending message:', message);
 
@@ -113,6 +112,7 @@ const Messenger = () => {
                 setRows(1);
                 setEditingMessageId(null);
                 setContextMenu({ visible: false });
+                setSelectedFile(null); // Сброс состояния файла после отправки
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
@@ -129,6 +129,10 @@ const Messenger = () => {
         }
     };
 
+    const handleFileChange = (e) => {
+        setSelectedFile(e.target.files[0]); // Сохраняем выбранный файл
+    };
+
     const handleRightClick = (e, message) => {
         e.preventDefault();
         setContextMenu({
@@ -142,7 +146,7 @@ const Messenger = () => {
     const handleMenuAction = (action) => {
         if (contextMenu.message.sender.username !== username) {
             toast.error('Вы можете редактировать или удалять только свои сообщения.');
-            return; // Если сообщение не ваше, ничего не делаем
+            return;
         }
 
         if (action === 'edit') {
@@ -290,6 +294,9 @@ const Messenger = () => {
                         >
                             <strong>{msg.sender.username}: </strong>
                             {msg.content}
+                            {msg.fileUrl && (
+                                <a href={msg.fileUrl} download>📥 Скачать файл</a>
+                            )}
                         </div>
                     ) : null
                 ))}
@@ -304,6 +311,7 @@ const Messenger = () => {
                 className="input-message"
                 rows={rows}
             />
+            <input type="file" onChange={handleFileChange} className="file-input" />
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
             {contextMenu.visible && (
