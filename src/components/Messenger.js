@@ -86,35 +86,14 @@ const Messenger = () => {
     }, [messages]);
 
     const sendMessage = async () => {
+        // Позволяем отправку сообщения с файлом даже если текст не введен
         if ((content || selectedFile) && userId) {
             const currentUsername = username;
-            let fileUrl = null;
-    
-            // Если есть файл, загружаем его на сервер
-            if (selectedFile) {
-                const formData = new FormData();
-                formData.append('file', selectedFile);
-    
-                // Замените этот URL на ваш API для загрузки файлов
-                const uploadResponse = await fetch('https://yourserver.com/api/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-    
-                if (uploadResponse.ok) {
-                    const data = await uploadResponse.json();
-                    fileUrl = data.fileUrl; // Предполагается, что сервер возвращает { fileUrl: 'http://...' }
-                } else {
-                    toast.error('Не удалось загрузить файл.');
-                    return;
-                }
-            }
-    
             const message = {
                 id: editingMessageId || Date.now(),
                 content,
                 sender: { id: userId, username: currentUsername },
-                fileUrl, // Используйте URL, полученный от сервера
+                fileUrl: selectedFile ? URL.createObjectURL(selectedFile) : null // URL для файла
             };
             console.log('Sending message:', message);
     
@@ -134,7 +113,7 @@ const Messenger = () => {
                 setRows(1);
                 setEditingMessageId(null);
                 setContextMenu({ visible: false });
-                setSelectedFile(null);
+                setSelectedFile(null); // Сброс состояния файла после отправки
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
