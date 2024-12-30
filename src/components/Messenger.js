@@ -88,16 +88,17 @@ const Messenger = () => {
     const uploadFile = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
-
+    
         const response = await fetch('https://unlimitedpossibilities12.org/api/files/upload', {
             method: 'POST',
             body: formData,
         });
-
+    
         if (!response.ok) {
             throw new Error('File upload failed');
         }
-
+    
+        // Парсим ответ как JSON
         const data = await response.json();
         return data.fileUrl; // Предполагается, что сервер возвращает URL файла
     };
