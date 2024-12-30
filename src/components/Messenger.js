@@ -11,7 +11,6 @@ const Messenger = () => {
     const [messages, setMessages] = useState([]);
     const [content, setContent] = useState('');
     const [selectedFile, setSelectedFile] = useState(null); // Новое состояние для файла
-    const [fileName, setFileName] = useState(''); // Состояние для имени файла
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [userId, setUserId] = useState(null);
@@ -93,8 +92,7 @@ const Messenger = () => {
                 id: editingMessageId || Date.now(),
                 content,
                 sender: { id: userId, username: currentUsername },
-                fileUrl: selectedFile ? URL.createObjectURL(selectedFile) : null, // URL для файла
-                fileName: fileName // Сохраняем оригинальное имя файла
+                fileUrl: selectedFile ? URL.createObjectURL(selectedFile) : null // URL для файла
             };
             console.log('Sending message:', message);
 
@@ -115,7 +113,6 @@ const Messenger = () => {
                 setEditingMessageId(null);
                 setContextMenu({ visible: false });
                 setSelectedFile(null); // Сброс состояния файла после отправки
-                setFileName(''); // Сброс имени файла
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
@@ -134,7 +131,6 @@ const Messenger = () => {
 
     const handleFileChange = (e) => {
         setSelectedFile(e.target.files[0]); // Сохраняем выбранный файл
-        setFileName(e.target.files[0].name); // Сохраняем оригинальное имя файла
     };
 
     const handleRightClick = (e, message) => {
@@ -252,7 +248,13 @@ const Messenger = () => {
             const textHeight = textAreaRef.current.scrollHeight;
             const currentScrollHeight = textHeight > 0 ? textHeight : 1;
             const linesCount = Math.floor(currentScrollHeight / 24);
-            return text.length > 0 ? linesCount : Math.max(1, Math.ceil(text.length / charPerLine));
+
+            if (text.length > 0) {
+                return linesCount;
+            } else {
+                const charCount = text.length;
+                return Math.max(1, Math.ceil(charCount / charPerLine));
+            }
         }
         return 1;
     };
@@ -293,7 +295,7 @@ const Messenger = () => {
                             <strong>{msg.sender.username}: </strong>
                             {msg.content}
                             {msg.fileUrl && (
-                                <a href={msg.fileUrl} download={msg.fileName}>📥 Скачать файл</a>
+                                <a href={msg.fileUrl} download>📥 Скачать файл</a>
                             )}
                         </div>
                     ) : null
