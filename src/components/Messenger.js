@@ -10,7 +10,7 @@ import 'react-toastify/dist/ReactToastify.css';
 const Messenger = () => {
     const [messages, setMessages] = useState([]);
     const [content, setContent] = useState('');
-    const [selectedFile, setSelectedFile] = useState(null); // Новое состояние для файла
+    const [selectedFile, setSelectedFile] = useState(null);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [userId, setUserId] = useState(null);
@@ -65,12 +65,12 @@ const Messenger = () => {
     }, []);
 
     const updateMessages = (newMessage) => {
-        console.log("Received message:", newMessage); // Отладка
+        console.log("Received message:", newMessage);
         setMessages((prevMessages) => {
             const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
                 const updatedMessages = [...prevMessages];
-                updatedMessages[existingMessageIndex] = newMessage; 
+                updatedMessages[existingMessageIndex] = newMessage;
                 return updatedMessages;
             } else if (newMessage.content !== "Message deleted") {
                 return [...prevMessages, newMessage];
@@ -85,18 +85,34 @@ const Messenger = () => {
         }
     }, [messages]);
 
+    const uploadFile = async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('https://unlimitedpossibilities12.org/api/files/upload', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            throw new Error('File upload failed');
+        }
+
+        const data = await response.json();
+        return data.fileUrl; // Предполагается, что сервер возвращает URL файла
+    };
+
     const sendMessage = async () => {
-        // Позволяем отправку сообщения с файлом даже если текст не введен
         if ((content || selectedFile) && userId) {
             const currentUsername = username;
             const message = {
                 id: editingMessageId || Date.now(),
                 content,
                 sender: { id: userId, username: currentUsername },
-                fileUrl: selectedFile ? URL.createObjectURL(selectedFile) : null // URL для файла
+                fileUrl: selectedFile ? await uploadFile(selectedFile) : null
             };
             console.log('Sending message:', message);
-    
+
             if (client && client.connected) {
                 if (editingMessageId) {
                     const existingMessage = messages.find(msg => msg.id === editingMessageId);
@@ -113,7 +129,7 @@ const Messenger = () => {
                 setRows(1);
                 setEditingMessageId(null);
                 setContextMenu({ visible: false });
-                setSelectedFile(null); // Сброс состояния файла после отправки
+                setSelectedFile(null);
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
@@ -131,7 +147,7 @@ const Messenger = () => {
     };
 
     const handleFileChange = (e) => {
-        setSelectedFile(e.target.files[0]); // Сохраняем выбранный файл
+        setSelectedFile(e.target.files[0]);
     };
 
     const handleRightClick = (e, message) => {
@@ -241,7 +257,6 @@ const Messenger = () => {
         const newRows = calculateRows(newValue);
         setRows(newRows);
         textAreaRef.current.style.height = `${newRows * 24}px`;
-        console.log("Content state:", newValue);
     };
 
     const calculateRows = (text) => {
