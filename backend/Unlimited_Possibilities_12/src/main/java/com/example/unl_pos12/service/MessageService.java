@@ -58,6 +58,7 @@ public class MessageService {
 
         try {
             Files.copy(file.getInputStream(), filePath);
+            System.out.println("File uploaded: " + filePath.toString()); // Добавлено
         } catch (IOException e) {
             throw new RuntimeException("Failed to upload file", e);
         }
