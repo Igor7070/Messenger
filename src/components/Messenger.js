@@ -89,7 +89,7 @@ const Messenger = () => {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch('https://unlimitedpossibilities12.org/api/files/upload', {
+        const response = await fetch('https://your-server-url/api/files/upload', {
             method: 'POST',
             body: formData,
         });
@@ -111,12 +111,6 @@ const Messenger = () => {
                 sender: { id: userId, username: currentUsername },
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null
             };
-            
-            // Логируем URL загруженного файла
-        if (selectedFile) {
-            console.log('Uploaded file URL:', message.fileUrl);
-        }
-
             console.log('Sending message:', message);
 
             if (client && client.connected) {
