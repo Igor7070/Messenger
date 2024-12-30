@@ -111,6 +111,12 @@ const Messenger = () => {
                 sender: { id: userId, username: currentUsername },
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null
             };
+            
+            // Логируем URL загруженного файла
+        if (selectedFile) {
+            console.log('Uploaded file URL:', message.fileUrl);
+        }
+
             console.log('Sending message:', message);
 
             if (client && client.connected) {
