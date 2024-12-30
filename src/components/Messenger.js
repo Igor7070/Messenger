@@ -86,7 +86,8 @@ const Messenger = () => {
     }, [messages]);
 
     const sendMessage = async () => {
-        if (content && userId) {
+        // Позволяем отправку сообщения с файлом даже если текст не введен
+        if ((content || selectedFile) && userId) {
             const currentUsername = username;
             const message = {
                 id: editingMessageId || Date.now(),
@@ -95,7 +96,7 @@ const Messenger = () => {
                 fileUrl: selectedFile ? URL.createObjectURL(selectedFile) : null // URL для файла
             };
             console.log('Sending message:', message);
-
+    
             if (client && client.connected) {
                 if (editingMessageId) {
                     const existingMessage = messages.find(msg => msg.id === editingMessageId);
