@@ -23,6 +23,7 @@ public class FileDownloadController {
     public ResponseEntity<FileSystemResource> downloadFile(@PathVariable String filename) {
         File file = new File("uploads/" + filename); // Убедитесь, что путь правильный
         if (!file.exists()) {
+            System.out.println("File not found: " + file.getAbsolutePath());
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 

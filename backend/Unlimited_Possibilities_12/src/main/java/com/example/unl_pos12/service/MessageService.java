@@ -45,26 +45,6 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
-    /*private String uploadFile(MultipartFile file) {
-        String uploadDir = "uploads/";
-
-        File directory = new File(uploadDir);
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
-
-        String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        Path filePath = Paths.get(uploadDir + filename);
-
-        try {
-            Files.copy(file.getInputStream(), filePath);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to upload file", e);
-        }
-
-        return "/uploads/" + filename;
-    }*/
-
     private String uploadFile(MultipartFile file) {
         String uploadDir = "uploads/";
 
