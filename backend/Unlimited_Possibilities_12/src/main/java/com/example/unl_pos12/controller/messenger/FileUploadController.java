@@ -21,10 +21,10 @@ public class FileUploadController {
     public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
             String fileUrl = messageService.uploadFile(file);
-            // Возвращаем JSON-ответ
             return ResponseEntity.ok("{\"fileUrl\":\"" + fileUrl + "\"}");
         } catch (Exception e) {
             System.out.println("Error uploading file: " + e.getMessage());
+            e.printStackTrace(); // Полная трассировка стека для отладки
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"error\":\"File upload failed\"}");
         }
     }

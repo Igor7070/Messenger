@@ -46,8 +46,11 @@ public class MessageService {
     }
 
     public String uploadFile(MultipartFile file) {
-        String uploadDir = "uploads/";
+        if (file.isEmpty()) {
+            throw new RuntimeException("Uploaded file is empty");
+        }
 
+        String uploadDir = "uploads/";
         File directory = new File(uploadDir);
         if (!directory.exists()) {
             directory.mkdirs();
@@ -59,13 +62,10 @@ public class MessageService {
         try {
             Files.copy(file.getInputStream(), filePath);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to upload file", e);
+            throw new RuntimeException("Failed to upload file: " + e.getMessage(), e);
         }
 
-        // Возвращаем полный URL
-        //return "/api/files/download/" + filename; // Обновите этот путь в соответствии с вашим маршрутом
-        // Формируем полный URL
-        String serverUrl = "https://unlimitedpossibilities12.org"; // Замените на ваш домен или IP-адрес...
+        String serverUrl = "https://unlimitedpossibilities12.org";
         return serverUrl + "/api/files/download/" + filename;
     }
 
