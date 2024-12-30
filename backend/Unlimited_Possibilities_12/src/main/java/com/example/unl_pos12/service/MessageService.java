@@ -58,7 +58,6 @@ public class MessageService {
 
         try {
             Files.copy(file.getInputStream(), filePath);
-            System.out.println("File uploaded: " + filePath.toString()); // Добавлено
         } catch (IOException e) {
             throw new RuntimeException("Failed to upload file", e);
         }
@@ -66,7 +65,7 @@ public class MessageService {
         // Возвращаем полный URL
         //return "/api/files/download/" + filename; // Обновите этот путь в соответствии с вашим маршрутом
         // Формируем полный URL
-        String serverUrl = "https://unlimitedpossibilities12.org"; // Замените на ваш домен или IP-адрес
+        String serverUrl = "https://unlimitedpossibilities12.org"; // Замените на ваш домен или IP-адрес...
         return serverUrl + "/api/files/download/" + filename;
     }
 
