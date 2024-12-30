@@ -29,7 +29,7 @@ public class WebSocketMessageController {
                 " from user: " + message.getSender().getUsername());
 
         // Здесь вы можете передать файл, если он есть.
-        return messageService.saveMessage(message, null); // Передайте файл, если он есть
+        return messageService.saveMessage(message, null); // Передайте файл, если он есть...
     }
 
     @MessageMapping("/editMessage")
