@@ -45,7 +45,7 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
-    private String uploadFile(MultipartFile file) {
+    public String uploadFile(MultipartFile file) {
         String uploadDir = "uploads/";
 
         File directory = new File(uploadDir);
