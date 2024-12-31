@@ -50,6 +50,11 @@ public class MessageService {
             throw new RuntimeException("Uploaded file is empty");
         }
 
+        // Проверка типа файла
+        if (!isValidFileType(file.getContentType())) {
+            throw new RuntimeException("Unsupported file type: " + file.getContentType());
+        }
+
         String uploadDir = "uploads/";
         File directory = new File(uploadDir);
         if (!directory.exists()) {
@@ -62,11 +67,21 @@ public class MessageService {
         try {
             Files.copy(file.getInputStream(), filePath);
         } catch (IOException e) {
+            // Логируем ошибку и выбрасываем исключение с сообщением об ошибке
+            System.out.println("Error while uploading file: " + e.getMessage());
             throw new RuntimeException("Failed to upload file: " + e.getMessage(), e);
         }
 
         String serverUrl = "https://unlimitedpossibilities12.org";
         return serverUrl + "/api/files/download/" + filename;
+    }
+
+    private boolean isValidFileType(String contentType) {
+        return contentType.equals("text/plain") ||
+                contentType.equals("image/jpeg") ||
+                contentType.equals("image/png") ||
+                contentType.equals("application/msword") ||
+                contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document"); // для .docx
     }
 
     public Message getMessageById(Long id) {
