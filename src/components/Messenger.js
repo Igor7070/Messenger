@@ -98,6 +98,8 @@ const Messenger = () => {
         });
     
         if (!response.ok) {
+            const errorText = await response.text(); // Получаем текст ошибки
+            console.error('Upload failed:', errorText); // Логируем текст ошибки
             throw new Error('File upload failed');
         }
     
