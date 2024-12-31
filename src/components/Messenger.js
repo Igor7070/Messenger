@@ -24,6 +24,7 @@ const Messenger = () => {
 
     const textAreaRef = useRef(null);
     const messagesEndRef = useRef(null);
+    const fileInputRef = useRef(null); // Реф для input файла
 
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
@@ -98,9 +99,8 @@ const Messenger = () => {
             throw new Error('File upload failed');
         }
     
-        // Парсим ответ как JSON
         const data = await response.json();
-        return data.fileUrl; // Предполагается, что сервер возвращает URL файла
+        return data.fileUrl; // URL загруженного файла
     };
 
     const sendMessage = async () => {
@@ -112,14 +112,9 @@ const Messenger = () => {
                 sender: { id: userId, username: currentUsername },
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null
             };
-    
-            // Логируем URL загруженного файла
-            if (selectedFile) {
-                console.log('Uploaded file URL:', message.fileUrl);
-            }
-    
+
             console.log('Sending message:', message);
-    
+
             if (client && client.connected) {
                 if (editingMessageId) {
                     const existingMessage = messages.find(msg => msg.id === editingMessageId);
@@ -132,17 +127,19 @@ const Messenger = () => {
                 } else {
                     client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
                 }
-    
+
                 // Сброс состояния после отправки
                 setContent('');
                 setRows(1);
                 setEditingMessageId(null);
                 setContextMenu({ visible: false });
                 setSelectedFile(null); // Сброс выбранного файла
-                if (textAreaRef.current) {
-                    textAreaRef.current.style.height = 'auto'; // Обнуление высоты текстового поля
+
+                // Сбрасываем значение input для файла
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = null; // Сброс значения поля
                 }
-    
+
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
@@ -340,7 +337,12 @@ const Messenger = () => {
                 className="input-message"
                 rows={rows}
             />
-            <input type="file" onChange={handleFileChange} className="file-input" />
+            <input
+                type="file"
+                onChange={handleFileChange}
+                className="file-input"
+                ref={fileInputRef} // Присваиваем реф
+            />
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
             {contextMenu.visible && (
