@@ -112,14 +112,14 @@ const Messenger = () => {
                 sender: { id: userId, username: currentUsername },
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null
             };
-
+    
             // Логируем URL загруженного файла
             if (selectedFile) {
                 console.log('Uploaded file URL:', message.fileUrl);
             }
-
+    
             console.log('Sending message:', message);
-
+    
             if (client && client.connected) {
                 if (editingMessageId) {
                     const existingMessage = messages.find(msg => msg.id === editingMessageId);
@@ -132,11 +132,17 @@ const Messenger = () => {
                 } else {
                     client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
                 }
+    
+                // Сброс состояния после отправки
                 setContent('');
                 setRows(1);
                 setEditingMessageId(null);
                 setContextMenu({ visible: false });
-                setSelectedFile(null);
+                setSelectedFile(null); // Сброс выбранного файла
+                if (textAreaRef.current) {
+                    textAreaRef.current.style.height = 'auto'; // Обнуление высоты текстового поля
+                }
+    
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
