@@ -36,10 +36,10 @@ public class FileDownloadController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
             }
         } catch (MalformedURLException e) {
-            e.printStackTrace(); // Логирование ошибки
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace(); // Логирование ошибки
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }

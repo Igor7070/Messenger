@@ -8,7 +8,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -65,12 +64,7 @@ public class MessageService {
         }
 
         String originalFilename = file.getOriginalFilename();
-        String safeFilename = null;
-        try {
-            safeFilename = URLEncoder.encode(originalFilename, StandardCharsets.UTF_8.toString());
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        String safeFilename = URLEncoder.encode(originalFilename, StandardCharsets.UTF_8);
         String filename = System.currentTimeMillis() + "_" + safeFilename;
         Path filePath = Paths.get(uploadDir + filename);
 
