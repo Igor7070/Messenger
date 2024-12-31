@@ -89,6 +89,8 @@ const Messenger = () => {
     const uploadFile = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
+
+        console.log('Uploading file:', file); // Логируем файл перед загрузкой
     
         const response = await fetch('https://unlimitedpossibilities12.org/api/files/upload', {
             method: 'POST',
