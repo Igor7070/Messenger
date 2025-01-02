@@ -118,14 +118,15 @@ const Messenger = () => {
 
     const sendMessage = async () => {
         if ((content || selectedFile) && userId) {
+            const currentUsername = username;
             const message = {
                 id: editingMessageId || Date.now(),
                 content,
-                sender: { id: userId, username: username },
-                chat: { id: chatId }, // chatId присоединяется
+                sender: { id: userId, username: currentUsername },
+                chat: { id: chatId }, // Добавьте chatId здесь
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
             };
-    
+
             if (client && client.connected) {
                 if (editingMessageId) {
                     const existingMessage = messages.find(msg => msg.id === editingMessageId);
@@ -138,17 +139,18 @@ const Messenger = () => {
                 } else {
                     client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
                 }
-    
+
                 // Сброс состояния после отправки
                 setContent('');
                 setRows(1);
                 setEditingMessageId(null);
                 setContextMenu({ visible: false });
                 setSelectedFile(null);
+
                 if (fileInputRef.current) {
                     fileInputRef.current.value = null;
                 }
-    
+
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
