@@ -15,7 +15,7 @@ public class ChatController {
 
     @PostMapping
     public Chat createChat(@RequestBody Chat chat) {
-        System.out.println("Chat " + chat.getName() + "created.");
+        System.out.println("Chat " + chat.getName() + " created.");
         return chatService.createChat(chat);
     }
 
