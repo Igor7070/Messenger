@@ -1,6 +1,7 @@
 package com.example.unl_pos12.service;
 
 import com.example.unl_pos12.model.messenger.Chat;
+import com.example.unl_pos12.model.messenger.Message;
 import com.example.unl_pos12.repo.ChatRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,5 +23,13 @@ public class ChatService {
 
     public void deleteChat(Long id) {
         chatRepository.deleteById(id);
+    }
+
+    public List<Message> getMessagesByChatName(String chatName) {
+        Chat chat = chatRepository.findByName(chatName);
+        if (chat == null) {
+            throw new RuntimeException("Chat not found");
+        }
+        return chat.getMessages();
     }
 }

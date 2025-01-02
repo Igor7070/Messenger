@@ -1,6 +1,7 @@
 package com.example.unl_pos12.controller.messenger;
 
 import com.example.unl_pos12.model.messenger.Chat;
+import com.example.unl_pos12.model.messenger.Message;
 import com.example.unl_pos12.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -27,5 +28,10 @@ public class ChatController {
     @DeleteMapping("/{id}")
     public void deleteChat(@PathVariable Long id) {
         chatService.deleteChat(id);
+    }
+
+    @GetMapping("/byName/{name}/messages")
+    public List<Message> getMessagesByChatName(@PathVariable String name) {
+        return chatService.getMessagesByChatName(name);
     }
 }
