@@ -25,6 +25,7 @@ public class MessageService {
 
     public Message saveMessage(Message message) {
         message.setTimestamp(LocalDateTime.now()); // Устанавливаем временную метку
+        System.out.println("Saving message: " + message.getContent() + " for chatId: " + message.getChat().getId());
         return messageRepository.save(message);
     }
 
