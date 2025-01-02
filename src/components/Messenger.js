@@ -25,9 +25,8 @@ const Messenger = () => {
 
     const textAreaRef = useRef(null);
     const messagesEndRef = useRef(null);
-    const fileInputRef = useRef(null); // Реф для input файла
-    // В начале компонента
-    const { chatId } = useParams(); // Используйте chatId, чтобы загружать сообщения для конкретного чата
+    const fileInputRef = useRef(null);
+    const { chatId } = useParams();
 
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
@@ -38,12 +37,19 @@ const Messenger = () => {
             setUsername(storedUsername);
             setIsLoggedIn(true);
         }
+    }, []);
 
+    // Загрузка сообщений при изменении chatId
+    useEffect(() => {
         const fetchMessages = async () => {
-            const messages = await getMessages();
+            const messages = await getMessages(chatId); // Передайте chatId
             setMessages(messages);
         };
 
+        fetchMessages();
+    }, [chatId]);
+
+    useEffect(() => {
         const stompClient = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
@@ -61,15 +67,12 @@ const Messenger = () => {
         setClient(stompClient);
         stompClient.activate();
 
-        fetchMessages();
-
         return () => {
             stompClient.deactivate();
         };
     }, []);
 
     const updateMessages = (newMessage) => {
-        console.log("Received message:", newMessage);
         setMessages((prevMessages) => {
             const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
@@ -93,21 +96,19 @@ const Messenger = () => {
         const formData = new FormData();
         formData.append('file', file);
 
-        console.log('Uploading file:', file); // Логируем файл перед загрузкой
-    
         const response = await fetch('https://unlimitedpossibilities12.org/api/files/upload', {
             method: 'POST',
             body: formData,
         });
-    
+
         if (!response.ok) {
-            const errorText = await response.text(); // Получаем текст ошибки
-            console.error('Upload failed:', errorText); // Логируем текст ошибки
+            const errorText = await response.text();
+            console.error('Upload failed:', errorText);
             throw new Error('File upload failed');
         }
-    
+
         const data = await response.json();
-        return data.fileUrl; // URL загруженного файла
+        return data.fileUrl;
     };
 
     const sendMessage = async () => {
@@ -119,8 +120,6 @@ const Messenger = () => {
                 sender: { id: userId, username: currentUsername },
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null
             };
-
-            console.log('Sending message:', message);
 
             if (client && client.connected) {
                 if (editingMessageId) {
@@ -140,11 +139,10 @@ const Messenger = () => {
                 setRows(1);
                 setEditingMessageId(null);
                 setContextMenu({ visible: false });
-                setSelectedFile(null); // Сброс выбранного файла
+                setSelectedFile(null);
 
-                // Сбрасываем значение input для файла
                 if (fileInputRef.current) {
-                    fileInputRef.current.value = null; // Сброс значения поля
+                    fileInputRef.current.value = null;
                 }
 
                 console.log('Message sent');
@@ -348,7 +346,7 @@ const Messenger = () => {
                 type="file"
                 onChange={handleFileChange}
                 className="file-input"
-                ref={fileInputRef} // Присваиваем реф
+                ref={fileInputRef}
             />
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
