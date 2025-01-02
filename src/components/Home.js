@@ -14,7 +14,7 @@ const Home = () => {
     };
 
     const goToChat = (chatName) => {
-        navigate(`# /chat/${chatName}`);  // Добавьте хэш перед маршрутом
+        navigate(`/chat/${chatName}`); // Исправлено: убран пробел перед маршрутом
     };
 
     return (
