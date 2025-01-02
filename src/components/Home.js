@@ -49,8 +49,8 @@ const Home = () => {
         }
     };
 
-    const goToChat = (chatName) => {
-        navigate(`/chat/${chatName}`);
+    const goToChat = (chatId) => {
+        navigate(`/chat/${chatId}`);
     };
 
     return (
