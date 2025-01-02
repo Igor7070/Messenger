@@ -11,7 +11,7 @@ public class Chat {
     private Long id;
     private String name;
 
-    @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "chat", fetch = FetchType.EAGER)
     private List<Message> messages;
 
     public Long getId() {
