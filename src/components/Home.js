@@ -12,7 +12,7 @@ const Home = () => {
             const response = await fetch('https://unlimitedpossibilities12.org/api/chats');
             if (response.ok) {
                 const data = await response.json();
-                setChats(data); // Предполагается, что API возвращает массив чатов
+                setChats(data); // Предполагается, что API возвращает массив объектов чатов
             } else {
                 console.error('Failed to fetch chats:', response.statusText);
             }
@@ -38,7 +38,7 @@ const Home = () => {
 
                 if (response.ok) {
                     const newChat = await response.json();
-                    setChats([...chats, newChat.name]); // Добавляем имя нового чата в список
+                    setChats([...chats, newChat]); // Добавляем новый объект чата в список
                     setChatName(''); // Очищаем поле ввода
                 } else {
                     console.error('Failed to create chat:', response.statusText);
@@ -49,8 +49,8 @@ const Home = () => {
         }
     };
 
-    const goToChat = (chatName) => {
-        navigate(`/chat/${chatName}`);
+    const goToChat = (chatId) => {
+        navigate(`/chat/${chatId}`);
     };
 
     return (
@@ -64,9 +64,9 @@ const Home = () => {
             />
             <button onClick={createChat}>Создать групповой чат</button>
             <ul>
-                {chats.map((chat, index) => (
-                    <li key={index} onClick={() => goToChat(chat)}>
-                        {chat}
+                {chats.map((chat) => (
+                    <li key={chat.id} onClick={() => goToChat(chat.id)}>
+                        {chat.name} {/* Отображаем имя чата */}
                     </li>
                 ))}
             </ul>
