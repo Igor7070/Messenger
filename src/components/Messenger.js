@@ -43,13 +43,15 @@ const Messenger = () => {
     useEffect(() => {
         const fetchMessages = async () => {
             try {
-                const messages = await getMessagesByChatName(chatId); // Используйте новую функцию
+                const messages = await getMessagesByChatName(chatId);
                 setMessages(messages);
+                console.log('Loaded messages:', messages); // Для отладки
             } catch (error) {
                 console.error('Error fetching messages:', error);
+                toast.error('Не удалось загрузить сообщения.');
             }
         };
-
+    
         fetchMessages();
     }, [chatId]);
 
