@@ -1,11 +1,10 @@
-// Home.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
     const [chatName, setChatName] = useState('');
     const [chats, setChats] = useState([]);
-    const navigate = useNavigate();  // Измените useHistory на useNavigate
+    const navigate = useNavigate();
 
     const createChat = () => {
         if (chatName) {
@@ -15,7 +14,7 @@ const Home = () => {
     };
 
     const goToChat = (chatName) => {
-        navigate(`/chat/${chatName}`);  // Измените history.push на navigate
+        navigate(`# /chat/${chatName}`);  // Добавьте хэш перед маршрутом
     };
 
     return (

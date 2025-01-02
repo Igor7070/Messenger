@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { HashRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './Home'; // Компонент главной страницы
 import Messenger from './Messenger'; // Компонент группового чата
 import '../styles/App.css';
