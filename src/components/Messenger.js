@@ -1,6 +1,3 @@
-javascript
-
-Copy
 import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -46,8 +43,8 @@ const Messenger = () => {
         console.log('Fetching messages for chatId:', chatId);
         const fetchMessages = async () => {
             try {
-                const messages = await getMessages(chatId);
-                console.log('Messages fetched:', messages);
+                const messages = await getMessages(chatId); // Используем chatId
+                console.log('Messages fetched:', messages); // Логируем сообщения
                 setMessages(messages);
             } catch (error) {
                 console.error('Ошибка при загрузке сообщений:', error);
@@ -121,11 +118,12 @@ const Messenger = () => {
 
     const sendMessage = async () => {
         if ((content || selectedFile) && userId) {
+            const currentUsername = username;
             const message = {
                 id: editingMessageId || Date.now(),
                 content,
-                sender: { id: userId, username },
-                chat: { id: chatId },
+                sender: { id: userId, username: currentUsername },
+                chat: { id: chatId }, // Добавьте chatId здесь
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
             };
 
@@ -142,11 +140,13 @@ const Messenger = () => {
                     client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
                 }
 
+                // Сброс состояния после отправки
                 setContent('');
                 setRows(1);
                 setEditingMessageId(null);
                 setContextMenu({ visible: false });
                 setSelectedFile(null);
+
                 if (fileInputRef.current) {
                     fileInputRef.current.value = null;
                 }
@@ -285,7 +285,13 @@ const Messenger = () => {
             const textHeight = textAreaRef.current.scrollHeight;
             const currentScrollHeight = textHeight > 0 ? textHeight : 1;
             const linesCount = Math.floor(currentScrollHeight / 24);
-            return text.length > 0 ? linesCount : Math.max(1, Math.ceil(text.length / charPerLine));
+
+            if (text.length > 0) {
+                return linesCount;
+            } else {
+                const charCount = text.length;
+                return Math.max(1, Math.ceil(charCount / charPerLine));
+            }
         }
         return 1;
     };
