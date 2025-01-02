@@ -6,6 +6,13 @@ export const getMessages = async () => {
     return await response.json();
 };
 
+// Функция для получения сообщений по имени чата
+export const getMessagesByChatName = async (chatName) => {
+    const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/byName/${chatName}/messages`);
+    if (!response.ok) throw new Error('Failed to fetch messages');
+    return await response.json();
+};
+
 export const sendMessage = async (message) => {
     const response = await fetch(API_URL, {
         method: 'POST',
