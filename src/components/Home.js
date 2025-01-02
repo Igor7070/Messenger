@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
@@ -6,15 +6,32 @@ const Home = () => {
     const [chats, setChats] = useState([]);
     const navigate = useNavigate();
 
-    const createChat = () => {
+    const createChat = async () => {
         if (chatName) {
-            setChats([...chats, chatName]);
-            setChatName('');
+            try {
+                const response = await fetch('https://unlimitedpossibilities12.org/api/chats', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: chatName }),
+                });
+
+                if (response.ok) {
+                    const newChat = await response.json();
+                    setChats([...chats, newChat.name]); // Добавляем имя нового чата в список
+                    setChatName(''); // Очищаем поле ввода
+                } else {
+                    console.error('Failed to create chat:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error creating chat:', error);
+            }
         }
     };
 
     const goToChat = (chatName) => {
-        navigate(`/chat/${chatName}`); // Исправлено: убран пробел перед маршрутом
+        navigate(`/chat/${chatName}`);
     };
 
     return (
