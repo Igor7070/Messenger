@@ -6,6 +6,7 @@ import { createUser } from '../api/users';
 import '../styles/Messenger.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useParams } from 'react-router-dom';
 
 const Messenger = () => {
     const [messages, setMessages] = useState([]);
@@ -25,6 +26,8 @@ const Messenger = () => {
     const textAreaRef = useRef(null);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null); // Реф для input файла
+    // В начале компонента
+    const { chatId } = useParams(); // Используйте chatId, чтобы загружать сообщения для конкретного чата
 
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
