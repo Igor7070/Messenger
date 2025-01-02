@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { getMessagesByChatName, sendMessage as apiSendMessage, loginUser } from '../api/messages'; // Импортируйте новую функцию
+import { getMessages, sendMessage as apiSendMessage, loginUser } from '../api/messages';
 import { createUser } from '../api/users';
 import '../styles/Messenger.css';
 import { ToastContainer, toast } from 'react-toastify';
@@ -39,11 +39,14 @@ const Messenger = () => {
         }
     }, []);
 
-    // Загрузка сообщений при изменении chatId
     useEffect(() => {
         const fetchMessages = async () => {
-            const messages = await getMessages(chatId); // Передайте chatId
-            setMessages(messages);
+            try {
+                const messages = await getMessages(chatId); // Используйте chatId
+                setMessages(messages);
+            } catch (error) {
+                console.error('Ошибка при загрузке сообщений:', error);
+            }
         };
 
         fetchMessages();

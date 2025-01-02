@@ -1,15 +1,8 @@
 const API_URL = 'https://unlimitedpossibilities12.org/api/messages'; // Замените на ваш URL
 
-export const getMessages = async () => {
-    const response = await fetch(API_URL);
+export const getMessages = async (chatId) => {
+    const response = await fetch(`${API_URL}?chatId=${chatId}`); // Получаем сообщения для конкретного чата
     if (!response.ok) throw new Error('Network response was not ok');
-    return await response.json();
-};
-
-// Функция для получения сообщений по имени чата
-export const getMessagesByChatName = async (chatName) => {
-    const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/byName/${chatName}/messages`);
-    if (!response.ok) throw new Error('Failed to fetch messages');
     return await response.json();
 };
 
