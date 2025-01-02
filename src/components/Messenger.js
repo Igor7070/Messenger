@@ -40,9 +40,11 @@ const Messenger = () => {
     }, []);
 
     useEffect(() => {
+        console.log('Fetching messages for chatId:', chatId);
         const fetchMessages = async () => {
             try {
-                const messages = await getMessages(chatId); // Используйте chatId
+                const messages = await getMessages(chatId); // Используем chatId
+                console.log('Messages fetched:', messages); // Логируем сообщения
                 setMessages(messages);
             } catch (error) {
                 console.error('Ошибка при загрузке сообщений:', error);
