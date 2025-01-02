@@ -2,6 +2,8 @@ package com.example.unl_pos12.controller.messenger;
 
 import com.example.unl_pos12.model.messenger.Chat;
 import com.example.unl_pos12.model.messenger.Message;
+import com.example.unl_pos12.model.messenger.dto.MessageDTO;
+import com.example.unl_pos12.model.messenger.dto.UserDTO;
 import com.example.unl_pos12.repo.ChatRepository;
 import com.example.unl_pos12.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +20,7 @@ public class WebSocketMessageController {
 
     @MessageMapping("/sendMessage")
     @SendTo("/topic/messages")
-    public Message sendMessage(Message message) {
+    public MessageDTO sendMessage(Message message) {
         System.out.println("Working method sendMessage...");
         System.out.println("Received message: " + message.getContent() +
                 " from user: " + message.getSender().getUsername());
@@ -32,8 +34,9 @@ public class WebSocketMessageController {
             throw new RuntimeException("Chat ID is missing");
         }
 
-        // Передайте файл, если он есть, иначе передайте null
-        return messageService.saveMessage(message, null); // Замените null на файл, если он есть
+        // Сохраняем сообщение и преобразуем его в DTO
+        Message savedMessage = messageService.saveMessage(message);
+        return convertToDTO(savedMessage); // Преобразуем в DTO перед отправкой
     }
 
     @MessageMapping("/editMessage")
@@ -51,5 +54,10 @@ public class WebSocketMessageController {
         deletedMessage.setId(id);
         deletedMessage.setContent("Message deleted");
         return deletedMessage; // Возвращаем сообщение о удалении
+    }
+
+    private MessageDTO convertToDTO(Message message) {
+        UserDTO sender = new UserDTO(message.getSender().getId(), message.getSender().getUsername());
+        return new MessageDTO(message.getId(), message.getContent(), sender);
     }
 }
