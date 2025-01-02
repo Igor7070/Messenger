@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './Home'; // Компонент главной страницы
 import Messenger from './Messenger'; // Компонент группового чата
 import '../styles/App.css';
@@ -9,10 +9,10 @@ const App = () => {
         <Router>
             <div className="app">
                 <h1>Messenger UP12</h1>
-                <Switch>
-                    <Route path="/" exact component={Home} /> {/* Главная страница */}
-                    <Route path="/chat/:chatId" component={Messenger} /> {/* Групповой чат */}
-                </Switch>
+                <Routes>
+                    <Route path="/" element={<Home />} /> {/* Главная страница */}
+                    <Route path="/chat/:chatId" element={<Messenger />} /> {/* Групповой чат */}
+                </Routes>
             </div>
         </Router>
     );
