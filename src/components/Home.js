@@ -9,7 +9,7 @@ const Home = () => {
     // Функция для получения списка чатов
     const fetchChats = async () => {
         try {
-            const response = await fetch('https://YOUR_API_URL/api/chats');
+            const response = await fetch('https://unlimitedpossibilities12.org/api/chats');
             if (response.ok) {
                 const data = await response.json();
                 setChats(data); // Предполагается, что API возвращает массив чатов
@@ -28,7 +28,7 @@ const Home = () => {
     const createChat = async () => {
         if (chatName) {
             try {
-                const response = await fetch('https://YOUR_API_URL/api/chats', {
+                const response = await fetch('https://unlimitedpossibilities12.org/api/chats', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
