@@ -15,6 +15,9 @@ public class Message {
     @JoinColumn(name = "sender_id")
     private User sender;
     private LocalDateTime timestamp;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "chat_id")
+    private Chat chat;
 
     public Long getId() {
         return id;
@@ -54,5 +57,13 @@ public class Message {
 
     public void setFileUrl(String fileUrl) {
         this.fileUrl = fileUrl;
+    }
+
+    public Chat getChat() {
+        return chat;
+    }
+
+    public void setChat(Chat chat) {
+        this.chat = chat;
     }
 }
