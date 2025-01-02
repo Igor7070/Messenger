@@ -30,8 +30,8 @@ public class ChatController {
         chatService.deleteChat(id);
     }
 
-    @GetMapping("/byName/{name}/messages")
-    public List<Message> getMessagesByChatName(@PathVariable String name) {
-        return chatService.getMessagesByChatName(name);
+    @GetMapping("/{id}/messages")
+    public List<Message> getMessagesByChatId(@PathVariable Long id) {
+        return chatService.getMessagesByChatId(id);
     }
 }

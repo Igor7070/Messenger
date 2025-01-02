@@ -25,11 +25,8 @@ public class ChatService {
         chatRepository.deleteById(id);
     }
 
-    public List<Message> getMessagesByChatName(String chatName) {
-        Chat chat = chatRepository.findByName(chatName);
-        if (chat == null) {
-            throw new RuntimeException("Chat not found");
-        }
+    public List<Message> getMessagesByChatId(Long chatId) {
+        Chat chat = chatRepository.findById(chatId).orElseThrow(() -> new RuntimeException("Chat not found"));
         return chat.getMessages();
     }
 }
