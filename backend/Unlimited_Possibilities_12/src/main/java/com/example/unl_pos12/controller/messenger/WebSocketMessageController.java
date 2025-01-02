@@ -20,7 +20,7 @@ public class WebSocketMessageController {
 
     @MessageMapping("/sendMessage")
     @SendTo("/topic/messages")
-    public MessageDTO sendMessage(Message message) {
+    public Message sendMessage(Message message) {
         System.out.println("Working method sendMessage...");
         System.out.println("Received message: " + message.getContent() +
                 " from user: " + message.getSender().getUsername());
@@ -34,9 +34,8 @@ public class WebSocketMessageController {
             throw new RuntimeException("Chat ID is missing");
         }
 
-        // Сохраняем сообщение и преобразуем его в DTO
-        Message savedMessage = messageService.saveMessage(message);
-        return convertToDTO(savedMessage); // Преобразуем в DTO перед отправкой
+        // Передайте файл, если он есть, иначе передайте null
+        return messageService.saveMessage(message, null); // Замените null на файл, если он есть
     }
 
     @MessageMapping("/editMessage")
