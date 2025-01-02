@@ -123,7 +123,8 @@ const Messenger = () => {
                 id: editingMessageId || Date.now(),
                 content,
                 sender: { id: userId, username: currentUsername },
-                fileUrl: selectedFile ? await uploadFile(selectedFile) : null
+                chat: { id: chatId }, // Добавьте chatId здесь
+                fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
             };
 
             if (client && client.connected) {
