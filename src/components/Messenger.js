@@ -37,6 +37,8 @@ const Messenger = () => {
             setUsername(storedUsername);
             setIsLoggedIn(true);
         }
+
+        console.log('Chat ID:', chatId); // Логируем chatId здесь
     }, []);
 
     useEffect(() => {
@@ -126,6 +128,9 @@ const Messenger = () => {
                 chat: { id: chatId }, // Добавьте chatId здесь
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
             };
+
+            console.log('Sending message:', message); // Логируем сообщение перед отправкой
+            console.log('Chat ID:', chatId); // Логируем chatId здесь
 
             if (client && client.connected) {
                 if (editingMessageId) {
