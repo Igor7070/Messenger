@@ -1,6 +1,5 @@
 package com.example.unl_pos12.model.messenger;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -20,7 +19,7 @@ public class Message {
     //@JoinColumn(name = "chat_id")
     @ManyToOne
     @JoinColumn(name = "chat_id")
-    @JsonBackReference
+    //@JsonBackReference
     private Chat chat;
 
     public Long getId() {
