@@ -23,7 +23,7 @@ public class WebSocketMessageController {
         System.out.println("Received message: " + message.getContent() +
                 " from user: " + message.getSender().getUsername());
         System.out.println("Message from chat: " + message.getChat().getName());
-        System.out.println("Message from chat: " + (message.getChat() != null
+        System.out.println("Message from chat id: " + (message.getChat() != null
                 ? message.getChat().getId() : "null"));
 
         // Убедитесь, что chatId установлен
