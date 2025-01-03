@@ -1,5 +1,6 @@
 package com.example.unl_pos12.model.messenger;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -13,7 +14,7 @@ public class Chat {
 
     //@OneToMany(mappedBy = "chat", cascade = CascadeType.ALL)
     @OneToMany(mappedBy = "chat", fetch = FetchType.EAGER)
-    //@JsonManagedReference
+    @JsonManagedReference
     private List<Message> messages;
 
     public Long getId() {
