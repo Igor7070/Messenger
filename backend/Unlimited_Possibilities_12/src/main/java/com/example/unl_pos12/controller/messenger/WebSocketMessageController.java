@@ -20,6 +20,7 @@ public class WebSocketMessageController {
     @SendTo("/topic/messages")
     public Message sendMessage(Message message) {
         System.out.println("Working method sendMessage...");
+        System.out.println("Received message object: " + message);
         System.out.println("Received message: " + message.getContent() +
                 " from user: " + message.getSender().getUsername());
         System.out.println("Message from chat: " + message.getChat().getName());
