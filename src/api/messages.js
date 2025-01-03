@@ -1,7 +1,8 @@
-const API_URL = 'https://unlimitedpossibilities12.org/api/messages'; // Замените на ваш URL
+const API_URL = 'https://unlimitedpossibilities12.org/api/messages';
+const API_CHATS_URL = 'https://unlimitedpossibilities12.org/api/chats'; // URL для чатов
 
 export const getMessages = async (chatId) => {
-    const response = await fetch(`${API_URL}/chats/${chatId}/messages`);
+    const response = await fetch(`${API_CHATS_URL}/${chatId}/messages`);
     if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to fetch messages: ${errorText}`);
