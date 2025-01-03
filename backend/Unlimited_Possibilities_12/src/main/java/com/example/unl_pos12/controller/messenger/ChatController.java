@@ -30,8 +30,15 @@ public class ChatController {
         chatService.deleteChat(id);
     }
 
-    @GetMapping("/{id}/messages")
+    /*@GetMapping("/{id}/messages")
     public List<Message> getMessagesByChatId(@PathVariable Long id) {
         return chatService.getMessagesByChatId(id);
+    }*/
+
+    @GetMapping("/{id}/messages")
+    public List<Message> getMessagesByChatId(@PathVariable Long id) {
+        List<Message> messages = chatService.getMessagesByChatId(id);
+        System.out.println(messages);
+        return messages;
     }
 }
