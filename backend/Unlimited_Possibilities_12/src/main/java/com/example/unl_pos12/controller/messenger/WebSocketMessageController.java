@@ -38,7 +38,7 @@ public class WebSocketMessageController {
         }
 
         // Передайте файл, если он есть, иначе передайте null
-        return messageService.saveMessage(message, null); // Замените null на файл, если он есть...
+        return messageService.saveMessage(message, null); // Замените null на файл, если он есть
     }
 
     @MessageMapping("/editMessage")
