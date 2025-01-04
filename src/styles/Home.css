@@ -67,7 +67,7 @@ h1 {
 }
 
 .search-input {
-    width: calc(100% - 10px); /* Учитываем внутренние отступы */
+    width: calc(100% - 0px); /* Учитываем внутренние отступы */
     padding: 10px;
     margin-bottom: 10px;
     border: 1px solid #ced4da;
