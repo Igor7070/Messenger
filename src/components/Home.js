@@ -4,6 +4,7 @@ import '../styles/Home.css';
 
 const Home = () => {
     const [chatName, setChatName] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
     const [chats, setChats] = useState([]);
     const navigate = useNavigate();
 
@@ -53,6 +54,9 @@ const Home = () => {
         navigate(`/chat/${chatId}`);
     };
 
+    // Фильтруем чаты по искомому имени
+    const filteredChats = chats.filter(chat => chat.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
     return (
         <div className="home-container">
             <h1>Групповые Чаты</h1>
@@ -66,8 +70,16 @@ const Home = () => {
                 />
                 <button onClick={createChat} className="create-chat-button">Создать групповой чат</button>
             </div>
+            {/* Поле ввода для поиска */}
+            <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Поиск чатов..."
+                className="search-input"
+            />
             <ul className="chat-list">
-                {chats.map((chat) => (
+                {filteredChats.map((chat) => (
                     <li key={chat.id} onClick={() => goToChat(chat.id)} className="chat-item">
                         {chat.name}
                     </li>

@@ -65,3 +65,11 @@ h1 {
 .chat-item:last-child {
     border-bottom: none; /* Убираем нижнюю границу у последнего элемента */
 }
+
+.search-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+}
