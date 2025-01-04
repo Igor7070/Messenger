@@ -48,6 +48,7 @@ h1 {
     overflow-y: auto; /* Прокрутка */
     border: 1px solid #ced4da;
     border-radius: 5px;
+    background-color: #DCDCDC;
 }
 
 .chat-item {
