@@ -1,0 +1,66 @@
+.home-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f8f9fa; /* Светлый фон */
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #333; /* Темный цвет для заголовка */
+}
+
+.chat-input-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.chat-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    margin-right: 10px;
+    font-size: 16px;
+}
+
+.create-chat-button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff; /* Синий цвет для кнопки */
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.create-chat-button:hover {
+    background-color: #0056b3; /* Темнее при наведении */
+}
+
+.chat-list {
+    list-style-type: none;
+    padding: 0;
+    max-height: 400px; /* Ограничиваем высоту списка */
+    overflow-y: auto; /* Прокрутка */
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+}
+
+.chat-item {
+    padding: 15px;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.chat-item:hover {
+    background-color: #f1f1f1; /* Подсветка при наведении */
+}
+
+.chat-item:last-child {
+    border-bottom: none; /* Убираем нижнюю границу у последнего элемента */
+}
