@@ -34,4 +34,9 @@ public class ChatController {
     public List<Message> getMessagesByChatId(@PathVariable Long id) {
         return chatService.getMessagesByChatId(id);
     }
+
+    @GetMapping("/{id}")
+    public Chat getChatById(@PathVariable Long id) {
+        return chatService.getChatById(id);
+    }
 }

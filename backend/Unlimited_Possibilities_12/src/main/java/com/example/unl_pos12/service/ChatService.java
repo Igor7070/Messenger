@@ -29,4 +29,9 @@ public class ChatService {
         Chat chat = chatRepository.findById(chatId).orElseThrow(() -> new RuntimeException("Chat not found"));
         return chat.getMessages();
     }
+
+    public Chat getChatById(Long id) {
+        return chatRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Chat not found"));
+    }
 }
