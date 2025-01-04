@@ -8,6 +8,16 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams } from 'react-router-dom';
 
+// Добавляем функцию для получения имени чата
+const getChatName = async (chatId) => {
+    const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch chat name');
+    }
+    const chat = await response.json();
+    return chat.name; // Вернуть имя чата
+};
+
 const Messenger = () => {
     const [messages, setMessages] = useState([]);
     const [content, setContent] = useState('');
@@ -121,6 +131,10 @@ const Messenger = () => {
     const sendMessage = async () => {
         if ((content || selectedFile) && userId) {
             const currentUsername = username;
+
+            const chatName = await getChatName(chatId);
+            console.log('chatName: ', chatName);
+
             const message = {
                 id: editingMessageId || Date.now(),
                 content,
