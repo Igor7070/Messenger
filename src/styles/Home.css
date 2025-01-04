@@ -46,7 +46,7 @@ h1 {
     padding: 0;
     max-height: 400px; /* Ограничиваем высоту списка */
     overflow-y: auto; /* Прокрутка */
-    border: 2px solid #A9A9A9; /* Темно-серый цвет и увеличенная толщина */
+    border: 1px solid #A9A9A9; /* Темно-серый цвет и увеличенная толщина */
     border-radius: 5px;
     background-color: #DCDCDC;
 }
