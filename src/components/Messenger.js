@@ -125,7 +125,7 @@ const Messenger = () => {
                 id: editingMessageId || Date.now(),
                 content,
                 sender: { id: userId, username: currentUsername },
-                chat: { id: chatId }, // Добавьте chatId здесь
+                chat: { id: chatId, name: chatName }, // Добавляем chatId и имя чата
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
             };
 
