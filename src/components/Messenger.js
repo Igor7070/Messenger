@@ -152,6 +152,13 @@ const Messenger = () => {
                     const existingMessage = messages.find(msg => msg.id === editingMessageId);
                     if (existingMessage && existingMessage.sender.username === username) {
                         client.publish({ destination: '/app/editMessage', body: JSON.stringify(message) });
+                
+                        // Обновите состояние сообщений локально
+                        setMessages(prevMessages => 
+                            prevMessages.map(msg => 
+                                msg.id === editingMessageId ? { ...msg, content } : msg
+                            )
+                        );
                     } else {
                         toast.error('Вы можете редактировать только свои сообщения.');
                         return;
