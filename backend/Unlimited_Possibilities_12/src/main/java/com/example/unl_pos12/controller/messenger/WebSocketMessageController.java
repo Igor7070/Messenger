@@ -37,7 +37,6 @@ public class WebSocketMessageController {
             throw new RuntimeException("Chat ID is missing");
         }
 
-        // Передайте файл, если он есть, иначе передайте null
         return messageService.saveMessage(message, null); // Замените null на файл, если он есть
     }
 
