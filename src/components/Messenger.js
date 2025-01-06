@@ -73,24 +73,21 @@ const Messenger = () => {
                 console.log('Connected to WebSocket');
                 stompClient.subscribe('/topic/messages', (message) => {
                     const newMessage = JSON.parse(message.body);
-                    // Проверка на соответствие chatId
-                    if (newMessage.chat.id === chatId) {
-                        updateMessages(newMessage);
-                    }
+                    updateMessages(newMessage);
                 });
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
             },
         });
-    
+
         setClient(stompClient);
         stompClient.activate();
-    
+
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId]); // Добавьте chatId как зависимость
+    }, []);
 
     const updateMessages = (newMessage) => {
         // Проверяем, что новое сообщение относится к текущему чату
