@@ -42,16 +42,16 @@ public class WebSocketMessageController {
         return messageService.saveMessage(message, null); // Замените null на файл, если он есть
     }
 
-    @MessageMapping("/editMessage")
-    @SendTo("/topic/messages")
-    public Message editMessage(Message message) {
+    @MessageMapping("/editMessage/{chatId}")
+    @SendTo("/topic/chat/{chatId}/messages")
+    public Message editMessage(@DestinationVariable String chatId, Message message) {
         System.out.println("Editing message: " + message.getId());
         return messageService.updateMessage(message); // Обновляем сообщение в базе данных
     }
 
-    @MessageMapping("/deleteMessage")
-    @SendTo("/topic/messages")
-    public Message deleteMessage(Long id) {
+    @MessageMapping("/deleteMessage/{chatId}")
+    @SendTo("/topic/chat/{chatId}/messages") // Замените на правильную тему
+    public Message deleteMessage(@DestinationVariable String chatId, Long id) {
         messageService.deleteMessage(id);
         Message deletedMessage = new Message();
         deletedMessage.setId(id);
