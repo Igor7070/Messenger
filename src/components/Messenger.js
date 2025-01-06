@@ -90,8 +90,6 @@ const Messenger = () => {
     }, []);
 
     const updateMessages = (newMessage) => {
-        console.log('Received message chatId:', newMessage.chat.id); // Логируем chatId сообщения
-        console.log('Current chatId:', chatId); // Логируем текущий chatId
         setMessages((prevMessages) => {
             const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
