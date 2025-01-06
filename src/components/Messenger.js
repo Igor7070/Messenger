@@ -71,7 +71,8 @@ const Messenger = () => {
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
                 console.log('Connected to WebSocket');
-                stompClient.subscribe('/topic/chat/${chatId}/messages', (message) => {
+                // Подписываемся на сообщения конкретного чата
+                stompClient.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
                     updateMessages(newMessage);
                 });
@@ -80,14 +81,14 @@ const Messenger = () => {
                 console.error('WebSocket error:', error);
             },
         });
-
+    
         setClient(stompClient);
         stompClient.activate();
-
+    
         return () => {
             stompClient.deactivate();
         };
-    }, []);
+    }, [chatId]); // chatId как зависимость для обновления подписки
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
