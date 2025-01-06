@@ -73,34 +73,40 @@ const Messenger = () => {
                 console.log('Connected to WebSocket');
                 stompClient.subscribe('/topic/messages', (message) => {
                     const newMessage = JSON.parse(message.body);
-                    updateMessages(newMessage);
+                    // Проверка на соответствие chatId
+                    if (newMessage.chat.id === chatId) {
+                        updateMessages(newMessage);
+                    }
                 });
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
             },
         });
-
+    
         setClient(stompClient);
         stompClient.activate();
-
+    
         return () => {
             stompClient.deactivate();
         };
-    }, []);
+    }, [chatId]); // Добавьте chatId как зависимость
 
     const updateMessages = (newMessage) => {
-        setMessages((prevMessages) => {
-            const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
-            if (existingMessageIndex !== -1) {
-                const updatedMessages = [...prevMessages];
-                updatedMessages[existingMessageIndex] = newMessage;
-                return updatedMessages;
-            } else if (newMessage.content !== "Message deleted") {
-                return [...prevMessages, newMessage];
-            }
-            return prevMessages;
-        });
+        // Проверяем, что новое сообщение относится к текущему чату
+        if (newMessage.chat.id === chatId) {
+            setMessages((prevMessages) => {
+                const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
+                if (existingMessageIndex !== -1) {
+                    const updatedMessages = [...prevMessages];
+                    updatedMessages[existingMessageIndex] = newMessage;
+                    return updatedMessages;
+                } else if (newMessage.content !== "Message deleted") {
+                    return [...prevMessages, newMessage];
+                }
+                return prevMessages;
+            });
+        }
     };
 
     useEffect(() => {
