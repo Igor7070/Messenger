@@ -5,6 +5,7 @@ import com.example.unl_pos12.model.messenger.Message;
 import com.example.unl_pos12.repo.ChatRepository;
 import com.example.unl_pos12.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
@@ -17,8 +18,8 @@ public class WebSocketMessageController {
     private ChatRepository chatRepository;
 
     @MessageMapping("/sendMessage")
-    @SendTo("/topic/messages")
-    public Message sendMessage(Message message) {
+    @SendTo("/topic/chat/{chatId}/messages") // Измените на уникальную тему для каждого чата
+    public Message sendMessage(@DestinationVariable String chatId, Message message) {
         System.out.println("Working method sendMessage...");
         System.out.println("Received message object: " + message);
         System.out.println("Received message: " + message.getContent() +
