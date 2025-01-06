@@ -90,8 +90,6 @@ const Messenger = () => {
     }, []);
 
     const updateMessages = (newMessage) => {
-        console.log('Current chatId:', chatId);
-        console.log('New message chatId:', newMessage.chat.id);
         setMessages((prevMessages) => {
             const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
