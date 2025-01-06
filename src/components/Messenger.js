@@ -90,20 +90,19 @@ const Messenger = () => {
     }, []);
 
     const updateMessages = (newMessage) => {
-        // Проверяем, что новое сообщение относится к текущему чату
-        if (newMessage.chat.id === chatId) {
-            setMessages((prevMessages) => {
-                const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
-                if (existingMessageIndex !== -1) {
-                    const updatedMessages = [...prevMessages];
-                    updatedMessages[existingMessageIndex] = newMessage;
-                    return updatedMessages;
-                } else if (newMessage.content !== "Message deleted") {
-                    return [...prevMessages, newMessage];
-                }
-                return prevMessages;
-            });
-        }
+        console.log('Current chatId:', chatId);
+        console.log('New message chatId:', newMessage.chat.id);
+        setMessages((prevMessages) => {
+            const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
+            if (existingMessageIndex !== -1) {
+                const updatedMessages = [...prevMessages];
+                updatedMessages[existingMessageIndex] = newMessage;
+                return updatedMessages;
+            } else if (newMessage.content !== "Message deleted") {
+                return [...prevMessages, newMessage];
+            }
+            return prevMessages;
+        });
     };
 
     useEffect(() => {
