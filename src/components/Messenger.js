@@ -132,10 +132,10 @@ const Messenger = () => {
     const sendMessage = async () => {
         if ((content || selectedFile) && userId) {
             const currentUsername = username;
-
+    
             const chatName = await getChatName(chatId);
             console.log('chatName: ', chatName);
-
+    
             const message = {
                 id: editingMessageId || Date.now(),
                 content,
@@ -143,16 +143,17 @@ const Messenger = () => {
                 chat: { id: chatId, name: chatName }, // Добавляем chatId и имя чата
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
             };
-
+    
             console.log('Sending message:', message); // Логируем сообщение перед отправкой
             console.log('Chat ID:', chatId); // Логируем chatId здесь
-
+    
             if (client && client.connected) {
                 if (editingMessageId) {
                     const existingMessage = messages.find(msg => msg.id === editingMessageId);
                     if (existingMessage && existingMessage.sender.username === username) {
-                        client.publish({ destination: '/app/editMessage', body: JSON.stringify(message) });
-                
+                        // Здесь добавляем chatId в сообщение
+                        client.publish({ destination: `/app/editMessage/${chatId}`, body: JSON.stringify(message) });
+    
                         // Обновите состояние сообщений локально
                         setMessages(prevMessages => 
                             prevMessages.map(msg => 
@@ -166,18 +167,18 @@ const Messenger = () => {
                 } else {
                     client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
                 }
-
+    
                 // Сброс состояния после отправки
                 setContent('');
                 setRows(1);
                 setEditingMessageId(null);
                 setContextMenu({ visible: false });
                 setSelectedFile(null);
-
+    
                 if (fileInputRef.current) {
                     fileInputRef.current.value = null;
                 }
-
+    
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
@@ -225,10 +226,15 @@ const Messenger = () => {
 
     const deleteMessage = async (id) => {
         if (client && client.connected) {
+            // Убедитесь, что chatId передается вместе с id
             client.publish({
-                destination: '/app/deleteMessage',
+                destination: `/app/deleteMessage/${chatId}`, // Добавьте chatId
                 body: JSON.stringify(id),
             });
+            
+            // Обновите состояние сообщений локально
+            setMessages(prevMessages => prevMessages.filter(msg => msg.id !== id));
+            
             toast.success('Сообщение удалено!');
         } else {
             toast.error('Не удалось удалить сообщение. Попробуйте снова.');
