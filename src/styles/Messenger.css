@@ -11,7 +11,7 @@
     font-size: 24px; /* Увеличиваем размер шрифта */
     font-weight: bold; /* Делаем текст жирным */
     color: #00796b; /* Цвет текста */
-    margin-top: 15px;
+    margin-top: -10px;
     margin-bottom: 15px; /* Отступ снизу */
     text-align: center; /* Центрируем текст */
     padding: 10px; /* Добавляем отступы для улучшения внешнего вида */
