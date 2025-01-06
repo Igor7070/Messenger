@@ -71,7 +71,7 @@ const Messenger = () => {
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
                 console.log('Connected to WebSocket');
-                stompClient.subscribe('/topic/messages', (message) => {
+                stompClient.subscribe('/topic/chat/${chatId}/messages', (message) => {
                     const newMessage = JSON.parse(message.body);
                     updateMessages(newMessage);
                 });
