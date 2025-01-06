@@ -32,6 +32,7 @@ const Messenger = () => {
     const [charPerLine, setCharPerLine] = useState(30);
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
+    const [chatName, setChatName] = useState(''); 
 
     const textAreaRef = useRef(null);
     const messagesEndRef = useRef(null);
@@ -58,6 +59,10 @@ const Messenger = () => {
                 const messages = await getMessages(chatId); // Используем chatId
                 console.log('Messages fetched:', messages); // Логируем сообщения
                 setMessages(messages);
+
+                // Получаем имя чата и устанавливаем в состояние
+                const name = await getChatName(chatId);
+                setChatName(name);
             } catch (error) {
                 console.error('Ошибка при загрузке сообщений:', error);
             }
@@ -331,6 +336,7 @@ const Messenger = () => {
 
     return (
         <div className="messenger">
+            <div className="chat-name">Chat: {chatName}</div> {/* Добавлено отображение имени чата */}
             <div className="user-creation">
                 <input
                     type="text"
