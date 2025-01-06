@@ -17,8 +17,8 @@ public class WebSocketMessageController {
     @Autowired
     private ChatRepository chatRepository;
 
-    @MessageMapping("/sendMessage")
-    @SendTo("/topic/chat/{chatId}/messages") // Измените на уникальную тему для каждого чата
+    @MessageMapping("/sendMessage/chat/{chatId}")
+    @SendTo("/topic/chat/{chatId}/messages")
     public Message sendMessage(@DestinationVariable String chatId, Message message) {
         System.out.println("Working method sendMessage...");
         System.out.println("Received message object: " + message);
