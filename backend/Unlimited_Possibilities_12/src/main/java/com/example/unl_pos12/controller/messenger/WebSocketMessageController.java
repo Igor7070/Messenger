@@ -22,6 +22,7 @@ public class WebSocketMessageController {
     public Message sendMessage(@DestinationVariable String chatId, Message message) {
         System.out.println("Working method sendMessage...");
         System.out.println("Received message object: " + message);
+        System.out.println("chatId: " + chatId);
         System.out.println("Received message: " + message.getContent() +
                 " from user: " + message.getSender().getUsername());
         System.out.println("Message from chat: " + message.getChat());
