@@ -157,7 +157,7 @@ const Messenger = () => {
                         return;
                     }
                 } else {
-                    client.publish({ destination: '/app/sendMessage', body: JSON.stringify(message) });
+                    client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
                 }
 
                 // Сброс состояния после отправки
