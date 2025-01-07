@@ -39,7 +39,7 @@ public class WebSocketMessageController {
             throw new RuntimeException("Chat ID is missing");
         }
 
-        return messageService.saveMessage(message, null); // Замените null на файл, если он есть
+        return messageService.saveMessage(message, null); // Замените null на файл, если он есть...
     }
 
     @MessageMapping("/editMessage/{chatId}")
