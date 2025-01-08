@@ -7,7 +7,7 @@ const Message = ({ sender, content, fileUrl, id, onDownload }) => {
             <strong>{sender.username}: </strong>
             {content}
             {fileUrl && (
-                <a href={fileUrl} download>📥 Скачать файл</a>
+                <a href={fileUrl} download>📥 Download file</a>
             )}
         </div>
     );

@@ -85,15 +85,15 @@ const Home = () => {
     return (
         <div className="home-container">
             <div className="users-container">
-                <h2>Пользователи</h2>
+                <h2>Users</h2>
                 <input
                     type="text"
                     value={userSearchTerm}
                     onChange={(e) => setUserSearchTerm(e.target.value)}
-                    placeholder="Найти пользователя"
+                    placeholder="Search user"
                     className="search-input"
                 />
-                <button onClick={createUser} className="create-user-button-main">Создать нового пользователя</button>
+                <button onClick={createUser} className="create-user-button-main">Create a new user</button>
                 <ul className="user-list">
                     {filteredUsers.map(user => (
                         <li key={user.id} className="user-item">
@@ -106,22 +106,22 @@ const Home = () => {
             <div className="line-divider"></div> {/* Линия раздела */}
 
             <div className="chats-container">
-                <h1>Групповые Чаты</h1>
+                <h1>Group chats</h1>
                 <div className="chat-input-container">
                     <input
                         type="text"
                         value={chatName}
                         onChange={(e) => setChatName(e.target.value)}
-                        placeholder="Введите имя чата"
+                        placeholder="Enter the chat name"
                         className="chat-input"
                     />
-                    <button onClick={createChat} className="create-chat-button">Создать групповой чат</button>
+                    <button onClick={createChat} className="create-chat-button">Create a group chat</button>
                 </div>
                 <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Поиск чатов..."
+                    placeholder="Search chats..."
                     className="search-input"
                 />
                 <ul className="chat-list">

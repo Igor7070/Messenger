@@ -371,7 +371,7 @@ const Messenger = () => {
                             <strong>{msg.sender.username}: </strong>
                             {msg.content}
                             {msg.fileUrl && (
-                                <a href={msg.fileUrl} download>📥 Скачать файл</a>
+                                <a href={msg.fileUrl} download>📥 Download file</a>
                             )}
                         </div>
                     ) : null
