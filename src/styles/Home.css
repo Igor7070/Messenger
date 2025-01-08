@@ -1,6 +1,6 @@
 .home-container {
     display: flex; /* Используем flexbox для расположения контейнеров */
-    max-width: 1800px; /* Увеличиваем максимальную ширину для двух колонок */
+    max-width: 1200px; /* Увеличиваем максимальную ширину для двух колонок */
     margin: 0 auto;
     padding: 20px;
     background-color: #E6E6FA; /* Светлый фон */
