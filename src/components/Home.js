@@ -91,6 +91,9 @@ const Home = () => {
                     ))}
                 </ul>
             </div>
+
+            <div className="line-divider"></div> {/* Линия раздела */}
+
             <div className="chats-container">
                 <h1>Групповые Чаты</h1>
                 <div className="chat-input-container">

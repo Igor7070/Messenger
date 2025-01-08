@@ -90,3 +90,10 @@ h1, h2 {
     border-radius: 5px;
     box-sizing: border-box; /* Учитываем отступы в ширине */
 }
+
+/* Линия раздела */
+.line-divider {
+    width: 1px; /* Толщина линии */
+    background-color: #ccc; /* Цвет линии */
+    margin: 0 20px; /* Отступ слева и справа */
+}
