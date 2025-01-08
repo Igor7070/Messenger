@@ -201,7 +201,8 @@ const Messenger = () => {
     };
 
     const handleFileChange = (e) => {
-        setSelectedFile(e.target.files[0]);
+        const file = setSelectedFile(e.target.files[0]);
+        setSelectedFile(file);
     };
 
     const handleRightClick = (e, message) => {
@@ -387,12 +388,21 @@ const Messenger = () => {
                 className="input-message"
                 rows={rows}
             />
-            <input
-                type="file"
-                onChange={handleFileChange}
-                className="file-input"
-                ref={fileInputRef}
-            />
+            <label className="custom-file-upload">
+                    <input
+                        type="file"
+                        onChange={handleFileChange}
+                        className="file-input"
+                        ref={fileInputRef}
+                    />
+                    Select file
+            </label>
+            {/* Отображаем сообщение в зависимости от выбранного файла */}
+            {selectedFile ? (
+                    <span>{selectedFile.name}</span>
+                ) : (
+                    <span>File not selected</span>
+                )}
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
             {contextMenu.visible && (
