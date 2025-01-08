@@ -5,6 +5,7 @@ import '../styles/Home.css';
 const Home = () => {
     const [chatName, setChatName] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [userSearchTerm, setUserSearchTerm] = useState(''); // Новое состояние для поиска пользователей
     const [chats, setChats] = useState([]);
     const [users, setUsers] = useState([]);
     const navigate = useNavigate();
