@@ -5,6 +5,7 @@ import com.example.unl_pos12.repo.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -39,6 +40,10 @@ public class UserService {
             System.out.println(errorMessage);
             throw new RuntimeException(errorMessage);
         }
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 
     private boolean isValidPassword(String password) {
