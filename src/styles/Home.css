@@ -52,7 +52,7 @@ h1, h2 {
     cursor: pointer;
     font-size: 16px;
     min-width: 150px; /* Минимальная ширина кнопки */
-    margin-bottom: 10px;
+    margin-top: 10px;
 }
 
 .create-chat-button:hover, .create-user-button:hover {
