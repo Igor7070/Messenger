@@ -29,10 +29,9 @@ h1, h2 {
 }
 
 .chat-input-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    margin-bottom: 20px;
+    display: flex; /* Используем flexbox для выравнивания */
+    align-items: center; /* Центрируем элементы по вертикали */
+    margin-bottom: 15px; /* Отступ снизу */
 }
 
 .chat-input {
