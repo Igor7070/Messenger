@@ -1,5 +1,6 @@
 .home-container {
-    max-width: 600px;
+    display: flex; /* Используем flexbox для расположения контейнеров */
+    max-width: 1200px; /* Увеличиваем максимальную ширину для двух колонок */
     margin: 0 auto;
     padding: 20px;
     background-color: #E6E6FA; /* Светлый фон */
@@ -7,7 +8,22 @@
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-h1 {
+.users-container {
+    width: 30%; /* Ширина для списка пользователей */
+    padding: 10px;
+    border-right: 1px solid #ccc; /* Разделитель между пользователями и чатами */
+    overflow-y: auto; /* Прокрутка, если список пользователей длинный */
+    max-height: 600px; /* Ограничиваем высоту для прокрутки */
+}
+
+.chats-container {
+    width: 65%; /* Ширина для списка чатов */
+    padding: 10px;
+    overflow-y: auto; /* Прокрутка, если список чатов длинный */
+    max-height: 600px; /* Ограничиваем высоту для прокрутки */
+}
+
+h1, h2 {
     text-align: center;
     color: #333; /* Темный цвет для заголовка */
 }
@@ -27,7 +43,7 @@ h1 {
     font-size: 16px;
 }
 
-.create-chat-button {
+.create-chat-button, .create-user-button {
     padding: 10px 15px;
     border: none;
     border-radius: 5px;
@@ -37,11 +53,11 @@ h1 {
     font-size: 16px;
 }
 
-.create-chat-button:hover {
+.create-chat-button:hover, .create-user-button:hover {
     background-color: #0056b3; /* Темнее при наведении */
 }
 
-.chat-list {
+.chat-list, .user-list {
     list-style-type: none;
     padding: 0;
     max-height: 400px; /* Ограничиваем высоту списка */
@@ -51,18 +67,18 @@ h1 {
     background-color: #DCDCDC;
 }
 
-.chat-item {
+.chat-item, .user-item {
     padding: 15px;
     border-bottom: 1px solid #e9ecef;
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
-.chat-item:hover {
+.chat-item:hover, .user-item:hover {
     background-color: #f1f1f1; /* Подсветка при наведении */
 }
 
-.chat-item:last-child {
+.chat-item:last-child, .user-item:last-child {
     border-bottom: none; /* Убираем нижнюю границу у последнего элемента */
 }
 

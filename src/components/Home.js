@@ -6,6 +6,7 @@ const Home = () => {
     const [chatName, setChatName] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [chats, setChats] = useState([]);
+    const [users, setUsers] = useState([]);
     const navigate = useNavigate();
 
     const fetchChats = async () => {
@@ -22,8 +23,23 @@ const Home = () => {
         }
     };
 
+    const fetchUsers = async () => {
+        try {
+            const response = await fetch('https://unlimitedpossibilities12.org/api/users');
+            if (response.ok) {
+                const data = await response.json();
+                setUsers(data);
+            } else {
+                console.error('Failed to fetch users:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error fetching users:', error);
+        }
+    };
+
     useEffect(() => {
         fetchChats();
+        fetchUsers();
     }, []);
 
     const createChat = async () => {
@@ -50,6 +66,11 @@ const Home = () => {
         }
     };
 
+    const createUser = async () => {
+        // Логика для создания нового пользователя
+        console.log('Создание нового пользователя...');
+    };
+
     const goToChat = (chatId) => {
         navigate(`/chat/${chatId}`);
     };
@@ -59,32 +80,44 @@ const Home = () => {
 
     return (
         <div className="home-container">
-            <h1>Групповые Чаты</h1>
-            <div className="chat-input-container">
+            <div className="users-container">
+                <h2>Пользователи</h2>
+                <button onClick={createUser} className="create-user-button">Создать нового пользователя</button>
+                <ul className="user-list">
+                    {users.map(user => (
+                        <li key={user.id} className="user-item">
+                            {user.username}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+            <div className="chats-container">
+                <h1>Групповые Чаты</h1>
+                <div className="chat-input-container">
+                    <input
+                        type="text"
+                        value={chatName}
+                        onChange={(e) => setChatName(e.target.value)}
+                        placeholder="Введите имя чата"
+                        className="chat-input"
+                    />
+                    <button onClick={createChat} className="create-chat-button">Создать групповой чат</button>
+                </div>
                 <input
                     type="text"
-                    value={chatName}
-                    onChange={(e) => setChatName(e.target.value)}
-                    placeholder="Введите имя чата"
-                    className="chat-input"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Поиск чатов..."
+                    className="search-input"
                 />
-                <button onClick={createChat} className="create-chat-button">Создать групповой чат</button>
+                <ul className="chat-list">
+                    {filteredChats.map((chat) => (
+                        <li key={chat.id} onClick={() => goToChat(chat.id)} className="chat-item">
+                            {chat.name}
+                        </li>
+                    ))}
+                </ul>
             </div>
-            {/* Поле ввода для поиска */}
-            <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Поиск чатов..."
-                className="search-input"
-            />
-            <ul className="chat-list">
-                {filteredChats.map((chat) => (
-                    <li key={chat.id} onClick={() => goToChat(chat.id)} className="chat-item">
-                        {chat.name}
-                    </li>
-                ))}
-            </ul>
         </div>
     );
 };
