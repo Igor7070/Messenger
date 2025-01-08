@@ -87,7 +87,7 @@ h1, h2 {
 .search-input {
     width: 100%; 
     padding: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 0px;
     border: 1px solid #ced4da;
     border-radius: 5px;
     box-sizing: border-box; /* Учитываем отступы в ширине */
