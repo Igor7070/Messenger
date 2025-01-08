@@ -36,7 +36,6 @@
     flex: 1; 
     min-width: 150px; 
     transition: border-color 0.3s; 
-    height: 40px; /* Устанавливаем фиксированную высоту */
 }
 
 .input-username:focus,
@@ -55,8 +54,7 @@
     border-radius: 5px;
     cursor: pointer;
     flex-shrink: 0; 
-    transition: background-color 0.3s; 
-    height: 40px; /* Устанавливаем фиксированную высоту для кнопок */
+    transition: background-color 0.3s;
 }
 
 .create-user-button:hover,
