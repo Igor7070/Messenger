@@ -86,7 +86,6 @@ const Home = () => {
         <div className="home-container">
             <div className="users-container">
                 <h2>Пользователи</h2>
-                <button onClick={createUser} className="create-user-button">Создать нового пользователя</button>
                 <input
                     type="text"
                     value={userSearchTerm}
@@ -94,6 +93,7 @@ const Home = () => {
                     placeholder="Найти пользователя"
                     className="search-input"
                 />
+                <button onClick={createUser} className="create-user-button">Создать нового пользователя</button>
                 <ul className="user-list">
                     {filteredUsers.map(user => (
                         <li key={user.id} className="user-item">
