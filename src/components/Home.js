@@ -78,13 +78,23 @@ const Home = () => {
     // Фильтруем чаты по искомому имени
     const filteredChats = chats.filter(chat => chat.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
+    // Фильтруем пользователей по искомому имени
+    const filteredUsers = users.filter(user => user.username.toLowerCase().includes(userSearchTerm.toLowerCase()));
+
     return (
         <div className="home-container">
             <div className="users-container">
                 <h2>Пользователи</h2>
                 <button onClick={createUser} className="create-user-button">Создать нового пользователя</button>
+                <input
+                    type="text"
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    placeholder="Найти пользователя"
+                    className="search-input"
+                />
                 <ul className="user-list">
-                    {users.map(user => (
+                    {filteredUsers.map(user => (
                         <li key={user.id} className="user-item">
                             {user.username}
                         </li>
