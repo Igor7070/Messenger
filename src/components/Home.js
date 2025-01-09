@@ -86,7 +86,6 @@ const Home = () => {
             const response = await fetch('https://unlimitedpossibilities12.org/api/users/create', {
                 method: 'POST',
                 body: formData,
-                // Не устанавливайте Content-Type, браузер установит его автоматически
             });
     
             if (response.ok) {
@@ -99,7 +98,7 @@ const Home = () => {
                 setAvatar(null);
             } else {
                 const errorMessage = await response.text();
-                alert(errorMessage); // Показать сообщение об ошибке
+                alert(errorMessage);
             }
         } catch (error) {
             console.error('Error creating user:', error);
@@ -108,6 +107,14 @@ const Home = () => {
 
     const goToChat = (chatId) => {
         navigate(`/chat/${chatId}`);
+    };
+
+    const openModal = () => {
+        setUsername(''); // Сброс значений
+        setPassword('');
+        setBio('');
+        setAvatar(null);
+        setModalIsOpen(true);
     };
 
     // Фильтруем чаты по искомому имени
@@ -197,7 +204,7 @@ const Home = () => {
                     onChange={(e) => setAvatar(e.target.files[0])}
                     className="modal-file-input"
                 />
-                <button onClick={createUser} className="modal-create-button">Create User</button>
+                <button type="button" onClick={createUser} className="modal-create-button">Create User</button>
                 <button onClick={() => setModalIsOpen(false)} className="modal-close-button">Close</button>
             </Modal>
         </div>
