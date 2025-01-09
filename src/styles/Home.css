@@ -135,17 +135,16 @@ h1, h2 {
 }
 
 /* Заголовок модального окна */
-.ReactModal__Content h2 {
+.modal-title {
     margin-bottom: 20px; /* Отступ снизу */
     font-size: 24px; /* Размер шрифта заголовка */
     color: #00796b; /* Цвет заголовка */
     text-align: center; /* Центрирование текста */
 }
 
-/* Стили для полей ввода */
-input[type="text"],
-input[type="password"],
-textarea {
+/* Стили для полей ввода в модальном окне */
+.modal-input,
+.modal-textarea {
     width: 100%; /* Занимает всю ширину */
     padding: 10px; /* Внутренний отступ */
     border: 1px solid #ced4da; /* Цвет границы */
@@ -155,7 +154,45 @@ textarea {
     box-sizing: border-box; /* Учитывает границы и отступы */
 }
 
-input[type="file"] {
+.modal-textarea {
+    resize: vertical; /* Позволяет изменять высоту */
+}
+
+/* Индивидуальные стили для поля загрузки файла */
+.modal-file-input {
     margin-bottom: 15px; /* Отступ снизу */
 }
 
+/* Стиль кнопки в модальном окне */
+.modal-create-button {
+    padding: 10px 15px; /* Внутренний отступ кнопки */
+    border: none;
+    border-radius: 5px;
+    background-color: #26a69a; /* Цвет кнопки */
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s; /* Плавный переход цвета */
+    width: 100%; /* Занимает всю ширину */
+}
+
+.modal-create-button:hover {
+    background-color: #00796b; /* Цвет кнопки при наведении */
+}
+
+/* Стиль для кнопки закрытия в модальном окне */
+.modal-close-button {
+    padding: 10px 15px; /* Внутренний отступ кнопки */
+    border: none;
+    border-radius: 5px;
+    background-color: #f44336; /* Красный цвет для кнопки закрытия */
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s; /* Плавный переход цвета */
+    width: 100%; /* Занимает всю ширину */
+}
+
+.modal-close-button:hover {
+    background-color: #d32f2f; /* Темнее при наведении */
+}

@@ -166,14 +166,14 @@ const Home = () => {
                 </ul>
             </div>
 
-            {/* Модальное окно для создания пользователя */}
             <Modal isOpen={modalIsOpen} onRequestClose={() => setModalIsOpen(false)} className="modal" overlayClassName="modal-overlay">
-                <h2>Create User</h2>
+                <h2 className="modal-title">Create User</h2>
                 <input
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Enter username"
+                    className="modal-input"
                     required
                 />
                 <input
@@ -181,6 +181,7 @@ const Home = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter password"
+                    className="modal-input"
                     required
                 />
                 <textarea
@@ -188,14 +189,15 @@ const Home = () => {
                     onChange={(e) => setBio(e.target.value)}
                     placeholder="Tell us about yourself (optional)"
                     rows={3}
-                    style={{ resize: 'vertical' }} // Позволяет изменять высоту
+                    className="modal-textarea"
                 />
                 <input
                     type="file"
                     onChange={(e) => setAvatar(e.target.files[0])}
+                    className="modal-file-input"
                 />
                 <button onClick={createUser} className="modal-create-button">Create User</button>
-                <button onClick={() => setModalIsOpen(false)} className="close-button">Close</button>
+                <button onClick={() => setModalIsOpen(false)} className="modal-close-button">Close</button>
             </Modal>
         </div>
     );
