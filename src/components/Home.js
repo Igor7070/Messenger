@@ -81,13 +81,14 @@ const Home = () => {
         if (avatar) {
             formData.append('avatar', avatar);
         }
-
+    
         try {
-            const response = await fetch('https://unlimitedpossibilities12.org/api/users', {
+            const response = await fetch('https://unlimitedpossibilities12.org/api/users/create', {
                 method: 'POST',
                 body: formData,
+                // Не устанавливайте Content-Type, браузер установит его автоматически
             });
-
+    
             if (response.ok) {
                 const newUser = await response.json();
                 setUsers([...users, newUser]);
