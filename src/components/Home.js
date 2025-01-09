@@ -138,7 +138,7 @@ const Home = () => {
                 <button type="button" onClick={openModal} className="create-user-button-main">Create a new user</button>
                 <ul className="user-list">
                     {filteredUsers.map(user => (
-                        <li key={user.id} className="user-item">
+                        <li key={user.id} className="user-item" onClick={() => navigate(`/user/${user.id}`)}>
                             {user.username}
                         </li>
                     ))}
