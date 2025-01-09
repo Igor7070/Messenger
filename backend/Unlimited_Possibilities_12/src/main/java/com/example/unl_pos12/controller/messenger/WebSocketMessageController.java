@@ -30,7 +30,7 @@ public class WebSocketMessageController {
         System.out.println("Message from chat id: " + (message.getChat() != null
                 ? message.getChat().getId() : "null"));
 
-        // Убедитесь, что chatId установлен...
+        // Убедитесь, что chatId установлен
         if (message.getChat() != null && message.getChat().getId() != null) {
             Chat chat = chatRepository.findById(message.getChat().getId())
                     .orElseThrow(() -> new RuntimeException("Chat not found"));
