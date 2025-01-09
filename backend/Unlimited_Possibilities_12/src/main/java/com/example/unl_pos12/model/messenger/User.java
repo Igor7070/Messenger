@@ -12,6 +12,8 @@ public class User {
     private Long id;
     private String username;
     private String password; // Храните пароли в зашифрованном виде
+    private String info; // Информация о пользователе
+    private String avatar; // Путь к аватару или байтовый массив
 
     public Long getId() {
         return id;
@@ -35,5 +37,21 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getInfo() {
+        return info;
+    }
+
+    public void setInfo(String info) {
+        this.info = info;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
     }
 }
