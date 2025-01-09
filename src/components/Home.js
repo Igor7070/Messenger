@@ -134,7 +134,8 @@ const Home = () => {
                     placeholder="Search user"
                     className="search-input"
                 />
-                <button onClick={createUser} className="create-user-button-main">Create a new user</button>
+                {/* Здесь вызывается openModal при нажатии на кнопку */}
+                <button type="button" onClick={openModal} className="create-user-button-main">Create a new user</button>
                 <ul className="user-list">
                     {filteredUsers.map(user => (
                         <li key={user.id} className="user-item">
@@ -143,9 +144,9 @@ const Home = () => {
                     ))}
                 </ul>
             </div>
-
+    
             <div className="line-divider"></div> {/* Линия раздела */}
-
+    
             <div className="chats-container">
                 <h1>Group chats</h1>
                 <div className="chat-input-container">
@@ -173,7 +174,7 @@ const Home = () => {
                     ))}
                 </ul>
             </div>
-
+    
             <Modal isOpen={modalIsOpen} onRequestClose={() => setModalIsOpen(false)} className="modal" overlayClassName="modal-overlay">
                 <h2 className="modal-title">Create User</h2>
                 <input
