@@ -3,10 +3,11 @@ import { useParams } from 'react-router-dom';
 import '../styles/UserProfile.css'; 
 
 const UserProfile = () => {
-    const { userId } = useParams(); // Получаем ID пользователя из URL
+    const { userId } = useParams();
     const [user, setUser] = useState(null);
     const [newAvatar, setNewAvatar] = useState(null);
     const [info, setInfo] = useState('');
+    const [error, setError] = useState(null); // Для хранения ошибок
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -17,9 +18,11 @@ const UserProfile = () => {
                     setUser(data);
                     setInfo(data.info || '');
                 } else {
+                    setError('Failed to fetch user data');
                     console.error('Failed to fetch user:', response.statusText);
                 }
             } catch (error) {
+                setError('Error fetching user data');
                 console.error('Error fetching user:', error);
             }
         };
@@ -47,15 +50,19 @@ const UserProfile = () => {
             if (response.ok) {
                 alert('User updated successfully!');
                 // Обновите информацию пользователя в состоянии
-                fetchUser();
+                const updatedUser = await response.json(); // Получаем обновлённые данные
+                setUser(updatedUser);
             } else {
+                setError('Failed to update user');
                 console.error('Failed to update user:', response.statusText);
             }
         } catch (error) {
+            setError('Error updating user');
             console.error('Error updating user:', error);
         }
     };
 
+    if (error) return <div className="error-message">{error}</div>;
     if (!user) return <div>Loading...</div>;
 
     return (
