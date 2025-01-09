@@ -194,7 +194,7 @@ const Home = () => {
                     type="file"
                     onChange={(e) => setAvatar(e.target.files[0])}
                 />
-                <button onClick={createUser}>Create User</button>
+                <button onClick={createUser} className="modal-create-button">Create User</button>
                 <button onClick={() => setModalIsOpen(false)} className="close-button">Close</button>
             </Modal>
         </div>

@@ -159,9 +159,9 @@ input[type="file"] {
     margin-bottom: 15px; /* Отступ снизу */
 }
 
-/* Стиль кнопок */
-button {
-    padding: 10px 15px; /* Внутренний отступ кнопок */
+/* Стиль кнопки в модальном окне */
+.modal-create-button {
+    padding: 10px 15px; /* Внутренний отступ кнопки */
     border: none;
     border-radius: 5px;
     background-color: #26a69a; /* Цвет кнопки */
@@ -172,15 +172,23 @@ button {
     width: 100%; /* Занимает всю ширину */
 }
 
-button:hover {
+.modal-create-button:hover {
     background-color: #00796b; /* Цвет кнопки при наведении */
 }
 
-/* Стиль кнопки закрытия */
-button.close-button {
+/* Стиль для кнопки закрытия */
+.close-button {
+    padding: 10px 15px; /* Внутренний отступ кнопки */
+    border: none;
+    border-radius: 5px;
     background-color: #f44336; /* Красный цвет для кнопки закрытия */
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s; /* Плавный переход цвета */
+    width: 100%; /* Занимает всю ширину */
 }
 
-button.close-button:hover {
+.close-button:hover {
     background-color: #d32f2f; /* Темнее при наведении */
 }
