@@ -54,7 +54,7 @@ public class UserController {
         return userService.createUser(user);
     }
 
-    // Реализация метода saveAvatar
+    // Реализация метода saveAvatar...
     private String saveAvatar(MultipartFile avatar) {
         // Указываем путь к папке для сохранения аватаров
         String uploadDir = "src/main/resources/static/avatars/";
