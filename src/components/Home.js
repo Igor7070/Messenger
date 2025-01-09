@@ -8,6 +8,11 @@ const Home = () => {
     const [userSearchTerm, setUserSearchTerm] = useState(''); // Новое состояние для поиска пользователей
     const [chats, setChats] = useState([]);
     const [users, setUsers] = useState([]);
+    const [modalIsOpen, setModalIsOpen] = useState(false);
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [bio, setBio] = useState('');
+    const [avatar, setAvatar] = useState(null);
     const navigate = useNavigate();
 
     const fetchChats = async () => {
@@ -68,8 +73,35 @@ const Home = () => {
     };
 
     const createUser = async () => {
-        // Логика для создания нового пользователя
-        console.log('Создание нового пользователя...');
+        const formData = new FormData();
+        formData.append('username', username);
+        formData.append('password', password);
+        formData.append('bio', bio);
+        if (avatar) {
+            formData.append('avatar', avatar);
+        }
+
+        try {
+            const response = await fetch('https://unlimitedpossibilities12.org/api/users', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                const newUser = await response.json();
+                setUsers([...users, newUser]);
+                setModalIsOpen(false);
+                setUsername('');
+                setPassword('');
+                setBio('');
+                setAvatar(null);
+            } else {
+                const errorMessage = await response.text();
+                alert(errorMessage); // Показать сообщение об ошибке
+            }
+        } catch (error) {
+            console.error('Error creating user:', error);
+        }
     };
 
     const goToChat = (chatId) => {
@@ -132,6 +164,38 @@ const Home = () => {
                     ))}
                 </ul>
             </div>
+
+            {/* Модальное окно для создания пользователя */}
+            <Modal isOpen={modalIsOpen} onRequestClose={() => setModalIsOpen(false)} className="modal" overlayClassName="modal-overlay">
+                <h2>Create User</h2>
+                <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter username"
+                    required
+                />
+                <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    required
+                />
+                <textarea
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Tell us about yourself (optional)"
+                    rows={3}
+                    style={{ resize: 'vertical' }} // Позволяет изменять высоту
+                />
+                <input
+                    type="file"
+                    onChange={(e) => setAvatar(e.target.files[0])}
+                />
+                <button onClick={createUser}>Create User</button>
+                <button onClick={() => setModalIsOpen(false)} className="close-button">Close</button>
+            </Modal>
         </div>
     );
 };

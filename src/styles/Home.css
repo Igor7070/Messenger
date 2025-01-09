@@ -115,3 +115,72 @@ h1, h2 {
     background-color: #ccc; /* Цвет линии */
     margin: 0 20px; /* Отступ слева и справа */
 }
+
+/* Стиль для модального окна */
+.ReactModal__Overlay {
+    background: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон для затемнения */
+}
+
+.ReactModal__Content {
+    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #ffffff; /* Белый фон для окна */
+    border-radius: 10px; /* Скругленные углы */
+    padding: 20px; /* Отступы */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Тень для глубины */
+    width: 400px; /* Ширина окна */
+    max-width: 90%; /* Максимальная ширина для мобильных устройств */
+}
+
+/* Заголовок модального окна */
+.ReactModal__Content h2 {
+    margin-bottom: 20px; /* Отступ снизу */
+    font-size: 24px; /* Размер шрифта заголовка */
+    color: #00796b; /* Цвет заголовка */
+    text-align: center; /* Центрирование текста */
+}
+
+/* Стили для полей ввода */
+input[type="text"],
+input[type="password"],
+textarea {
+    width: 100%; /* Занимает всю ширину */
+    padding: 10px; /* Внутренний отступ */
+    border: 1px solid #ced4da; /* Цвет границы */
+    border-radius: 5px; /* Скругление углов */
+    margin-bottom: 15px; /* Отступ снизу */
+    font-size: 16px; /* Размер шрифта */
+    box-sizing: border-box; /* Учитывает границы и отступы */
+}
+
+input[type="file"] {
+    margin-bottom: 15px; /* Отступ снизу */
+}
+
+/* Стиль кнопок */
+button {
+    padding: 10px 15px; /* Внутренний отступ кнопок */
+    border: none;
+    border-radius: 5px;
+    background-color: #26a69a; /* Цвет кнопки */
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s; /* Плавный переход цвета */
+    width: 100%; /* Занимает всю ширину */
+}
+
+button:hover {
+    background-color: #00796b; /* Цвет кнопки при наведении */
+}
+
+/* Стиль кнопки закрытия */
+button.close-button {
+    background-color: #f44336; /* Красный цвет для кнопки закрытия */
+}
+
+button.close-button:hover {
+    background-color: #d32f2f; /* Темнее при наведении */
+}
