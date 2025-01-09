@@ -22,6 +22,11 @@ public class UserController {
         return userService.getAllUsers();
     }
 
+    @GetMapping("/{id}") // Получение пользователя по ID
+    public User getUserById(@PathVariable Long id) {
+        return userService.getUserById(id);
+    }
+
     @PostMapping
     public User createUser(@RequestBody User user) {
         System.out.println("Created user: " + user.getUsername());
@@ -46,7 +51,7 @@ public class UserController {
 
         // Сохраняем файл, если он загружен
         if (avatar != null && !avatar.isEmpty()) {
-            String avatarPath = saveAvatar(avatar); // Метод сохранения аватара
+            String avatarPath = saveAvatar(username, avatar); // Метод сохранения аватара
             user.setAvatar(avatarPath);
         }
 
@@ -55,20 +60,43 @@ public class UserController {
     }
 
     // Реализация метода saveAvatar...
-    private String saveAvatar(MultipartFile avatar) {
-        // Указываем путь к папке для сохранения аватаров
+    private String saveAvatar(String username, MultipartFile avatar) {
         String uploadDir = "src/main/resources/static/avatars/";
-        String filePath = uploadDir + avatar.getOriginalFilename(); // Полный путь к файлу
+
+        String originalFilename = avatar.getOriginalFilename();
+        String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".png";
+
+        // Транслитерация имени пользователя
+        String transliteratedUsername = transliterate(username);
+        String fileName = transliteratedUsername + extension; // Используем транслитерированное имя
+        String filePath = uploadDir + fileName; // Полный путь к файлу
 
         try {
-            // Сохраняем файл в указанную папку
             avatar.transferTo(new File(filePath));
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        // Возвращаем относительный путь для хранения в базе данных
-        return "/avatars/" + avatar.getOriginalFilename(); // Относительный путь
+        return "/avatars/" + fileName; // Относительный путь
+    }
+
+    @PutMapping("/{id}") // Обновление данных пользователя
+    public User updateUser(@PathVariable Long id,
+                           @RequestParam(value = "info", required = false) String info,
+                           @RequestParam(value = "avatar", required = false) MultipartFile avatar) {
+        User user = userService.getUserById(id);
+        if (user != null) {
+            if (info != null) {
+                user.setInfo(info);
+            }
+            if (avatar != null && !avatar.isEmpty()) {
+                String avatarPath = saveAvatar(user.getUsername(), avatar);
+                user.setAvatar(avatarPath);
+            }
+            return userService.updateUser(user); // Обновляем пользователя
+        } else {
+            throw new RuntimeException("User not found");
+        }
     }
 
     @PostMapping("/login")
@@ -76,5 +104,27 @@ public class UserController {
         String username = loginRequest.get("username");
         String password = loginRequest.get("password");
         return userService.loginUser(username, password);
+    }
+
+    public static String transliterate(String input) {
+        String[][] cyrillicToLatin = {
+                {"а", "a"}, {"б", "b"}, {"в", "v"}, {"г", "h"}, {"ґ", "g"}, {"д", "d"}, {"е", "e"},
+                {"є", "ye"}, {"ж", "zh"}, {"з", "z"}, {"и", "y"}, {"і", "i"}, {"ї", "yi"}, {"й", "y"},
+                {"к", "k"}, {"л", "l"}, {"м", "m"}, {"н", "n"}, {"о", "o"}, {"п", "p"}, {"р", "r"},
+                {"с", "s"}, {"т", "t"}, {"у", "u"}, {"ф", "f"}, {"х", "kh"}, {"ц", "ts"}, {"ч", "ch"},
+                {"ш", "sh"}, {"щ", "shch"}, {"ь", ""}, {"ю", "yu"}, {"я", "ya"},
+                {"А", "A"}, {"Б", "B"}, {"В", "V"}, {"Г", "H"}, {"Ґ", "G"}, {"Д", "D"}, {"Е", "E"},
+                {"Є", "Ye"}, {"Ж", "Zh"}, {"З", "Z"}, {"И", "Y"}, {"І", "I"}, {"Ї", "Yi"}, {"Й", "Y"},
+                {"К", "K"}, {"Л", "L"}, {"М", "M"}, {"Н", "N"}, {"О", "O"}, {"П", "P"}, {"Р", "R"},
+                {"С", "S"}, {"Т", "T"}, {"У", "U"}, {"Ф", "F"}, {"Х", "Kh"}, {"Ц", "Ts"}, {"Ч", "Ch"},
+                {"Ш", "Sh"}, {"Щ", "Shch"}, {"Ь", ""}, {"Ю", "Yu"}, {"Я", "Ya"}
+        };
+
+        for (String[] pair : cyrillicToLatin) {
+            input = input.replace(pair[0], pair[1]);
+        }
+
+        // Заменяем недопустимые символы на подчеркивание и удаляем лишние символы
+        return input.replaceAll("[^a-zA-Z0-9_]", "_");
     }
 }

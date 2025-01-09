@@ -46,6 +46,14 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    public User getUserById(Long id) {
+        return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public User updateUser(User user) {
+        return userRepository.save(user);
+    }
+
     private boolean isValidPassword(String password) {
         return password.length() >= 9 && password.matches(".*[a-zA-Z].*") && password.matches(".*\\d.*");
     }
