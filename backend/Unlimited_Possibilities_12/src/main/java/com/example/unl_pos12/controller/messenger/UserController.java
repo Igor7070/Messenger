@@ -3,6 +3,8 @@ package com.example.unl_pos12.controller.messenger;
 import com.example.unl_pos12.model.messenger.User;
 import com.example.unl_pos12.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -118,6 +120,18 @@ public class UserController {
         String username = loginRequest.get("username");
         String password = loginRequest.get("password");
         return userService.loginUser(username, password);
+    }
+
+    @GetMapping("/check-avatar/{filename}")
+    public ResponseEntity<String> checkAvatar(@PathVariable String filename) {
+        String filePath = System.getProperty("user.dir") + "/src/main/resources/static/avatars/" + filename;
+        File file = new File(filePath);
+
+        if (file.exists()) {
+            return ResponseEntity.ok("File exists: " + file.getAbsolutePath());
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found");
+        }
     }
 
     public static String transliterate(String input) {
