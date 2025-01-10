@@ -12,6 +12,8 @@ public class User {
     private Long id;
     private String username;
     private String password; // Храните пароли в зашифрованном виде
+
+    //@Lob // Указываем, что это большое поле
     private String info; // Информация о пользователе
     private String avatar; // Путь к аватару или байтовый массив
 
