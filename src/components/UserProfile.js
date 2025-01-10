@@ -75,16 +75,16 @@ const UserProfile = () => {
                 alt={`${user.username} avatar`} 
                 className="user-avatar" 
             />
+            <input type="file" onChange={handleAvatarChange} className="avatar-input" />
             <div className="user-info">
+                <h2>О себе:</h2>
                 {isEditing ? (
-                    <>
-                        <textarea 
-                            value={info}
-                            onChange={(e) => setInfo(e.target.value)}
-                            rows={3}
-                            className="user-info-input"
-                        />
-                    </>
+                    <textarea 
+                        value={info}
+                        onChange={(e) => setInfo(e.target.value)}
+                        rows={3}
+                        className="user-info-input"
+                    />
                 ) : (
                     <div className="user-info-text">
                         <p>{info}</p>
@@ -92,8 +92,6 @@ const UserProfile = () => {
                     </div>
                 )}
             </div>
-            <input type="file" onChange={handleAvatarChange} />
-            {/* Кнопка обновления всегда отображается */}
             <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
         </div>
     );

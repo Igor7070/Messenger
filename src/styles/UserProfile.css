@@ -14,19 +14,28 @@
     object-fit: cover; /* Обрезка изображения */
 }
 
+.avatar-input {
+    margin-top: 10px; /* Отступ сверху для поля выбора файла */
+}
+
+.user-info {
+    margin-top: 20px; /* Отступ сверху от аватара */
+}
+
 .user-info-input {
     width: 100%; /* 100% ширины контейнера */
     margin-top: 10px; /* Отступ сверху */
 }
 
 .update-button {
-    margin-top: 10px;
+    margin-top: 20px; /* Отступ сверху */
     padding: 10px 15px; /* Внутренние отступы */
     background-color: #007bff; /* Цвет фона кнопки */
     color: white; /* Цвет текста кнопки */
     border: none; /* Без рамки */
     border-radius: 5px; /* Закругленные углы */
     cursor: pointer; /* Курсор указателя при наведении */
+    align-self: flex-end; /* Выравнивание кнопки вправо */
 }
 
 .user-info {
@@ -39,6 +48,10 @@
 }
 
 .edit-icon {
-    margin-left: 10px;
-    cursor: pointer;
+    margin-left: 10px; /* Отступ слева от иконки */
+    cursor: pointer; /* Курсор указателя при наведении */
+}
+
+h2 {
+    margin: 0; /* Убираем отступы для заголовка "О себе:" */
 }
