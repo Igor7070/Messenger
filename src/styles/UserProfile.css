@@ -8,23 +8,23 @@
 }
 
 .user-avatar {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    object-fit: cover;
+    width: 100px; /* Ширина аватара */
+    height: 100px; /* Высота аватара */
+    border-radius: 50%; /* Круглая форма */
+    object-fit: cover; /* Обрезка изображения */
 }
 
 .user-info-input {
-    width: 100%;
-    margin-top: 10px;
+    width: 100%; /* 100% ширины контейнера */
+    margin-top: 10px; /* Отступ сверху */
 }
 
 .update-button {
     margin-top: 10px;
-    padding: 10px 15px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+    padding: 10px 15px; /* Внутренние отступы */
+    background-color: #007bff; /* Цвет фона кнопки */
+    color: white; /* Цвет текста кнопки */
+    border: none; /* Без рамки */
+    border-radius: 5px; /* Закругленные углы */
+    cursor: pointer; /* Курсор указателя при наведении */
 }
