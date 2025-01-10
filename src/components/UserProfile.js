@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import '../styles/UserProfile.css'; 
+import { FaEdit } from 'react-icons/fa'; // Импортируем иконку карандашика
 
 const UserProfile = () => {
     const { userId } = useParams();
     const [user, setUser] = useState(null);
     const [newAvatar, setNewAvatar] = useState(null);
     const [info, setInfo] = useState('');
-    const [error, setError] = useState(null); // Для хранения ошибок
+    const [isEditing, setIsEditing] = useState(false); // Состояние для редактирования
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -49,9 +51,9 @@ const UserProfile = () => {
 
             if (response.ok) {
                 alert('User updated successfully!');
-                // Обновите информацию пользователя в состоянии
-                const updatedUser = await response.json(); // Получаем обновлённые данные
+                const updatedUser = await response.json();
                 setUser(updatedUser);
+                setIsEditing(false); // Закрываем режим редактирования
             } else {
                 setError('Failed to update user');
                 console.error('Failed to update user:', response.statusText);
@@ -73,15 +75,25 @@ const UserProfile = () => {
                 alt={`${user.username} avatar`} 
                 className="user-avatar" 
             />
+            <div className="user-info">
+                {isEditing ? (
+                    <>
+                        <textarea 
+                            value={info}
+                            onChange={(e) => setInfo(e.target.value)}
+                            rows={3}
+                            className="user-info-input"
+                        />
+                        <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
+                    </>
+                ) : (
+                    <div className="user-info-text">
+                        <p>{info}</p>
+                        <FaEdit className="edit-icon" onClick={() => setIsEditing(true)} />
+                    </div>
+                )}
+            </div>
             <input type="file" onChange={handleAvatarChange} />
-            <textarea 
-                value={info}
-                onChange={(e) => setInfo(e.target.value)}
-                placeholder="Tell us about yourself"
-                rows={4}
-                className="user-info-input"
-            />
-            <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
         </div>
     );
 };

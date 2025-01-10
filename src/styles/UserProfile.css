@@ -28,3 +28,17 @@
     border-radius: 5px; /* Закругленные углы */
     cursor: pointer; /* Курсор указателя при наведении */
 }
+
+.user-info {
+    position: relative;
+}
+
+.user-info-text {
+    display: flex;
+    align-items: center;
+}
+
+.edit-icon {
+    margin-left: 10px;
+    cursor: pointer;
+}
