@@ -84,6 +84,7 @@ const UserProfile = () => {
                         onChange={(e) => setInfo(e.target.value)}
                         rows={3}
                         className="user-info-input"
+                        maxLength={128} // Ограничение длины текста
                     />
                 ) : (
                     <div className="user-info-text">
