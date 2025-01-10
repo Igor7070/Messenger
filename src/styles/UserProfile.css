@@ -45,6 +45,14 @@
 .user-info-text {
     display: flex;
     align-items: center;
+    flex-direction: column; /* Изменяем на столбец для переноса текста */
+}
+
+.user-info-text p {
+    margin: 0; /* Убираем отступы */
+    word-wrap: break-word; /* Перенос длинных слов */
+    width: 100%; /* Занимает всю ширину контейнера */
+    max-width: 100%; /* Ограничиваем ширину текста */
 }
 
 .edit-icon {
