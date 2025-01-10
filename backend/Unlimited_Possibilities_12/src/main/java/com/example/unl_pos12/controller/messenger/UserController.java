@@ -31,8 +31,8 @@ public class UserController {
 
     @GetMapping("/check-avatar/{filename}")
     public ResponseEntity<String> checkAvatar(@PathVariable String filename) {
-        // Указываем абсолютный путь к директории для аватаров
-        String filePath = System.getProperty("catalina.base") + "/avatars/" + filename;
+        // Указываем абсолютный путь к директории для аватаров в проекте
+        String filePath = new File("src/main/resources/static/avatars/" + filename).getAbsolutePath();
         File file = new File(filePath);
 
         if (file.exists()) {
@@ -76,8 +76,8 @@ public class UserController {
 
     // Реализация метода saveAvatar
     private String saveAvatar(String username, MultipartFile avatar) {
-        // Используем абсолютный путь в директории Tomcat
-        String uploadDir = System.getProperty("catalina.base") + "/avatars/";
+        // Используем абсолютный путь к директории для аватаров
+        String uploadDir = new File("src/main/resources/static/avatars/").getAbsolutePath();
 
         // Создаем директорию, если она не существует
         File directory = new File(uploadDir);
@@ -90,7 +90,7 @@ public class UserController {
         String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".png";
         String transliteratedUsername = transliterate(username);
         String fileName = transliteratedUsername + extension;
-        String filePath = uploadDir + fileName;
+        String filePath = uploadDir + File.separator + fileName;
 
         try {
             avatar.transferTo(new File(filePath));
