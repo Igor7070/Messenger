@@ -65,10 +65,14 @@ public class UserController {
     private String saveAvatar(String username, MultipartFile avatar) {
         String uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/avatars/";
 
+        // Вывод текущей рабочей директории
+        System.out.println("Current working directory: " + System.getProperty("user.dir"));
+
         // Создаем директорию, если она не существует
         File directory = new File(uploadDir);
         if (!directory.exists()) {
             directory.mkdirs(); // Создает директорию и все необходимые родительские директории
+            System.out.println("Created directory: " + uploadDir);
         }
 
         String originalFilename = avatar.getOriginalFilename();
