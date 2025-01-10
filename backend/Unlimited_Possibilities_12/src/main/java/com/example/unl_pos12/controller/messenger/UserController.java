@@ -61,23 +61,28 @@ public class UserController {
 
     // Реализация метода saveAvatar...
     private String saveAvatar(String username, MultipartFile avatar) {
-        String uploadDir = "src/main/resources/static/avatars/";
+        String uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/avatars/";
+
+        // Создаем директорию, если она не существует
+        File directory = new File(uploadDir);
+        if (!directory.exists()) {
+            directory.mkdirs(); // Создает директорию и все необходимые родительские директории
+        }
 
         String originalFilename = avatar.getOriginalFilename();
         String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".png";
-
-        // Транслитерация имени пользователя
         String transliteratedUsername = transliterate(username);
-        String fileName = transliteratedUsername + extension; // Используем транслитерированное имя
-        String filePath = uploadDir + fileName; // Полный путь к файлу
+        String fileName = transliteratedUsername + extension;
+        String filePath = uploadDir + fileName;
 
+        System.out.println("Saving avatar to: " + filePath);
         try {
             avatar.transferTo(new File(filePath));
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        return "/avatars/" + fileName; // Относительный путь...
+        return "/avatars/" + fileName; // Относительный путь
     }
 
     @PutMapping("/{id}") // Обновление данных пользователя
