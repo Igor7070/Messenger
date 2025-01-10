@@ -68,7 +68,11 @@ const UserProfile = () => {
     return (
         <div className="user-profile-container">
             <h1>{user.username}</h1>
-            <img src={user.avatar || '/default-avatar.png'} alt={`${user.username} avatar`} className="user-avatar" />
+            <img 
+                src={user.avatar ? `https://unlimitedpossibilities12.org${user.avatar}` : '/default-avatar.png'} 
+                alt={`${user.username} avatar`} 
+                className="user-avatar" 
+            />
             <input type="file" onChange={handleAvatarChange} />
             <textarea 
                 value={info}
