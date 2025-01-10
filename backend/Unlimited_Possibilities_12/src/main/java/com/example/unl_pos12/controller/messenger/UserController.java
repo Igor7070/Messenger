@@ -76,11 +76,12 @@ public class UserController {
 
     // Реализация метода saveAvatar...
     private String saveAvatar(String username, MultipartFile avatar) {
-        String uploadDir = "src/main/resources/static/avatars/";
+        // Используем абсолютный путь
+        String uploadDir = System.getProperty("catalina.base") + "/avatars/";
 
         File directory = new File(uploadDir);
         if (!directory.exists()) {
-            directory.mkdirs();
+            directory.mkdirs(); // Создает все необходимые родительские директории
             System.out.println("Created directory: " + uploadDir);
         }
 
