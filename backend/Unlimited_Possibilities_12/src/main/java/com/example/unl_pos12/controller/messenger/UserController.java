@@ -76,43 +76,28 @@ public class UserController {
 
     // Реализация метода saveAvatar...
     private String saveAvatar(String username, MultipartFile avatar) {
-        // Устанавливаем директорию для сохранения аватаров
-        String uploadDir = "avatars/";
+        // Используем абсолютный путь
+        String uploadDir = System.getProperty("catalina.base") + "/avatars/";
 
-        // Вывод текущей рабочей директории
-        System.out.println("Current working directory: " + System.getProperty("user.dir"));
-
-        // Создаем директорию, если она не существует
         File directory = new File(uploadDir);
         if (!directory.exists()) {
-            directory.mkdirs(); // Создает директорию и все необходимые родительские директории
+            directory.mkdirs();
             System.out.println("Created directory: " + uploadDir);
         }
 
-        // Получаем оригинальное имя файла и его расширение
         String originalFilename = avatar.getOriginalFilename();
         String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".png";
         String transliteratedUsername = transliterate(username);
         String fileName = transliteratedUsername + extension;
         String filePath = uploadDir + fileName;
 
-        System.out.println("Saving avatar to: " + filePath);
         try {
             avatar.transferTo(new File(filePath));
-
-            // Проверка существования файла после сохранения
-            File savedFile = new File(filePath);
-            if (savedFile.exists()) {
-                System.out.println("File saved successfully: " + savedFile.getAbsolutePath());
-            } else {
-                System.out.println("File not found after saving.");
-            }
         } catch (IOException e) {
             System.out.println("Error saving avatar: " + e.getMessage());
             e.printStackTrace();
         }
 
-        // Возвращаем относительный путь к файлу
         return "/avatars/" + fileName;
     }
 
