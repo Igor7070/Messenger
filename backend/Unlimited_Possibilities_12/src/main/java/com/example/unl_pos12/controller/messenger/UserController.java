@@ -29,6 +29,19 @@ public class UserController {
         return userService.getUserById(id);
     }
 
+    @GetMapping("/check-avatar/{filename}")
+    public ResponseEntity<String> checkAvatar(@PathVariable String filename) {
+        // Указываем путь к директории для аватаров
+        String filePath = "avatars/" + filename;
+        File file = new File(filePath);
+
+        if (file.exists()) {
+            return ResponseEntity.ok("File exists: " + file.getAbsolutePath());
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found");
+        }
+    }
+
     @PostMapping
     public User createUser(@RequestBody User user) {
         System.out.println("Created user: " + user.getUsername());
@@ -63,7 +76,8 @@ public class UserController {
 
     // Реализация метода saveAvatar...
     private String saveAvatar(String username, MultipartFile avatar) {
-        String uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/avatars/";
+        // Устанавливаем директорию для сохранения аватаров
+        String uploadDir = "avatars/";
 
         // Вывод текущей рабочей директории
         System.out.println("Current working directory: " + System.getProperty("user.dir"));
@@ -75,6 +89,7 @@ public class UserController {
             System.out.println("Created directory: " + uploadDir);
         }
 
+        // Получаем оригинальное имя файла и его расширение
         String originalFilename = avatar.getOriginalFilename();
         String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".png";
         String transliteratedUsername = transliterate(username);
@@ -97,7 +112,8 @@ public class UserController {
             e.printStackTrace();
         }
 
-        return "/avatars/" + fileName; // Относительный путь
+        // Возвращаем относительный путь к файлу
+        return "/avatars/" + fileName;
     }
 
     @PutMapping("/{id}") // Обновление данных пользователя
@@ -124,18 +140,6 @@ public class UserController {
         String username = loginRequest.get("username");
         String password = loginRequest.get("password");
         return userService.loginUser(username, password);
-    }
-
-    @GetMapping("/check-avatar/{filename}")
-    public ResponseEntity<String> checkAvatar(@PathVariable String filename) {
-        String filePath = System.getProperty("user.dir") + "/src/main/resources/static/avatars/" + filename;
-        File file = new File(filePath);
-
-        if (file.exists()) {
-            return ResponseEntity.ok("File exists: " + file.getAbsolutePath());
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found");
-        }
     }
 
     public static String transliterate(String input) {
