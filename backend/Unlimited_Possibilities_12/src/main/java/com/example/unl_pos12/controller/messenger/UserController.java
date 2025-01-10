@@ -77,7 +77,7 @@ public class UserController {
             e.printStackTrace();
         }
 
-        return "/avatars/" + fileName; // Относительный путь
+        return "/avatars/" + fileName; // Относительный путь...
     }
 
     @PutMapping("/{id}") // Обновление данных пользователя
