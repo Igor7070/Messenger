@@ -84,7 +84,6 @@ const UserProfile = () => {
                             rows={3}
                             className="user-info-input"
                         />
-                        <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
                     </>
                 ) : (
                     <div className="user-info-text">
@@ -94,6 +93,8 @@ const UserProfile = () => {
                 )}
             </div>
             <input type="file" onChange={handleAvatarChange} />
+            {/* Кнопка обновления всегда отображается */}
+            <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
         </div>
     );
 };
