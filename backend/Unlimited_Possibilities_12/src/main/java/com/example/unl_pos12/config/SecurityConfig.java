@@ -20,6 +20,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Отключаем защиту CSRF для теста
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/login", "/oauth2/**").permitAll() // Разрешаем доступ ко всем URL, связанным с OAuth2 аутентификацией
+                        .requestMatchers("/avatars/**").permitAll() // Разрешаем доступ к аватарам
                         .anyRequest().permitAll() // Разрешаем доступ ко всем остальным URL
                 )
                 .oauth2Login(oauth2 -> oauth2
