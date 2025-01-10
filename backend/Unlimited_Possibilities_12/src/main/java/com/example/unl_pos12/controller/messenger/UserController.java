@@ -78,7 +78,16 @@ public class UserController {
         System.out.println("Saving avatar to: " + filePath);
         try {
             avatar.transferTo(new File(filePath));
+
+            // Проверка существования файла после сохранения
+            File savedFile = new File(filePath);
+            if (savedFile.exists()) {
+                System.out.println("File saved successfully: " + savedFile.getAbsolutePath());
+            } else {
+                System.out.println("File not found after saving.");
+            }
         } catch (IOException e) {
+            System.out.println("Error saving avatar: " + e.getMessage());
             e.printStackTrace();
         }
 
