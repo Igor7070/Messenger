@@ -32,7 +32,7 @@ public class UserController {
     @GetMapping("/check-avatar/{filename}")
     public ResponseEntity<String> checkAvatar(@PathVariable String filename) {
         // Указываем абсолютный путь к директории для аватаров
-        String filePath = "src/main/resources/static/avatars/" + filename;
+        String filePath = System.getProperty("catalina.base") + "/avatars/" + filename;
         File file = new File(filePath);
 
         if (file.exists()) {
@@ -76,9 +76,10 @@ public class UserController {
 
     // Реализация метода saveAvatar...
     private String saveAvatar(String username, MultipartFile avatar) {
-        // Используем абсолютный путь
+        // Используем абсолютный путь в директории Tomcat
         String uploadDir = System.getProperty("catalina.base") + "/avatars/";
 
+        // Создаем директорию, если она не существует
         File directory = new File(uploadDir);
         if (!directory.exists()) {
             directory.mkdirs(); // Создает все необходимые родительские директории
