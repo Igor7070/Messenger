@@ -74,7 +74,7 @@ public class UserController {
         return userService.createUser(user);
     }
 
-    // Реализация метода saveAvatar...
+    // Реализация метода saveAvatar
     private String saveAvatar(String username, MultipartFile avatar) {
         // Используем абсолютный путь в директории Tomcat
         String uploadDir = System.getProperty("catalina.base") + "/avatars/";
