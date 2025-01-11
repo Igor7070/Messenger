@@ -70,11 +70,17 @@ const UserProfile = () => {
     return (
         <div className="user-profile-container">
             <h1>{user.username}</h1>
-            <img 
-                src={user.avatar ? `https://unlimitedpossibilities12.org${user.avatar}` : '/default-avatar.png'} 
-                alt={`${user.username} avatar`} 
-                className="user-avatar-profile" 
-            />
+            {user.avatar ? (
+                <img 
+                    src={`https://unlimitedpossibilities12.org${user.avatar}`} 
+                    alt={`${user.username} avatar`} 
+                    className="user-avatar-profile" 
+                />
+            ) : (
+                <div className="user-avatar-profile" style={{ backgroundColor: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {user.username.charAt(0).toUpperCase()}
+                </div>
+            )}
             <input type="file" onChange={handleAvatarChange} className="avatar-input" />
             <div className="user-info">
                 <h2>О себе:</h2>

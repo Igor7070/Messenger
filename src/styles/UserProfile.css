@@ -12,6 +12,12 @@
     height: 100px; /* Высота аватара */
     border-radius: 50%; /* Круглая форма */
     object-fit: cover; /* Обрезка изображения */
+    background-color: #e0e0e0; /* Цвет фона по умолчанию */
+    display: flex; /* Используем флексбокс для центрирования текста */
+    align-items: center; /* Вертикальное выравнивание */
+    justify-content: center; /* Горизонтальное выравнивание */
+    font-size: 40px; /* Размер шрифта для текста */
+    color: #757575; /* Цвет текста */
 }
 
 .avatar-input {
