@@ -143,9 +143,13 @@ const Home = () => {
 
                         return (
                             <li key={user.id} className="user-item" onClick={() => navigate(`/user/${user.id}`)}>
-                                <div className="user-avatar" style={{ backgroundImage: avatarSrc ? `url(${avatarSrc})` : 'none' }}>
-                                    {!avatarSrc && initials}
-                                </div>
+                                {avatarSrc ? (
+                                    <img src={avatarSrc} alt={`${user.username} avatar`} className="user-avatar" />
+                                ) : (
+                                    <div className="user-avatar">
+                                        {initials}
+                                    </div>
+                                )}
                                 {user.username}
                             </li>
                         );
