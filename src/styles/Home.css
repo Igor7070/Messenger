@@ -199,8 +199,8 @@ h1, h2 {
 }
 
 .user-avatar {
-    width: 30px; /* Ширина кружка */
-    height: 30px; /* Высота кружка */
+    width: 10px; /* Ширина кружка */
+    height: 10px; /* Высота кружка */
     border-radius: 50%; /* Круглая форма */
     object-fit: cover; /* Обтягивание изображения */
     margin-right: 10px; /* Отступ справа */
