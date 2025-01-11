@@ -210,6 +210,8 @@ h1, h2 {
 .user-avatar {
     width: 30px; /* Ширина кружка */
     height: 30px; /* Высота кружка */
+    max-width: 30px; /* Максимальная ширина */
+    max-height: 30px; /* Максимальная высота */
     border-radius: 50%; /* Круглая форма */
     object-fit: cover; /* Обтягивание изображения */
     margin-right: 10px; /* Отступ справа */
