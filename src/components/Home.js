@@ -199,6 +199,7 @@ const Home = () => {
                     placeholder="Tell us about yourself (optional)"
                     rows={3}
                     className="modal-textarea"
+                    maxLength={244} // Ограничение длины текста
                 />
                 <input
                     type="file"
