@@ -73,7 +73,7 @@ const UserProfile = () => {
             <img 
                 src={user.avatar ? `https://unlimitedpossibilities12.org${user.avatar}` : '/default-avatar.png'} 
                 alt={`${user.username} avatar`} 
-                className="user-avatar" 
+                className="user-avatar-profile" 
             />
             <input type="file" onChange={handleAvatarChange} className="avatar-input" />
             <div className="user-info">

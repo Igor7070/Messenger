@@ -7,7 +7,7 @@
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.user-avatar {
+.user-avatar-profile {
     width: 100px; /* Ширина аватара */
     height: 100px; /* Высота аватара */
     border-radius: 50%; /* Круглая форма */
