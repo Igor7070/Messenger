@@ -85,11 +85,21 @@ h1, h2 {
     background-color: #DCDCDC;
 }
 
-.chat-item, .user-item {
+.chat-item {
     padding: 15px;
     border-bottom: 1px solid #e9ecef;
     cursor: pointer;
     transition: background-color 0.2s;
+}
+
+.user-item {
+    padding: 15px;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex; /* Используем флексбокс для выравнивания */
+    align-items: center; /* Вертикальное выравнивание */
+    height: 40px; /* Фиксированная высота элемента списка */
 }
 
 .chat-item:hover, .user-item:hover {
