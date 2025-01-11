@@ -150,7 +150,7 @@ const Home = () => {
                                         {initials}
                                     </div>
                                 )}
-                                {user.username}
+                                <span className="user-name">{user.username}</span>
                             </li>
                         );
                     })}
