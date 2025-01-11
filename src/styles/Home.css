@@ -93,7 +93,7 @@ h1, h2 {
 }
 
 .user-item {
-    padding: 15px;
+    padding: 10px;
     border-bottom: 1px solid #e9ecef;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -208,10 +208,10 @@ h1, h2 {
 }
 
 .user-avatar {
-    width: 30px; /* Ширина кружка */
-    height: 30px; /* Высота кружка */
-    max-width: 30px; /* Максимальная ширина */
-    max-height: 30px; /* Максимальная высота */
+    width: 35px; /* Ширина кружка */
+    height: 35px; /* Высота кружка */
+    max-width: 35px; /* Максимальная ширина */
+    max-height: 35px; /* Максимальная высота */
     border-radius: 50%; /* Круглая форма */
     object-fit: cover; /* Обтягивание изображения */
     margin-right: 10px; /* Отступ справа */
