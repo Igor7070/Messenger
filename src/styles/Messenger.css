@@ -160,3 +160,16 @@
 .context-menu button:hover {
     background-color: #f0f0f0;
 }
+
+.message-avatar {
+    width: 35px; /* Ширина аватара */
+    height: 35px; /* Высота аватара */
+    border-radius: 50%; /* Круглая форма */
+    object-fit: cover; /* Обрезка изображения */
+    margin-right: 10px; /* Отступ справа */
+    display: inline-block; /* Отображение в строке */
+    background-color: #e0e0e0; /* Цвет фона по умолчанию */
+    display: flex; /* Используем флексбокс для центрирования текста */
+    align-items: center; /* Вертикальное выравнивание */
+    justify-content: center; /* Горизонтальное выравнивание */
+}

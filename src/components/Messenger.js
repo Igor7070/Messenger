@@ -367,7 +367,19 @@ const Messenger = () => {
                             key={msg.id}
                             className={`message ${msg.sender.username === username ? 'current-user' : 'other-user'}`} 
                             onContextMenu={(e) => handleRightClick(e, msg)}
+                            style={{ display: 'flex', alignItems: 'center' }} // Flexbox для выравнивания
                         >
+                            {msg.sender.avatar ? (
+                                <img 
+                                    src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
+                                    alt={`${msg.sender.username} avatar`} 
+                                    className="message-avatar"
+                                />
+                            ) : (
+                                <div className="message-avatar">
+                                    {msg.sender.username.charAt(0).toUpperCase()}
+                                </div>
+                            )}
                             <strong>{msg.sender.username}: </strong>
                             {msg.content}
                             {msg.fileUrl && (
