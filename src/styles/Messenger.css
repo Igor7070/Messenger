@@ -173,3 +173,7 @@
     align-items: center; /* Вертикальное выравнивание */
     justify-content: center; /* Горизонтальное выравнивание */
 }
+
+.message-content {
+    margin-left: 10px; /* Отступ слева от двоеточия */
+}

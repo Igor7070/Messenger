@@ -381,7 +381,7 @@ const Messenger = () => {
                                 </div>
                             )}
                             <strong>{msg.sender.username}: </strong>
-                            {msg.content}
+                            <span className="message-content">{msg.content}</span> {/* Обернули текст сообщения в span */}
                             {msg.fileUrl && (
                                 <a href={msg.fileUrl} download>📥 Download file</a>
                             )}
