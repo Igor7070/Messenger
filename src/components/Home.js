@@ -137,16 +137,19 @@ const Home = () => {
                 {/* Здесь вызывается openModal при нажатии на кнопку */}
                 <button type="button" onClick={openModal} className="create-user-button-main">Create a new user</button>
                 <ul className="user-list">
-                    {filteredUsers.map(user => (
-                        <li key={user.id} className="user-item" onClick={() => navigate(`/user/${user.id}`)}>
-                            <img 
-                                src={user.avatar ? `https://unlimitedpossibilities12.org${user.avatar}` : '/default-avatar.png'} 
-                                alt={`${user.username} avatar`} 
-                                className="user-avatar" 
-                            />
-                            {user.username}
-                        </li>
-                    ))}
+                    {filteredUsers.map(user => {
+                        const avatarSrc = user.avatar ? `https://unlimitedpossibilities12.org${user.avatar}` : null;
+                        const initials = user.username ? user.username.charAt(0).toUpperCase() : '';
+
+                        return (
+                            <li key={user.id} className="user-item" onClick={() => navigate(`/user/${user.id}`)}>
+                                <div className="user-avatar" style={{ backgroundImage: avatarSrc ? `url(${avatarSrc})` : 'none' }}>
+                                    {!avatarSrc && initials}
+                                </div>
+                                {user.username}
+                            </li>
+                        );
+                    })}
                 </ul>
             </div>
     
