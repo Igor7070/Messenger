@@ -139,6 +139,11 @@ const Home = () => {
                 <ul className="user-list">
                     {filteredUsers.map(user => (
                         <li key={user.id} className="user-item" onClick={() => navigate(`/user/${user.id}`)}>
+                            <img 
+                                src={user.avatar ? `https://unlimitedpossibilities12.org${user.avatar}` : '/default-avatar.png'} 
+                                alt={`${user.username} avatar`} 
+                                className="user-avatar" 
+                            />
                             {user.username}
                         </li>
                     ))}
