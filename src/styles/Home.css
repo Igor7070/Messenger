@@ -127,32 +127,26 @@ h1, h2 {
 
 /* Стиль для модального окна */
 .ReactModal__Overlay {
+    display: flex; /* Flexbox для центрирования */
+    align-items: center; /* Вертикальное центрирование */
+    justify-content: center; /* Горизонтальное центрирование */
+    position: fixed; /* Фиксированное позиционирование */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон для затемнения */
+    z-index: 1000; /* Высокий z-index для оверлея */
 }
 
 .ReactModal__Content {
-    position: relative;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     background: #ffffff; /* Белый фон для окна */
     border-radius: 10px; /* Скругленные углы */
     padding: 20px; /* Отступы */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Тень для глубины */
     width: 400px; /* Ширина окна */
     max-width: 90%; /* Максимальная ширина для мобильных устройств */
-}
-
-.modal-overlay {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed; /* Фиксированное позиционирование */
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон */
+    position: relative; /* Можно оставить, но не обязательно */
 }
 
 /* Заголовок модального окна */
