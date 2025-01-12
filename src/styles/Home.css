@@ -148,17 +148,11 @@ h1, h2 {
     align-items: center;
     justify-content: center;
     position: fixed; /* Фиксированное позиционирование */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон */
-}
-
-.modal {
-    background: white;
-    border-radius: 8px; /* Закругление углов */
-    padding: 20px;
-    max-width: 500px; /* Максимальная ширина модального окна */
-    width: 80%; /* Ширина 80% от родителя */
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Тень */
-    position: relative; /* Относительное позиционирование для адаптации */
 }
 
 /* Заголовок модального окна */
