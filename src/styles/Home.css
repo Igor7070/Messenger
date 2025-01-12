@@ -143,6 +143,18 @@ h1, h2 {
     max-width: 90%; /* Максимальная ширина для мобильных устройств */
 }
 
+.modal-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed; /* Фиксированное позиционирование */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон */
+}
+
 /* Заголовок модального окна */
 .modal-title {
     margin-bottom: 20px; /* Отступ снизу */
