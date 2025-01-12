@@ -27,7 +27,7 @@ public class HuggingFaceChatController {
     //private static final String HUGGING_FACE_API_URL = "https://api-inference.huggingface.co/models/erfanzar/LinguaMatic-GPT4";
     //private static final String HUGGING_FACE_API_URL = "https://api-inference.huggingface.co/models/erfanzar/LinguaMatic-GPT4";
     private static final String HUGGING_FACE_API_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-32B-Instruct";
-    //private static final String API_TOKEN = "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";
+    //private static final String API_TOKEN_OLD = "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";
 
     @Value("${huggingFace.api.token}")
     private String API_TOKEN;
