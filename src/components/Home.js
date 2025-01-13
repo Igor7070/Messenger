@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Home.css'; 
 
 const Home = () => {
@@ -17,7 +19,7 @@ const Home = () => {
     const [currentUserId, setCurrentUserId] = useState(null);
     const [loginUsername, setLoginUsername] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
-    const [isLoggedIn, setIsLoggedIn] = useState(false); // Новое состояние для авторизации
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const navigate = useNavigate();
 
     const fetchChats = async () => {
@@ -27,10 +29,10 @@ const Home = () => {
                 const data = await response.json();
                 setChats(data);
             } else {
-                console.error('Failed to fetch chats:', response.statusText);
+                toast.error('Failed to fetch chats');
             }
         } catch (error) {
-            console.error('Error fetching chats:', error);
+            toast.error('Error fetching chats');
         }
     };
 
@@ -41,10 +43,10 @@ const Home = () => {
                 const data = await response.json();
                 setUsers(data);
             } else {
-                console.error('Failed to fetch users:', response.statusText);
+                toast.error('Failed to fetch users');
             }
         } catch (error) {
-            console.error('Error fetching users:', error);
+            toast.error('Error fetching users');
         }
     };
 
@@ -52,7 +54,7 @@ const Home = () => {
         const storedUserId = localStorage.getItem('userId');
         if (storedUserId) {
             setCurrentUserId(Number(storedUserId));
-            setIsLoggedIn(true); // Если есть userId, устанавливаем статус авторизации
+            setIsLoggedIn(true);
         }
         fetchChats();
         fetchUsers();
@@ -70,26 +72,26 @@ const Home = () => {
     
             if (response.ok) {
                 const user = await response.json();
-                console.log('Logged in user:', user);
                 localStorage.setItem('userId', String(user.id));
                 setCurrentUserId(Number(user.id));
                 setLoginUsername('');
                 setLoginPassword('');
-                setIsLoggedIn(true); // Устанавливаем состояние авторизации
-                alert('Login successful!'); // Уведомление об успешной авторизации
+                setIsLoggedIn(true);
+                toast.success('Login successful!'); // Уведомление об успешной авторизации
             } else {
                 const errorMessage = await response.text();
-                alert(errorMessage);
+                toast.error(errorMessage);
             }
         } catch (error) {
-            console.error('Error logging in:', error);
+            toast.error('Error logging in');
         }
     };
 
     const logoutUser = () => {
         localStorage.removeItem('userId');
         setCurrentUserId(null);
-        setIsLoggedIn(false); // Сбрасываем состояние авторизации
+        setIsLoggedIn(false);
+        toast.success('Logged out successfully!'); // Уведомление об успешном выходе
     };
 
     const createChat = async () => {
@@ -107,12 +109,15 @@ const Home = () => {
                     const newChat = await response.json();
                     setChats([...chats, newChat]);
                     setChatName('');
+                    toast.success('Chat created successfully!');
                 } else {
-                    console.error('Failed to create chat:', response.statusText);
+                    toast.error('Failed to create chat');
                 }
             } catch (error) {
-                console.error('Error creating chat:', error);
+                toast.error('Error creating chat');
             }
+        } else {
+            toast.error('Chat name cannot be empty');
         }
     };
 
@@ -139,12 +144,13 @@ const Home = () => {
                 setPassword('');
                 setBio('');
                 setAvatar(null);
+                toast.success('User created successfully!');
             } else {
                 const errorMessage = await response.text();
-                alert(errorMessage);
+                toast.error(errorMessage);
             }
         } catch (error) {
-            console.error('Error creating user:', error);
+            toast.error('Error creating user');
         }
     };
 
@@ -165,7 +171,7 @@ const Home = () => {
 
     return (
         <div className="home-container">
-            {/* Логин-контейнер сверху */}
+            <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
             <div className="login-container-home">
                 {isLoggedIn ? (
                     <button onClick={logoutUser} className="logout-button-home">Logout</button>
@@ -190,7 +196,6 @@ const Home = () => {
                 )}
             </div>
 
-            {/* Основной контейнер для разделителя и двух колонок */}
             <div className="line-divider-container">
                 <div className="users-container">
                     <h2>Users</h2>
@@ -210,9 +215,9 @@ const Home = () => {
                             return (
                                 <li key={user.id} className="user-item" onClick={() => {
                                     if (user.id === currentUserId) {
-                                        navigate(`/user/${user.id}`); // Переход на страницу профиля текущего пользователя
+                                        navigate(`/user/${user.id}`);
                                     } else {
-                                        alert('Вы можете редактировать только свой аккаунт.');
+                                        toast.error('Вы можете редактировать только свой аккаунт.');
                                     }
                                 }}>
                                     {avatarSrc ? (
@@ -284,7 +289,7 @@ const Home = () => {
                     placeholder="Tell us about yourself (optional)"
                     rows={3}
                     className="modal-textarea"
-                    maxLength={244} // Ограничение длины текста
+                    maxLength={244}
                 />
                 <input
                     type="file"
