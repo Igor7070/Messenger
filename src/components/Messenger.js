@@ -8,14 +8,13 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams } from 'react-router-dom';
 
-// Добавляем функцию для получения имени чата
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
     if (!response.ok) {
         throw new Error('Failed to fetch chat name');
     }
     const chat = await response.json();
-    return chat.name; // Вернуть имя чата
+    return chat.name;
 };
 
 const Messenger = () => {
@@ -32,7 +31,7 @@ const Messenger = () => {
     const [charPerLine, setCharPerLine] = useState(30);
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
-    const [chatName, setChatName] = useState(''); 
+    const [chatName, setChatName] = useState('');
 
     const textAreaRef = useRef(null);
     const messagesEndRef = useRef(null);
@@ -44,23 +43,22 @@ const Messenger = () => {
         const storedUsername = localStorage.getItem('username');
 
         if (storedUserId && storedUsername) {
-            setUserId(storedUserId);
+            setUserId(Number(storedUserId)); // Преобразуем в число
             setUsername(storedUsername);
             setIsLoggedIn(true);
         }
 
-        console.log('Chat ID:', chatId); // Логируем chatId здесь
+        console.log('Chat ID:', chatId);
     }, []);
 
     useEffect(() => {
         console.log('Fetching messages for chatId:', chatId);
         const fetchMessages = async () => {
             try {
-                const messages = await getMessages(chatId); // Используем chatId
-                console.log('Messages fetched:', messages); // Логируем сообщения
+                const messages = await getMessages(chatId);
+                console.log('Messages fetched:', messages);
                 setMessages(messages);
 
-                // Получаем имя чата и устанавливаем в состояние
                 const name = await getChatName(chatId);
                 setChatName(name);
             } catch (error) {
@@ -76,7 +74,6 @@ const Messenger = () => {
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
                 console.log('Connected to WebSocket');
-                // Подписываемся на сообщения конкретного чата
                 stompClient.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
                     updateMessages(newMessage);
@@ -93,7 +90,7 @@ const Messenger = () => {
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId]); // chatId как зависимость для обновления подписки
+    }, [chatId]);
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
@@ -137,29 +134,23 @@ const Messenger = () => {
     const sendMessage = async () => {
         if ((content || selectedFile) && userId) {
             const currentUsername = username;
-    
             const chatName = await getChatName(chatId);
-            console.log('chatName: ', chatName);
     
             const message = {
                 id: editingMessageId || Date.now(),
                 content,
                 sender: { id: userId, username: currentUsername },
-                chat: { id: chatId, name: chatName }, // Добавляем chatId и имя чата
+                chat: { id: chatId, name: chatName },
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
             };
     
-            console.log('Sending message:', message); // Логируем сообщение перед отправкой
-            console.log('Chat ID:', chatId); // Логируем chatId здесь
+            console.log('Sending message:', message);
     
             if (client && client.connected) {
                 if (editingMessageId) {
                     const existingMessage = messages.find(msg => msg.id === editingMessageId);
                     if (existingMessage && existingMessage.sender.username === username) {
-                        // Здесь добавляем chatId в сообщение
                         client.publish({ destination: `/app/editMessage/${chatId}`, body: JSON.stringify(message) });
-    
-                        // Обновите состояние сообщений локально
                         setMessages(prevMessages => 
                             prevMessages.map(msg => 
                                 msg.id === editingMessageId ? { ...msg, content } : msg
@@ -173,7 +164,6 @@ const Messenger = () => {
                     client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
                 }
     
-                // Сброс состояния после отправки
                 setContent('');
                 setRows(1);
                 setEditingMessageId(null);
@@ -231,13 +221,11 @@ const Messenger = () => {
 
     const deleteMessage = async (id) => {
         if (client && client.connected) {
-            // Убедитесь, что chatId передается вместе с id
             client.publish({
-                destination: `/app/deleteMessage/${chatId}`, // Добавьте chatId
+                destination: `/app/deleteMessage/${chatId}`,
                 body: JSON.stringify(id),
             });
             
-            // Обновите состояние сообщений локально
             setMessages(prevMessages => prevMessages.filter(msg => msg.id !== id));
             
             toast.success('Сообщение удалено!');
@@ -336,7 +324,7 @@ const Messenger = () => {
 
     return (
         <div className="messenger">
-            <div className="chat-name">Chat: {chatName}</div> {/* Добавлено отображение имени чата */}
+            <div className="chat-name">Chat: {chatName}</div>
             <div className="user-creation">
                 <input
                     type="text"
@@ -365,9 +353,9 @@ const Messenger = () => {
                     msg.sender ? (
                         <div 
                             key={msg.id}
-                            className={`message ${msg.sender.username === username ? 'current-user' : 'other-user'}`} 
+                            className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`} 
                             onContextMenu={(e) => handleRightClick(e, msg)}
-                            style={{ display: 'flex', alignItems: 'center' }} // Flexbox для выравнивания
+                            style={{ display: 'flex', alignItems: 'center' }}
                         >
                             {msg.sender.avatar ? (
                                 <img 
@@ -381,7 +369,7 @@ const Messenger = () => {
                                 </div>
                             )}
                             <strong>{msg.sender.username}: </strong>
-                            <span className="message-content">{msg.content}</span> {/* Обернули текст сообщения в span */}
+                            <span className="message-content">{msg.content}</span>
                             {msg.fileUrl && (
                                 <a href={msg.fileUrl} download>📥 Download file</a>
                             )}
