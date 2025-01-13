@@ -9,7 +9,6 @@
 }
 
 .login-container-home {
-    display: flex;
     justify-content: center; /* Центрирование по горизонтали */
     margin-bottom: 20px; /* Отступ снизу */
     gap: 10px; /* Отступ между элементами */
