@@ -50,7 +50,7 @@ const Home = () => {
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
         if (storedUserId) {
-            setCurrentUserId(storedUserId); // Восстанавливаем идентификатор пользователя
+            setCurrentUserId(Number(storedUserId)); // Преобразуем обратно в число и устанавливаем
         }
         fetchChats();
         fetchUsers();
