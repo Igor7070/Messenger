@@ -135,7 +135,7 @@ const Messenger = () => {
         if ((content || selectedFile) && userId) {
             const currentUsername = username;
             const chatName = await getChatName(chatId);
-    
+        
             const message = {
                 id: editingMessageId || Date.now(),
                 content,
@@ -143,13 +143,13 @@ const Messenger = () => {
                 chat: { id: chatId, name: chatName },
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
             };
-    
+        
             console.log('Sending message:', message);
-    
+        
             if (client && client.connected) {
                 if (editingMessageId) {
                     const existingMessage = messages.find(msg => msg.id === editingMessageId);
-                    if (existingMessage && existingMessage.sender.username === username) {
+                    if (existingMessage && existingMessage.sender.id === userId) {
                         client.publish({ destination: `/app/editMessage/${chatId}`, body: JSON.stringify(message) });
                         setMessages(prevMessages => 
                             prevMessages.map(msg => 
@@ -163,17 +163,17 @@ const Messenger = () => {
                 } else {
                     client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
                 }
-    
+        
                 setContent('');
                 setRows(1);
                 setEditingMessageId(null);
                 setContextMenu({ visible: false });
                 setSelectedFile(null);
-    
+        
                 if (fileInputRef.current) {
                     fileInputRef.current.value = null;
                 }
-    
+        
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
@@ -205,11 +205,11 @@ const Messenger = () => {
     };
 
     const handleMenuAction = (action) => {
-        if (contextMenu.message.sender.username !== username) {
+        if (contextMenu.message.sender.id !== userId) {
             toast.error('Вы можете редактировать или удалять только свои сообщения.');
             return;
         }
-
+    
         if (action === 'edit') {
             setContent(contextMenu.message.content);
             setEditingMessageId(contextMenu.message.id);
@@ -222,7 +222,7 @@ const Messenger = () => {
     const deleteMessage = async (id) => {
         if (client && client.connected) {
             client.publish({
-                destination: `/app/deleteMessage/${chatId}`,
+                destination: `/app/deleteMessage/${chatId}`, 
                 body: JSON.stringify(id),
             });
             
