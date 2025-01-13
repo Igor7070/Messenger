@@ -15,6 +15,8 @@ const Home = () => {
     const [bio, setBio] = useState('');
     const [avatar, setAvatar] = useState(null);
     const [currentUserId, setCurrentUserId] = useState(null);
+    const [loginUsername, setLoginUsername] = useState('');
+    const [loginPassword, setLoginPassword] = useState('');
     const navigate = useNavigate();
 
     const fetchChats = async () => {
@@ -54,6 +56,31 @@ const Home = () => {
         fetchUsers();
     }, []);
 
+    const loginUser = async () => {
+        try {
+            const response = await fetch('https://unlimitedpossibilities12.org/api/users/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username: loginUsername, password: loginPassword }),
+            });
+
+            if (response.ok) {
+                const user = await response.json();
+                localStorage.setItem('userId', user.id); // Сохраните userId в localStorage
+                setCurrentUserId(user.id);
+                setLoginUsername('');
+                setLoginPassword('');
+            } else {
+                const errorMessage = await response.text();
+                alert(errorMessage);
+            }
+        } catch (error) {
+            console.error('Error logging in:', error);
+        }
+    };
+
     const createChat = async () => {
         if (chatName) {
             try {
@@ -86,13 +113,13 @@ const Home = () => {
         if (avatar) {
             formData.append('avatar', avatar);
         }
-    
+
         try {
             const response = await fetch('https://unlimitedpossibilities12.org/api/users/create', {
                 method: 'POST',
                 body: formData,
             });
-    
+
             if (response.ok) {
                 const newUser = await response.json();
                 setUsers([...users, newUser]);
@@ -127,6 +154,24 @@ const Home = () => {
 
     return (
         <div className="home-container">
+            <div className="login-container">
+                <input
+                    type="text"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                    placeholder="Username"
+                    className="login-input"
+                />
+                <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Password"
+                    className="login-input"
+                />
+                <button onClick={loginUser} className="login-button">Login</button>
+            </div>
+
             <div className="users-container">
                 <h2>Users</h2>
                 <input
