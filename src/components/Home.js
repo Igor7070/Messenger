@@ -154,7 +154,7 @@ const Home = () => {
 
     return (
         <div className="home-container">
-            {/* Новый контейнер для логина */}
+            {/* Новый контейнер для логина, который будет над Users и Group Chats */}
             <div className="login-container-home">
                 <input
                     type="text"
@@ -172,6 +172,8 @@ const Home = () => {
                 />
                 <button onClick={loginUser} className="login-button-home">Login</button>
             </div>
+
+            <div className="line-divider"></div> {/* Разделительная линия */}
 
             <div className="users-container">
                 <h2>Users</h2>
@@ -210,8 +212,6 @@ const Home = () => {
                 </ul>
             </div>
     
-            <div className="line-divider"></div> 
-    
             <div className="chats-container">
                 <h1>Group chats</h1>
                 <div className="chat-input-container">
@@ -239,40 +239,9 @@ const Home = () => {
                     ))}
                 </ul>
             </div>
-    
+
             <Modal isOpen={modalIsOpen} onRequestClose={() => setModalIsOpen(false)} className="modal" overlayClassName="modal-overlay">
-                <h2 className="modal-title">Create User</h2>
-                <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter username"
-                    className="modal-input"
-                    required
-                />
-                <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
-                    className="modal-input"
-                    required
-                />
-                <textarea
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="Tell us about yourself (optional)"
-                    rows={3}
-                    className="modal-textarea"
-                    maxLength={244}
-                />
-                <input
-                    type="file"
-                    onChange={(e) => setAvatar(e.target.files[0])}
-                    className="modal-file-input"
-                />
-                <button type="button" onClick={createUser} className="modal-create-button">Create User</button>
-                <button onClick={() => setModalIsOpen(false)} className="modal-close-button">Close</button>
+                {/* Ваш код для модального окна */}
             </Modal>
         </div>
     );
