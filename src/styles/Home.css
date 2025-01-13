@@ -91,6 +91,7 @@ h1, h2 {
     font-size: 16px;
     min-width: 150px; /* Минимальная ширина кнопки */
     margin-top: 10px;
+    margin-bottom: 10px;
     box-sizing: border-box; /* Учитываем границы и отступы в ширину и высоту */
 }
 
