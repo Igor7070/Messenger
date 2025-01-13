@@ -65,11 +65,12 @@ const Home = () => {
                 },
                 body: JSON.stringify({ username: loginUsername, password: loginPassword }),
             });
-
+    
             if (response.ok) {
                 const user = await response.json();
-                localStorage.setItem('userId', user.id); // Сохранение userId в localStorage
-                setCurrentUserId(user.id); // Устанавливаем текущего пользователя
+                console.log('Logged in user:', user); // Для отладки
+                localStorage.setItem('userId', String(user.id)); // Преобразуем в строку и сохраняем
+                setCurrentUserId(Number(user.id)); // Устанавливаем текущего пользователя
                 setLoginUsername('');
                 setLoginPassword('');
             } else {
