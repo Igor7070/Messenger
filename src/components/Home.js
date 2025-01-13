@@ -199,6 +199,7 @@ const Home = () => {
             <div className="line-divider-container">
                 <div className="users-container">
                     <h2>Users</h2>
+                    <button type="button" onClick={openModal} className="create-user-button-main">Create a new user</button>
                     <input
                         type="text"
                         value={userSearchTerm}
@@ -206,7 +207,6 @@ const Home = () => {
                         placeholder="Search user"
                         className="search-input"
                     />
-                    <button type="button" onClick={openModal} className="create-user-button-main">Create a new user</button>
                     <ul className="user-list">
                         {filteredUsers.map(user => {
                             const avatarSrc = user.avatar ? `https://unlimitedpossibilities12.org${user.avatar}` : null;
