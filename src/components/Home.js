@@ -6,7 +6,7 @@ import '../styles/Home.css';
 const Home = () => {
     const [chatName, setChatName] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
-    const [userSearchTerm, setUserSearchTerm] = useState(''); // Новое состояние для поиска пользователей
+    const [userSearchTerm, setUserSearchTerm] = useState('');
     const [chats, setChats] = useState([]);
     const [users, setUsers] = useState([]);
     const [modalIsOpen, setModalIsOpen] = useState(false);
@@ -14,6 +14,7 @@ const Home = () => {
     const [password, setPassword] = useState('');
     const [bio, setBio] = useState('');
     const [avatar, setAvatar] = useState(null);
+    const [currentUserId, setCurrentUserId] = useState(null);
     const navigate = useNavigate();
 
     const fetchChats = async () => {
@@ -45,6 +46,10 @@ const Home = () => {
     };
 
     useEffect(() => {
+        const storedUserId = localStorage.getItem('userId');
+        if (storedUserId) {
+            setCurrentUserId(storedUserId);
+        }
         fetchChats();
         fetchUsers();
     }, []);
@@ -110,17 +115,14 @@ const Home = () => {
     };
 
     const openModal = () => {
-        setUsername(''); // Сброс значений
+        setUsername('');
         setPassword('');
         setBio('');
         setAvatar(null);
         setModalIsOpen(true);
     };
 
-    // Фильтруем чаты по искомому имени
     const filteredChats = chats.filter(chat => chat.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    // Фильтруем пользователей по искомому имени
     const filteredUsers = users.filter(user => user.username.toLowerCase().includes(userSearchTerm.toLowerCase()));
 
     return (
@@ -134,7 +136,6 @@ const Home = () => {
                     placeholder="Search user"
                     className="search-input"
                 />
-                {/* Здесь вызывается openModal при нажатии на кнопку */}
                 <button type="button" onClick={openModal} className="create-user-button-main">Create a new user</button>
                 <ul className="user-list">
                     {filteredUsers.map(user => {
@@ -142,7 +143,13 @@ const Home = () => {
                         const initials = user.username ? user.username.charAt(0).toUpperCase() : '';
 
                         return (
-                            <li key={user.id} className="user-item" onClick={() => navigate(`/user/${user.id}`)}>
+                            <li key={user.id} className="user-item" onClick={() => {
+                                if (user.id === currentUserId) {
+                                    navigate(`/user/${user.id}`);
+                                } else {
+                                    alert('Вы можете редактировать только свой аккаунт.');
+                                }
+                            }}>
                                 {avatarSrc ? (
                                     <img src={avatarSrc} alt={`${user.username} avatar`} className="user-avatar" />
                                 ) : (
@@ -157,7 +164,7 @@ const Home = () => {
                 </ul>
             </div>
     
-            <div className="line-divider"></div> {/* Линия раздела */}
+            <div className="line-divider"></div> 
     
             <div className="chats-container">
                 <h1>Group chats</h1>
@@ -211,7 +218,7 @@ const Home = () => {
                     placeholder="Tell us about yourself (optional)"
                     rows={3}
                     className="modal-textarea"
-                    maxLength={244} // Ограничение длины текста
+                    maxLength={244}
                 />
                 <input
                     type="file"
