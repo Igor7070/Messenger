@@ -1,18 +1,20 @@
 .home-container {
-    display: flex; /* Используем flexbox для расположения контейнеров */
-    max-width: 1200px; /* Увеличиваем максимальную ширину для двух колонок */
+    display: flex; /* Flexbox для расположения */
+    flex-direction: column; /* Размещаем элементы вертикально */
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    background-color: #E6E6FA; /* Светлый фон */
+    background-color: #E6E6FA;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .login-container-home {
-    display: flex; /* Используем flexbox для выравнивания */
-    justify-content: center; /* Центрирование по горизонтали */
-    margin-bottom: 20px; /* Отступ снизу */
-    gap: 10px; /* Отступ между элементами */
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Центрируем элементы вертикально */
+    margin-bottom: 20px; /* Добавляем отступ снизу */
+    gap: 10px;
 }
 
 .login-input-home {
@@ -35,18 +37,17 @@
 }
 
 .users-container {
-    width: 35%; /* Ширина для списка пользователей */
+    flex: 1; /* Занимает оставшееся пространство */
     padding: 10px;
-    /*border-right: 1px solid #ccc; Разделитель между пользователями и чатами */
-    overflow-y: auto; /* Прокрутка, если список пользователей длинный */
-    max-height: 600px; /* Ограничиваем высоту для прокрутки */
+    overflow-y: auto; /* Прокрутка для длинного списка */
+    max-height: 600px;
 }
 
 .chats-container {
-    width: 70%; /* Ширина для списка чатов */
+    flex: 1; /* Занимает оставшееся пространство */
     padding: 10px;
-    overflow-y: auto; /* Прокрутка, если список чатов длинный */
-    max-height: 600px; /* Ограничиваем высоту для прокрутки */
+    overflow-y: auto; /* Прокрутка для длинного списка */
+    max-height: 600px;
 }
 
 h1, h2 {
@@ -145,10 +146,16 @@ h1, h2 {
 }
 
 /* Линия раздела */
+.line-divider-container {
+    display: flex; /* Flexbox для разделения Users и Chats */
+    width: 100%; /* Занять всю ширину */
+    margin-top: 20px; /* Отступ сверху */
+}
+
 .line-divider {
     width: 1px; /* Толщина линии */
-    background-color: #ccc; /* Цвет линии */
-    margin: 0 20px; /* Отступ слева и справа */
+    background-color: #ccc;
+    margin: 0 20px; /* Отступ по бокам между контейнерами */
 }
 
 /* Стиль для модального окна */

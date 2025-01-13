@@ -154,7 +154,7 @@ const Home = () => {
 
     return (
         <div className="home-container">
-            {/* Новый контейнер для логина, который будет над Users и Group Chats */}
+            {/* Логин-контейнер сверху */}
             <div className="login-container-home">
                 <input
                     type="text"
@@ -173,71 +173,74 @@ const Home = () => {
                 <button onClick={loginUser} className="login-button-home">Login</button>
             </div>
 
-            <div className="line-divider"></div> {/* Разделительная линия */}
-
-            <div className="users-container">
-                <h2>Users</h2>
-                <input
-                    type="text"
-                    value={userSearchTerm}
-                    onChange={(e) => setUserSearchTerm(e.target.value)}
-                    placeholder="Search user"
-                    className="search-input"
-                />
-                <button type="button" onClick={openModal} className="create-user-button-main">Create a new user</button>
-                <ul className="user-list">
-                    {filteredUsers.map(user => {
-                        const avatarSrc = user.avatar ? `https://unlimitedpossibilities12.org${user.avatar}` : null;
-                        const initials = user.username ? user.username.charAt(0).toUpperCase() : '';
-
-                        return (
-                            <li key={user.id} className="user-item" onClick={() => {
-                                if (user.id === currentUserId) {
-                                    navigate(`/user/${user.id}`);
-                                } else {
-                                    alert('Вы можете редактировать только свой аккаунт.');
-                                }
-                            }}>
-                                {avatarSrc ? (
-                                    <img src={avatarSrc} alt={`${user.username} avatar`} className="user-avatar" />
-                                ) : (
-                                    <div className="user-avatar">
-                                        {initials}
-                                    </div>
-                                )}
-                                <span className="user-name">{user.username}</span>
-                            </li>
-                        );
-                    })}
-                </ul>
-            </div>
-    
-            <div className="chats-container">
-                <h1>Group chats</h1>
-                <div className="chat-input-container">
+            {/* Основной контейнер для разделителя и двух колонок */}
+            <div className="line-divider-container">
+                <div className="users-container">
+                    <h2>Users</h2>
                     <input
                         type="text"
-                        value={chatName}
-                        onChange={(e) => setChatName(e.target.value)}
-                        placeholder="Enter the chat name"
-                        className="chat-input"
+                        value={userSearchTerm}
+                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                        placeholder="Search user"
+                        className="search-input"
                     />
-                    <button onClick={createChat} className="create-chat-button">Create a group chat</button>
+                    <button type="button" onClick={openModal} className="create-user-button-main">Create a new user</button>
+                    <ul className="user-list">
+                        {filteredUsers.map(user => {
+                            const avatarSrc = user.avatar ? `https://unlimitedpossibilities12.org${user.avatar}` : null;
+                            const initials = user.username ? user.username.charAt(0).toUpperCase() : '';
+
+                            return (
+                                <li key={user.id} className="user-item" onClick={() => {
+                                    if (user.id === currentUserId) {
+                                        navigate(`/user/${user.id}`);
+                                    } else {
+                                        alert('Вы можете редактировать только свой аккаунт.');
+                                    }
+                                }}>
+                                    {avatarSrc ? (
+                                        <img src={avatarSrc} alt={`${user.username} avatar`} className="user-avatar" />
+                                    ) : (
+                                        <div className="user-avatar">
+                                            {initials}
+                                        </div>
+                                    )}
+                                    <span className="user-name">{user.username}</span>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 </div>
-                <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search chats..."
-                    className="search-input"
-                />
-                <ul className="chat-list">
-                    {filteredChats.map((chat) => (
-                        <li key={chat.id} onClick={() => goToChat(chat.id)} className="chat-item">
-                            {chat.name}
-                        </li>
-                    ))}
-                </ul>
+
+                <div className="line-divider"></div>
+
+                <div className="chats-container">
+                    <h1>Group chats</h1>
+                    <div className="chat-input-container">
+                        <input
+                            type="text"
+                            value={chatName}
+                            onChange={(e) => setChatName(e.target.value)}
+                            placeholder="Enter the chat name"
+                            className="chat-input"
+                        />
+                        <button onClick={createChat} className="create-chat-button">Create a group chat</button>
+                    </div>
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search chats..."
+                        className="search-input"
+                    />
+                    <ul className="chat-list">
+                        {filteredChats.map((chat) => (
+                            <li key={chat.id} onClick={() => goToChat(chat.id)} className="chat-item">
+                                {chat.name}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
             </div>
 
             <Modal isOpen={modalIsOpen} onRequestClose={() => setModalIsOpen(false)} className="modal" overlayClassName="modal-overlay">
