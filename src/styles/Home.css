@@ -1,7 +1,7 @@
 .home-container {
     display: flex; /* Flexbox для расположения */
     flex-direction: column; /* Размещаем элементы вертикально */
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
     background-color: #E6E6FA;
