@@ -50,7 +50,7 @@ const Home = () => {
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
         if (storedUserId) {
-            setCurrentUserId(storedUserId);
+            setCurrentUserId(storedUserId); // Восстанавливаем идентификатор пользователя
         }
         fetchChats();
         fetchUsers();
@@ -68,8 +68,8 @@ const Home = () => {
 
             if (response.ok) {
                 const user = await response.json();
-                localStorage.setItem('userId', user.id);
-                setCurrentUserId(user.id);
+                localStorage.setItem('userId', user.id); // Сохранение userId в localStorage
+                setCurrentUserId(user.id); // Устанавливаем текущего пользователя
                 setLoginUsername('');
                 setLoginPassword('');
             } else {
@@ -193,7 +193,7 @@ const Home = () => {
                             return (
                                 <li key={user.id} className="user-item" onClick={() => {
                                     if (user.id === currentUserId) {
-                                        navigate(`/user/${user.id}`);
+                                        navigate(`/user/${user.id}`); // Переход на страницу профиля текущего пользователя
                                     } else {
                                         alert('Вы можете редактировать только свой аккаунт.');
                                     }
