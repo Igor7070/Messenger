@@ -17,6 +17,7 @@ const Home = () => {
     const [currentUserId, setCurrentUserId] = useState(null);
     const [loginUsername, setLoginUsername] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
+    const [isLoggedIn, setIsLoggedIn] = useState(false); // Новое состояние для авторизации
     const navigate = useNavigate();
 
     const fetchChats = async () => {
@@ -50,7 +51,8 @@ const Home = () => {
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
         if (storedUserId) {
-            setCurrentUserId(Number(storedUserId)); // Преобразуем обратно в число и устанавливаем
+            setCurrentUserId(Number(storedUserId));
+            setIsLoggedIn(true); // Если есть userId, устанавливаем статус авторизации
         }
         fetchChats();
         fetchUsers();
@@ -68,11 +70,13 @@ const Home = () => {
     
             if (response.ok) {
                 const user = await response.json();
-                console.log('Logged in user:', user); // Для отладки
-                localStorage.setItem('userId', String(user.id)); // Преобразуем в строку и сохраняем
-                setCurrentUserId(Number(user.id)); // Устанавливаем текущего пользователя
+                console.log('Logged in user:', user);
+                localStorage.setItem('userId', String(user.id));
+                setCurrentUserId(Number(user.id));
                 setLoginUsername('');
                 setLoginPassword('');
+                setIsLoggedIn(true); // Устанавливаем состояние авторизации
+                alert('Login successful!'); // Уведомление об успешной авторизации
             } else {
                 const errorMessage = await response.text();
                 alert(errorMessage);
@@ -80,6 +84,12 @@ const Home = () => {
         } catch (error) {
             console.error('Error logging in:', error);
         }
+    };
+
+    const logoutUser = () => {
+        localStorage.removeItem('userId');
+        setCurrentUserId(null);
+        setIsLoggedIn(false); // Сбрасываем состояние авторизации
     };
 
     const createChat = async () => {
@@ -157,21 +167,27 @@ const Home = () => {
         <div className="home-container">
             {/* Логин-контейнер сверху */}
             <div className="login-container-home">
-                <input
-                    type="text"
-                    value={loginUsername}
-                    onChange={(e) => setLoginUsername(e.target.value)}
-                    placeholder="Username"
-                    className="login-input-home"
-                />
-                <input
-                    type="password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="Password"
-                    className="login-input-home"
-                />
-                <button onClick={loginUser} className="login-button-home">Login</button>
+                {isLoggedIn ? (
+                    <button onClick={logoutUser} className="logout-button-home">Logout</button>
+                ) : (
+                    <>
+                        <input
+                            type="text"
+                            value={loginUsername}
+                            onChange={(e) => setLoginUsername(e.target.value)}
+                            placeholder="Username"
+                            className="login-input-home"
+                        />
+                        <input
+                            type="password"
+                            value={loginPassword}
+                            onChange={(e) => setLoginPassword(e.target.value)}
+                            placeholder="Password"
+                            className="login-input-home"
+                        />
+                        <button onClick={loginUser} className="login-button-home">Login</button>
+                    </>
+                )}
             </div>
 
             {/* Основной контейнер для разделителя и двух колонок */}
