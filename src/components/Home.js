@@ -154,22 +154,23 @@ const Home = () => {
 
     return (
         <div className="home-container">
-            <div className="login-container">
+            {/* Новый контейнер для логина */}
+            <div className="login-container-home">
                 <input
                     type="text"
                     value={loginUsername}
                     onChange={(e) => setLoginUsername(e.target.value)}
                     placeholder="Username"
-                    className="login-input"
+                    className="login-input-home"
                 />
                 <input
                     type="password"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="Password"
-                    className="login-input"
+                    className="login-input-home"
                 />
-                <button onClick={loginUser} className="login-button">Login</button>
+                <button onClick={loginUser} className="login-button-home">Login</button>
             </div>
 
             <div className="users-container">
