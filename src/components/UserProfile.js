@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import '../styles/UserProfile.css'; 
 import { FaEdit } from 'react-icons/fa';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const UserProfile = () => {
     const { userId } = useParams();
@@ -23,10 +25,12 @@ const UserProfile = () => {
                 } else {
                     setError('Failed to fetch user data');
                     console.error('Failed to fetch user:', response.statusText);
+                    toast.error('Failed to fetch user data');
                 }
             } catch (error) {
                 setError('Error fetching user data');
                 console.error('Error fetching user:', error);
+                toast.error('Error fetching user data');
             }
         };
 
@@ -56,17 +60,19 @@ const UserProfile = () => {
             });
 
             if (response.ok) {
-                alert('User updated successfully!');
                 const updatedUser = await response.json();
                 setUser(updatedUser);
+                toast.success('User updated successfully!');
                 setIsEditing(false);
             } else {
                 setError('Failed to update user');
                 console.error('Failed to update user:', response.statusText);
+                toast.error('Failed to update user');
             }
         } catch (error) {
             setError('Error updating user');
             console.error('Error updating user:', error);
+            toast.error('Error updating user');
         }
     };
 
@@ -75,6 +81,7 @@ const UserProfile = () => {
 
     return (
         <div className="user-profile-container">
+            <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
             <h1>{user.username}</h1>
             {user.avatar ? (
                 <img 
@@ -87,7 +94,7 @@ const UserProfile = () => {
                     {user.username.charAt(0).toUpperCase()}
                 </div>
             )}
-            {userId === String(currentUserId) && ( // Проверка на совпадение ID
+            {userId === String(currentUserId) && ( 
                 <input type="file" onChange={handleAvatarChange} className="avatar-input" />
             )}
             <div className="user-info">
