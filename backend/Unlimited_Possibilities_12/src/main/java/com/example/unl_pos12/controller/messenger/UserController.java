@@ -24,6 +24,11 @@ public class UserController {
         return userService.getAllUsers();
     }
 
+    @GetMapping("/{id}") // Получение пользователя по ID
+    public User getUserById(@PathVariable Long id) {
+        return userService.getUserById(id);
+    }
+
     @GetMapping("/check-avatar/{filename}")
     public ResponseEntity<String> checkAvatar(@PathVariable String filename) {
         // Указываем абсолютный путь к директории для аватаров в проекте
