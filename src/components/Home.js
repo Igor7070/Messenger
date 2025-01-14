@@ -77,7 +77,7 @@ const Home = () => {
                 setLoginUsername('');
                 setLoginPassword('');
                 setIsLoggedIn(true);
-                toast.success('Login successful!'); // Уведомление об успешной авторизации
+                toast.success('Login successful!');
             } else {
                 const errorMessage = await response.text();
                 toast.error(errorMessage);
@@ -91,7 +91,7 @@ const Home = () => {
         localStorage.removeItem('userId');
         setCurrentUserId(null);
         setIsLoggedIn(false);
-        toast.success('Logged out successfully!'); // Уведомление об успешном выходе
+        toast.success('Logged out successfully!');
     };
 
     const createChat = async () => {
@@ -213,13 +213,7 @@ const Home = () => {
                             const initials = user.username ? user.username.charAt(0).toUpperCase() : '';
 
                             return (
-                                <li key={user.id} className="user-item" onClick={() => {
-                                    if (user.id === currentUserId) {
-                                        navigate(`/user/${user.id}`);
-                                    } else {
-                                        toast.error('Вы можете редактировать только свой аккаунт.');
-                                    }
-                                }}>
+                                <li key={user.id} className="user-item" onClick={() => navigate(`/user/${user.id}`)}>
                                     {avatarSrc ? (
                                         <img src={avatarSrc} alt={`${user.username} avatar`} className="user-avatar" />
                                     ) : (

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import '../styles/UserProfile.css'; 
-import { FaEdit } from 'react-icons/fa'; // Импортируем иконку карандашика
+import { FaEdit } from 'react-icons/fa';
 
 const UserProfile = () => {
     const { userId } = useParams();
     const [user, setUser] = useState(null);
     const [newAvatar, setNewAvatar] = useState(null);
     const [info, setInfo] = useState('');
-    const [isEditing, setIsEditing] = useState(false); // Состояние для редактирования
+    const [isEditing, setIsEditing] = useState(false);
     const [error, setError] = useState(null);
+    const [currentUserId, setCurrentUserId] = useState(null); // Добавляем состояние для текущего пользователя
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -30,6 +31,12 @@ const UserProfile = () => {
         };
 
         fetchUser();
+
+        // Получаем текущий ID пользователя из localStorage
+        const storedUserId = localStorage.getItem('userId');
+        if (storedUserId) {
+            setCurrentUserId(Number(storedUserId));
+        }
     }, [userId]);
 
     const handleAvatarChange = (e) => {
@@ -53,7 +60,7 @@ const UserProfile = () => {
                 alert('User updated successfully!');
                 const updatedUser = await response.json();
                 setUser(updatedUser);
-                setIsEditing(false); // Закрываем режим редактирования
+                setIsEditing(false);
             } else {
                 setError('Failed to update user');
                 console.error('Failed to update user:', response.statusText);
@@ -90,16 +97,20 @@ const UserProfile = () => {
                         onChange={(e) => setInfo(e.target.value)}
                         rows={3}
                         className="user-info-input"
-                        maxLength={244} // Ограничение длины текста
+                        maxLength={244}
                     />
                 ) : (
                     <div className="user-info-text">
                         <p>{info}</p>
-                        <FaEdit className="edit-icon" onClick={() => setIsEditing(true)} />
+                        {userId === String(currentUserId) && ( // Проверка на совпадение ID
+                            <FaEdit className="edit-icon" onClick={() => setIsEditing(true)} />
+                        )}
                     </div>
                 )}
             </div>
-            <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
+            {userId === String(currentUserId) && ( // Проверка на совпадение ID
+                <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
+            )}
         </div>
     );
 };
