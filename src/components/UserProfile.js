@@ -137,6 +137,7 @@ const UserProfile = () => {
                     src={`https://unlimitedpossibilities12.org${user.avatar}`} 
                     alt={`${user.username} avatar`} 
                     className="user-profile-modal-image" 
+                    style={{ width: '100%', height: 'auto' }} // Добавьте стили для адаптивного изображения
                     onClick={closeModal} // Закрытие модального окна при клике на изображение
                 />
                 <button onClick={closeModal} className="user-profile-modal-close-button">Close</button>
