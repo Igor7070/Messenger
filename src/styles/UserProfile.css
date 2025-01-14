@@ -69,3 +69,31 @@
 h2 {
     margin: 0; /* Убираем отступы для заголовка "О себе:" */
 }
+
+.user-profile-modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    outline: none;
+}
+
+.user-profile-modal-overlay {
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-profile-modal-image {
+    max-width: 90%;
+    max-height: 90%;
+    cursor: pointer; /* Указывает, что изображение может быть нажато */
+}
+
+.user-profile-modal-close-button {
+    margin-top: 20px;
+    background-color: #fff;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+}

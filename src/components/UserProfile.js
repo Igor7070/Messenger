@@ -4,6 +4,7 @@ import '../styles/UserProfile.css';
 import { FaEdit } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Modal from 'react-modal';
 
 const UserProfile = () => {
     const { userId } = useParams();
@@ -12,7 +13,8 @@ const UserProfile = () => {
     const [info, setInfo] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [error, setError] = useState(null);
-    const [currentUserId, setCurrentUserId] = useState(null); 
+    const [currentUserId, setCurrentUserId] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false); // Для управления модальным окном
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -76,6 +78,14 @@ const UserProfile = () => {
         }
     };
 
+    const openModal = () => {
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+    };
+
     if (error) return <div className="error-message">{error}</div>;
     if (!user) return <div>Loading...</div>;
 
@@ -88,6 +98,7 @@ const UserProfile = () => {
                     src={`https://unlimitedpossibilities12.org${user.avatar}`} 
                     alt={`${user.username} avatar`} 
                     className="user-avatar-profile" 
+                    onClick={openModal} // Открытие модального окна при клике
                 />
             ) : (
                 <div className="user-avatar-profile" style={{ backgroundColor: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -119,6 +130,17 @@ const UserProfile = () => {
             {userId === String(currentUserId) && ( 
                 <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
             )}
+
+            {/* Модальное окно для увеличенного изображения с уникальными классами */}
+            <Modal isOpen={isModalOpen} onRequestClose={closeModal} className="user-profile-modal" overlayClassName="user-profile-modal-overlay">
+                <img 
+                    src={`https://unlimitedpossibilities12.org${user.avatar}`} 
+                    alt={`${user.username} avatar`} 
+                    className="user-profile-modal-image" 
+                    onClick={closeModal} // Закрытие модального окна при клике на изображение
+                />
+                <button onClick={closeModal} className="user-profile-modal-close-button">Close</button>
+            </Modal>
         </div>
     );
 };
