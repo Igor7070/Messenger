@@ -10,7 +10,7 @@ const UserProfile = () => {
     const [info, setInfo] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [error, setError] = useState(null);
-    const [currentUserId, setCurrentUserId] = useState(null); // Добавляем состояние для текущего пользователя
+    const [currentUserId, setCurrentUserId] = useState(null); 
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -32,7 +32,6 @@ const UserProfile = () => {
 
         fetchUser();
 
-        // Получаем текущий ID пользователя из localStorage
         const storedUserId = localStorage.getItem('userId');
         if (storedUserId) {
             setCurrentUserId(Number(storedUserId));
@@ -88,7 +87,9 @@ const UserProfile = () => {
                     {user.username.charAt(0).toUpperCase()}
                 </div>
             )}
-            <input type="file" onChange={handleAvatarChange} className="avatar-input" />
+            {userId === String(currentUserId) && ( // Проверка на совпадение ID
+                <input type="file" onChange={handleAvatarChange} className="avatar-input" />
+            )}
             <div className="user-info">
                 <h2>О себе:</h2>
                 {isEditing ? (
@@ -102,13 +103,13 @@ const UserProfile = () => {
                 ) : (
                     <div className="user-info-text">
                         <p>{info}</p>
-                        {userId === String(currentUserId) && ( // Проверка на совпадение ID
+                        {userId === String(currentUserId) && ( 
                             <FaEdit className="edit-icon" onClick={() => setIsEditing(true)} />
                         )}
                     </div>
                 )}
             </div>
-            {userId === String(currentUserId) && ( // Проверка на совпадение ID
+            {userId === String(currentUserId) && ( 
                 <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
             )}
         </div>
