@@ -42,6 +42,18 @@ public class UserController {
         }
     }
 
+    @GetMapping("/{id}/avatar")
+    public ResponseEntity<String> getUserAvatar(@PathVariable Long id) {
+        User user = userService.getUserById(id);
+        if (user != null && user.getAvatar() != null) {
+            // Возвращаем имя файла аватара
+            String fileName = user.getAvatar().substring(user.getAvatar().lastIndexOf('/') + 1);
+            return ResponseEntity.ok(fileName);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Avatar not found");
+        }
+    }
+
     @PostMapping
     public User createUser(@RequestBody User user) {
         System.out.println("Created user: " + user.getUsername());
