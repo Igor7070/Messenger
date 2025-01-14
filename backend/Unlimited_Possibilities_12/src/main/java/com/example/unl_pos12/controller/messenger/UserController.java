@@ -3,10 +3,7 @@ package com.example.unl_pos12.controller.messenger;
 import com.example.unl_pos12.model.messenger.User;
 import com.example.unl_pos12.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,18 +24,16 @@ public class UserController {
         return userService.getAllUsers();
     }
 
-    @GetMapping("/avatars/{filename}")
-    public ResponseEntity<Resource> getAvatar(@PathVariable String filename) {
+    @GetMapping("/check-avatar/{filename}")
+    public ResponseEntity<String> checkAvatar(@PathVariable String filename) {
+        // Указываем абсолютный путь к директории для аватаров в проекте
         String filePath = new File("src/main/resources/static/avatars/" + filename).getAbsolutePath();
         File file = new File(filePath);
 
         if (file.exists()) {
-            Resource resource = new FileSystemResource(file);
-            return ResponseEntity.ok()
-                    .contentType(MediaType.IMAGE_JPEG) // Укажите тип контента в зависимости от формата изображения
-                    .body(resource);
+            return ResponseEntity.ok("File exists: " + file.getAbsolutePath());
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found");
         }
     }
 
