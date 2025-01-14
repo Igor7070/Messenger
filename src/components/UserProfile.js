@@ -15,6 +15,7 @@ const UserProfile = () => {
     const [error, setError] = useState(null);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false); // Для управления модальным окном
+    const [avatarFileName, setAvatarFileName] = useState(''); // Хранение имени файла аватара
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -24,6 +25,14 @@ const UserProfile = () => {
                     const data = await response.json();
                     setUser(data);
                     setInfo(data.info || '');
+                    // Получаем имя файла аватара
+                    const avatarResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${userId}/avatar`);
+                    if (avatarResponse.ok) {
+                        const fileName = await avatarResponse.text();
+                        setAvatarFileName(fileName); // Сохраняем имя файла
+                    } else {
+                        console.error('Failed to fetch avatar file name:', avatarResponse.statusText);
+                    }
                 } else {
                     setError('Failed to fetch user data');
                     console.error('Failed to fetch user:', response.statusText);
@@ -134,7 +143,7 @@ const UserProfile = () => {
             {/* Модальное окно для увеличенного изображения с уникальными классами */}
             <Modal isOpen={isModalOpen} onRequestClose={closeModal} className="user-profile-modal" overlayClassName="user-profile-modal-overlay">
                 <img 
-                    src={`https://unlimitedpossibilities12.org${user.avatar}`} 
+                    src={`https://unlimitedpossibilities12.org/avatars/${avatarFileName}`} // Используйте имя файла для формирования URL
                     alt={`${user.username} avatar`} 
                     className="user-profile-modal-image" 
                     style={{ width: '100%', height: 'auto' }} // Добавьте стили для адаптивного изображения
