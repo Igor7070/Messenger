@@ -15,7 +15,6 @@ const UserProfile = () => {
     const [error, setError] = useState(null);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false); // Для управления модальным окном
-    const [modalImage, setModalImage] = useState(''); // Для хранения URL изображения в модальном окне
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -79,12 +78,7 @@ const UserProfile = () => {
         }
     };
 
-    const openModal = async () => {
-        if (user.avatar) {
-            const avatarFilename = user.avatar.split('/').pop(); // Извлекаем имя файла
-            const imageUrl = `https://unlimitedpossibilities12.org/api/users/avatars/${avatarFilename}`;
-            setModalImage(imageUrl);
-        }
+    const openModal = () => {
         setIsModalOpen(true);
     };
 
@@ -140,7 +134,7 @@ const UserProfile = () => {
             {/* Модальное окно для увеличенного изображения с уникальными классами */}
             <Modal isOpen={isModalOpen} onRequestClose={closeModal} className="user-profile-modal" overlayClassName="user-profile-modal-overlay">
                 <img 
-                    src={modalImage} // Используем загруженное изображение
+                    src={`https://unlimitedpossibilities12.org${user.avatar}`} 
                     alt={`${user.username} avatar`} 
                     className="user-profile-modal-image" 
                     onClick={closeModal} // Закрытие модального окна при клике на изображение
