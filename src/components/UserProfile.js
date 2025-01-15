@@ -95,6 +95,12 @@ const UserProfile = () => {
         setIsModalOpen(false);
     };
 
+    const handleSendMessage = () => {
+        // Логика отправки сообщения
+        console.log('Send message to:', user.username);
+        toast.success(`Message sent to ${user.username}!`);
+    };
+
     if (error) return <div className="error-message">{error}</div>;
     if (!user) return <div>Loading...</div>;
 
@@ -138,6 +144,11 @@ const UserProfile = () => {
             </div>
             {userId === String(currentUserId) && ( 
                 <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
+            )}
+
+            {/* Кнопка "Send message" */}
+            {currentUserId && userId !== String(currentUserId) && ( // Проверка на авторизацию и чужой профиль
+                <button onClick={handleSendMessage} className="send-message-button">Send Message</button>
             )}
 
             {/* Модальное окно для увеличенного изображения с уникальными классами */}
