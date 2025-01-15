@@ -97,3 +97,19 @@ h2 {
     padding: 10px;
     cursor: pointer;
 }
+
+.send-message-button {
+    background-color: #4CAF50; /* Зеленый цвет фона */
+    color: white; /* Белый текст */
+    border: none; /* Убираем границы */
+    border-radius: 5px; /* Закругленные углы */
+    padding: 10px 20px; /* Отступы внутри кнопки */
+    font-size: 16px; /* Размер шрифта */
+    cursor: pointer; /* Указатель при наведении */
+    transition: background-color 0.3s; /* Плавный переход цвета фона */
+    margin-top: 20px; /* Отступ сверху */
+}
+
+.send-message-button:hover {
+    background-color: #45a049; /* Более темный зеленый при наведении */
+}
