@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { getMessages, sendMessage as apiSendMessage, createChat } from '../api/messages';
+import { getMessages, sendMessage as apiSendMessage } from '../api/messages';
 import '../styles/Messenger.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -27,31 +27,14 @@ const PrivateChat = () => {
 
                 const uniqueUsernames = [...new Set(messages.map(msg => msg.sender.username))];
                 setChatName(uniqueUsernames.join(' и '));
-
-                // Проверка существования чата
-                const existingChat = await checkChatExists(uniqueUsernames);
-                if (existingChat) {
-                    setChatId(existingChat.id);
-                } else {
-                    const newChat = await createChat({ name: chatName });
-                    setChatId(newChat.id);
-                }
+                setChatId(chatIdParam); // Установка chatId из параметров
             } catch (error) {
                 console.error('Ошибка при загрузке сообщений:', error);
             }
         };
 
         fetchMessages();
-    }, [chatIdParam, chatName]);
-
-    const checkChatExists = async (usernames) => {
-        const response = await fetch(`https://unlimitedpossibilities12.org/api/chats`);
-        const chats = await response.json();
-        return chats.find(chat => {
-            const chatUsernames = chat.name.split(' и ');
-            return usernames.every(username => chatUsernames.includes(username));
-        });
-    };
+    }, [chatIdParam]);
 
     useEffect(() => {
         const stompClient = new Client({
@@ -139,15 +122,6 @@ const PrivateChat = () => {
         setSelectedFile(e.target.files[0]);
     };
 
-    const handleRightClick = (e, message) => {
-        e.preventDefault();
-        // Логика для контекстного меню
-    };
-
-    const handleMenuAction = (action, message) => {
-        // Логика для редактирования и удаления сообщений
-    };
-
     const deleteMessage = async (id) => {
         if (client && client.connected) {
             client.publish({
@@ -169,7 +143,6 @@ const PrivateChat = () => {
                     <div 
                         key={msg.id}
                         className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`} 
-                        onContextMenu={(e) => handleRightClick(e, msg)}
                         style={{ display: 'flex', alignItems: 'center' }}
                     >
                         {msg.sender.avatar ? (
@@ -207,7 +180,6 @@ const PrivateChat = () => {
             />
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
-            {/* Контекстное меню можно добавить здесь */}
         </div>
     );
 };

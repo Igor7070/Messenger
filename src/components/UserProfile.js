@@ -95,10 +95,36 @@ const UserProfile = () => {
         setIsModalOpen(false);
     };
 
-    const handleSendMessage = () => {
+    const handleSendMessage = async () => {
         if (currentUserId && userId !== String(currentUserId)) {
             const chatName = `${user.username}_${localStorage.getItem('username')}`; // Формирование имени чата
-            navigate(`/private-chat/${chatName}`); // Переход к личному чату
+    
+            // Проверка наличия чата
+            const response = await fetch(`/api/chats/check?name1=${user.username}&name2=${localStorage.getItem('username')}`);
+            const chatId = await response.json();
+    
+            if (chatId) {
+                // Если чат существует, переходим к нему
+                navigate(`/private-chat/${chatId}`);
+            } else {
+                // Если чат не существует, создаем новый
+                const newChat = { name: chatName };
+                const createResponse = await fetch('/api/chats', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(newChat),
+                });
+    
+                if (createResponse.ok) {
+                    const createdChat = await createResponse.json();
+                    navigate(`/private-chat/${createdChat.id}`); // Переход к новому чату
+                } else {
+                    toast.error('Failed to create new chat');
+                }
+            }
+    
             toast.success(`Navigating to chat with ${user.username}!`);
         } else {
             toast.warn('You cannot send a message to yourself.');
