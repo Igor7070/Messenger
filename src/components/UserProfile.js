@@ -97,35 +97,40 @@ const UserProfile = () => {
 
     const handleSendMessage = async () => {
         if (currentUserId && userId !== String(currentUserId)) {
-            const chatName = `${user.username}_${localStorage.getItem('username')}`; // Формирование имени чата
+            const chatName = `${user.username}_${localStorage.getItem('username')}`;
     
-            // Проверка наличия чата
-            const response = await fetch(`/api/chats/check?name1=${user.username}&name2=${localStorage.getItem('username')}`);
-            const chatId = await response.json();
-    
-            if (chatId) {
-                // Если чат существует, переходим к нему
-                navigate(`/private-chat/${chatId}`);
-            } else {
-                // Если чат не существует, создаем новый
-                const newChat = { name: chatName };
-                const createResponse = await fetch('/api/chats', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(newChat),
-                });
-    
-                if (createResponse.ok) {
-                    const createdChat = await createResponse.json();
-                    navigate(`/private-chat/${createdChat.id}`); // Переход к новому чату
-                } else {
-                    toast.error('Failed to create new chat');
+            try {
+                const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/check?name1=${user.username}&name2=${localStorage.getItem('username')}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
                 }
-            }
+                const chatId = await response.json();
     
-            toast.success(`Navigating to chat with ${user.username}!`);
+                if (chatId) {
+                    navigate(`/private-chat/${chatId}`);
+                } else {
+                    const newChat = { name: chatName };
+                    const createResponse = await fetch('https://unlimitedpossibilities12.org/api/chats', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(newChat),
+                    });
+    
+                    if (createResponse.ok) {
+                        const createdChat = await createResponse.json();
+                        navigate(`/private-chat/${createdChat.id}`);
+                    } else {
+                        toast.error('Failed to create new chat');
+                    }
+                }
+    
+                toast.success(`Navigating to chat with ${user.username}!`);
+            } catch (error) {
+                console.error('Ошибка при отправке сообщения:', error);
+                toast.error('Ошибка при отправке сообщения. Попробуйте снова.');
+            }
         } else {
             toast.warn('You cannot send a message to yourself.');
         }
