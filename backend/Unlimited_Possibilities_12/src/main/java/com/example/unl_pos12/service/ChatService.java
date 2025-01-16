@@ -6,6 +6,7 @@ import com.example.unl_pos12.repo.ChatRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -33,5 +34,16 @@ public class ChatService {
     public Chat getChatById(Long id) {
         return chatRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Chat not found"));
+    }
+
+    public Long findChatByUsers(String name1, String name2) {
+        String chatName1 = name1 + "_" + name2;
+        String chatName2 = name2 + "_" + name1;
+
+        List<Chat> chats = chatRepository.findByNameIn(Arrays.asList(chatName1, chatName2));
+        if (!chats.isEmpty()) {
+            return chats.get(0).getId(); // Возвращаем ID первого найденного чата
+        }
+        return null; // Если чат не найден
     }
 }

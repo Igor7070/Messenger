@@ -39,4 +39,9 @@ public class ChatController {
     public Chat getChatById(@PathVariable Long id) {
         return chatService.getChatById(id);
     }
+
+    @GetMapping("/check")
+    public Long checkChatExists(@RequestParam String name1, @RequestParam String name2) {
+        return chatService.findChatByUsers(name1, name2);
+    }
 }
