@@ -20,7 +20,13 @@ const PrivateChat = () => {
     const { chatIdParam } = useParams();
 
     useEffect(() => {
+        console.log('Chat ID Param:', chatIdParam); // Логируем chatIdParam
         const fetchMessages = async () => {
+            if (!chatIdParam) {
+                console.error('Chat ID parameter is undefined');
+                return; // Прекращаем выполнение, если chatId не определен
+            }
+
             try {
                 const messages = await getMessages(chatIdParam);
                 setMessages(messages);
@@ -89,6 +95,8 @@ const PrivateChat = () => {
     };
 
     const sendMessage = async () => {
+        console.log('Sending message to chat ID:', chatId); // Логируем chatId
+        console.log('Chat name:', chatName); // Логируем chatName
         if ((content || selectedFile) && userId) {
             const message = {
                 id: Date.now(),
