@@ -105,27 +105,17 @@ const UserProfile = () => {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
     
-                const data = await response.json(); // Получаем JSON ответ
-                const chatId = data.chatId; // Извлекаем chatId
+                const data = await response.json();
+                const chatId = data.chatId;
     
-                if (chatId !== -1) { // Если чат найден
+                if (chatId !== -1) {
                     navigate(`/private-chat/${chatId}`);
                 } else {
-                    // Получаем последний chatId
-                    const lastChatIdResponse = await fetch('https://unlimitedpossibilities12.org/api/chats/lastChatId');
-                    if (!lastChatIdResponse.ok) {
-                        throw new Error('Failed to fetch last chat ID');
-                    }
-    
-                    const lastChatId = await lastChatIdResponse.json();
-                    const newChatId = lastChatId + 1; // Увеличиваем на 1 для нового чата
-    
                     const newChat = { 
-                        id: newChatId, 
                         name: chatName, 
-                        isPrivate: true // Устанавливаем isPrivate в true для личного чата
-                    }; 
-
+                        isPrivate: true // Устанавливаем isPrivate в true
+                    };
+    
                     console.log('New chat data:', newChat);
     
                     const createResponse = await fetch('https://unlimitedpossibilities12.org/api/chats', {
