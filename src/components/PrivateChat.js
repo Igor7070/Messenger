@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { getMessages, sendMessage as apiSendMessage } from '../api/messages';
+import { getMessages } from '../api/messages';
 import '../styles/Messenger.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -17,7 +17,7 @@ const PrivateChat = () => {
     const [chatName, setChatName] = useState('');
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
-    const { chatIdParam } = useParams();
+    const { chatId: chatIdParam } = useParams(); // Извлекаем chatId из параметров
 
     useEffect(() => {
         console.log('Chat ID Param:', chatIdParam); // Логируем chatIdParam
