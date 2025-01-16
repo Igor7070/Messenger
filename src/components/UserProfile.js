@@ -125,6 +125,8 @@ const UserProfile = () => {
                         name: chatName, 
                         isPrivate: true // Устанавливаем isPrivate в true для личного чата
                     }; 
+
+                    console.log('New chat data:', newChat);
     
                     const createResponse = await fetch('https://unlimitedpossibilities12.org/api/chats', {
                         method: 'POST',
