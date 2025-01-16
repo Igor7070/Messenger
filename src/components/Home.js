@@ -27,6 +27,7 @@ const Home = () => {
             const response = await fetch('https://unlimitedpossibilities12.org/api/chats');
             if (response.ok) {
                 const data = await response.json();
+                console.log(data);
                 setChats(data);
             } else {
                 toast.error('Failed to fetch chats');
