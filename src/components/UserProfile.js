@@ -105,15 +105,10 @@ const UserProfile = () => {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
     
-                const textResponse = await response.text(); // Получаем текстовый ответ
-                if (!textResponse) {
-                    throw new Error('Empty response from server');
-                }
-    
-                const data = JSON.parse(textResponse); // Парсим текст как JSON
+                const data = await response.json(); // Получаем JSON ответ
                 const chatId = data.chatId; // Извлекаем chatId
     
-                if (chatId) {
+                if (chatId !== -1) { // Если чат найден
                     navigate(`/private-chat/${chatId}`);
                 } else {
                     const newChat = { name: chatName };
