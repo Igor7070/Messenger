@@ -11,6 +11,7 @@ public class Chat {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
+    private boolean isPrivate;
 
     //@OneToMany(mappedBy = "chat", cascade = CascadeType.ALL)
     @OneToMany(mappedBy = "chat", fetch = FetchType.EAGER)
@@ -39,5 +40,13 @@ public class Chat {
 
     public void setMessages(List<Message> messages) {
         this.messages = messages;
+    }
+
+    public boolean isPrivate() {
+        return isPrivate;
+    }
+
+    public void setPrivate(boolean aPrivate) {
+        isPrivate = aPrivate;
     }
 }
