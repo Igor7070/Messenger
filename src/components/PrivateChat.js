@@ -6,6 +6,7 @@ import '../styles/Messenger.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams } from 'react-router-dom';
+import { getChatById } from '../api/chats'; // Импортируйте функцию для получения данных о чате
 
 const PrivateChat = () => {
     const [messages, setMessages] = useState([]);
@@ -21,27 +22,28 @@ const PrivateChat = () => {
 
     useEffect(() => {
         console.log('Chat ID Param:', chatIdParam); // Логируем chatIdParam
-        const fetchMessages = async () => {
+        const fetchChatData = async () => {
             if (!chatIdParam) {
                 console.error('Chat ID parameter is undefined');
                 return; // Прекращаем выполнение, если chatId не определен
             }
     
             try {
+                // Получаем данные о чате по ID
+                const chatData = await getChatById(chatIdParam);
+                setChatName(chatData.name); // Устанавливаем имя чата
+                setChatId(chatIdParam); // Установка chatId из параметров
+    
+                // Получаем сообщения для этого чата
                 const messages = await getMessages(chatIdParam);
                 setMessages(messages);
-    
-                // Здесь устанавливаем имя чата
-                const chatName = `${user.username}_${localStorage.getItem('username')}`;
-                setChatName(chatName);
-                setChatId(chatIdParam); // Установка chatId из параметров
             } catch (error) {
-                console.error('Ошибка при загрузке сообщений:', error);
+                console.error('Ошибка при загрузке данных о чате:', error);
             }
         };
     
-        fetchMessages();
-    }, [chatIdParam, user.username]); // Добавьте user.username в зависимости
+        fetchChatData();
+    }, [chatIdParam]); // Здесь можно оставить только chatIdParam в зависимостях
 
     useEffect(() => {
         if (!chatId) return; // Прекращаем выполнение, если chatId не установлен
