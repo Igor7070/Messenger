@@ -26,21 +26,22 @@ const PrivateChat = () => {
                 console.error('Chat ID parameter is undefined');
                 return; // Прекращаем выполнение, если chatId не определен
             }
-
+    
             try {
                 const messages = await getMessages(chatIdParam);
                 setMessages(messages);
-
-                const uniqueUsernames = [...new Set(messages.map(msg => msg.sender.username))];
-                setChatName(uniqueUsernames.join(' и '));
+    
+                // Здесь устанавливаем имя чата
+                const chatName = `${user.username}_${localStorage.getItem('username')}`;
+                setChatName(chatName);
                 setChatId(chatIdParam); // Установка chatId из параметров
             } catch (error) {
                 console.error('Ошибка при загрузке сообщений:', error);
             }
         };
-
+    
         fetchMessages();
-    }, [chatIdParam]);
+    }, [chatIdParam, user.username]); // Добавьте user.username в зависимости
 
     useEffect(() => {
         if (!chatId) return; // Прекращаем выполнение, если chatId не установлен
