@@ -37,6 +37,8 @@ const PrivateChat = () => {
     }, [chatIdParam]);
 
     useEffect(() => {
+        if (!chatId) return; // Прекращаем выполнение, если chatId не установлен
+
         const stompClient = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
@@ -57,7 +59,7 @@ const PrivateChat = () => {
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId]);
+    }, [chatId]); // Подписка только после установки chatId
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => [...prevMessages, newMessage]);
