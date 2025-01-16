@@ -50,4 +50,10 @@ public class ChatController {
         response.put("chatId", chatId != null ? chatId : -1); // Возвращаем -1, если чат не найден
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/lastChatId")
+    public ResponseEntity<Long> getLastChatId() {
+        Long lastChatId = chatService.getLastChatId();
+        return ResponseEntity.ok(lastChatId);
+    }
 }

@@ -46,4 +46,8 @@ public class ChatService {
         }
         return null; // Если чат не найден
     }
+
+    public Long getLastChatId() {
+        return chatRepository.findTopByOrderByIdDesc().getId(); // Предполагается, что у вас есть такой метод в репозитории
+    }
 }

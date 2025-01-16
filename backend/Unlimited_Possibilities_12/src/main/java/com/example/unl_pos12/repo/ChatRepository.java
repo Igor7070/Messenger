@@ -8,4 +8,5 @@ import java.util.List;
 public interface ChatRepository extends JpaRepository<Chat, Long> {
     Chat findByName(String name);
     List<Chat> findByNameIn(List<String> names);
+    Chat findTopByOrderByIdDesc(); // Возвращает последний чат по ID
 }
