@@ -111,7 +111,16 @@ const UserProfile = () => {
                 if (chatId !== -1) { // Если чат найден
                     navigate(`/private-chat/${chatId}`);
                 } else {
-                    const newChat = { name: chatName };
+                    // Получаем последний chatId
+                    const lastChatIdResponse = await fetch('https://unlimitedpossibilities12.org/api/chats/lastChatId');
+                    if (!lastChatIdResponse.ok) {
+                        throw new Error('Failed to fetch last chat ID');
+                    }
+    
+                    const lastChatId = await lastChatIdResponse.json();
+                    const newChatId = lastChatId + 1; // Увеличиваем на 1 для нового чата
+    
+                    const newChat = { id: newChatId, name: chatName }; // Устанавливаем новый ID
                     const createResponse = await fetch('https://unlimitedpossibilities12.org/api/chats', {
                         method: 'POST',
                         headers: {
