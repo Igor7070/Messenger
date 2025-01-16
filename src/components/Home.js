@@ -27,9 +27,7 @@ const Home = () => {
             const response = await fetch('https://unlimitedpossibilities12.org/api/chats');
             if (response.ok) {
                 const data = await response.json();
-                // Фильтруем только групповые чаты
-                const groupChats = data.filter(chat => !chat.isPrivate);
-                setChats(groupChats);
+                setChats(data);
             } else {
                 toast.error('Failed to fetch chats');
             }
@@ -109,10 +107,7 @@ const Home = () => {
 
                 if (response.ok) {
                     const newChat = await response.json();
-                    // Добавляем новый чат в список, если он групповой
-                    if (!newChat.isPrivate) {
-                        setChats([...chats, newChat]);
-                    }
+                    setChats([...chats, newChat]);
                     setChatName('');
                     toast.success('Chat created successfully!');
                 } else {
