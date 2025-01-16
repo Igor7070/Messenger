@@ -21,6 +21,7 @@ public class ChatController {
     public Chat createChat(@RequestBody Chat chat) {
         System.out.println("Creating chat: " + chat.getName() + ", isPrivate: " + chat.isPrivate());
         System.out.println("Chat " + chat.getName() + " created.");
+        System.out.println("ChatId = " + chat.getId());
         return chatService.createChat(chat);
     }
 
