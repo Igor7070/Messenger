@@ -168,7 +168,7 @@ const Home = () => {
     };
 
     const filteredChats = chats
-        .filter(chat => !chat.isPrivate) // Отображаем только групповые чаты
+        .filter(chat => !chat.private) // Отображаем только групповые чаты
         .filter(chat => chat.name.toLowerCase().includes(searchTerm.toLowerCase()));
     const filteredUsers = users.filter(user => user.username.toLowerCase().includes(userSearchTerm.toLowerCase()));
 
