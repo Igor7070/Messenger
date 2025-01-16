@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // Импортируйте useNavigate
 import '../styles/UserProfile.css'; 
 import { FaEdit } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
@@ -8,14 +8,15 @@ import Modal from 'react-modal';
 
 const UserProfile = () => {
     const { userId } = useParams();
+    const navigate = useNavigate(); // Инициализация useNavigate
     const [user, setUser] = useState(null);
     const [newAvatar, setNewAvatar] = useState(null);
     const [info, setInfo] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [error, setError] = useState(null);
     const [currentUserId, setCurrentUserId] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false); // Для управления модальным окном
-    const [avatarFileName, setAvatarFileName] = useState(''); // Хранение имени файла аватара
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [avatarFileName, setAvatarFileName] = useState('');
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -25,11 +26,10 @@ const UserProfile = () => {
                     const data = await response.json();
                     setUser(data);
                     setInfo(data.info || '');
-                    // Получаем имя файла аватара
                     const avatarResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${userId}/avatar`);
                     if (avatarResponse.ok) {
                         const fileName = await avatarResponse.text();
-                        setAvatarFileName(fileName); // Сохраняем имя файла
+                        setAvatarFileName(fileName);
                     } else {
                         console.error('Failed to fetch avatar file name:', avatarResponse.statusText);
                     }
@@ -96,9 +96,13 @@ const UserProfile = () => {
     };
 
     const handleSendMessage = () => {
-        // Логика отправки сообщения
-        console.log('Send message to:', user.username);
-        toast.success(`Message sent to ${user.username}!`);
+        if (currentUserId && userId !== String(currentUserId)) {
+            const chatName = `${user.username}_${localStorage.getItem('username')}`; // Формирование имени чата
+            navigate(`/private-chat/${chatName}`); // Переход к личному чату
+            toast.success(`Navigating to chat with ${user.username}!`);
+        } else {
+            toast.warn('You cannot send a message to yourself.');
+        }
     };
 
     if (error) return <div className="error-message">{error}</div>;
@@ -113,7 +117,7 @@ const UserProfile = () => {
                     src={`https://unlimitedpossibilities12.org${user.avatar}`} 
                     alt={`${user.username} avatar`} 
                     className="user-avatar-profile" 
-                    onClick={openModal} // Открытие модального окна при клике
+                    onClick={openModal} 
                 />
             ) : (
                 <div className="user-avatar-profile" style={{ backgroundColor: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -147,18 +151,18 @@ const UserProfile = () => {
             )}
 
             {/* Кнопка "Send message" */}
-            {currentUserId && userId !== String(currentUserId) && ( // Проверка на авторизацию и чужой профиль
+            {currentUserId && userId !== String(currentUserId) && ( 
                 <button onClick={handleSendMessage} className="send-message-button">Send Message</button>
             )}
 
-            {/* Модальное окно для увеличенного изображения с уникальными классами */}
+            {/* Модальное окно для увеличенного изображения */}
             <Modal isOpen={isModalOpen} onRequestClose={closeModal} className="user-profile-modal" overlayClassName="user-profile-modal-overlay">
                 <img 
-                    src={`https://unlimitedpossibilities12.org/avatars/${avatarFileName}`} // Используйте имя файла для формирования URL
+                    src={`https://unlimitedpossibilities12.org/avatars/${avatarFileName}`} 
                     alt={`${user.username} avatar`} 
                     className="user-profile-modal-image" 
-                    style={{ width: '100%', height: 'auto' }} // Добавьте стили для адаптивного изображения
-                    onClick={closeModal} // Закрытие модального окна при клике на изображение
+                    style={{ width: '100%', height: 'auto' }} 
+                    onClick={closeModal} 
                 />
                 <button onClick={closeModal} className="user-profile-modal-close-button">Close</button>
             </Modal>
