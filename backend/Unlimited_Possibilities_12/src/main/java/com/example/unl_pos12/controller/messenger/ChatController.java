@@ -4,9 +4,12 @@ import com.example.unl_pos12.model.messenger.Chat;
 import com.example.unl_pos12.model.messenger.Message;
 import com.example.unl_pos12.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chats")
@@ -41,7 +44,10 @@ public class ChatController {
     }
 
     @GetMapping("/check")
-    public Long checkChatExists(@RequestParam String name1, @RequestParam String name2) {
-        return chatService.findChatByUsers(name1, name2);
+    public ResponseEntity<Map<String, Object>> checkChatExists(@RequestParam String name1, @RequestParam String name2) {
+        Long chatId = chatService.findChatByUsers(name1, name2);
+        Map<String, Object> response = new HashMap<>();
+        response.put("chatId", chatId != null ? chatId : -1); // Возвращаем -1, если чат не найден
+        return ResponseEntity.ok(response);
     }
 }
