@@ -120,7 +120,12 @@ const UserProfile = () => {
                     const lastChatId = await lastChatIdResponse.json();
                     const newChatId = lastChatId + 1; // Увеличиваем на 1 для нового чата
     
-                    const newChat = { id: newChatId, name: chatName }; // Устанавливаем новый ID
+                    const newChat = { 
+                        id: newChatId, 
+                        name: chatName, 
+                        isPrivate: true // Устанавливаем isPrivate в true для личного чата
+                    }; 
+    
                     const createResponse = await fetch('https://unlimitedpossibilities12.org/api/chats', {
                         method: 'POST',
                         headers: {
