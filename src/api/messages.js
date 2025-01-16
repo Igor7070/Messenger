@@ -52,3 +52,20 @@ export const loginUser = async (user) => {
     
     return await response.json();
 };
+
+export const createChat = async (chat) => {
+    const response = await fetch('https://unlimitedpossibilities12.org/api/chats', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(chat),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to create chat');
+    }
+
+    const data = await response.json();
+    return data;
+};
