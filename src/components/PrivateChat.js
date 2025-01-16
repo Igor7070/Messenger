@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { getMessages, createChat } from '../api/messages'; // Не забудьте добавить функцию createChat в api
+import { getMessages, sendMessage as apiSendMessage, createChat } from '../api/messages';
 import '../styles/Messenger.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -18,13 +18,6 @@ const PrivateChat = () => {
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const { chatIdParam } = useParams();
-
-    useEffect(() => {
-        const storedUserId = localStorage.getItem('userId');
-        if (storedUserId) {
-            setUserId(Number(storedUserId));
-        }
-    }, []);
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -146,35 +139,56 @@ const PrivateChat = () => {
         setSelectedFile(e.target.files[0]);
     };
 
+    const handleRightClick = (e, message) => {
+        e.preventDefault();
+        // Логика для контекстного меню
+    };
+
+    const handleMenuAction = (action, message) => {
+        // Логика для редактирования и удаления сообщений
+    };
+
+    const deleteMessage = async (id) => {
+        if (client && client.connected) {
+            client.publish({
+                destination: `/app/deleteMessage/${chatId}`,
+                body: JSON.stringify(id),
+            });
+            setMessages(prevMessages => prevMessages.filter(msg => msg.id !== id));
+            toast.success('Сообщение удалено!');
+        } else {
+            toast.error('Не удалось удалить сообщение. Попробуйте снова.');
+        }
+    };
+
     return (
         <div className="messenger">
             <div className="chat-name">Chat: {chatName}</div>
             <div className="message-list">
                 {messages.map((msg) => (
-                    msg.sender ? (
-                        <div 
-                            key={msg.id}
-                            className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`} 
-                            style={{ display: 'flex', alignItems: 'center' }}
-                        >
-                            {msg.sender.avatar ? (
-                                <img 
-                                    src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
-                                    alt={`${msg.sender.username} avatar`} 
-                                    className="message-avatar"
-                                />
-                            ) : (
-                                <div className="message-avatar">
-                                    {msg.sender.username.charAt(0).toUpperCase()}
-                                </div>
-                            )}
-                            <strong>{msg.sender.username}: </strong>
-                            <span className="message-content">{msg.content}</span>
-                            {msg.fileUrl && (
-                                <a href={msg.fileUrl} download>📥 Download file</a>
-                            )}
-                        </div>
-                    ) : null
+                    <div 
+                        key={msg.id}
+                        className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`} 
+                        onContextMenu={(e) => handleRightClick(e, msg)}
+                        style={{ display: 'flex', alignItems: 'center' }}
+                    >
+                        {msg.sender.avatar ? (
+                            <img 
+                                src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
+                                alt={`${msg.sender.username} avatar`} 
+                                className="message-avatar"
+                            />
+                        ) : (
+                            <div className="message-avatar">
+                                {msg.sender.username.charAt(0).toUpperCase()}
+                            </div>
+                        )}
+                        <strong>{msg.sender.username}: </strong>
+                        <span className="message-content">{msg.content}</span>
+                        {msg.fileUrl && (
+                            <a href={msg.fileUrl} download>📥 Download file</a>
+                        )}
+                    </div>
                 ))}
                 <div ref={messagesEndRef} />
             </div>
@@ -193,6 +207,7 @@ const PrivateChat = () => {
             />
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
+            {/* Контекстное меню можно добавить здесь */}
         </div>
     );
 };
