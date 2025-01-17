@@ -32,7 +32,7 @@ const PrivateChat = () => {
             try {
                 // Получаем данные о чате по ID
                 const chatData = await getChatById(chatIdParam);
-                setChatName(`${username}_${chatData.otherUser.username}`); // Создаем имя чата
+                setChatName(chatData.name); // Создаем имя чата
                 setChatId(chatIdParam); // Установка chatId из параметров
     
                 // Получаем сообщения для этого чата
