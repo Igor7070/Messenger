@@ -69,18 +69,15 @@ const PrivateChat = () => {
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
             if (newMessage.content === "Message deleted") {
-                // Удаляем сообщение из списка
                 return prevMessages.filter(msg => msg.id !== newMessage.id);
             }
     
             const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
-                // Обновляем существующее сообщение
                 const updatedMessages = [...prevMessages];
                 updatedMessages[existingMessageIndex] = newMessage;
                 return updatedMessages;
             } else {
-                // Добавляем новое сообщение
                 return [...prevMessages, newMessage];
             }
         });
@@ -181,6 +178,11 @@ const PrivateChat = () => {
         }
     };
 
+    // Прокрутка вниз при обновлении сообщений
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
     return (
         <div className="messenger">
             <div className="chat-name">Chat: {chatName}</div>
@@ -198,7 +200,7 @@ const PrivateChat = () => {
                         )}
                     </div>
                 ))}
-                <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} /> {/* Элемент для прокрутки */}
             </div>
             <textarea
                 value={content}
