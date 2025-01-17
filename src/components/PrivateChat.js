@@ -13,6 +13,7 @@ const PrivateChat = () => {
     const [content, setContent] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
     const [userId, setUserId] = useState(Number(localStorage.getItem('userId')));
+    const [username, setUsername] = useState(localStorage.getItem('username')); // Храните имя пользователя
     const [client, setClient] = useState(null);
     const [chatId, setChatId] = useState(null);
     const [chatName, setChatName] = useState('');
@@ -23,15 +24,15 @@ const PrivateChat = () => {
     useEffect(() => {
         console.log('Chat ID Param:', chatIdParam); // Логируем chatIdParam
         const fetchChatData = async () => {
-            if (!chatIdParam) {
-                console.error('Chat ID parameter is undefined');
-                return; // Прекращаем выполнение, если chatId не определен
+            if (!chatIdParam || !username) {
+                console.error('Chat ID parameter is undefined or username is missing');
+                return; // Прекращаем выполнение, если chatId не определен или имя пользователя отсутствует
             }
     
             try {
                 // Получаем данные о чате по ID
                 const chatData = await getChatById(chatIdParam);
-                setChatName(chatData.name); // Устанавливаем имя чата
+                setChatName(`${username}_${chatData.otherUser.username}`); // Создаем имя чата
                 setChatId(chatIdParam); // Установка chatId из параметров
     
                 // Получаем сообщения для этого чата
@@ -43,7 +44,7 @@ const PrivateChat = () => {
         };
     
         fetchChatData();
-    }, [chatIdParam]); // Здесь можно оставить только chatIdParam в зависимостях
+    }, [chatIdParam, username]); // Добавьте username в зависимости
 
     useEffect(() => {
         if (!chatId) return; // Прекращаем выполнение, если chatId не установлен
