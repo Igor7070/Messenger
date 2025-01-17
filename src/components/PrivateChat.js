@@ -6,53 +6,48 @@ import '../styles/Messenger.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams } from 'react-router-dom';
-import { getChatById } from '../api/chats'; // Импортируйте функцию для получения данных о чате
+import { getChatById } from '../api/chats';
 
 const PrivateChat = () => {
     const [messages, setMessages] = useState([]);
     const [content, setContent] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
     const [userId, setUserId] = useState(Number(localStorage.getItem('userId')));
-    const [username, setUsername] = useState(localStorage.getItem('username')); // Храните имя пользователя
+    const [username, setUsername] = useState(localStorage.getItem('username'));
     const [client, setClient] = useState(null);
     const [chatId, setChatId] = useState(null);
     const [chatName, setChatName] = useState('');
+    const [editingMessageId, setEditingMessageId] = useState(null);
+    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
-    const { chatId: chatIdParam } = useParams(); // Извлекаем chatId из параметров
+    const { chatId: chatIdParam } = useParams();
 
     useEffect(() => {
-        console.log('Chat ID Param:', chatIdParam); // Логируем chatIdParam
         const fetchChatData = async () => {
-            if (!chatIdParam || !username) {
-                console.error('Chat ID parameter is undefined or username is missing');
-                return; // Прекращаем выполнение, если chatId не определен или имя пользователя отсутствует
-            }
-    
+            if (!chatIdParam || !username) return;
+
             try {
-                // Получаем данные о чате по ID
                 const chatData = await getChatById(chatIdParam);
-                setChatName(chatData.name); // Создаем имя чата
-                setChatId(chatIdParam); // Установка chatId из параметров
-    
-                // Получаем сообщения для этого чата
+                setChatName(chatData.name);
+                setChatId(chatIdParam);
+
                 const messages = await getMessages(chatIdParam);
                 setMessages(messages);
             } catch (error) {
                 console.error('Ошибка при загрузке данных о чате:', error);
             }
         };
-    
+
         fetchChatData();
-    }, [chatIdParam, username]); // Добавьте username в зависимости
+    }, [chatIdParam, username]);
 
     useEffect(() => {
-        if (!chatId) return; // Прекращаем выполнение, если chatId не установлен
+        if (!chatId) return;
 
         const stompClient = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
-                console.log('Connected to WebSocket');
                 stompClient.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
                     updateMessages(newMessage);
@@ -69,54 +64,45 @@ const PrivateChat = () => {
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId]); // Подписка только после установки chatId
+    }, [chatId]);
 
     const updateMessages = (newMessage) => {
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
-    };
-
-    useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-        }
-    }, [messages]);
-
-    const uploadFile = async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch('https://unlimitedpossibilities12.org/api/files/upload', {
-            method: 'POST',
-            body: formData,
+        setMessages((prevMessages) => {
+            const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
+            if (existingMessageIndex !== -1) {
+                const updatedMessages = [...prevMessages];
+                updatedMessages[existingMessageIndex] = newMessage;
+                return updatedMessages;
+            } else if (newMessage.content !== "Message deleted") {
+                return [...prevMessages, newMessage];
+            }
+            return prevMessages;
         });
-
-        if (!response.ok) {
-            throw new Error('File upload failed');
-        }
-
-        const data = await response.json();
-        return data.fileUrl;
     };
 
     const sendMessage = async () => {
-        console.log('Sending message to chat ID:', chatId); // Логируем chatId
-        console.log('Chat name:', chatName); // Логируем chatName
         if ((content || selectedFile) && userId) {
             const message = {
-                id: Date.now(),
+                id: editingMessageId || Date.now(),
                 content,
-                sender: { id: userId },
+                sender: { id: userId, username },
                 chat: { id: chatId, name: chatName },
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
             };
 
             if (client && client.connected) {
-                client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
-                setContent('');
-                setSelectedFile(null);
-                if (fileInputRef.current) {
-                    fileInputRef.current.value = null;
+                if (editingMessageId) {
+                    client.publish({ destination: `/app/editMessage/${chatId}`, body: JSON.stringify(message) });
+                    setMessages(prevMessages => 
+                        prevMessages.map(msg => 
+                            msg.id === editingMessageId ? { ...msg, content } : msg
+                        )
+                    );
+                } else {
+                    client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
                 }
+
+                resetForm();
             } else {
                 console.error('STOMP client is not connected');
             }
@@ -125,15 +111,38 @@ const PrivateChat = () => {
         }
     };
 
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
+    const resetForm = () => {
+        setContent('');
+        setSelectedFile(null);
+        setEditingMessageId(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = null;
         }
     };
 
-    const handleFileChange = (e) => {
-        setSelectedFile(e.target.files[0]);
+    const handleRightClick = (e, message) => {
+        e.preventDefault();
+        setContextMenu({
+            visible: true,
+            x: e.pageX,
+            y: e.pageY,
+            message,
+        });
+    };
+
+    const handleMenuAction = (action) => {
+        if (contextMenu.message.sender.id !== userId) {
+            toast.error('Вы можете редактировать или удалять только свои сообщения.');
+            return;
+        }
+
+        if (action === 'edit') {
+            setContent(contextMenu.message.content);
+            setEditingMessageId(contextMenu.message.id);
+        } else if (action === 'delete') {
+            deleteMessage(contextMenu.message.id);
+        }
+        setContextMenu({ visible: false });
     };
 
     const deleteMessage = async (id) => {
@@ -156,20 +165,9 @@ const PrivateChat = () => {
                 {messages.map((msg) => (
                     <div 
                         key={msg.id}
-                        className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`} 
-                        style={{ display: 'flex', alignItems: 'center' }}
+                        className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
+                        onContextMenu={(e) => handleRightClick(e, msg)}
                     >
-                        {msg.sender.avatar ? (
-                            <img 
-                                src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
-                                alt={`${msg.sender.username} avatar`} 
-                                className="message-avatar"
-                            />
-                        ) : (
-                            <div className="message-avatar">
-                                {msg.sender.username.charAt(0).toUpperCase()}
-                            </div>
-                        )}
                         <strong>{msg.sender.username}: </strong>
                         <span className="message-content">{msg.content}</span>
                         {msg.fileUrl && (
@@ -182,18 +180,27 @@ const PrivateChat = () => {
             <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                onKeyDown={handleKeyDown}
                 placeholder="Enter your message"
                 className="input-message"
             />
             <input
                 type="file"
-                onChange={handleFileChange}
+                onChange={(e) => setSelectedFile(e.target.files[0])}
                 className="file-input"
                 ref={fileInputRef}
             />
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
+            {contextMenu.visible && (
+                <div 
+                    className="context-menu" 
+                    style={{ top: contextMenu.y, left: contextMenu.x }}
+                    onMouseLeave={() => setContextMenu({ visible: false })}
+                >
+                    <button onClick={() => handleMenuAction('edit')}>Edit</button>
+                    <button onClick={() => handleMenuAction('delete')}>Delete</button>
+                </div>
+            )}
         </div>
     );
 };
