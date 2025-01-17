@@ -68,15 +68,21 @@ const PrivateChat = () => {
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
+            if (newMessage.content === "Message deleted") {
+                // Удаляем сообщение из списка
+                return prevMessages.filter(msg => msg.id !== newMessage.id);
+            }
+    
             const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
+                // Обновляем существующее сообщение
                 const updatedMessages = [...prevMessages];
                 updatedMessages[existingMessageIndex] = newMessage;
                 return updatedMessages;
-            } else if (newMessage.content !== "Message deleted") {
+            } else {
+                // Добавляем новое сообщение
                 return [...prevMessages, newMessage];
             }
-            return prevMessages;
         });
     };
 
