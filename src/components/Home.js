@@ -74,6 +74,7 @@ const Home = () => {
             if (response.ok) {
                 const user = await response.json();
                 localStorage.setItem('userId', String(user.id));
+                localStorage.setItem('username', user.username); // Установка имени пользователя
                 setCurrentUserId(Number(user.id));
                 setLoginUsername('');
                 setLoginPassword('');
