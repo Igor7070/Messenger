@@ -96,11 +96,12 @@ const UserProfile = () => {
     };
 
     const handleSendMessage = async () => {
-        if (currentUserId && userId !== String(currentUserId)) {
-            const chatName = `${user.username}_${localStorage.getItem('username')}`;
+        const currentUsername = localStorage.getItem('username'); // Получаем актуальное имя пользователя
+        const chatName = `${user.username}_${currentUsername}`; // Создаем имя чата
     
+        if (currentUserId && userId !== String(currentUserId)) {
             try {
-                const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/check?name1=${user.username}&name2=${localStorage.getItem('username')}`);
+                const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/check?name1=${user.username}&name2=${currentUsername}`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
