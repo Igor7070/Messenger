@@ -23,7 +23,9 @@ public class Message {
     @JsonBackReference
     private Chat chat;
 
+    @Column(columnDefinition = "TINYINT(1)")
     private Boolean delivered; // Статус доставки
+    @Column(columnDefinition = "TINYINT(1)")
     private Boolean read;      // Статус прочтения
 
     public Long getId() {
