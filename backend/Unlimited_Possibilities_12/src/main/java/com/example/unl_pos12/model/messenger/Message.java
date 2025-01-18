@@ -23,8 +23,8 @@ public class Message {
     @JsonBackReference
     private Chat chat;
 
-    //private boolean delivered; // Статус доставки
-    //private boolean read;      // Статус прочтения
+    private boolean delivered; // Статус доставки
+    private boolean read;      // Статус прочтения
 
     public Long getId() {
         return id;
@@ -74,7 +74,7 @@ public class Message {
         this.chat = chat;
     }
 
-    /*public boolean isDelivered() {
+    public boolean isDelivered() {
         return delivered;
     }
 
@@ -88,5 +88,5 @@ public class Message {
 
     public void setRead(boolean read) {
         this.read = read;
-    }*/
+    }
 }
