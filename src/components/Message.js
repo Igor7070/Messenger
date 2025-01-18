@@ -1,14 +1,18 @@
 import React from 'react';
 import './styles/Message.css';
 
-const Message = ({ sender, content, fileUrl, id, onDownload }) => {
+const Message = ({ sender, content, fileUrl, id, delivered, read, onDownload }) => {
     return (
         <div className="message">
             <strong>{sender.username}: </strong>
-            {content}
+            <span>{content}</span>
             {fileUrl && (
-                <a href={fileUrl} download>📥 Download file</a>
+                <a href={fileUrl} download onClick={onDownload}>📥 Download file</a>
             )}
+            <div className="message-status">
+                {delivered && <span className="delivery-indicator">✔️</span>}
+                {read && <span className="read-indicator">✔️</span>}
+            </div>
         </div>
     );
 };

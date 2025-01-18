@@ -1,0 +1,9 @@
+.message-status {
+    font-size: 0.8em;
+    margin-top: 5px;
+}
+
+.delivery-indicator, .read-indicator {
+    margin-left: 5px;
+    color: green; /* Цвет для индикаторов */
+}
