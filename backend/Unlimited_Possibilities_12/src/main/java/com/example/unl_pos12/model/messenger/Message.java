@@ -74,19 +74,19 @@ public class Message {
         this.chat = chat;
     }
 
-    public boolean isDelivered() {
+    public Boolean getDelivered() {
         return delivered;
     }
 
-    public void setDelivered(boolean delivered) {
+    public void setDelivered(Boolean delivered) {
         this.delivered = delivered;
     }
 
-    public boolean isRead() {
+    public Boolean getRead() {
         return read;
     }
 
-    public void setRead(boolean read) {
+    public void setRead(Boolean read) {
         this.read = read;
     }
 }
