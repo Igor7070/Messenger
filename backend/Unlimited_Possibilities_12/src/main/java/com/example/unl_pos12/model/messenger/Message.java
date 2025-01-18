@@ -3,8 +3,6 @@ package com.example.unl_pos12.model.messenger;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
-
 @Entity
 public class Message {
     @Id
@@ -49,13 +47,13 @@ public class Message {
         this.sender = sender;
     }
 
-    public LocalDateTime getTimestamp() {
+    /*public LocalDateTime getTimestamp() {
         return timestamp;
     }
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
-    }
+    }*/
 
     public String getFileUrl() {
         return fileUrl;
