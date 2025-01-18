@@ -39,6 +39,7 @@ public class WebSocketMessageController {
             throw new RuntimeException("Chat ID is missing");
         }
 
+        message.setDelivered(true); // Устанавливаем статус доставки
         return messageService.saveMessage(message, null); // Замените null на файл, если он есть
     }
 
@@ -57,5 +58,14 @@ public class WebSocketMessageController {
         deletedMessage.setId(id);
         deletedMessage.setContent("Message deleted");
         return deletedMessage; // Возвращаем сообщение о удалении
+    }
+
+    // Обработчик для статуса прочтения
+    @MessageMapping("/readMessage/{chatId}")
+    @SendTo("/topic/chat/{chatId}/messages")
+    public Message readMessage(@DestinationVariable String chatId, Long messageId) {
+        // Обновите статус прочтения сообщения в базе данных, если необходимо
+        Message message = messageService.markAsRead(messageId);
+        return message;
     }
 }

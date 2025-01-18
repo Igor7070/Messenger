@@ -46,6 +46,13 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
+    public Message markAsRead(Long messageId) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found"));
+        message.setRead(true); // Устанавливаем статус прочтения
+        return messageRepository.save(message);
+    }
+
     public String uploadFile(MultipartFile file) {
         if (file.isEmpty()) {
             throw new RuntimeException("Uploaded file is empty");
