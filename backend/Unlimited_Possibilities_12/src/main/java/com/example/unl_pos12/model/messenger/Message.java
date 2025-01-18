@@ -15,7 +15,7 @@ public class Message {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sender_id")
     private User sender;
-    private LocalDateTime timestamp;
+    //private LocalDateTime timestamp;
     //@ManyToOne(fetch = FetchType.EAGER)
     //@JoinColumn(name = "chat_id")
     @ManyToOne
