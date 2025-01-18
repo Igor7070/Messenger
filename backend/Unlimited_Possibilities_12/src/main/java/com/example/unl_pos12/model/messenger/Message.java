@@ -22,11 +22,8 @@ public class Message {
     @JoinColumn(name = "chat_id")
     @JsonBackReference
     private Chat chat;
-
-    @Column(columnDefinition = "TINYINT(1)")
-    private Boolean delivered; // Статус доставки
-    @Column(columnDefinition = "TINYINT(1)")
-    private Boolean read;      // Статус прочтения
+    private Long delivered; // Статус доставки
+    private Long read;      // Статус прочтения
 
     public Long getId() {
         return id;
@@ -76,19 +73,19 @@ public class Message {
         this.chat = chat;
     }
 
-    public Boolean getDelivered() {
+    public Long getDelivered() {
         return delivered;
     }
 
-    public void setDelivered(Boolean delivered) {
+    public void setDelivered(Long delivered) {
         this.delivered = delivered;
     }
 
-    public Boolean getRead() {
+    public Long getRead() {
         return read;
     }
 
-    public void setRead(Boolean read) {
+    public void setRead(Long read) {
         this.read = read;
     }
 }
