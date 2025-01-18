@@ -1,5 +1,5 @@
 import React from 'react';
-import './styles/Message.css';
+import '../styles/Message.css';
 
 const Message = ({ sender, content, fileUrl, id, delivered, read, onDownload }) => {
     return (
