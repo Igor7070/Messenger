@@ -1,6 +1,5 @@
 package com.example.unl_pos12.model.messenger;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -12,15 +11,14 @@ public class Message {
     private Long id;
     private String content;
     private String fileUrl; // URL файла...
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "sender_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
     private LocalDateTime timestamp;
     //@ManyToOne(fetch = FetchType.EAGER)
     //@JoinColumn(name = "chat_id")
-    @ManyToOne
-    @JoinColumn(name = "chat_id")
-    @JsonBackReference
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "chat_id", nullable = false)
     private Chat chat;
     private Long delivered; // Статус доставки
     private Long read;      // Статус прочтения
