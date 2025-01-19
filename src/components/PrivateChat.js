@@ -51,9 +51,19 @@ const PrivateChat = () => {
 
     useEffect(() => {
         if (client && client.connected) {
-            markAllMessagesAsRead(); // Проверяем статус сообщений при входе
+            // Отправляем все непрочитанные сообщения серверу
+            const unreadMessageIds = messages
+                .filter(msg => msg.sender.id !== userId && !msg.read)
+                .map(msg => msg.id);
+    
+            if (unreadMessageIds.length) {
+                client.publish({ 
+                    destination: `/app/readMessage/${chatId}`, 
+                    body: JSON.stringify(unreadMessageIds) 
+                });
+            }
         }
-    }, [client, chatId]); // Зависимости от клиента и chatId
+    }, [client, messages, chatId]);
 
     useEffect(() => {
         // Вызываем markAllMessagesAsRead только после того, как сообщения загружены
@@ -72,7 +82,7 @@ const PrivateChat = () => {
                     const newMessage = JSON.parse(message.body);
                     console.log('NewMessage: ', newMessage);
                     updateMessages(newMessage);
-                    markAllMessagesAsRead();
+                    // Удаляем отправку уведомления о прочтении здесь
                 });
             },
             onWebSocketError: (error) => {
