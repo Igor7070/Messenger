@@ -39,7 +39,7 @@ public class WebSocketMessageController {
             throw new RuntimeException("Chat ID is missing");
         }
 
-        //message.setDelivered(true); // Устанавливаем статус доставки
+        message.setDelivered_status(true); // Устанавливаем статус доставки
         return messageService.saveMessage(message, null); // Замените null на файл, если он есть
     }
 
