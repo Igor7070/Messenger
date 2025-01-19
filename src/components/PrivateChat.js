@@ -50,6 +50,12 @@ const PrivateChat = () => {
     }, [chatIdParam, username]);
 
     useEffect(() => {
+        if (client && client.connected) {
+            markAllMessagesAsRead(); // Проверяем статус сообщений при входе
+        }
+    }, [client, chatId]); // Зависимости от клиента и chatId
+
+    useEffect(() => {
         // Вызываем markAllMessagesAsRead только после того, как сообщения загружены
         if (messages.length > 0) {
             markAllMessagesAsRead();
