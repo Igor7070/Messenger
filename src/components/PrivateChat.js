@@ -50,20 +50,17 @@ const PrivateChat = () => {
     }, [chatIdParam, username]);
 
     useEffect(() => {
-        if (client && client.connected) {
-            // Отправляем все непрочитанные сообщения серверу
-            const unreadMessageIds = messages
-                .filter(msg => msg.sender.id !== userId && !msg.read)
-                .map(msg => msg.id);
-    
-            if (unreadMessageIds.length) {
-                client.publish({ 
-                    destination: `/app/readMessage/${chatId}`, 
-                    body: JSON.stringify(unreadMessageIds) 
-                });
-            }
+        if (chatId) {
+            // Обновляем статус прочтения после перезахода в чат
+            markAllMessagesAsRead();
         }
-    }, [client, messages, chatId]);
+    }, [chatId]);
+
+    useEffect(() => {
+        if (client && client.connected) {
+            markAllMessagesAsRead(); // Проверяем статус сообщений при входе
+        }
+    }, [client, chatId]); // Зависимости от клиента и chatId
 
     useEffect(() => {
         // Вызываем markAllMessagesAsRead только после того, как сообщения загружены
