@@ -55,6 +55,7 @@ const PrivateChat = () => {
             onConnect: () => {
                 stompClient.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
+                    console.log("Received message: ", newMessage);
                     updateMessages(newMessage);
                     
                     // Отправьте уведомление о прочтении, если сообщение не от текущего пользователя
