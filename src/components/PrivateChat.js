@@ -7,7 +7,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams } from 'react-router-dom';
 import { getChatById } from '../api/chats';
-import Message from './Message'; // Импортируйте компонент Message
+import Message from './Message';
 
 const PrivateChat = () => {
     const [messages, setMessages] = useState([]);
@@ -66,16 +66,6 @@ const PrivateChat = () => {
                         });
                     }
                 });
-
-                // Уведомить о прочтении всех сообщений в чате, когда пользователь заходит
-                messages.forEach(msg => {
-                    if (msg.sender.id !== userId) {
-                        client.publish({
-                            destination: `/app/readMessage/${chatId}`,
-                            body: JSON.stringify(msg.id)
-                        });
-                    }
-                });
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
@@ -88,7 +78,21 @@ const PrivateChat = () => {
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId, userId, messages]); // Добавьте `messages` в зависимости
+    }, [chatId, userId]);
+
+    // Уведомление о прочтении при входе в чат
+    useEffect(() => {
+        if (client && client.connected && messages.length > 0) {
+            messages.forEach(msg => {
+                if (msg.sender.id !== userId) {
+                    client.publish({
+                        destination: `/app/readMessage/${chatId}`,
+                        body: JSON.stringify(msg.id)
+                    });
+                }
+            });
+        }
+    }, [client, messages, chatId, userId]);
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
