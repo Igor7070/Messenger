@@ -7,6 +7,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams } from 'react-router-dom';
 import { getChatById } from '../api/chats';
+import Message from './Message';  // Импортируйте компонент Message
 
 const PrivateChat = () => {
     const [messages, setMessages] = useState([]);
@@ -32,8 +33,8 @@ const PrivateChat = () => {
                 setChatName(chatData.name);
                 setChatId(chatIdParam);
 
-                const messages = await getMessages(chatIdParam);
-                setMessages(messages);
+                const initialMessages = await getMessages(chatIdParam);
+                setMessages(initialMessages);
             } catch (error) {
                 console.error('Ошибка при загрузке данных о чате:', error);
             }
@@ -51,6 +52,11 @@ const PrivateChat = () => {
                 stompClient.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
                     updateMessages(newMessage);
+                    
+                    // Отправьте уведомление о прочтении, если сообщение не от текущего пользователя
+                    if (newMessage.sender.id !== userId) {
+                        client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(newMessage.id) });
+                    }
                 });
             },
             onWebSocketError: (error) => {
@@ -64,21 +70,21 @@ const PrivateChat = () => {
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId]);
+    }, [chatId, userId]); // Добавьте userId в зависимости
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
             if (newMessage.content === "Message deleted") {
                 return prevMessages.filter(msg => msg.id !== newMessage.id);
             }
-    
+
             const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
                 const updatedMessages = [...prevMessages];
-                updatedMessages[existingMessageIndex] = newMessage;
+                updatedMessages[existingMessageIndex] = { ...newMessage, delivered: true }; // Обновляем статус доставки
                 return updatedMessages;
             } else {
-                return [...prevMessages, newMessage];
+                return [...prevMessages, { ...newMessage, delivered: true }];
             }
         });
     };
@@ -108,20 +114,12 @@ const PrivateChat = () => {
                 sender: { id: userId, username },
                 chat: { id: chatId, name: chatName },
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
+                delivered: false,
+                read: false,
             };
 
             if (client && client.connected) {
-                if (editingMessageId) {
-                    client.publish({ destination: `/app/editMessage/${chatId}`, body: JSON.stringify(message) });
-                    setMessages(prevMessages => 
-                        prevMessages.map(msg => 
-                            msg.id === editingMessageId ? { ...msg, content } : msg
-                        )
-                    );
-                } else {
-                    client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
-                }
-
+                client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
                 resetForm();
             } else {
                 console.error('STOMP client is not connected');
@@ -198,6 +196,10 @@ const PrivateChat = () => {
                         {msg.fileUrl && (
                             <a href={msg.fileUrl} download>📥 Download file</a>
                         )}
+                        <div className="message-status">
+                            {msg.delivered && <span className="delivery-indicator">✔️</span>}
+                            {msg.read && <span className="read-indicator">✔️</span>}
+                        </div>
                     </div>
                 ))}
                 <div ref={messagesEndRef} /> {/* Элемент для прокрутки */}
