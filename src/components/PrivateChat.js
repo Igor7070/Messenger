@@ -34,7 +34,11 @@ const PrivateChat = () => {
                 setChatId(chatIdParam);
 
                 const initialMessages = await getMessages(chatIdParam);
-                setMessages(initialMessages);
+                setMessages(initialMessages.map(msg => ({
+                    ...msg,
+                    delivered: msg.delivered_status,
+                    read: msg.read_status
+                })));
             } catch (error) {
                 console.error('Ошибка при загрузке данных о чате:', error);
             }
@@ -70,7 +74,7 @@ const PrivateChat = () => {
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId, userId]); // Добавьте userId в зависимости
+    }, [chatId, userId]);
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
@@ -81,10 +85,18 @@ const PrivateChat = () => {
             const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
                 const updatedMessages = [...prevMessages];
-                updatedMessages[existingMessageIndex] = { ...newMessage, delivered: true }; // Обновляем статус доставки
+                updatedMessages[existingMessageIndex] = {
+                    ...newMessage,
+                    delivered: newMessage.delivered_status,
+                    read: newMessage.read_status
+                };
                 return updatedMessages;
             } else {
-                return [...prevMessages, { ...newMessage, delivered: true }];
+                return [...prevMessages, {
+                    ...newMessage,
+                    delivered: newMessage.delivered_status,
+                    read: newMessage.read_status
+                }];
             }
         });
     };
