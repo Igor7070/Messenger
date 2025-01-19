@@ -40,7 +40,7 @@ const PrivateChat = () => {
                 })));
 
                 // Отправляем уведомления о прочтении для всех непрочитанных сообщений
-                //markAllMessagesAsRead(); // Вызов функции после загрузки сообщений
+                markAllMessagesAsRead(); // Вызов функции после загрузки сообщений
             } catch (error) {
                 console.error('Ошибка при загрузке данных о чате:', error);
             }
@@ -85,7 +85,6 @@ const PrivateChat = () => {
     const markAllMessagesAsRead = () => {
         console.log('markAllMessagesAsRead is working...');
         messages.forEach(msg => {
-            console.log('msg: ', msg);
             if (msg.sender.id !== userId && !msg.read) {
                 if (client && client.connected) {
                     client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
