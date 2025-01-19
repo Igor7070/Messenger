@@ -198,11 +198,11 @@ const PrivateChat = () => {
             <div className="chat-name">Chat: {chatName}</div>
             <div className="message-list">
             {messages.map((msg) => (
-                <div 
-                    key={msg.id}
-                    className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
-                    onContextMenu={(e) => handleRightClick(e, msg)}
-                >
+                    <div 
+                        key={msg.id}
+                        className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
+                        onContextMenu={(e) => handleRightClick(e, msg)}
+                    >
                     <strong>{msg.sender.username}: </strong>
                     <span className="message-content">{msg.content}</span>
                     {msg.fileUrl && (
