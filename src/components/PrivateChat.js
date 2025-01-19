@@ -77,8 +77,8 @@ const PrivateChat = () => {
 
     const markAllMessagesAsRead = () => {
         console.log('markAllMessagesAsRead is working...');
-        console.log('msg.read: ', msg.read);
         messages.forEach(msg => {
+            console.log('msg.read: ', msg.read);
             if (msg.sender.id !== userId && !msg.read) {
                 if (client && client.connected) {
                     client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
