@@ -40,7 +40,7 @@ const PrivateChat = () => {
                 })));
 
                 // Отправляем уведомления о прочтении для всех непрочитанных сообщений
-                markAllMessagesAsRead(); // Вызов функции после загрузки сообщений
+                //markAllMessagesAsRead(); // Вызов функции после загрузки сообщений
             } catch (error) {
                 console.error('Ошибка при загрузке данных о чате:', error);
             }
@@ -50,24 +50,16 @@ const PrivateChat = () => {
     }, [chatIdParam, username]);
 
     useEffect(() => {
-        if (chatId) {
-            // Обновляем статус прочтения после перезахода в чат
-            markAllMessagesAsRead();
-        }
-    }, [chatId]);
-
-    useEffect(() => {
         if (client && client.connected) {
             markAllMessagesAsRead(); // Проверяем статус сообщений при входе
         }
     }, [client, chatId]); // Зависимости от клиента и chatId
 
     useEffect(() => {
-        // Вызываем markAllMessagesAsRead только после того, как сообщения загружены
-        if (messages.length > 0) {
-            markAllMessagesAsRead();
+        if (messages.length > 0 && client && client.connected) {
+            markAllMessagesAsRead(); // Вызываем, когда сообщения загружены
         }
-    }, [messages]); // Зависимость от messages
+    }, [messages, client]); // Зависимость от сообщений и клиента
 
     useEffect(() => {
         if (!chatId) return;
