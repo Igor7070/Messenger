@@ -65,6 +65,7 @@ public class WebSocketMessageController {
     @SendTo("/topic/chat/{chatId}/messages")
     public Message readMessage(@DestinationVariable String chatId, Long messageId) {
         // Обновите статус прочтения сообщения в базе данных, если необходимо
+        System.out.println("Marking message as read: " + messageId);
         Message message = messageService.markAsRead(messageId);
         return message;
     }
