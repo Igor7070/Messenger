@@ -7,7 +7,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams } from 'react-router-dom';
 import { getChatById } from '../api/chats';
-import Message from './Message';  // Импортируйте компонент Message
+import Message from './Message'; // Импортируйте компонент Message
 
 const PrivateChat = () => {
     const [messages, setMessages] = useState([]);
@@ -60,7 +60,20 @@ const PrivateChat = () => {
                     
                     // Отправьте уведомление о прочтении, если сообщение не от текущего пользователя
                     if (newMessage.sender.id !== userId) {
-                        client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(newMessage.id) });
+                        client.publish({ 
+                            destination: `/app/readMessage/${chatId}`, 
+                            body: JSON.stringify(newMessage.id) 
+                        });
+                    }
+                });
+
+                // Уведомить о прочтении всех сообщений в чате, когда пользователь заходит
+                messages.forEach(msg => {
+                    if (msg.sender.id !== userId) {
+                        client.publish({
+                            destination: `/app/readMessage/${chatId}`,
+                            body: JSON.stringify(msg.id)
+                        });
                     }
                 });
             },
@@ -75,7 +88,7 @@ const PrivateChat = () => {
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId, userId]);
+    }, [chatId, userId, messages]); // Добавьте `messages` в зависимости
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
