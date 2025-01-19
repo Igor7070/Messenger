@@ -72,7 +72,7 @@ const PrivateChat = () => {
                     const newMessage = JSON.parse(message.body);
                     console.log('NewMessage: ', newMessage);
                     updateMessages(newMessage);
-                    // Удаляем отправку уведомления о прочтении здесь
+                    markAllMessagesAsRead();
                 });
             },
             onWebSocketError: (error) => {
