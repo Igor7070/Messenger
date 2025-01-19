@@ -25,6 +25,7 @@ const PrivateChat = () => {
 
     useEffect(() => {
         const fetchChatData = async () => {
+            console.log('fetchChatData is working...');
             if (!chatIdParam || !username) return;
 
             try {
