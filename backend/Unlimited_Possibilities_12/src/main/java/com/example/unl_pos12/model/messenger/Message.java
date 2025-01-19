@@ -3,6 +3,8 @@ package com.example.unl_pos12.model.messenger;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 public class Message {
     @Id
@@ -13,15 +15,15 @@ public class Message {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sender_id")
     private User sender;
-    //private LocalDateTime timestamp;
+    private LocalDateTime timestamp;
     //@ManyToOne(fetch = FetchType.EAGER)
     //@JoinColumn(name = "chat_id")
     @ManyToOne
     @JoinColumn(name = "chat_id")
     @JsonBackReference
     private Chat chat;
-    private Long delivered; // Статус доставки
-    private Long read;      // Статус прочтения
+    private Boolean delivered_status; // Статус доставки
+    private Boolean read_status;      // Статус прочтения
 
     public Long getId() {
         return id;
@@ -47,13 +49,13 @@ public class Message {
         this.sender = sender;
     }
 
-    /*public LocalDateTime getTimestamp() {
+    public LocalDateTime getTimestamp() {
         return timestamp;
     }
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
-    }*/
+    }
 
     public String getFileUrl() {
         return fileUrl;
@@ -71,19 +73,19 @@ public class Message {
         this.chat = chat;
     }
 
-    public Long getDelivered() {
-        return delivered;
+    public Boolean getDelivered_status() {
+        return delivered_status;
     }
 
-    public void setDelivered(Long delivered) {
-        this.delivered = delivered;
+    public void setDelivered_status(Boolean delivered_status) {
+        this.delivered_status = delivered_status;
     }
 
-    public Long getRead() {
-        return read;
+    public Boolean getRead_status() {
+        return read_status;
     }
 
-    public void setRead(Long read) {
-        this.read = read;
+    public void setRead_status(Boolean read_status) {
+        this.read_status = read_status;
     }
 }
