@@ -7,6 +7,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams } from 'react-router-dom';
 import { getChatById } from '../api/chats';
+import Message from './Message';  // Импортируйте компонент Message
 
 const PrivateChat = () => {
     const [messages, setMessages] = useState([]);
@@ -47,53 +48,33 @@ const PrivateChat = () => {
     }, [chatIdParam, username]);
 
     useEffect(() => {
+        if (!chatId) return;
+
         const stompClient = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
-                console.log('STOMP client connected');
-                setClient(stompClient);
                 stompClient.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
-                    console.log("Received message: ", newMessage);
                     updateMessages(newMessage);
                     
                     // Отправьте уведомление о прочтении, если сообщение не от текущего пользователя
                     if (newMessage.sender.id !== userId) {
-                        stompClient.publish({ 
-                            destination: `/app/readMessage/${chatId}`, 
-                            body: JSON.stringify(newMessage.id) 
-                        });
+                        client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(newMessage.id) });
                     }
                 });
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
             },
-            onDisconnect: () => {
-                console.log('STOMP client disconnected');
-            },
         });
 
+        setClient(stompClient);
         stompClient.activate();
 
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId]);
-
-    // Уведомление о прочтении при входе в чат
-    useEffect(() => {
-        if (client && messages.length > 0) {
-            messages.forEach(msg => {
-                if (msg.sender.id !== userId) {
-                    client.publish({
-                        destination: `/app/readMessage/${chatId}`,
-                        body: JSON.stringify(msg.id)
-                    });
-                }
-            });
-        }
-    }, [client, messages, chatId, userId]);
+    }, [chatId, userId]);
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
@@ -138,11 +119,6 @@ const PrivateChat = () => {
     };
 
     const sendMessage = async () => {
-        if (!client || !client.connected) {
-            toast.error('STOMP client is not connected. Please try again later.');
-            return;
-        }
-
         if ((content || selectedFile) && userId) {
             const message = {
                 id: editingMessageId || Date.now(),
@@ -154,8 +130,12 @@ const PrivateChat = () => {
                 read: false,
             };
 
-            client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
-            resetForm();
+            if (client && client.connected) {
+                client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
+                resetForm();
+            } else {
+                console.error('STOMP client is not connected');
+            }
         } else {
             toast.warn('Content is missing');
         }
