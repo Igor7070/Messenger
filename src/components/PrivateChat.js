@@ -197,23 +197,23 @@ const PrivateChat = () => {
         <div className="messenger">
             <div className="chat-name">Chat: {chatName}</div>
             <div className="message-list">
-                {messages.map((msg) => (
-                    <div 
-                        key={msg.id}
-                        className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
-                        onContextMenu={(e) => handleRightClick(e, msg)}
-                    >
-                        <strong>{msg.sender.username}: </strong>
-                        <span className="message-content">{msg.content}</span>
-                        {msg.fileUrl && (
-                            <a href={msg.fileUrl} download>📥 Download file</a>
-                        )}
-                        <div className="message-status">
-                            {msg.delivered && <span className="delivery-indicator">✔️</span>}
-                            {msg.read && <span className="read-indicator">✔️</span>}
-                        </div>
+            {messages.map((msg) => (
+                <div 
+                    key={msg.id}
+                    className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
+                    onContextMenu={(e) => handleRightClick(e, msg)}
+                >
+                    <strong>{msg.sender.username}: </strong>
+                    <span className="message-content">{msg.content}</span>
+                    {msg.fileUrl && (
+                        <a href={msg.fileUrl} download>📥 Download file</a>
+                    )}
+                    <div className="message-status">
+                        {msg.sender.id === userId && msg.delivered && <span className="delivery-indicator">✔️</span>}
+                        {msg.sender.id === userId && msg.read && <span className="read-indicator">✔️</span>}
                     </div>
-                ))}
+                </div>
+            ))}
                 <div ref={messagesEndRef} /> {/* Элемент для прокрутки */}
             </div>
             <textarea
