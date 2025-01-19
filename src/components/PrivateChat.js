@@ -7,7 +7,6 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams } from 'react-router-dom';
 import { getChatById } from '../api/chats';
-import Message from './Message';  // Импортируйте компонент Message
 
 const PrivateChat = () => {
     const [messages, setMessages] = useState([]);
@@ -39,6 +38,9 @@ const PrivateChat = () => {
                     delivered: msg.delivered_status,
                     read: msg.read_status
                 })));
+
+                // Отправляем уведомления о прочтении для всех сообщений
+                markAllMessagesAsRead(); // Вызов функции после загрузки сообщений
             } catch (error) {
                 console.error('Ошибка при загрузке данных о чате:', error);
             }
@@ -75,6 +77,14 @@ const PrivateChat = () => {
             stompClient.deactivate();
         };
     }, [chatId, userId]);
+
+    const markAllMessagesAsRead = () => {
+        messages.forEach(msg => {
+            if (msg.sender.id !== userId && !msg.read) {
+                client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
+            }
+        });
+    };
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
@@ -197,23 +207,23 @@ const PrivateChat = () => {
         <div className="messenger">
             <div className="chat-name">Chat: {chatName}</div>
             <div className="message-list">
-            {messages.map((msg) => (
+                {messages.map((msg) => (
                     <div 
                         key={msg.id}
                         className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
                         onContextMenu={(e) => handleRightClick(e, msg)}
                     >
-                    <strong>{msg.sender.username}: </strong>
-                    <span className="message-content">{msg.content}</span>
-                    {msg.fileUrl && (
-                        <a href={msg.fileUrl} download>📥 Download file</a>
-                    )}
-                    <div className="message-status">
-                        {msg.sender.id === userId && msg.delivered && <span className="delivery-indicator">✔️</span>}
-                        {msg.sender.id === userId && msg.read && <span className="read-indicator">✔️</span>}
+                        <strong>{msg.sender.username}: </strong>
+                        <span className="message-content">{msg.content}</span>
+                        {msg.fileUrl && (
+                            <a href={msg.fileUrl} download>📥 Download file</a>
+                        )}
+                        <div className="message-status">
+                            {msg.sender.id === userId && msg.delivered && <span className="delivery-indicator">✔️</span>}
+                            {msg.sender.id === userId && msg.read && <span className="read-indicator">✔️</span>}
+                        </div>
                     </div>
-                </div>
-            ))}
+                ))}
                 <div ref={messagesEndRef} /> {/* Элемент для прокрутки */}
             </div>
             <textarea
