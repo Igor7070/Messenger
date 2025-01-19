@@ -57,6 +57,7 @@ const PrivateChat = () => {
             onConnect: () => {
                 stompClient.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
+                    console.log('NewMessage: ', newMessage);
                     updateMessages(newMessage);
                     // Удаляем отправку уведомления о прочтении здесь
                 });
@@ -75,6 +76,8 @@ const PrivateChat = () => {
     }, [chatId]);
 
     const markAllMessagesAsRead = () => {
+        console.log('markAllMessagesAsRead is working...');
+        console.log('msg.read: ', msg.read);
         messages.forEach(msg => {
             if (msg.sender.id !== userId && !msg.read) {
                 if (client && client.connected) {
