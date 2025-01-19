@@ -39,7 +39,7 @@ const PrivateChat = () => {
                     read: msg.read_status
                 })));
 
-                // Отправляем уведомления о прочтении для всех сообщений
+                // Отправляем уведомления о прочтении для всех непрочитанных сообщений
                 markAllMessagesAsRead(); // Вызов функции после загрузки сообщений
             } catch (error) {
                 console.error('Ошибка при загрузке данных о чате:', error);
@@ -58,11 +58,7 @@ const PrivateChat = () => {
                 stompClient.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
                     updateMessages(newMessage);
-                    
-                    // Отправьте уведомление о прочтении, если сообщение не от текущего пользователя
-                    if (newMessage.sender.id !== userId) {
-                        client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(newMessage.id) });
-                    }
+                    // Удаляем отправку уведомления о прочтении здесь
                 });
             },
             onWebSocketError: (error) => {
@@ -76,12 +72,14 @@ const PrivateChat = () => {
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId, userId]);
+    }, [chatId]);
 
     const markAllMessagesAsRead = () => {
         messages.forEach(msg => {
             if (msg.sender.id !== userId && !msg.read) {
-                client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
+                if (client && client.connected) {
+                    client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
+                }
             }
         });
     };
