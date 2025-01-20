@@ -125,21 +125,6 @@ const PrivateChat = () => {
     }, [messages, client]);*/
 
     useEffect(() => {
-        const checkAndMarkMessagesAsRead = () => {
-            if (client && client.connected && messages.length > 0) {
-                const unreadMessages = messages.some(msg => !msg.read);
-                if (unreadMessages) {
-                    markAllMessagesAsRead(messages);
-                }
-            }
-        };
-
-        if (client) {
-            checkAndMarkMessagesAsRead(); // Проверяем на непрочитанные сообщения
-        }
-    }, [messages, client]);
-
-    useEffect(() => {
         if (!chatId) return;
 
         const stompClient = new Client({
@@ -164,6 +149,21 @@ const PrivateChat = () => {
             stompClient.deactivate();
         };
     }, [chatId]);
+
+    useEffect(() => {
+        const checkAndMarkMessagesAsRead = () => {
+            if (client && client.connected && messages.length > 0) {
+                const unreadMessages = messages.some(msg => !msg.read);
+                if (unreadMessages) {
+                    markAllMessagesAsRead(messages);
+                }
+            }
+        };
+
+        if (client) {
+            checkAndMarkMessagesAsRead(); // Проверяем на непрочитанные сообщения
+        }
+    }, [messages, client]);
 
     /*const markAllMessagesAsRead = () => {
         console.log('markAllMessagesAsRead is working...');
