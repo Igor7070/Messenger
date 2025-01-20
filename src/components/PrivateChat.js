@@ -23,65 +23,6 @@ const PrivateChat = () => {
     const fileInputRef = useRef(null);
     const { chatId: chatIdParam } = useParams();
 
-    /*useEffect(() => {
-        const fetchChatData = async () => {
-            console.log('fetchChatData is working...');
-            if (!chatIdParam || !username) return;
-
-            try {
-                const chatData = await getChatById(chatIdParam);
-                setChatName(chatData.name);
-                setChatId(chatIdParam);
-
-                const initialMessages = await getMessages(chatIdParam);
-                setMessages(initialMessages.map(msg => ({
-                    ...msg,
-                    delivered: msg.delivered_status,
-                    read: msg.read_status
-                })));
-
-                // Отправляем уведомления о прочтении для всех непрочитанных сообщений
-                //markAllMessagesAsRead(); // Вызов функции после загрузки сообщений
-            } catch (error) {
-                console.error('Ошибка при загрузке данных о чате:', error);
-            }
-        };
-        fetchChatData();
-    }, [chatIdParam, username]);*/
-
-    /*useEffect(() => {
-        const fetchChatData = async () => {
-            console.log('fetchChatData is working...');
-            if (!chatIdParam || !username) return;
-    
-            try {
-                const chatData = await getChatById(chatIdParam);
-                setChatName(chatData.name);
-                setChatId(chatIdParam);
-    
-                const initialMessages = await getMessages(chatIdParam);
-                setMessages(prevMessages => {
-                    const updatedMessages = initialMessages.map(msg => ({
-                        ...msg,
-                        delivered: msg.delivered_status,
-                        read: msg.read_status
-                    }));
-    
-                    // Теперь вызываем markAllMessagesAsRead после обновления состояния
-                    markAllMessagesAsRead(updatedMessages); // Вызываем здесь
-
-                    // Логируем все сообщения после вызова markAllMessagesAsRead
-                    console.log('All messages after markAllMessagesAsRead:', updatedMessages);
-                    return updatedMessages; // Возвращаем обновленный массив сообщений
-                });
-            } catch (error) {
-                console.error('Ошибка при загрузке данных о чате:', error);
-            }
-        };
-    
-        fetchChatData();
-    }, [chatIdParam, username]);*/
-
     useEffect(() => {
         const fetchChatData = async () => {
             console.log('fetchChatData is working...');
@@ -109,21 +50,6 @@ const PrivateChat = () => {
         fetchChatData();
     }, [chatIdParam, username]);
 
-    /*useEffect(() => {
-        if (messages.length > 0 && client && client.connected) {
-            markAllMessagesAsRead(); // Вызываем, когда сообщения загружены
-        }
-    }, [messages, client]);*/ // Зависимость от сообщений и клиента
-
-    /*useEffect(() => {
-        if (messages.length > 0 && client && client.connected) {
-            const unreadMessages = messages.some(msg => !msg.read);
-            if (unreadMessages) {
-                markAllMessagesAsRead(messages); // Передаем текущие сообщения
-            }
-        }
-    }, [messages, client]);*/
-
     useEffect(() => {
         if (!chatId) return;
 
@@ -150,21 +76,6 @@ const PrivateChat = () => {
         };
     }, [chatId]);
 
-    /*useEffect(() => {
-        const checkAndMarkMessagesAsRead = () => {
-            if (client && client.connected && messages.length > 0) {
-                const unreadMessages = messages.some(msg => !msg.read);
-                if (unreadMessages) {
-                    markAllMessagesAsRead(messages);
-                }
-            }
-        };
-
-        if (client) {
-            checkAndMarkMessagesAsRead(); // Проверяем на непрочитанные сообщения
-        }
-    }, [messages, client]);*/
-
     // Проверка подключения клиента и непрочитанных сообщений
     useEffect(() => {
         const interval = setInterval(() => {
@@ -180,30 +91,12 @@ const PrivateChat = () => {
         return () => clearInterval(interval); // Очищаем интервал при размонтировании
     }, [messages, client]);
 
-    /*const markAllMessagesAsRead = () => {
-        console.log('markAllMessagesAsRead is working...');
-        messages.forEach(msg => {
-            console.log('msg: ' + msg);
-            if (msg.sender.id !== userId && !msg.read) {
-                if (client && client.connected) {
-                    client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
-                    // Обновляем локальное состояние, чтобы отобразить, что сообщение прочитано
-                    setMessages(prevMessages => 
-                        prevMessages.map(message => 
-                            message.id === msg.id ? { ...message, read: true } : message
-                        )
-                    );
-                }
-            }
-        });
-    };*/
-
     const markAllMessagesAsRead = (updatedMessages) => {
         console.log('markAllMessagesAsRead is working...');
         // Проверяем, что updatedMessages определен и является массивом
         if (Array.isArray(updatedMessages)) {
             updatedMessages.forEach(msg => {
-                console.log(`Checking message: senderId: ${msg.sender.id}, userId: ${userId}, read: ${msg.read}`);
+                //console.log(`Checking message: senderId: ${msg.sender.id}, userId: ${userId}, read: ${msg.read}`);
                 if (msg.sender.id !== userId && (msg.read === false || msg.read === null)) {
                     if (client && client.connected) {
                         client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
@@ -212,9 +105,7 @@ const PrivateChat = () => {
                                 message.id === msg.id ? { ...message, read: true } : message
                             )
                         );
-                        console.log('markAllMessagesAsRead conditions1 are met...');
                     }
-                    console.log('markAllMessagesAsRead conditions2 are met...');
                 }
             });
         } else {
