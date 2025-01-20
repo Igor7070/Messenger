@@ -129,26 +129,29 @@ const PrivateChat = () => {
             if (client && client.connected && messages.length > 0) {
                 const unreadMessages = messages.some(msg => !msg.read);
                 if (unreadMessages) {
-                    markAllMessagesAsRead(messages); // Передаем текущие сообщения
+                    markAllMessagesAsRead(messages);
                 }
             }
         };
     
-        // Добавляем обработчик события подключения
         const onConnect = () => {
+            console.log('Client connected');
             checkAndMarkMessagesAsRead();
         };
     
         if (client) {
-            client.on('connect', onConnect);
+            // Проверяем, поддерживает ли клиент метод on
+            if (typeof client.on === 'function') {
+                client.on('connect', onConnect);
+            } else {
+                console.error('Client does not support the `on` method:', client);
+            }
         }
     
-        // Проверяем сообщения при изменении
         checkAndMarkMessagesAsRead();
     
-        // Убираем обработчик при размонтировании
         return () => {
-            if (client) {
+            if (client && typeof client.off === 'function') {
                 client.off('connect', onConnect);
             }
         };
