@@ -140,19 +140,17 @@ const PrivateChat = () => {
         };
     
         if (client) {
-            // Проверяем, поддерживает ли клиент метод on
-            if (typeof client.on === 'function') {
-                client.on('connect', onConnect);
-            } else {
-                console.error('Client does not support the `on` method:', client);
-            }
+            // Используйте метод connect для установки соединения
+            client.connect({}, onConnect, (error) => {
+                console.error('Connection error:', error);
+            });
         }
     
         checkAndMarkMessagesAsRead();
     
         return () => {
-            if (client && typeof client.off === 'function') {
-                client.off('connect', onConnect);
+            if (client) {
+                client.disconnect();
             }
         };
     }, [messages, client]);
