@@ -146,7 +146,7 @@ const PrivateChat = () => {
         // Проверяем, что updatedMessages определен и является массивом
         if (Array.isArray(updatedMessages)) {
             updatedMessages.forEach(msg => {
-                //console.log('msg: ', msg);
+                console.log(`Checking message: senderId: ${msg.sender.id}, userId: ${userId}, read: ${msg.read}`);
                 if (msg.sender.id !== userId && !msg.read) {
                     if (client && client.connected) {
                         client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
