@@ -49,7 +49,7 @@ const PrivateChat = () => {
         fetchChatData();
     }, [chatIdParam, username]);*/
 
-    useEffect(() => {
+    /*useEffect(() => {
         const fetchChatData = async () => {
             console.log('fetchChatData is working...');
             if (!chatIdParam || !username) return;
@@ -80,6 +80,33 @@ const PrivateChat = () => {
         };
     
         fetchChatData();
+    }, [chatIdParam, username]);*/
+
+    useEffect(() => {
+        const fetchChatData = async () => {
+            console.log('fetchChatData is working...');
+            if (!chatIdParam || !username) return;
+    
+            try {
+                const chatData = await getChatById(chatIdParam);
+                setChatName(chatData.name);
+                setChatId(chatIdParam);
+    
+                const initialMessages = await getMessages(chatIdParam);
+                const updatedMessages = initialMessages.map(msg => ({
+                    ...msg,
+                    delivered: msg.delivered_status,
+                    read: msg.read_status
+                }));
+    
+                // Сохраняем сообщения в состояние
+                setMessages(updatedMessages); // Здесь не вызываем markAllMessagesAsRead
+            } catch (error) {
+                console.error('Ошибка при загрузке данных о чате:', error);
+            }
+        };
+    
+        fetchChatData();
     }, [chatIdParam, username]);
 
     /*useEffect(() => {
@@ -88,13 +115,43 @@ const PrivateChat = () => {
         }
     }, [messages, client]);*/ // Зависимость от сообщений и клиента
 
-    useEffect(() => {
+    /*useEffect(() => {
         if (messages.length > 0 && client && client.connected) {
             const unreadMessages = messages.some(msg => !msg.read);
             if (unreadMessages) {
                 markAllMessagesAsRead(messages); // Передаем текущие сообщения
             }
         }
+    }, [messages, client]);*/
+
+    useEffect(() => {
+        const checkAndMarkMessagesAsRead = () => {
+            if (client && client.connected && messages.length > 0) {
+                const unreadMessages = messages.some(msg => !msg.read);
+                if (unreadMessages) {
+                    markAllMessagesAsRead(messages); // Передаем текущие сообщения
+                }
+            }
+        };
+    
+        // Добавляем обработчик события подключения
+        const onConnect = () => {
+            checkAndMarkMessagesAsRead();
+        };
+    
+        if (client) {
+            client.on('connect', onConnect);
+        }
+    
+        // Проверяем сообщения при изменении
+        checkAndMarkMessagesAsRead();
+    
+        // Убираем обработчик при размонтировании
+        return () => {
+            if (client) {
+                client.off('connect', onConnect);
+            }
+        };
     }, [messages, client]);
 
     useEffect(() => {
