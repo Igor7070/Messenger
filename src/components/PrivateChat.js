@@ -41,28 +41,13 @@ const PrivateChat = () => {
                 })));
 
                 // Отправляем уведомления о прочтении для всех непрочитанных сообщений
-                //markAllMessagesAsRead(); // Вызов функции после загрузки сообщений
+                markAllMessagesAsRead(); // Вызов функции после загрузки сообщений
             } catch (error) {
                 console.error('Ошибка при загрузке данных о чате:', error);
             }
         };
-        markAllMessagesAsRead();
         fetchChatData();
     }, [chatIdParam, username]);
-
-    useEffect(() => {
-        if (chatId) {
-            const fetchMessages = async () => {
-                const initialMessages = await getMessages(chatId);
-                setMessages(initialMessages.map(msg => ({
-                    ...msg,
-                    delivered: msg.delivered_status,
-                    read: msg.read_status
-                })));
-            };
-            fetchMessages();
-        }
-    }, [chatId]);
 
     useEffect(() => {
         if (messages.length > 0 && client && client.connected) {
