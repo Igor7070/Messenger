@@ -79,11 +79,20 @@ const PrivateChat = () => {
         fetchChatData();
     }, [chatIdParam, username]);
 
+    /*useEffect(() => {
+        if (messages.length > 0 && client && client.connected) {
+            markAllMessagesAsRead(); // Вызываем, когда сообщения загружены
+        }
+    }, [messages, client]);*/ // Зависимость от сообщений и клиента
+
     useEffect(() => {
         if (messages.length > 0 && client && client.connected) {
-            markAllMessagesAsRead(messages); // Вызываем, когда сообщения загружены
+            const unreadMessages = messages.some(msg => !msg.read);
+            if (unreadMessages) {
+                markAllMessagesAsRead(messages); // Передаем текущие сообщения
+            }
         }
-    }, [messages, client]); // Зависимость от сообщений и клиента
+    }, [messages, client]);
 
     useEffect(() => {
         if (!chatId) return;
@@ -131,19 +140,25 @@ const PrivateChat = () => {
 
     const markAllMessagesAsRead = (updatedMessages) => {
         console.log('markAllMessagesAsRead is working...');
-        updatedMessages.forEach(msg => {
-            console.log('msg: ', msg);
-            if (msg.sender.id !== userId && !msg.read) {
-                if (client && client.connected) {
-                    client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
-                    setMessages(prevMessages => 
-                        prevMessages.map(message => 
-                            message.id === msg.id ? { ...message, read: true } : message
-                        )
-                    );
+        
+        // Проверяем, что updatedMessages определен и является массивом
+        if (Array.isArray(updatedMessages)) {
+            updatedMessages.forEach(msg => {
+                console.log('msg: ', msg);
+                if (msg.sender.id !== userId && !msg.read) {
+                    if (client && client.connected) {
+                        client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
+                        setMessages(prevMessages => 
+                            prevMessages.map(message => 
+                                message.id === msg.id ? { ...message, read: true } : message
+                            )
+                        );
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            console.error('updatedMessages is undefined or not an array');
+        }
     };
 
     const updateMessages = (newMessage) => {
