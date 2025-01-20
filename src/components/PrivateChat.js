@@ -51,6 +51,20 @@ const PrivateChat = () => {
     }, [chatIdParam, username]);
 
     useEffect(() => {
+        if (chatId) {
+            const fetchMessages = async () => {
+                const initialMessages = await getMessages(chatId);
+                setMessages(initialMessages.map(msg => ({
+                    ...msg,
+                    delivered: msg.delivered_status,
+                    read: msg.read_status
+                })));
+            };
+            fetchMessages();
+        }
+    }, [chatId]);
+
+    useEffect(() => {
         if (messages.length > 0 && client && client.connected) {
             markAllMessagesAsRead(); // Вызываем, когда сообщения загружены
         }
