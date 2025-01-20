@@ -69,6 +69,9 @@ const PrivateChat = () => {
     
                     // Теперь вызываем markAllMessagesAsRead после обновления состояния
                     markAllMessagesAsRead(updatedMessages); // Вызываем здесь
+
+                    // Логируем все сообщения после вызова markAllMessagesAsRead
+                    console.log('All messages after markAllMessagesAsRead:', updatedMessages);
                     return updatedMessages; // Возвращаем обновленный массив сообщений
                 });
             } catch (error) {
