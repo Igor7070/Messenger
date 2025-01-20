@@ -146,14 +146,14 @@ const PrivateChat = () => {
             updatedMessages.forEach(msg => {
                 console.log('msg: ', msg);
                 if (msg.sender.id !== userId && !msg.read) {
-                    if (client && client.connected) {
-                        client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
-                        setMessages(prevMessages => 
-                            prevMessages.map(message => 
-                                message.id === msg.id ? { ...message, read: true } : message
-                            )
-                        );
-                    }
+                    
+                    client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
+                    setMessages(prevMessages => 
+                        prevMessages.map(message => 
+                            message.id === msg.id ? { ...message, read: true } : message
+                        )
+                    );
+                    
                 }
             });
         } else {
