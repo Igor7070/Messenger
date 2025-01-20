@@ -48,7 +48,6 @@ const PrivateChat = () => {
         };
 
         fetchChatData();
-        markAllMessagesAsRead();
     }, [chatIdParam, username]);
 
     useEffect(() => {
