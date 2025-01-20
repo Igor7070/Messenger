@@ -124,7 +124,7 @@ const PrivateChat = () => {
         }
     }, [messages, client]);*/
 
-    /*useEffect(() => {
+    useEffect(() => {
         const checkAndMarkMessagesAsRead = () => {
             if (client && client.connected && messages.length > 0) {
                 const unreadMessages = messages.some(msg => !msg.read);
@@ -137,7 +137,7 @@ const PrivateChat = () => {
         if (client) {
             checkAndMarkMessagesAsRead(); // Проверяем на непрочитанные сообщения
         }
-    }, [messages, client]);*/
+    }, [messages, client]);
 
     useEffect(() => {
         if (!chatId) return;
@@ -149,9 +149,8 @@ const PrivateChat = () => {
                     const newMessage = JSON.parse(message.body);
                     console.log('NewMessage: ', newMessage);
                     updateMessages(newMessage);
-                    checkAndMarkMessagesAsRead(); // Проверяем на непрочитанные сообщения
+
                 });
-                checkAndMarkMessagesAsRead(); // Проверяем на непрочитанные сообщения
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
@@ -165,15 +164,6 @@ const PrivateChat = () => {
             stompClient.deactivate();
         };
     }, [chatId]);
-
-    const checkAndMarkMessagesAsRead = () => {
-        if (client && client.connected && messages.length > 0) {
-            const unreadMessages = messages.some(msg => !msg.read);
-            if (unreadMessages) {
-                markAllMessagesAsRead(messages);
-            }
-        }
-    };
 
     /*const markAllMessagesAsRead = () => {
         console.log('markAllMessagesAsRead is working...');
