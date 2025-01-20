@@ -46,7 +46,7 @@ const PrivateChat = () => {
                 console.error('Ошибка при загрузке данных о чате:', error);
             }
         };
-
+        markAllMessagesAsRead();
         fetchChatData();
     }, [chatIdParam, username]);
 
