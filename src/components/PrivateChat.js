@@ -81,7 +81,7 @@ const PrivateChat = () => {
 
     useEffect(() => {
         if (messages.length > 0 && client && client.connected) {
-            markAllMessagesAsRead(); // Вызываем, когда сообщения загружены
+            markAllMessagesAsRead(messages); // Вызываем, когда сообщения загружены
         }
     }, [messages, client]); // Зависимость от сообщений и клиента
 
