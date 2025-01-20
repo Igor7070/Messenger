@@ -150,7 +150,7 @@ const PrivateChat = () => {
         };
     }, [chatId]);
 
-    useEffect(() => {
+    /*useEffect(() => {
         const checkAndMarkMessagesAsRead = () => {
             if (client && client.connected && messages.length > 0) {
                 const unreadMessages = messages.some(msg => !msg.read);
@@ -163,6 +163,21 @@ const PrivateChat = () => {
         if (client) {
             checkAndMarkMessagesAsRead(); // Проверяем на непрочитанные сообщения
         }
+    }, [messages, client]);*/
+
+    // Проверка подключения клиента и непрочитанных сообщений
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (client && client.connected && messages.length > 0) {
+                const unreadMessages = messages.some(msg => !msg.read);
+                if (unreadMessages) {
+                    markAllMessagesAsRead(messages);
+                    clearInterval(interval); // Останавливаем проверку после успешного вызова
+                }
+            }
+        }, 1000); // Проверяем каждую секунду
+
+        return () => clearInterval(interval); // Очищаем интервал при размонтировании
     }, [messages, client]);
 
     /*const markAllMessagesAsRead = () => {
