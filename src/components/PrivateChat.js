@@ -147,7 +147,7 @@ const PrivateChat = () => {
         if (Array.isArray(updatedMessages)) {
             updatedMessages.forEach(msg => {
                 console.log(`Checking message: senderId: ${msg.sender.id}, userId: ${userId}, read: ${msg.read}`);
-                if (msg.sender.id !== userId && !msg.read) {
+                if (msg.sender.id !== userId && (msg.read === false || msg.read === null)) {
                     if (client && client.connected) {
                         client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
                         setMessages(prevMessages => 
@@ -155,8 +155,9 @@ const PrivateChat = () => {
                                 message.id === msg.id ? { ...message, read: true } : message
                             )
                         );
-                        console.log('markAllMessagesAsRead conditions are met...');
+                        console.log('markAllMessagesAsRead conditions1 are met...');
                     }
+                    console.log('markAllMessagesAsRead conditions2 are met...');
                 }
             });
         } else {
