@@ -159,9 +159,9 @@ const PrivateChat = () => {
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
                 delivered: false,
                 read: false,
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(), // Используем ISO-8601 формат
             };
-
+    
             if (client && client.connected) {
                 client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
                 resetForm();
