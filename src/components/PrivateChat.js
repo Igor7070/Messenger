@@ -5,7 +5,7 @@ import { getMessages } from '../api/messages';
 import '../styles/Messenger.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useParams, useHistory } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // Измените импорт
 import { getChatById } from '../api/chats';
 
 const PrivateChat = () => {
@@ -19,11 +19,10 @@ const PrivateChat = () => {
     const [chatName, setChatName] = useState('');
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
-    const [notifications, setNotifications] = useState([]);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const { chatId: chatIdParam } = useParams();
-    const history = useHistory();
+    const navigate = useNavigate(); // Заменяем useHistory на useNavigate
 
     useEffect(() => {
         const fetchChatData = async () => {
@@ -60,16 +59,14 @@ const PrivateChat = () => {
                     const newMessage = JSON.parse(message.body);
                     updateMessages(newMessage);
 
-                    // Если сообщение от другого пользователя и не прочитано
                     if (newMessage.sender.id !== userId && !newMessage.read) {
                         const currentTime = Date.now();
                         const messageTime = newMessage.timestamp;
 
-                        // Проверяем, прошло ли 1.5 секунды
                         if (currentTime - messageTime >= 1500) {
                             toast.info(`Новое сообщение от ${newMessage.sender.username}: "${newMessage.content}"`, {
                                 onClick: () => {
-                                    history.push(`/chat/${chatId}`);
+                                    navigate(`/chat/${chatId}`); // Используем navigate вместо history
                                 },
                                 autoClose: false,
                             });
@@ -88,7 +85,7 @@ const PrivateChat = () => {
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId, userId, history]);
+    }, [chatId, userId, navigate]);
 
     const markAllMessagesAsRead = (updatedMessages) => {
         if (Array.isArray(updatedMessages)) {
@@ -129,7 +126,7 @@ const PrivateChat = () => {
                     ...newMessage,
                     delivered: newMessage.delivered_status,
                     read: newMessage.read_status,
-                    timestamp: Date.now(), // Добавляем метку времени
+                    timestamp: Date.now(),
                 }];
             }
         });
@@ -162,7 +159,7 @@ const PrivateChat = () => {
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
                 delivered: false,
                 read: false,
-                timestamp: Date.now(), // Добавляем метку времени
+                timestamp: Date.now(),
             };
 
             if (client && client.connected) {
@@ -223,7 +220,6 @@ const PrivateChat = () => {
         }
     };
 
-    // Прокрутка вниз при обновлении сообщений
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
