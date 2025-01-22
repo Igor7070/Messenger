@@ -82,6 +82,7 @@ public class MessageController {
 
     @PostMapping("/notify")
     public ResponseEntity<String> sendNotification(@RequestBody NotificationRequest request) {
+        System.out.println("Method sendNotification working...");
         // Проверка получателя
         User recipient = userRepository.findById(request.getRecipientId())
                 .orElseThrow(() -> new RuntimeException("Recipient not found"));
