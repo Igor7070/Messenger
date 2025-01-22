@@ -195,10 +195,13 @@ const PrivateChat = () => {
                             if (userResponse.ok) {
                                 const recipient = await userResponse.json();
                                 const recipientId = recipient.id; // Получаем ID получателя
-                                console.log('recipientId:', recipientId);
-    
+
+                                console.log('recipientId:', recipientId);   
+                                console.log('messageStatus.read: ' + messageStatus.read);
+                                console.log('userId: ' + userId);
+
                                 // Проверка, прочитано ли сообщение
-                                if (!messageStatus.read && recipientId === userId) {
+                                if (messageStatus.read === false && recipientId === userId) {
                                     toast.info(`Новое сообщение от ${username}: "${content}"`, {
                                         onClick: () => {
                                             window.location.href = `/chat/${chatId}`;
