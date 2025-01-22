@@ -5,7 +5,7 @@ import { getMessages } from '../api/messages';
 import '../styles/Messenger.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useParams, useNavigate } from 'react-router-dom'; // Измените импорт
+import { useParams } from 'react-router-dom';
 import { getChatById } from '../api/chats';
 
 const PrivateChat = () => {
@@ -22,30 +22,31 @@ const PrivateChat = () => {
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const { chatId: chatIdParam } = useParams();
-    const navigate = useNavigate(); // Заменяем useHistory на useNavigate
 
     useEffect(() => {
         const fetchChatData = async () => {
+            console.log('fetchChatData is working...');
             if (!chatIdParam || !username) return;
-
+    
             try {
                 const chatData = await getChatById(chatIdParam);
                 setChatName(chatData.name);
                 setChatId(chatIdParam);
-
+    
                 const initialMessages = await getMessages(chatIdParam);
                 const updatedMessages = initialMessages.map(msg => ({
                     ...msg,
                     delivered: msg.delivered_status,
                     read: msg.read_status
                 }));
-
-                setMessages(updatedMessages);
+    
+                // Сохраняем сообщения в состояние
+                setMessages(updatedMessages); // Здесь не вызываем markAllMessagesAsRead
             } catch (error) {
                 console.error('Ошибка при загрузке данных о чате:', error);
             }
         };
-
+    
         fetchChatData();
     }, [chatIdParam, username]);
 
@@ -57,21 +58,9 @@ const PrivateChat = () => {
             onConnect: () => {
                 stompClient.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
+                    console.log('NewMessage: ', newMessage);
                     updateMessages(newMessage);
 
-                    if (newMessage.sender.id !== userId && !newMessage.read) {
-                        const currentTime = Date.now();
-                        const messageTime = newMessage.timestamp;
-
-                        if (currentTime - messageTime >= 1500) {
-                            toast.info(`Новое сообщение от ${newMessage.sender.username}: "${newMessage.content}"`, {
-                                onClick: () => {
-                                    navigate(`/chat/${chatId}`); // Используем navigate вместо history
-                                },
-                                autoClose: false,
-                            });
-                        }
-                    }
                 });
             },
             onWebSocketError: (error) => {
@@ -85,11 +74,29 @@ const PrivateChat = () => {
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId, userId, navigate]);
+    }, [chatId]);
+
+    // Проверка подключения клиента и непрочитанных сообщений
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (client && client.connected && messages.length > 0) {
+                const unreadMessages = messages.some(msg => !msg.read);
+                if (unreadMessages) {
+                    markAllMessagesAsRead(messages);
+                    clearInterval(interval); // Останавливаем проверку после успешного вызова
+                }
+            }
+        }, 1000); // Проверяем каждую секунду
+
+        return () => clearInterval(interval); // Очищаем интервал при размонтировании
+    }, [messages, client]);
 
     const markAllMessagesAsRead = (updatedMessages) => {
+        console.log('markAllMessagesAsRead is working...');
+        // Проверяем, что updatedMessages определен и является массивом
         if (Array.isArray(updatedMessages)) {
             updatedMessages.forEach(msg => {
+                //console.log(`Checking message: senderId: ${msg.sender.id}, userId: ${userId}, read: ${msg.read}`);
                 if (msg.sender.id !== userId && (msg.read === false || msg.read === null)) {
                     if (client && client.connected) {
                         client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
@@ -125,8 +132,7 @@ const PrivateChat = () => {
                 return [...prevMessages, {
                     ...newMessage,
                     delivered: newMessage.delivered_status,
-                    read: newMessage.read_status,
-                    timestamp: Date.now(),
+                    read: newMessage.read_status
                 }];
             }
         });
@@ -159,9 +165,8 @@ const PrivateChat = () => {
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
                 delivered: false,
                 read: false,
-                timestamp: new Date().toISOString(), // Используем ISO-8601 формат
             };
-    
+
             if (client && client.connected) {
                 client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
                 resetForm();
@@ -220,6 +225,7 @@ const PrivateChat = () => {
         }
     };
 
+    // Прокрутка вниз при обновлении сообщений
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
