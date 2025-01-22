@@ -173,10 +173,7 @@ const PrivateChat = () => {
                     setTimeout(async () => {
                         const statusResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/${sentMessage.id}`); // Проверка статуса
                         const updatedMessage = await statusResponse.json();
-                        
-                        // Извлечение имени получателя
-                        const recipientName = chatName.split('_').find(name => name !== username);
-                        const recipientId = await getUserIdByName(recipientName); // Получение ID получателя
+                        const recipientName = chatName.split('_').find(name => name !== username); // Извлечение имени получателя
     
                         if (!updatedMessage.read_status) {
                             toast.info(`Новое сообщение от ${username}: "${content}"`, {
@@ -187,6 +184,7 @@ const PrivateChat = () => {
                             });
     
                             // Отправка уведомления получателю
+                            const recipientId = await getUserIdByName(recipientName);
                             if (client && client.connected) {
                                 client.publish({
                                     destination: `/user/${recipientId}/queue/notifications`,
