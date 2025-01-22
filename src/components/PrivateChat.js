@@ -83,7 +83,7 @@ const PrivateChat = () => {
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId]);
+    }, [chatId, userId]);
 
     // Проверка подключения клиента и непрочитанных сообщений
     useEffect(() => {
