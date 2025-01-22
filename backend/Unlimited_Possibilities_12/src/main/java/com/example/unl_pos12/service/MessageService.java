@@ -27,7 +27,7 @@ public class MessageService {
         return messageRepository.findById(id).orElse(null);
     }
 
-    public Message findByContentAndSenderAndChat(String content, Long senderId, Long chatId) {
+    public List<Message> findByContentAndSenderAndChat(String content, Long senderId, Long chatId) {
         return messageRepository.findByContentAndSenderIdAndChatId(content, senderId, chatId);
     }
 

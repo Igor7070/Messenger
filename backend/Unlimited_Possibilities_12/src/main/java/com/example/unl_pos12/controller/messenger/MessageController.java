@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.ZonedDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @RestController
@@ -37,8 +38,18 @@ public class MessageController {
 
     @GetMapping("/search")
     public ResponseEntity<Message> getMessageByContent(@RequestParam String content, @RequestParam Long senderId, @RequestParam Long chatId) {
-        Message message = messageService.findByContentAndSenderAndChat(content, senderId, chatId);
-        return message != null ? ResponseEntity.ok(message) : ResponseEntity.notFound().build();
+        List<Message> messages = (List<Message>) messageService.findByContentAndSenderAndChat(content, senderId, chatId);
+
+        if (messages.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Находим сообщение с самой поздней меткой времени
+        Message latestMessage = messages.stream()
+                .max(Comparator.comparing(Message::getTimestamp))
+                .orElse(null);
+
+        return ResponseEntity.ok(latestMessage);
     }
 
     @PostMapping

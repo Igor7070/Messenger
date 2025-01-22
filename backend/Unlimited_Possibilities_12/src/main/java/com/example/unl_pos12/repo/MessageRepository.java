@@ -8,5 +8,5 @@ import java.util.List;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findBySender(User sender);
-    Message findByContentAndSenderIdAndChatId(String content, Long senderId, Long chatId);
+    List<Message> findByContentAndSenderIdAndChatId(String content, Long senderId, Long chatId);
 }
