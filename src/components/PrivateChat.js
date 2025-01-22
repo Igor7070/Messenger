@@ -169,30 +169,49 @@ const PrivateChat = () => {
 
                 // Таймер на 1.5 секунды для проверки статуса прочтения
                 setTimeout(async () => {
-                    console.log(`Fetching message with ID: ${message.id}`);
-                    const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/${message.id}`); // Проверка статуса прочтения
-                    const updatedMessage = await response.json();
-                    //console.log('updatedMessage: ' + updatedMessage);
-                    const recipientName = chatName.split('_').find(name => name !== username); // Извлечение имени получателя
-                    //console.log('recipientName: ' + recipientName);
-
-                    if (!updatedMessage.read) {
-                        toast.info(`Новое сообщение от ${username}: "${content}"`, {
-                            onClick: () => {
-                                window.location.href = `/chat/${chatId}`;
-                            },
-                            autoClose: false,
-                        });
-
-                        // Отправка уведомления получателю
-                        const recipientId = await getUserIdByName(recipientName); // Получите ID получателя
-                        console.log('recipientId: ' + recipientId);
-                        if (client && client.connected) {
-                            client.publish({
-                                destination: `/user/${recipientId}/queue/notifications`,
-                                body: JSON.stringify({ sender: { username }, content })
+                    // Здесь нужно сделать запрос для получения последнего сообщения
+                    const response = await fetch(`https://unlimitedpossibilities12.org/api/messages`, {
+                        method: 'GET', // Получаем все сообщения или конкретные
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+    
+                    if (!response.ok) {
+                        console.error('Failed to fetch messages');
+                        return;
+                    }
+    
+                    const messages = await response.json();
+                    const sentMessage = messages.find(msg => msg.content === content && msg.sender.id === userId && msg.chat.id === chatId);
+                    
+                    if (sentMessage) {
+                        console.log(`Fetching message with ID: ${sentMessage.id}`); // Используйте ID, возвращаемый сервером
+                        
+                        // Проверка статуса прочтения
+                        const statusResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/${sentMessage.id}`);
+                        const updatedMessage = await statusResponse.json();
+                        console.log('updatedMessage: ', updatedMessage);
+    
+                        const recipientName = chatName.split('_').find(name => name !== username); // Извлечение имени получателя
+    
+                        if (!updatedMessage.read) {
+                            toast.info(`Новое сообщение от ${username}: "${content}"`, {
+                                onClick: () => {
+                                    window.location.href = `/chat/${chatId}`;
+                                },
+                                autoClose: false,
                             });
+    
+                            // Отправка уведомления получателю
+                            const recipientId = await getUserIdByName(recipientName); // Получите ID получателя
+                            if (client && client.connected) {
+                                client.publish({
+                                    destination: `/user/${recipientId}/queue/notifications`,
+                                    body: JSON.stringify({ sender: { username }, content })
+                                });
+                            }
                         }
+                    } else {
+                        console.error('Message not found');
                     }
                 }, 1500);
                 
