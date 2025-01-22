@@ -171,7 +171,9 @@ const PrivateChat = () => {
                 setTimeout(async () => {
                     const response = await fetch(`/api/messages/${message.id}`); // Проверка статуса прочтения
                     const updatedMessage = await response.json();
+                    console.log('updatedMessage: ' + updatedMessage);
                     const recipientName = chatName.split('_').find(name => name !== username); // Извлечение имени получателя
+                    console.log('recipientName: ' + recipientName);
 
                     if (!updatedMessage.read) {
                         toast.info(`Новое сообщение от ${username}: "${content}"`, {
@@ -183,6 +185,7 @@ const PrivateChat = () => {
 
                         // Отправка уведомления получателю
                         const recipientId = await getUserIdByName(recipientName); // Получите ID получателя
+                        console.log('recipientId: ' + recipientId);
                         if (client && client.connected) {
                             client.publish({
                                 destination: `/user/${recipientId}/queue/notifications`,
