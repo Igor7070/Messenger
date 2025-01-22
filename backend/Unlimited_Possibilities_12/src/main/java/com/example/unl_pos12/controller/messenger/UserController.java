@@ -54,6 +54,16 @@ public class UserController {
         }
     }
 
+    @GetMapping("/by-username/{username}")
+    public ResponseEntity<User> getUserByUsername(@PathVariable String username) {
+        User user = userService.getUserByUsername(username);
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
     @PostMapping
     public User createUser(@RequestBody User user) {
         System.out.println("Created user: " + user.getUsername());

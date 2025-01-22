@@ -42,6 +42,11 @@ public class UserService {
         }
     }
 
+    public User getUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElse(null); // Возвращает пользователя или null, если не найден
+    }
+
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
