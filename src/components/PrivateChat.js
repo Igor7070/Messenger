@@ -163,25 +163,40 @@ const PrivateChat = () => {
                 delivered: false,
                 read: false,
             };
-
+    
             if (client && client.connected) {
                 client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
-
+    
                 // Таймер на 1.5 секунды для проверки статуса прочтения
                 setTimeout(async () => {
                     // Запрос для получения ID сообщения по содержимому
-                const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(content)}&senderId=${userId}&chatId=${chatId}`);
+                    const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(content)}&senderId=${userId}&chatId=${chatId}`);
                     const updatedMessage = await response.json();
-                    if (!updatedMessage.read) {
-                        toast.info(`Новое сообщение от ${username}: "${content}"`, {
-                            onClick: () => {
-                                window.location.href = `/chat/${chatId}`;
-                            },
-                            autoClose: false,
-                        });
+    
+                    // Извлечение имени получателя из имени чата
+                    const recipientName = chatName.split('_').find(name => name !== username);
+    
+                    // Запрос на получение ID получателя
+                    const userResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
+                    
+                    if (userResponse.ok) {
+                        const recipient = await userResponse.json();
+                        const recipientId = recipient.id; // Получаем ID получателя
+    
+                        // Проверка статуса прочтения только для получателя
+                        if (updatedMessage && !updatedMessage.read && recipientId === userId) {
+                            toast.info(`Новое сообщение от ${username}: "${content}"`, {
+                                onClick: () => {
+                                    window.location.href = `/chat/${chatId}`;
+                                },
+                                autoClose: false,
+                            });
+                        }
+                    } else {
+                        console.error('Failed to fetch recipient ID');
                     }
                 }, 1500);
-
+    
                 resetForm();
             } else {
                 console.error('STOMP client is not connected');
