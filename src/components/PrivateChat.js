@@ -169,6 +169,7 @@ const PrivateChat = () => {
 
                 // Таймер на 1.5 секунды для проверки статуса прочтения
                 setTimeout(async () => {
+                    console.log(`Fetching message with ID: ${message.id}`);
                     const response = await fetch(`/api/messages/${message.id}`); // Проверка статуса прочтения
                     const updatedMessage = await response.json();
                     console.log('updatedMessage: ' + updatedMessage);
