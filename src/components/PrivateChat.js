@@ -169,7 +169,7 @@ const PrivateChat = () => {
 
                 // Таймер на 1.5 секунды для проверки статуса прочтения
                 setTimeout(async () => {
-                    const response = await fetch(`/api/messages/${message.id}`); // Проверка статуса прочтения
+                    const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/61`); // Проверка статуса прочтения
                     const updatedMessage = await response.json();
                     if (!updatedMessage.read) {
                         toast.info(`Новое сообщение от ${username}: "${content}"`, {
