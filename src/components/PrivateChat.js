@@ -155,7 +155,7 @@ const PrivateChat = () => {
     const sendMessage = async () => {
         if ((content || selectedFile) && userId) {
             const message = {
-                id: editingMessageId || Date.now(),
+                //id: editingMessageId || Date.now(),
                 content,
                 sender: { id: userId, username },
                 chat: { id: chatId, name: chatName },
@@ -170,11 +170,11 @@ const PrivateChat = () => {
                 // Таймер на 1.5 секунды для проверки статуса прочтения
                 setTimeout(async () => {
                     console.log(`Fetching message with ID: ${message.id}`);
-                    const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/11`); // Проверка статуса прочтения
+                    const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/${message.id}`); // Проверка статуса прочтения
                     const updatedMessage = await response.json();
-                    console.log('updatedMessage: ' + updatedMessage);
+                    //console.log('updatedMessage: ' + updatedMessage);
                     const recipientName = chatName.split('_').find(name => name !== username); // Извлечение имени получателя
-                    console.log('recipientName: ' + recipientName);
+                    //console.log('recipientName: ' + recipientName);
 
                     if (!updatedMessage.read) {
                         toast.info(`Новое сообщение от ${username}: "${content}"`, {
