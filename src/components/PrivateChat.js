@@ -170,7 +170,7 @@ const PrivateChat = () => {
                 // Таймер на 1.5 секунды для проверки статуса прочтения
                 setTimeout(async () => {
                     console.log(`Fetching message with ID: ${message.id}`);
-                    const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/10`); // Проверка статуса прочтения
+                    const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/11`); // Проверка статуса прочтения
                     const updatedMessage = await response.json();
                     console.log('updatedMessage: ' + updatedMessage);
                     const recipientName = chatName.split('_').find(name => name !== username); // Извлечение имени получателя
@@ -207,7 +207,7 @@ const PrivateChat = () => {
 
     // Функция для получения ID пользователя по имени
     const getUserIdByName = async (name) => {
-        const response = await fetch(`/api/users/by-username/${name}`);
+        const response = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${name}`);
         if (!response.ok) {
             throw new Error('Failed to fetch user ID');
         }
