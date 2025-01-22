@@ -35,6 +35,12 @@ public class MessageController {
         }
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<Message> getMessageByContent(@RequestParam String content, @RequestParam Long senderId, @RequestParam Long chatId) {
+        Message message = messageService.findByContentAndSenderAndChat(content, senderId, chatId);
+        return message != null ? ResponseEntity.ok(message) : ResponseEntity.notFound().build();
+    }
+
     @PostMapping
     public Message sendMessage(@RequestBody Message message) {
         // Загрузка пользователя из базы данных

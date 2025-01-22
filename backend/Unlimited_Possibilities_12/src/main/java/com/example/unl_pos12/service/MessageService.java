@@ -27,6 +27,10 @@ public class MessageService {
         return messageRepository.findById(id).orElse(null);
     }
 
+    public Message findByContentAndSenderAndChat(String content, Long senderId, Long chatId) {
+        return messageRepository.findByContentAndSenderIdAndChatId(content, senderId, chatId);
+    }
+
     public Message saveMessage(Message message) {
         //message.setTimestamp(LocalDateTime.now()); // Устанавливаем временную метку
         message.setTimestamp(ZonedDateTime.now());
