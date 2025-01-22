@@ -1,9 +1,11 @@
 package com.example.unl_pos12.controller.messenger;
 
 import com.example.unl_pos12.model.messenger.Message;
+import com.example.unl_pos12.model.messenger.NotificationRequest;
 import com.example.unl_pos12.model.messenger.User;
 import com.example.unl_pos12.repo.UserRepository;
 import com.example.unl_pos12.service.MessageService;
+import com.example.unl_pos12.service.WebSocketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +22,9 @@ public class MessageController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private WebSocketService webSocketService; // Сервис для отправки уведомлений через WebSocket
 
     @GetMapping
     public List<Message> getMessages() {
@@ -73,5 +78,17 @@ public class MessageController {
     @DeleteMapping("/{id}")
     public void deleteMessage(@PathVariable Long id) {
         messageService.deleteMessage(id);
+    }
+
+    @PostMapping("/notify")
+    public ResponseEntity<String> sendNotification(@RequestBody NotificationRequest request) {
+        // Проверка получателя
+        User recipient = userRepository.findById(request.getRecipientId())
+                .orElseThrow(() -> new RuntimeException("Recipient not found"));
+
+        // Отправка уведомления через WebSocket
+        webSocketService.sendNotification(recipient.getId(), request.getContent(), request.getChatId());
+
+        return ResponseEntity.ok("Notification sent");
     }
 }
