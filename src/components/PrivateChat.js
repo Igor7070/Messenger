@@ -155,7 +155,6 @@ const PrivateChat = () => {
     const sendMessage = async () => {
         if ((content || selectedFile) && userId) {
             const message = {
-                //id: editingMessageId || Date.now(),
                 content,
                 sender: { id: userId, username },
                 chat: { id: chatId, name: chatName },
@@ -163,37 +162,20 @@ const PrivateChat = () => {
                 delivered: false,
                 read: false,
             };
-
+    
             if (client && client.connected) {
-                client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
-
-                // Таймер на 1.5 секунды для проверки статуса прочтения
-                setTimeout(async () => {
-                    // Здесь нужно сделать запрос для получения последнего сообщения
-                    const response = await fetch(`https://unlimitedpossibilities12.org/api/messages`, {
-                        method: 'GET', // Получаем все сообщения или конкретные
-                        headers: { 'Content-Type': 'application/json' },
-                    });
+                // Подписка на получение сообщений из чата
+                client.subscribe(`/topic/chat/${chatId}/messages`, async (response) => {
+                    const sentMessage = JSON.parse(response.body); // Получаем сообщение с ID
+                    console.log(`Message sent with ID: ${sentMessage.id}`); // Логируем ID сообщения
     
-                    if (!response.ok) {
-                        console.error('Failed to fetch messages');
-                        return;
-                    }
-    
-                    const messages = await response.json();
-                    const sentMessage = messages.find(msg => msg.content === content && msg.sender.id === userId && msg.chat.id === chatId);
-                    
-                    if (sentMessage) {
-                        console.log(`Fetching message with ID: ${sentMessage.id}`); // Используйте ID, возвращаемый сервером
-                        
-                        // Проверка статуса прочтения
-                        const statusResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/${sentMessage.id}`);
+                    // Таймер для проверки статуса прочтения
+                    setTimeout(async () => {
+                        const statusResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/${sentMessage.id}`); // Проверка статуса
                         const updatedMessage = await statusResponse.json();
-                        console.log('updatedMessage: ', updatedMessage);
-    
                         const recipientName = chatName.split('_').find(name => name !== username); // Извлечение имени получателя
     
-                        if (!updatedMessage.read) {
+                        if (!updatedMessage.read_status) {
                             toast.info(`Новое сообщение от ${username}: "${content}"`, {
                                 onClick: () => {
                                     window.location.href = `/chat/${chatId}`;
@@ -202,7 +184,7 @@ const PrivateChat = () => {
                             });
     
                             // Отправка уведомления получателю
-                            const recipientId = await getUserIdByName(recipientName); // Получите ID получателя
+                            const recipientId = await getUserIdByName(recipientName);
                             if (client && client.connected) {
                                 client.publish({
                                     destination: `/user/${recipientId}/queue/notifications`,
@@ -210,11 +192,12 @@ const PrivateChat = () => {
                                 });
                             }
                         }
-                    } else {
-                        console.error('Message not found');
-                    }
-                }, 1500);
-                
+                    }, 1500);
+                });
+    
+                // Отправка сообщения на сервер через WebSocket
+                client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
+    
                 resetForm();
             } else {
                 console.error('STOMP client is not connected');
