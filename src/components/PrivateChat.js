@@ -201,7 +201,7 @@ const PrivateChat = () => {
                                 console.log('userId: ' + userId);
 
                                 // Проверка, прочитано ли сообщение
-                                if ((messageStatus.read === false || messageStatus.read === undefined) && recipientId === userId) {
+                                if ((messageStatus.read === false || messageStatus.read === undefined)) {
                                     console.log('Notification must be sent...');
                                     toast.info(`Новое сообщение от ${username}: "${content}"`, {
                                         onClick: () => {
