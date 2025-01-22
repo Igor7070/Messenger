@@ -155,6 +155,7 @@ const PrivateChat = () => {
     const sendMessage = async () => {
         if ((content || selectedFile) && userId) {
             const message = {
+                id: editingMessageId || Date.now(),
                 content,
                 sender: { id: userId, username },
                 chat: { id: chatId, name: chatName },
@@ -162,42 +163,24 @@ const PrivateChat = () => {
                 delivered: false,
                 read: false,
             };
-    
+
             if (client && client.connected) {
-                // Подписка на получение сообщений из чата
-                client.subscribe(`/topic/chat/${chatId}/messages`, async (response) => {
-                    const sentMessage = JSON.parse(response.body); // Получаем сообщение с ID
-                    console.log(`Message sent with ID: ${sentMessage.id}`); // Логируем ID сообщения
-    
-                    // Таймер для проверки статуса прочтения
-                    setTimeout(async () => {
-                        const statusResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/${sentMessage.id}`); // Проверка статуса
-                        const updatedMessage = await statusResponse.json();
-                        const recipientName = chatName.split('_').find(name => name !== username); // Извлечение имени получателя
-    
-                        if (!updatedMessage.read_status) {
-                            toast.info(`Новое сообщение от ${username}: "${content}"`, {
-                                onClick: () => {
-                                    window.location.href = `/chat/${chatId}`;
-                                },
-                                autoClose: false,
-                            });
-    
-                            // Отправка уведомления получателю
-                            const recipientId = await getUserIdByName(recipientName);
-                            if (client && client.connected) {
-                                client.publish({
-                                    destination: `/user/${recipientId}/queue/notifications`,
-                                    body: JSON.stringify({ sender: { username }, content })
-                                });
-                            }
-                        }
-                    }, 1500);
-                });
-    
-                // Отправка сообщения на сервер через WebSocket
                 client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
-    
+
+                // Таймер на 1.5 секунды для проверки статуса прочтения
+                setTimeout(async () => {
+                    const response = await fetch(`/api/messages/${message.id}`); // Проверка статуса прочтения
+                    const updatedMessage = await response.json();
+                    if (!updatedMessage.read) {
+                        toast.info(`Новое сообщение от ${username}: "${content}"`, {
+                            onClick: () => {
+                                window.location.href = `/chat/${chatId}`;
+                            },
+                            autoClose: false,
+                        });
+                    }
+                }, 1500);
+
                 resetForm();
             } else {
                 console.error('STOMP client is not connected');
@@ -205,16 +188,6 @@ const PrivateChat = () => {
         } else {
             toast.warn('Content is missing');
         }
-    };
-
-    // Функция для получения ID пользователя по имени
-    const getUserIdByName = async (name) => {
-        const response = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${name}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch user ID');
-        }
-        const user = await response.json();
-        return user.id; // Возвращает ID пользователя
     };
 
     const resetForm = () => {
