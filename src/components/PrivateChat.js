@@ -56,10 +56,20 @@ const PrivateChat = () => {
         const stompClient = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
+                console.log('Connected to WebSocket');
+                
                 stompClient.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
                     console.log('NewMessage: ', newMessage);
                     updateMessages(newMessage);
+                });
+
+                // Подписка на уведомления
+                stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
+                    const notification = message.body;
+                    toast.info(notification, {
+                        autoClose: false,
+                    });
                 });
             },
             onWebSocketError: (error) => {
