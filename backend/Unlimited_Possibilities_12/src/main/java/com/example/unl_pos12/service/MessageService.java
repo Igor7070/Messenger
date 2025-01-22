@@ -23,6 +23,10 @@ public class MessageService {
         return messageRepository.findAll();
     }
 
+    public Message findById(Long id) {
+        return messageRepository.findById(id).orElse(null);
+    }
+
     public Message saveMessage(Message message) {
         //message.setTimestamp(LocalDateTime.now()); // Устанавливаем временную метку
         message.setTimestamp(ZonedDateTime.now());

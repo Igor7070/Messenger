@@ -5,6 +5,7 @@ import com.example.unl_pos12.model.messenger.User;
 import com.example.unl_pos12.repo.UserRepository;
 import com.example.unl_pos12.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.ZonedDateTime;
@@ -22,6 +23,16 @@ public class MessageController {
     @GetMapping
     public List<Message> getMessages() {
         return messageService.getAllMessages();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Message> getMessageStatus(@PathVariable Long id) {
+        Message message = messageService.findById(id);
+        if (message != null) {
+            return ResponseEntity.ok(message);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @PostMapping
