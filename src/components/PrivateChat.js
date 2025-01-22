@@ -203,9 +203,12 @@ const PrivateChat = () => {
 
     // Функция для получения ID пользователя по имени
     const getUserIdByName = async (name) => {
-        const response = await fetch(`/api/users?username=${name}`);
+        const response = await fetch(`/api/users/by-username/${name}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch user ID');
+        }
         const user = await response.json();
-        return user.id;
+        return user.id; // Возвращает ID пользователя
     };
 
     const resetForm = () => {
