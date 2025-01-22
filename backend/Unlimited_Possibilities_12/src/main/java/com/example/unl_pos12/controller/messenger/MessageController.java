@@ -90,6 +90,8 @@ public class MessageController {
         // Отправка уведомления через WebSocket
         webSocketService.sendNotification(recipient.getId(), request.getContent(), request.getChatId());
 
+        System.out.println("Notification sent from server...");
+
         return ResponseEntity.ok("Notification sent");
     }
 }
