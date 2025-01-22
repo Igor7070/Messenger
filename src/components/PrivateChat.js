@@ -171,6 +171,8 @@ const PrivateChat = () => {
                 setTimeout(async () => {
                     const response = await fetch(`/api/messages/${message.id}`); // Проверка статуса прочтения
                     const updatedMessage = await response.json();
+                    const recipientName = chatName.split('_').find(name => name !== username); // Извлечение имени получателя
+
                     if (!updatedMessage.read) {
                         toast.info(`Новое сообщение от ${username}: "${content}"`, {
                             onClick: () => {
@@ -178,9 +180,18 @@ const PrivateChat = () => {
                             },
                             autoClose: false,
                         });
+
+                        // Отправка уведомления получателю
+                        const recipientId = await getUserIdByName(recipientName); // Получите ID получателя
+                        if (client && client.connected) {
+                            client.publish({
+                                destination: `/user/${recipientId}/queue/notifications`,
+                                body: JSON.stringify({ sender: { username }, content })
+                            });
+                        }
                     }
                 }, 1500);
-
+                
                 resetForm();
             } else {
                 console.error('STOMP client is not connected');
@@ -188,6 +199,13 @@ const PrivateChat = () => {
         } else {
             toast.warn('Content is missing');
         }
+    };
+
+    // Функция для получения ID пользователя по имени
+    const getUserIdByName = async (name) => {
+        const response = await fetch(`/api/users?username=${name}`);
+        const user = await response.json();
+        return user.id;
     };
 
     const resetForm = () => {
