@@ -7,7 +7,7 @@ import com.example.unl_pos12.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @RestController
@@ -31,7 +31,8 @@ public class MessageController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         message.setSender(sender); // Установка существующего пользователя как отправителя
-        message.setTimestamp(LocalDateTime.now()); // Установка временной метки
+        //message.setTimestamp(LocalDateTime.now()); // Установка временной метки
+        message.setTimestamp(ZonedDateTime.now());
         return messageService.saveMessage(message);
     }
 

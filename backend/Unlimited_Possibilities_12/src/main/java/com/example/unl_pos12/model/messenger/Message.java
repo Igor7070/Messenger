@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Entity
 public class Message {
@@ -16,8 +16,11 @@ public class Message {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sender_id")
     private User sender;
+    /*@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    private LocalDateTime timestamp;*/
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
-    private LocalDateTime timestamp;
+    private ZonedDateTime timestamp;
+
     //@ManyToOne(fetch = FetchType.EAGER)
     //@JoinColumn(name = "chat_id")
     @ManyToOne
@@ -51,11 +54,19 @@ public class Message {
         this.sender = sender;
     }
 
-    public LocalDateTime getTimestamp() {
+    /*public LocalDateTime getTimestamp() {
         return timestamp;
     }
 
     public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }*/
+
+    public ZonedDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(ZonedDateTime timestamp) {
         this.timestamp = timestamp;
     }
 

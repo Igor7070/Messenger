@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Service
@@ -24,7 +24,8 @@ public class MessageService {
     }
 
     public Message saveMessage(Message message) {
-        message.setTimestamp(LocalDateTime.now()); // Устанавливаем временную метку
+        //message.setTimestamp(LocalDateTime.now()); // Устанавливаем временную метку
+        message.setTimestamp(ZonedDateTime.now());
         System.out.println("Saving message: " + message.getContent() + " for chatId: " + message.getChat().getId());
         return messageRepository.save(message);
     }
@@ -42,7 +43,8 @@ public class MessageService {
             String fileUrl = uploadFile(file);
             message.setFileUrl(fileUrl);
         }
-        message.setTimestamp(LocalDateTime.now());
+        //message.setTimestamp(LocalDateTime.now());
+        message.setTimestamp(ZonedDateTime.now());
         return messageRepository.save(message);
     }
 
