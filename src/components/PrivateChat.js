@@ -25,6 +25,7 @@ const PrivateChat = () => {
 
     useEffect(() => {
         const fetchChatData = async () => {
+            console.log('fetchChatData is working...');
             if (!chatIdParam || !username) return;
 
             try {
@@ -36,9 +37,10 @@ const PrivateChat = () => {
                 const updatedMessages = initialMessages.map(msg => ({
                     ...msg,
                     delivered: msg.delivered_status,
-                    read: msg.read_status,
+                    read: msg.read_status
                 }));
 
+                // Сохраняем сообщения в состояние
                 setMessages(updatedMessages);
             } catch (error) {
                 console.error('Ошибка при загрузке данных о чате:', error);
@@ -56,6 +58,7 @@ const PrivateChat = () => {
             onConnect: () => {
                 stompClient.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
+                    console.log('NewMessage: ', newMessage);
                     updateMessages(newMessage);
                 });
             },
@@ -72,7 +75,23 @@ const PrivateChat = () => {
         };
     }, [chatId]);
 
+    // Проверка подключения клиента и непрочитанных сообщений
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (client && client.connected && messages.length > 0) {
+                const unreadMessages = messages.some(msg => !msg.read);
+                if (unreadMessages) {
+                    markAllMessagesAsRead(messages);
+                    clearInterval(interval); // Останавливаем проверку после успешного вызова
+                }
+            }
+        }, 1000); // Проверяем каждую секунду
+
+        return () => clearInterval(interval); // Очищаем интервал при размонтировании
+    }, [messages, client]);
+
     const markAllMessagesAsRead = (updatedMessages) => {
+        console.log('markAllMessagesAsRead is working...');
         if (Array.isArray(updatedMessages)) {
             updatedMessages.forEach(msg => {
                 if (msg.sender.id !== userId && (msg.read === false || msg.read === null)) {
@@ -103,14 +122,14 @@ const PrivateChat = () => {
                 updatedMessages[existingMessageIndex] = {
                     ...newMessage,
                     delivered: newMessage.delivered_status,
-                    read: newMessage.read_status,
+                    read: newMessage.read_status
                 };
                 return updatedMessages;
             } else {
                 return [...prevMessages, {
                     ...newMessage,
                     delivered: newMessage.delivered_status,
-                    read: newMessage.read_status,
+                    read: newMessage.read_status
                 }];
             }
         });
@@ -150,12 +169,11 @@ const PrivateChat = () => {
 
                 // Таймер на 1.5 секунды для проверки статуса прочтения
                 setTimeout(async () => {
-                    const response = await fetch(`/api/messages/${message.id}`); // Запрос на сервер для проверки статуса прочтения
+                    const response = await fetch(`/api/messages/${message.id}`); // Проверка статуса прочтения
                     const updatedMessage = await response.json();
                     if (!updatedMessage.read) {
                         toast.info(`Новое сообщение от ${username}: "${content}"`, {
                             onClick: () => {
-                                // Переход в чат
                                 window.location.href = `/chat/${chatId}`;
                             },
                             autoClose: false,
@@ -219,6 +237,7 @@ const PrivateChat = () => {
         }
     };
 
+    // Прокрутка вниз при обновлении сообщений
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
