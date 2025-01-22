@@ -171,29 +171,49 @@ const PrivateChat = () => {
                 setTimeout(async () => {
                     // Запрос для получения ID сообщения по содержимому
                     const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(content)}&senderId=${userId}&chatId=${chatId}`);
-                    const updatedMessage = await response.json();
-    
-                    // Извлечение имени получателя из имени чата
-                    const recipientName = chatName.split('_').find(name => name !== username);
-    
-                    // Запрос на получение ID получателя
-                    const userResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
                     
-                    if (userResponse.ok) {
-                        const recipient = await userResponse.json();
-                        const recipientId = recipient.id; // Получаем ID получателя
+                    if (response.ok) {
+                        const updatedMessage = await response.json();
+                        console.log('updatedMessage:', updatedMessage);
     
-                        // Проверка статуса прочтения только для получателя
-                        if (updatedMessage && !updatedMessage.read && recipientId === userId) {
-                            toast.info(`Новое сообщение от ${username}: "${content}"`, {
-                                onClick: () => {
-                                    window.location.href = `/chat/${chatId}`;
-                                },
-                                autoClose: false,
-                            });
+                        // Получаем ID сообщения
+                        const messageId = updatedMessage.id; // Предполагается, что это поле существует
+    
+                        // Запрос на сервер для проверки статуса сообщения
+                        const statusResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/${messageId}`);
+                        
+                        if (statusResponse.ok) {
+                            const messageStatus = await statusResponse.json();
+                            
+                            // Извлечение имени получателя из имени чата
+                            const recipientName = chatName.split('_').find(name => name !== username);
+                            console.log('recipientName:', recipientName);
+    
+                            // Запрос на получение ID получателя
+                            const userResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
+                            
+                            if (userResponse.ok) {
+                                const recipient = await userResponse.json();
+                                const recipientId = recipient.id; // Получаем ID получателя
+                                console.log('recipientId:', recipientId);
+    
+                                // Проверка, прочитано ли сообщение
+                                if (!messageStatus.read && recipientId === userId) {
+                                    toast.info(`Новое сообщение от ${username}: "${content}"`, {
+                                        onClick: () => {
+                                            window.location.href = `/chat/${chatId}`;
+                                        },
+                                        autoClose: false,
+                                    });
+                                }
+                            } else {
+                                console.error('Ошибка при получении ID получателя');
+                            }
+                        } else {
+                            console.error('Ошибка при получении статуса сообщения');
                         }
                     } else {
-                        console.error('Failed to fetch recipient ID');
+                        console.error('Ошибка при поиске сообщения');
                     }
                 }, 1500);
     
