@@ -202,12 +202,22 @@ const PrivateChat = () => {
 
                                 // Проверка, прочитано ли сообщение
                                 if ((messageStatus.read === false || messageStatus.read === undefined)) {
-                                    console.log('Notification must be sent...');
+                                    /*console.log('Notification must be sent...');
                                     toast.info(`Новое сообщение от ${username}: "${content}"`, {
                                         onClick: () => {
                                             window.location.href = `/chat/${chatId}`;
                                         },
                                         autoClose: false,
+                                    });*/
+                                    // Отправка уведомления на сервер
+                                    await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            recipientId,
+                                            content: message.content,
+                                            chatId,
+                                        }),
                                     });
                                 }
                             } else {
