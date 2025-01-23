@@ -4,7 +4,7 @@ import Modal from 'react-modal';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Home.css'; 
-import useWebSocket from './hooks/useWebSocket';
+import useWebSocket from '../hooks/useWebSocket';
 
 const Home = () => {
     const [chatName, setChatName] = useState('');
