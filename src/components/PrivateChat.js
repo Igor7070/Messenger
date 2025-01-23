@@ -209,6 +209,7 @@ const PrivateChat = () => {
 
                                 console.log('recipientId:', recipientId);   
                                 console.log('messageStatus.read: ' + messageStatus.read);
+                                console.log('messageStatus.read_status: ' + messageStatus.read_status);
                                 console.log('userId: ' + userId);
 
                                 // Проверка, прочитано ли сообщение
