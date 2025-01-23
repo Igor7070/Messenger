@@ -225,6 +225,7 @@ const PrivateChat = () => {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
+                                            userId,
                                             recipientId,
                                             content: message.content,
                                             chatId,
