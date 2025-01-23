@@ -33,7 +33,7 @@ const useWebSocket = (userId) => {
                         onClick: () => {
                             if (chatId) {
                                 // Переход к личному чату при нажатии на уведомление
-                                window.location.href = `/private-chat/${chatId}`;
+                                window.location.href = `/Messenger/#/private-chat/${chatId}`;
                             } else {
                                 console.error("chatId не найден в уведомлении");
                             }
