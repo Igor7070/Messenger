@@ -99,7 +99,7 @@ const Messenger = () => {
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId]);
+    }, [chatId, userId]);
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
