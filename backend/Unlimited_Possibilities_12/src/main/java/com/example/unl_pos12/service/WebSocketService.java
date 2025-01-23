@@ -1,5 +1,7 @@
 package com.example.unl_pos12.service;
 
+import com.example.unl_pos12.model.messenger.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -8,14 +10,20 @@ public class WebSocketService {
 
     private final SimpMessagingTemplate messagingTemplate;
 
+    @Autowired
+    private UserService userService; // Добавьте зависимость UserService
+
     public WebSocketService(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
     }
 
     public void sendNotification(Long recipientId, String content, Long chatId) {
         try {
+            User user = userService.getUserById(recipientId);
+            String userName = user.getUsername();
+
             String destination = "/topic/notifications/" + recipientId;
-            messagingTemplate.convertAndSend(destination, "Новое сообщение: " + content + " в чате: " + chatId);
+            messagingTemplate.convertAndSend(destination, "Новое сообщение: " + content + " от: " + userName);
             System.out.println("Notification sent to user ID: " + recipientId);
         } catch (Exception e) {
             System.out.println("Error in method sendNotification: " + e.getMessage());
