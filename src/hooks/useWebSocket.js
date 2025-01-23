@@ -20,18 +20,23 @@ const useWebSocket = (userId) => {
                         autoClose: false,
                     });*/
 
-                    const notification = JSON.parse(message.body);
-                    const chatId = notification.chatId; // Извлечение chatId из уведомления
-                    const notificationContent = `New message: ${notification.content} from: ${notification.senderUsername}`;
+                    const notification = message.body;
+                    console.log("Received notification:", notification);
 
-                    console.log("Received notification:", notificationContent);
+                    // Используйте регулярное выражение для извлечения chatId
+                    const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
+                    const chatId = chatIdMatch ? chatIdMatch[1] : null; // Извлекаем chatId, если найдено
 
                     // Отображение уведомления
-                    toast.info(notificationContent, {
+                    toast.info(notification, {
                         autoClose: false,
                         onClick: () => {
-                            // Переход к чату при нажатии на уведомление
-                            window.location.href = `/private-chat/${chatId}`;
+                            if (chatId) {
+                                // Переход к личному чату при нажатии на уведомление
+                                window.location.href = `/private-chat/${chatId}`;
+                            } else {
+                                console.error("chatId не найден в уведомлении");
+                            }
                         },
                     });
                 });
