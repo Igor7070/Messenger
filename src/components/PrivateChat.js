@@ -208,6 +208,8 @@ const PrivateChat = () => {
                                 const recipientId = recipient.id; // Получаем ID получателя
 
                                 console.log('recipientId:', recipientId);   
+                                console.log('updatedMessage.read: ' + updatedMessage.read);
+                                console.log('updatedMessage.read_status: ' + updatedMessage.read_status);
                                 console.log('messageStatus.read: ' + messageStatus.read);
                                 console.log('messageStatus.read_status: ' + messageStatus.read_status);
                                 console.log('userId: ' + userId);
