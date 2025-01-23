@@ -80,7 +80,7 @@ public class MessageController {
         messageService.deleteMessage(id);
     }
 
-    @PostMapping("/notify")
+    /*@PostMapping("/notify")
     public ResponseEntity<String> sendNotification(@RequestBody NotificationRequest request) {
         System.out.println("Method sendNotification working...");
         // Проверка получателя
@@ -91,6 +91,16 @@ public class MessageController {
         webSocketService.sendNotification(recipient.getId(), request.getContent(), request.getChatId());
 
         System.out.println("Notification sent from server...");
+
+        return ResponseEntity.ok("Notification sent");
+    }*/
+
+    @PostMapping("/notify")
+    public ResponseEntity<String> sendNotification(@RequestBody NotificationRequest request) {
+        User recipient = userRepository.findById(request.getRecipientId())
+                .orElseThrow(() -> new RuntimeException("Recipient not found"));
+
+        webSocketService.sendNotification(recipient.getId(), request.getContent(), request.getChatId());
 
         return ResponseEntity.ok("Notification sent");
     }
