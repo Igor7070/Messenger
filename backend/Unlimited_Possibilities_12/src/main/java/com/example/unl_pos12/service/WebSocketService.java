@@ -17,13 +17,13 @@ public class WebSocketService {
         this.messagingTemplate = messagingTemplate;
     }
 
-    public void sendNotification(Long recipientId, String content, Long chatId) {
+    public void sendNotification(Long userId, Long recipientId, String content, Long chatId) {
         try {
-            User user = userService.getUserById(recipientId);
+            User user = userService.getUserById(userId);
             String userName = user.getUsername();
 
             String destination = "/topic/notifications/" + recipientId;
-            messagingTemplate.convertAndSend(destination, "Новое сообщение: " + content + " от: " + userName);
+            messagingTemplate.convertAndSend(destination, "New message: " + content + " from: " + userName);
             System.out.println("Notification sent to user ID: " + recipientId);
         } catch (Exception e) {
             System.out.println("Error in method sendNotification: " + e.getMessage());

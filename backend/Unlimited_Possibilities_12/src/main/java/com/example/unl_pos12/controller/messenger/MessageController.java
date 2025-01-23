@@ -97,10 +97,13 @@ public class MessageController {
 
     @PostMapping("/notify")
     public ResponseEntity<String> sendNotification(@RequestBody NotificationRequest request) {
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("Recipient not found"));
+
         User recipient = userRepository.findById(request.getRecipientId())
                 .orElseThrow(() -> new RuntimeException("Recipient not found"));
 
-        webSocketService.sendNotification(recipient.getId(), request.getContent(), request.getChatId());
+        webSocketService.sendNotification(user.getId(), recipient.getId(), request.getContent(), request.getChatId());
 
         return ResponseEntity.ok("Notification sent");
     }
