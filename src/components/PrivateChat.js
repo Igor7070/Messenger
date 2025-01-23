@@ -67,6 +67,7 @@ const PrivateChat = () => {
                 // Подписка на уведомления
                 stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
                     const notification = message.body;
+                    console.log("Received notification:", notification);
                     toast.info(notification, {
                         autoClose: false,
                     });
