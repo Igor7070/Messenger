@@ -80,7 +80,8 @@ const Messenger = () => {
                 });
 
                 // Подписка на уведомления
-                const notification = message.body;
+                stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
+                    const notification = message.body;
                     console.log("Received notification:", notification);
 
                     // Используйте регулярное выражение для извлечения chatId
@@ -99,6 +100,7 @@ const Messenger = () => {
                             }
                         },
                     });
+                });
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
