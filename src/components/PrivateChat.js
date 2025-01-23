@@ -244,7 +244,7 @@ const PrivateChat = () => {
                     } else {
                         console.error('Ошибка при поиске сообщения');
                     }
-                }, 2000);
+                }, 3000);
     
                 resetForm();
             } else {
