@@ -23,11 +23,15 @@ public class WebSocketService {
         System.out.println("chatId: " + chatId);
         System.out.println("recipientId: " + recipientId);
         System.out.println("content: " + content);
-        if (session != null && session.isOpen()) {
+        System.out.println("session: " + session);
+        boolean isOpen = session.isOpen();
+        System.out.println("isOpen: " + isOpen);
+        if (session != null && isOpen) {
             try {
                 session.sendMessage(new TextMessage("Новое сообщение: " + content + " в чате: " + chatId));
                 System.out.println("Session from method sendNotification sent...");
             } catch (Exception e) {
+                System.out.println("Error in sendNotification: " + e.getMessage());
                 e.printStackTrace();
             }
         }
