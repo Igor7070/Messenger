@@ -5,6 +5,7 @@ import { FaEdit } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Modal from 'react-modal';
+import useWebSocket from '../hooks/useWebSocket';
 
 const UserProfile = () => {
     const { userId } = useParams();
@@ -17,6 +18,9 @@ const UserProfile = () => {
     const [currentUserId, setCurrentUserId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [avatarFileName, setAvatarFileName] = useState('');
+
+    // Используем хук для подключения к WebSocket
+    useWebSocket(currentUserId);
 
     useEffect(() => {
         const fetchUser = async () => {
