@@ -13,8 +13,13 @@ public class WebSocketService {
     }
 
     public void sendNotification(Long recipientId, String content, Long chatId) {
-        String destination = "/topic/notifications/" + recipientId;
-        messagingTemplate.convertAndSend(destination, "Новое сообщение: " + content + " в чате: " + chatId);
-        System.out.println("Notification sent to user ID: " + recipientId);
+        try {
+            String destination = "/topic/notifications/" + recipientId;
+            messagingTemplate.convertAndSend(destination, "Новое сообщение: " + content + " в чате: " + chatId);
+            System.out.println("Notification sent to user ID: " + recipientId);
+        } catch (Exception e) {
+            System.out.println("Error in method sendNotification: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
