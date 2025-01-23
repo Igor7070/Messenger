@@ -20,9 +20,13 @@ public class WebSocketService {
 
     public void sendNotification(Long recipientId, String content, Long chatId) {
         WebSocketSession session = sessions.get(recipientId);
+        System.out.println("chatId: " + chatId);
+        System.out.println("recipientId: " + recipientId);
+        System.out.println("content: " + content);
         if (session != null && session.isOpen()) {
             try {
                 session.sendMessage(new TextMessage("Новое сообщение: " + content + " в чате: " + chatId));
+                System.out.println("Session from method sendNotification sent...");
             } catch (Exception e) {
                 e.printStackTrace();
             }
