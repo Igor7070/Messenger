@@ -80,13 +80,25 @@ const Messenger = () => {
                 });
 
                 // Подписка на уведомления
-                stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
-                    const notification = message.body;
+                const notification = message.body;
                     console.log("Received notification:", notification);
+
+                    // Используйте регулярное выражение для извлечения chatId
+                    const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
+                    const chatId = chatIdMatch ? chatIdMatch[1] : null; // Извлекаем chatId, если найдено
+
+                    // Отображение уведомления
                     toast.info(notification, {
                         autoClose: false,
+                        onClick: () => {
+                            if (chatId) {
+                                // Переход к личному чату при нажатии на уведомление
+                                window.location.href = `/Messenger/#/private-chat/${chatId}`;
+                            } else {
+                                console.error("chatId не найден в уведомлении");
+                            }
+                        },
                     });
-                });
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
