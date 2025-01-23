@@ -14,10 +14,25 @@ const useWebSocket = (userId) => {
 
                 // Подписка на уведомления
                 stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
-                    const notification = message.body;
+                    /*const notification = message.body;
                     console.log("Received notification:", notification);
                     toast.info(notification, {
                         autoClose: false,
+                    });*/
+
+                    const notification = JSON.parse(message.body);
+                    const chatId = notification.chatId; // Извлечение chatId из уведомления
+                    const notificationContent = `New message: ${notification.content} from: ${notification.senderUsername}`;
+
+                    console.log("Received notification:", notificationContent);
+
+                    // Отображение уведомления
+                    toast.info(notificationContent, {
+                        autoClose: false,
+                        onClick: () => {
+                            // Переход к чату при нажатии на уведомление
+                            window.location.href = `/private-chat/${chatId}`;
+                        },
                     });
                 });
             },
