@@ -23,7 +23,9 @@ public class WebSocketService {
             String userName = user.getUsername();
 
             String destination = "/topic/notifications/" + recipientId;
-            messagingTemplate.convertAndSend(destination, "New message: " + content + " from: " + userName);
+            String notificationMessage = String.format("New message: %s from:" +
+                    " %s (chatId: %d)", content, userName, chatId);
+            messagingTemplate.convertAndSend(destination, notificationMessage);
             System.out.println("Notification sent to user ID: " + recipientId);
         } catch (Exception e) {
             System.out.println("Error in method sendNotification: " + e.getMessage());

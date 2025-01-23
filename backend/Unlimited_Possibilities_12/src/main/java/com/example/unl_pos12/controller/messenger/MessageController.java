@@ -80,21 +80,6 @@ public class MessageController {
         messageService.deleteMessage(id);
     }
 
-    /*@PostMapping("/notify")
-    public ResponseEntity<String> sendNotification(@RequestBody NotificationRequest request) {
-        System.out.println("Method sendNotification working...");
-        // Проверка получателя
-        User recipient = userRepository.findById(request.getRecipientId())
-                .orElseThrow(() -> new RuntimeException("Recipient not found"));
-
-        // Отправка уведомления через WebSocket
-        webSocketService.sendNotification(recipient.getId(), request.getContent(), request.getChatId());
-
-        System.out.println("Notification sent from server...");
-
-        return ResponseEntity.ok("Notification sent");
-    }*/
-
     @PostMapping("/notify")
     public ResponseEntity<String> sendNotification(@RequestBody NotificationRequest request) {
         User user = userRepository.findById(request.getUserId())
