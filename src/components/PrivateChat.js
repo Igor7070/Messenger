@@ -213,7 +213,7 @@ const PrivateChat = () => {
                                 console.log('userId: ' + userId);
 
                                 // Проверка, прочитано ли сообщение
-                                if ((messageStatus.read === false || messageStatus.read === undefined)) {
+                                if (messageStatus.read_status === false || messageStatus.read_status === null) {
                                     console.log('Notification must be sent...');
                                     /*toast.info(`Новое сообщение от ${username}: "${content}"`, {
                                         onClick: () => {
@@ -242,7 +242,7 @@ const PrivateChat = () => {
                     } else {
                         console.error('Ошибка при поиске сообщения');
                     }
-                }, 1500);
+                }, 2000);
     
                 resetForm();
             } else {
