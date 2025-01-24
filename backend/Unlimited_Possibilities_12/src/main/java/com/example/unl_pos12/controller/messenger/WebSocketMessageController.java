@@ -60,7 +60,7 @@ public class WebSocketMessageController {
         return deletedMessage; // Возвращаем сообщение о удалении
     }
 
-    // Обработчик для статуса прочтения
+    // Обработчик для статуса прочтения...
     @MessageMapping("/readMessage/{chatId}")
     @SendTo("/topic/chat/{chatId}/messages")
     public Message readMessage(@DestinationVariable String chatId, Long messageId) {
