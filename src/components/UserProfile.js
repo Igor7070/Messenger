@@ -149,6 +149,12 @@ const UserProfile = () => {
         }
     };
 
+    // Обработчик для звонка
+    const handleCall = () => {
+        // Здесь вы можете добавить логику для начала голосового звонка
+        navigate(`/voice-call/${userId}`); // Переход на страницу звонка, где будет реализован WebRTC
+    };
+
     if (error) return <div className="error-message">{error}</div>;
     if (!user) return <div>Loading...</div>;
 
@@ -197,6 +203,11 @@ const UserProfile = () => {
             {/* Кнопка "Send message" */}
             {currentUserId && userId !== String(currentUserId) && ( 
                 <button onClick={handleSendMessage} className="send-message-button">Send Message</button>
+            )}
+
+            {/* Кнопка "Call" */}
+            {currentUserId && userId !== String(currentUserId) && ( 
+                <button onClick={handleCall} className="call-button">Call</button>
             )}
 
             {/* Модальное окно для увеличенного изображения */}
