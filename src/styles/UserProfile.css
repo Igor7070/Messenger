@@ -124,6 +124,7 @@ h2 {
     cursor: pointer; /* Указатель при наведении */
     transition: background-color 0.3s; /* Плавный переход цвета фона */
     margin-top: 20px; /* Отступ сверху */
+    margin-left: 20px;
 }
 
 .call-button:hover {
