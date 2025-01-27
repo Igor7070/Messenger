@@ -39,7 +39,31 @@ const VoiceCall = ({ currentUserId, roomId }) => {
 
     const acceptCall = async () => {
         setIncomingCall(null); // Скрыть уведомление
-        await startCall(); // Начать звонок
+
+        // Запрашиваем доступ к микрофону для принимающего
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        localAudioRef.current.srcObject = stream;
+
+        peerConnectionRef.current = new RTCPeerConnection();
+        stream.getTracks().forEach(track => peerConnectionRef.current.addTrack(track, stream));
+
+        peerConnectionRef.current.onicecandidate = (event) => {
+            if (event.candidate) {
+                sendSignal({ from: currentUserId, signal: event.candidate });
+            }
+        };
+
+        peerConnectionRef.current.ontrack = (event) => {
+            remoteAudioRef.current.srcObject = event.streams[0];
+        };
+
+        // Обработка сигнала от звонящего
+        if (incomingCall.signal) {
+            await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCall.signal));
+            const answer = await peerConnectionRef.current.createAnswer();
+            await peerConnectionRef.current.setLocalDescription(answer);
+            sendSignal({ from: currentUserId, signal: answer });
+        }
     };
 
     const rejectCall = () => {
@@ -102,7 +126,10 @@ const VoiceCall = ({ currentUserId, roomId }) => {
                     onReject={rejectCall} 
                 />
             )}
-            <button onClick={startCall}>Start Call</button>
+            {/* Скрыть кнопку для принимающего */}
+            {!incomingCall && (
+                <button onClick={startCall}>Start Call</button>
+            )}
         </div>
     );
 };
