@@ -33,7 +33,7 @@ public class WebRTCController {
         // Отправляем уведомление о звонке
         messagingTemplate.convertAndSend("/topic/calls/" + callRequest.getRecipientId(), callRequest);
 
-        // Можно отправить roomId, если это необходимо
+        // Можно отправить roomId, если это необходимо...
         messagingTemplate.convertAndSend("/topic/room/" + callRequest.getRoomId(), callRequest);
 
         System.out.println("Method initiateCall worked success.");
