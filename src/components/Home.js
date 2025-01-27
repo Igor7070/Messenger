@@ -5,6 +5,9 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Home.css'; 
 import useWebSocket from '../hooks/useWebSocket';
+import IncomingCallNotification from './IncomingCallNotification'; // Импортируйте компонент уведомления
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
 
 const Home = () => {
     const [chatName, setChatName] = useState('');
@@ -21,6 +24,7 @@ const Home = () => {
     const [loginUsername, setLoginUsername] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
     const navigate = useNavigate();
 
     // Используем хук для подключения к WebSocket
@@ -63,7 +67,39 @@ const Home = () => {
         }
         fetchChats();
         fetchUsers();
-    }, []);
+
+        // Подключение к WebSocket
+        const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
+        const stompClient = new Client({
+            webSocketFactory: () => socket,
+            onConnect: () => {
+                console.log('Connected to WebSocket');
+                stompClient.subscribe(`/topic/calls/${currentUserId}`, (message) => {
+                    const callRequest = JSON.parse(message.body);
+                    handleIncomingCall(callRequest);
+                });
+            },
+        });
+        stompClient.activate();
+
+        return () => {
+            stompClient.deactivate();
+        };
+    }, [currentUserId]);
+
+    const handleIncomingCall = (callRequest) => {
+        setIncomingCall(callRequest); // Устанавливаем входящий вызов
+    };
+
+    const acceptCall = () => {
+        setIncomingCall(null); // Скрыть уведомление
+        navigate(`/voice-call/${incomingCall.callerId}`); // Перейти на страницу звонка
+    };
+
+    const rejectCall = () => {
+        setIncomingCall(null); // Скрыть уведомление
+        toast.info(`Call from ${incomingCall.callerId} rejected.`);
+    };
 
     const loginUser = async () => {
         try {
@@ -175,6 +211,7 @@ const Home = () => {
     const filteredChats = chats
         .filter(chat => !chat.private) // Отображаем только групповые чаты
         .filter(chat => chat.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    
     const filteredUsers = users.filter(user => user.username.toLowerCase().includes(userSearchTerm.toLowerCase()));
 
     return (
@@ -203,6 +240,15 @@ const Home = () => {
                     </>
                 )}
             </div>
+
+            {/* Уведомление о входящем звонке */}
+            {incomingCall && (
+                <IncomingCallNotification 
+                    callerName={incomingCall.callerId} 
+                    onAccept={acceptCall} 
+                    onReject={rejectCall} 
+                />
+            )}
 
             <div className="line-divider-container">
                 <div className="users-container">

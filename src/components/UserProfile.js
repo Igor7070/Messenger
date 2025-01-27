@@ -150,9 +150,35 @@ const UserProfile = () => {
     };
 
     // Обработчик для звонка
-    const handleCall = () => {
-        // Здесь вы можете добавить логику для начала голосового звонка
-        navigate(`/voice-call/${userId}`); // Переход на страницу звонка, где будет реализован WebRTC
+    const handleCall = async () => {
+        // Генерация уникального roomId
+        const roomId = `room-${currentUserId}-${userId}`; // Например, используем комбинацию ID пользователя
+    
+        const callRequest = {
+            callerId: currentUserId,
+            recipientId: userId,
+            roomId: roomId // Передаем roomId
+        };
+    
+        try {
+            const response = await fetch('https://unlimitedpossibilities12.org/api/webrtc/call', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(callRequest),
+            });
+    
+            if (response.ok) {
+                toast.success(`Calling ${user.username}...`);
+                navigate(`/voice-call/${roomId}`); // Переход на страницу звонка с roomId
+            } else {
+                toast.error('Failed to initiate call');
+            }
+        } catch (error) {
+            console.error('Error initiating call:', error);
+            toast.error('Error initiating call');
+        }
     };
 
     if (error) return <div className="error-message">{error}</div>;
