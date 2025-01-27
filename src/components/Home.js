@@ -92,6 +92,9 @@ const Home = () => {
     };
 
     const acceptCall = () => {
+        console.log('Function acceptCall in Home.js working...');
+        console.log("Incoming call accepted:", incomingCall); // Логируем входящий вызов
+        console.log("Caller ID:", incomingCall.callerId); // Логируем callerId
         setIncomingCall(null); // Скрыть уведомление
         navigate(`/voice-call/${incomingCall.callerId}`); // Перейти на страницу звонка
     };

@@ -16,6 +16,8 @@ const VoiceCall = ({ currentUserId, roomId }) => {
             webSocketFactory: () => socket,
             onConnect: () => {
                 console.log('Connected to WebSocket');
+                console.log("Room ID from URL:", roomId); // Логируем roomId
+
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
                     const callRequest = JSON.parse(message.body);
                     handleIncomingCall(callRequest);
@@ -96,6 +98,13 @@ const VoiceCall = ({ currentUserId, roomId }) => {
     const handleSignal = async (signalMessage) => {
         if (signalMessage.signal) {
             if (signalMessage.signal.type === 'offer') {
+                // Сравниваем callerId и roomId
+                const expectedCallerId = roomId; // Это значение из URL
+                if (incomingCall && incomingCall.callerId === expectedCallerId) {
+                    console.log("Caller ID matches with roomId.");
+                } else {
+                    console.log("Caller ID does not match with roomId.");
+                }
                 await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
                 const answer = await peerConnectionRef.current.createAnswer();
                 await peerConnectionRef.current.setLocalDescription(answer);
