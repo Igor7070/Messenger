@@ -4,6 +4,7 @@ import Home from './Home'; // Компонент главной страницы
 import Messenger from './Messenger'; // Компонент группового чата
 import UserProfile from './UserProfile'; // Компонент профиля пользователя
 import PrivateChat from './PrivateChat'; // Импорт нового компонента
+import VoiceCall from './VoiceCall'; // Импорт компонента для видеозвонка
 import '../styles/App.css';
 
 const App = () => {
@@ -16,6 +17,7 @@ const App = () => {
                     <Route path="/chat/:chatId" element={<Messenger />} /> {/* Групповой чат */}
                     <Route path="/user/:userId" element={<UserProfile />} /> {/* Профиль пользователя */}
                     <Route path="/private-chat/:chatId" element={<PrivateChat />} /> {/* Новый маршрут для личного чата */}
+                    <Route path="/voice-call/:roomId" element={<VoiceCall />} /> {/* Новый маршрут для видеозвонка */}
                 </Routes>
             </div>
         </Router>
