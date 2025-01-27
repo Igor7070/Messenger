@@ -3,7 +3,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import IncomingCallNotification from './IncomingCallNotification';
 
-const VoiceCall = ({ currentUserId, roomId }) => {
+const VoiceCall = ({ currentUserId, roomId, recipientId }) => {
     const localAudioRef = useRef(null);
     const remoteAudioRef = useRef(null);
     const peerConnectionRef = useRef(null);
@@ -43,7 +43,6 @@ const VoiceCall = ({ currentUserId, roomId }) => {
         console.log('Function acceptCall in VoiceCall.js working...');
         setIncomingCall(null); // Скрыть уведомление
 
-        // Запрашиваем доступ к микрофону для принимающего
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localAudioRef.current.srcObject = stream;
 
@@ -60,7 +59,6 @@ const VoiceCall = ({ currentUserId, roomId }) => {
             remoteAudioRef.current.srcObject = event.streams[0];
         };
 
-        // Обработка сигнала от звонящего
         if (incomingCall.signal) {
             await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCall.signal));
             const answer = await peerConnectionRef.current.createAnswer();
@@ -76,37 +74,36 @@ const VoiceCall = ({ currentUserId, roomId }) => {
 
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
-    
+        
         // Создайте уникальный roomId
-        const roomId = `room-${currentUserId}-${recipientId}`; // Пример формирования roomId
-    
+        const uniqueRoomId = `room-${currentUserId}-${recipientId}`; // Пример формирования roomId
+        
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localAudioRef.current.srcObject = stream;
-    
+
         peerConnectionRef.current = new RTCPeerConnection();
         stream.getTracks().forEach(track => peerConnectionRef.current.addTrack(track, stream));
-    
+
         peerConnectionRef.current.onicecandidate = (event) => {
             if (event.candidate) {
                 sendSignal({ from: currentUserId, signal: event.candidate });
             }
         };
-    
+
         peerConnectionRef.current.ontrack = (event) => {
             remoteAudioRef.current.srcObject = event.streams[0];
         };
-    
+
         const offer = await peerConnectionRef.current.createOffer();
         await peerConnectionRef.current.setLocalDescription(offer);
-    
+
         // Отправьте сигнал вызова с roomId
-        sendSignal({ from: currentUserId, signal: offer, roomId: roomId });
+        sendSignal({ from: currentUserId, signal: offer, roomId: uniqueRoomId });
     };
 
     const handleSignal = async (signalMessage) => {
         if (signalMessage.signal) {
             if (signalMessage.signal.type === 'offer') {
-                // Сравниваем callerId и roomId
                 const expectedCallerId = roomId; // Это значение из URL
                 if (incomingCall && incomingCall.callerId === expectedCallerId) {
                     console.log("Caller ID matches with roomId.");
@@ -143,7 +140,6 @@ const VoiceCall = ({ currentUserId, roomId }) => {
                     onReject={rejectCall} 
                 />
             )}
-            {/* Скрыть кнопку для принимающего */}
             {!incomingCall && (
                 <button onClick={startCall}>Start Call</button>
             )}
