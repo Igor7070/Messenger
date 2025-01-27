@@ -40,6 +40,7 @@ const VoiceCall = ({ currentUserId, roomId }) => {
     };
 
     const acceptCall = async () => {
+        console.log('Function acceptCall in VoiceCall.js working...');
         setIncomingCall(null); // Скрыть уведомление
 
         // Запрашиваем доступ к микрофону для принимающего
@@ -74,6 +75,7 @@ const VoiceCall = ({ currentUserId, roomId }) => {
     };
 
     const startCall = async () => {
+        console.log('Function startCall in Home.js working...');
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localAudioRef.current.srcObject = stream;
 
