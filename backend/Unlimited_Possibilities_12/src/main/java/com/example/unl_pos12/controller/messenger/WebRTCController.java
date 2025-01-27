@@ -21,18 +21,22 @@ public class WebRTCController {
 
     @MessageMapping("/signal/{roomId}")
     public void signal(@DestinationVariable String roomId, SignalMessage signalMessage) {
+        System.out.println("Method signal is working...");
         // Отправка сигнала другому участнику
         messagingTemplate.convertAndSend("/topic/room/" + roomId, signalMessage);
+        System.out.println("Method signal worked success.");
     }
 
     @PostMapping("/call")
     public ResponseEntity<String> initiateCall(@RequestBody CallRequest callRequest) {
+        System.out.println("Method initiateCall is working...");
         // Отправляем уведомление о звонке
         messagingTemplate.convertAndSend("/topic/calls/" + callRequest.getRecipientId(), callRequest);
 
         // Можно отправить roomId, если это необходимо
         messagingTemplate.convertAndSend("/topic/room/" + callRequest.getRoomId(), callRequest);
 
+        System.out.println("Method initiateCall worked success.");
         return ResponseEntity.ok("Call initiated");
     }
 }
