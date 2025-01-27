@@ -64,9 +64,12 @@ const VoiceCall = ({ currentUserId, roomId }) => {
             remoteAudioRef.current.srcObject = event.streams[0];
         };
 
-        const offer = await peerConnectionRef.current.createOffer();
-        await peerConnectionRef.current.setLocalDescription(offer);
-        sendSignal({ from: currentUserId, signal: offer });
+        // Если это звонящий, создаем предложение
+        if (incomingCall) {
+            const offer = await peerConnectionRef.current.createOffer();
+            await peerConnectionRef.current.setLocalDescription(offer);
+            sendSignal({ from: currentUserId, signal: offer });
+        }
     };
 
     const handleSignal = async (signalMessage) => {
@@ -86,7 +89,7 @@ const VoiceCall = ({ currentUserId, roomId }) => {
 
     const sendSignal = (signalMessage) => {
         stompClient.current.publish({
-            destination: `/api/webrtc/signal/${roomId}`, // Используем roomId здесь
+            destination: `/api/webrtc/signal/${roomId}`,
             body: JSON.stringify(signalMessage),
         });
     };
@@ -102,7 +105,7 @@ const VoiceCall = ({ currentUserId, roomId }) => {
                     onReject={rejectCall} 
                 />
             )}
-            <button onClick={startCall}>Start Call</button>
+            {/* Уберите кнопку "Start Call", чтобы она не отображалась для принимающего */}
         </div>
     );
 };
