@@ -76,25 +76,31 @@ const VoiceCall = ({ currentUserId, roomId }) => {
 
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
+    
+        // Создайте уникальный roomId
+        const roomId = `room-${currentUserId}-${recipientId}`; // Пример формирования roomId
+    
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localAudioRef.current.srcObject = stream;
-
+    
         peerConnectionRef.current = new RTCPeerConnection();
         stream.getTracks().forEach(track => peerConnectionRef.current.addTrack(track, stream));
-
+    
         peerConnectionRef.current.onicecandidate = (event) => {
             if (event.candidate) {
                 sendSignal({ from: currentUserId, signal: event.candidate });
             }
         };
-
+    
         peerConnectionRef.current.ontrack = (event) => {
             remoteAudioRef.current.srcObject = event.streams[0];
         };
-
+    
         const offer = await peerConnectionRef.current.createOffer();
         await peerConnectionRef.current.setLocalDescription(offer);
-        sendSignal({ from: currentUserId, signal: offer });
+    
+        // Отправьте сигнал вызова с roomId
+        sendSignal({ from: currentUserId, signal: offer, roomId: roomId });
     };
 
     const handleSignal = async (signalMessage) => {

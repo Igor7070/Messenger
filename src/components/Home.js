@@ -88,6 +88,7 @@ const Home = () => {
     }, [currentUserId]);
 
     const handleIncomingCall = (callRequest) => {
+        console.log("Incoming call request:", callRequest); // Логируем объект вызова
         setIncomingCall(callRequest); // Устанавливаем входящий вызов
     };
 
@@ -95,6 +96,7 @@ const Home = () => {
         console.log('Function acceptCall in Home.js working...');
         console.log("Incoming call accepted:", incomingCall); // Логируем входящий вызов
         console.log("Caller ID:", incomingCall.callerId); // Логируем callerId
+        console.log("Room ID:", incomingCall.roomId); // Логируем roomId
         setIncomingCall(null); // Скрыть уведомление
         navigate(`/voice-call/${incomingCall.roomId}`); // Перейти на страницу звонка
     };
