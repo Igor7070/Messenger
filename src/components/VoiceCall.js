@@ -22,6 +22,7 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
             onConnect: () => {
                 console.log('Connected to WebSocket');
                 console.log("Room ID from URL:", roomId); 
+                console.log("currentUserId:", currentUserId);
 
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
                     console.log('Incoming message:', message.body);
