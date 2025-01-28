@@ -24,6 +24,7 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
                 console.log("Room ID from URL:", roomId); 
 
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
+                    console.log('Incoming message:', message.body);
                     const callRequest = JSON.parse(message.body);
                     handleIncomingCall(callRequest);
                 });
