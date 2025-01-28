@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom'; // Импортируйте useParams
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import IncomingCallNotification from './IncomingCallNotification';
 
-const VoiceCall = ({ currentUserId, roomId, recipientId }) => {
+const VoiceCall = ({ currentUserId, recipientId }) => {
+    const { roomId } = useParams(); // Извлекаем roomId из URL
     const localAudioRef = useRef(null);
     const remoteAudioRef = useRef(null);
     const peerConnectionRef = useRef(null);
@@ -75,9 +77,6 @@ const VoiceCall = ({ currentUserId, roomId, recipientId }) => {
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
         
-        // Создайте уникальный roomId
-        const uniqueRoomId = `room-${currentUserId}-${recipientId}`; // Пример формирования roomId
-        
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localAudioRef.current.srcObject = stream;
 
@@ -97,8 +96,7 @@ const VoiceCall = ({ currentUserId, roomId, recipientId }) => {
         const offer = await peerConnectionRef.current.createOffer();
         await peerConnectionRef.current.setLocalDescription(offer);
 
-        // Отправьте сигнал вызова с roomId
-        sendSignal({ from: currentUserId, signal: offer, roomId: uniqueRoomId });
+        sendSignal({ from: currentUserId, signal: offer, roomId }); // Используйте roomId из URL
     };
 
     const handleSignal = async (signalMessage) => {
@@ -131,6 +129,7 @@ const VoiceCall = ({ currentUserId, roomId, recipientId }) => {
 
     return (
         <div>
+            <h2>Calling User ID: {recipientId}</h2>
             <audio ref={localAudioRef} autoPlay muted />
             <audio ref={remoteAudioRef} autoPlay />
             {incomingCall && (
