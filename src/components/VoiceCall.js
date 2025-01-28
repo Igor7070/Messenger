@@ -31,11 +31,17 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('Connected to WebSocket');
                 console.log("Room ID from URL:", roomId); 
 
-                stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
+                /*stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
                     console.log('Incoming message:', message.body);
                     const callRequest = JSON.parse(message.body);
                     handleIncomingCall(callRequest);
-                });
+                });*/
+                // Обработка входящего вызова для звонящего и принимающего
+                if (incomingCall) {
+                    console.log('Incoming call:', incomingCall);
+                    handleIncomingCall(incomingCall);
+                }
+
                 stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
                     const signalMessage = JSON.parse(message.body);
                     handleSignal(signalMessage);
