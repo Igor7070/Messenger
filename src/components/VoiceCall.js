@@ -124,6 +124,8 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
     };
 
     const sendSignal = (signalMessage) => {
+        console.log('Function sendSignal in VoiceCall.js working...');
+        console.log("Sending signal:", signalMessage);
         stompClient.current.publish({
             destination: `/api/webrtc/signal/${roomId}`, 
             body: JSON.stringify(signalMessage),
