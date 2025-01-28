@@ -42,6 +42,10 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
 
     const handleIncomingCall = (callRequest) => {
         setIncomingCallState(callRequest);
+        // Обработка сигнала, если он есть
+        if (callRequest.signal) {
+            handleSignal(callRequest.signal);
+        }
     };
 
     const acceptCall = async () => {
