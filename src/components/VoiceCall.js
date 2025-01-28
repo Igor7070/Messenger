@@ -4,7 +4,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import IncomingCallNotification from './IncomingCallNotification';
 
-const VoiceCall = ({ currentUserId, recipientId }) => {
+const VoiceCall = ({ recipientId }) => {
     const { roomId } = useParams(); 
     const location = useLocation();
     const { incomingCall, isCaller, currentUserId } = location.state || { incomingCall: null, 
