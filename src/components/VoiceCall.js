@@ -41,9 +41,11 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
     }, [currentUserId, roomId]);
 
     const handleIncomingCall = (callRequest) => {
+        console.log('Function handleIncomingCall in VoiceCall.js working...');
         setIncomingCallState(callRequest);
         // Обработка сигнала, если он есть
         if (callRequest.signal) {
+            console.log('Function handleSignal in VoiceCall.js calling...');
             handleSignal(callRequest.signal);
         }
     };
