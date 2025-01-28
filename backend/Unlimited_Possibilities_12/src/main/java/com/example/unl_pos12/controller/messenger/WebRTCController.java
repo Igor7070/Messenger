@@ -32,6 +32,7 @@ public class WebRTCController {
     public ResponseEntity<String> initiateCall(@RequestBody CallRequest callRequest) {
         System.out.println("Method initiateCall is working...");
         System.out.println("callRequest: " + callRequest);
+        System.out.println("callRequest.getRecipientId(): " + callRequest.getRecipientId());
         // Отправляем уведомление о звонке
         messagingTemplate.convertAndSend("/topic/calls/" + callRequest.getRecipientId(), callRequest);
 
