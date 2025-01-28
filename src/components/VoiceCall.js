@@ -132,23 +132,37 @@ const VoiceCall = ({ recipientId }) => {
     };
 
     const handleSignal = async (signalMessage) => {
+        console.log('Received signal message:', signalMessage); // Логирование всего сообщения
+    
         if (signalMessage.signal) {
             if (signalMessage.signal.type === 'offer') {
+                console.log('Handling offer...');
                 await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
                 const answer = await peerConnectionRef.current.createAnswer();
                 await peerConnectionRef.current.setLocalDescription(answer);
                 sendSignal({ from: currentUserId, signal: answer });
             } else if (signalMessage.signal.type === 'answer') {
+                console.log('Handling answer...');
                 await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
-            } else {
-                // Обработка ICE-кандидата
-                const iceCandidate = new RTCIceCandidate({
-                    candidate: signalMessage.signal.candidate,
-                    sdpMid: signalMessage.signal.sdpMid,
-                    sdpMLineIndex: signalMessage.signal.sdpMLineIndex
-                });
-                await peerConnectionRef.current.addIceCandidate(iceCandidate);
+            } else if (signalMessage.signal.candidate) {
+                console.log('Handling ICE candidate:', signalMessage.signal.candidate); // Логирование ICE кандидата
+    
+                // Проверка на наличие необходимых свойств перед добавлением
+                const { candidate, sdpMid, sdpMLineIndex } = signalMessage.signal;
+                if (candidate && sdpMid !== null && sdpMLineIndex !== null) {
+                    const iceCandidate = new RTCIceCandidate({
+                        candidate,
+                        sdpMid,
+                        sdpMLineIndex
+                    });
+                    await peerConnectionRef.current.addIceCandidate(iceCandidate);
+                    console.log('ICE candidate added:', iceCandidate); // Логирование успешного добавления
+                } else {
+                    console.error('ICE candidate is missing required fields:', signalMessage.signal);
+                }
             }
+        } else {
+            console.error('Signal message does not contain signal:', signalMessage);
         }
     };
 
