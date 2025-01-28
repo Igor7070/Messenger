@@ -7,7 +7,8 @@ import IncomingCallNotification from './IncomingCallNotification';
 const VoiceCall = ({ currentUserId, recipientId }) => {
     const { roomId } = useParams(); 
     const location = useLocation();
-    const { incomingCall, isCaller } = location.state || { incomingCall: null, isCaller: false };
+    const { incomingCall, isCaller, currentUserId } = location.state || { incomingCall: null, 
+        isCaller: false, currentUserId: null };
     const localAudioRef = useRef(null);
     const remoteAudioRef = useRef(null);
     const peerConnectionRef = useRef(null);
