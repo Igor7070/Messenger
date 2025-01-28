@@ -175,7 +175,8 @@ const UserProfile = () => {
     
             if (response.ok) {
                 toast.success(`Calling ${user.username}...`);
-                navigate(`/voice-call/${roomId}`); // Переход на страницу звонка с roomId
+                //navigate(`/voice-call/${roomId}`); // Переход на страницу звонка с roomId
+                navigate(`/voice-call/${roomId}`, { state: { isCaller: true } });
             } else {
                 toast.error('Failed to initiate call');
             }
