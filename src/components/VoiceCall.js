@@ -16,13 +16,19 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
 
     useEffect(() => {
         console.log('isCaller: ' + isCaller);
+        console.log("currentUserId:", currentUserId); // Логируем currentUserId
+
+        if (!currentUserId) {
+            console.error('currentUserId is undefined. Check the props being passed to VoiceCall.');
+            return; // Прерываем выполнение, если currentUserId не определен
+        }
+
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
                 console.log('Connected to WebSocket');
                 console.log("Room ID from URL:", roomId); 
-                console.log("currentUserId:", currentUserId);
 
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
                     console.log('Incoming message:', message.body);
