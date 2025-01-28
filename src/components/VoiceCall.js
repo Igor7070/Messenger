@@ -125,7 +125,7 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
 
     const sendSignal = (signalMessage) => {
         stompClient.current.publish({
-            destination: `https://unlimitedpossibilities12.org/api/webrtc/signal/${roomId}`, 
+            destination: `/api/webrtc/signal/${roomId}`, 
             body: JSON.stringify(signalMessage),
         });
     };
