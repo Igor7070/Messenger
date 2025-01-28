@@ -22,6 +22,7 @@ public class WebRTCController {
     @MessageMapping("/signal/{roomId}")
     public void signal(@DestinationVariable String roomId, SignalMessage signalMessage) {
         System.out.println("Method signal is working...");
+        System.out.println("roomId in method signal: " + roomId);
         // Отправка сигнала другому участнику...
         messagingTemplate.convertAndSend("/topic/room/" + roomId, signalMessage);
         System.out.println("Method signal worked success.");
@@ -30,6 +31,7 @@ public class WebRTCController {
     @PostMapping("/call")
     public ResponseEntity<String> initiateCall(@RequestBody CallRequest callRequest) {
         System.out.println("Method initiateCall is working...");
+        System.out.println("callRequest: " + callRequest);
         // Отправляем уведомление о звонке
         messagingTemplate.convertAndSend("/topic/calls/" + callRequest.getRecipientId(), callRequest);
 

@@ -29,4 +29,13 @@ public class CallRequest {
     public void setRoomId(String roomId) {
         this.roomId = roomId;
     }
+
+    @Override
+    public String toString() {
+        return "CallRequest{" +
+                "callerId='" + callerId + '\'' +
+                ", recipientId='" + recipientId + '\'' +
+                ", roomId='" + roomId + '\'' +
+                '}';
+    }
 }
