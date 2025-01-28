@@ -153,7 +153,11 @@ const UserProfile = () => {
     const handleCall = async () => {
         // Генерация уникального roomId
         const roomId = `room-${currentUserId}-${userId}`; // Например, используем комбинацию ID пользователя
+        console.log("Room ID:", roomId); // Логируем roomId
     
+        console.log("Call Request: ");
+        console.log("callerId - currentUserId: ", currentUserId);
+        console.log("recipientId - userId: ", userId);
         const callRequest = {
             callerId: currentUserId,
             recipientId: userId,
