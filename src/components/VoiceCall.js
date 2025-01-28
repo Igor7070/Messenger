@@ -1,24 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom'; // Импортируйте useParams
+import { useParams, useLocation } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import IncomingCallNotification from './IncomingCallNotification';
 
 const VoiceCall = ({ currentUserId, recipientId }) => {
-    const { roomId } = useParams(); // Извлекаем roomId из URL
+    const { roomId } = useParams(); 
+    const location = useLocation();
+    const { incomingCall, isCaller } = location.state || { incomingCall: null, isCaller: false }; // Извлекаем состояние
     const localAudioRef = useRef(null);
     const remoteAudioRef = useRef(null);
     const peerConnectionRef = useRef(null);
     const stompClient = useRef(null);
-    const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего вызова
+    const [incomingCallState, setIncomingCallState] = useState(incomingCall); // Состояние для входящего вызова
 
     useEffect(() => {
+        console.log('isCaller: ' + isCaller);
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
                 console.log('Connected to WebSocket');
-                console.log("Room ID from URL:", roomId); // Логируем roomId
+                console.log("Room ID from URL:", roomId); 
 
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
                     const callRequest = JSON.parse(message.body);
@@ -38,12 +41,12 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
     }, [currentUserId, roomId]);
 
     const handleIncomingCall = (callRequest) => {
-        setIncomingCall(callRequest); // Устанавливаем входящий вызов
+        setIncomingCallState(callRequest); // Устанавливаем состояние для входящего вызова
     };
 
     const acceptCall = async () => {
         console.log('Function acceptCall in VoiceCall.js working...');
-        setIncomingCall(null); // Скрыть уведомление
+        setIncomingCallState(null); // Скрыть уведомление
 
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localAudioRef.current.srcObject = stream;
@@ -61,8 +64,8 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
             remoteAudioRef.current.srcObject = event.streams[0];
         };
 
-        if (incomingCall.signal) {
-            await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCall.signal));
+        if (incomingCallState.signal) {
+            await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallState.signal));
             const answer = await peerConnectionRef.current.createAnswer();
             await peerConnectionRef.current.setLocalDescription(answer);
             sendSignal({ from: currentUserId, signal: answer });
@@ -70,8 +73,8 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
     };
 
     const rejectCall = () => {
-        setIncomingCall(null); // Скрыть уведомление
-        console.log(`Call from ${incomingCall.callerId} rejected.`);
+        setIncomingCallState(null);
+        console.log(`Call from ${incomingCallState.callerId} rejected.`);
     };
 
     const startCall = async () => {
@@ -96,14 +99,14 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
         const offer = await peerConnectionRef.current.createOffer();
         await peerConnectionRef.current.setLocalDescription(offer);
 
-        sendSignal({ from: currentUserId, signal: offer, roomId }); // Используйте roomId из URL
+        sendSignal({ from: currentUserId, signal: offer, roomId });
     };
 
     const handleSignal = async (signalMessage) => {
         if (signalMessage.signal) {
             if (signalMessage.signal.type === 'offer') {
-                const expectedCallerId = roomId; // Это значение из URL
-                if (incomingCall && incomingCall.callerId === expectedCallerId) {
+                const expectedCallerId = roomId;
+                if (incomingCallState && incomingCallState.callerId === expectedCallerId) {
                     console.log("Caller ID matches with roomId.");
                 } else {
                     console.log("Caller ID does not match with roomId.");
@@ -122,7 +125,7 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
 
     const sendSignal = (signalMessage) => {
         stompClient.current.publish({
-            destination: `/api/webrtc/signal/${roomId}`, // Используем roomId здесь
+            destination: `/api/webrtc/signal/${roomId}`, 
             body: JSON.stringify(signalMessage),
         });
     };
@@ -132,14 +135,14 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
             <h2>Calling User ID: {recipientId}</h2>
             <audio ref={localAudioRef} autoPlay muted />
             <audio ref={remoteAudioRef} autoPlay />
-            {incomingCall && (
+            {incomingCallState && (
                 <IncomingCallNotification 
-                    callerName={incomingCall.callerId} 
+                    callerName={incomingCallState.callerId} 
                     onAccept={acceptCall} 
                     onReject={rejectCall} 
                 />
             )}
-            {!incomingCall && (
+            {!incomingCallState && (
                 <button onClick={startCall}>Start Call</button>
             )}
         </div>

@@ -98,7 +98,10 @@ const Home = () => {
         console.log("Caller ID:", incomingCall.callerId); // Логируем callerId
         console.log("Room ID:", incomingCall.roomId); // Логируем roomId
         setIncomingCall(null); // Скрыть уведомление
-        navigate(`/voice-call/${incomingCall.roomId}`); // Перейти на страницу звонка
+        //navigate(`/voice-call/${incomingCall.roomId}`); // Перейти на страницу звонка
+        navigate(`/voice-call/${incomingCall.roomId}`, { 
+            state: { incomingCall, isCaller: false } // Указываем, что это не звонящий
+        });
     };
 
     const rejectCall = () => {
