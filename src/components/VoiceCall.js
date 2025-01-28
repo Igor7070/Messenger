@@ -7,12 +7,12 @@ import IncomingCallNotification from './IncomingCallNotification';
 const VoiceCall = ({ currentUserId, recipientId }) => {
     const { roomId } = useParams(); 
     const location = useLocation();
-    const { incomingCall, isCaller } = location.state || { incomingCall: null, isCaller: false }; // Извлекаем состояние
+    const { incomingCall, isCaller } = location.state || { incomingCall: null, isCaller: false };
     const localAudioRef = useRef(null);
     const remoteAudioRef = useRef(null);
     const peerConnectionRef = useRef(null);
     const stompClient = useRef(null);
-    const [incomingCallState, setIncomingCallState] = useState(incomingCall); // Состояние для входящего вызова
+    const [incomingCallState, setIncomingCallState] = useState(incomingCall);
 
     useEffect(() => {
         console.log('isCaller: ' + isCaller);
@@ -41,12 +41,12 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
     }, [currentUserId, roomId]);
 
     const handleIncomingCall = (callRequest) => {
-        setIncomingCallState(callRequest); // Устанавливаем состояние для входящего вызова
+        setIncomingCallState(callRequest);
     };
 
     const acceptCall = async () => {
         console.log('Function acceptCall in VoiceCall.js working...');
-        setIncomingCallState(null); // Скрыть уведомление
+        setIncomingCallState(null);
 
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localAudioRef.current.srcObject = stream;
@@ -56,7 +56,14 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
 
         peerConnectionRef.current.onicecandidate = (event) => {
             if (event.candidate) {
-                sendSignal({ from: currentUserId, signal: event.candidate });
+                sendSignal({
+                    from: currentUserId,
+                    signal: {
+                        candidate: event.candidate.candidate,
+                        sdpMid: event.candidate.sdpMid,
+                        sdpMLineIndex: event.candidate.sdpMLineIndex
+                    }
+                });
             }
         };
 
@@ -88,7 +95,14 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
 
         peerConnectionRef.current.onicecandidate = (event) => {
             if (event.candidate) {
-                sendSignal({ from: currentUserId, signal: event.candidate });
+                sendSignal({
+                    from: currentUserId,
+                    signal: {
+                        candidate: event.candidate.candidate,
+                        sdpMid: event.candidate.sdpMid,
+                        sdpMLineIndex: event.candidate.sdpMLineIndex
+                    }
+                });
             }
         };
 
@@ -105,12 +119,6 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
     const handleSignal = async (signalMessage) => {
         if (signalMessage.signal) {
             if (signalMessage.signal.type === 'offer') {
-                const expectedCallerId = roomId;
-                if (incomingCallState && incomingCallState.callerId === expectedCallerId) {
-                    console.log("Caller ID matches with roomId.");
-                } else {
-                    console.log("Caller ID does not match with roomId.");
-                }
                 await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
                 const answer = await peerConnectionRef.current.createAnswer();
                 await peerConnectionRef.current.setLocalDescription(answer);
@@ -118,7 +126,13 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
             } else if (signalMessage.signal.type === 'answer') {
                 await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
             } else {
-                await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(signalMessage.signal));
+                // Обработка ICE-кандидата
+                const iceCandidate = new RTCIceCandidate({
+                    candidate: signalMessage.signal.candidate,
+                    sdpMid: signalMessage.signal.sdpMid,
+                    sdpMLineIndex: signalMessage.signal.sdpMLineIndex
+                });
+                await peerConnectionRef.current.addIceCandidate(iceCandidate);
             }
         }
     };
@@ -127,7 +141,6 @@ const VoiceCall = ({ currentUserId, recipientId }) => {
         console.log('Function sendSignal in VoiceCall.js working...');
         console.log("Sending signal:", JSON.stringify(signalMessage, null, 2));
         stompClient.current.publish({
-            //destination: `/api/webrtc/signal/${roomId},`
             destination: `/app/signal/${roomId}`, 
             body: JSON.stringify(signalMessage),
         });
