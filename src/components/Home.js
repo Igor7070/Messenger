@@ -73,7 +73,7 @@ const Home = () => {
         const stompClient = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
-                console.log('Connected to WebSocket');
+                console.log('Connected to WebSocket in Home.js');
                 console.log("currentUserId:", currentUserId);
                 stompClient.subscribe(`/topic/calls/${currentUserId}`, (message) => {
                     const callRequest = JSON.parse(message.body);
