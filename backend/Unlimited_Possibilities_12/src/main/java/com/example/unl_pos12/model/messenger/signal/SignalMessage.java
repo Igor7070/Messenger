@@ -1,8 +1,8 @@
-package com.example.unl_pos12.model.messenger;
+package com.example.unl_pos12.model.messenger.signal;
 
 public class SignalMessage {
     private String from; // Идентификатор отправителя
-    private String signal; // Сигнал WebRTC (ICE-кандидаты, SDP и т.д.)
+    private SignalData signal; // Объект с сигналом WebRTC
 
     public String getFrom() {
         return from;
@@ -12,11 +12,11 @@ public class SignalMessage {
         this.from = from;
     }
 
-    public String getSignal() {
+    public SignalData getSignal() {
         return signal;
     }
 
-    public void setSignal(String signal) {
+    public void setSignal(SignalData signal) {
         this.signal = signal;
     }
 }

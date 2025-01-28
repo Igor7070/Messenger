@@ -1,7 +1,7 @@
 package com.example.unl_pos12.controller.messenger;
 
 import com.example.unl_pos12.model.messenger.CallRequest;
-import com.example.unl_pos12.model.messenger.SignalMessage;
+import com.example.unl_pos12.model.messenger.signal.SignalMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
