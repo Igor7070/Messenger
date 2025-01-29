@@ -186,13 +186,7 @@ const VoiceCall = ({ recipientId }) => {
             <h2>Calling User ID: {recipientId}</h2>
             <audio ref={localAudioRef} autoPlay muted />
             <audio ref={remoteAudioRef} autoPlay />
-            {incomingCallState && (
-                <IncomingCallNotification 
-                    callerName={incomingCallState.callerId} 
-                    onAccept={acceptCall} 
-                    onReject={rejectCall} 
-                />
-            )}
+            
             {!incomingCallState && (
                 <button onClick={startCall}>Start Call</button>
             )}
