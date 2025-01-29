@@ -37,7 +37,7 @@ const VoiceCall = ({ recipientId }) => {
                     handleIncomingCall(callRequest);
                 });*/
                 // Обработка входящего вызова для звонящего и принимающего
-                if (incomingCall) {
+                if (!isCaller && incomingCall) {
                     console.log('Incoming call:', incomingCall);
                     handleIncomingCall(incomingCall);
                 }
