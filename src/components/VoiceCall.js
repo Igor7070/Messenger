@@ -189,32 +189,52 @@ const VoiceCall = ({ recipientId }) => {
     // Эмуляция сигнала между пользователями
     const simulateCall = () => {
         console.log('Simulating call...');
-
+    
         // Эмуляция отправки предложения (offer)
         const simulatedOffer = {
             signal: {
                 type: 'offer',
-                // Другие необходимые поля...
+                sdp: `v=0
+                      o=- 4611738368623065656 2 IN IP4 127.0.0.1
+                      s=-
+                      t=0 0
+                      m=audio 9 UDP/TLS/RTP/SAVPF 111
+                      c=IN IP4 0.0.0.0
+                      a=rtcp:9 IN IP4 0.0.0.0
+                      a=ice-ufrag:example
+                      a=ice-pwd:password
+                      a=sendrecv
+                      a=rtpmap:111 opus/48000/2`, // Пример корректного SDP
             },
             from: currentUserId,
         };
-
+    
         // Имитация задержки перед отправкой предложения
         setTimeout(() => {
-            console.log('Sending simulated offer');
+            console.log('Sending simulated offer:', simulatedOffer.signal.sdp);
             handleSignal(simulatedOffer);
         }, 1000); // 1 секунда задержки
-
+    
         // Эмуляция ответа (answer)
         setTimeout(() => {
             const simulatedAnswer = {
                 signal: {
                     type: 'answer',
-                    // Другие необходимые поля...
+                    sdp: `v=0
+                          o=- 4611738368623065656 3 IN IP4 127.0.0.1
+                          s=-
+                          t=0 0
+                          m=audio 9 UDP/TLS/RTP/SAVPF 111
+                          c=IN IP4 0.0.0.0
+                          a=rtcp:9 IN IP4 0.0.0.0
+                          a=ice-ufrag:example
+                          a=ice-pwd:password
+                          a=sendrecv
+                          a=rtpmap:111 opus/48000/2`, // Пример корректного SDP ответа
                 },
                 from: 'simulatedRecipientId', // Имитация ID получателя
             };
-            console.log('Sending simulated answer');
+            console.log('Sending simulated answer:', simulatedAnswer.signal.sdp);
             handleSignal(simulatedAnswer);
         }, 3000); // 3 секунды задержки
     };
