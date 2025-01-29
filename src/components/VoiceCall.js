@@ -46,6 +46,11 @@ const VoiceCall = ({ recipientId }) => {
                     const signalMessage = JSON.parse(message.body);
                     handleSignal(signalMessage);
                 });
+
+                // Эмуляция вызова после подключения
+                if (!isCaller) {
+                    simulateCall();
+                }
             },
         });
         stompClient.current.activate();
@@ -180,6 +185,42 @@ const VoiceCall = ({ recipientId }) => {
             body: JSON.stringify(signalMessage),
         });
     };
+
+    // Эмуляция сигнала между пользователями
+    const simulateCall = () => {
+        console.log('Simulating call...');
+
+        // Эмуляция отправки предложения (offer)
+        const simulatedOffer = {
+            signal: {
+                type: 'offer',
+                // Другие необходимые поля...
+            },
+            from: currentUserId,
+        };
+
+        // Имитация задержки перед отправкой предложения
+        setTimeout(() => {
+            console.log('Sending simulated offer');
+            handleSignal(simulatedOffer);
+        }, 1000); // 1 секунда задержки
+
+        // Эмуляция ответа (answer)
+        setTimeout(() => {
+            const simulatedAnswer = {
+                signal: {
+                    type: 'answer',
+                    // Другие необходимые поля...
+                },
+                from: 'simulatedRecipientId', // Имитация ID получателя
+            };
+            console.log('Sending simulated answer');
+            handleSignal(simulatedAnswer);
+        }, 3000); // 3 секунды задержки
+    };
+
+// Вызов функции для симуляции
+simulateCall();
 
     return (
         <div>
