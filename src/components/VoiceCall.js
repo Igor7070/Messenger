@@ -68,38 +68,47 @@ const VoiceCall = ({ recipientId }) => {
     const acceptCall = async () => {
         console.log('Function acceptCall in VoiceCall.js working...');
         setIncomingCallState(null);
-
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        localAudioRef.current.srcObject = stream;
-
-        peerConnectionRef.current = new RTCPeerConnection();
-        stream.getTracks().forEach(track => peerConnectionRef.current.addTrack(track, stream));
-
-        peerConnectionRef.current.onicecandidate = (event) => {
-            if (event.candidate) {
-                console.log('ICE candidate generated:', event.candidate);
-                sendSignal({
-                    from: currentUserId,
-                    signal: {
-                        candidate: event.candidate.candidate,
-                        sdpMid: event.candidate.sdpMid,
-                        sdpMLineIndex: event.candidate.sdpMLineIndex
-                    }
-                });
+    
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            localAudioRef.current.srcObject = stream;
+            console.log('Audio stream obtained successfully.');
+    
+            peerConnectionRef.current = new RTCPeerConnection();
+            console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
+            stream.getTracks().forEach(track => peerConnectionRef.current.addTrack(track, stream));
+    
+            peerConnectionRef.current.onicecandidate = (event) => {
+                console.log('onicecandidate event fired:', event);
+                if (event.candidate) {
+                    console.log('ICE candidate generated:', event.candidate);
+                    sendSignal({
+                        from: currentUserId,
+                        signal: {
+                            candidate: event.candidate.candidate,
+                            sdpMid: event.candidate.sdpMid,
+                            sdpMLineIndex: event.candidate.sdpMLineIndex
+                        }
+                    });
+                } else {
+                    console.log('No more ICE candidates.');
+                }
+            };
+    
+            peerConnectionRef.current.ontrack = (event) => {
+                remoteAudioRef.current.srcObject = event.streams[0];
+                console.log('Remote stream received:', event.streams[0]);
+            };
+    
+            if (incomingCallState.signal) {
+                console.log('Setting remote description for incoming call...');
+                await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallState.signal));
+                const answer = await peerConnectionRef.current.createAnswer();
+                await peerConnectionRef.current.setLocalDescription(answer);
+                sendSignal({ from: currentUserId, signal: answer });
             }
-        };
-
-        peerConnectionRef.current.ontrack = (event) => {
-            remoteAudioRef.current.srcObject = event.streams[0];
-            console.log('Remote stream received:', event.streams[0]);
-        };
-
-        if (incomingCallState.signal) {
-            console.log('Setting remote description for incoming call...');
-            await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallState.signal));
-            const answer = await peerConnectionRef.current.createAnswer();
-            await peerConnectionRef.current.setLocalDescription(answer);
-            sendSignal({ from: currentUserId, signal: answer });
+        } catch (error) {
+            console.error('Error in acceptCall:', error);
         }
     };
 
