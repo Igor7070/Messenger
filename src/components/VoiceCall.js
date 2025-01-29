@@ -48,9 +48,9 @@ const VoiceCall = ({ recipientId }) => {
                 });
 
                 // Эмуляция вызова после подключения
-                if (!isCaller) {
+                /*if (!isCaller) {
                     simulateCall();
-                }
+                }*/
             },
         });
         stompClient.current.activate();
@@ -187,7 +187,7 @@ const VoiceCall = ({ recipientId }) => {
     };
 
     // Эмуляция сигнала между пользователями
-    const simulateCall = () => {
+    /*const simulateCall = () => {
         console.log('Simulating call...');
     
         // Эмуляция отправки предложения (offer)
@@ -237,7 +237,7 @@ const VoiceCall = ({ recipientId }) => {
             console.log('Sending simulated answer:', simulatedAnswer.signal.sdp);
             handleSignal(simulatedAnswer);
         }, 3000); // 3 секунды задержки
-    };
+    };*/
 
 // Вызов функции для симуляции
 simulateCall();
