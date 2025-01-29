@@ -193,7 +193,7 @@ const VoiceCall = ({ recipientId }) => {
                     onReject={rejectCall} 
                 />
             )}
-            {!incomingCallState && (
+            {isCaller && (
                 <button onClick={startCall}>Start Call</button>
             )}
         </div>
