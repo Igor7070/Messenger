@@ -122,12 +122,19 @@ const VoiceCall = ({ recipientId }) => {
         
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localAudioRef.current.srcObject = stream;
-
+        console.log('Local audio stream obtained.');
+    
         peerConnectionRef.current = new RTCPeerConnection();
-        stream.getTracks().forEach(track => peerConnectionRef.current.addTrack(track, stream));
-
+        console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
+    
+        stream.getTracks().forEach(track => {
+            peerConnectionRef.current.addTrack(track, stream);
+            console.log('Track added to peer connection:', track);
+        });
+    
         peerConnectionRef.current.onicecandidate = (event) => {
             if (event.candidate) {
+                console.log('ICE candidate generated:', event.candidate);
                 sendSignal({
                     from: currentUserId,
                     signal: {
@@ -138,21 +145,24 @@ const VoiceCall = ({ recipientId }) => {
                 });
             }
         };
-
+    
         peerConnectionRef.current.ontrack = (event) => {
             remoteAudioRef.current.srcObject = event.streams[0];
+            console.log('Remote track received:', event.streams[0]);
         };
-
+    
         const offer = await peerConnectionRef.current.createOffer();
         await peerConnectionRef.current.setLocalDescription(offer);
-
+        console.log('Local offer created and set:', offer);
+    
         sendSignal({ from: currentUserId, signal: offer, roomId });
     };
 
     const handleSignal = async (signalMessage) => {
-        console.log('Received signal message:', signalMessage); // Логирование всего сообщения
+        console.log('Received signal message:', signalMessage);
     
         if (signalMessage.signal) {
+            console.log('Processing signal type:', signalMessage.signal.type);
             if (signalMessage.signal.type === 'offer') {
                 console.log('Handling offer...');
                 await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
@@ -163,9 +173,7 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('Handling answer...');
                 await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
             } else if (signalMessage.signal.candidate) {
-                console.log('Handling ICE candidate:', signalMessage.signal.candidate); // Логирование ICE кандидата
-    
-                // Проверка на наличие необходимых свойств перед добавлением
+                console.log('Handling ICE candidate:', signalMessage.signal.candidate);
                 const { candidate, sdpMid, sdpMLineIndex } = signalMessage.signal;
                 if (candidate && sdpMid !== null && sdpMLineIndex !== null) {
                     const iceCandidate = new RTCIceCandidate({
@@ -174,7 +182,7 @@ const VoiceCall = ({ recipientId }) => {
                         sdpMLineIndex
                     });
                     await peerConnectionRef.current.addIceCandidate(iceCandidate);
-                    console.log('ICE candidate added:', iceCandidate); // Логирование успешного добавления
+                    console.log('ICE candidate added:', iceCandidate);
                 } else {
                     console.error('ICE candidate is missing required fields:', signalMessage.signal);
                 }
@@ -191,6 +199,7 @@ const VoiceCall = ({ recipientId }) => {
             destination: `/app/signal/${roomId}`, 
             body: JSON.stringify(signalMessage),
         });
+        console.log('Signal sent successfully.');
     };
 
     return (
