@@ -77,6 +77,7 @@ const VoiceCall = ({ recipientId }) => {
 
         peerConnectionRef.current.onicecandidate = (event) => {
             if (event.candidate) {
+                console.log('ICE candidate generated:', event.candidate);
                 sendSignal({
                     from: currentUserId,
                     signal: {
@@ -90,9 +91,11 @@ const VoiceCall = ({ recipientId }) => {
 
         peerConnectionRef.current.ontrack = (event) => {
             remoteAudioRef.current.srcObject = event.streams[0];
+            console.log('Remote stream received:', event.streams[0]);
         };
 
         if (incomingCallState.signal) {
+            console.log('Setting remote description for incoming call...');
             await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallState.signal));
             const answer = await peerConnectionRef.current.createAnswer();
             await peerConnectionRef.current.setLocalDescription(answer);
