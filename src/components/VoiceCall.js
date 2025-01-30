@@ -59,6 +59,10 @@ const VoiceCall = ({ recipientId }) => {
         };
     }, [currentUserId, roomId]);
 
+    useEffect(() => {
+        console.log('isReadyToCall updated to:', isReadyToCall);
+    }, [isReadyToCall]);
+
     const handleIncomingCall = (callRequest) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
         setIncomingCallState(callRequest);
