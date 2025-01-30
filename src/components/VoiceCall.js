@@ -43,7 +43,7 @@ const VoiceCall = ({ recipientId }) => {
                 }
 
                 if (!isCaller) {
-                    //sendSignal({ from: currentUserId, type: 'ready' }); // Отправляем сигнал
+                    sendSignal({ from: currentUserId, type: 'ready' }); // Отправляем сигнал
                     console.log('The receiver"s readiness signal has been sent.');
                 }
 
