@@ -13,6 +13,7 @@ const VoiceCall = ({ recipientId }) => {
     const peerConnectionRef = useRef(null);
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
+    const [isReadyToCall, setIsReadyToCall] = useState(false); 
 
     useEffect(() => {
         console.log('isCaller: ' + isCaller);
