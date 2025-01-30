@@ -32,8 +32,10 @@ const VoiceCall = ({ recipientId }) => {
                 console.log("Room ID from URL:", roomId); 
 
                 // Устанавливаем состояние готовности только для принимающего
+                console.log('isCaller: ', isCaller);
                 if (!isCaller) {
                     setIsReadyToCall(true);
+                    console.log('isReadyToCall set true');
                 }
 
                 console.log('isReadyToCall: ', isReadyToCall);
