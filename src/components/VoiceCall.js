@@ -7,22 +7,21 @@ import IncomingCallNotification from './IncomingCallNotification';
 const VoiceCall = ({ recipientId }) => {
     const { roomId } = useParams(); 
     const location = useLocation();
-    const { incomingCall, isCaller, currentUserId } = location.state || { incomingCall: null, isCaller: false, currentUserId: null };
+    const { incomingCall, isCaller, currentUserId } = location.state || { incomingCall: null, 
+        isCaller: false, currentUserId: null };
     const localAudioRef = useRef(null);
     const remoteAudioRef = useRef(null);
     const peerConnectionRef = useRef(null);
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
-    const [isReadyToCall, setIsReadyToCall] = useState(false); 
-    const [callInitiated, setCallInitiated] = useState(false); // Локальное состояние для отслеживания нажатия кнопки
 
     useEffect(() => {
         console.log('isCaller: ' + isCaller);
-        console.log("currentUserId:", currentUserId);
+        console.log("currentUserId:", currentUserId); // Логируем currentUserId
 
         if (!currentUserId) {
             console.error('currentUserId is undefined. Check the props being passed to VoiceCall.');
-            return;
+            return; // Прерываем выполнение, если currentUserId не определен
         }
 
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
@@ -32,23 +31,18 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('Connected to WebSocket');
                 console.log("Room ID from URL:", roomId); 
 
-                // Устанавливаем состояние готовности только для принимающего
-                console.log('isCaller: ', isCaller);
-                if (!isCaller) {
-                    setIsReadyToCall(true);
-                    sendSignal({ from: currentUserId, type: 'ready' }); // Отправляем сигнал
-                    console.log('isReadyToCall set true');
-                }
-
-                console.log('isReadyToCall: ', isReadyToCall);
-
+                /*stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
+                    console.log('Incoming message:', message.body);
+                    const callRequest = JSON.parse(message.body);
+                    handleIncomingCall(callRequest);
+                });*/
+                // Обработка входящего вызова для звонящего и принимающего
                 if (!isCaller && incomingCall) {
                     console.log('Incoming call:', incomingCall);
                     handleIncomingCall(incomingCall);
                 }
 
                 stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
-                    console.log('Subscribed to /topic/room/' + roomId);
                     const signalMessage = JSON.parse(message.body);
                     handleSignal(signalMessage);
                 });
@@ -61,17 +55,10 @@ const VoiceCall = ({ recipientId }) => {
         };
     }, [currentUserId, roomId]);
 
-    useEffect(() => {
-        console.log('isReadyToCall updated to:', isReadyToCall);
-        if (callInitiated && isReadyToCall) {
-            startCall(); // Вызываем функцию startCall, когда готовность становится true
-            setCallInitiated(false); // Сбрасываем флаг после начала вызова
-        }
-    }, [isReadyToCall]);
-
     const handleIncomingCall = (callRequest) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
         setIncomingCallState(callRequest);
+        // Обработка сигнала, если он есть
         if (callRequest.signal) {
             console.log('Function handleSignal in VoiceCall.js calling...');
             handleSignal(callRequest.signal);
@@ -98,7 +85,6 @@ const VoiceCall = ({ recipientId }) => {
                     sendSignal({
                         from: currentUserId,
                         signal: {
-                            type: 'candidate', // Указываем тип
                             candidate: event.candidate.candidate,
                             sdpMid: event.candidate.sdpMid,
                             sdpMLineIndex: event.candidate.sdpMLineIndex
@@ -119,7 +105,7 @@ const VoiceCall = ({ recipientId }) => {
                 await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallState.signal));
                 const answer = await peerConnectionRef.current.createAnswer();
                 await peerConnectionRef.current.setLocalDescription(answer);
-                sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp }, roomId });
+                sendSignal({ from: currentUserId, signal: answer });
             }
         } catch (error) {
             console.error('Error in acceptCall:', error);
@@ -133,91 +119,60 @@ const VoiceCall = ({ recipientId }) => {
 
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
-        console.log('isReadyToCall: ', isReadyToCall);
-        console.log('Call started');
-
-        /*while (!isReadyToCall) {
-            await new Promise(resolve => setTimeout(resolve, 100)); // Пауза в 100 мс
-        }*/
-
-        // Логика начала вызова...
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            localAudioRef.current.srcObject = stream;
-            console.log('Local audio stream obtained.');
+        
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        localAudioRef.current.srcObject = stream;
+        console.log('Local audio stream obtained.');
     
-            peerConnectionRef.current = new RTCPeerConnection();
-            console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
+        peerConnectionRef.current = new RTCPeerConnection();
+        console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
     
-            stream.getTracks().forEach(track => {
-                peerConnectionRef.current.addTrack(track, stream);
-                console.log('Track added to peer connection:', track);
-            });
+        stream.getTracks().forEach(track => {
+            peerConnectionRef.current.addTrack(track, stream);
+            console.log('Track added to peer connection:', track);
+        });
     
-            peerConnectionRef.current.onicecandidate = (event) => {
-                if (event.candidate) {
-                    console.log('ICE candidate generated:', event.candidate);
-                    sendSignal({
-                        from: currentUserId,
-                        signal: {
-                            type: 'candidate', // Указываем тип
-                            candidate: event.candidate.candidate,
-                            sdpMid: event.candidate.sdpMid,
-                            sdpMLineIndex: event.candidate.sdpMLineIndex
-                        }
-                    });
-                }
-            };
+        peerConnectionRef.current.onicecandidate = (event) => {
+            if (event.candidate) {
+                console.log('ICE candidate generated:', event.candidate);
+                sendSignal({
+                    from: currentUserId,
+                    signal: {
+                        candidate: event.candidate.candidate,
+                        sdpMid: event.candidate.sdpMid,
+                        sdpMLineIndex: event.candidate.sdpMLineIndex
+                    }
+                });
+            }
+        };
     
-            peerConnectionRef.current.ontrack = (event) => {
-                remoteAudioRef.current.srcObject = event.streams[0];
-                console.log('Remote track received:', event.streams[0]);
-            };
+        peerConnectionRef.current.ontrack = (event) => {
+            remoteAudioRef.current.srcObject = event.streams[0];
+            console.log('Remote track received:', event.streams[0]);
+        };
     
-            const offer = await peerConnectionRef.current.createOffer();
-            await peerConnectionRef.current.setLocalDescription(offer);
-            console.log('Local offer created and set:', offer);
+        const offer = await peerConnectionRef.current.createOffer();
+        await peerConnectionRef.current.setLocalDescription(offer);
+        console.log('Local offer created and set:', offer);
     
-            sendSignal({ 
-                from: currentUserId, 
-                signal: { type: 'offer', sdp: offer.sdp }, // Указываем тип
-                roomId 
-            });
-        } catch (error) {
-            console.error('Error in startCall:', error);
-        }
+        sendSignal({ from: currentUserId, signal: offer, roomId });
     };
 
     const handleSignal = async (signalMessage) => {
         console.log('Received signal message:', signalMessage);
-        
+    
         if (signalMessage.signal) {
             console.log('Processing signal type:', signalMessage.signal.type);
-            
             if (signalMessage.signal.type === 'offer') {
                 console.log('Handling offer...');
-                try {
-                    // Устанавливаем удаленное описание
-                    await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
-                    const answer = await peerConnectionRef.current.createAnswer();
-                    await peerConnectionRef.current.setLocalDescription(answer);
-                    console.log('Sending answer:', answer);
-                    sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
-                } catch (error) {
-                    console.error('Error handling offer:', error);
-                }
+                await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+                const answer = await peerConnectionRef.current.createAnswer();
+                await peerConnectionRef.current.setLocalDescription(answer);
+                sendSignal({ from: currentUserId, signal: answer });
             } else if (signalMessage.signal.type === 'answer') {
                 console.log('Handling answer...');
-                if (peerConnectionRef.current.remoteDescription) {
-                    try {
-                        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
-                    } catch (error) {
-                        console.error('Error setting remote description:', error);
-                    }
-                } else {
-                    console.error('Cannot set remote description: No remote offer found.');
-                }
-            } else if (signalMessage.signal.type === 'candidate') {
+                await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+            } else if (signalMessage.signal.candidate) {
                 console.log('Handling ICE candidate:', signalMessage.signal.candidate);
                 const { candidate, sdpMid, sdpMLineIndex } = signalMessage.signal;
                 if (candidate && sdpMid !== null && sdpMLineIndex !== null) {
@@ -230,13 +185,6 @@ const VoiceCall = ({ recipientId }) => {
                     console.log('ICE candidate added:', iceCandidate);
                 } else {
                     console.error('ICE candidate is missing required fields:', signalMessage.signal);
-                }
-            } else if (signalMessage.signal.type === 'ready') {
-                console.log('Received ready signal from the other party.');
-                setIsReadyToCall(true); // Обновляем состояние готовности
-                // Если звонящий инициировал вызов, начинаем его
-                if (callInitiated) {
-                    startCall();
                 }
             }
         } else {
@@ -267,7 +215,7 @@ const VoiceCall = ({ recipientId }) => {
                 />
             )}
             {isCaller && (
-                <button onClick={() => setCallInitiated(true)}>Start Call</button>
+                <button onClick={startCall}>Start Call</button>
             )}
         </div>
     );
