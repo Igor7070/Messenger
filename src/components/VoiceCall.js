@@ -199,34 +199,19 @@ const VoiceCall = ({ recipientId }) => {
 
     const handleSignal = async (signalMessage) => {
         console.log('Received signal message:', signalMessage);
-        
+    
         if (signalMessage.signal) {
             console.log('Processing signal type:', signalMessage.signal.type);
-            
             if (signalMessage.signal.type === 'offer') {
                 console.log('Handling offer...');
-                try {
-                    // Устанавливаем удаленное описание
-                    await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
-                    const answer = await peerConnectionRef.current.createAnswer();
-                    await peerConnectionRef.current.setLocalDescription(answer);
-                    console.log('Sending answer:', answer);
-                    sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
-                } catch (error) {
-                    console.error('Error handling offer:', error);
-                }
+                await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+                const answer = await peerConnectionRef.current.createAnswer();
+                await peerConnectionRef.current.setLocalDescription(answer);
+                sendSignal({ from: currentUserId, signal: answer });
             } else if (signalMessage.signal.type === 'answer') {
                 console.log('Handling answer...');
-                if (peerConnectionRef.current.remoteDescription) {
-                    try {
-                        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
-                    } catch (error) {
-                        console.error('Error setting remote description:', error);
-                    }
-                } else {
-                    console.error('Cannot set remote description: No remote offer found.');
-                }
-            } else if (signalMessage.signal.type === 'candidate') {
+                await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+            } else if (signalMessage.signal.candidate) {
                 console.log('Handling ICE candidate:', signalMessage.signal.candidate);
                 const { candidate, sdpMid, sdpMLineIndex } = signalMessage.signal;
                 if (candidate && sdpMid !== null && sdpMLineIndex !== null) {
@@ -240,8 +225,6 @@ const VoiceCall = ({ recipientId }) => {
                 } else {
                     console.error('ICE candidate is missing required fields:', signalMessage.signal);
                 }
-            } else if (signalMessage.signal.type === 'ready') {
-                console.log('Received ready signal from the other party.');
             }
         } else {
             console.error('Signal message does not contain signal:', signalMessage);
