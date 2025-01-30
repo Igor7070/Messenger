@@ -43,7 +43,7 @@ const VoiceCall = ({ recipientId }) => {
                 }
 
                 if (!isCaller) {
-                    sendSignal({ from: currentUserId, type: 'ready' }); // Отправляем сигнал
+                    //sendSignal({ from: currentUserId, type: 'ready' }); // Отправляем сигнал
                     console.log('The receiver"s readiness signal has been sent.');
                 }
 
@@ -123,8 +123,41 @@ const VoiceCall = ({ recipientId }) => {
         console.log(`Call from ${incomingCallState.callerId} rejected.`);
     };
 
+    const subscribeToRoom = () => {
+        stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
+            console.log('Subscribed to /topic/room/' + roomId);
+            const signalMessage = JSON.parse(message.body);
+            handleSignalReady(signalMessage);
+        });
+    };
+
+    let readySignalReceived = false; // Флаг для отслеживания получения сигнала готовности
+
+    const handleSignalReady = async (signalMessage) => {
+        console.log('Method handleSignalReady working...');
+        //console.log('Received signal message:', signalMessage);
+        
+        if (signalMessage.signal) {
+            console.log('Processing signal type:', signalMessage.signal.type);
+            
+            if (signalMessage.signal.type === 'ready') {
+                console.log('Received ready signal from the other party.');
+                readySignalReceived = true; // Установлен флаг, когда сигнал получен
+            }
+            // Обработка других типов сигналов...
+        } else {
+            //console.error('Signal message does not contain signal:', signalMessage);
+        }
+    };
+
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
+
+        // Проверка наличия сигнала ready
+        while (!readySignalReceived) {
+            console.log('Waiting for ready signal...');
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Ждать 1 секунду
+        }
         
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localAudioRef.current.srcObject = stream;
