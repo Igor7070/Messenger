@@ -168,17 +168,24 @@ const VoiceCall = ({ recipientId }) => {
             
             if (signalMessage.signal.type === 'offer') {
                 console.log('Handling offer...');
-                // Устанавливаем удаленное описание
-                await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
-                const answer = await peerConnectionRef.current.createAnswer();
-                await peerConnectionRef.current.setLocalDescription(answer);
-                console.log('Sending answer:', answer);
-                sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
+                try {
+                    // Устанавливаем удаленное описание
+                    await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+                    const answer = await peerConnectionRef.current.createAnswer();
+                    await peerConnectionRef.current.setLocalDescription(answer);
+                    console.log('Sending answer:', answer);
+                    sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
+                } catch (error) {
+                    console.error('Error handling offer:', error);
+                }
             } else if (signalMessage.signal.type === 'answer') {
                 console.log('Handling answer...');
-                // Проверяем, что состояние соединения позволяет установить ответ
                 if (peerConnectionRef.current.remoteDescription) {
-                    await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+                    try {
+                        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+                    } catch (error) {
+                        console.error('Error setting remote description:', error);
+                    }
                 } else {
                     console.error('Cannot set remote description: No remote offer found.');
                 }
