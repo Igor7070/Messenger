@@ -199,19 +199,34 @@ const VoiceCall = ({ recipientId }) => {
 
     const handleSignal = async (signalMessage) => {
         console.log('Received signal message:', signalMessage);
-    
+        
         if (signalMessage.signal) {
             console.log('Processing signal type:', signalMessage.signal.type);
+            
             if (signalMessage.signal.type === 'offer') {
                 console.log('Handling offer...');
-                await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
-                const answer = await peerConnectionRef.current.createAnswer();
-                await peerConnectionRef.current.setLocalDescription(answer);
-                sendSignal({ from: currentUserId, signal: answer });
+                try {
+                    // Устанавливаем удаленное описание
+                    await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+                    const answer = await peerConnectionRef.current.createAnswer();
+                    await peerConnectionRef.current.setLocalDescription(answer);
+                    console.log('Sending answer:', answer);
+                    sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
+                } catch (error) {
+                    console.error('Error handling offer:', error);
+                }
             } else if (signalMessage.signal.type === 'answer') {
                 console.log('Handling answer...');
-                await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
-            } else if (signalMessage.signal.candidate) {
+                if (peerConnectionRef.current.remoteDescription) {
+                    try {
+                        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+                    } catch (error) {
+                        console.error('Error setting remote description:', error);
+                    }
+                } else {
+                    console.error('Cannot set remote description: No remote offer found.');
+                }
+            } else if (signalMessage.signal.type === 'candidate') {
                 console.log('Handling ICE candidate:', signalMessage.signal.candidate);
                 const { candidate, sdpMid, sdpMLineIndex } = signalMessage.signal;
                 if (candidate && sdpMid !== null && sdpMLineIndex !== null) {
@@ -224,6 +239,13 @@ const VoiceCall = ({ recipientId }) => {
                     console.log('ICE candidate added:', iceCandidate);
                 } else {
                     console.error('ICE candidate is missing required fields:', signalMessage.signal);
+                }
+            } else if (signalMessage.signal.type === 'ready') {
+                console.log('Received ready signal from the other party.');
+                setIsReadyToCall(true); // Обновляем состояние готовности
+                // Если звонящий инициировал вызов, начинаем его
+                if (callInitiated) {
+                    startCall();
                 }
             }
         } else {
