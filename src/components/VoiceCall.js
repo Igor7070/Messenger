@@ -36,7 +36,7 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('isCaller: ', isCaller);
                 if (!isCaller) {
                     setIsReadyToCall(true);
-                    //sendSignal({ from: currentUserId, type: 'ready' }); // Отправляем сигнал
+                    sendSignal({ from: currentUserId, type: 'ready' }); // Отправляем сигнал
                     console.log('isReadyToCall set true');
                 }
 
@@ -229,6 +229,13 @@ const VoiceCall = ({ recipientId }) => {
                     console.log('ICE candidate added:', iceCandidate);
                 } else {
                     console.error('ICE candidate is missing required fields:', signalMessage.signal);
+                }
+            } else if (signalMessage.signal.type === 'ready') {
+                console.log('Received ready signal from the other party.');
+                setIsReadyToCall(true); // Обновляем состояние готовности
+                // Если звонящий инициировал вызов, начинаем его
+                if (callInitiated) {
+                    startCall();
                 }
             }
         } else {
