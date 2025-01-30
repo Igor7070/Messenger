@@ -14,6 +14,7 @@ const VoiceCall = ({ recipientId }) => {
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
     const [isReadyToCall, setIsReadyToCall] = useState(false); 
+    const [callInitiated, setCallInitiated] = useState(false); // Локальное состояние для отслеживания нажатия кнопки
 
     useEffect(() => {
         console.log('isCaller: ' + isCaller);
@@ -61,6 +62,10 @@ const VoiceCall = ({ recipientId }) => {
 
     useEffect(() => {
         console.log('isReadyToCall updated to:', isReadyToCall);
+        if (callInitiated && isReadyToCall) {
+            startCall(); // Вызываем функцию startCall, когда готовность становится true
+            setCallInitiated(false); // Сбрасываем флаг после начала вызова
+        }
     }, [isReadyToCall]);
 
     const handleIncomingCall = (callRequest) => {
@@ -127,18 +132,14 @@ const VoiceCall = ({ recipientId }) => {
 
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
-
-        // Ожидание готовности принимающего
         console.log('isReadyToCall: ', isReadyToCall);
+        console.log('Call started');
 
-        while (!isReadyToCall) {
+        /*while (!isReadyToCall) {
             await new Promise(resolve => setTimeout(resolve, 100)); // Пауза в 100 мс
-        }
+        }*/
 
         // Логика начала вызова...
-        console.log('Call started');
-        console.log('isReadyToCall: ', isReadyToCall);
-
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             localAudioRef.current.srcObject = stream;
@@ -258,7 +259,7 @@ const VoiceCall = ({ recipientId }) => {
                 />
             )}
             {isCaller && (
-                <button onClick={startCall}>Start Call</button>
+                <button onClick={() => setCallInitiated(true)}>Start Call</button>
             )}
         </div>
     );
