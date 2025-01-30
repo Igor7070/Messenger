@@ -36,6 +36,8 @@ const VoiceCall = ({ recipientId }) => {
                     setIsReadyToCall(true);
                 }
 
+                console.log('isReadyToCall: ', isReadyToCall);
+
                 if (!isCaller && incomingCall) {
                     console.log('Incoming call:', incomingCall);
                     handleIncomingCall(incomingCall);
@@ -120,9 +122,11 @@ const VoiceCall = ({ recipientId }) => {
         console.log('Function startCall in Home.js working...');
 
         // Ожидание готовности принимающего
+        console.log('isReadyToCall: ', isReadyToCall);
         while (!isReadyToCall) {
             await new Promise(resolve => setTimeout(resolve, 100)); // Пауза в 100 мс
         }
+        console.log('isReadyToCall: ', isReadyToCall);
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
