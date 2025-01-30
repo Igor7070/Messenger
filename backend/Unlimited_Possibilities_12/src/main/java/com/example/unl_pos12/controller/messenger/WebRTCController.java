@@ -23,6 +23,8 @@ public class WebRTCController {
     public void signal(@DestinationVariable String roomId, SignalMessage signalMessage) {
         System.out.println("Method signal is working...");
         System.out.println("roomId in method signal: " + roomId);
+        System.out.println("Received signal from: " + signalMessage.getFrom() + ", type: "
+                + signalMessage.getSignal().getType());
         // Отправка сигнала другому участнику_
         messagingTemplate.convertAndSend("/topic/room/" + roomId, signalMessage);
         System.out.println("Method signal worked success.");
