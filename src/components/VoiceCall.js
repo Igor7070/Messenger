@@ -57,7 +57,7 @@ const VoiceCall = ({ recipientId }) => {
         return () => {
             stompClient.current.deactivate();
         };
-    }, [currentUserId, roomId]);
+    }, [currentUserId, roomId, handleIncomingCall, handleSignal, incomingCall, isCaller, isReadyToCall, sendSignal]);
 
     const handleIncomingCall = (callRequest) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
