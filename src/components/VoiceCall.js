@@ -208,11 +208,6 @@ const VoiceCall = ({ recipientId }) => {
                 }
             } else if (signalMessage.signal.type === 'ready') {
                 console.log('Received ready signal from the other party.');
-                setIsReadyToCall(true); // Обновляем состояние готовности
-                // Если звонящий инициировал вызов, начинаем его
-                if (callInitiated) {
-                    startCall();
-                }
             }
         } else {
             console.error('Signal message does not contain signal:', signalMessage);
