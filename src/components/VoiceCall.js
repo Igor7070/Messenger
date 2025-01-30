@@ -162,18 +162,26 @@ const VoiceCall = ({ recipientId }) => {
 
     const handleSignal = async (signalMessage) => {
         console.log('Received signal message:', signalMessage);
-    
+        
         if (signalMessage.signal) {
             console.log('Processing signal type:', signalMessage.signal.type);
+            
             if (signalMessage.signal.type === 'offer') {
                 console.log('Handling offer...');
+                // Устанавливаем удаленное описание
                 await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
                 const answer = await peerConnectionRef.current.createAnswer();
                 await peerConnectionRef.current.setLocalDescription(answer);
+                console.log('Sending answer:', answer);
                 sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
             } else if (signalMessage.signal.type === 'answer') {
                 console.log('Handling answer...');
-                await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+                // Проверяем, что состояние соединения позволяет установить ответ
+                if (peerConnectionRef.current.remoteDescription) {
+                    await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+                } else {
+                    console.error('Cannot set remote description: No remote offer found.');
+                }
             } else if (signalMessage.signal.type === 'candidate') {
                 console.log('Handling ICE candidate:', signalMessage.signal.candidate);
                 const { candidate, sdpMid, sdpMLineIndex } = signalMessage.signal;
