@@ -48,6 +48,7 @@ const VoiceCall = ({ recipientId }) => {
                 }
 
                 stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
+                    console.log('Subscribed to /topic/room/' + roomId);
                     const signalMessage = JSON.parse(message.body);
                     handleSignal(signalMessage);
                 });
