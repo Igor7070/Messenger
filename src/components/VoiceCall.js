@@ -35,6 +35,7 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('isCaller: ', isCaller);
                 if (!isCaller) {
                     setIsReadyToCall(true);
+                    sendSignal({ from: currentUserId, type: 'ready' }); // Отправляем сигнал
                     console.log('isReadyToCall set true');
                 }
 
@@ -125,7 +126,7 @@ const VoiceCall = ({ recipientId }) => {
 
         // Ожидание готовности принимающего
         console.log('isReadyToCall: ', isReadyToCall);
-        while (!isReadyToCall) {
+        while (isReadyToCall) {
             await new Promise(resolve => setTimeout(resolve, 100)); // Пауза в 100 мс
         }
         console.log('isReadyToCall: ', isReadyToCall);
