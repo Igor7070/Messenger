@@ -30,6 +30,11 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('Connected to WebSocket');
                 console.log("Room ID from URL:", roomId); 
 
+                // Устанавливаем состояние готовности только для принимающего
+                if (!isCaller) {
+                    setIsReadyToCall(true);
+                }
+
                 if (!isCaller && incomingCall) {
                     console.log('Incoming call:', incomingCall);
                     handleIncomingCall(incomingCall);
@@ -112,7 +117,12 @@ const VoiceCall = ({ recipientId }) => {
 
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
-        
+
+        // Ожидание готовности принимающего
+        while (!isReadyToCall) {
+            await new Promise(resolve => setTimeout(resolve, 100)); // Пауза в 100 мс
+        }
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             localAudioRef.current.srcObject = stream;
