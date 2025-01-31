@@ -177,29 +177,29 @@ const VoiceCall = ({ recipientId }) => {
             
             if (signalMessage.signal.type === 'offer') {
                 console.log('Handling offer...');
-            try {
-                if (peerConnectionRef.current) { // Проверка инициализации
-                    await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
-                    const answer = await peerConnectionRef.current.createAnswer();
-                    await peerConnectionRef.current.setLocalDescription(answer);
-                    console.log('Sending answer:', answer);
-                    sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
-                } else {
-                    console.error('peerConnectionRef.current is not initialized.');
+                try {
+                    if (peerConnectionRef.current) { // Проверка инициализации
+                        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+                        const answer = await peerConnectionRef.current.createAnswer();
+                        await peerConnectionRef.current.setLocalDescription(answer);
+                        console.log('Sending answer:', answer);
+                        sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
+                    } else {
+                        console.error('peerConnectionRef.current is not initialized.');
+                    }
+                } catch (error) {
+                    console.error('Error handling offer:', error);
                 }
-            } catch (error) {
-                console.error('Error handling offer:', error);
-            }
             } else if (signalMessage.signal.type === 'answer') {
                 console.log('Handling answer...');
-                if (peerConnectionRef.current.remoteDescription) {
+                if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
+                    console.error('Cannot set remote description: Already has a remote description.');
+                } else {
                     try {
                         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
                     } catch (error) {
                         console.error('Error setting remote description:', error);
                     }
-                } else {
-                    console.error('Cannot set remote description: No remote offer found.');
                 }
             } else if (signalMessage.signal.type === 'candidate') {
                 console.log('Handling ICE candidate:', signalMessage.signal.candidate);
