@@ -63,12 +63,6 @@ const VoiceCall = ({ recipientId }) => {
         // Инициализация peerConnectionRef перед обработкой сигнала
         peerConnectionRef.current = new RTCPeerConnection();
         console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
-
-        // Обработка сигнала, если он есть
-        if (callRequest.signal) {
-            console.log('Function handleSignal in VoiceCall.js calling...');
-            handleSignal(callRequest.signal);
-        }
     };
 
     const acceptCall = async () => {
