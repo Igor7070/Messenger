@@ -109,7 +109,7 @@ const VoiceCall = ({ recipientId }) => {
             console.log('peerConnectionRef.current: ' + peerConnectionRef.current);
     
             // Проверка состояния перед установкой удалённого описания
-            if (incomingCallState && incomingCallState.signal && peerConnectionRef.current) {
+            if (incomingCallState && peerConnectionRef.current) {
                 console.log('Setting remote description for incoming call...');
 
                 if (!peerConnectionRef.current.remoteDescription) {
