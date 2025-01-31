@@ -79,8 +79,12 @@ const VoiceCall = ({ recipientId }) => {
             localAudioRef.current.srcObject = stream;
             console.log('Audio stream obtained successfully.');
     
-            peerConnectionRef.current = new RTCPeerConnection();
-            console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
+            // Проверка инициализации peerConnectionRef
+            if (!peerConnectionRef.current) {
+                peerConnectionRef.current = new RTCPeerConnection();
+                console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
+            }
+    
             stream.getTracks().forEach(track => peerConnectionRef.current.addTrack(track, stream));
     
             peerConnectionRef.current.onicecandidate = (event) => {
@@ -105,10 +109,10 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('Remote stream received:', event.streams[0]);
             };
     
-            // Проверка инициализации и состояния перед установкой удалённого описания
+            // Проверка состояния перед установкой удалённого описания
             if (incomingCallState && incomingCallState.signal && peerConnectionRef.current) {
                 console.log('Setting remote description for incoming call...');
-                if (!peerConnectionRef.current.remoteDescription) { // Проверка на наличие remoteDescription
+                if (!peerConnectionRef.current.remoteDescription) {
                     await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallState.signal));
                     const answer = await peerConnectionRef.current.createAnswer();
                     await peerConnectionRef.current.setLocalDescription(answer);
