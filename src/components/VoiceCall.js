@@ -31,16 +31,16 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('Connected to WebSocket');
                 console.log("Room ID from URL:", roomId); 
 
-                if (!isCaller) {
-                    sendSignal({ from: currentUserId, type: 'ready' }); // Отправляем сигнал
-                    console.log('The receiver"s readiness signal has been sent.');
-                }
-
                 stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
                     console.log('Subscribed to /topic/room/' + roomId);
                     const signalMessage = JSON.parse(message.body);
                     handleSignal(signalMessage);
                 });
+
+                if (!isCaller) {
+                    sendSignal({ from: currentUserId, type: 'ready' }); // Отправляем сигнал
+                    console.log('The receiver"s readiness signal has been sent.');
+                }
 
                 if (!isCaller && incomingCall) {
                     console.log('Incoming call:', incomingCall);
