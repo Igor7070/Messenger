@@ -108,13 +108,14 @@ const VoiceCall = ({ recipientId }) => {
                 remoteAudioRef.current.srcObject = event.streams[0];
                 console.log('Remote stream received:', event.streams[0]);
             };
+
+            console.log('incomingCallState: ' + incomingCallState);
+            console.log('incomingCallState.signal: ' + incomingCallState.signal);
+            console.log('peerConnectionRef.current: ' + peerConnectionRef.current);
     
             // Проверка состояния перед установкой удалённого описания
             if (incomingCallState && incomingCallState.signal && peerConnectionRef.current) {
                 console.log('Setting remote description for incoming call...');
-                console.log('incomingCallState: ' + incomingCallState);
-                console.log('incomingCallState.signal: ' + incomingCallState.signal);
-                console.log('peerConnectionRef.current: ' + peerConnectionRef.current);
 
                 if (!peerConnectionRef.current.remoteDescription) {
                     await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallState.signal));
