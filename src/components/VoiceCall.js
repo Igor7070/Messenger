@@ -61,7 +61,7 @@ const VoiceCall = ({ recipientId }) => {
         setIncomingCallState(callRequest);
 
         // Инициализация peerConnectionRef перед обработкой сигнала
-        //peerConnectionRef.current = new RTCPeerConnection();
+        peerConnectionRef.current = new RTCPeerConnection();
         console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
     };
 
@@ -190,6 +190,7 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('Handling offer...');
                 try {
                     if (peerConnectionRef.current) { // Проверка инициализации
+                        console.log('Installing a remote description (offer)...');
                         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
                         const answer = await peerConnectionRef.current.createAnswer();
                         await peerConnectionRef.current.setLocalDescription(answer);
@@ -207,6 +208,7 @@ const VoiceCall = ({ recipientId }) => {
                     console.error('Cannot set remote description: Already has a remote description.');
                 } else {
                     try {
+                        console.log('Installing a remote description (answer)...');
                         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
                     } catch (error) {
                         console.error('Error setting remote description:', error);
