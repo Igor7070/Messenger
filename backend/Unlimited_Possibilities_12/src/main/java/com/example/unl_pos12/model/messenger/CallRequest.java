@@ -1,9 +1,12 @@
 package com.example.unl_pos12.model.messenger;
 
+import com.example.unl_pos12.model.messenger.signal.SignalData;
+
 public class CallRequest {
     private String callerId; // ID вызывающего
     private String recipientId; // ID получателя
     private String roomId; // ID комнаты для звонка
+    private SignalData signal; // Объект с сигналом WebRTC (например, offer, answer)
 
     // Геттеры и сеттеры
     public String getCallerId() {
@@ -28,6 +31,14 @@ public class CallRequest {
 
     public void setRoomId(String roomId) {
         this.roomId = roomId;
+    }
+
+    public SignalData getSignal() {
+        return signal;
+    }
+
+    public void setSignal(SignalData signal) {
+        this.signal = signal;
     }
 
     @Override
