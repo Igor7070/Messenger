@@ -113,6 +113,7 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('Setting remote description for incoming call...');
 
                 if (!peerConnectionRef.current.remoteDescription) {
+                    console.log('Installing a remote description...');
                     await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallState.signal));
                     const answer = await peerConnectionRef.current.createAnswer();
                     await peerConnectionRef.current.setLocalDescription(answer);
