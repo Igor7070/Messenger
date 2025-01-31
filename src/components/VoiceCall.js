@@ -58,6 +58,7 @@ const VoiceCall = ({ recipientId }) => {
     const handleIncomingCall = (callRequest) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
         setIncomingCallState(callRequest);
+        console.log('callRequest: ' + callRequest);
 
         // Инициализация peerConnectionRef перед обработкой сигнала
         peerConnectionRef.current = new RTCPeerConnection();
