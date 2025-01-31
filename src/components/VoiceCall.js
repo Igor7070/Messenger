@@ -61,7 +61,7 @@ const VoiceCall = ({ recipientId }) => {
         setIncomingCallState(callRequest);
 
         // Инициализация peerConnectionRef перед обработкой сигнала
-        peerConnectionRef.current = new RTCPeerConnection();
+        //peerConnectionRef.current = new RTCPeerConnection();
         console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
     };
 
@@ -105,7 +105,6 @@ const VoiceCall = ({ recipientId }) => {
             };
 
             console.log('incomingCallState: ' + incomingCallState);
-            console.log('incomingCallState.signal: ' + incomingCallState.signal);
             console.log('peerConnectionRef.current: ' + peerConnectionRef.current);
     
             // Проверка состояния перед установкой удалённого описания
