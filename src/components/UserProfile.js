@@ -161,7 +161,11 @@ const UserProfile = () => {
         const callRequest = {
             callerId: currentUserId,
             recipientId: userId,
-            roomId: roomId // Передаем roomId
+            roomId: roomId,
+            signal: {
+                type: 'offer', // Тип сигнала
+                sdp: offer.sdp // SDP-строка
+            }
         };
     
         try {
