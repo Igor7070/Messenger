@@ -105,12 +105,19 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('Remote stream received:', event.streams[0]);
             };
     
-            if (incomingCallState.signal) {
+            // Проверка инициализации и состояния перед установкой удалённого описания
+            if (incomingCallState && incomingCallState.signal && peerConnectionRef.current) {
                 console.log('Setting remote description for incoming call...');
-                await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallState.signal));
-                const answer = await peerConnectionRef.current.createAnswer();
-                await peerConnectionRef.current.setLocalDescription(answer);
-                sendSignal({ from: currentUserId, signal: answer });
+                if (!peerConnectionRef.current.remoteDescription) { // Проверка на наличие remoteDescription
+                    await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallState.signal));
+                    const answer = await peerConnectionRef.current.createAnswer();
+                    await peerConnectionRef.current.setLocalDescription(answer);
+                    sendSignal({ from: currentUserId, signal: answer });
+                } else {
+                    console.warn('Remote description has already been set.');
+                }
+            } else {
+                console.error('No valid signal found in incomingCallState or peerConnectionRef.current is not initialized.');
             }
         } catch (error) {
             console.error('Error in acceptCall:', error);
