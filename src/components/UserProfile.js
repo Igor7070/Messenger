@@ -164,7 +164,7 @@ const UserProfile = () => {
             roomId: roomId,
             signal: {
                 type: 'offer', // Тип сигнала
-                sdp: offer.sdp // SDP-строка
+                sdp: 'dummy_sdp_string' // SDP-строка
             }
         };
     
