@@ -37,10 +37,10 @@ const VoiceCall = ({ recipientId }) => {
                     handleSignal(signalMessage);
                 });
 
-                if (!isCaller) {
+                /*if (!isCaller) {
                     sendSignal({ from: currentUserId, type: 'ready' }); // Отправляем сигнал
                     console.log('The receiver"s readiness signal has been sent.');
-                }
+                }*/
 
                 if (!isCaller && incomingCall) {
                     console.log('Incoming call:', incomingCall);
@@ -58,6 +58,11 @@ const VoiceCall = ({ recipientId }) => {
     const handleIncomingCall = (callRequest) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
         setIncomingCallState(callRequest);
+
+        // Инициализация peerConnectionRef перед обработкой сигнала
+        peerConnectionRef.current = new RTCPeerConnection();
+        console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
+
         // Обработка сигнала, если он есть
         if (callRequest.signal) {
             console.log('Function handleSignal in VoiceCall.js calling...');
@@ -172,16 +177,19 @@ const VoiceCall = ({ recipientId }) => {
             
             if (signalMessage.signal.type === 'offer') {
                 console.log('Handling offer...');
-                try {
-                    // Устанавливаем удаленное описание
+            try {
+                if (peerConnectionRef.current) { // Проверка инициализации
                     await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
                     const answer = await peerConnectionRef.current.createAnswer();
                     await peerConnectionRef.current.setLocalDescription(answer);
                     console.log('Sending answer:', answer);
                     sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
-                } catch (error) {
-                    console.error('Error handling offer:', error);
+                } else {
+                    console.error('peerConnectionRef.current is not initialized.');
                 }
+            } catch (error) {
+                console.error('Error handling offer:', error);
+            }
             } else if (signalMessage.signal.type === 'answer') {
                 console.log('Handling answer...');
                 if (peerConnectionRef.current.remoteDescription) {
