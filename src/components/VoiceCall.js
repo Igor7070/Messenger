@@ -60,9 +60,14 @@ const VoiceCall = ({ recipientId }) => {
         console.log('callRequest:', JSON.stringify(callRequest, null, 2)); // Улучшенное логирование
         setIncomingCallState(callRequest);
 
+        // Инициализация peerConnectionRef перед обработкой сигнала с STUN сервером
+        const iceServers = [
+            { urls: 'stun:stun.l.google.com:19302' }
+        ];
+
         // Инициализация peerConnectionRef перед обработкой сигнала
-        peerConnectionRef.current = new RTCPeerConnection();
-        console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
+        peerConnectionRef.current = new RTCPeerConnection({ iceServers });
+        console.log('RTCPeerConnection initialized with STUN server: ', peerConnectionRef.current);
     };
 
     const acceptCall = async () => {
@@ -73,11 +78,16 @@ const VoiceCall = ({ recipientId }) => {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             localAudioRef.current.srcObject = stream;
             console.log('Audio stream obtained successfully.');
+
+            // Добавление STUN сервера
+            const iceServers = [
+                { urls: 'stun:stun.l.google.com:19302' }
+            ];
     
             // Проверка инициализации peerConnectionRef
             if (!peerConnectionRef.current) {
-                peerConnectionRef.current = new RTCPeerConnection();
-                console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
+                peerConnectionRef.current = new RTCPeerConnection({ iceServers });
+                console.log('RTCPeerConnection initialized with STUN server: ', peerConnectionRef.current);
             }
     
             stream.getTracks().forEach(track => peerConnectionRef.current.addTrack(track, stream));
@@ -145,9 +155,14 @@ const VoiceCall = ({ recipientId }) => {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localAudioRef.current.srcObject = stream;
         console.log('Local audio stream obtained.');
+
+        // Добавление STUN сервера
+        const iceServers = [
+            { urls: 'stun:stun.l.google.com:19302' }
+        ];
     
-        peerConnectionRef.current = new RTCPeerConnection();
-        console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
+        peerConnectionRef.current = new RTCPeerConnection({ iceServers });
+        console.log('RTCPeerConnection initialized with STUN server:', peerConnectionRef.current);
     
         stream.getTracks().forEach(track => {
             peerConnectionRef.current.addTrack(track, stream);
