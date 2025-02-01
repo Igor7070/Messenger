@@ -62,10 +62,18 @@ const VoiceCall = ({ recipientId }) => {
 
         // Инициализация peerConnectionRef перед обработкой сигнала с STUN и TURN серверов
         // Определение STUN и TURN серверов
-        const iceServers = [
+        /*const iceServers = [
             { urls: 'stun:stun.l.google.com:19302' }, // STUN сервер
             {
                 urls: 'turn:localhost:3478', // Укажите IP-адрес вашего TURN сервера
+                username: 'user1',                // Имя пользователя
+                credential: 'password123'         // Пароль
+            }
+        ];*/
+        const iceServers = [
+            { urls: 'stun:stun.l.google.com:19302' }, // STUN сервер
+            {
+                urls: 'turn:192.168.0.101:3478', // Используйте ваш локальный IP-адрес
                 username: 'user1',                // Имя пользователя
                 credential: 'password123'         // Пароль
             }
@@ -163,10 +171,18 @@ const VoiceCall = ({ recipientId }) => {
         console.log('Local audio stream obtained.');
 
         // Определение STUN и TURN серверов
-        const iceServers = [
+        /*const iceServers = [
             { urls: 'stun:stun.l.google.com:19302' }, // STUN сервер
             {
                 urls: 'turn:localhost:3478', // Укажите IP-адрес вашего TURN сервера
+                username: 'user1',                // Имя пользователя
+                credential: 'password123'         // Пароль
+            }
+        ];*/
+        const iceServers = [
+            { urls: 'stun:stun.l.google.com:19302' }, // STUN сервер
+            {
+                urls: 'turn:192.168.0.101:3478', // Используйте ваш локальный IP-адрес
                 username: 'user1',                // Имя пользователя
                 credential: 'password123'         // Пароль
             }
