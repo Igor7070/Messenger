@@ -113,6 +113,7 @@ const VoiceCall = ({ recipientId }) => {
                     sendSignal({
                         from: currentUserId,
                         signal: {
+                            type: 'candidate',
                             candidate: event.candidate.candidate,
                             sdpMid: event.candidate.sdpMid,
                             sdpMLineIndex: event.candidate.sdpMLineIndex
@@ -159,12 +160,6 @@ const VoiceCall = ({ recipientId }) => {
 
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
-
-        // Проверка наличия сигнала ready
-        /*while (!readySignalReceived) {
-            console.log('Waiting for ready signal...');
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Ждать 1 секунду
-        }*/
         
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localAudioRef.current.srcObject = stream;
@@ -202,6 +197,7 @@ const VoiceCall = ({ recipientId }) => {
                 sendSignal({
                     from: currentUserId,
                     signal: {
+                        type: 'candidate',
                         candidate: event.candidate.candidate,
                         sdpMid: event.candidate.sdpMid,
                         sdpMLineIndex: event.candidate.sdpMLineIndex
