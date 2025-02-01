@@ -62,8 +62,10 @@ const VoiceCall = ({ recipientId }) => {
 
         // Инициализация peerConnectionRef перед обработкой сигнала с STUN сервером
         const iceServers = [
-            { urls: 'stun:stun.l.google.com:19302' }
-        ];
+            {
+              urls: 'turn:turnserver.net:3478'
+            }
+          ];
 
         // Инициализация peerConnectionRef перед обработкой сигнала
         peerConnectionRef.current = new RTCPeerConnection({ iceServers });
@@ -158,8 +160,10 @@ const VoiceCall = ({ recipientId }) => {
 
         // Добавление STUN сервера
         const iceServers = [
-            { urls: 'stun:stun.l.google.com:19302' }
-        ];
+            {
+              urls: 'turn:turnserver.net:3478'
+            }
+          ];
     
         peerConnectionRef.current = new RTCPeerConnection({ iceServers });
         console.log('RTCPeerConnection initialized with STUN server:', peerConnectionRef.current);
