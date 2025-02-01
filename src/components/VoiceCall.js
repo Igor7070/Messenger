@@ -60,9 +60,15 @@ const VoiceCall = ({ recipientId }) => {
         console.log('callRequest:', JSON.stringify(callRequest, null, 2)); // Улучшенное логирование
         setIncomingCallState(callRequest);
 
-        // Инициализация peerConnectionRef перед обработкой сигнала с STUN сервером
+        // Инициализация peerConnectionRef перед обработкой сигнала с STUN и TURN серверов
+        // Определение STUN и TURN серверов
         const iceServers = [
-            { urls: 'stun:stun.l.google.com:19302' }
+            { urls: 'stun:stun.l.google.com:19302' }, // STUN сервер
+            {
+                urls: 'turn:localhost:3478', // Укажите IP-адрес вашего TURN сервера
+                username: 'user1',                // Имя пользователя
+                credential: 'password123'         // Пароль
+            }
         ];
 
         // Инициализация peerConnectionRef перед обработкой сигнала
@@ -156,9 +162,14 @@ const VoiceCall = ({ recipientId }) => {
         localAudioRef.current.srcObject = stream;
         console.log('Local audio stream obtained.');
 
-        // Добавление STUN сервера
+        // Определение STUN и TURN серверов
         const iceServers = [
-            { urls: 'stun:stun.l.google.com:19302' }
+            { urls: 'stun:stun.l.google.com:19302' }, // STUN сервер
+            {
+                urls: 'turn:localhost:3478', // Укажите IP-адрес вашего TURN сервера
+                username: 'user1',                // Имя пользователя
+                credential: 'password123'         // Пароль
+            }
         ];
     
         peerConnectionRef.current = new RTCPeerConnection({ iceServers });
