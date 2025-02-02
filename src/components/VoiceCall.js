@@ -73,9 +73,9 @@ const VoiceCall = ({ recipientId }) => {
         const iceServers = [
             { urls: 'stun:stun.l.google.com:19302' }, // STUN сервер
             {
-                urls: 'turn:192.168.0.101:3478', // Используйте ваш локальный IP-адрес
-                username: 'user1',                // Имя пользователя
-                credential: 'password123'         // Пароль
+                urls: 'turn:16.170.203.109:3478',
+                username: 'user1',
+                credential: 'password123'  
             }
         ];
 
@@ -177,9 +177,9 @@ const VoiceCall = ({ recipientId }) => {
         const iceServers = [
             { urls: 'stun:stun.l.google.com:19302' }, // STUN сервер
             {
-                urls: 'turn:192.168.0.101:3478', // Используйте ваш локальный IP-адрес
-                username: 'user1',                // Имя пользователя
-                credential: 'password123'         // Пароль
+                urls: 'turn:16.170.203.109:3478',
+                username: 'user1',
+                credential: 'password123'
             }
         ];
     
