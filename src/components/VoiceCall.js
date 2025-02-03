@@ -194,9 +194,12 @@ const VoiceCall = ({ recipientId }) => {
                     from: currentUserId,
                     signal: {
                         type: 'candidate',
-                        candidate: event.candidate.candidate,
-                        sdpMid: event.candidate.sdpMid,
-                        sdpMLineIndex: event.candidate.sdpMLineIndex
+                        sdp: "", // Если требуется, можно оставить пустым
+                        iceCandidate: {
+                            candidate: event.candidate.candidate,
+                            sdpMid: event.candidate.sdpMid,
+                            sdpMLineIndex: event.candidate.sdpMLineIndex.toString() // Преобразуем в строку, если необходимо
+                        }
                     }
                 });
             } else {
@@ -259,16 +262,19 @@ const VoiceCall = ({ recipientId }) => {
                     }
                 }
             } else if (signalMessage.signal.type === 'candidate') {
-                console.log('Handling ICE candidate:', signalMessage.signal.candidate);
-                const { candidate, sdpMid, sdpMLineIndex } = signalMessage.signal;
+                console.log('Handling ICE candidate:', signalMessage.signal.iceCandidate);
+    
+                const { iceCandidate } = signalMessage.signal; // Извлекаем объект iceCandidate
+                const { candidate, sdpMid, sdpMLineIndex } = iceCandidate; // Достаем необходимые поля
+
                 if (candidate && sdpMid !== null && sdpMLineIndex !== null) {
-                    const iceCandidate = new RTCIceCandidate({
+                    const iceCandidateToAdd = new RTCIceCandidate({
                         candidate,
                         sdpMid,
                         sdpMLineIndex
                     });
-                    await peerConnectionRef.current.addIceCandidate(iceCandidate);
-                    console.log('ICE candidate added:', iceCandidate);
+                    await peerConnectionRef.current.addIceCandidate(iceCandidateToAdd);
+                    console.log('ICE candidate added:', iceCandidateToAdd);
                 } else {
                     console.error('ICE candidate is missing required fields:', signalMessage.signal);
                 }
