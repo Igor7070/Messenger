@@ -20,4 +20,21 @@ public class SignalData {
     public void setSdp(String sdp) {
         this.sdp = sdp;
     }
+
+    public IceCandidate getIceCandidate() {
+        return iceCandidate;
+    }
+
+    public void setIceCandidate(IceCandidate iceCandidate) {
+        this.iceCandidate = iceCandidate;
+    }
+
+    @Override
+    public String toString() {
+        return "SignalData{" +
+                "type='" + type + '\'' +
+                ", sdp='" + sdp + '\'' +
+                ", iceCandidate=" + iceCandidate +
+                '}';
+    }
 }

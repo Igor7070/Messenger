@@ -19,4 +19,12 @@ public class SignalMessage {
     public void setSignal(SignalData signal) {
         this.signal = signal;
     }
+
+    @Override
+    public String toString() {
+        return "SignalMessage{" +
+                "from='" + from + '\'' +
+                ", signal=" + signal +
+                '}';
+    }
 }

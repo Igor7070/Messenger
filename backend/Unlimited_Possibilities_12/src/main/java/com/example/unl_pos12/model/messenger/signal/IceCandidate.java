@@ -28,4 +28,13 @@ public class IceCandidate {
     public void setSdpMLineIndex(String sdpMLineIndex) {
         this.sdpMLineIndex = sdpMLineIndex;
     }
+
+    @Override
+    public String toString() {
+        return "IceCandidate{" +
+                "candidate='" + candidate + '\'' +
+                ", sdpMid='" + sdpMid + '\'' +
+                ", sdpMLineIndex='" + sdpMLineIndex + '\'' +
+                '}';
+    }
 }
