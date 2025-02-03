@@ -160,12 +160,14 @@ const VoiceCall = ({ recipientId }) => {
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
     
+        // Получаем доступ к аудиопотоку
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localAudioRef.current.srcObject = stream;
         console.log('Local audio stream obtained.');
     
+        // Определяем STUN и TURN серверы
         const iceServers = [
-            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun.l.google.com:19302' }, // Добавляем STUN сервер
             {
                 urls: 'turn:16.170.203.109:3478',
                 username: 'username1',
@@ -173,15 +175,17 @@ const VoiceCall = ({ recipientId }) => {
             }
         ];
     
+        // Инициализация RTCPeerConnection
         peerConnectionRef.current = new RTCPeerConnection({ iceServers });
         console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
     
+        // Добавляем треки в peer connection
         stream.getTracks().forEach(track => {
             peerConnectionRef.current.addTrack(track, stream);
             console.log('Track added to peer connection:', track);
         });
     
-        // Устанавливаем обработчик ICE кандидатов
+        // Обработчик ICE кандидатов
         peerConnectionRef.current.onicecandidate = (event) => {
             console.log('onicecandidate event fired');
             if (event.candidate) {
@@ -208,11 +212,13 @@ const VoiceCall = ({ recipientId }) => {
         // Отправка сигнала с предложением
         sendSignal({ from: currentUserId, signal: offer, roomId });
     
+        // Обработчик входящих треков
         peerConnectionRef.current.ontrack = (event) => {
             remoteAudioRef.current.srcObject = event.streams[0];
             console.log('Remote track received:', event.streams[0]);
         };
     
+        // Обработчик состояния ICE
         peerConnectionRef.current.onicegatheringstatechange = () => {
             console.log('ICE Gathering State:', peerConnectionRef.current.iceGatheringState);
         };
