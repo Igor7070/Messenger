@@ -72,7 +72,7 @@ const VoiceCall = ({ recipientId }) => {
         ];*/
         const iceServers = [
             {
-                urls: 'turn:16.170.203.109:3478',
+                urls: 'turn:16.170.203.109:3478?transport=tcp',
                 username: 'username1', 
                 credential: 'key1'     
             }
@@ -80,7 +80,7 @@ const VoiceCall = ({ recipientId }) => {
 
         // Инициализация peerConnectionRef перед обработкой сигнала
         peerConnectionRef.current = new RTCPeerConnection({ iceServers });
-        console.log('RTCPeerConnection initialized with STUN server: ', peerConnectionRef.current);
+        console.log('RTCPeerConnection initialized with TURN server: ', peerConnectionRef.current);
     };
 
     const acceptCall = async () => {
