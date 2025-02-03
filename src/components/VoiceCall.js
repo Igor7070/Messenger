@@ -159,22 +159,12 @@ const VoiceCall = ({ recipientId }) => {
 
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
-        
+    
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localAudioRef.current.srcObject = stream;
         console.log('Local audio stream obtained.');
-
-        // Определение STUN и TURN серверов
-        /*const iceServers = [
-            { urls: 'stun:stun.l.google.com:19302' }, // STUN сервер
-            {
-                urls: 'turn:localhost:3478', // Укажите IP-адрес вашего TURN сервера
-                username: 'user1',                // Имя пользователя
-                credential: 'password123'         // Пароль
-            }
-        ];*/
+    
         const iceServers = [
-            //{ urls: 'stun:stun.l.google.com:19302' }, // STUN сервер
             {
                 urls: 'turn:16.170.203.109:3478',
                 username: 'username1', 
@@ -183,7 +173,7 @@ const VoiceCall = ({ recipientId }) => {
         ];
     
         peerConnectionRef.current = new RTCPeerConnection({ iceServers });
-        console.log('RTCPeerConnection initialized with STUN server:', peerConnectionRef.current);
+        console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
     
         stream.getTracks().forEach(track => {
             peerConnectionRef.current.addTrack(track, stream);
@@ -202,12 +192,18 @@ const VoiceCall = ({ recipientId }) => {
                         sdpMLineIndex: event.candidate.sdpMLineIndex
                     }
                 });
+            } else {
+                console.log('All ICE candidates have been generated.');
             }
         };
     
         peerConnectionRef.current.ontrack = (event) => {
             remoteAudioRef.current.srcObject = event.streams[0];
             console.log('Remote track received:', event.streams[0]);
+        };
+    
+        peerConnectionRef.current.onicegatheringstatechange = () => {
+            console.log('ICE Gathering State:', peerConnectionRef.current.iceGatheringState);
         };
     
         const offer = await peerConnectionRef.current.createOffer();
