@@ -165,10 +165,11 @@ const VoiceCall = ({ recipientId }) => {
         console.log('Local audio stream obtained.');
     
         const iceServers = [
+            { urls: 'stun:stun.l.google.com:19302' },
             {
                 urls: 'turn:16.170.203.109:3478',
-                username: 'username1', 
-                credential: 'key1'     
+                username: 'username1',
+                credential: 'key1'
             }
         ];
     
@@ -180,6 +181,7 @@ const VoiceCall = ({ recipientId }) => {
             console.log('Track added to peer connection:', track);
         });
     
+        // Устанавливаем обработчик ICE кандидатов
         peerConnectionRef.current.onicecandidate = (event) => {
             console.log('onicecandidate event fired');
             if (event.candidate) {
@@ -198,6 +200,14 @@ const VoiceCall = ({ recipientId }) => {
             }
         };
     
+        // Создание и установка локального описания
+        const offer = await peerConnectionRef.current.createOffer();
+        await peerConnectionRef.current.setLocalDescription(offer);
+        console.log('Local offer created and set:', offer);
+    
+        // Отправка сигнала с предложением
+        sendSignal({ from: currentUserId, signal: offer, roomId });
+    
         peerConnectionRef.current.ontrack = (event) => {
             remoteAudioRef.current.srcObject = event.streams[0];
             console.log('Remote track received:', event.streams[0]);
@@ -206,12 +216,6 @@ const VoiceCall = ({ recipientId }) => {
         peerConnectionRef.current.onicegatheringstatechange = () => {
             console.log('ICE Gathering State:', peerConnectionRef.current.iceGatheringState);
         };
-    
-        const offer = await peerConnectionRef.current.createOffer();
-        await peerConnectionRef.current.setLocalDescription(offer);
-        console.log('Local offer created and set:', offer);
-    
-        sendSignal({ from: currentUserId, signal: offer, roomId });
     };
 
     const handleSignal = async (signalMessage) => {
