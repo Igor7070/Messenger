@@ -71,11 +71,8 @@ const VoiceCall = ({ recipientId }) => {
             }
         ];*/
         const iceServers = [
-            //{ urls: 'stun:stun.l.google.com:19302' }, // STUN сервер
             {
-                urls: 'turn:16.170.203.109:3478?transport=tcp',
-                username: 'user1',
-                credential: 'password123'  
+                urls: 'turn:16.170.203.109:3478' 
             }
         ];
 
@@ -175,11 +172,8 @@ const VoiceCall = ({ recipientId }) => {
             }
         ];*/
         const iceServers = [
-            //{ urls: 'stun:stun.l.google.com:19302' }, // STUN сервер
             {
-                urls: 'turn:16.170.203.109:3478?transport=tcp',
-                username: 'user1',
-                credential: 'password123'
+                urls: 'turn:16.170.203.109:3478' 
             }
         ];
     
