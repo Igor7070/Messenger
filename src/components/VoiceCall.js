@@ -181,6 +181,7 @@ const VoiceCall = ({ recipientId }) => {
         });
     
         peerConnectionRef.current.onicecandidate = (event) => {
+            console.log('onicecandidate event fired');
             if (event.candidate) {
                 console.log('ICE candidate generated:', event.candidate);
                 sendSignal({
