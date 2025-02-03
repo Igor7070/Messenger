@@ -92,9 +92,13 @@ const VoiceCall = ({ recipientId }) => {
             localAudioRef.current.srcObject = stream;
             console.log('Audio stream obtained successfully.');
 
-            // Добавление STUN сервера
+            // Добавление TURN сервера
             const iceServers = [
-                { urls: 'stun:stun.l.google.com:19302' }
+                {
+                    urls: 'turn:16.170.203.109:3478?transport=tcp',
+                    username: 'username1', 
+                    credential: 'key1'     
+                }
             ];
     
             // Проверка инициализации peerConnectionRef
@@ -113,9 +117,12 @@ const VoiceCall = ({ recipientId }) => {
                         from: currentUserId,
                         signal: {
                             type: 'candidate',
-                            candidate: event.candidate.candidate,
-                            sdpMid: event.candidate.sdpMid,
-                            sdpMLineIndex: event.candidate.sdpMLineIndex
+                            sdp: "", // Если требуется, можете оставить пустым
+                            iceCandidate: {
+                                candidate: event.candidate.candidate,
+                                sdpMid: event.candidate.sdpMid,
+                                sdpMLineIndex: event.candidate.sdpMLineIndex.toString() // Преобразуем в строку, если необходимо
+                            }
                         }
                     });
                 } else {
