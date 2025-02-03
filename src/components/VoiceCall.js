@@ -79,7 +79,8 @@ const VoiceCall = ({ recipientId }) => {
         ];
 
         // Инициализация peerConnectionRef перед обработкой сигнала
-        peerConnectionRef.current = new RTCPeerConnection({ iceServers });
+        peerConnectionRef.current = new RTCPeerConnection({ iceServers,
+            iceTransportPolicy: 'all' });
         console.log('RTCPeerConnection initialized with TURN server: ', peerConnectionRef.current);
     };
 
@@ -183,7 +184,8 @@ const VoiceCall = ({ recipientId }) => {
         ];
     
         // Инициализация RTCPeerConnection
-        peerConnectionRef.current = new RTCPeerConnection({ iceServers });
+        peerConnectionRef.current = new RTCPeerConnection({ iceServers,
+            iceTransportPolicy: 'all' });
         console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
     
         // Добавляем треки в peer connection
