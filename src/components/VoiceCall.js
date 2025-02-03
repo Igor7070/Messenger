@@ -169,7 +169,7 @@ const VoiceCall = ({ recipientId }) => {
         const iceServers = [
             //{ urls: 'stun:stun.l.google.com:19302' }, // Добавляем STUN сервер
             {
-                urls: 'turn:16.170.203.109:3478',
+                urls: 'turn:16.170.203.109:3478?transport=tcp',
                 username: 'username1',
                 credential: 'key1'
             }
