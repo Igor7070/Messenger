@@ -284,6 +284,9 @@ const VoiceCall = ({ recipientId }) => {
                 try {
                     if (peerConnectionRef.current) { // Проверка инициализации
                         console.log('Installing a remote description (offer)...');
+                        // Логируем полученное предложение (offer)
+                        console.log('Received offer SDP:', signalMessage.signal.sdp);
+                        
                         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
                         const answer = await peerConnectionRef.current.createAnswer();
                         await peerConnectionRef.current.setLocalDescription(answer);
