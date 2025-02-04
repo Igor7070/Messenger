@@ -55,7 +55,7 @@ const VoiceCall = ({ recipientId }) => {
         };
     }, [currentUserId, roomId]);
 
-    const handleIncomingCall = (callRequest) => {
+    const handleIncomingCall = async (callRequest) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
         console.log('callRequest:', JSON.stringify(callRequest, null, 2)); // Улучшенное логирование
         setIncomingCallState(callRequest);
@@ -70,6 +70,11 @@ const VoiceCall = ({ recipientId }) => {
                 credential: 'password123'         // Пароль
             }
         ];*/
+        
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            localAudioRef.current.srcObject = stream;
+            console.log('Audio stream obtained successfully.');
+
         const iceServers = [
             {
                 urls: 'turn:16.170.203.109:3478?transport=tcp',
@@ -82,6 +87,33 @@ const VoiceCall = ({ recipientId }) => {
         peerConnectionRef.current = new RTCPeerConnection({ iceServers,
             iceTransportPolicy: 'all' });
         console.log('RTCPeerConnection initialized with TURN server: ', peerConnectionRef.current);
+
+        //------------------------------------------------------------------------------------------
+
+        stream.getTracks().forEach(track => {
+            peerConnectionRef.current.addTrack(track, stream);
+        });
+        
+        // Шаг 2: Установка обработчика события onicecandidate
+        peerConnectionRef.current.onicecandidate = (event) => {
+            console.log('onicecandidate event fired:', event);
+            if (event.candidate) {
+                console.log('ICE candidate generated:', event.candidate);
+                sendSignal({
+                    from: currentUserId,
+                    signal: {
+                        type: 'candidate',
+                        iceCandidate: {
+                            candidate: event.candidate.candidate,
+                            sdpMid: event.candidate.sdpMid,
+                            sdpMLineIndex: event.candidate.sdpMLineIndex.toString()
+                        }
+                    }
+                });
+            } else {
+                console.log('No more ICE candidates.');
+            }
+        };
     };
 
     const acceptCall = async () => {
