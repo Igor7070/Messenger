@@ -90,6 +90,11 @@ const VoiceCall = ({ recipientId }) => {
 
         //------------------------------------------------------------------------------------------
 
+        peerConnectionRef.current.ontrack = (event) => {
+            remoteAudioRef.current.srcObject = event.streams[0];
+            console.log('Remote stream received:', event.streams[0]);
+        };
+
         stream.getTracks().forEach(track => {
             peerConnectionRef.current.addTrack(track, stream);
         });
