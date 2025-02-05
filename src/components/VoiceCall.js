@@ -51,7 +51,9 @@ const VoiceCall = ({ recipientId }) => {
         stompClient.current.activate();
 
         return () => {
+            console.log('Deactivating WebSocket connection...');
             stompClient.current.deactivate();
+            console.log('WebSocket connection deactivated.');
         };
     }, [currentUserId, roomId]);
 
