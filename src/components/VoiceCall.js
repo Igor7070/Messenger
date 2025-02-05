@@ -212,11 +212,10 @@ const VoiceCall = ({ recipientId }) => {
     
         // Определяем STUN и TURN серверы
         const iceServers = [
-            //{ urls: 'stun:stun.l.google.com:19302' }, // Добавляем STUN сервер
             {
                 urls: 'turn:16.170.203.109:3478?transport=tcp',
-                username: 'username1',
-                credential: 'key1'
+                username: 'username1', 
+                credential: 'key1'     
             }
         ];
     
