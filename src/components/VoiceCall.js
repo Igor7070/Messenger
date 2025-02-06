@@ -290,26 +290,28 @@ const VoiceCall = ({ recipientId }) => {
                         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
                         
                         // Обработчик ICE кандидатов
-                        peerConnectionRef.current.onicecandidate = (event) => {
-                            console.log('onicecandidate event fired');
-                            if (event.candidate) {
-                                console.log('ICE candidate generated:', event.candidate);
-                                sendSignal({
-                                    from: currentUserId,
-                                    signal: {
-                                        type: 'candidate',
-                                        sdp: "", // Если требуется, можно оставить пустым
-                                        iceCandidate: {
-                                            candidate: event.candidate.candidate,
-                                            sdpMid: event.candidate.sdpMid,
-                                            sdpMLineIndex: event.candidate.sdpMLineIndex.toString() // Преобразуем в строку, если необходимо
+                        setTimeout(() => {
+                            peerConnectionRef.current.onicecandidate = (event) => {
+                                console.log('onicecandidate event fired:', event);
+                                if (event.candidate) {
+                                    console.log('ICE candidate generated:', event.candidate);
+                                    sendSignal({
+                                        from: currentUserId,
+                                        signal: {
+                                            type: 'candidate',
+                                            sdp: "", // Если требуется, можно оставить пустым
+                                            iceCandidate: {
+                                                candidate: event.candidate.candidate,
+                                                sdpMid: event.candidate.sdpMid,
+                                                sdpMLineIndex: event.candidate.sdpMLineIndex.toString()
+                                            }
                                         }
-                                    }
-                                });
-                            } else {
-                                console.log('All ICE candidates have been generated.');
-                            }
-                        };
+                                    });
+                                } else {
+                                    console.log('No more ICE candidates.');
+                                }
+                            };
+                        }, 1000); // Пауза в 1000 миллисекунд (1 секунда)
                     } catch (error) {
                         console.error('Error setting remote description:', error);
                     }
