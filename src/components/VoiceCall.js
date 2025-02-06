@@ -88,6 +88,7 @@ const VoiceCall = ({ recipientId }) => {
 
         stream.getTracks().forEach(track => {
             peerConnectionRef.current.addTrack(track, stream);
+            console.log('Track added to peer connection:', track);
         });
         
         // Шаг 2: Установка обработчика события onicecandidate
@@ -99,6 +100,7 @@ const VoiceCall = ({ recipientId }) => {
                     from: currentUserId,
                     signal: {
                         type: 'candidate',
+                        sdp: "", // Если требуется, можно оставить пустым
                         iceCandidate: {
                             candidate: event.candidate.candidate,
                             sdpMid: event.candidate.sdpMid,
@@ -132,8 +134,9 @@ const VoiceCall = ({ recipientId }) => {
     
             // Проверка инициализации peerConnectionRef
             if (!peerConnectionRef.current) {
-                peerConnectionRef.current = new RTCPeerConnection({ iceServers });
-                console.log('RTCPeerConnection initialized with STUN server: ', peerConnectionRef.current);
+                peerConnectionRef.current = new RTCPeerConnection({ iceServers,
+                    iceTransportPolicy: 'all' });
+                console.log('RTCPeerConnection initialized with TURN server: ', peerConnectionRef.current);
             }
     
             stream.getTracks().forEach(track => peerConnectionRef.current.addTrack(track, stream));
@@ -214,7 +217,15 @@ const VoiceCall = ({ recipientId }) => {
         peerConnectionRef.current = new RTCPeerConnection({ iceServers,
             iceTransportPolicy: 'all' });
         console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
+
+        //------------------------------------------------------------------------------------------
     
+        // Обработчик входящих треков
+        peerConnectionRef.current.ontrack = (event) => {
+            remoteAudioRef.current.srcObject = event.streams[0];
+            console.log('Remote track received:', event.streams[0]);
+        };
+
         // Добавляем треки в peer connection
         stream.getTracks().forEach(track => {
             peerConnectionRef.current.addTrack(track, stream);
@@ -251,12 +262,6 @@ const VoiceCall = ({ recipientId }) => {
         // Отправка сигнала с предложением
         sendSignal({ from: currentUserId, signal: offer, roomId });
     
-        // Обработчик входящих треков
-        peerConnectionRef.current.ontrack = (event) => {
-            remoteAudioRef.current.srcObject = event.streams[0];
-            console.log('Remote track received:', event.streams[0]);
-        };
-    
         // Обработчик состояния ICE
         peerConnectionRef.current.onicegatheringstatechange = () => {
             console.log('ICE Gathering State:', peerConnectionRef.current.iceGatheringState);
@@ -272,9 +277,10 @@ const VoiceCall = ({ recipientId }) => {
             if (signalMessage.signal.type === 'offer') {
                 console.log('Handling offer...');
                 try {
-                    if (peerConnectionRef.current) { // Проверка инициализации
+                    if (peerConnectionRef.current && !isCaller) { // Проверка инициализации
                         console.log('Installing a remote description (offer)...');
                         // Логируем полученное предложение (offer)
+                        console.log('Received offer SDP:', signalMessage.signal);
                         console.log('Received offer SDP:', signalMessage.signal.sdp);
                         
                         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
@@ -292,7 +298,7 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('Handling answer...');
                 if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
                     console.error('Cannot set remote description: Already has a remote description.');
-                } else {
+                } else if (isCaller) {
                     try {
                         console.log('Installing a remote description (answer)...');
                         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
