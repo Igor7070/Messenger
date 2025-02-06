@@ -233,7 +233,7 @@ const VoiceCall = ({ recipientId }) => {
         });
     
         // Обработчик ICE кандидатов
-        peerConnectionRef.current.onicecandidate = (event) => {
+        /*peerConnectionRef.current.onicecandidate = (event) => {
             console.log('onicecandidate event fired');
             if (event.candidate) {
                 console.log('ICE candidate generated:', event.candidate);
@@ -252,7 +252,7 @@ const VoiceCall = ({ recipientId }) => {
             } else {
                 console.log('All ICE candidates have been generated.');
             }
-        };
+        };*/
     
         // Создание и установка локального описания
         const offer = await peerConnectionRef.current.createOffer();
@@ -302,6 +302,28 @@ const VoiceCall = ({ recipientId }) => {
                     try {
                         console.log('Installing a remote description (answer)...');
                         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+                        
+                        // Обработчик ICE кандидатов
+                        peerConnectionRef.current.onicecandidate = (event) => {
+                            console.log('onicecandidate event fired');
+                            if (event.candidate) {
+                                console.log('ICE candidate generated:', event.candidate);
+                                sendSignal({
+                                    from: currentUserId,
+                                    signal: {
+                                        type: 'candidate',
+                                        sdp: "", // Если требуется, можно оставить пустым
+                                        iceCandidate: {
+                                            candidate: event.candidate.candidate,
+                                            sdpMid: event.candidate.sdpMid,
+                                            sdpMLineIndex: event.candidate.sdpMLineIndex.toString() // Преобразуем в строку, если необходимо
+                                        }
+                                    }
+                                });
+                            } else {
+                                console.log('All ICE candidates have been generated.');
+                            }
+                        };
                     } catch (error) {
                         console.error('Error setting remote description:', error);
                     }
