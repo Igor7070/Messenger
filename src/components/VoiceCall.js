@@ -297,7 +297,7 @@ const VoiceCall = ({ recipientId }) => {
             } else if (signalMessage.signal.type === 'answer') {
                 console.log('Handling answer...');
                 if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
-                    console.error('Cannot set remote description: Already has a remote description.');
+                    console.log('Cannot set remote description: Already has a remote description.');
                 } else if (isCaller) {
                     try {
                         console.log('Installing a remote description (answer)...');
