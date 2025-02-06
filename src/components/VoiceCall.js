@@ -92,7 +92,26 @@ const VoiceCall = ({ recipientId }) => {
         });
         
         // Шаг 2: Установка обработчика события onicecandidate
-        //-------------------------------------------------------
+        peerConnectionRef.current.onicecandidate = (event) => {
+            console.log('onicecandidate event fired:', event);
+            if (event.candidate) {
+                console.log('ICE candidate generated:', event.candidate);
+                sendSignal({
+                    from: currentUserId,
+                    signal: {
+                        type: 'candidate',
+                        sdp: "", // Если требуется, можно оставить пустым
+                        iceCandidate: {
+                            candidate: event.candidate.candidate,
+                            sdpMid: event.candidate.sdpMid,
+                            sdpMLineIndex: event.candidate.sdpMLineIndex.toString()
+                        }
+                    }
+                });
+            } else {
+                console.log('No more ICE candidates.');
+            }
+        };
     };
 
     const acceptCall = async () => {
@@ -214,7 +233,26 @@ const VoiceCall = ({ recipientId }) => {
         });
     
         // Обработчик ICE кандидатов
-        //------------------------------------------------------------
+        peerConnectionRef.current.onicecandidate = (event) => {
+            console.log('onicecandidate event fired');
+            if (event.candidate) {
+                console.log('ICE candidate generated:', event.candidate);
+                sendSignal({
+                    from: currentUserId,
+                    signal: {
+                        type: 'candidate',
+                        sdp: "", // Если требуется, можно оставить пустым
+                        iceCandidate: {
+                            candidate: event.candidate.candidate,
+                            sdpMid: event.candidate.sdpMid,
+                            sdpMLineIndex: event.candidate.sdpMLineIndex.toString() // Преобразуем в строку, если необходимо
+                        }
+                    }
+                });
+            } else {
+                console.log('All ICE candidates have been generated.');
+            }
+        };
     
         // Создание и установка локального описания
         const offer = await peerConnectionRef.current.createOffer();
@@ -264,8 +302,6 @@ const VoiceCall = ({ recipientId }) => {
                     try {
                         console.log('Installing a remote description (answer)...');
                         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
-                        
-                        sendSignal({ from: currentUserId, signal: { type: 'ready', sdp: "" } });
                     } catch (error) {
                         console.error('Error setting remote description:', error);
                     }
@@ -282,35 +318,22 @@ const VoiceCall = ({ recipientId }) => {
                         sdpMid,
                         sdpMLineIndex
                     });
-                    await peerConnectionRef.current.addIceCandidate(iceCandidateToAdd);
-                    console.log('ICE candidate added:', iceCandidateToAdd);
+                    //await peerConnectionRef.current.addIceCandidate(iceCandidateToAdd);
+                    //console.log('ICE candidate added:', iceCandidateToAdd);
+                    setTimeout(async () => {
+                        try {
+                            await peerConnectionRef.current.addIceCandidate(iceCandidateToAdd);
+                            console.log('ICE candidate added:', iceCandidateToAdd);
+                        } catch (error) {
+                            console.error('Error adding ICE candidate:', error);
+                        }
+                    }, 500); // Задержка в 500 миллисекунд
                 } else {
                     console.error('ICE candidate is missing required fields:', signalMessage.signal);
                 }
             } else if (signalMessage.signal.type === 'ready') {
-                console.log('Received ready signal.');
-                // Обработчик ICE кандидатов
-                peerConnectionRef.current.onicecandidate = (event) => {
-                    console.log('onicecandidate event fired');
-                    if (event.candidate) {
-                        console.log('ICE candidate generated:', event.candidate);
-                        sendSignal({
-                            from: currentUserId,
-                            signal: {
-                                type: 'candidate',
-                                sdp: "", // Если требуется, можно оставить пустым
-                                iceCandidate: {
-                                    candidate: event.candidate.candidate,
-                                    sdpMid: event.candidate.sdpMid,
-                                    sdpMLineIndex: event.candidate.sdpMLineIndex.toString() // Преобразуем в строку, если необходимо
-                                }
-                            }
-                        });
-                    } else {
-                        console.log('All ICE candidates have been generated.');
-                    }
-                };
-                
+                console.log('Received ready signal from the other party.');
+                // Если звонящий инициировал вызов, начинаем его
             } else if (signalMessage.signal.type === 'endCall') {
                 console.log('Call ended by the other party.');
                 endCall(); // Завершение локального вызова, если это необходимо
