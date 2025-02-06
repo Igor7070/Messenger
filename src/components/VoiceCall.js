@@ -320,6 +320,9 @@ const VoiceCall = ({ recipientId }) => {
             } else if (signalMessage.signal.type === 'ready') {
                 console.log('Received ready signal from the other party.');
                 // Если звонящий инициировал вызов, начинаем его
+            } else if (signalMessage.signal.type === 'endCall') {
+                console.log('Call ended by the other party.');
+                endCall(); // Завершение локального вызова, если это необходимо
             }
         } else {
             console.error('Signal message does not contain signal:', signalMessage);
@@ -334,6 +337,33 @@ const VoiceCall = ({ recipientId }) => {
             body: JSON.stringify(signalMessage),
         });
         console.log('Signal sent successfully.');
+    };
+
+    const endCall = () => {
+        console.log('Ending call...');
+    
+        // Закрываем RTCPeerConnection, если он существует
+        if (peerConnectionRef.current) {
+            peerConnectionRef.current.close();
+            peerConnectionRef.current = null; // Очищаем ссылку
+            console.log('Peer connection closed.');
+        }
+    
+        // Очищаем аудиопотоки
+        if (localAudioRef.current) {
+            localAudioRef.current.srcObject = null;
+        }
+        if (remoteAudioRef.current) {
+            remoteAudioRef.current.srcObject = null;
+        }
+    
+        // Отправляем сигнал о завершении вызова
+        sendSignal({
+            from: currentUserId,
+            signal: {
+                type: 'endCall'
+            }
+        });
     };
 
     return (
@@ -351,6 +381,7 @@ const VoiceCall = ({ recipientId }) => {
             {isCaller && (
                 <button onClick={startCall}>Start Call</button>
             )}
+            <button onClick={endCall}>End Call</button>
         </div>
     );
 };
