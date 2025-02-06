@@ -358,12 +358,12 @@ const VoiceCall = ({ recipientId }) => {
         }
     
         // Отправляем сигнал о завершении вызова
-        sendSignal({
+        /*sendSignal({
             from: currentUserId,
             signal: {
                 type: 'endCall'
             }
-        });
+        });*/
     };
 
     return (
