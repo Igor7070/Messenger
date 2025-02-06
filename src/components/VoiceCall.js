@@ -61,17 +61,6 @@ const VoiceCall = ({ recipientId }) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
         console.log('callRequest:', JSON.stringify(callRequest, null, 2)); // Улучшенное логирование
         setIncomingCallState(callRequest);
-
-        // Инициализация peerConnectionRef перед обработкой сигнала с STUN и TURN серверов
-        // Определение STUN и TURN серверов
-        /*const iceServers = [
-            { urls: 'stun:stun.l.google.com:19302' }, // STUN сервер
-            {
-                urls: 'turn:localhost:3478', // Укажите IP-адрес вашего TURN сервера
-                username: 'user1',                // Имя пользователя
-                credential: 'password123'         // Пароль
-            }
-        ];*/
         
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             localAudioRef.current.srcObject = stream;
