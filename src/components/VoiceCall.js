@@ -223,7 +223,7 @@ const VoiceCall = ({ recipientId }) => {
         // Обработчик входящих треков
         peerConnectionRef.current.ontrack = (event) => {
             remoteAudioRef.current.srcObject = event.streams[0];
-            console.log('Remote track received:', event.streams[0]);
+            console.log('Remote stream received:', event.streams[0]);
         };
 
         // Добавляем треки в peer connection
@@ -280,7 +280,7 @@ const VoiceCall = ({ recipientId }) => {
                     if (peerConnectionRef.current && !isCaller) { // Проверка инициализации
                         console.log('Installing a remote description (offer)...');
                         // Логируем полученное предложение (offer)
-                        console.log('Received offer SDP:', signalMessage.signal);
+                        console.log('Received signal offer:', signalMessage.signal);
                         console.log('Received offer SDP:', signalMessage.signal.sdp);
                         
                         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
@@ -289,7 +289,7 @@ const VoiceCall = ({ recipientId }) => {
                         console.log('Sending answer:', answer);
                         sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
                     } else {
-                        console.error('peerConnectionRef.current is not initialized.');
+                        console.log('peerConnectionRef.current is not initialized or signal received by caller.');
                     }
                 } catch (error) {
                     console.error('Error handling offer:', error);
