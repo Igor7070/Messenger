@@ -92,7 +92,7 @@ const VoiceCall = ({ recipientId }) => {
         });
         
         // Шаг 2: Установка обработчика события onicecandidate
-        peerConnectionRef.current.onicecandidate = (event) => {
+        /*peerConnectionRef.current.onicecandidate = (event) => {
             console.log('onicecandidate event fired:', event);
             if (event.candidate) {
                 console.log('ICE candidate generated:', event.candidate);
@@ -111,7 +111,7 @@ const VoiceCall = ({ recipientId }) => {
             } else {
                 console.log('No more ICE candidates.');
             }
-        };
+        };*/
     };
 
     const acceptCall = async () => {
@@ -288,6 +288,27 @@ const VoiceCall = ({ recipientId }) => {
                         await peerConnectionRef.current.setLocalDescription(answer);
                         console.log('Sending answer:', answer);
                         sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
+                        
+                        peerConnectionRef.current.onicecandidate = (event) => {
+                            console.log('onicecandidate event fired:', event);
+                            if (event.candidate) {
+                                console.log('ICE candidate generated:', event.candidate);
+                                sendSignal({
+                                    from: currentUserId,
+                                    signal: {
+                                        type: 'candidate',
+                                        sdp: "", // Если требуется, можно оставить пустым
+                                        iceCandidate: {
+                                            candidate: event.candidate.candidate,
+                                            sdpMid: event.candidate.sdpMid,
+                                            sdpMLineIndex: event.candidate.sdpMLineIndex.toString()
+                                        }
+                                    }
+                                });
+                            } else {
+                                console.log('No more ICE candidates.');
+                            }
+                        };
                     } else {
                         console.log('peerConnectionRef.current is not initialized or signal received by caller.');
                     }
