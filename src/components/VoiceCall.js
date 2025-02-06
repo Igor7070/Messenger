@@ -250,30 +250,6 @@ const VoiceCall = ({ recipientId }) => {
                         await peerConnectionRef.current.setLocalDescription(answer);
                         console.log('Sending answer:', answer);
                         sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
-                        
-                        // Установка обработчика ICE-кандидатов с паузой в одну секунду
-                        setTimeout(() => {
-                            peerConnectionRef.current.onicecandidate = (event) => {
-                                console.log('onicecandidate event fired:', event);
-                                if (event.candidate) {
-                                    console.log('ICE candidate generated:', event.candidate);
-                                    sendSignal({
-                                        from: currentUserId,
-                                        signal: {
-                                            type: 'candidate',
-                                            sdp: "", // Если требуется, можно оставить пустым
-                                            iceCandidate: {
-                                                candidate: event.candidate.candidate,
-                                                sdpMid: event.candidate.sdpMid,
-                                                sdpMLineIndex: event.candidate.sdpMLineIndex.toString()
-                                            }
-                                        }
-                                    });
-                                } else {
-                                    console.log('No more ICE candidates.');
-                                }
-                            };
-                        }, 1000); // Пауза в 1000 миллисекунд (1 секунда)
                     } else {
                         console.log('peerConnectionRef.current is not initialized or signal received by caller.');
                     }
@@ -289,29 +265,7 @@ const VoiceCall = ({ recipientId }) => {
                         console.log('Installing a remote description (answer)...');
                         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
                         
-                        // Обработчик ICE кандидатов
-                        setTimeout(() => {
-                            peerConnectionRef.current.onicecandidate = (event) => {
-                                console.log('onicecandidate event fired:', event);
-                                if (event.candidate) {
-                                    console.log('ICE candidate generated:', event.candidate);
-                                    sendSignal({
-                                        from: currentUserId,
-                                        signal: {
-                                            type: 'candidate',
-                                            sdp: "", // Если требуется, можно оставить пустым
-                                            iceCandidate: {
-                                                candidate: event.candidate.candidate,
-                                                sdpMid: event.candidate.sdpMid,
-                                                sdpMLineIndex: event.candidate.sdpMLineIndex.toString()
-                                            }
-                                        }
-                                    });
-                                } else {
-                                    console.log('No more ICE candidates.');
-                                }
-                            };
-                        }, 1000); // Пауза в 1000 миллисекунд (1 секунда)
+                        sendSignal({ from: currentUserId, signal: { type: 'ready', sdp: "" } });
                     } catch (error) {
                         console.error('Error setting remote description:', error);
                     }
@@ -334,8 +288,29 @@ const VoiceCall = ({ recipientId }) => {
                     console.error('ICE candidate is missing required fields:', signalMessage.signal);
                 }
             } else if (signalMessage.signal.type === 'ready') {
-                console.log('Received ready signal from the other party.');
-                // Если звонящий инициировал вызов, начинаем его
+                console.log('Received ready signal.');
+                // Обработчик ICE кандидатов
+                peerConnectionRef.current.onicecandidate = (event) => {
+                    console.log('onicecandidate event fired');
+                    if (event.candidate) {
+                        console.log('ICE candidate generated:', event.candidate);
+                        sendSignal({
+                            from: currentUserId,
+                            signal: {
+                                type: 'candidate',
+                                sdp: "", // Если требуется, можно оставить пустым
+                                iceCandidate: {
+                                    candidate: event.candidate.candidate,
+                                    sdpMid: event.candidate.sdpMid,
+                                    sdpMLineIndex: event.candidate.sdpMLineIndex.toString() // Преобразуем в строку, если необходимо
+                                }
+                            }
+                        });
+                    } else {
+                        console.log('All ICE candidates have been generated.');
+                    }
+                };
+                
             } else if (signalMessage.signal.type === 'endCall') {
                 console.log('Call ended by the other party.');
                 endCall(); // Завершение локального вызова, если это необходимо
