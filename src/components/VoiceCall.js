@@ -335,7 +335,7 @@ const VoiceCall = ({ recipientId }) => {
                         } catch (error) {
                             console.error('Error adding ICE candidate:', error);
                         }
-                    }, 12); // Задержка в 5 миллисекунд
+                    }, 3); // Задержка в 5 миллисекунд
                 } else {
                     console.error('ICE candidate is missing required fields:', signalMessage.signal);
                 }
