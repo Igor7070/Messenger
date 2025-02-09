@@ -68,6 +68,9 @@ const VoiceCall = ({ recipientId }) => {
 
         const iceServers = [
             {
+                urls: 'stun:stun.l.google.com:19302'
+            },
+            {
                 urls: 'turn:16.170.203.109:3478?transport=tcp',
                 username: 'username2', 
                 credential: 'key2'     
@@ -208,6 +211,9 @@ const VoiceCall = ({ recipientId }) => {
     
         // Определяем STUN и TURN серверы
         const iceServers = [
+            {
+                urls: 'stun:stun.l.google.com:19302'
+            },
             {
                 urls: 'turn:16.170.203.109:3478?transport=tcp',
                 username: 'username1', 
