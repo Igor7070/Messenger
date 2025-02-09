@@ -112,6 +112,8 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('No more ICE candidates.');
             }
         };
+
+        sendSignal({ from: currentUserId, signal: { type: 'ready', sdp: "" } });
     };
 
     const acceptCall = async () => {
@@ -331,9 +333,12 @@ const VoiceCall = ({ recipientId }) => {
                 } else {
                     console.error('ICE candidate is missing required fields:', signalMessage.signal);
                 }
-            } else if (signalMessage.signal.type === 'ready') {
+            } else if (signalMessage.signal.type === 'ready' && isCaller) {
                 console.log('Received ready signal from the other party.');
-                // Если звонящий инициировал вызов, начинаем его
+                // Если принимающий принял вызов, вызываем startCall
+                setTimeout(() => {
+                    startCall();
+                }, 1000);
             } else if (signalMessage.signal.type === 'endCall') {
                 console.log('Call ended by the other party.');
                 endCall(); // Завершение локального вызова, если это необходимо
