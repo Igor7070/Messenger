@@ -3,16 +3,16 @@
     top: 20%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: white;
+    background-color:	#D8BFD8; /* Светло-голубой фон для окна вызова */
     border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     padding: 20px;
     text-align: center;
     z-index: 1000; /* Обеспечивает, что окно поверх других элементов */
 }
 
 h2 {
-    margin: 0 0 20px;
+    margin: 0 0 70px; /* Увеличен отступ снизу */
     font-family: Arial, sans-serif;
     color: #333;
 }
@@ -23,7 +23,7 @@ h2 {
 }
 
 .accept-button, .reject-button {
-    padding: 10px 20px;
+    padding: 12px 25px; /* Увеличены размеры кнопок */
     border: none;
     border-radius: 5px;
     font-size: 16px;
@@ -41,9 +41,9 @@ h2 {
 }
 
 .accept-button:hover {
-    background-color: #45a049; /* Более темный зеленый при наведении */
+    background-color: #45a049; /* Темный зеленый при наведении */
 }
 
 .reject-button:hover {
-    background-color: #e53935; /* Более темный красный при наведении */
+    background-color: #e53935; /* Темный красный при наведении */
 }
