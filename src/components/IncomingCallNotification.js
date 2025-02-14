@@ -37,3 +37,5 @@ const IncomingCallNotification = ({ callerId, onAccept, onReject }) => {
         </div>
     );
 };
+
+export default IncomingCallNotification;
