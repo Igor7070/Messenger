@@ -162,10 +162,6 @@ const UserProfile = () => {
             callerId: currentUserId,
             recipientId: userId,
             roomId: roomId
-            /*signal: {
-                type: 'offer', // Тип сигнала
-                sdp: null // SDP-строка
-            }*/
         };
     
         try {
@@ -178,13 +174,17 @@ const UserProfile = () => {
             });
     
             if (response.ok) {
+                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}`);
+                const callerData = await callerResponse.json();
+
                 toast.success(`Calling ${user.username}...`);
-                //navigate(`/voice-call/${roomId}`); // Переход на страницу звонка с roomId
                 navigate(`/voice-call/${roomId}`, { 
                     state: { 
-                        incomingCall: callRequest, // Передаем callRequest как incomingCall
+                        incomingCall: callRequest, 
                         isCaller: true, 
-                        currentUserId: currentUserId 
+                        currentUserId: currentUserId,
+                        callerName: callerData.username, // Передаем имя звонящего
+                        recipientName: user.username // Передаем имя получателя
                     } 
                 });
             } else {
