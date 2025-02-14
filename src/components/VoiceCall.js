@@ -314,9 +314,7 @@ const VoiceCall = ({ recipientId }) => {
             <h2>Calling User ID: {recipientId}</h2>
             <audio ref={localAudioRef} autoPlay muted />
             <audio ref={remoteAudioRef} autoPlay />
-            {isCaller && (
-                <button onClick={startCall}>Start Call</button>
-            )}
+            
             <button onClick={endCall}>End Call</button>
         </div>
     );
