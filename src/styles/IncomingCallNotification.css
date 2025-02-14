@@ -1,0 +1,49 @@
+.incoming-call-notification {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+    z-index: 1000; /* Обеспечивает, что окно поверх других элементов */
+}
+
+h2 {
+    margin: 0 0 20px;
+    font-family: Arial, sans-serif;
+    color: #333;
+}
+
+.button-container {
+    display: flex;
+    justify-content: space-around;
+}
+
+.accept-button, .reject-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.accept-button {
+    background-color: #4CAF50; /* Зеленый для кнопки принятия */
+    color: white;
+}
+
+.reject-button {
+    background-color: #f44336; /* Красный для кнопки отклонения */
+    color: white;
+}
+
+.accept-button:hover {
+    background-color: #45a049; /* Более темный зеленый при наведении */
+}
+
+.reject-button:hover {
+    background-color: #e53935; /* Более темный красный при наведении */
+}

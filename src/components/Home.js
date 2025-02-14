@@ -5,7 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Home.css'; 
 import useWebSocket from '../hooks/useWebSocket';
-import IncomingCallNotification from './IncomingCallNotification'; // Импортируйте компонент уведомления
+import IncomingCallNotification from './IncomingCallNotification'; // Импорт компонента уведомления
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 
