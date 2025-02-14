@@ -96,17 +96,38 @@ const Home = () => {
     const acceptCall = () => {
         console.log('Function acceptCall in Home.js working...');
         console.log("Incoming call accepted:", incomingCall); // Логируем входящий вызов
-        console.log("Caller ID:", incomingCall.callerId); // Логируем callerId
-        console.log("Room ID:", incomingCall.roomId); // Логируем roomId
         
-        setIncomingCall(null); // Скрыть уведомление
-        navigate(`/voice-call/${incomingCall.roomId}`, { 
-            state: { 
-                incomingCall, 
-                isCaller: false, 
-                currentUserId: currentUserId // Передаем currentUserId
-            } 
-        });
+        const callerId = incomingCall.callerId;
+        const recipientId = currentUserId; // Получаем ID текущего пользователя
+    
+        // Получаем имена пользователей (можно использовать Promise.all для параллельных запросов)
+        const fetchUserNames = async () => {
+            try {
+                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
+                const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`);
+                
+                if (callerResponse.ok && recipientResponse.ok) {
+                    const callerData = await callerResponse.json();
+                    const recipientData = await recipientResponse.json();
+                    
+                    navigate(`/voice-call/${incomingCall.roomId}`, { 
+                        state: { 
+                            incomingCall, 
+                            isCaller: false, 
+                            currentUserId: currentUserId, 
+                            callerName: callerData.username, // Передаем имя звонящего
+                            recipientName: recipientData.username // Передаем имя получателя
+                        } 
+                    });
+                } else {
+                    console.error('Error fetching user names');
+                }
+            } catch (error) {
+                console.error('Error fetching user names:', error);
+            }
+        };
+    
+        fetchUserNames();
     };
 
     const rejectCall = () => {

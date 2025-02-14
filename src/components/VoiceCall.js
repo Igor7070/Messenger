@@ -7,39 +7,15 @@ import IncomingCallNotification from './IncomingCallNotification';
 const VoiceCall = ({ recipientId }) => {
     const { roomId } = useParams(); 
     const location = useLocation();
-    const { incomingCall, isCaller, currentUserId } = location.state || { incomingCall: null, 
-        isCaller: false, currentUserId: null };
+    const { incomingCall, isCaller, currentUserId, callerName, recipientName } = location.state || 
+    { incomingCall: null, isCaller: false, currentUserId: null, callerName: '', recipientName: '' };
     const localAudioRef = useRef(null);
     const remoteAudioRef = useRef(null);
     const peerConnectionRef = useRef(null);
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
-    const [callerName, setCallerName] = useState('Loading...');
-    const [recipientName, setRecipientName] = useState('Loading...');
 
     useEffect(() => {
-        // Получаем имена пользователей по их ID
-        const fetchUserNames = async () => {
-            try {
-                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${incomingCall.callerId}`);
-                const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${incomingCall.recipientId}`);
-                
-                if (callerResponse.ok && recipientResponse.ok) {
-                    const callerData = await callerResponse.json();
-                    const recipientData = await recipientResponse.json();
-                    
-                    setCallerName(callerData.username);
-                    setRecipientName(recipientData.username);
-                } else {
-                    console.error('Error fetching user names');
-                }
-            } catch (error) {
-                console.error('Error fetching user names:', error);
-            }
-        };
-
-        fetchUserNames();
-
         console.log('isCaller: ' + isCaller);
         console.log("currentUserId:", currentUserId); // Логируем currentUserId
 
@@ -74,7 +50,7 @@ const VoiceCall = ({ recipientId }) => {
             stompClient.current.deactivate();
             console.log('WebSocket connection deactivated.');
         };
-    }, [incomingCall, currentUserId, roomId]);
+    }, [currentUserId, roomId]);
 
     const handleIncomingCall = async (callRequest) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
