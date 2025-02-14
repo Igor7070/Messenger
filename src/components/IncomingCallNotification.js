@@ -1,5 +1,5 @@
 import React from 'react';
-import './IncomingCallNotification.css'; // Добавьте импорт стилей
+import '../styles/IncomingCallNotification.css';
 
 const IncomingCallNotification = ({ callerName, onAccept, onReject }) => {
     return (
