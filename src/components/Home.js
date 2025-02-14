@@ -257,7 +257,7 @@ const Home = () => {
             {/* Уведомление о входящем звонке */}
             {incomingCall && (
                 <IncomingCallNotification 
-                    callerName={incomingCall.callerId} 
+                    callerId={incomingCall.callerId} 
                     onAccept={acceptCall} 
                     onReject={rejectCall} 
                 />
