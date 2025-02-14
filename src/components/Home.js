@@ -98,8 +98,8 @@ const Home = () => {
         console.log("Incoming call accepted:", incomingCall); // Логируем входящий вызов
         console.log("Caller ID:", incomingCall.callerId); // Логируем callerId
         console.log("Room ID:", incomingCall.roomId); // Логируем roomId
+        
         setIncomingCall(null); // Скрыть уведомление
-        //navigate(`/voice-call/${incomingCall.roomId}`); // Перейти на страницу звонка
         navigate(`/voice-call/${incomingCall.roomId}`, { 
             state: { 
                 incomingCall, 
