@@ -23,9 +23,6 @@ const VoiceCall = ({ recipientId }) => {
             try {
                 const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${incomingCall.callerId}`);
                 const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${incomingCall.recipientId}`);
-
-                console.log('incomingCall.callerId: ' + incomingCall.callerId);
-                console.log('incomingCall.recipientId: ' + incomingCall.recipientId);
                 
                 if (callerResponse.ok && recipientResponse.ok) {
                     const callerData = await callerResponse.json();
@@ -33,8 +30,6 @@ const VoiceCall = ({ recipientId }) => {
                     
                     setCallerName(callerData.username);
                     setRecipientName(recipientData.username);
-                    console.log('callerData.username: ' + callerData.username);
-                    console.log('recipientData.username: ' + recipientData.username);
                 } else {
                     console.error('Error fetching user names');
                 }
