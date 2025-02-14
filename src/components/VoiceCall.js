@@ -18,33 +18,28 @@ const VoiceCall = ({ recipientId }) => {
     const [recipientName, setRecipientName] = useState('Loading...');
 
     useEffect(() => {
+        // Получаем имена пользователей по их ID
         const fetchUserNames = async () => {
-            if (incomingCall) {
-                try {
-                    const [callerResponse, recipientResponse] = await Promise.all([
-                        fetch(`https://unlimitedpossibilities12.org/api/users/${incomingCall.callerId}`),
-                        fetch(`https://unlimitedpossibilities12.org/api/users/${incomingCall.recipientId}`)
-                    ]);
-
-                    if (callerResponse.ok && recipientResponse.ok) {
-                        const callerData = await callerResponse.json();
-                        const recipientData = await recipientResponse.json();
-                        
-                        setCallerName(callerData.username);
-                        setRecipientName(recipientData.username);
-                    } else {
-                        console.error('Error fetching user names');
-                    }
-                } catch (error) {
-                    console.error('Error fetching user names:', error);
+            try {
+                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${incomingCall.callerId}`);
+                const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${incomingCall.recipientId}`);
+                
+                if (callerResponse.ok && recipientResponse.ok) {
+                    const callerData = await callerResponse.json();
+                    const recipientData = await recipientResponse.json();
+                    
+                    setCallerName(callerData.username);
+                    setRecipientName(recipientData.username);
+                } else {
+                    console.error('Error fetching user names');
                 }
+            } catch (error) {
+                console.error('Error fetching user names:', error);
             }
         };
 
         fetchUserNames();
-    }, [incomingCall]); // Зависимость только от incomingCall
 
-    useEffect(() => {
         console.log('isCaller: ' + isCaller);
         console.log("currentUserId:", currentUserId); // Логируем currentUserId
 
