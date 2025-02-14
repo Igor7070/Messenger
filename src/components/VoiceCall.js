@@ -37,11 +37,6 @@ const VoiceCall = ({ recipientId }) => {
                     handleSignal(signalMessage);
                 });
 
-                /*if (!isCaller) {
-                    sendSignal({ from: currentUserId, type: 'ready' }); // Отправляем сигнал
-                    console.log('The receiver"s readiness signal has been sent.');
-                }*/
-
                 if (!isCaller && incomingCall) {
                     console.log('Incoming call:', incomingCall);
                     handleIncomingCall(incomingCall);
@@ -117,83 +112,6 @@ const VoiceCall = ({ recipientId }) => {
         };
 
         sendSignal({ from: currentUserId, signal: { type: 'ready', sdp: "" } });
-    };
-
-    const acceptCall = async () => {
-        console.log('Function acceptCall in VoiceCall.js working...');
-        setIncomingCallState(null);
-    
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            localAudioRef.current.srcObject = stream;
-            console.log('Audio stream obtained successfully.');
-
-            // Добавление TURN сервера
-            const iceServers = [
-                {
-                    urls: 'turn:16.170.203.109:3478?transport=tcp',
-                    username: 'username1', 
-                    credential: 'key1'     
-                }
-            ];
-    
-            // Проверка инициализации peerConnectionRef
-            if (!peerConnectionRef.current) {
-                peerConnectionRef.current = new RTCPeerConnection({ iceServers,
-                    iceTransportPolicy: 'all' });
-                console.log('RTCPeerConnection initialized with TURN server: ', peerConnectionRef.current);
-            }
-    
-            stream.getTracks().forEach(track => peerConnectionRef.current.addTrack(track, stream));
-    
-            peerConnectionRef.current.onicecandidate = (event) => {
-                console.log('onicecandidate event fired:', event);
-                if (event.candidate) {
-                    console.log('ICE candidate generated:', event.candidate);
-                    sendSignal({
-                        from: currentUserId,
-                        signal: {
-                            type: 'candidate',
-                            sdp: "", // Если требуется, можете оставить пустым
-                            iceCandidate: {
-                                candidate: event.candidate.candidate,
-                                sdpMid: event.candidate.sdpMid,
-                                sdpMLineIndex: event.candidate.sdpMLineIndex.toString() // Преобразуем в строку, если необходимо
-                            }
-                        }
-                    });
-                } else {
-                    console.log('No more ICE candidates.');
-                }
-            };
-    
-            peerConnectionRef.current.ontrack = (event) => {
-                remoteAudioRef.current.srcObject = event.streams[0];
-                console.log('Remote stream received:', event.streams[0]);
-            };
-
-            console.log('incomingCallState: ' + incomingCallState);
-            console.log('peerConnectionRef.current: ' + peerConnectionRef.current);
-    
-            // Проверка состояния перед установкой удалённого описания
-            if (incomingCallState && peerConnectionRef.current) {
-                console.log('Setting remote description for incoming call...');
-
-                if (!peerConnectionRef.current.remoteDescription) {
-                    console.log('Installing a remote description...');
-                    await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingCallState.signal));
-                    const answer = await peerConnectionRef.current.createAnswer();
-                    await peerConnectionRef.current.setLocalDescription(answer);
-                    sendSignal({ from: currentUserId, signal: answer });
-                } else {
-                    console.warn('Remote description has already been set.');
-                }
-            } else {
-                console.error('No valid signal found in incomingCallState or peerConnectionRef.current is not initialized.');
-            }
-        } catch (error) {
-            console.error('Error in acceptCall:', error);
-        }
     };
 
     const rejectCall = () => {
@@ -396,13 +314,6 @@ const VoiceCall = ({ recipientId }) => {
             <h2>Calling User ID: {recipientId}</h2>
             <audio ref={localAudioRef} autoPlay muted />
             <audio ref={remoteAudioRef} autoPlay />
-            {!isCaller && incomingCallState && (
-                <IncomingCallNotification 
-                    callerName={incomingCallState.callerId} 
-                    onAccept={acceptCall} 
-                    onReject={rejectCall} 
-                />
-            )}
             {isCaller && (
                 <button onClick={startCall}>Start Call</button>
             )}
