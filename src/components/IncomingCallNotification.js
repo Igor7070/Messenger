@@ -6,7 +6,7 @@ const IncomingCallNotification = ({ callerId, onAccept, onReject }) => {
 
     const getUserNameById = async (userId) => {
         try {
-            const response = await fetch(`/api/users/${userId}`);
+            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${userId}`);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
