@@ -343,7 +343,7 @@ const VoiceCall = ({ recipientId }) => {
         });*/
 
         // Перенаправляем пользователя на компонент Home
-        navigate('/home');
+        navigate('/');
     };
 
     return (
