@@ -15,7 +15,6 @@ const VoiceCall = ({ recipientId }) => {
     const notify = useNotification(); // Используем контекст уведомлений
     const { roomId } = useParams(); 
     const location = useLocation();
-    const [userName, setUserName] = useState(null); // Состояние для имени пользователя
     const { incomingCall, isCaller, currentUserId, callerName, recipientName } = location.state || 
     { incomingCall: null, isCaller: false, currentUserId: null, callerName: '', recipientName: '' };
     const localAudioRef = useRef(null);
@@ -23,6 +22,9 @@ const VoiceCall = ({ recipientId }) => {
     const peerConnectionRef = useRef(null);
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
+
+    // Объявляем общую переменную для имени пользователя
+    let userName = null;
 
     // Состояние для данных графика
     const [chartData, setChartData] = useState({
@@ -40,14 +42,6 @@ const VoiceCall = ({ recipientId }) => {
     });
 
     useEffect(() => {
-        if (userName) {
-            console.log('Updated userName:', userName);
-        }
-    }, [userName]); // Зависимость на userName
-
-    useEffect(() => {
-        console.log('callerName: ' + callerName);
-        console.log('recipientName: ' + recipientName);
         console.log('isCaller: ' + isCaller);
         console.log("currentUserId:", currentUserId); // Логируем currentUserId
 
@@ -99,7 +93,7 @@ const VoiceCall = ({ recipientId }) => {
 
     const handleIncomingCall = async (callRequest) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
-        setUserName(callerName);
+        userName = callerName;
         console.log('userName: ' + userName);
         console.log('callRequest:', JSON.stringify(callRequest, null, 2)); // Улучшенное логирование
         setIncomingCallState(callRequest);
@@ -168,7 +162,7 @@ const VoiceCall = ({ recipientId }) => {
 
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
-        setUserName(recipientName);
+        userName = recipientName;
         console.log('userName: ' + userName);
     
         // Получаем доступ к аудиопотоку
