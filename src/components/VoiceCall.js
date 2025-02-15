@@ -15,6 +15,7 @@ const VoiceCall = ({ recipientId }) => {
     const notify = useNotification(); // Используем контекст уведомлений
     const { roomId } = useParams(); 
     const location = useLocation();
+    const [userName, setUserName] = useState(null); // Состояние для имени пользователя
     const { incomingCall, isCaller, currentUserId, callerName, recipientName } = location.state || 
     { incomingCall: null, isCaller: false, currentUserId: null, callerName: '', recipientName: '' };
     const localAudioRef = useRef(null);
@@ -39,6 +40,21 @@ const VoiceCall = ({ recipientId }) => {
     });
 
     useEffect(() => {
+        const fetchUserName = async () => {
+            try {
+                const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}`);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const user = await response.json();
+                setUserName(user.name); // Устанавливаем имя пользователя в состояние
+            } catch (error) {
+                console.error('Error fetching user name:', error);
+            }
+        };
+
+        fetchUserName(); // Получаем имя пользователя при монтировании компонента
+
         console.log('isCaller: ' + isCaller);
         console.log("currentUserId:", currentUserId); // Логируем currentUserId
 
@@ -87,20 +103,6 @@ const VoiceCall = ({ recipientId }) => {
             clearInterval(interval); // Убираем интервал при размонтировании компонента
         };
     }, [currentUserId, roomId]);
-
-    const fetchUserNameById = async (userId) => {
-        try {
-            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${userId}`); // Измените на ваш URL
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            const user = await response.json();
-            return user.name; // Предполагаем, что имя пользователя хранится в поле 'name'
-        } catch (error) {
-            console.error('Error fetching user name:', error);
-            return null; // Возвращаем null в случае ошибки
-        }
-    };
 
     const handleIncomingCall = async (callRequest) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
@@ -315,7 +317,6 @@ const VoiceCall = ({ recipientId }) => {
                 }, 1000);
             } else if (signalMessage.signal.type === 'endCall') {
                 console.log('Call ended by the other party.');
-                const userName = await fetchUserNameById(signalMessage.from); // Получение имя пользователя
                 if (userName) {
                     notify(`${userName} прервал разговор.`); // Уведомление для принимающего
                 } else {
