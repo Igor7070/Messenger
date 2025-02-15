@@ -23,20 +23,6 @@ const VoiceCall = ({ recipientId }) => {
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
 
-    const fetchUserNameById = async (userId) => {
-        try {
-            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${userId}`); // Измените на ваш URL
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            const user = await response.json();
-            return user.name; // Предполагаем, что имя пользователя хранится в поле 'name'
-        } catch (error) {
-            console.error('Error fetching user name:', error);
-            return null; // Возвращаем null в случае ошибки
-        }
-    };
-
     // Состояние для данных графика
     const [chartData, setChartData] = useState({
         labels: [],
@@ -101,6 +87,20 @@ const VoiceCall = ({ recipientId }) => {
             clearInterval(interval); // Убираем интервал при размонтировании компонента
         };
     }, [currentUserId, roomId]);
+
+    const fetchUserNameById = async (userId) => {
+        try {
+            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${userId}`); // Измените на ваш URL
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const user = await response.json();
+            return user.name; // Предполагаем, что имя пользователя хранится в поле 'name'
+        } catch (error) {
+            console.error('Error fetching user name:', error);
+            return null; // Возвращаем null в случае ошибки
+        }
+    };
 
     const handleIncomingCall = async (callRequest) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
@@ -319,7 +319,7 @@ const VoiceCall = ({ recipientId }) => {
                 if (userName) {
                     notify(`${userName} прервал разговор.`); // Уведомление для принимающего
                 } else {
-                    notify(`Пользователь прервал разговор.`); // Если имя не найдено
+                    notify(`Пользователь с ID ${signalMessage.from} прервал разговор.`); // Уведомление с ID если имя не найдено
                 }
                 endCall(); // Завершение локального вызова
             }
