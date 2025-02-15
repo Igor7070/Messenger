@@ -40,6 +40,12 @@ const VoiceCall = ({ recipientId }) => {
     });
 
     useEffect(() => {
+        if (userName) {
+            console.log('Updated userName:', userName);
+        }
+    }, [userName]); // Зависимость на userName
+
+    useEffect(() => {
         console.log('callerName: ' + callerName);
         console.log('recipientName: ' + recipientName);
         console.log('isCaller: ' + isCaller);
