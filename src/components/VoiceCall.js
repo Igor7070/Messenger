@@ -40,6 +40,8 @@ const VoiceCall = ({ recipientId }) => {
     });
 
     useEffect(() => {
+        console.log('callerName: ' + callerName);
+        console.log('recipientName: ' + recipientName);
         console.log('isCaller: ' + isCaller);
         console.log("currentUserId:", currentUserId); // Логируем currentUserId
 
