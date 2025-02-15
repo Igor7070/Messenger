@@ -1,0 +1,25 @@
+.chart-container {
+    width: 80%;
+    height: 300px;
+    margin: 20px 0;
+    background-color: #ffffff; /* Белый фон для графика */
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+}
+
+.end-call-button {
+    padding: 15px 30px;
+    font-size: 18px;
+    color: white;
+    background-color: #e74c3c;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.end-call-button:hover {
+    background-color: #c0392b;
+}

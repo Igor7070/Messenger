@@ -3,6 +3,8 @@ import { useParams, useLocation } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import IncomingCallNotification from './IncomingCallNotification';
+import { Line } from 'react-chartjs-2';
+import '../styles/VoiceCall.css';
 
 const VoiceCall = ({ recipientId }) => {
     const { roomId } = useParams(); 
@@ -14,6 +16,21 @@ const VoiceCall = ({ recipientId }) => {
     const peerConnectionRef = useRef(null);
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
+
+    // Состояние для данных графика
+    const [chartData, setChartData] = useState({
+        labels: [],
+        datasets: [
+            {
+                label: 'Voice Activity',
+                data: [],
+                borderColor: 'rgba(74, 144, 226, 1)',
+                backgroundColor: 'rgba(74, 144, 226, 0.2)',
+                borderWidth: 2,
+                fill: true,
+            },
+        ],
+    });
 
     useEffect(() => {
         console.log('isCaller: ' + isCaller);
@@ -45,10 +62,23 @@ const VoiceCall = ({ recipientId }) => {
         });
         stompClient.current.activate();
 
+        // Пример обновления графика каждую 3 секунду
+        const interval = setInterval(() => {
+            setChartData(prevData => {
+                const newLabels = [...prevData.labels, new Date().toLocaleTimeString()];
+                const newData = [...prevData.datasets[0].data, Math.random() * 100]; // Пример случайных данных
+                return {
+                    labels: newLabels,
+                    datasets: [{ ...prevData.datasets[0], data: newData }],
+                };
+            });
+        }, 1000);
+
         return () => {
             console.log('Deactivating WebSocket connection...');
             stompClient.current.deactivate();
             console.log('WebSocket connection deactivated.');
+            clearInterval(interval); // Убираем интервал при размонтировании компонента
         };
     }, [currentUserId, roomId]);
 
@@ -310,12 +340,35 @@ const VoiceCall = ({ recipientId }) => {
     };
 
     return (
-        <div>
-            <h2>Voice communication with {isCaller ? recipientName : callerName}</h2>
-            <audio ref={localAudioRef} autoPlay muted />
-            <audio ref={remoteAudioRef} autoPlay />
-            
-            <button onClick={endCall}>End Call</button>
+        <div className="voice-call-container">
+            <div className="voice-call-header">
+                <h2 className="voice-call-title">Voice communication with {isCaller ? recipientName : callerName}</h2>
+            </div>
+            <div className="audio-container">
+                <audio ref={localAudioRef} autoPlay muted />
+                <audio ref={remoteAudioRef} autoPlay />
+            </div>
+            <div className="chart-container">
+                <Line data={chartData} options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time',
+                            },
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Activity Level',
+                            },
+                        },
+                    },
+                }}/>
+            </div>
+            <button className="end-call-button" onClick={endCall}>End Call</button>
         </div>
     );
 };
