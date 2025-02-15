@@ -4,7 +4,10 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import IncomingCallNotification from './IncomingCallNotification';
 import { Line } from 'react-chartjs-2';
+import { Chart, registerables } from 'chart.js'; 
 import '../styles/VoiceCall.css';
+
+Chart.register(...registerables); // Регистрация всех необходимых модулей
 
 const VoiceCall = ({ recipientId }) => {
     const { roomId } = useParams(); 
