@@ -94,6 +94,7 @@ const VoiceCall = ({ recipientId }) => {
     const handleIncomingCall = async (callRequest) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
         setUserName(callerName);
+        console.log('userName: ' + userName);
         console.log('callRequest:', JSON.stringify(callRequest, null, 2)); // Улучшенное логирование
         setIncomingCallState(callRequest);
         
@@ -162,6 +163,7 @@ const VoiceCall = ({ recipientId }) => {
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
         setUserName(recipientName);
+        console.log('userName: ' + userName);
     
         // Получаем доступ к аудиопотоку
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
