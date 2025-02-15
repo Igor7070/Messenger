@@ -1,22 +1,24 @@
 .voice-call-container {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    justify-content: flex-start; /* Убираем центрирование по вертикали */
+    align-items: center; /* Центрируем по горизонтали */
+    max-width: 800px; /* Установите максимальную ширину */
+    margin: 20px auto; /* Центрировать по горизонтали с отступом сверху и снизу */
+    padding: 20px; /* Отступы внутри контейнера */
     background-color: #f0f4f8; /* Светлый фон */
-    font-family: 'Arial', sans-serif;
-    color: #333; /* Текст темного цвета */
+    border-radius: 10px; /* Скругленные углы */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Тень */
 }
 
 .chart-container {
-    width: 80%;
-    height: 300px;
-    margin: 20px 0;
+    width: 100%; /* Занимает 100% ширины контейнера */
+    height: 300px; /* Фиксированная высота графика */
+    margin: 20px 0; /* Отступы сверху и снизу */
     background-color: #ffffff; /* Белый фон для графика */
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
+    border-radius: 10px; /* Скругленные углы */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Тень */
+    padding: 20px; /* Внутренние отступы */
 }
 
 .end-call-button {
