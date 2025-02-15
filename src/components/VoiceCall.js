@@ -23,6 +23,20 @@ const VoiceCall = ({ recipientId }) => {
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
 
+    const fetchUserNameById = async (userId) => {
+        try {
+            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${userId}`); // Измените на ваш URL
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const user = await response.json();
+            return user.name; // Предполагаем, что имя пользователя хранится в поле 'name'
+        } catch (error) {
+            console.error('Error fetching user name:', error);
+            return null; // Возвращаем null в случае ошибки
+        }
+    };
+
     // Состояние для данных графика
     const [chartData, setChartData] = useState({
         labels: [],
@@ -301,7 +315,12 @@ const VoiceCall = ({ recipientId }) => {
                 }, 1000);
             } else if (signalMessage.signal.type === 'endCall') {
                 console.log('Call ended by the other party.');
-                notify(`прервал разговор.`);
+                const userName = await fetchUserNameById(signalMessage.from); // Получение имя пользователя
+                if (userName) {
+                    notify(`${userName} прервал разговор.`); // Уведомление для принимающего
+                } else {
+                    notify(`Пользователь прервал разговор.`); // Если имя не найдено
+                }
                 endCall(); // Завершение локального вызова
             }
         } else {
