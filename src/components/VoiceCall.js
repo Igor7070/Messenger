@@ -53,7 +53,7 @@ const VoiceCall = ({ recipientId }) => {
             }
         };
 
-        fetchUserName(); // Получаем имя пользователя при монтировании компонента
+        //fetchUserName();
 
         console.log('isCaller: ' + isCaller);
         console.log("currentUserId:", currentUserId); // Логируем currentUserId
@@ -80,6 +80,8 @@ const VoiceCall = ({ recipientId }) => {
                     console.log('Incoming call:', incomingCall);
                     handleIncomingCall(incomingCall);
                 }
+
+                fetchUserName();
             },
         });
         stompClient.current.activate();
