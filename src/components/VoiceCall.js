@@ -299,7 +299,7 @@ const VoiceCall = ({ recipientId }) => {
                 }, 1000);
             } else if (signalMessage.signal.type === 'endCall') {
                 console.log('Call ended by the other party.');
-                endCall(); // Завершение локального вызова, если это необходимо
+                endCall(); // Завершение локального вызова
             }
         } else {
             console.error('Signal message does not contain signal:', signalMessage);
@@ -335,12 +335,12 @@ const VoiceCall = ({ recipientId }) => {
         }
     
         // Отправляем сигнал о завершении вызова
-        /*sendSignal({
+        sendSignal({
             from: currentUserId,
             signal: {
                 type: 'endCall'
             }
-        });*/
+        });
 
         // Перенаправляем пользователя на компонент Home
         navigate('/');
