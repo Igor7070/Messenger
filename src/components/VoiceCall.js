@@ -5,12 +5,14 @@ import SockJS from 'sockjs-client';
 import IncomingCallNotification from './IncomingCallNotification';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js'; 
+import { useNotification } from './NotificationContext'; // Импортируем контекст
 import '../styles/VoiceCall.css';
 
 Chart.register(...registerables); // Регистрация всех необходимых модулей
 
 const VoiceCall = ({ recipientId }) => {
     const navigate = useNavigate(); // Инициализация navigate
+    const notify = useNotification(); // Используем контекст уведомлений
     const { roomId } = useParams(); 
     const location = useLocation();
     const { incomingCall, isCaller, currentUserId, callerName, recipientName } = location.state || 
@@ -287,18 +289,19 @@ const VoiceCall = ({ recipientId }) => {
                         } catch (error) {
                             console.error('Error adding ICE candidate:', error);
                         }
-                    }, 3); // Задержка в 5 миллисекунд
+                    }, 3); // Задержка в 3 миллисекунды
                 } else {
                     console.error('ICE candidate is missing required fields:', signalMessage.signal);
                 }
             } else if (signalMessage.signal.type === 'ready' && isCaller) {
                 console.log('Received ready signal from the other party.');
-                // Если принимающий принял вызов, вызываем startCall
+                // Если принимающий принял вызов, вызываем startCall у звонящего
                 setTimeout(() => {
                     startCall();
                 }, 1000);
             } else if (signalMessage.signal.type === 'endCall') {
                 console.log('Call ended by the other party.');
+                notify(`прервал разговор.`);
                 endCall(); // Завершение локального вызова
             }
         } else {
