@@ -25,6 +25,7 @@ const VoiceCall = ({ recipientId }) => {
 
     // Объявляем общую переменную для имени пользователя
     let userName = null;
+    let terminationInitiator = false;
 
     // Состояние для данных графика
     const [chartData, setChartData] = useState({
@@ -350,13 +351,17 @@ const VoiceCall = ({ recipientId }) => {
         }
     
         // Отправляем сигнал о завершении вызова
-        sendSignal({
-            from: currentUserId,
-            signal: {
-                type: 'endCall'
-            }
-        });
+        if (!terminationInitiator) {
+            // Выполняем sendSignal только если terminationInitiator равно false
+            sendSignal({
+                from: currentUserId,
+                signal: {
+                    type: 'endCall'
+                }
+            });
+        }
 
+        terminationInitiator = true;
         // Перенаправляем пользователя на компонент Home
         navigate('/');
     };
