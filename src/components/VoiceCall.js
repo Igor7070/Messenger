@@ -315,6 +315,7 @@ const VoiceCall = ({ recipientId }) => {
                 } else {
                     notify(`Пользователь с ID ${signalMessage.from} прервал разговор.`); // Уведомление с ID если имя не найдено
                 }
+                terminationInitiator = true;
                 endCall(); // Завершение локального вызова
             }
         } else {
