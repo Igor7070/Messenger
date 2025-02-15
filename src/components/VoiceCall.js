@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import IncomingCallNotification from './IncomingCallNotification';
@@ -10,6 +10,7 @@ import '../styles/VoiceCall.css';
 Chart.register(...registerables); // Регистрация всех необходимых модулей
 
 const VoiceCall = ({ recipientId }) => {
+    const navigate = useNavigate(); // Инициализация navigate
     const { roomId } = useParams(); 
     const location = useLocation();
     const { incomingCall, isCaller, currentUserId, callerName, recipientName } = location.state || 
@@ -340,6 +341,9 @@ const VoiceCall = ({ recipientId }) => {
                 type: 'endCall'
             }
         });*/
+
+        // Перенаправляем пользователя на компонент Home
+        navigate('/home');
     };
 
     return (
