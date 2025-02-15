@@ -40,22 +40,6 @@ const VoiceCall = ({ recipientId }) => {
     });
 
     useEffect(() => {
-        const fetchUserName = async () => {
-            try {
-                console.log('fetchUserName is working...');
-                const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}`);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const user = await response.json();
-                setUserName(user.name); // Устанавливаем имя пользователя в состояние
-            } catch (error) {
-                console.error('Error fetching user name:', error);
-            }
-        };
-
-        fetchUserName();
-        console.log('userName: ' + userName);
         console.log('isCaller: ' + isCaller);
         console.log("currentUserId:", currentUserId); // Логируем currentUserId
 
@@ -107,6 +91,7 @@ const VoiceCall = ({ recipientId }) => {
 
     const handleIncomingCall = async (callRequest) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
+        setUserName(callerName);
         console.log('callRequest:', JSON.stringify(callRequest, null, 2)); // Улучшенное логирование
         setIncomingCallState(callRequest);
         
@@ -174,6 +159,7 @@ const VoiceCall = ({ recipientId }) => {
 
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
+        setUserName(recipientName);
     
         // Получаем доступ к аудиопотоку
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
