@@ -42,6 +42,7 @@ const VoiceCall = ({ recipientId }) => {
     useEffect(() => {
         const fetchUserName = async () => {
             try {
+                console.log('fetchUserName is working...');
                 const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}`);
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -53,8 +54,8 @@ const VoiceCall = ({ recipientId }) => {
             }
         };
 
-        //fetchUserName();
-
+        fetchUserName();
+        console.log('userName: ' + userName);
         console.log('isCaller: ' + isCaller);
         console.log("currentUserId:", currentUserId); // Логируем currentUserId
 
@@ -80,8 +81,6 @@ const VoiceCall = ({ recipientId }) => {
                     console.log('Incoming call:', incomingCall);
                     handleIncomingCall(incomingCall);
                 }
-
-                fetchUserName();
             },
         });
         stompClient.current.activate();
@@ -319,6 +318,7 @@ const VoiceCall = ({ recipientId }) => {
                 }, 1000);
             } else if (signalMessage.signal.type === 'endCall') {
                 console.log('Call ended by the other party.');
+                console.log('userName: ' + userName);
                 if (userName) {
                     notify(`${userName} прервал разговор.`); // Уведомление для принимающего
                 } else {
