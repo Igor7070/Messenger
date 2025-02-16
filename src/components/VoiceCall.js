@@ -26,6 +26,7 @@ const VoiceCall = ({ recipientId }) => {
     // Объявляем общую переменную для имени пользователя
     let userName = null;
     let terminationInitiator = false;
+    let pressed_the_button = false; // Переменная для отслеживания нажатия кнопки
 
     // Состояние для данных графика
     const [chartData, setChartData] = useState({
@@ -308,12 +309,18 @@ const VoiceCall = ({ recipientId }) => {
                     startCall();
                 }, 1000);
             } else if (signalMessage.signal.type === 'endCall') {
+                // Проверяем, нажата ли кнопка
+                if (pressed_the_button) {
+                    console.log('Button was pressed, ignoring endCall signal.');
+                    return; // Пропускаем выполнение кода, если кнопка нажата
+                }
+
                 console.log('Call ended by the other party.');
                 console.log('userName: ' + userName);
                 if (userName) {
-                    notify(`${userName} прервал разговор.`); // Уведомление для принимающего
+                    notify(`${userName} interrupted the conversation.`); // Уведомление для принимающего
                 } else {
-                    notify(`Пользователь с ID ${signalMessage.from} прервал разговор.`); // Уведомление с ID если имя не найдено
+                    notify(`Пользователь с ID ${signalMessage.from} interrupted the conversation.`); // Уведомление с ID если имя не найдено
                 }
                 terminationInitiator = true;
                 endCall(); // Завершение локального вызова
@@ -367,6 +374,11 @@ const VoiceCall = ({ recipientId }) => {
         navigate('/');
     };
 
+    const handleButtonClick = () => {
+        pressed_the_button = true; // Устанавливаем переменную при нажатии
+        endCall(); // Завершение вызова
+    };
+
     return (
         <div className="voice-call-container">
             <div className="voice-call-header">
@@ -396,7 +408,7 @@ const VoiceCall = ({ recipientId }) => {
                     },
                 }}/>
             </div>
-            <button className="end-call-button" onClick={endCall}>End Call</button>
+            <button className="end-call-button" onClick={handleButtonClick}>End Call</button>
         </div>
     );
 };
