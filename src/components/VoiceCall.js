@@ -309,9 +309,9 @@ const VoiceCall = ({ recipientId }) => {
                     startCall();
                 }, 1000);
             } else if (signalMessage.signal.type === 'endCall') {
-                console.log('pressed_the_button: ' + pressed_the_button);
+                console.log('pressedTheButton: ' + pressedTheButton);
                 // Проверяем, нажата ли кнопка
-                if (pressed_the_button) {
+                if (pressedTheButton) {
                     console.log('Button was pressed, ignoring endCall signal.');
                     return; // Пропускаем выполнение кода, если кнопка нажата
                 }
