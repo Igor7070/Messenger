@@ -311,6 +311,7 @@ const VoiceCall = ({ recipientId }) => {
                 console.log('Call ended by the other party.');
                 console.log('userName: ' + userName);
                 terminationInitiator = true;
+                console.log('terminationInitiator: ' + terminationInitiator);
                 endCall(); // Завершение локального вызова
             }
         } else {
@@ -346,6 +347,7 @@ const VoiceCall = ({ recipientId }) => {
             remoteAudioRef.current.srcObject = null;
         }
     
+        console.log('terminationInitiator: ' + terminationInitiator);
         // Отправляем сигнал о завершении вызова
         if (!terminationInitiator) {
             // Выполняем sendSignal только если terminationInitiator равно false
