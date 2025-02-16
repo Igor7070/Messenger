@@ -22,7 +22,6 @@ const VoiceCall = ({ recipientId }) => {
     const peerConnectionRef = useRef(null);
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
-    //const [pressedTheButton, setPressedTheButton] = useState(false);
 
     // Объявляем общую переменную для имени пользователя
     let userName = null;
@@ -309,13 +308,6 @@ const VoiceCall = ({ recipientId }) => {
                     startCall();
                 }, 1000);
             } else if (signalMessage.signal.type === 'endCall') {
-                //console.log('pressedTheButton: ' + pressedTheButton);
-                // Проверяем, нажата ли кнопка
-                /*if (pressedTheButton) {
-                    console.log('Button was pressed, ignoring endCall signal.');
-                    return; // Пропускаем выполнение кода, если кнопка нажата
-                }*/
-
                 console.log('Call ended by the other party.');
                 console.log('userName: ' + userName);
                 if (userName) {
