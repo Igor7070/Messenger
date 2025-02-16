@@ -311,23 +311,20 @@ const VoiceCall = ({ recipientId }) => {
             } else if (signalMessage.signal.type === 'endCall') {
                 console.log('pressedTheButton: ' + pressedTheButton);
                 // Проверяем, нажата ли кнопка
-                setTimeout(() => {
-                    // Проверяем, нажата ли кнопка
-                    if (pressedTheButton) {
-                        console.log('Button was pressed, ignoring endCall signal.');
-                        return; // Пропускаем выполнение кода, если кнопка нажата
-                    }
-            
-                    console.log('Call ended by the other party.');
-                    console.log('userName: ' + userName);
-                    if (userName) {
-                        notify(`${userName} interrupted the conversation.`); // Уведомление для принимающего
-                    } else {
-                        notify(`Пользователь с ID ${signalMessage.from} interrupted the conversation.`); // Уведомление с ID если имя не найдено
-                    }
-                    terminationInitiator = true;
-                    endCall(); // Завершение локального вызова
-                }, 500);
+                if (pressedTheButton) {
+                    console.log('Button was pressed, ignoring endCall signal.');
+                    return; // Пропускаем выполнение кода, если кнопка нажата
+                }
+
+                console.log('Call ended by the other party.');
+                console.log('userName: ' + userName);
+                if (userName) {
+                    notify(`${userName} interrupted the conversation.`); // Уведомление для принимающего
+                } else {
+                    notify(`Пользователь с ID ${signalMessage.from} interrupted the conversation.`); // Уведомление с ID если имя не найдено
+                }
+                terminationInitiator = true;
+                endCall(); // Завершение локального вызова
             }
         } else {
             console.error('Signal message does not contain signal:', signalMessage);
