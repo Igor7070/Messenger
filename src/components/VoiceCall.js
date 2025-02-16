@@ -22,11 +22,11 @@ const VoiceCall = ({ recipientId }) => {
     const peerConnectionRef = useRef(null);
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
+    const [pressedTheButton, setPressedTheButton] = useState(false);
 
     // Объявляем общую переменную для имени пользователя
     let userName = null;
     let terminationInitiator = false;
-    let pressed_the_button = false; // Переменная для отслеживания нажатия кнопки
 
     // Состояние для данных графика
     const [chartData, setChartData] = useState({
@@ -377,7 +377,7 @@ const VoiceCall = ({ recipientId }) => {
 
     const handleButtonClick = () => {
         console.log('handleButtonClick working...');
-        pressed_the_button = true; // Устанавливаем переменную при нажатии
+        setPressedTheButton(true);
         endCall(); // Завершение вызова
     };
 
