@@ -73,7 +73,7 @@ const VoiceCall = ({ recipientId }) => {
         stompClient.current.activate();
 
         // Пример обновления графика каждую 3 секунду
-        const interval = setInterval(() => {
+        /*const interval = setInterval(() => {
             setChartData(prevData => {
                 const newLabels = [...prevData.labels, new Date().toLocaleTimeString()];
                 const newData = [...prevData.datasets[0].data, Math.random() * 100]; // Пример случайных данных
@@ -82,13 +82,13 @@ const VoiceCall = ({ recipientId }) => {
                     datasets: [{ ...prevData.datasets[0], data: newData }],
                 };
             });
-        }, 1000);
+        }, 1000);*/
 
         return () => {
             console.log('Deactivating WebSocket connection...');
             stompClient.current.deactivate();
             console.log('WebSocket connection deactivated.');
-            clearInterval(interval); // Убираем интервал при размонтировании компонента
+            //clearInterval(interval); // Убираем интервал при размонтировании компонента
         };
     }, [currentUserId, roomId]);
 
