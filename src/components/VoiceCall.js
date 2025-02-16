@@ -368,12 +368,6 @@ const VoiceCall = ({ recipientId }) => {
         navigate('/');
     };
 
-    const handleButtonClick = () => {
-        console.log('handleButtonClick working...');
-        setPressedTheButton(true);
-        endCall(); // Завершение вызова
-    };
-
     return (
         <div className="voice-call-container">
             <div className="voice-call-header">
@@ -403,7 +397,7 @@ const VoiceCall = ({ recipientId }) => {
                     },
                 }}/>
             </div>
-            <button className="end-call-button" onClick={handleButtonClick}>End Call</button>
+            <button className="end-call-button" onClick={endCall}>End Call</button>
         </div>
     );
 };
