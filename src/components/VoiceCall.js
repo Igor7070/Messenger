@@ -3,12 +3,12 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import IncomingCallNotification from './IncomingCallNotification';
-//import { Line } from 'react-chartjs-2';
-//import { Chart, registerables } from 'chart.js'; 
+import { Line } from 'react-chartjs-2';
+import { Chart, registerables } from 'chart.js'; 
 import { useNotification } from './NotificationContext'; // Импортируем контекст
 import '../styles/VoiceCall.css';
 
-//Chart.register(...registerables); // Регистрация всех необходимых модулей
+Chart.register(...registerables); // Регистрация всех необходимых модулей
 
 const VoiceCall = ({ recipientId }) => {
     const navigate = useNavigate(); // Инициализация navigate
@@ -28,7 +28,7 @@ const VoiceCall = ({ recipientId }) => {
     let terminationInitiator = false;
 
     // Состояние для данных графика
-    /*const [chartData, setChartData] = useState({
+    const [chartData, setChartData] = useState({
         labels: [],
         datasets: [
             {
@@ -40,7 +40,7 @@ const VoiceCall = ({ recipientId }) => {
                 fill: true,
             },
         ],
-    });*/
+    });
 
     useEffect(() => {
         console.log('isCaller: ' + isCaller);
@@ -73,7 +73,7 @@ const VoiceCall = ({ recipientId }) => {
         stompClient.current.activate();
 
         // Пример обновления графика каждую 3 секунду
-        /*const interval = setInterval(() => {
+        const interval = setInterval(() => {
             setChartData(prevData => {
                 const newLabels = [...prevData.labels, new Date().toLocaleTimeString()];
                 const newData = [...prevData.datasets[0].data, Math.random() * 100]; // Пример случайных данных
@@ -82,13 +82,13 @@ const VoiceCall = ({ recipientId }) => {
                     datasets: [{ ...prevData.datasets[0], data: newData }],
                 };
             });
-        }, 1000);*/
+        }, 1000);
 
         return () => {
             console.log('Deactivating WebSocket connection...');
             stompClient.current.deactivate();
             console.log('WebSocket connection deactivated.');
-            //clearInterval(interval); // Убираем интервал при размонтировании компонента
+            clearInterval(interval); // Убираем интервал при размонтировании компонента
         };
     }, [currentUserId, roomId]);
 
@@ -376,7 +376,26 @@ const VoiceCall = ({ recipientId }) => {
                 <audio ref={localAudioRef} autoPlay muted />
                 <audio ref={remoteAudioRef} autoPlay />
             </div>
-            
+            <div className="chart-container">
+                <Line data={chartData} options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time',
+                            },
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Activity Level',
+                            },
+                        },
+                    },
+                }}/>
+            </div>
             <button className="end-call-button" onClick={endCall}>End Call</button>
         </div>
     );
