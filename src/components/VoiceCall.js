@@ -359,7 +359,7 @@ const VoiceCall = ({ recipientId }) => {
             if (userName) {
                 notify(`${userName} interrupted the conversation.`); // Уведомление для принимающего
             } else {
-                notify(`Пользователь с ID ${signalMessage.from} interrupted the conversation.`); // Уведомление с ID если имя не найдено
+                notify(`Companion interrupted the conversation.`); // Уведомление с ID если имя не найдено
             }
         }
 
