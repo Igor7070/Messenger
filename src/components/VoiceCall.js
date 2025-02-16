@@ -1,10 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import IncomingCallNotification from './IncomingCallNotification';
+import { Line } from 'react-chartjs-2';
+import { Chart, registerables } from 'chart.js'; 
+import { useNotification } from './NotificationContext'; // Импортируем контекст
+import '../styles/VoiceCall.css';
+
+Chart.register(...registerables); // Регистрация всех необходимых модулей
 
 const VoiceCall = ({ recipientId }) => {
+    const navigate = useNavigate(); // Инициализация navigate
+    const notify = useNotification(); // Используем контекст уведомлений
     const { roomId } = useParams(); 
     const location = useLocation();
     const { incomingCall, isCaller, currentUserId, callerName, recipientName } = location.state || 
@@ -14,6 +22,25 @@ const VoiceCall = ({ recipientId }) => {
     const peerConnectionRef = useRef(null);
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
+
+    // Объявляем общую переменную для имени пользователя
+    let userName = null;
+    let terminationInitiator = false;
+
+    // Состояние для данных графика
+    const [chartData, setChartData] = useState({
+        labels: [],
+        datasets: [
+            {
+                label: 'Voice Activity',
+                data: [],
+                borderColor: 'rgba(74, 144, 226, 1)',
+                backgroundColor: 'rgba(74, 144, 226, 0.2)',
+                borderWidth: 2,
+                fill: true,
+            },
+        ],
+    });
 
     useEffect(() => {
         console.log('isCaller: ' + isCaller);
@@ -45,15 +72,30 @@ const VoiceCall = ({ recipientId }) => {
         });
         stompClient.current.activate();
 
+        // Пример обновления графика каждую 3 секунду
+        const interval = setInterval(() => {
+            setChartData(prevData => {
+                const newLabels = [...prevData.labels, new Date().toLocaleTimeString()];
+                const newData = [...prevData.datasets[0].data, Math.random() * 100]; // Пример случайных данных
+                return {
+                    labels: newLabels,
+                    datasets: [{ ...prevData.datasets[0], data: newData }],
+                };
+            });
+        }, 1000);
+
         return () => {
             console.log('Deactivating WebSocket connection...');
             stompClient.current.deactivate();
             console.log('WebSocket connection deactivated.');
+            clearInterval(interval); // Убираем интервал при размонтировании компонента
         };
     }, [currentUserId, roomId]);
 
     const handleIncomingCall = async (callRequest) => {
         console.log('Function handleIncomingCall in VoiceCall.js working...');
+        userName = callerName;
+        console.log('userName: ' + userName);
         console.log('callRequest:', JSON.stringify(callRequest, null, 2)); // Улучшенное логирование
         setIncomingCallState(callRequest);
         
@@ -121,6 +163,8 @@ const VoiceCall = ({ recipientId }) => {
 
     const startCall = async () => {
         console.log('Function startCall in Home.js working...');
+        userName = recipientName;
+        console.log('userName: ' + userName);
     
         // Получаем доступ к аудиопотоку
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -253,19 +297,26 @@ const VoiceCall = ({ recipientId }) => {
                         } catch (error) {
                             console.error('Error adding ICE candidate:', error);
                         }
-                    }, 3); // Задержка в 5 миллисекунд
+                    }, 3); // Задержка в 3 миллисекунды
                 } else {
                     console.error('ICE candidate is missing required fields:', signalMessage.signal);
                 }
             } else if (signalMessage.signal.type === 'ready' && isCaller) {
                 console.log('Received ready signal from the other party.');
-                // Если принимающий принял вызов, вызываем startCall
+                // Если принимающий принял вызов, вызываем startCall у звонящего
                 setTimeout(() => {
                     startCall();
                 }, 1000);
             } else if (signalMessage.signal.type === 'endCall') {
                 console.log('Call ended by the other party.');
-                endCall(); // Завершение локального вызова, если это необходимо
+                console.log('userName: ' + userName);
+                if (userName) {
+                    notify(`${userName} прервал разговор.`); // Уведомление для принимающего
+                } else {
+                    notify(`Пользователь с ID ${signalMessage.from} прервал разговор.`); // Уведомление с ID если имя не найдено
+                }
+                terminationInitiator = true;
+                endCall(); // Завершение локального вызова
             }
         } else {
             console.error('Signal message does not contain signal:', signalMessage);
@@ -301,21 +352,51 @@ const VoiceCall = ({ recipientId }) => {
         }
     
         // Отправляем сигнал о завершении вызова
-        /*sendSignal({
-            from: currentUserId,
-            signal: {
-                type: 'endCall'
-            }
-        });*/
+        if (!terminationInitiator) {
+            // Выполняем sendSignal только если terminationInitiator равно false
+            sendSignal({
+                from: currentUserId,
+                signal: {
+                    type: 'endCall'
+                }
+            });
+        }
+
+        terminationInitiator = true;
+        // Перенаправляем пользователя на компонент Home
+        navigate('/');
     };
 
     return (
-        <div>
-            <h2>Voice communication with {isCaller ? recipientName : callerName}</h2>
-            <audio ref={localAudioRef} autoPlay muted />
-            <audio ref={remoteAudioRef} autoPlay />
-            
-            <button onClick={endCall}>End Call</button>
+        <div className="voice-call-container">
+            <div className="voice-call-header">
+                <h2 className="voice-call-title">Voice communication with {isCaller ? recipientName : callerName}</h2>
+            </div>
+            <div className="audio-container">
+                <audio ref={localAudioRef} autoPlay muted />
+                <audio ref={remoteAudioRef} autoPlay />
+            </div>
+            <div className="chart-container">
+                <Line data={chartData} options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time',
+                            },
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Activity Level',
+                            },
+                        },
+                    },
+                }}/>
+            </div>
+            <button className="end-call-button" onClick={endCall}>End Call</button>
         </div>
     );
 };
