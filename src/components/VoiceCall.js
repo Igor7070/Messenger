@@ -22,7 +22,7 @@ const VoiceCall = ({ recipientId }) => {
     const peerConnectionRef = useRef(null);
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
-    const [pressedTheButton, setPressedTheButton] = useState(false);
+    //const [pressedTheButton, setPressedTheButton] = useState(false);
 
     // Объявляем общую переменную для имени пользователя
     let userName = null;
@@ -311,23 +311,20 @@ const VoiceCall = ({ recipientId }) => {
             } else if (signalMessage.signal.type === 'endCall') {
                 console.log('pressedTheButton: ' + pressedTheButton);
                 // Проверяем, нажата ли кнопка
-                setTimeout(() => {
-                    // Проверяем, нажата ли кнопка
-                    if (pressedTheButton) {
-                        console.log('Button was pressed, ignoring endCall signal.');
-                        return; // Пропускаем выполнение кода, если кнопка нажата
-                    }
-            
-                    console.log('Call ended by the other party.');
-                    console.log('userName: ' + userName);
-                    if (userName) {
-                        notify(`${userName} interrupted the conversation.`); // Уведомление для принимающего
-                    } else {
-                        notify(`Пользователь с ID ${signalMessage.from} interrupted the conversation.`); // Уведомление с ID если имя не найдено
-                    }
-                    terminationInitiator = true;
-                    endCall(); // Завершение локального вызова
-                }, 1000);
+                if (pressedTheButton) {
+                    console.log('Button was pressed, ignoring endCall signal.');
+                    return; // Пропускаем выполнение кода, если кнопка нажата
+                }
+
+                console.log('Call ended by the other party.');
+                console.log('userName: ' + userName);
+                if (userName) {
+                    notify(`${userName} interrupted the conversation.`); // Уведомление для принимающего
+                } else {
+                    notify(`Пользователь с ID ${signalMessage.from} interrupted the conversation.`); // Уведомление с ID если имя не найдено
+                }
+                terminationInitiator = true;
+                endCall(); // Завершение локального вызова
             }
         } else {
             console.error('Signal message does not contain signal:', signalMessage);
@@ -361,6 +358,11 @@ const VoiceCall = ({ recipientId }) => {
         if (remoteAudioRef.current) {
             remoteAudioRef.current.srcObject = null;
         }
+
+        if (stompClient.current) {
+            stompClient.current.deactivate();
+            console.log('WebSocket connection deactivated in endCall.');
+        }
     
         // Отправляем сигнал о завершении вызова
         if (!terminationInitiator) {
@@ -373,15 +375,8 @@ const VoiceCall = ({ recipientId }) => {
             });
         }
 
-        terminationInitiator = true;
         // Перенаправляем пользователя на компонент Home
         navigate('/');
-    };
-
-    const handleButtonClick = () => {
-        console.log('handleButtonClick working...');
-        setPressedTheButton(true);
-        endCall(); // Завершение вызова
     };
 
     return (
@@ -413,7 +408,7 @@ const VoiceCall = ({ recipientId }) => {
                     },
                 }}/>
             </div>
-            <button className="end-call-button" onClick={handleButtonClick}>End Call</button>
+            <button className="end-call-button" onClick={endCall}>End Call</button>
         </div>
     );
 };
