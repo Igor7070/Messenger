@@ -148,7 +148,24 @@ const Home = () => {
 
     const rejectCall = () => {
         setIncomingCall(null); // Скрыть уведомление
-        toast.info(`Call from ${incomingCall.callerId} rejected.`);
+        sendSignal({
+            from: currentUserId,
+            signal: {
+                type: 'rejectCall'
+            }
+        });
+        //toast.info(`Call from ${incomingCall.callerId} rejected.`);
+    };
+
+    const sendSignal = (signalMessage) => {
+        console.log('Function sendSignal in VoiceCall.js working...');
+        console.log("Sending signal:", JSON.stringify(signalMessage, null, 2));
+        const roomId = incomingCall.roomId;
+        stompClient.current.publish({
+            destination: `/app/signal/${roomId}`, 
+            body: JSON.stringify(signalMessage),
+        });
+        console.log('Signal sent successfully.');
     };
 
     const loginUser = async () => {

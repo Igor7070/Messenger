@@ -317,6 +317,9 @@ const VoiceCall = ({ recipientId }) => {
                 }
                 terminationInitiator = true;
                 endCall(); // Завершение локального вызова
+            } else if (signalMessage.signal.type === 'rejectCall' && isCaller) {
+                notify(`${recipientName} declined call.`);
+                endCall();
             }
         } else {
             console.error('Signal message does not contain signal:', signalMessage);
