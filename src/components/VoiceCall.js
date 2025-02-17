@@ -318,8 +318,10 @@ const VoiceCall = ({ recipientId }) => {
                 terminationInitiator = true;
                 endCall(); // Завершение локального вызова
             } else if (signalMessage.signal.type === 'rejectCall' && isCaller) {
-                notify(`${recipientName} declined call.`);
+                notify(`${recipientName} rejected the call.`);
                 endCall();
+            } else if (signalMessage.signal.type === 'acceptCall' && isCaller) {
+                notify(`${recipientName} accepted the call.`);
             }
         } else {
             console.error('Signal message does not contain signal:', signalMessage);

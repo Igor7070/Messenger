@@ -143,6 +143,13 @@ const Home = () => {
                 console.error('Error fetching user names:', error);
             }
         };
+
+        sendSignal({
+            from: currentUserId,
+            signal: {
+                type: 'acceptCall'
+            }
+        });
     
         fetchUserNames();
     };
