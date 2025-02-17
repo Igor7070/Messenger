@@ -126,6 +126,13 @@ const Home = () => {
                 if (callerResponse.ok && recipientResponse.ok) {
                     const callerData = await callerResponse.json();
                     const recipientData = await recipientResponse.json();
+
+                    sendSignal({
+                        from: currentUserId,
+                        signal: {
+                            type: 'acceptCall'
+                        }
+                    });
                     
                     navigate(`/voice-call/${incomingCall.roomId}`, { 
                         state: { 
@@ -143,13 +150,6 @@ const Home = () => {
                 console.error('Error fetching user names:', error);
             }
         };
-
-        sendSignal({
-            from: currentUserId,
-            signal: {
-                type: 'acceptCall'
-            }
-        });
     
         fetchUserNames();
     };
