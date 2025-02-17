@@ -25,6 +25,7 @@ const Home = () => {
     const [loginPassword, setLoginPassword] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
+    const stompClient = useRef(null); // Используем useRef для stompClient
     const navigate = useNavigate();
 
     // Используем хук для подключения к WebSocket
@@ -70,7 +71,7 @@ const Home = () => {
 
         // Подключение к WebSocket
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
-        const stompClient = new Client({
+        stompClient.current = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
                 console.log('Connected to WebSocket in Home.js');
@@ -81,10 +82,10 @@ const Home = () => {
                 });
             },
         });
-        stompClient.activate();
+        stompClient.current.activate();
 
         return () => {
-            stompClient.deactivate();
+            stompClient.current.deactivate();
         };
     }, [currentUserId]);
 
