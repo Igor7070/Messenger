@@ -6,6 +6,7 @@ import IncomingCallNotification from './IncomingCallNotification';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js'; 
 import { useNotification } from './NotificationContext'; // Импортируем контекст
+import { ToastContainer, toast } from 'react-toastify';
 import '../styles/VoiceCall.css';
 
 Chart.register(...registerables); // Регистрация всех необходимых модулей
@@ -321,7 +322,8 @@ const VoiceCall = ({ recipientId }) => {
                 notify(`${recipientName} rejected the call.`);
                 endCall();
             } else if (signalMessage.signal.type === 'acceptCall' && isCaller) {
-                notify(`${recipientName} accepted the call.`);
+                //notify(`${recipientName} accepted the call.`);
+                toast.success(`${recipientName} accepted the call.`);
             }
         } else {
             console.error('Signal message does not contain signal:', signalMessage);
