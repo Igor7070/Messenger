@@ -111,7 +111,7 @@ public class RabotaUaStrategy implements Strategy {
             //Для Railway
             String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
             ChromeOptions options = new ChromeOptions();
-            options.addArguments("--headless"); // Запуск без графического интерфейса
+            //options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
             options.addArguments("--lang=" + "ru"); // Установка языка в зависимости от параметра, например, "ru" или "en"
             driver = new RemoteWebDriver(new URL(remoteUrl), options);
@@ -132,13 +132,6 @@ public class RabotaUaStrategy implements Strategy {
             //wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("santa--mb-20")));
 
             JavascriptExecutor js = (JavascriptExecutor) driver;
-            // Ожидание полной загрузки страницы
-            js.executeAsyncScript(
-                    "var callback = arguments[arguments.length - 1]; " +
-                            "if (document.readyState === 'complete') callback(); " +
-                            "else window.onload = callback;"
-            );
-
             long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
             System.out.println(lastHeight);
             int scrollStep = 500;
