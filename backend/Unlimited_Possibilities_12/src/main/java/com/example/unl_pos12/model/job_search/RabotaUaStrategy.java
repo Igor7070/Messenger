@@ -131,8 +131,8 @@ public class RabotaUaStrategy implements Strategy {
             long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
             System.out.println(lastHeight);
             int scrollStep = 2500;
-            int maxWaitTime = 5000;
-            Thread.sleep(1000);
+            int maxWaitTime = 10000;
+            Thread.sleep(3000);
 
             // Прокрутка вниз
             while (true) {
