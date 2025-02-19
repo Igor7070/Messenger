@@ -127,16 +127,12 @@ public class RabotaUaStrategy implements Strategy {
             String appRootContent = appRootElement.getAttribute("outerHTML");
             System.out.println(appRootContent);*/
 
-            //WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-            //wait.until(ExpectedConditions.presenceOfElementLocated(By.className("santa--mb-20")));
-            //wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("santa--mb-20")));
-
             JavascriptExecutor js = (JavascriptExecutor) driver;
             long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
             System.out.println(lastHeight);
-            int scrollStep = 500;
+            int scrollStep = 2500;
             int maxWaitTime = 5000;
-            Thread.sleep(3000);
+            Thread.sleep(1000);
 
             // Прокрутка вниз
             while (true) {
@@ -376,7 +372,7 @@ public class RabotaUaStrategy implements Strategy {
             //Для Railway
             String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
             ChromeOptions options = new ChromeOptions();
-            options.addArguments("--headless"); // Запуск без графического интерфейса
+            //options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
             String langDriver = "";
             switch (language) {
