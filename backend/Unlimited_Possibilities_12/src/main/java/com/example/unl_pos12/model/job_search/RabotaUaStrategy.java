@@ -120,7 +120,7 @@ public class RabotaUaStrategy implements Strategy {
             //driver = new ChromeDriver();
             System.out.println("WebDriver initialized successfully.");
 
-            driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+            driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
             driver.get(url);
 
             /*WebElement appRootElement = driver.findElement(By.cssSelector("app-root"));
