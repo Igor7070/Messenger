@@ -9,11 +9,8 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.net.URL;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -130,9 +127,9 @@ public class RabotaUaStrategy implements Strategy {
             String appRootContent = appRootElement.getAttribute("outerHTML");
             System.out.println(appRootContent);*/
 
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-            wait.until(ExpectedConditions.presenceOfElementLocated(By.className("santa--mb-20")));
-            wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("santa--mb-20")));
+            //WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            //wait.until(ExpectedConditions.presenceOfElementLocated(By.className("santa--mb-20")));
+            //wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("santa--mb-20")));
 
             JavascriptExecutor js = (JavascriptExecutor) driver;
             long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
