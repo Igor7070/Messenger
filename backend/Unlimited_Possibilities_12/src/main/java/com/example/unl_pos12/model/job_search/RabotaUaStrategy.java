@@ -141,39 +141,41 @@ public class RabotaUaStrategy implements Strategy {
             Thread.sleep(1500);
 
             // Прокрутка вниз
-            while (true) {
-                js.executeScript("window.scrollBy(0, " + scrollStep + ");");
-                long newHeight = (long) js.executeScript("return document.body.scrollHeight");
-                System.out.println("Scrolling down");
+            for (int i = 0; i < 2; i++) {
+                while (true) {
+                    js.executeScript("window.scrollBy(0, " + scrollStep + ");");
+                    long newHeight = (long) js.executeScript("return document.body.scrollHeight");
+                    System.out.println("Scrolling down");
 
-                // Ждем изменения высоты страницы в течение maxWaitTime
-                long startTime = System.currentTimeMillis();
-                while (newHeight == lastHeight && (System.currentTimeMillis() - startTime) < maxWaitTime) {
+                    // Ждем изменения высоты страницы в течение maxWaitTime
+                    long startTime = System.currentTimeMillis();
+                    while (newHeight == lastHeight && (System.currentTimeMillis() - startTime) < maxWaitTime) {
+                        Thread.sleep(300);
+                        newHeight = (long) js.executeScript("return document.body.scrollHeight");
+                    }
+
+                    if (newHeight == lastHeight) {
+                        // Если высота не изменилась за maxWaitTime, значит мы достигли конца страницы
+                        break;
+                    }
+
+                    lastHeight = newHeight;
+                }
+
+                // Прокрутка вверх
+                scrollStep = 1000;
+                while (true) {
+                    // Прокручиваем вверх
+                    js.executeScript("window.scrollBy(0, -" + scrollStep + ");");
+                    // Ждем немного, чтобы дать время на загрузку
                     Thread.sleep(300);
-                    newHeight = (long) js.executeScript("return document.body.scrollHeight");
-                }
+                    System.out.println("Scrolling up");
 
-                if (newHeight == lastHeight) {
-                    // Если высота не изменилась за maxWaitTime, значит мы достигли конца страницы
-                    break;
-                }
-
-                lastHeight = newHeight;
-            }
-
-            // Прокрутка вверх
-            scrollStep = 1000;
-            while (true) {
-                // Прокручиваем вверх
-                js.executeScript("window.scrollBy(0, -" + scrollStep + ");");
-                // Ждем немного, чтобы дать время на загрузку
-                Thread.sleep(300);
-                System.out.println("Scrolling up");
-
-                // Проверяем текущее положение скролла
-                long currentScrollPosition = (long) js.executeScript("return window.scrollY");
-                if (currentScrollPosition == 0) {
-                    break; // Достигли верха страницы
+                    // Проверяем текущее положение скролла
+                    long currentScrollPosition = (long) js.executeScript("return window.scrollY");
+                    if (currentScrollPosition == 0) {
+                        break; // Достигли верха страницы
+                    }
                 }
             }
 
