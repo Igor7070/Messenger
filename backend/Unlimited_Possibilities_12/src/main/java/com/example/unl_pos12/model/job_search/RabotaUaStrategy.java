@@ -9,8 +9,11 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.net.URL;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -141,7 +144,7 @@ public class RabotaUaStrategy implements Strategy {
                 // Ждем изменения высоты страницы в течение maxWaitTime
                 long startTime = System.currentTimeMillis();
                 while (newHeight == lastHeight && (System.currentTimeMillis() - startTime) < maxWaitTime) {
-                    Thread.sleep(800);
+                    Thread.sleep(500);
                     newHeight = (long) js.executeScript("return document.body.scrollHeight");
                 }
 
@@ -160,7 +163,7 @@ public class RabotaUaStrategy implements Strategy {
                 js.executeScript("window.scrollBy(0, -" + scrollStep + ");");
 
                 // Ждем немного, чтобы дать время на загрузку
-                Thread.sleep(800);
+                Thread.sleep(500);
 
                 // Проверяем текущее положение скролла
                 long currentScrollPosition = (long) js.executeScript("return window.scrollY");
@@ -170,9 +173,10 @@ public class RabotaUaStrategy implements Strategy {
             }
 
             System.out.println("Page: " + page);
-            //WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            // Ожидаем, пока хотя бы один элемент с классом "santa--mb-20" не станет доступен
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("santa--mb-20")));
             List<WebElement> elementVacancies = driver.findElements(By.className("santa--mb-20"));
-            //WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("santa--mb-20")));
             //System.out.println("Total number of vacancies: " + elementVacancies.size());
             elementVacanciesSize = elementVacancies.size();
             System.out.println("elementVacanciesSize: " + elementVacanciesSize);
