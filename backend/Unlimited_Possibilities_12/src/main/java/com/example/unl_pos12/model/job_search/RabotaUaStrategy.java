@@ -134,8 +134,8 @@ public class RabotaUaStrategy implements Strategy {
             JavascriptExecutor js = (JavascriptExecutor) driver;
             long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
             System.out.println(lastHeight);
-            int scrollStep = 2500;
-            int maxWaitTime = 25000;
+            int scrollStep = 500;
+            int maxWaitTime = 7000;
             Thread.sleep(1500);
 
             // Прокрутка вниз
@@ -154,6 +154,7 @@ public class RabotaUaStrategy implements Strategy {
 
                 if (newHeight == lastHeight) {
                     // Если высота не изменилась за maxWaitTime, значит мы достигли конца страницы
+                    System.out.println("newHeight == lastHeight: " + newHeight);
                     break;
                 }
 
