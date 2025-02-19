@@ -138,6 +138,7 @@ public class RabotaUaStrategy implements Strategy {
                 js.executeScript("window.scrollBy(0, " + scrollStep + ");");
                 long newHeight = (long) js.executeScript("return document.body.scrollHeight");
                 Thread.sleep(1000);
+                System.out.println("Scrolling down");
 
                 // Ждем изменения высоты страницы в течение maxWaitTime
                 long startTime = System.currentTimeMillis();
@@ -159,9 +160,9 @@ public class RabotaUaStrategy implements Strategy {
             while (true) {
                 // Прокручиваем вверх
                 js.executeScript("window.scrollBy(0, -" + scrollStep + ");");
-
                 // Ждем немного, чтобы дать время на загрузку
                 Thread.sleep(1000);
+                System.out.println("Scrolling up");
 
                 // Проверяем текущее положение скролла
                 long currentScrollPosition = (long) js.executeScript("return window.scrollY");
