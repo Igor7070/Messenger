@@ -7,6 +7,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
@@ -109,18 +110,18 @@ public class RabotaUaStrategy implements Strategy {
 
             System.out.println("Initializing WebDriver...");
             //Для Railway
-            String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
+            /*String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
             options.addArguments("--lang=" + "ru"); // Установка языка в зависимости от параметра, например, "ru" или "en"
-            driver = new RemoteWebDriver(new URL(remoteUrl), options);
+            driver = new RemoteWebDriver(new URL(remoteUrl), options);*/
 
             //Для локальной работы
-            //driver = new ChromeDriver();
+            driver = new ChromeDriver();
             System.out.println("WebDriver initialized successfully.");
 
-            driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
+            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
             driver.get(url);
 
             /*WebElement appRootElement = driver.findElement(By.cssSelector("app-root"));
@@ -141,7 +142,7 @@ public class RabotaUaStrategy implements Strategy {
                 // Ждем изменения высоты страницы в течение maxWaitTime
                 long startTime = System.currentTimeMillis();
                 while (newHeight == lastHeight && (System.currentTimeMillis() - startTime) < maxWaitTime) {
-                    Thread.sleep(300);
+                    Thread.sleep(500);
                     newHeight = (long) js.executeScript("return document.body.scrollHeight");
                 }
 
@@ -160,7 +161,7 @@ public class RabotaUaStrategy implements Strategy {
                 js.executeScript("window.scrollBy(0, -" + scrollStep + ");");
 
                 // Ждем немного, чтобы дать время на загрузку
-                Thread.sleep(300);
+                Thread.sleep(500);
 
                 // Проверяем текущее положение скролла
                 long currentScrollPosition = (long) js.executeScript("return window.scrollY");

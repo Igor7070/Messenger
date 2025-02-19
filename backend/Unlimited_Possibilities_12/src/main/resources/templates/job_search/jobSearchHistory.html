@@ -37,7 +37,7 @@
 
     <body>
         <!-- Включаем header -->
-        <div th:replace="job_search/header.html"></div>
+        <div th:replace="~{job_search/header.html}"></div>
 
         <div class="container mt-5">
             <h1>Список вакансий со всех запросов поиска</h1>
@@ -59,7 +59,7 @@
         </div>
 
         <!-- Включаем футер -->
-        <div th:replace="job_search/footer.html"></div>
+        <div th:replace="~{job_search/footer.html}"></div>
 
         <div id="notification" class="alert alert-success" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 900px; text-align: center; font-size: 24px;">
             <strong>Успех!</strong> <span id="notification-message">История поиска вакансий очищена.</span>

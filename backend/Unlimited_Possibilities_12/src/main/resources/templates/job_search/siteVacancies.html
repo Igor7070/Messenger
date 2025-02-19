@@ -105,7 +105,7 @@
 
     <body>
         <!-- Включаем header -->
-        <div th:replace="job_search/header.html"></div>
+        <div th:replace="~{job_search/header.html}"></div>
 
         <div id="jobSearchContainer" class="container mt-5">
             <h1 class="text-center">Поиск вакансий</h1>
@@ -275,6 +275,6 @@
         </script>
 
         <!-- Включаем футер -->
-        <div th:replace="job_search/footer.html"></div>
+        <div th:replace="~{job_search/footer.html}"></div>
     </body>
 </html>
