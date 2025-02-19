@@ -9,8 +9,10 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.net.URL;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -170,6 +172,7 @@ public class RabotaUaStrategy implements Strategy {
             }
 
             System.out.println("Page: " + page);
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
             List<WebElement> elementVacancies = driver.findElements(By.className("santa--mb-20"));
             //System.out.println("Total number of vacancies: " + elementVacancies.size());
             elementVacanciesSize = elementVacancies.size();
