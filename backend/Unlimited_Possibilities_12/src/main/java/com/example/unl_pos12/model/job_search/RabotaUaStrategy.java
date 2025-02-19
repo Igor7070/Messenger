@@ -132,11 +132,18 @@ public class RabotaUaStrategy implements Strategy {
             //wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("santa--mb-20")));
 
             JavascriptExecutor js = (JavascriptExecutor) driver;
+            // Ожидание полной загрузки страницы
+            js.executeAsyncScript(
+                    "var callback = arguments[arguments.length - 1]; " +
+                            "if (document.readyState === 'complete') callback(); " +
+                            "else window.onload = callback;"
+            );
+
             long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
             System.out.println(lastHeight);
             int scrollStep = 500;
             int maxWaitTime = 5000;
-            Thread.sleep(20000);
+            Thread.sleep(3000);
 
             // Прокрутка вниз
             while (true) {
