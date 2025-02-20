@@ -353,7 +353,7 @@ const Home = () => {
 
             {/* Вставляем аудиофайл */}
             <audio ref={audioRef} loop>
-                <source src="/melodiya_kovboy.mp3" type="audio/mpeg" />
+                <source src="https://igor7070.github.io/melodiya_kovboy.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
             </audio>
 
