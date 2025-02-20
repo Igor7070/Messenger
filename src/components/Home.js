@@ -41,11 +41,13 @@ const Home = () => {
     // Обработка события клика на документе
     useEffect(() => {
         const navigationEntries = window.performance.getEntriesByType("navigation");
+        console.log("Navigation Entries:", navigationEntries);
 
         // Проверяем, есть ли записи с типами 'navigate' или 'back_forward'
         const hasNavigateOrBackForward = navigationEntries.some(entry => 
             entry.type === "navigate" || entry.type === "back_forward"
         );
+        console.log("Has navigate or back_forward:", hasNavigateOrBackForward);
 
         // Если ни одной записи с этими типами нет, открываем модальное окно
         if (!hasNavigateOrBackForward) {
