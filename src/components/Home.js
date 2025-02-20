@@ -30,6 +30,7 @@ const Home = () => {
     const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
     const { userInteracted, handleInteraction } = useUserInteraction();
     const { showModalVoice, openModalVoice, closeModalVoice } = useModal();
+    const [hasLoaded, setHasLoaded] = useState(false); // Флаг для отслеживания загрузки
     const stompClient = useRef(null); // Используем useRef для stompClient
     const audioRef = useRef(null); // Используем useRef для аудиоплеера
     const navigate = useNavigate();
@@ -39,8 +40,11 @@ const Home = () => {
 
     // Обработка события клика на документе
     useEffect(() => {
-        // Открыть модальное окно при обновлении
-        openModalVoice();
+        // Открыть модальное окно только при первой загрузке
+        if (!hasLoaded) {
+            openModalVoice();
+            setHasLoaded(true); // Установить флаг в true
+        }
 
         const handleClick = () => {
             handleInteraction();
