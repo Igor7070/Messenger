@@ -40,9 +40,9 @@ const Home = () => {
 
     // Обработка события клика на документе
     useEffect(() => {
-        // Открыть модальное окно только при первой загрузке
+        const isReload = window.performance.getEntriesByType("navigation").some((entry) => entry.type === "reload");
         // Проверяем, была ли страница перезагружена
-        if (window.performance.navigation.type === 1) {
+        if (isReload) {
             openModalVoice(); // Открываем модальное окно только при перезагрузке
         }
 
