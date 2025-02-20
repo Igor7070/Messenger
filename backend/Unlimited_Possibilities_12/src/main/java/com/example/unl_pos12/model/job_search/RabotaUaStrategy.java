@@ -387,7 +387,7 @@ public class RabotaUaStrategy implements Strategy {
             options.addArguments("--lang=" + langDriver); // Установка языка в зависимости от параметра, например, "ru","en" или uk
             driver = new RemoteWebDriver(new URL(remoteUrl), options);
 
-            //Для локальной работы
+            //Для локальной работы...
             //driver = new ChromeDriver();
             System.out.println("WebDriver initialized successfully.");
 
