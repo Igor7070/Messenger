@@ -26,7 +26,7 @@ const Home = () => {
     const [loginPassword, setLoginPassword] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
-    const [userInteracted, setUserInteracted] = useState(false); // Состояние взаимодействия
+    const { userInteracted, handleInteraction } = useUserInteraction();
     const stompClient = useRef(null); // Используем useRef для stompClient
     const audioRef = useRef(null); // Используем useRef для аудиоплеера
     const navigate = useNavigate();
@@ -36,11 +36,11 @@ const Home = () => {
 
     // Обработка события клика на документе
     useEffect(() => {
-        document.addEventListener('click', handleUserInteraction);
+        document.addEventListener('click', handleInteraction);
         return () => {
-            document.removeEventListener('click', handleUserInteraction);
+            document.removeEventListener('click', handleInteraction);
         };
-    }, []);
+    }, [handleInteraction]);
 
     // Второе useEffect: управление воспроизведением звука
     useEffect(() => {
