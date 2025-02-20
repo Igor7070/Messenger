@@ -7,6 +7,8 @@ import '../styles/Home.css';
 import useWebSocket from '../hooks/useWebSocket';
 import IncomingCallNotification from './IncomingCallNotification'; // Импорт компонента уведомления
 import { useUserInteraction } from './UserInteractionContext';
+import { useModal } from './ModalContextVoice';
+import '../styles/ModalContextVoice.css';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 
@@ -27,6 +29,7 @@ const Home = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
     const { userInteracted, handleInteraction } = useUserInteraction();
+    const { showModalVoice, openModalVoice, closeModalVoice } = useModal();
     const stompClient = useRef(null); // Используем useRef для stompClient
     const audioRef = useRef(null); // Используем useRef для аудиоплеера
     const navigate = useNavigate();
@@ -36,6 +39,9 @@ const Home = () => {
 
     // Обработка события клика на документе
     useEffect(() => {
+        // Открыть модальное окно при обновлении
+        openModalVoice();
+
         const handleClick = () => {
             handleInteraction();
         };
@@ -350,6 +356,15 @@ const Home = () => {
                     </>
                 )}
             </div>
+
+            {showModalVoice && (
+                <div className="modal">
+                    <div className="modal-content">
+                        <p>Press OK to confirm the sound for voice calls.</p>
+                        <button onClick={() => { handleInteraction(); closeModalVoice(); }}>OK</button>
+                    </div>
+                </div>
+            )}
 
             {/* Вставляем аудиофайл */}
             <audio ref={audioRef} loop>
