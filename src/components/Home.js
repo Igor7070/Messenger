@@ -36,9 +36,13 @@ const Home = () => {
 
     // Обработка события клика на документе
     useEffect(() => {
-        document.addEventListener('click', handleInteraction);
+        const handleClick = () => {
+            handleInteraction();
+        };
+
+        document.addEventListener('click', handleClick);
         return () => {
-            document.removeEventListener('click', handleInteraction);
+            document.removeEventListener('click', handleClick);
         };
     }, [handleInteraction]);
 
