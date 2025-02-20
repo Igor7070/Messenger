@@ -26,6 +26,7 @@ const Home = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
     const stompClient = useRef(null); // Используем useRef для stompClient
+    const audioRef = useRef(null); // Используем useRef для аудиоплеера
     const navigate = useNavigate();
 
     // Используем хук для подключения к WebSocket
@@ -89,6 +90,16 @@ const Home = () => {
         };
     }, [currentUserId]);
 
+    // Второе useEffect: управление воспроизведением звука
+    useEffect(() => {
+        if (incomingCall) {
+            audioRef.current.play(); // Запускаем звук
+        } else {
+            audioRef.current.pause(); // Останавливаем звук, если звонка нет
+            audioRef.current.currentTime = 0; // Сбрасываем время
+        }
+    }, [incomingCall]);
+
     const handleIncomingCall = async (callRequest) => {
         console.log("Incoming call request:", callRequest); // Логируем объект вызова
         setIncomingCall(callRequest); // Устанавливаем входящий вызов
@@ -111,6 +122,10 @@ const Home = () => {
     };
 
     const acceptCall = () => {
+        // Остановка звука при принятии звонка
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+
         console.log('Function acceptCall in Home.js working...');
         console.log("Incoming call accepted:", incomingCall); // Логируем входящий вызов
         
@@ -155,6 +170,10 @@ const Home = () => {
     };
 
     const rejectCall = () => {
+        // Остановка звука при принятии звонка
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+
         setIncomingCall(null); // Скрыть уведомление
         sendSignal({
             from: currentUserId,
@@ -315,6 +334,12 @@ const Home = () => {
                     </>
                 )}
             </div>
+
+            {/* Вставляем аудиофайл */}
+            <audio ref={audioRef} loop>
+                <source src="/melodiya_kovboy.mp3" type="audio/mpeg" />
+                Ваш браузер не поддерживает аудио.
+            </audio>
 
             {/* Уведомление о входящем звонке */}
             {incomingCall && (
