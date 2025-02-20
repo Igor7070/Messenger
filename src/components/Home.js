@@ -40,10 +40,16 @@ const Home = () => {
 
     // Обработка события клика на документе
     useEffect(() => {
-        const isReload = window.performance.getEntriesByType("navigation").some((entry) => entry.type === "reload");
-        // Проверяем, была ли страница перезагружена
-        if (isReload) {
-            openModalVoice(); // Открываем модальное окно только при перезагрузке
+        const navigationEntries = window.performance.getEntriesByType("navigation");
+
+        // Проверяем, есть ли записи с типами 'navigate' или 'back_forward'
+        const hasNavigateOrBackForward = navigationEntries.some(entry => 
+            entry.type === "navigate" || entry.type === "back_forward"
+        );
+
+        // Если ни одной записи с этими типами нет, открываем модальное окно
+        if (!hasNavigateOrBackForward) {
+            openModalVoice();
         }
 
         const handleClick = () => {
