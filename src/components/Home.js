@@ -41,9 +41,9 @@ const Home = () => {
     // Обработка события клика на документе
     useEffect(() => {
         // Открыть модальное окно только при первой загрузке
-        if (!hasLoaded) {
-            openModalVoice();
-            setHasLoaded(true); // Установить флаг в true
+        // Проверяем, была ли страница перезагружена
+        if (window.performance.navigation.type === 1) {
+            openModalVoice(); // Открываем модальное окно только при перезагрузке
         }
 
         const handleClick = () => {
