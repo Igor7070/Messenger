@@ -25,12 +25,26 @@ const Home = () => {
     const [loginPassword, setLoginPassword] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
+    const [userInteracted, setUserInteracted] = useState(false); // Состояние взаимодействия
     const stompClient = useRef(null); // Используем useRef для stompClient
     const audioRef = useRef(null); // Используем useRef для аудиоплеера
     const navigate = useNavigate();
 
     // Используем хук для подключения к WebSocket
-    useWebSocket(currentUserId); 
+    useWebSocket(currentUserId);
+    
+    // Обработчик клика для регистрации взаимодействия
+    const handleUserInteraction = () => {
+        setUserInteracted(true);
+    };
+
+    // Обработка события клика на документе
+    useEffect(() => {
+        document.addEventListener('click', handleUserInteraction);
+        return () => {
+            document.removeEventListener('click', handleUserInteraction);
+        };
+    }, []);
 
     const fetchChats = async () => {
         try {
@@ -92,13 +106,15 @@ const Home = () => {
 
     // Второе useEffect: управление воспроизведением звука
     useEffect(() => {
-        if (incomingCall) {
-            audioRef.current.play(); // Запускаем звук
+        if (incomingCall && userInteracted) {
+            audioRef.current.play().catch(error => {
+                console.error('Autoplay was prevented.', error);
+            }); // Запускаем звук при входящем звонке
         } else {
             audioRef.current.pause(); // Останавливаем звук, если звонка нет
             audioRef.current.currentTime = 0; // Сбрасываем время
         }
-    }, [incomingCall]);
+    }, [incomingCall, userInteracted]); // Добавляем userInteracted в зависимости
 
     const handleIncomingCall = async (callRequest) => {
         console.log("Incoming call request:", callRequest); // Логируем объект вызова
