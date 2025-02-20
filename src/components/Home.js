@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Home.css'; 
 import useWebSocket from '../hooks/useWebSocket';
 import IncomingCallNotification from './IncomingCallNotification'; // Импорт компонента уведомления
+import { useUserInteraction } from './UserInteractionContext';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 
@@ -32,11 +33,6 @@ const Home = () => {
 
     // Используем хук для подключения к WebSocket
     useWebSocket(currentUserId);
-    
-    // Обработчик клика для регистрации взаимодействия
-    const handleUserInteraction = () => {
-        setUserInteracted(true);
-    };
 
     // Обработка события клика на документе
     useEffect(() => {
@@ -45,6 +41,18 @@ const Home = () => {
             document.removeEventListener('click', handleUserInteraction);
         };
     }, []);
+
+    // Второе useEffect: управление воспроизведением звука
+    useEffect(() => {
+        if (incomingCall && userInteracted) {
+            audioRef.current.play().catch(error => {
+                console.error('Autoplay was prevented.', error);
+            }); // Запускаем звук при входящем звонке
+        } else {
+            audioRef.current.pause(); // Останавливаем звук, если звонка нет
+            audioRef.current.currentTime = 0; // Сбрасываем время
+        }
+    }, [incomingCall, userInteracted]); // Добавляем userInteracted в зависимости
 
     const fetchChats = async () => {
         try {
@@ -103,18 +111,6 @@ const Home = () => {
             stompClient.current.deactivate();
         };
     }, [currentUserId]);
-
-    // Второе useEffect: управление воспроизведением звука
-    useEffect(() => {
-        if (incomingCall && userInteracted) {
-            audioRef.current.play().catch(error => {
-                console.error('Autoplay was prevented.', error);
-            }); // Запускаем звук при входящем звонке
-        } else {
-            audioRef.current.pause(); // Останавливаем звук, если звонка нет
-            audioRef.current.currentTime = 0; // Сбрасываем время
-        }
-    }, [incomingCall, userInteracted]); // Добавляем userInteracted в зависимости
 
     const handleIncomingCall = async (callRequest) => {
         console.log("Incoming call request:", callRequest); // Логируем объект вызова
