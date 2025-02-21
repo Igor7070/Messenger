@@ -25,11 +25,13 @@ const PrivateChat = () => {
     const fileInputRef = useRef(null);
     const { chatId: chatIdParam } = useParams();
 
+    const [currentUserId, setCurrentUserId] = useState(null);
     const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
     const { userInteracted, handleInteraction } = useUserInteraction();
     const stompClient = useRef(null); // Используем useRef для stompClient
     const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3')); // Инициализация
     audioRef.current.loop = true; // Устанавливаем зацикливание
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchChatData = async () => {
@@ -60,6 +62,8 @@ const PrivateChat = () => {
 
     useEffect(() => {
         if (!chatId) return;
+
+        setCurrentUserId(Number(user.id));
 
         const stompClient = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
