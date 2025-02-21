@@ -5,7 +5,7 @@ import { getMessages } from '../api/messages';
 import '../styles/Messenger.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getChatById } from '../api/chats';
 import IncomingCallNotification from './IncomingCallNotification'; // Импорт компонента уведомления
 import { useUserInteraction } from './UserInteractionContext';
