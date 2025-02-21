@@ -407,6 +407,13 @@ const PrivateChat = () => {
         }
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    };
+
     const resetForm = () => {
         setContent('');
         setSelectedFile(null);
@@ -497,6 +504,7 @@ const PrivateChat = () => {
             <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="Enter your message"
                 className="input-message"
             />
