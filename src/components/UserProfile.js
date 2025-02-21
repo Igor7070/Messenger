@@ -8,10 +8,12 @@ import Modal from 'react-modal';
 import useWebSocket from '../hooks/useWebSocket';
 import IncomingCallNotification from './IncomingCallNotification'; // Импорт компонента уведомления
 import { useUserInteraction } from './UserInteractionContext';
+import { Client } from '@stomp/stompjs'; // Импортируем Client
+import SockJS from 'sockjs-client'; // Импортируем SockJS
 
 const UserProfile = () => {
     const { userId } = useParams();
-    const navigate = useNavigate(); // Инициализация useNavigate
+    const navigate = useNavigate(); 
     const [user, setUser] = useState(null);
     const [newAvatar, setNewAvatar] = useState(null);
     const [info, setInfo] = useState('');
@@ -22,6 +24,8 @@ const UserProfile = () => {
     const [avatarFileName, setAvatarFileName] = useState('');
     const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
     const { userInteracted, handleInteraction } = useUserInteraction();
+    const audioRef = useRef(null); // Создаем ссылку для аудио
+    const stompClient = useRef(null); // Создаем ссылку для stompClient
 
     // Используем хук для подключения к WebSocket
     useWebSocket(currentUserId);
