@@ -7,7 +7,6 @@ import PrivateChat from './PrivateChat'; // Импорт нового компо
 import VoiceCall from './VoiceCall'; // Импорт компонента для видеозвонка
 import { NotificationProvider } from './NotificationContext'; // Импортируем контекст уведомлений
 import { UserInteractionProvider } from './UserInteractionContext';
-import { ModalProvider } from './ModalContextVoice'; // Импортируем ModalProvider
 import { ToastContainer } from 'react-toastify'; // Импортируем ToastContainer
 import '../styles/App.css';
 
@@ -15,21 +14,19 @@ const App = () => {
     return (
         <UserInteractionProvider>
             <NotificationProvider>
-                <ModalProvider> {/* Оборачиваем Router в ModalProvider */}
-                    <Router>
-                        <div className="app">
-                            <h1>Messenger UP12</h1>
-                            <ToastContainer /> {/* Размещаем ToastContainer для уведомлений */}
-                            <Routes>
-                                <Route path="/" element={<Home />} /> {/* Главная страница */}
-                                <Route path="/chat/:chatId" element={<Messenger />} /> {/* Групповой чат */}
-                                <Route path="/user/:userId" element={<UserProfile />} /> {/* Профиль пользователя */}
-                                <Route path="/private-chat/:chatId" element={<PrivateChat />} /> {/* Личный чат */}
-                                <Route path="/voice-call/:roomId" element={<VoiceCall />} /> {/* Видеозвонок */}
-                            </Routes>
-                        </div>
-                    </Router>
-                </ModalProvider>
+                <Router>
+                    <div className="app">
+                        <h1>Messenger UP12</h1>
+                        <ToastContainer /> {/* Размещаем ToastContainer для уведомлений */}
+                        <Routes>
+                            <Route path="/" element={<Home />} /> {/* Главная страница */}
+                            <Route path="/chat/:chatId" element={<Messenger />} /> {/* Групповой чат */}
+                            <Route path="/user/:userId" element={<UserProfile />} /> {/* Профиль пользователя */}
+                            <Route path="/private-chat/:chatId" element={<PrivateChat />} /> {/* Личный чат */}
+                            <Route path="/voice-call/:roomId" element={<VoiceCall />} /> {/* Видеозвонок */}
+                        </Routes>
+                    </div>
+                </Router>
             </NotificationProvider>
         </UserInteractionProvider>
     );

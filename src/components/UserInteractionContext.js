@@ -27,4 +27,4 @@ export const UserInteractionProvider = ({ children }) => {
 
 export const useUserInteraction = () => {
     return useContext(UserInteractionContext);
-};;
+};
