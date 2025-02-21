@@ -23,6 +23,26 @@ const VoiceCall = ({ recipientId }) => {
     const peerConnectionRef = useRef(null);
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
+    const [isWaiting, setIsWaiting] = useState(false);
+
+    const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
+
+    useEffect(() => {
+        if (isCaller) {
+            // Запускаем музыку ожидания
+            setIsWaiting(true);
+            ringtoneRef.current.loop = true; // Устанавливаем зацикливание
+            ringtoneRef.current.play().catch(error => {
+                console.error('Error playing ringtone:', error);
+            });
+        }
+
+        return () => {
+            // Останавливаем музыку при размонтировании
+            ringtoneRef.current.pause();
+            ringtoneRef.current.currentTime = 0;
+        };
+    }, [isCaller]);
 
     // Объявляем общую переменную для имени пользователя
     let userName = null;
@@ -319,11 +339,21 @@ const VoiceCall = ({ recipientId }) => {
                 terminationInitiator = true;
                 endCall(); // Завершение локального вызова
             } else if (signalMessage.signal.type === 'rejectCall' && isCaller) {
+                // Останавливаем музыку ожидания
+                setIsWaiting(false);
+                ringtoneRef.current.pause();
+                ringtoneRef.current.currentTime = 0;
+
                 notify(`${recipientName} rejected the call.`);
                 endCall();
             } else if (signalMessage.signal.type === 'acceptCall' && isCaller) {
-                //notify(`${recipientName} accepted the call.`);
-                toast.success(`${recipientName} accepted the call.`);
+                // Останавливаем музыку ожидания
+                setIsWaiting(false);
+                ringtoneRef.current.pause();
+                ringtoneRef.current.currentTime = 0;
+
+                notify(`${recipientName} accepted the call.`);
+                //toast.success(`${recipientName} accepted the call.`);
             }
         } else {
             console.error('Signal message does not contain signal:', signalMessage);
