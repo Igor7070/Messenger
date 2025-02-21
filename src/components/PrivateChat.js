@@ -63,7 +63,7 @@ const PrivateChat = () => {
     useEffect(() => {
         if (!chatId) return;
 
-        setCurrentUserId(Number(user.id));
+        setCurrentUserId(Number(userId));
 
         const stompClient = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
