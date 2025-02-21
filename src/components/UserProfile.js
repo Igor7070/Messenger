@@ -66,6 +66,30 @@ const UserProfile = () => {
         }
     }, [userId]);
 
+    // Обработка события клика на документе
+    useEffect(() => {
+        const handleClick = () => {
+            handleInteraction();
+        };
+    
+        document.addEventListener('click', handleClick);
+        return () => {
+            document.removeEventListener('click', handleClick);
+        };
+    }, [handleInteraction]);
+    
+    // Второе useEffect: управление воспроизведением звука
+    useEffect(() => {
+        if (incomingCall && userInteracted) {
+            audioRef.current.play().catch(error => {
+                console.error('Autoplay was prevented.', error);
+            }); // Запускаем звук при входящем звонке
+        } else {
+            audioRef.current.pause(); // Останавливаем звук, если звонка нет
+            audioRef.current.currentTime = 0; // Сбрасываем время
+        }
+    }, [incomingCall, userInteracted]); // Добавляем userInteracted в зависимости
+
     useEffect(() => {         
         // Подключение к WebSocket
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
@@ -110,8 +134,8 @@ const UserProfile = () => {
 
     const acceptCall = () => {
         // Остановка звука при принятии звонка
-        //audioRef.current.pause();
-        //audioRef.current.currentTime = 0;
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
 
         console.log('Function acceptCall in Home.js working...');
         console.log("Incoming call accepted:", incomingCall); // Логируем входящий вызов
@@ -158,8 +182,8 @@ const UserProfile = () => {
 
     const rejectCall = () => {
         // Остановка звука при принятии звонка
-        //audioRef.current.pause();
-        //audioRef.current.currentTime = 0;
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
 
         setIncomingCall(null); // Скрыть уведомление
         sendSignal({
@@ -387,6 +411,12 @@ const UserProfile = () => {
                 />
                 <button onClick={closeModal} className="user-profile-modal-close-button">Close</button>
             </Modal>
+
+            {/* Вставляем аудиофайл */}
+            <audio ref={audioRef} loop>
+                <source src="https://igor7070.github.io/Messenger/melodiya_kovboy.mp3" type="audio/mpeg" />
+                Ваш браузер не поддерживает аудио.
+            </audio>
 
             {/* Уведомление о входящем звонке */}
             {incomingCall && (
