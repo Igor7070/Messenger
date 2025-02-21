@@ -25,8 +25,8 @@ const UserProfile = () => {
     const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
     const { userInteracted, handleInteraction } = useUserInteraction();
     const stompClient = useRef(null); // Используем useRef для stompClient
-    const audioRef = useRef(null); // Используем useRef для аудиоплеера
-    const navigateToVoiceCall = useNavigate();
+    const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3')); // Инициализация
+    audioRef.current.loop = true; // Устанавливаем зацикливание
 
     // Используем хук для подключения к WebSocket
     useWebSocket(currentUserId);
@@ -411,12 +411,6 @@ const UserProfile = () => {
                 />
                 <button onClick={closeModal} className="user-profile-modal-close-button">Close</button>
             </Modal>
-
-            {/* Вставляем аудиофайл */}
-            <audio ref={audioRef} loop>
-                <source src="https://igor7070.github.io/Messenger/melodiya_kovboy.mp3" type="audio/mpeg" />
-                Ваш браузер не поддерживает аудио.
-            </audio>
 
             {/* Уведомление о входящем звонке */}
             {incomingCall && (
