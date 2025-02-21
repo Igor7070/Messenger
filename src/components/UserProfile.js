@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom'; // Импортируйте useNavigate
 import '../styles/UserProfile.css'; 
 import { FaEdit } from 'react-icons/fa';
