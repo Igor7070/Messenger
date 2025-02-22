@@ -27,7 +27,7 @@ public class WebRTCController {
                 "iceCandidate: %s", signalMessage.getFrom(), signalMessage.getSignal().getType(),
                 signalMessage.getSignal().getSdp(), signalMessage.getSignal().getIceCandidate()));
 
-        // Отправка сигнала другому участнику...
+        // Отправка сигнала другому участнику
         messagingTemplate.convertAndSend("/topic/room/" + roomId, signalMessage);
         System.out.println("Method signal worked success.");
     }
