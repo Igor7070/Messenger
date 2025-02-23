@@ -326,7 +326,7 @@ const Home = () => {
 
     return (
         <div className="home-container">
-            <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} />
+            <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
             <div className="login-container-home">
                 {isLoggedIn ? (
                     <button onClick={logoutUser} className="logout-button-home">Logout</button>
@@ -361,7 +361,7 @@ const Home = () => {
             {incomingCall && (
                 <IncomingCallNotification 
                     callerId={incomingCall.callerId} 
-                    callerName={incomingCall.callerName}
+                    callerName={incomingCall.callerName} // Передаем имя звонящего
                     onAccept={acceptCall} 
                     onReject={rejectCall} 
                 />

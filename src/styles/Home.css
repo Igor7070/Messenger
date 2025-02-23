@@ -1,6 +1,6 @@
 .home-container {
-    display: flex;
-    flex-direction: column;
+    display: flex; /* Flexbox для расположения */
+    flex-direction: column; /* Размещаем элементы вертикально */
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
@@ -12,8 +12,8 @@
 .login-container-home {
     display: flex;
     justify-content: center;
-    align-items: center;
-    margin-bottom: 20px;
+    align-items: center; /* Центрируем элементы вертикально */
+    margin-bottom: 20px; /* Добавляем отступ снизу */
     gap: 10px;
 }
 
@@ -46,78 +46,31 @@
 }
 
 .users-container {
-    flex: 1;
+    flex: 1; /* Занимает оставшееся пространство */
     padding: 10px;
-    overflow-y: auto;
+    overflow-y: auto; /* Прокрутка для длинного списка */
     max-height: 600px;
 }
 
 .chats-container {
-    flex: 1;
+    flex: 1; /* Занимает оставшееся пространство */
     padding: 10px;
-    overflow-y: auto;
+    overflow-y: auto; /* Прокрутка для длинного списка */
     max-height: 600px;
 }
 
 h1, h2 {
     text-align: center;
-    color: #2E8B57;
-    font-size: 2rem;
-    font-weight: bold;
-    margin: 0;
+    color: 	#2E8B57; /* Темный цвет для заголовка */
+    font-size: 2rem; /* Установите одинаковый размер шрифта */
+    font-weight: bold; /* Убедитесь, что вес шрифта одинаковый */
+    margin: 0; /* Уберите отступы, если они есть */
 }
 
-/* Адаптивные стили */
-@media (max-width: 600px) {
-    .home-container {
-        padding: 10px;
-    }
-
-    .login-container-home {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .login-input-home,
-    .search-input,
-    .chat-input,
-    .modal-input,
-    .modal-textarea {
-        width: 100%;
-    }
-
-    .create-user-button-main,
-    .create-chat-button,
-    .modal-create-button,
-    .modal-close-button {
-        width: 100%;
-        margin-top: 10px;
-    }
-
-    .line-divider-container {
-        flex-direction: column;
-    }
-
-    .line-divider {
-        display: none; /* Скрываем разделитель на мобильных устройствах */
-    }
-
-    .users-container,
-    .chats-container {
-        max-height: none;
-        padding: 10px;
-    }
-
-    h1, h2 {
-        font-size: 1.5rem; /* Уменьшаем размер шрифта заголовков */
-    }
-}
-
-/* Дополнительные стили остаются без изменений */
 .chat-input-container {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
+    display: flex; /* Используем flexbox для выравнивания */
+    align-items: center; /* Центрируем элементы по вертикали */
+    margin-bottom: 15px; /* Отступ снизу */
 }
 
 .chat-input {
@@ -128,46 +81,46 @@ h1, h2 {
     border-radius: 5px;
     margin-right: 10px;
     font-size: 16px;
-    box-sizing: border-box;
-}
+    box-sizing: border-box; /* Учитываем границы и отступы в ширину и высоту */
+    }
 
 .create-user-button-main {
     padding: 10px 15px;
     border: none;
     border-radius: 5px;
-    background-color: #26a69a;
+    background-color: #26a69a; /* Синий цвет для кнопки */
     color: white;
     cursor: pointer;
     font-size: 16px;
-    min-width: 150px;
+    min-width: 150px; /* Минимальная ширина кнопки */
     margin-top: 10px;
     margin-bottom: 15px;
-    box-sizing: border-box;
+    box-sizing: border-box; /* Учитываем границы и отступы в ширину и высоту */
 }
 
 .create-chat-button {
     padding: 10px 15px;
     border: none;
     border-radius: 5px;
-    background-color: #007bff;
+    background-color: #007bff; /* Синий цвет для кнопки */
     color: white;
     cursor: pointer;
     font-size: 16px;
-    min-width: 150px;
+    min-width: 150px; /* Минимальная ширина кнопки */
     margin-top: 10px;
-    box-sizing: border-box;
+    box-sizing: border-box; /* Учитываем границы и отступы в ширину и высоту */
 }
 
-.create-chat-button:hover, .create-user-button-main:hover {
-    background-color: #0056b3;
+.create-chat-button:hover, .create-user-button:hover {
+    background-color: #0056b3; /* Темнее при наведении */
 }
 
 .chat-list, .user-list {
     list-style-type: none;
     padding: 0;
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid #A9A9A9;
+    max-height: 400px; /* Ограничиваем высоту списка */
+    overflow-y: auto; /* Прокрутка */
+    border: 1px solid #A9A9A9; /* Темно-серый цвет и увеличенная толщина */
     border-radius: 5px;
     background-color: #DCDCDC;
 }
@@ -184,16 +137,16 @@ h1, h2 {
     border-bottom: 1px solid #e9ecef;
     cursor: pointer;
     transition: background-color 0.2s;
-    display: flex;
-    align-items: center;
+    display: flex; /* Используем флексбокс для выравнивания */
+    align-items: center; /* Вертикальное выравнивание */
 }
 
 .chat-item:hover, .user-item:hover {
-    background-color: #f1f1f1;
+    background-color: #f1f1f1; /* Подсветка при наведении */
 }
 
 .chat-item:last-child, .user-item:last-child {
-    border-bottom: none;
+    border-bottom: none; /* Убираем нижнюю границу у последнего элемента */
 }
 
 .search-input {
@@ -202,106 +155,125 @@ h1, h2 {
     margin-bottom: 0px;
     border: 1px solid #ced4da;
     border-radius: 5px;
-    box-sizing: border-box;
+    box-sizing: border-box; /* Учитываем отступы в ширине */
+}
+
+/* Линия раздела */
+.line-divider-container {
+    display: flex; /* Flexbox для разделения Users и Chats */
+    width: 100%; /* Занять всю ширину */
+    margin-top: 20px; /* Отступ сверху */
+}
+
+.line-divider {
+    width: 1px; /* Толщина линии */
+    background-color: #ccc;
+    margin: 0 20px; /* Отступ по бокам между контейнерами */
 }
 
 /* Стиль для модального окна */
 .ReactModal__Overlay {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
+    display: flex; /* Flexbox для центрирования */
+    align-items: center; /* Вертикальное центрирование */
+    justify-content: center; /* Горизонтальное центрирование */
+    position: fixed; /* Фиксированное позиционирование */
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    background: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон для затемнения */
+    z-index: 1000; /* Высокий z-index для оверлея */
 }
 
 .ReactModal__Content {
-    background: #ffffff;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    width: 400px;
-    max-width: 90%;
+    background: #ffffff; /* Белый фон для окна */
+    border-radius: 10px; /* Скругленные углы */
+    padding: 20px; /* Отступы */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Тень для глубины */
+    width: 400px; /* Ширина окна */
+    max-width: 90%; /* Максимальная ширина для мобильных устройств */
+    position: relative; /* Можно оставить, но не обязательно */
 }
 
+/* Заголовок модального окна */
 .modal-title {
-    margin-bottom: 20px;
-    font-size: 24px;
-    color: #00796b;
-    text-align: center;
+    margin-bottom: 20px; /* Отступ снизу */
+    font-size: 24px; /* Размер шрифта заголовка */
+    color: #00796b; /* Цвет заголовка */
+    text-align: center; /* Центрирование текста */
 }
 
+/* Стили для полей ввода в модальном окне */
 .modal-input,
 .modal-textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 5px;
-    margin-bottom: 15px;
-    font-size: 16px;
-    box-sizing: border-box;
+    width: 100%; /* Занимает всю ширину */
+    padding: 10px; /* Внутренний отступ */
+    border: 1px solid #ced4da; /* Цвет границы */
+    border-radius: 5px; /* Скругление углов */
+    margin-bottom: 15px; /* Отступ снизу */
+    font-size: 16px; /* Размер шрифта */
+    box-sizing: border-box; /* Учитывает границы и отступы */
 }
 
 .modal-textarea {
-    resize: vertical;
+    resize: vertical; /* Позволяет изменять высоту */
 }
 
+/* Индивидуальные стили для поля загрузки файла */
 .modal-file-input {
-    margin-bottom: 15px;
+    margin-bottom: 15px; /* Отступ снизу */
 }
 
+/* Стиль кнопки в модальном окне */
 .modal-create-button {
-    padding: 10px 15px;
+    padding: 10px 15px; /* Внутренний отступ кнопки */
     border: none;
     border-radius: 5px;
-    background-color: #26a69a;
+    background-color: #26a69a; /* Цвет кнопки */
     color: white;
     cursor: pointer;
     font-size: 16px;
-    transition: background-color 0.3s;
-    width: 100%;
+    transition: background-color 0.3s; /* Плавный переход цвета */
+    width: 100%; /* Занимает всю ширину */
 }
 
 .modal-create-button:hover {
-    background-color: #00796b;
+    background-color: #00796b; /* Цвет кнопки при наведении */
 }
 
+/* Стиль для кнопки закрытия в модальном окне */
 .modal-close-button {
-    padding: 10px 15px;
+    padding: 10px 15px; /* Внутренний отступ кнопки */
     border: none;
     border-radius: 5px;
-    background-color: #f44336;
+    background-color: #f44336; /* Красный цвет для кнопки закрытия */
     color: white;
     cursor: pointer;
     font-size: 16px;
-    transition: background-color 0.3s;
-    width: 100%;
-    margin-top: 10px;
+    transition: background-color 0.3s; /* Плавный переход цвета */
+    width: 100%; /* Занимает всю ширину */
+    margin-top: 10px; /* Отступ сверху для разделения кнопок */
 }
 
 .modal-close-button:hover {
-    background-color: #d32f2f;
+    background-color: #d32f2f; /* Темнее при наведении */
 }
 
 .user-name {
-    margin-left: 10px;
+    margin-left: 10px; /* Отступ слева от изображения */
 }
 
 .user-avatar {
-    width: 35px;
-    height: 35px;
-    max-width: 35px;
-    max-height: 35px;
-    border-radius: 50%;
-    background-color: #e0e0e0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    color: #757575;
-    overflow: hidden;
+    width: 35px; /* Ширина кружка */
+    height: 35px; /* Высота кружка */
+    max-width: 35px; /* Максимальная ширина */
+    max-height: 35px; /* Максимальная высота */
+    border-radius: 50%; /* Круглая форма */
+    background-color: #e0e0e0; /* Цвет фона по умолчанию */
+    display: flex; /* Используем флексбокс для центрирования текста */
+    align-items: center; /* Вертикальное выравнивание */
+    justify-content: center; /* Горизонтальное выравнивание */
+    font-size: 16px; /* Размер шрифта для текста */
+    color: #757575; /* Цвет текста */
+    overflow: hidden; /* Скрыть переполнение */
 }
