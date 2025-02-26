@@ -1,7 +1,13 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 .home-container {
     display: flex; /* Flexbox для расположения */
     flex-direction: column; /* Размещаем элементы вертикально */
-    max-width: 1200px;
+    max-width: 100%; /* Занимает всю ширину экрана */
     margin: 0 auto;
     padding: 20px;
     background-color: #E6E6FA;
@@ -15,12 +21,14 @@
     align-items: center; /* Центрируем элементы вертикально */
     margin-bottom: 20px; /* Добавляем отступ снизу */
     gap: 10px;
+    width: 100%; /* Занимает всю ширину */
 }
 
 .login-input-home {
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
+    width: 100%; /* Занимает всю ширину */
 }
 
 .login-button-home {
@@ -30,6 +38,7 @@
     background-color: #007bff;
     color: white;
     cursor: pointer;
+    width: 100%; /* Занимает всю ширину */
 }
 
 .logout-button-home {
@@ -39,6 +48,7 @@
     background-color: #007bff;
     color: white;
     cursor: pointer;
+    width: 100%; /* Занимает всю ширину */
 }
 
 .login-button-home:hover {
@@ -61,7 +71,7 @@
 
 h1, h2 {
     text-align: center;
-    color: 	#2E8B57; /* Темный цвет для заголовка */
+    color: #2E8B57; /* Темный цвет для заголовка */
     font-size: 2rem; /* Установите одинаковый размер шрифта */
     font-weight: bold; /* Убедитесь, что вес шрифта одинаковый */
     margin: 0; /* Уберите отступы, если они есть */
@@ -82,7 +92,7 @@ h1, h2 {
     margin-right: 10px;
     font-size: 16px;
     box-sizing: border-box; /* Учитываем границы и отступы в ширину и высоту */
-    }
+}
 
 .create-user-button-main {
     padding: 10px 15px;
@@ -276,4 +286,29 @@ h1, h2 {
     font-size: 16px; /* Размер шрифта для текста */
     color: #757575; /* Цвет текста */
     overflow: hidden; /* Скрыть переполнение */
+}
+
+/* Медиа-запросы для адаптивности */
+@media (max-width: 768px) {
+    .home-container {
+        padding: 10px; /* Уменьшаем отступы на мобильных устройствах */
+    }
+
+    .users-container,
+    .chats-container {
+        max-height: 400px; /* Ограничиваем высоту на мобильных устройствах */
+    }
+
+    .login-input-home,
+    .search-input,
+    .chat-input {
+        width: 100%; /* Ширина 100% для всех полей ввода */
+    }
+
+    .create-user-button-main,
+    .create-chat-button,
+    .modal-create-button,
+    .modal-close-button {
+        width: 100%; /* Ширина 100% для кнопок */
+    }
 }
