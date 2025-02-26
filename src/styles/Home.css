@@ -81,6 +81,7 @@ h1, h2 {
 
 .chat-input-container {
     display: flex; /* Используем flexbox для выравнивания */
+    flex-wrap: wrap; /* Позволяем элементам переноситься на новую строку */
     align-items: center; /* Центрируем элементы по вертикали */
     margin-bottom: 15px; /* Отступ снизу */
 }
@@ -94,7 +95,8 @@ h1, h2 {
     margin-right: 10px;
     font-size: 16px;
     box-sizing: border-box; /* Учитываем границы и отступы в ширину и высоту */
-    width: 50%;
+    max-width: 100%; /* Ограничиваем максимальную ширину полю ввода */
+    margin-right: 10px; /* Отступ справа */
 }
 
 .create-user-button-main {
@@ -122,7 +124,8 @@ h1, h2 {
     min-width: 150px; /* Минимальная ширина кнопки */
     margin-top: 10px;
     box-sizing: border-box; /* Учитываем границы и отступы в ширину и высоту */
-    width: 50%;
+    box-sizing: border-box; /* Учитываем границы и отступы в ширину и высоту */
+    max-width: 100%; /* Ограничиваем максимальную ширину кнопки */
 }
 
 .create-chat-button:hover, .create-user-button:hover {
