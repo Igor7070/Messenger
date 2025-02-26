@@ -114,7 +114,7 @@ h1, h2 {
 }
 
 .create-chat-button {
-    padding: 10px 15px;
+    padding: 10px 10px;
     border: none;
     border-radius: 5px;
     background-color: #007bff; /* Синий цвет для кнопки */
