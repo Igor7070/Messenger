@@ -19,7 +19,8 @@
     display: flex;
     justify-content: center;
     align-items: center; /* Центрируем элементы вертикально */
-    margin-bottom: 20px; /* Добавляем отступ снизу */
+    /*margin-bottom: 20px; Добавляем отступ снизу */
+    margin: 0 20px 20px; /* Отступы: 0 сверху, 20px слева и справа, 20px снизу */
     gap: 10px;
     width: 100%; /* Занимает всю ширину */
     /*width: calc(100% - 120px); /* Учитываем отступы по бокам */
