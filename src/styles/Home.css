@@ -94,6 +94,7 @@ h1, h2 {
     margin-right: 10px;
     font-size: 16px;
     box-sizing: border-box; /* Учитываем границы и отступы в ширину и высоту */
+    width: 50%;
 }
 
 .create-user-button-main {
@@ -121,6 +122,7 @@ h1, h2 {
     min-width: 150px; /* Минимальная ширина кнопки */
     margin-top: 10px;
     box-sizing: border-box; /* Учитываем границы и отступы в ширину и высоту */
+    width: 50%;
 }
 
 .create-chat-button:hover, .create-user-button:hover {
