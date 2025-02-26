@@ -21,14 +21,14 @@
     align-items: center; /* Центрируем элементы вертикально */
     margin-bottom: 20px; /* Добавляем отступ снизу */
     gap: 10px;
-    width: 100%; /* Занимает всю ширину */
+    width: 70%; /* Занимает всю ширину */
 }
 
 .login-input-home {
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    width: 100%; /* Занимает всю ширину */
+    width: 70%; /* Занимает всю ширину */
 }
 
 .login-button-home {
@@ -38,7 +38,7 @@
     background-color: #007bff;
     color: white;
     cursor: pointer;
-    width: 100%; /* Занимает всю ширину */
+    width: 70%; /* Занимает всю ширину */
 }
 
 .logout-button-home {
@@ -48,7 +48,7 @@
     background-color: #007bff;
     color: white;
     cursor: pointer;
-    width: 100%; /* Занимает всю ширину */
+    width: 70%; /* Занимает всю ширину */
 }
 
 .login-button-home:hover {
