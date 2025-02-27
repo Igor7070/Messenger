@@ -26,6 +26,7 @@
     gap: 10px; 
     flex-wrap: wrap; 
     /*align-items: center;  Центрируем элементы по вертикали */
+    justify-content: center; /* Центрируем все элементы по горизонтали */
 }
 
 .input-username,
