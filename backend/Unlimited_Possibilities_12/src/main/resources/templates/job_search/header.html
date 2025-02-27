@@ -30,15 +30,23 @@
         z-index: 1; /* Убедитесь, что контейнер выше псевдоэлементов */
     }
 
-    .header-container::before {
-        content: ''; /* Создаем псевдоэлемент */
+    header::before,
+    header::after {
+        content: '';
         position: absolute;
-        left: -20px; /* Смещение влево */
-        right: -20px; /* Смещение вправо */
         top: 0;
         bottom: 0;
+        width: 20px; /* Ширина затемненных краев */
         background-color: #b0a3c0; /* Темный оттенок фона */
-        z-index: -1; /* Помещаем за контейнер */
+        z-index: 0; /* Помещаем за контейнер */
+    }
+
+    header::before {
+        left: 0; /* Затемненный край слева */
+    }
+
+    header::after {
+        right: 0; /* Затемненный край справа */
     }
 
     .header-title {
