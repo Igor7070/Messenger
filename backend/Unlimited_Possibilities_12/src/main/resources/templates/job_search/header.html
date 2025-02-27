@@ -28,6 +28,17 @@
         padding: 0 30px; /* Добавим немного внутреннего отступа для мобильных устройств */
     }
 
+    .header-container::before {
+        content: ''; /* Создаем псевдоэлемент */
+        position: absolute;
+        left: -20px; /* Смещение влево */
+        right: -20px; /* Смещение вправо */
+        top: 0;
+        bottom: 0;
+        background-color: #b0a3c0; /* Темный оттенок фона */
+        z-index: -1; /* Помещаем за контейнер */
+    }
+
     .header-title {
         font-family: 'Roboto', sans-serif; /* Применение нового шрифта */
         font-size: 30px;
