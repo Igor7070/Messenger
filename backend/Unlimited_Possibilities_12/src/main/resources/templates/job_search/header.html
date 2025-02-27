@@ -7,6 +7,9 @@
     body {
         display: flex;
         flex-direction: column; /* Устанавливает вертикальное расположение элементов */
+    }
+
+    body {
         font-family: Arial, sans-serif;
         background-color: #f2f2f2;
         padding-top: 0px; /* увеличена верхняя отступ, чтобы учесть высоту шапки */
@@ -22,13 +25,21 @@
     .header-container {
         max-width: 1200px; /* ограничена ширина контейнера шапки */
         margin: 0 auto; /* центрирование контейнера */
-        padding: 0 15px; /* отступы для мобильных устройств */
     }
 
     .header-title {
         font-family: 'Roboto', sans-serif; /* Применение нового шрифта */
         font-size: 30px;
         color: goldenrod !important;
+    }
+
+    .light-maroon-bg {
+        background-color: #d0c1e3;
+        padding: 10px 15px;
+    }
+
+    .light-maroon-bg a.btn {
+        color: #343a40;
     }
 
     .clear-db-btn {
@@ -47,26 +58,9 @@
         background-color: #e06e6e; /* Легкий оттенок при наведении */
     }
 
-    /* Медиа-запрос для мобильных устройств */
-    @media (max-width: 768px) {
-        .header-title {
-            font-size: 24px; /* Уменьшаем размер шрифта заголовка */
-        }
-
-        .clear-db-btn {
-            width: 100%; /* Кнопка занимает всю ширину */
-            margin-top: 10px; /* Отступ сверху */
-        }
-
-        .btn {
-            width: 100%; /* Кнопки занимают всю ширину */
-            margin-top: 5px; /* Отступ сверху для кнопок */
-        }
-
-        .link-secondary {
-            display: block; /* Ссылки отображаются в блоках, чтобы занимали всю ширину */
-            margin: 5px 0; /* Вертикальный отступ между ссылками */
-        }
+    .clear-db-btn {
+        position: relative; /* Установите относительное позиционирование */
+        top: 7px; /* Сдвиньте кнопку на 10 пикселей вверх */
     }
 </style>
 
