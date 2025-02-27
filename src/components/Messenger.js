@@ -500,27 +500,30 @@ const Messenger = () => {
     return (
         <div className="messenger">
             <div className="chat-name">Chat: {chatName}</div>
-            {!isLoggedIn ? (
-                <div className="user-creation">
-                    <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Enter username"
-                        className="input-username"
-                    />
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter password"
-                        className="input-password"
-                    />
-                    <button onClick={handleCreateUser} className="create-user-button">Create User</button>
-                </div>
-            ) : (
-                <button onClick={handleLogout} className="logout-button">Logout</button>
-            )}
+            <div className="user-creation">
+                {!isLoggedIn ? (
+                    <>
+                        <input
+                            type="text"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="Enter username"
+                            className="input-username"
+                        />
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter password"
+                            className="input-password"
+                        />
+                        <button onClick={handleCreateUser} className="create-user-button">Create User</button>
+                        <button onClick={handleLogin} className="login-button">Login</button>
+                    </>
+                ) : (
+                    <button onClick={handleLogout} className="logout-button">Logout</button>
+                )}
+            </div>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
             <div className="message-list">
                 {messages.map((msg) => (
