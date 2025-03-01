@@ -10,24 +10,25 @@
             html, body {
                 height: 100%; /* Задает высоту для html и body */
                 margin: 0; /* Убирает отступы по умолчанию */
-                background-image: url('/images/background_job_search_2.png'); /* Путь к изображению */
-                background-size: cover; /* Масштабирует изображение, чтобы покрыть весь фон */
-                background-position: center; /* Центрирует изображение */
+                /*background-image: url('/images/background_job_search_2.png'); /* Путь к изображению */
+                /*background-size: cover; /* Масштабирует изображение, чтобы покрыть весь фон */
+                /*background-position: center; /* Центрирует изображение */
+                background: linear-gradient(to bottom, #E5E8E8, #AAB8C2); /* Насыщенный градиент */
+                background-repeat: no-repeat;
+                background-attachment: fixed; /* Фиксирует фон */
+                background-size: cover;
+                background-color: #E5E8E8; /* Запасной цвет фона */
             }
 
             body {
                 display: flex;
                 flex-direction: column; /* Устанавливает вертикальное расположение элементов */
+                font-family: Arial, sans-serif;
+                padding-top: 0px; /* увеличена верхняя отступ, чтобы учесть высоту шапки */
             }
 
             .container {
                 flex: 1; /* Заставляет контейнер занимать всё доступное пространство */
-            }
-
-            body {
-                font-family: Arial, sans-serif;
-                background-color: #f2f2f2;
-                padding-top: 0px; /* увеличена верхняя отступ, чтобы учесть высоту шапки */
             }
 
             .light-maroon-bg {
@@ -40,7 +41,9 @@
             }
 
             .alert-info {
-                background-color: #48D1CC; /* Задаёт цвет фона для alert */
+                /*background-color: #48D1CC; /* Задаёт цвет фона для alert */
+                /*background-color: #61CCEA; /* Задаёт цвет фона для alert*/
+                background-color: #79DAF5; /* Задаёт цвет фона для alert*/
                 color: 	#2F4F4F;
             }
         </style>
