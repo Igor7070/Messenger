@@ -9,7 +9,7 @@ import { NotificationProvider } from './NotificationContext'; // Импорти�
 import { UserInteractionProvider } from './UserInteractionContext';
 import { ToastContainer } from 'react-toastify'; // Импортируем ToastContainer
 import '../styles/App.css';
-import backgroundImage from './assets/Background_messenger.jpg'; // Путь к изображению
+import backgroundImage from '../assets/Background_messenger.jpg'; // Путь к изображению
 
 const App = () => {
     useEffect(() => {
