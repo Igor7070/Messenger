@@ -1,6 +1,6 @@
 body {
   /*background-color: #66CDAA; /* Мягкий светло-синий фон для всего приложения */
-  background-image: url('/Background_messenger.jpg'); /* Путь к изображению в public */
+  background-image: url('https://igor7070.github.io/Messenger/Background_messenger.jpg'); 
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
