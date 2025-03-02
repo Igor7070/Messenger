@@ -1,5 +1,9 @@
 body {
-  background-color: #66CDAA; /* Мягкий светло-синий фон для всего приложения */
+  /*background-color: #66CDAA; /* Мягкий светло-синий фон для всего приложения */
+  background-image: url('/Background_messenger.jpg'); /* Путь к изображению в папке public */
+  background-size: cover; /* Чтобы изображение покрывало весь экран */
+  background-repeat: no-repeat; /* Не повторять изображение */
+  background-position: center; /* Центрировать изображение */
   margin: 0; /* Убираем стандартные отступы браузера */
   font-family: 'Roboto', sans-serif; /* Убедитесь, что шрифт установлен */
 }
