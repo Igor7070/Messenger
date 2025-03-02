@@ -27,6 +27,21 @@
             h2 {
                 text-align: center;
                 margin-bottom: 30px;
+                color: #ffffff; /* Белый цвет для заголовка */
+                text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8); /* Тень для лучшего контраста */
+            }
+
+            .p1 {
+                margin-left: 20px;
+                color: #ffffff; /* Белый цвет текста */
+                text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8); /* Тень текста для лучшего контраста */
+            }
+
+            .p1 span {
+                /*background-color: rgba(0, 0, 0, 0.6); /* Полупрозрачный черный фон */
+                padding: 10px 5px; /* 10px сверху и снизу, 5px слева и справа */
+                border-radius: 5px; /* Скругление углов */
+                display: inline; /* Фон растягивается только до длины текста */
             }
 
             .light-maroon-bg a.btn {
@@ -107,9 +122,21 @@
         <div th:replace="~{job_search/header.html}"></div>
 
         <h2>Подтверждение</h2>
-        <p style="margin-left: 20px;" th:text="${message}"></p>
-        <p style="margin-left: 20px;">Идентификатор вакансии: <span th:text="${vacancyId}"></span></p>
-        <p style="margin-left: 20px;">URL страницы откуда отправка резюме: <span th:text="${submitPageUrl}"></span></p>
+        <p class="p1" style="margin-left: 20px;">
+            <span style="background-color: rgba(0, 0, 0, 0.6); border-radius: 5px;">
+                <span th:text="${message}"></span>
+            </span>
+        </p>
+        <p class="p1" style="margin-left: 20px;">
+            <span style="background-color: rgba(0, 0, 0, 0.6); border-radius: 5px;">
+                <span>Идентификатор вакансии: </span><span th:text="${vacancyId}"></span>
+            </span>
+        </p>
+        <p class="p1" style="margin-left: 20px;">
+            <span style="background-color: rgba(0, 0, 0, 0.6); border-radius: 5px;">
+                <span>URL страницы откуда отправка резюме: </span><span th:text="${submitPageUrl}"></span>
+            </span>
+        </p>
 
         <div class="fireworks" id="fireworks"></div>
 
