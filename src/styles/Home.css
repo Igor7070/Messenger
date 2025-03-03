@@ -203,7 +203,8 @@ h1, h2 {
 }
 
 .ReactModal__Content {
-    background: #ffffff; /* Белый фон для окна */
+    /*background: #ffffff; /* Белый фон для окна */
+    background: #E4EFAB;
     border-radius: 10px; /* Скругленные углы */
     padding: 20px; /* Отступы */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Тень для глубины */
