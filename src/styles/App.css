@@ -1,3 +1,8 @@
+html, body {
+  height: 100%; /* Устанавливаем высоту 100% для html и body */
+  margin: 0; /* Убираем стандартные отступы */
+}
+
 body {
   /*background-color: #66CDAA; /* Мягкий светло-синий фон для всего приложения */
   background-image: url('https://igor7070.github.io/Messenger/Background_messenger_1.png'); 
