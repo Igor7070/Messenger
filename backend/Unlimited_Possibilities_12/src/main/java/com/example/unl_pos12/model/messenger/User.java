@@ -1,9 +1,9 @@
 package com.example.unl_pos12.model.messenger;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class User {
@@ -16,6 +16,14 @@ public class User {
     //@Lob // Указываем, что это большое поле
     private String info; // Информация о пользователе
     private String avatar; // Путь к аватару или байтовый массив
+
+    @ManyToMany
+    @JoinTable(
+            name = "user_chats",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "chat_id")
+    )
+    private List<Chat> privateChats = new ArrayList<>(); // Список приватных чатов
 
     public Long getId() {
         return id;
@@ -55,5 +63,13 @@ public class User {
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+
+    public List<Chat> getPrivateChats() {
+        return privateChats;
+    }
+
+    public void setPrivateChats(List<Chat> privateChats) {
+        this.privateChats = privateChats;
     }
 }
