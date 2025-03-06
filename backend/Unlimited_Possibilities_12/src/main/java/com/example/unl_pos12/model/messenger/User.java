@@ -1,6 +1,5 @@
 package com.example.unl_pos12.model.messenger;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -24,7 +23,6 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "chat_id")
     )
-    @JsonManagedReference // Указываем, что это основная сторона связи
     private List<Chat> privateChats = new ArrayList<>(); // Список приватных чатов
 
     public Long getId() {

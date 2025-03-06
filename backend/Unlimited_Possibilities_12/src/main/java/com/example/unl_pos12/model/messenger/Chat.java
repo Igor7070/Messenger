@@ -1,10 +1,8 @@
 package com.example.unl_pos12.model.messenger;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -19,10 +17,6 @@ public class Chat {
     @OneToMany(mappedBy = "chat", fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<Message> messages;
-
-    @ManyToMany(mappedBy = "privateChats") // Обратная сторона связи
-    @JsonBackReference // Указываем, что это обратная ссылка
-    private List<User> users = new ArrayList<>(); // Список пользователей в чате
 
     public Long getId() {
         return id;
