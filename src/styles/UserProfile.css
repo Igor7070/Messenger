@@ -134,7 +134,7 @@ h2 {
 
 .button-container {
     display: flex;
-    justify-content: flex-end; /* Выравнивание по правому краю */
+    justify-content: space-between; /* Разделяет кнопки по краям */
     margin-top: 10px; /* Отступ сверху */
 }
 
