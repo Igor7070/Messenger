@@ -3,17 +3,17 @@
 }
 
 .chat-item1 {
-    display: flex; /* Flex для горизонтального расположения */
-    align-items: center; /* Выравнивание всех дочерних элементов по центру по вертикали */
+    display: flex;
+    align-items: center;
     padding: 10px;
     margin: 5px 0;
-    background-color: #c4cac5;
+    background-color: #c4cac5; /* Фон только для контейнера */
     border-radius: 5px;
     cursor: pointer;
 }
 
 .chat-item1:hover {
-    background-color: #e0e0e0;
+    background-color: #e0e0e0; /* Фон при наведении */
 }
 
 .chat-avatar {
@@ -21,13 +21,13 @@
     height: 40px;
     border-radius: 50%;
     margin-right: 10px;
-    background-color: #999;
+    background-color: #999; /* Фон для инициалов аватара */
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
     color: #fff;
-    flex-shrink: 0; /* Предотвращает сжатие аватара */
+    flex-shrink: 0;
 }
 
 .chat-avatar img {
@@ -39,6 +39,7 @@
 
 .chat-name {
     font-size: 16px;
-    line-height: 40px; /* Устанавливаем высоту строки равной высоте аватара для точного центрирования */
-    margin: 0; /* Убираем возможные внешние отступы */
+    line-height: 40px; /* Высота строки для центрирования */
+    margin: 0; /* Убираем отступы */
+    background-color: transparent; /* Убираем любой фон вокруг текста */
 }
