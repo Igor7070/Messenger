@@ -46,7 +46,7 @@
 }
 
 .update-button:hover {
-    background-color: #00adb3; /* Цвет фона при наведении */
+    background-color: #00b327; /* Цвет фона при наведении */
 }
 
 .user-info {
@@ -155,5 +155,5 @@ h2 {
 }
 
 .personal-chats-button:hover {
-    background-color: #00adb3; /* Цвет фона при наведении */
+    background-color: #00b327; /* Цвет фона при наведении */
 }
