@@ -3,9 +3,10 @@
 }
 
 .personal-chats-container ul {
-    list-style: none; /* Убираем стандартные маркеры списка */
-    padding: 0; /* Убираем внутренние отступы списка */
-    margin: 0; /* Убираем внешние отступы списка */
+    list-style: none; /* Убираем маркеры списка */
+    padding: 0; /* Убираем внутренние отступы */
+    margin: 0; /* Убираем внешние отступы */
+    border: none; /* Убираем возможные границы списка */
 }
 
 .chat-item1 {
@@ -16,7 +17,8 @@
     background-color: #c4cac5;
     border-radius: 5px;
     cursor: pointer;
-    outline: none; /* Убираем синюю рамку при фокусе */
+    border: none; /* Убираем любые границы */
+    border-bottom: none; /* Явно убираем нижнюю границу */
 }
 
 .chat-item1:hover {
@@ -35,6 +37,7 @@
     font-size: 18px;
     color: #fff;
     flex-shrink: 0;
+    border: none; /* Убираем границы у аватара */
 }
 
 .chat-avatar img {
@@ -42,6 +45,7 @@
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
+    border: none; /* Убираем границы у изображения */
 }
 
 .chat-name {
@@ -49,4 +53,7 @@
     line-height: 40px;
     margin: 0;
     background-color: transparent;
+    border: none; /* Убираем границы у текста */
+    border-bottom: none; /* Явно убираем нижнюю границу */
+    text-decoration: none; /* Убираем подчёркивание текста */
 }
