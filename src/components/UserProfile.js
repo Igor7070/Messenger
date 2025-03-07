@@ -345,6 +345,10 @@ const UserProfile = () => {
         }
     };
 
+    const handlePersonalChats = () => {
+        navigate(`/user/${currentUserId}/personal-chats`); // Переход к личным чатам
+    };
+
     if (error) return <div className="error-message">{error}</div>;
     if (!user) return <div>Loading...</div>;
 

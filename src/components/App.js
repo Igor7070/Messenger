@@ -7,6 +7,7 @@ import PrivateChat from './PrivateChat'; // Импорт нового компо
 import VoiceCall from './VoiceCall'; // Импорт компонента для видеозвонка
 import { NotificationProvider } from './NotificationContext'; // Импортируем контекст уведомлений
 import { UserInteractionProvider } from './UserInteractionContext';
+import PersonalChats from './PersonalChats';
 import { ToastContainer } from 'react-toastify'; // Импортируем ToastContainer
 import '../styles/App.css';
 
