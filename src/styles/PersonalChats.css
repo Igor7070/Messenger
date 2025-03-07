@@ -2,18 +2,25 @@
     padding: 20px;
 }
 
+.personal-chats-container ul {
+    list-style: none; /* Убираем стандартные маркеры списка */
+    padding: 0; /* Убираем внутренние отступы списка */
+    margin: 0; /* Убираем внешние отступы списка */
+}
+
 .chat-item1 {
     display: flex;
     align-items: center;
     padding: 10px;
     margin: 5px 0;
-    background-color: #c4cac5; /* Фон только для контейнера */
+    background-color: #c4cac5;
     border-radius: 5px;
     cursor: pointer;
+    outline: none; /* Убираем синюю рамку при фокусе */
 }
 
 .chat-item1:hover {
-    background-color: #e0e0e0; /* Фон при наведении */
+    background-color: #e0e0e0;
 }
 
 .chat-avatar {
@@ -21,7 +28,7 @@
     height: 40px;
     border-radius: 50%;
     margin-right: 10px;
-    background-color: #999; /* Фон для инициалов аватара */
+    background-color: #999;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -39,7 +46,7 @@
 
 .chat-name {
     font-size: 16px;
-    line-height: 40px; /* Высота строки для центрирования */
-    margin: 0; /* Убираем отступы */
-    background-color: transparent; /* Убираем любой фон вокруг текста */
+    line-height: 40px;
+    margin: 0;
+    background-color: transparent;
 }
