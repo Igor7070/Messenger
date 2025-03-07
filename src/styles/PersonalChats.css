@@ -3,6 +3,8 @@
 }
 
 .chat-item1 {
+    display: flex; /* Делаем flex-контейнер для выравнивания аватара и имени */
+    align-items: center; /* Вертикальное выравнивание элементов */
     padding: 10px;
     margin: 5px 0;
     background-color: #c4cac5;
@@ -12,4 +14,28 @@
 
 .chat-item1:hover {
     background-color: #e0e0e0;
+}
+
+.chat-avatar {
+    width: 40px; /* Размер аватара, как в Home */
+    height: 40px;
+    border-radius: 50%; /* Круглый аватар */
+    margin-right: 10px; /* Отступ между аватаром и именем */
+    background-color: #999; /* Цвет фона для инициалов, чуть темнее, чтобы сочетался с #c4cac5 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px; /* Размер шрифта для инициалов */
+    color: #fff; /* Белый цвет текста инициалов */
+}
+
+.chat-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover; /* Картинка заполняет круг без искажений */
+}
+
+.chat-name {
+    font-size: 16px; /* Размер шрифта имени */
 }
