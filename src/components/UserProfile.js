@@ -390,15 +390,14 @@ const UserProfile = () => {
                     </div>
                 )}
             </div>
-            {userId === String(currentUserId) && ( 
-                <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
-            )}
 
-            {/* Кнопка "Personal chats" */}
-            {userId === String(currentUserId) && (
-                <button onClick={handlePersonalChats} className="personal-chats-button">
-                    Personal Chats
-                </button>
+            {userId === String(currentUserId) && ( 
+                <div className="button-container"> {/* Новый контейнер */}
+                    <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
+                    <button onClick={handlePersonalChats} className="personal-chats-button">
+                        Personal Chats
+                    </button>
+                </div>
             )}
 
             {/* Кнопка "Send message" */}

@@ -132,16 +132,22 @@ h2 {
     background-color: #45a049; /* Более темный зеленый при наведении */
 }
 
+.button-container {
+    display: flex;
+    justify-content: flex-end; /* Выравнивание по правому краю */
+    margin-top: 10px; /* Отступ сверху */
+}
+
 .personal-chats-button {
-    background-color: #6f00ff;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 10px;
+    background-color: #6f00ff; /* Цвет фона */
+    color: white; /* Цвет текста */
+    padding: 10px 15px; /* Внутренние отступы */
+    border: none; /* Без рамки */
+    border-radius: 5px; /* Закругление углов */
+    cursor: pointer; /* Курсор при наведении */
+    margin-left: 10px; /* Отступ между кнопками */
 }
 
 .personal-chats-button:hover {
-    background-color: #0056b3;
+    background-color: #0056b3; /* Цвет фона при наведении */
 }
