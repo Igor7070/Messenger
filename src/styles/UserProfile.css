@@ -45,6 +45,10 @@
     align-self: flex-end; /* Выравнивание кнопки вправо */
 }
 
+.update-button:hover {
+    background-color: #00adb3; /* Цвет фона при наведении */
+}
+
 .user-info {
     position: relative;
 }
@@ -151,5 +155,5 @@ h2 {
 }
 
 .personal-chats-button:hover {
-    background-color: #0056b3; /* Цвет фона при наведении */
+    background-color: #00adb3; /* Цвет фона при наведении */
 }
