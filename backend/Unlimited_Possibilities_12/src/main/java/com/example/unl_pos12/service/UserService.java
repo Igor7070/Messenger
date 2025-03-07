@@ -1,10 +1,12 @@
 package com.example.unl_pos12.service;
 
+import com.example.unl_pos12.model.messenger.Chat;
 import com.example.unl_pos12.model.messenger.User;
 import com.example.unl_pos12.repo.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,5 +63,13 @@ public class UserService {
 
     private boolean isValidPassword(String password) {
         return password.length() >= 9 && password.matches(".*[a-zA-Z].*") && password.matches(".*\\d.*");
+    }
+
+    public List<Chat> getPrivateChatsByUserId(Long userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null) {
+            return user.getPrivateChats(); // Возвращаем список приватных чатов
+        }
+        return Collections.emptyList(); // Возвращаем пустой список, если пользователь не найден
     }
 }

@@ -1,5 +1,6 @@
 package com.example.unl_pos12.controller.messenger;
 
+import com.example.unl_pos12.model.messenger.Chat;
 import com.example.unl_pos12.model.messenger.User;
 import com.example.unl_pos12.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -149,6 +150,16 @@ public class UserController {
         String username = loginRequest.get("username");
         String password = loginRequest.get("password");
         return userService.loginUser(username, password);
+    }
+
+    @GetMapping("/{id}/private-chats")
+    public ResponseEntity<List<Chat>> getPrivateChatsByUserId(@PathVariable Long id) {
+        List<Chat> privateChats = userService.getPrivateChatsByUserId(id);
+        if (!privateChats.isEmpty()) {
+            return ResponseEntity.ok(privateChats); // Возвращаем список приватных чатов
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // Пользователь не найден
+        }
     }
 
     public static String transliterate(String input) {
