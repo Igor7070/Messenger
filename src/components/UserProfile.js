@@ -390,6 +390,13 @@ const UserProfile = () => {
                 <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
             )}
 
+            {/* Кнопка "Personal chats" */}
+            {userId === String(currentUserId) && (
+                <button onClick={handlePersonalChats} className="personal-chats-button">
+                    Personal Chats
+                </button>
+            )}
+
             {/* Кнопка "Send message" */}
             {currentUserId && userId !== String(currentUserId) && ( 
                 <button onClick={handleSendMessage} className="send-message-button">Send Message</button>

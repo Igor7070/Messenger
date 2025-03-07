@@ -24,6 +24,7 @@ const App = () => {
                             <Route path="/user/:userId" element={<UserProfile />} /> {/* Профиль пользователя */}
                             <Route path="/private-chat/:chatId" element={<PrivateChat />} /> {/* Личный чат */}
                             <Route path="/voice-call/:roomId" element={<VoiceCall />} /> {/* Видеозвонок */}
+                            <Route path="/user/:userId/personal-chats" element={<PersonalChats />} /> {/* Личные чаты */}
                         </Routes>
                     </div>
                 </Router>
