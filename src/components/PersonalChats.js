@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import '../styles/PersonalChats.css'; // Добавьте стили для компонента
+import '../styles/PersonalChats.css';
 
 const PersonalChats = () => {
     const { userId } = useParams();
     const navigate = useNavigate();
-    const location = useLocation(); // Используем useLocation для получения переданных данных
+    const location = useLocation();
     const [privateChats, setPrivateChats] = useState([]);
-    const [avatars, setAvatars] = useState({}); // Состояние для хранения аватаров собеседников
+    const [chatPartners, setChatPartners] = useState({}); // Храним данные собеседников
 
-    // Извлекаем имя пользователя из состояния
-    const currentUserName = location.state?.currentUserName || 'User'; // Используем 'User' как запасное имя
+    const currentUserName = location.state?.currentUserName || 'User';
 
     useEffect(() => {
         const fetchPrivateChats = async () => {
@@ -19,7 +18,7 @@ const PersonalChats = () => {
                 if (response.ok) {
                     const chats = await response.json();
                     setPrivateChats(chats);
-                    fetchAvatars(chats); // Получаем аватары после загрузки чатов
+                    fetchChatPartners(chats); // Загружаем данные собеседников
                 } else {
                     console.error('Failed to fetch private chats:', response.statusText);
                 }
@@ -31,61 +30,58 @@ const PersonalChats = () => {
         fetchPrivateChats();
     }, [userId]);
 
-    const fetchAvatars = async (chats) => {
-        const avatarPromises = chats.map(async (chat) => {
-            const names = chat.name.split('_');
-            const partnerName = names.find(name => name !== currentUserName);
-
-            const response = await fetch(`https://unlimitedpossibilities12.org/api/users?username=${partnerName}`);
-            if (response.ok) {
-                const user = await response.json();
-                return { username: partnerName, avatar: user.avatar }; // Возвращаем имя и аватар
+    // Функция для загрузки данных собеседников
+    const fetchChatPartners = async (chats) => {
+        const partners = {};
+        for (const chat of chats) {
+            const partnerName = getChatPartnerName(chat.name);
+            try {
+                const response = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${partnerName}`);
+                if (response.ok) {
+                    const userData = await response.json();
+                    partners[chat.id] = userData; // Сохраняем данные пользователя по ID чата
+                } else {
+                    console.error(`Failed to fetch user ${partnerName}:`, response.statusText);
+                }
+            } catch (error) {
+                console.error(`Error fetching user ${partnerName}:`, error);
             }
-            return { username: partnerName, avatar: null }; // Если не удалось получить, возвращаем null
-        });
-
-        const avatarsData = await Promise.all(avatarPromises);
-        const avatarsMap = avatarsData.reduce((acc, { username, avatar }) => {
-            acc[username] = avatar;
-            return acc;
-        }, {});
-
-        setAvatars(avatarsMap); // Сохраняем аватары в состоянии
+        }
+        setChatPartners(partners);
     };
 
     const handleChatClick = (chatId) => {
-        navigate(`/private-chat/${chatId}`); // Переход к конкретному чату
+        navigate(`/private-chat/${chatId}`);
     };
 
     const getChatPartnerName = (chatName) => {
         const names = chatName.split('_');
-        return names.find(name => name !== currentUserName); // Возвращаем имя, отличное от текущего пользователя
+        return names.find(name => name !== currentUserName);
     };
 
     return (
         <div className="personal-chats-container">
-            <h1>{`${currentUserName}'s private chats`}</h1> {/* Используем имя пользователя в заголовке */}
+            <h1>{`${currentUserName}'s private chats`}</h1>
             <ul>
-            {privateChats.map(chat => {
-                const partnerName = getChatPartnerName(chat.name);
-                const avatarSrc = avatars[partnerName] ? `https://unlimitedpossibilities12.org${avatars[partnerName]}` : null;
+                {privateChats.map(chat => {
+                    const partner = chatPartners[chat.id] || {};
+                    const avatarSrc = partner.avatar ? `https://unlimitedpossibilities12.org${partner.avatar}` : null;
+                    const initials = partner.username ? partner.username.charAt(0).toUpperCase() : '';
+                    const partnerName = getChatPartnerName(chat.name);
 
-                return (
-                    <li key={chat.id} onClick={() => handleChatClick(chat.id)} className="chat-item1">
-                        {avatarSrc ? (
-                            <img
-                                src={avatarSrc}
-                                alt={`${partnerName} avatar`}
-                                className="chat-avatar"
-                                onError={() => console.error(`Failed to load avatar for ${partnerName}`)} // Для отладки
-                            />
-                        ) : (
-                            <div className="chat-avatar-placeholder">{partnerName.charAt(0).toUpperCase()}</div>
-                        )}
-                        {partnerName}
-                    </li>
-                );
-            })}
+                    return (
+                        <li key={chat.id} onClick={() => handleChatClick(chat.id)} className="chat-item1">
+                            {avatarSrc ? (
+                                <img src={avatarSrc} alt={`${partnerName} avatar`} className="chat-avatar" />
+                            ) : (
+                                <div className="chat-avatar">
+                                    {initials}
+                                </div>
+                            )}
+                            <span className="chat-name">{partnerName}</span>
+                        </li>
+                    );
+                })}
             </ul>
         </div>
     );
