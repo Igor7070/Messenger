@@ -33,13 +33,19 @@ const PersonalChats = () => {
         navigate(`/private-chat/${chatId}`); // Переход к конкретному чату
     };
 
+     // Функция для получения имени собеседника
+     const getChatPartnerName = (chatName) => {
+        const names = chatName.split('_'); // Разделяем имя на части
+        return names.find(name => name !== currentUserName); // Возвращаем имя, отличное от текущего пользователя
+    };
+
     return (
         <div className="personal-chats-container">
-            <h1>{`${currentUserName}'s Private Chats`}</h1> {/* Используем имя пользователя в заголовке */}
+            <h1>{`${currentUserName}'s private chats`}</h1> {/* Используем имя пользователя в заголовке */}
             <ul>
                 {privateChats.map(chat => (
                     <li key={chat.id} onClick={() => handleChatClick(chat.id)} className="chat-item1">
-                        {chat.name}
+                        {getChatPartnerName(chat.name)} {/* Отображаем имя собеседника */}
                     </li>
                 ))}
             </ul>
