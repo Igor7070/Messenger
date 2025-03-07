@@ -134,14 +134,16 @@ h2 {
 
 .button-container {
     display: flex;
+    /*justify-content: flex-end; /* Выравнивание по правому краю */
     justify-content: space-between; /* Разделяет кнопки по краям */
     margin-top: 10px; /* Отступ сверху */
 }
 
 .personal-chats-button {
+    margin-top: 20px; /* Отступ сверху */
+    padding: 10px 15px; /* Внутренние отступы */
     background-color: #6f00ff; /* Цвет фона */
     color: white; /* Цвет текста */
-    padding: 10px 15px; /* Внутренние отступы */
     border: none; /* Без рамки */
     border-radius: 5px; /* Закругление углов */
     cursor: pointer; /* Курсор при наведении */
