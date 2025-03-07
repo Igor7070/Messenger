@@ -5,9 +5,9 @@ import Messenger from './Messenger'; // Компонент группового 
 import UserProfile from './UserProfile'; // Компонент профиля пользователя
 import PrivateChat from './PrivateChat'; // Импорт нового компонента
 import VoiceCall from './VoiceCall'; // Импорт компонента для видеозвонка
+import PersonalChats from './PersonalChats';
 import { NotificationProvider } from './NotificationContext'; // Импортируем контекст уведомлений
 import { UserInteractionProvider } from './UserInteractionContext';
-import PersonalChats from './PersonalChats';
 import { ToastContainer } from 'react-toastify'; // Импортируем ToastContainer
 import '../styles/App.css';
 

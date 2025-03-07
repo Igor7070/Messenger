@@ -34,7 +34,7 @@ const PersonalChats = () => {
             <h1>Private Chats</h1>
             <ul>
                 {privateChats.map(chat => (
-                    <li key={chat.id} onClick={() => handleChatClick(chat.id)} className="chat-item">
+                    <li key={chat.id} onClick={() => handleChatClick(chat.id)} className="chat-item1">
                         {chat.name}
                     </li>
                 ))}
