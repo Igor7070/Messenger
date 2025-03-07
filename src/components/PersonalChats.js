@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import '../styles/PersonalChats.css'; // Добавьте стили для компонента
 
 const PersonalChats = () => {
     const { userId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation(); // Используем useLocation для получения переданных данных
     const [privateChats, setPrivateChats] = useState([]);
+
+    // Извлекаем имя пользователя из состояния
+    const currentUserName = location.state?.currentUserName || 'User'; // Используем 'User' как запасное имя
 
     useEffect(() => {
         const fetchPrivateChats = async () => {
@@ -31,7 +35,7 @@ const PersonalChats = () => {
 
     return (
         <div className="personal-chats-container">
-            <h1>Private Chats</h1>
+            <h1>{`${currentUserName}'s Private Chats`}</h1> {/* Используем имя пользователя в заголовке */}
             <ul>
                 {privateChats.map(chat => (
                     <li key={chat.id} onClick={() => handleChatClick(chat.id)} className="chat-item1">
