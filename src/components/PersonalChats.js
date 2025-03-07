@@ -66,21 +66,26 @@ const PersonalChats = () => {
         <div className="personal-chats-container">
             <h1>{`${currentUserName}'s private chats`}</h1> {/* Используем имя пользователя в заголовке */}
             <ul>
-                {privateChats.map(chat => {
-                    const partnerName = getChatPartnerName(chat.name);
-                    const avatarSrc = avatars[partnerName] ? `https://unlimitedpossibilities12.org${avatars[partnerName]}` : null; // Получаем аватар собеседника
+            {privateChats.map(chat => {
+                const partnerName = getChatPartnerName(chat.name);
+                const avatarSrc = avatars[partnerName] ? `https://unlimitedpossibilities12.org${avatars[partnerName]}` : null;
 
-                    return (
-                        <li key={chat.id} onClick={() => handleChatClick(chat.id)} className="chat-item1">
-                            {avatarSrc ? (
-                                <img src={avatarSrc} alt={`${partnerName} avatar`} className="chat-avatar" />
-                            ) : (
-                                <div className="chat-avatar-placeholder">{partnerName.charAt(0).toUpperCase()}</div>
-                            )}
-                            {partnerName}
-                        </li>
-                    );
-                })}
+                return (
+                    <li key={chat.id} onClick={() => handleChatClick(chat.id)} className="chat-item1">
+                        {avatarSrc ? (
+                            <img
+                                src={avatarSrc}
+                                alt={`${partnerName} avatar`}
+                                className="chat-avatar"
+                                onError={() => console.error(`Failed to load avatar for ${partnerName}`)} // Для отладки
+                            />
+                        ) : (
+                            <div className="chat-avatar-placeholder">{partnerName.charAt(0).toUpperCase()}</div>
+                        )}
+                        {partnerName}
+                    </li>
+                );
+            })}
             </ul>
         </div>
     );
