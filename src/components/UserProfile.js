@@ -346,10 +346,8 @@ const UserProfile = () => {
     };
 
     const handlePersonalChats = () => {
-        const handlePersonalChats = () => {
-            const currentUserName = localStorage.getItem('username'); // Получаем имя из localStorage
-            navigate(`/user/${currentUserId}/personal-chats`, { state: { currentUserName } }); // Переход к личным чатам
-        };
+        const currentUserName = localStorage.getItem('username'); // Получаем имя из localStorage
+        navigate(`/user/${currentUserId}/personal-chats`, { state: { currentUserName } }); // Переход к личным чатам
     };
 
     if (error) return <div className="error-message">{error}</div>;
