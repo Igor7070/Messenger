@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom'; // Импортируйте useNavigate
 import '../styles/UserProfile.css'; 
-import { FaEdit } from 'react-icons/fa';
+import { FaEdit, FaEllipsisV } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Modal from 'react-modal';
