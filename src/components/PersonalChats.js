@@ -61,7 +61,7 @@ const PersonalChats = () => {
 
     return (
         <div className="personal-chats-container">
-            <h1>{`${currentUserName}'s private chats`}</h1>
+            <h1 className="custom-h1">{`${currentUserName}'s private chats`}</h1>
             <ul>
                 {privateChats.map(chat => {
                     const partner = chatPartners[chat.id] || {};

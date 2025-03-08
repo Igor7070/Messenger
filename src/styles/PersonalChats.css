@@ -2,6 +2,10 @@
     padding: 20px;
 }
 
+.custom-h1 {
+    color: #00796b;
+}
+
 .personal-chats-container ul {
     list-style: none; /* Убираем маркеры списка */
     padding: 0; /* Убираем внутренние отступы */
