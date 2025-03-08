@@ -172,6 +172,16 @@ public class UserController {
         }
     }
 
+    @DeleteMapping("/private-chats/check/{chatId}")
+    public ResponseEntity<String> removeChatIfNotExists(@PathVariable Long chatId) {
+        boolean isDeleted = userService.removeChatIfNotExists(chatId);
+        if (isDeleted) {
+            return ResponseEntity.ok("Chat deleted from database successfully");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Chat exists for at least one user");
+        }
+    }
+
     public static String transliterate(String input) {
         String[][] cyrillicToLatin = {
                 {"а", "a"}, {"б", "b"}, {"в", "v"}, {"г", "h"}, {"ґ", "g"}, {"д", "d"}, {"е", "e"},

@@ -2,6 +2,7 @@ package com.example.unl_pos12.service;
 
 import com.example.unl_pos12.model.messenger.Chat;
 import com.example.unl_pos12.model.messenger.User;
+import com.example.unl_pos12.repo.ChatRepository;
 import com.example.unl_pos12.repo.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,9 @@ import java.util.Optional;
 public class UserService {
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ChatRepository chatRepository;
 
     public User createUser(User user) {
         String errorMessage = "";
@@ -84,5 +88,42 @@ public class UserService {
             }
         }
         return false;
+    }
+
+    public boolean removeChatIfNotExists(Long chatId) {
+        // Получаем чат по ID
+        Chat chat = chatRepository.findById(chatId).orElse(null);
+        if (chat == null) {
+            return false; // Чат не найден
+        }
+
+        // Извлекаем имена пользователей из названия чата
+        String[] usernames = chat.getName().split("_");
+        if (usernames.length != 2) {
+            throw new IllegalArgumentException("Chat name must consist of two usernames");
+        }
+
+        String username1 = usernames[0];
+        String username2 = usernames[1];
+
+        // Получаем пользователей по именам
+        User user1 = userRepository.findByUsername(username1).orElse(null);
+        User user2 = userRepository.findByUsername(username2).orElse(null);
+
+        if (user1 == null || user2 == null) {
+            return false; // Один из пользователей не найден
+        }
+
+        // Проверяем наличие чата у обоих пользователей
+        boolean chatExistsInUser1 = user1.getPrivateChats().stream().anyMatch(c -> c.getId().equals(chatId));
+        boolean chatExistsInUser2 = user2.getPrivateChats().stream().anyMatch(c -> c.getId().equals(chatId));
+
+        if (!chatExistsInUser1 && !chatExistsInUser2) {
+            // Если чат не найден у ни одного пользователя, удаляем его из базы
+            chatRepository.deleteById(chatId); // Удаляем чат по ID
+            return true; // Чат успешно удален из базы
+        }
+
+        return false; // Чат существует у хотя бы одного пользователя
     }
 }
