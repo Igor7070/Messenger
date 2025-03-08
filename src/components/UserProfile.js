@@ -353,8 +353,8 @@ const UserProfile = () => {
         navigate(`/user/${currentUserId}/personal-chats`, { state: { currentUserName } }); // Переход к личным чатам
     };
 
-    const toggleSettingsMenu = () => {
-        e.stopPropagation(); // Останавливаем всплытие события
+    const toggleSettingsMenu = (event) => {
+        event.stopPropagation(); // Останавливаем всплытие события
         setSettingsMenuVisible(prevVisible => !prevVisible);
     };
 
