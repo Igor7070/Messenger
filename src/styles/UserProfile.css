@@ -1,4 +1,5 @@
 .user-profile-container {
+    position: relative; 
     padding: 20px;
     /*background-color: #f9f9f9;*/
     background-color: #DAF7A9;
@@ -158,8 +159,17 @@ h2 {
     background-color: #00b327; /* Цвет фона при наведении */
 }
 
+.settings-icon {
+    position: absolute; /* Абсолютное позиционирование для иконки */
+    top: 10px; /* Отступ сверху */
+    right: 10px; /* Отступ справа */
+    cursor: pointer; /* Курсор при наведении */
+}
+
 .settings-menu {
-    position: absolute;
+    position: absolute; /* Абсолютное позиционирование для меню */
+    top: 30px; /* Отступ сверху от иконки */
+    right: 0; /* Выравнивание по правому краю */
     background: white;
     border: 1px solid #ccc;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
