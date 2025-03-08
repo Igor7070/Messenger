@@ -354,6 +354,7 @@ const UserProfile = () => {
     };
 
     const toggleSettingsMenu = () => {
+        e.stopPropagation(); // Останавливаем всплытие события
         setSettingsMenuVisible(prevVisible => !prevVisible);
     };
 
