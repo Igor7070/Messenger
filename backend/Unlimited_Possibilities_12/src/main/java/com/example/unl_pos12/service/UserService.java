@@ -7,6 +7,7 @@ import com.example.unl_pos12.repo.MessageRepository;
 import com.example.unl_pos12.repo.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
@@ -131,6 +132,7 @@ public class UserService {
         return false; // Чат существует у хотя бы одного пользователя
     }
 
+    @Transactional // Эта аннотация позволяет выполнять операции в транзакции
     public boolean deleteUser(Long id) {
         // Сначала удаляем все сообщения, отправленные пользователем
         messageRepository.deleteBySenderId(id);
