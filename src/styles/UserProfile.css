@@ -157,3 +157,25 @@ h2 {
 .personal-chats-button:hover {
     background-color: #00b327; /* Цвет фона при наведении */
 }
+
+.settings-menu {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    padding: 10px;
+}
+
+.settings-menu button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    width: 100%;
+    text-align: left;
+}
+
+.settings-menu button:hover {
+    background-color: #f0f0f0;
+}

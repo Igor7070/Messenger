@@ -28,6 +28,8 @@ const UserProfile = () => {
     const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3')); // Инициализация
     audioRef.current.loop = true; // Устанавливаем зацикливание
 
+    const [settingsMenuVisible, setSettingsMenuVisible] = useState(false); // Состояние для управления видимостью меню настроек
+
     // Используем хук для подключения к WebSocket
     useWebSocket(currentUserId);
 
@@ -70,6 +72,7 @@ const UserProfile = () => {
     useEffect(() => {
         const handleClick = () => {
             handleInteraction();
+            setSettingsMenuVisible(false); // Закрываем меню настроек при клике вне его
         };
     
         document.addEventListener('click', handleClick);
@@ -350,6 +353,15 @@ const UserProfile = () => {
         navigate(`/user/${currentUserId}/personal-chats`, { state: { currentUserName } }); // Переход к личным чатам
     };
 
+    const toggleSettingsMenu = () => {
+        setSettingsMenuVisible(prevVisible => !prevVisible);
+    };
+
+    const handleDeleteAccount = () => {
+        console.log('Delete account clicked'); 
+        // Здесь позже добавьте логику для удаления аккаунта
+    };
+
     if (error) return <div className="error-message">{error}</div>;
     if (!user) return <div>Loading...</div>;
 
@@ -398,6 +410,12 @@ const UserProfile = () => {
                     <button onClick={handlePersonalChats} className="personal-chats-button">
                         Personal Chats
                     </button>
+                    <FaEllipsisV className="settings-icon" onClick={toggleSettingsMenu} /> {/* Кнопка для открытия меню */}
+                    {settingsMenuVisible && (
+                        <div className="settings-menu">
+                            <button onClick={handleDeleteAccount}>Delete account</button>
+                        </div>
+                    )}
                 </div>
             )}
 
