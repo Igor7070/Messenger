@@ -69,14 +69,24 @@ const PersonalChats = () => {
 
     const deleteChat = async (chatId) => {
         try {
+            // Сначала удаляем чат из списка пользователя
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${userId}/private-chats/${chatId}`, {
                 method: 'DELETE',
             });
+            
             if (response.ok) {
                 setPrivateChats(prevChats => prevChats.filter(chat => chat.id !== chatId)); // Обновляем состояние
-                console.log("Chat deleted successfully");
+                console.log("Chat deleted from user list successfully");
+    
+                // Теперь проверяем, можно ли удалить чат из базы данных
+                const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/private-chats/check/${chatId}`, {
+                    method: 'DELETE',
+                });
+    
+                const result = await checkResponse.text(); // Получаем текст ответа
+                console.log(result); // Выводим сообщение о результате проверки
             } else {
-                console.error('Failed to delete chat:', response.statusText);
+                console.error('Failed to delete chat from user list:', response.statusText);
             }
         } catch (error) {
             console.error('Error deleting chat:', error);
