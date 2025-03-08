@@ -369,7 +369,7 @@ const Home = () => {
 
             <div className="line-divider-container">
                 <div className="users-container">
-                    <h2>Users</h2>
+                <h2 className="home-users-h2">Users</h2>
                     <button type="button" onClick={openModal} className="create-user-button-main">Create a new user</button>
                     <input
                         type="text"
@@ -402,7 +402,7 @@ const Home = () => {
                 <div className="line-divider"></div>
 
                 <div className="chats-container">
-                    <h1>Group chats</h1>
+                <h1 className="home-group-chats-h1">Group chats</h1>
                     <div className="chat-input-container">
                         <input
                             type="text"

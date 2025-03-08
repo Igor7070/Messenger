@@ -71,6 +71,22 @@
     max-height: 600px;
 }
 
+.home-group-chats-h1 {
+    text-align: center;
+    color: #000000;
+    font-size: 2rem; /* Установите одинаковый размер шрифта */
+    font-weight: bold; /* Убедитесь, что вес шрифта одинаковый */
+    margin: 0; /* Уберите отступы, если они есть */
+}
+
+.home-users-h2 {
+    text-align: center;
+    color: #000000;
+    font-size: 2rem; /* Установите одинаковый размер шрифта */
+    font-weight: bold; /* Убедитесь, что вес шрифта одинаковый */
+    margin: 0; /* Уберите отступы, если они есть */
+}
+
 h1, h2 {
     text-align: center;
     color: #2E8B57; /* Темный цвет для заголовка */
