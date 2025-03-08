@@ -59,6 +59,30 @@ const PersonalChats = () => {
         return names.find(name => name !== currentUserName);
     };
 
+    const handleContextMenu = (event, chatId) => {
+        event.preventDefault(); // Отменяем стандартное меню
+        const confirmDelete = window.confirm("Delete chat?");
+        if (confirmDelete) {
+            deleteChat(chatId);
+        }
+    };
+
+    const deleteChat = async (chatId) => {
+        try {
+            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${userId}/private-chats/${chatId}`, {
+                method: 'DELETE',
+            });
+            if (response.ok) {
+                setPrivateChats(prevChats => prevChats.filter(chat => chat.id !== chatId)); // Обновляем состояние
+                console.log("Chat deleted successfully");
+            } else {
+                console.error('Failed to delete chat:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error deleting chat:', error);
+        }
+    };
+
     return (
         <div className="personal-chats-container">
             <h1 className="custom-h1">{`${currentUserName}'s private chats`}</h1>
@@ -70,7 +94,9 @@ const PersonalChats = () => {
                     const partnerName = getChatPartnerName(chat.name);
 
                     return (
-                        <li key={chat.id} onClick={() => handleChatClick(chat.id)} className="chat-item1">
+                        <li key={chat.id} onClick={() => handleChatClick(chat.id)} 
+                            onContextMenu={(event) => handleContextMenu(event, chat.id)} 
+                            className="chat-item1">
                             {avatarSrc ? (
                                 <img src={avatarSrc} alt={`${partnerName} avatar`} className="chat-avatar" />
                             ) : (
