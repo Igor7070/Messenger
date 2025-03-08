@@ -61,3 +61,25 @@
     border-bottom: none; /* Явно убираем нижнюю границу */
     text-decoration: none; /* Убираем подчёркивание текста */
 }
+
+.context-menu {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    padding: 10px;
+}
+
+.context-menu button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    width: 100%;
+    text-align: left;
+}
+
+.context-menu button:hover {
+    background-color: #f0f0f0;
+}

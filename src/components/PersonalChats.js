@@ -7,7 +7,8 @@ const PersonalChats = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [privateChats, setPrivateChats] = useState([]);
-    const [chatPartners, setChatPartners] = useState({}); // Храним данные собеседников
+    const [chatPartners, setChatPartners] = useState({});
+    const [contextMenu, setContextMenu] = useState({ visible: false, chatId: null, x: 0, y: 0 });
 
     const currentUserName = location.state?.currentUserName || 'User';
 
@@ -18,7 +19,7 @@ const PersonalChats = () => {
                 if (response.ok) {
                     const chats = await response.json();
                     setPrivateChats(chats);
-                    fetchChatPartners(chats); // Загружаем данные собеседников
+                    fetchChatPartners(chats);
                 } else {
                     console.error('Failed to fetch private chats:', response.statusText);
                 }
@@ -30,7 +31,6 @@ const PersonalChats = () => {
         fetchPrivateChats();
     }, [userId]);
 
-    // Функция для загрузки данных собеседников
     const fetchChatPartners = async (chats) => {
         const partners = {};
         for (const chat of chats) {
@@ -39,7 +39,7 @@ const PersonalChats = () => {
                 const response = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${partnerName}`);
                 if (response.ok) {
                     const userData = await response.json();
-                    partners[chat.id] = userData; // Сохраняем данные пользователя по ID чата
+                    partners[chat.id] = userData;
                 } else {
                     console.error(`Failed to fetch user ${partnerName}:`, response.statusText);
                 }
@@ -60,31 +60,39 @@ const PersonalChats = () => {
     };
 
     const handleContextMenu = (event, chatId) => {
-        event.preventDefault(); // Отменяем стандартное меню
-        const confirmDelete = window.confirm("Delete chat?");
+        event.preventDefault();
+        setContextMenu({
+            visible: true,
+            chatId: chatId,
+            x: event.pageX,
+            y: event.pageY,
+        });
+    };
+
+    const handleDeleteChat = async () => {
+        const confirmDelete = window.confirm("Are you sure you want to delete this chat?");
         if (confirmDelete) {
-            deleteChat(chatId);
+            await deleteChat(contextMenu.chatId);
         }
+        setContextMenu({ ...contextMenu, visible: false }); // Скрываем контекстное меню
     };
 
     const deleteChat = async (chatId) => {
         try {
-            // Сначала удаляем чат из списка пользователя
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${userId}/private-chats/${chatId}`, {
                 method: 'DELETE',
             });
             
             if (response.ok) {
-                setPrivateChats(prevChats => prevChats.filter(chat => chat.id !== chatId)); // Обновляем состояние
+                setPrivateChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
                 console.log("Chat deleted from user list successfully");
-    
-                // Теперь проверяем, можно ли удалить чат из базы данных
+
                 const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/private-chats/check/${chatId}`, {
                     method: 'DELETE',
                 });
-    
-                const result = await checkResponse.text(); // Получаем текст ответа
-                console.log(result); // Выводим сообщение о результате проверки
+
+                const result = await checkResponse.text();
+                console.log(result);
             } else {
                 console.error('Failed to delete chat from user list:', response.statusText);
             }
@@ -93,8 +101,12 @@ const PersonalChats = () => {
         }
     };
 
+    const closeContextMenu = () => {
+        setContextMenu({ ...contextMenu, visible: false });
+    };
+
     return (
-        <div className="personal-chats-container">
+        <div className="personal-chats-container" onClick={closeContextMenu}>
             <h1 className="custom-h1">{`${currentUserName}'s private chats`}</h1>
             <ul>
                 {privateChats.map(chat => {
@@ -119,6 +131,15 @@ const PersonalChats = () => {
                     );
                 })}
             </ul>
+
+            {contextMenu.visible && (
+                <div 
+                    className="context-menu" 
+                    style={{ top: contextMenu.y, left: contextMenu.x }}
+                >
+                    <button onClick={handleDeleteChat}>Delete chat</button>
+                </div>
+            )}
         </div>
     );
 };
