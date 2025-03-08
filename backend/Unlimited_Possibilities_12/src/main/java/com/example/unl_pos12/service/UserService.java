@@ -3,6 +3,7 @@ package com.example.unl_pos12.service;
 import com.example.unl_pos12.model.messenger.Chat;
 import com.example.unl_pos12.model.messenger.User;
 import com.example.unl_pos12.repo.ChatRepository;
+import com.example.unl_pos12.repo.MessageRepository;
 import com.example.unl_pos12.repo.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,9 +16,10 @@ import java.util.Optional;
 public class UserService {
     @Autowired
     private UserRepository userRepository;
-
     @Autowired
     private ChatRepository chatRepository;
+    @Autowired
+    private MessageRepository messageRepository;
 
     public User createUser(User user) {
         String errorMessage = "";
@@ -119,6 +121,8 @@ public class UserService {
         boolean chatExistsInUser2 = user2.getPrivateChats().stream().anyMatch(c -> c.getId().equals(chatId));
 
         if (!chatExistsInUser1 && !chatExistsInUser2) {
+            // Сначала удаляем все сообщения, связанные с чатом
+            messageRepository.deleteByChatId(chatId);
             // Если чат не найден у ни одного пользователя, удаляем его из базы
             chatRepository.deleteById(chatId); // Удаляем чат по ID
             return true; // Чат успешно удален из базы
