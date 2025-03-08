@@ -77,7 +77,11 @@ public class UserService {
         User user = userRepository.findById(userId).orElse(null);
         if (user != null) {
             List<Chat> chats = user.getPrivateChats();
-            return chats.removeIf(chat -> chat.getId().equals(chatId)); // Удаляем чат по ID
+            boolean isRemoved = chats.removeIf(chat -> chat.getId().equals(chatId));
+            if (isRemoved) {
+                userRepository.save(user); // Сохраняем обновленного пользователя в базе данных
+                return true;
+            }
         }
         return false;
     }
