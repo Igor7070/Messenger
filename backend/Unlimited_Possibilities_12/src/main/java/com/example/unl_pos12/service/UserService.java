@@ -130,4 +130,12 @@ public class UserService {
 
         return false; // Чат существует у хотя бы одного пользователя
     }
+
+    public boolean deleteUser(Long id) {
+        if (userRepository.existsById(id)) {
+            userRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
 }
