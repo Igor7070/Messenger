@@ -358,9 +358,28 @@ const UserProfile = () => {
         setSettingsMenuVisible(prevVisible => !prevVisible);
     };
 
-    const handleDeleteAccount = () => {
+    const handleDeleteAccount = async () => {
         console.log('Delete account clicked'); 
-        // Здесь позже добавьте логику для удаления аккаунта
+        const confirmed = window.confirm("Are you sure you want to delete your account?");
+        if (confirmed) {
+            try {
+                const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    console.log('User deleted successfully');
+                    toast.success('Account deleted successfully!');
+                    navigate('/login'); // Перенаправление на страницу входа
+                } else {
+                    console.error('Failed to delete user:', response.statusText);
+                    toast.error('Failed to delete account');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                toast.error('Error deleting account');
+            }
+        }
     };
 
     if (error) return <div className="error-message">{error}</div>;
