@@ -162,6 +162,16 @@ public class UserController {
         }
     }
 
+    @DeleteMapping("/{userId}/private-chats/{chatId}")
+    public ResponseEntity<String> deleteChat(@PathVariable Long userId, @PathVariable Long chatId) {
+        boolean isDeleted = userService.deleteChat(userId, chatId);
+        if (isDeleted) {
+            return ResponseEntity.ok("Chat deleted successfully");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Chat not found");
+        }
+    }
+
     public static String transliterate(String input) {
         String[][] cyrillicToLatin = {
                 {"а", "a"}, {"б", "b"}, {"в", "v"}, {"г", "h"}, {"ґ", "g"}, {"д", "d"}, {"е", "e"},

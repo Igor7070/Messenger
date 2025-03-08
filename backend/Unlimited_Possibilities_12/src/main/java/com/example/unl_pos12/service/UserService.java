@@ -72,4 +72,13 @@ public class UserService {
         }
         return Collections.emptyList(); // Возвращаем пустой список, если пользователь не найден
     }
+
+    public boolean deleteChat(Long userId, Long chatId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null) {
+            List<Chat> chats = user.getPrivateChats();
+            return chats.removeIf(chat -> chat.getId().equals(chatId)); // Удаляем чат по ID
+        }
+        return false;
+    }
 }
