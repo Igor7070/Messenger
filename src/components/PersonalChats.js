@@ -78,7 +78,7 @@ const PersonalChats = () => {
                                     {initials}
                                 </div>
                             )}
-                            <span className="chat-name">{partnerName}</span>
+                            <span className="chat-name-list-item">{partnerName}</span>
                         </li>
                     );
                 })}
