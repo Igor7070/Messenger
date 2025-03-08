@@ -13,6 +13,7 @@ import java.util.List;
 public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findBySender(User sender);
     List<Message> findByContentAndSenderIdAndChatId(String content, Long senderId, Long chatId);
+    void deleteBySenderId(Long senderId);
 
     @Modifying
     @Transactional

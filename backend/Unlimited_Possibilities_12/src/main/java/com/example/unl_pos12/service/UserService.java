@@ -132,6 +132,9 @@ public class UserService {
     }
 
     public boolean deleteUser(Long id) {
+        // Сначала удаляем все сообщения, отправленные пользователем
+        messageRepository.deleteBySenderId(id);
+
         if (userRepository.existsById(id)) {
             userRepository.deleteById(id);
             return true;
