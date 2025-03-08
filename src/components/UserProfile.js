@@ -369,8 +369,13 @@ const UserProfile = () => {
 
                 if (response.ok) {
                     console.log('User deleted successfully');
+                    // Удаляем данные из localStorage
+                    localStorage.removeItem('userId');
+                    localStorage.removeItem('username');
+
+                    // Перенаправляем на главную страницу
+                    navigate('/');
                     toast.success('Account deleted successfully!');
-                    navigate('/login'); // Перенаправление на страницу входа
                 } else {
                     console.error('Failed to delete user:', response.statusText);
                     toast.error('Failed to delete account');
