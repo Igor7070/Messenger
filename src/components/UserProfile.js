@@ -268,6 +268,7 @@ const UserProfile = () => {
                 if (chatId !== -1) {
                     // Проверка, существует ли чат у текущего пользователя
                     const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
+                    console.log('checkResponse: ' + checkResponse);
                     if (checkResponse.ok) {
                         const exists = await checkResponse.json();
                         if (exists) {
