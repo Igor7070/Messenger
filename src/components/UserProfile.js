@@ -276,9 +276,11 @@ const UserProfile = () => {
                             navigate(`/private-chat/${chatId}`);
                         } else {
                             // Если чат не существует у текущего пользователя, добавляем его
+                            console.log('Чат не существует у текущего пользователя, добавляем его')
                             const addResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`, {
                                 method: 'POST',
                             });
+                            console.log('addResponse: ' + addResponse);
                             
                             if (addResponse.ok) {
                                 navigate(`/private-chat/${chatId}`);
