@@ -270,7 +270,8 @@ const UserProfile = () => {
                     const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
                     console.log('checkResponse: ' + checkResponse);
                     if (checkResponse.ok) {
-                        const exists = await checkResponse.json();
+                        const text = await checkResponse.text();
+                        const exists = text === "Chat exists in user's private chats";
                         if (exists) {
                             navigate(`/private-chat/${chatId}`);
                         } else {
