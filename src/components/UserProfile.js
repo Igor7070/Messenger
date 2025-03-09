@@ -266,31 +266,37 @@ const UserProfile = () => {
                 const chatId = data.chatId;
     
                 if (chatId !== -1) {
-                    // Проверка, существует ли чат у текущего пользователя
                     const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
-                    console.log('checkResponse: ' + checkResponse);
+                    console.log('checkResponse status:', checkResponse.status);
+
                     if (checkResponse.ok) {
                         const text = await checkResponse.text();
+                        console.log('checkResponse text:', text);
                         const exists = text === "Chat exists in user's private chats";
                         if (exists) {
                             navigate(`/private-chat/${chatId}`);
+                            toast.success(`Navigating to chat with ${user.username}!`);
                         } else {
-                            // Если чат не существует у текущего пользователя, добавляем его
-                            console.log('Чат не существует у текущего пользователя, добавляем его')
-                            const addResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`, {
-                                method: 'POST',
-                            });
-                            console.log('addResponse: ' + addResponse);
-                            
-                            if (addResponse.ok) {
-                                navigate(`/private-chat/${chatId}`);
-                            } else {
-                                toast.error('Failed to add chat to user');
-                            }
+                            console.error('Unexpected response for OK status:', text);
+                            toast.error('Unexpected server response');
+                        }
+                    } else if (checkResponse.status === 404) {
+                        console.log('Чат не существует у текущего пользователя, добавляем его');
+                        const addResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`, {
+                            method: 'POST',
+                        });
+                        console.log('addResponse status:', addResponse.status, 'text:', await addResponse.text());
+
+                        if (addResponse.ok) {
+                            navigate(`/private-chat/${chatId}`);
+                            toast.success(`Navigating to chat with ${user.username}!`);
+                        } else {
+                            toast.error('Failed to add chat to user');
                         }
                     } else {
+                        console.log('checkResponse error text:', await checkResponse.text());
                         toast.error('Error checking chat existence');
-                    };
+                    }
                 } else {
                     const newChat = { 
                         name: chatName, 
