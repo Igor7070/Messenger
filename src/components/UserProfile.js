@@ -266,7 +266,27 @@ const UserProfile = () => {
                 const chatId = data.chatId;
     
                 if (chatId !== -1) {
-                    navigate(`/private-chat/${chatId}`);
+                    // Проверка, существует ли чат у текущего пользователя
+                    const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
+                    if (checkResponse.ok) {
+                        const exists = await checkResponse.json();
+                        if (exists) {
+                            navigate(`/private-chat/${chatId}`);
+                        } else {
+                            // Если чат не существует у текущего пользователя, добавляем его
+                            const addResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`, {
+                                method: 'POST',
+                            });
+                            
+                            if (addResponse.ok) {
+                                navigate(`/private-chat/${chatId}`);
+                            } else {
+                                toast.error('Failed to add chat to user');
+                            }
+                        }
+                    } else {
+                        toast.error('Error checking chat existence');
+                    };
                 } else {
                     const newChat = { 
                         name: chatName, 
