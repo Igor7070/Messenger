@@ -132,6 +132,29 @@ public class UserService {
         return false; // Чат существует у хотя бы одного пользователя
     }
 
+    public boolean chatExistsForUser(Long userId, Long chatId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null) {
+            return user.getPrivateChats().stream()
+                    .anyMatch(chat -> chat.getId().equals(chatId));
+        }
+        return false; // Пользователь не найден
+    }
+
+    public boolean addChatToUser(Long userId, Long chatId) {
+        User user = userRepository.findById(userId).orElse(null);
+        Chat chat = chatRepository.findById(chatId).orElse(null);
+
+        if (user != null && chat != null) {
+            if (!user.getPrivateChats().contains(chat)) { // Проверяем, что чат еще не добавлен
+                user.getPrivateChats().add(chat);
+                userRepository.save(user); // Сохраняем обновленного пользователя
+                return true; // Чат успешно добавлен
+            }
+        }
+        return false; // Пользователь или чат не найден, или чат уже в списке
+    }
+
     @Transactional // Эта аннотация позволяет выполнять операции в транзакции
     public boolean deleteUser(Long id) {
         // Сначала удаляем все сообщения, отправленные пользователем

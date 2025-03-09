@@ -182,6 +182,26 @@ public class UserController {
         }
     }
 
+    @GetMapping("/{userId}/private-chats/{chatId}/exists")
+    public ResponseEntity<String> checkChatExists(@PathVariable Long userId, @PathVariable Long chatId) {
+        boolean exists = userService.chatExistsForUser(userId, chatId);
+        if (exists) {
+            return ResponseEntity.ok("Chat exists in user's private chats");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Chat does not exist for this user");
+        }
+    }
+
+    @PostMapping("/{userId}/private-chats/{chatId}/add")
+    public ResponseEntity<String> addChatToUser(@PathVariable Long userId, @PathVariable Long chatId) {
+        boolean isAdded = userService.addChatToUser(userId, chatId);
+        if (isAdded) {
+            return ResponseEntity.ok("Chat added to user's private chats successfully");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User or chat not found, or chat already exists");
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         boolean isDeleted = userService.deleteUser(id);
