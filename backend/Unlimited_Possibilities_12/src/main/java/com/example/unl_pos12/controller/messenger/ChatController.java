@@ -6,6 +6,7 @@ import com.example.unl_pos12.model.messenger.User;
 import com.example.unl_pos12.service.ChatService;
 import com.example.unl_pos12.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,34 +23,39 @@ public class ChatController {
     private UserService userService;
 
     @PostMapping
-    public Chat createChat(@RequestBody Chat chat) {
+    public ResponseEntity<?> createChat(@RequestBody Chat chat) {
         System.out.println("Creating chat: " + chat.getName() + ", isPrivate: " + chat.isPrivate());
 
-        // Создаем чат
-        Chat createdChat = chatService.createChat(chat);
+        try {
+            // Создаем чат
+            Chat createdChat = chatService.createChat(chat);
 
-        // Если чат приватный, добавляем его обоим пользователям
-        if (chat.isPrivate()) {
-            String[] usernames = chat.getName().split("_"); // Предполагаем, что имя чата состоит из "Имя1_Имя2"
-            if (usernames.length == 2) {
-                User user1 = userService.getUserByUsername(usernames[0]);
-                User user2 = userService.getUserByUsername(usernames[1]);
+            // Если чат приватный, добавляем его обоим пользователям
+            if (chat.isPrivate()) {
+                String[] usernames = chat.getName().split("_"); // Предполагаем, что имя чата состоит из "Имя1_Имя2"
+                if (usernames.length == 2) {
+                    User user1 = userService.getUserByUsername(usernames[0]);
+                    User user2 = userService.getUserByUsername(usernames[1]);
 
-                // Добавляем чат в список приватных чатов пользователей
-                user1.getPrivateChats().add(createdChat);
-                user2.getPrivateChats().add(createdChat);
+                    // Добавляем чат в список приватных чатов пользователей
+                    user1.getPrivateChats().add(createdChat);
+                    user2.getPrivateChats().add(createdChat);
 
-                // Обновляем пользователей
-                userService.updateUser(user1);
-                userService.updateUser(user2);
-            } else {
-                System.out.println("Invalid chat name format: " + chat.getName());
+                    // Обновляем пользователей
+                    userService.updateUser(user1);
+                    userService.updateUser(user2);
+                } else {
+                    System.out.println("Invalid chat name format: " + chat.getName());
+                }
             }
-        }
 
-        System.out.println("Chat " + chat.getName() + " created.");
-        System.out.println("ChatId = " + createdChat.getId());
-        return createdChat;
+            System.out.println("Chat " + chat.getName() + " created.");
+            System.out.println("ChatId = " + createdChat.getId());
+            return ResponseEntity.ok(createdChat);
+        } catch (RuntimeException e) {
+            // Обработка ошибки, когда чат с таким именем уже существует
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
     }
 
     @GetMapping

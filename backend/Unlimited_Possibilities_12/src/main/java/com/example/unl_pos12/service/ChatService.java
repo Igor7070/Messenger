@@ -15,6 +15,10 @@ public class ChatService {
     private ChatRepository chatRepository;
 
     public Chat createChat(Chat chat) {
+        // Проверка только для групповых чатов
+        if (!chat.isPrivate() && chatExists(chat.getName())) {
+            throw new RuntimeException("A chat with this name already exists");
+        }
         return chatRepository.save(chat);
     }
 
@@ -49,5 +53,9 @@ public class ChatService {
 
     public Long getLastChatId() {
         return chatRepository.findTopByOrderByIdDesc().getId(); // Предполагается, что у вас есть такой метод в репозитории
+    }
+
+    public boolean chatExists(String name) {
+        return chatRepository.findByName(name) != null;
     }
 }
