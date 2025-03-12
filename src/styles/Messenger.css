@@ -197,3 +197,14 @@
     box-sizing: border-box; /* Учитываем отступы в общей ширине */
     flex-grow: 1; /* Позволяет тексту занимать оставшееся пространство */
 }
+
+/* Дополнительные стили для мобильных устройств */
+@media (max-width: 1080px) {
+    .message-content {
+        max-width: 45%;
+    }
+
+    .message-content1 {
+        max-width: 45%;
+    }
+}
