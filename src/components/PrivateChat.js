@@ -489,7 +489,7 @@ const PrivateChat = () => {
                             </div>
                         )}
                         <strong>{msg.sender.username}: </strong>
-                        <span className="message-content">{msg.content}</span>
+                        <span className="message-content1">{msg.content}</span>
                         {msg.fileUrl && (
                             <a href={msg.fileUrl} download>📥 Download file</a>
                         )}
