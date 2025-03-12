@@ -475,23 +475,31 @@ const PrivateChat = () => {
                         key={msg.id}
                         className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
                         onContextMenu={(e) => handleRightClick(e, msg)}
-                        style={{ display: 'flex', alignItems: 'center' }} // Добавлено для флекс-выравнивания
+                        style={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }} // Изменено на column
                     >
-                        {msg.sender.avatar ? ( // Проверка наличия аватара
-                            <img 
-                                src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
-                                alt={`${msg.sender.username} avatar`} 
-                                className="message-avatar"
-                            />
-                        ) : (
-                            <div className="message-avatar">
-                                {msg.sender.username.charAt(0).toUpperCase()}
-                            </div>
-                        )}
-                        <strong>{msg.sender.username}: </strong>
-                        <span className="message-content1">{msg.content}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                            {msg.sender.avatar ? (
+                                <img 
+                                    src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
+                                    alt={`${msg.sender.username} avatar`} 
+                                    className="message-avatar"
+                                />
+                            ) : (
+                                <div className="message-avatar">
+                                    {msg.sender.username.charAt(0).toUpperCase()}
+                                </div>
+                            )}
+                            <strong>{msg.sender.username}: </strong>
+                            <span className="message-content">{msg.content}</span>
+                        </div>
                         {msg.fileUrl && (
-                            <a href={msg.fileUrl} download>📥 Download file</a>
+                            <a 
+                                href={msg.fileUrl} 
+                                download 
+                                style={{ marginTop: '5px', marginLeft: '20px' }} // Отступ слева для ссылки
+                            >
+                                📥 Download file
+                            </a>
                         )}
                         <div className="message-status">
                             {msg.sender.id === userId && msg.delivered && <span className="delivery-indicator">✔️</span>}
