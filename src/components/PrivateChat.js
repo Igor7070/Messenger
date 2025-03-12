@@ -501,7 +501,7 @@ const PrivateChat = () => {
                                 📥 Download file
                             </a>
                         )}
-                        <div className="message-status">
+                        <div style={{ marginLeft: 'auto', marginTop: '5px' }} className="message-status">
                             {msg.sender.id === userId && msg.delivered && <span className="delivery-indicator">✔️</span>}
                             {msg.sender.id === userId && msg.read && <span className="read-indicator">✔️</span>}
                         </div>
