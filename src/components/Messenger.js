@@ -550,7 +550,7 @@ const Messenger = () => {
                                 <span className="message-content">{msg.content}</span>
                             </div>
                             {msg.fileUrl && (
-                                <a href={msg.fileUrl} download style={{ marginTop: '5px' }}>📥 Download file</a> // Переносим ссылку вниз
+                                <a href={msg.fileUrl} download style={{ marginTop: '5px', marginLeft: '40px' }}>📥 Download file</a> // Переносим ссылку вниз
                             )}
                         </div>
                     ) : null
