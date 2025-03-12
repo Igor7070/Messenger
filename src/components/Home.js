@@ -263,7 +263,9 @@ const Home = () => {
                     setChatName('');
                     toast.success('Chat created successfully!');
                 } else {
-                    toast.error('Failed to create chat');
+                    // Получаем текст ошибки с сервера
+                    const errorMessage = await response.text();
+                    toast.error(errorMessage);
                 }
             } catch (error) {
                 toast.error('Error creating chat');
