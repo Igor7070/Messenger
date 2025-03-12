@@ -496,7 +496,7 @@ const PrivateChat = () => {
                             <a 
                                 href={msg.fileUrl} 
                                 download 
-                                style={{ marginTop: '5px', marginLeft: '20px' }} // Отступ слева для ссылки
+                                style={{ marginTop: '5px', marginLeft: '112px' }} // Отступ слева для ссылки
                             >
                                 📥 Download file
                             </a>
