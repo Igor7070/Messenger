@@ -124,6 +124,9 @@
     padding: 10px; 
     margin-bottom: 5px; 
     border-radius: 10px; 
+    box-sizing: border-box; /* Учитываем отступы в общей ширине */
+    display: flex; /* Используем флекс для выравнивания текста */
+    flex-direction: column; /* Вертикальное выравнивание содержимого */
 }
 
 .current-user {
