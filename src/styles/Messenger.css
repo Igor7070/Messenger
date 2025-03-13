@@ -201,6 +201,7 @@
 }
 
 .message-content-container {
+    margin-Left: 5px;
     max-width: 85%;
     word-wrap: break-word;
     display: flex;            /* Оставляем flex */
@@ -224,5 +225,6 @@
 
     .message-content-container {
         max-Width: 61%; 
+        margin-Left: 0;
     }
 }
