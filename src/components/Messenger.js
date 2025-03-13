@@ -557,7 +557,7 @@ const Messenger = () => {
                                         </div>
                                     )}
                                 </div>
-                                <div style={{ marginLeft: '5px' }}> {/* Общий контейнер для содержимого сообщения и ссылки */}
+                                <div style={{ marginLeft: '5px', maxWidth: '70%', wordWrap: 'break-word' }}>
                                     <span className="message-content">{msg.content}</span>
                                     {msg.fileUrl && (
                                         <a 
