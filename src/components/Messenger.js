@@ -540,7 +540,7 @@ const Messenger = () => {
                                     flexDirection: 'column', 
                                     alignItems: 'center', 
                                     marginRight: '10px',
-                                    border: '1px solid #ccc', // Рамка
+                                    border: '2px solid #666', // Рамка
                                     borderRadius: '5px', // Закругленные углы
                                     padding: '5px' // Отступы внутри рамки
                                 }}>
