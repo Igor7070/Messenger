@@ -206,8 +206,7 @@
     word-wrap: break-word;
     display: flex;            /* Оставляем flex */
     flex-direction: column;   /* Меняем направление на вертикальное */
-    align-items: flex-end;    /* Выравниваем элементы справа */
-    padding: 0;
+    /*align-items: flex-end;    /* Выравниваем элементы справа */
 }
 
 /* Дополнительные стили для мобильных устройств */
