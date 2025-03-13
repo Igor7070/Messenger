@@ -500,7 +500,7 @@ const PrivateChat = () => {
                                     </div>
                                 )}
                             </div>
-                            <div className="message-content-container" style={{ display: 'flex', flexDirection: 'column', marginLeft: '5px', maxWidth: '85%' }}>
+                            <div className="message-content-container">
                                 <span className="message-content">{msg.content}</span>
                                 {msg.fileUrl && (
                                     <a 
