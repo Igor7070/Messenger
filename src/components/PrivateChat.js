@@ -506,7 +506,7 @@ const PrivateChat = () => {
                                     <a 
                                         href={msg.fileUrl} 
                                         download 
-                                        style={{ marginTop: '5px' }}
+                                        style={{ display: 'block', marginTop: '5px' }}
                                     >
                                         📥 Download file
                                     </a>
