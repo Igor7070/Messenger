@@ -201,10 +201,14 @@
 /* Дополнительные стили для мобильных устройств */
 @media (max-width: 1080px) {
     .message-content {
-        max-width: 55%;
+        max-width: 60%;
     }
 
     .message-content1 {
-        max-width: 55%;
+        max-width: 60%;
+    }
+
+    .message {
+        padding: 5px; 
     }
 }
