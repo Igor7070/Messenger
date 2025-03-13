@@ -198,6 +198,12 @@
     flex-grow: 1; /* Позволяет тексту занимать оставшееся пространство */
 }
 
+.message-content-container {
+    margin-Left: '5px'; 
+    max-Width: '85%'; 
+    word-Wrap: 'break-word';
+}
+
 /* Дополнительные стили для мобильных устройств */
 @media (max-width: 1080px) {
     .message-content {
@@ -210,5 +216,9 @@
 
     .message {
         padding: 5px; 
+    }
+
+    .message-content-container {
+        max-Width: '63%'; 
     }
 }
