@@ -186,6 +186,7 @@
     max-width: 83%; /* Ограничиваем ширину до 100% родительского элемента */
     box-sizing: border-box; /* Учитываем отступы в общей ширине */
     flex-grow: 1; /* Позволяет тексту занимать оставшееся пространство */
+    text-align: right;
 }
 
 .message-content1 {
@@ -196,12 +197,15 @@
     max-width: 78%; /* Ограничиваем ширину до 100% родительского элемента */
     box-sizing: border-box; /* Учитываем отступы в общей ширине */
     flex-grow: 1; /* Позволяет тексту занимать оставшееся пространство */
+    text-align: right;
 }
 
 .message-content-container {
     margin-Left: 5px; 
     max-Width: 85%; 
     word-Wrap: break-word;
+    display: flex;           /* Добавляем flex для управления выравниванием */
+    justify-content: flex-end; /* Выравниваем содержимое справа */
 }
 
 /* Дополнительные стили для мобильных устройств */
