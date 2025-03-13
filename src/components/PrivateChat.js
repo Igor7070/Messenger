@@ -482,7 +482,7 @@ const PrivateChat = () => {
                                 display: 'flex', 
                                 flexDirection: 'column', 
                                 alignItems: 'center', 
-                                marginRight: '10px',
+                                marginRight: '5px',
                                 border: '2px solid #ccc', // Рамка
                                 borderRadius: '5px', // Закругленные углы
                                 padding: '5px' // Отступы внутри рамки
@@ -500,20 +500,22 @@ const PrivateChat = () => {
                                     </div>
                                 )}
                             </div>
-                            <span className="message-content" style={{ marginLeft: '5px' }}>{msg.content}</span>
                         </div>
-                        {msg.fileUrl && (
-                            <a 
-                                href={msg.fileUrl} 
-                                download 
-                                style={{ marginTop: '5px', marginLeft: '90px' }} // Отступ слева для ссылки
-                            >
-                                📥 Download file
-                            </a>
-                        )}
-                        <div style={{ marginLeft: 'auto', marginTop: '5px' }} className="message-status">
-                            {msg.sender.id === userId && msg.delivered && <span className="delivery-indicator">✔️</span>}
-                            {msg.sender.id === userId && msg.read && <span className="read-indicator">✔️</span>}
+                        <div className="message-content-container">
+                            <span className="message-content" style={{ marginLeft: '5px' }}>{msg.content}</span>
+                            {msg.fileUrl && (
+                                <a 
+                                    href={msg.fileUrl} 
+                                    download 
+                                    style={{ marginTop: '5px', marginLeft: '90px' }} // Отступ слева для ссылки
+                                >
+                                    📥 Download file
+                                </a>
+                            )}
+                            <div style={{ marginLeft: 'auto', marginTop: '5px' }} className="message-status">
+                                {msg.sender.id === userId && msg.delivered && <span className="delivery-indicator">✔️</span>}
+                                {msg.sender.id === userId && msg.read && <span className="read-indicator">✔️</span>}
+                            </div>
                         </div>
                     </div>
                 ))}
