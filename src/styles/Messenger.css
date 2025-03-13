@@ -199,9 +199,9 @@
 }
 
 .message-content-container {
-    margin-Left: '5px'; 
-    max-Width: '85%'; 
-    word-Wrap: 'break-word';
+    margin-Left: 5px; 
+    max-Width: 85%; 
+    word-Wrap: break-word;
 }
 
 /* Дополнительные стили для мобильных устройств */
@@ -219,6 +219,6 @@
     }
 
     .message-content-container {
-        max-Width: '63%'; 
+        max-Width: 63%; 
     }
 }
