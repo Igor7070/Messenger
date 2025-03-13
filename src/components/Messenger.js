@@ -557,17 +557,19 @@ const Messenger = () => {
                                         </div>
                                     )}
                                 </div>
-                                <span className="message-content" style={{ marginLeft: '5px' }}>{msg.content}</span>
+                                <div style={{ marginLeft: '5px' }}> {/* Общий контейнер для содержимого сообщения и ссылки */}
+                                    <span className="message-content">{msg.content}</span>
+                                    {msg.fileUrl && (
+                                        <a 
+                                            href={msg.fileUrl} 
+                                            download 
+                                            style={{ display: 'block', marginTop: '5px' }} // Отступ для ссылки
+                                        >
+                                            📥 Download file
+                                        </a>
+                                    )}
+                                </div>
                             </div>
-                            {msg.fileUrl && (
-                                <a 
-                                    href={msg.fileUrl} 
-                                    download 
-                                    style={{ marginTop: '5px', marginLeft: '90px' }} // Отступ слева для ссылки
-                                >
-                                    📥 Download file
-                                </a>
-                            )}
                         </div>
                     ) : null
                 ))}
