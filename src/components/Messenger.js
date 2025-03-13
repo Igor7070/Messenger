@@ -535,7 +535,15 @@ const Messenger = () => {
                             style={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }} // Изменено на column
                         >
                             <div style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '10px' }}>
+                                <div style={{ 
+                                    display: 'flex', 
+                                    flexDirection: 'column', 
+                                    alignItems: 'center', 
+                                    marginRight: '10px',
+                                    border: '1px solid #ccc', // Рамка
+                                    borderRadius: '5px', // Закругленные углы
+                                    padding: '5px' // Отступы внутри рамки
+                                }}>
                                     <strong>{msg.sender.username}:</strong>
                                     {msg.sender.avatar ? (
                                         <img 
@@ -555,7 +563,7 @@ const Messenger = () => {
                                 <a 
                                     href={msg.fileUrl} 
                                     download 
-                                    style={{ marginTop: '5px', marginLeft: '112px' }} // Отступ слева для ссылки
+                                    style={{ marginTop: '5px', marginLeft: '90px' }} // Отступ слева для ссылки
                                 >
                                     📥 Download file
                                 </a>
