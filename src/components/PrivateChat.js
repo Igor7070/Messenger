@@ -477,26 +477,36 @@ const PrivateChat = () => {
                         onContextMenu={(e) => handleRightClick(e, msg)}
                         style={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }} // Изменено на column
                     >
-                        <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                            {msg.sender.avatar ? (
-                                <img 
-                                    src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
-                                    alt={`${msg.sender.username} avatar`} 
-                                    className="message-avatar"
-                                />
-                            ) : (
-                                <div className="message-avatar">
-                                    {msg.sender.username.charAt(0).toUpperCase()}
-                                </div>
-                            )}
-                            <strong>{msg.sender.username}: </strong>
-                            <span className="message-content">{msg.content}</span>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
+                            <div style={{ 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                alignItems: 'center', 
+                                marginRight: '10px',
+                                border: '2px solid #ccc', // Рамка
+                                borderRadius: '5px', // Закругленные углы
+                                padding: '5px' // Отступы внутри рамки
+                            }}>
+                                <strong>{msg.sender.username}:</strong>
+                                {msg.sender.avatar ? (
+                                    <img 
+                                        src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
+                                        alt={`${msg.sender.username} avatar`} 
+                                        className="message-avatar"
+                                    />
+                                ) : (
+                                    <div className="message-avatar">
+                                        {msg.sender.username.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+                            <span className="message-content" style={{ marginLeft: '5px' }}>{msg.content}</span>
                         </div>
                         {msg.fileUrl && (
                             <a 
                                 href={msg.fileUrl} 
                                 download 
-                                style={{ marginTop: '5px', marginLeft: '112px' }} // Отступ слева для ссылки
+                                style={{ marginTop: '5px', marginLeft: '90px' }} // Отступ слева для ссылки
                             >
                                 📥 Download file
                             </a>
