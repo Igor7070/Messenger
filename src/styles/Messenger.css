@@ -201,7 +201,7 @@
 /* Дополнительные стили для мобильных устройств */
 @media (max-width: 1080px) {
     .message-content {
-        max-width: 63%;
+        max-width: 50%;
     }
 
     .message-content1 {
@@ -210,9 +210,5 @@
 
     .message {
         padding: 5px; 
-    }
-
-    .message-content-container {
-        max-width: 63%;
     }
 }
