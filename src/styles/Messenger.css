@@ -211,4 +211,8 @@
     .message {
         padding: 5px; 
     }
+
+    .message-content-container {
+        max-width: 63%;
+    }
 }
