@@ -93,6 +93,7 @@
     min-height: 40px; 
     font-size: 18px;
     transition: border-color 0.3s; 
+    background-color: #F9FBFC;
 }
 
 .input-message:focus {
