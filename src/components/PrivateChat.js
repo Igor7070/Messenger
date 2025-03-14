@@ -496,9 +496,17 @@ const PrivateChat = () => {
                                         style={{ display: 'block', margin: '0 auto' }} // Центрирование изображения
                                     />
                                 ) : (
-                                    <div className="message-avatar">
-                                        {msg.sender.username.charAt(0).toUpperCase()}
-                                    </div>
+                                    <div 
+                                            className="message-avatar"
+                                            style={{ 
+                                                display: 'flex', 
+                                                justifyContent: 'center', 
+                                                alignItems: 'center', // Добавлено для вертикального центрирования буквы
+                                                margin: '0 auto' // Центрирование самого div
+                                            }}
+                                        >
+                                            {msg.sender.username.charAt(0).toUpperCase()}
+                                        </div>
                                 )}
                             </div>
                             <div className="message-content-container">
