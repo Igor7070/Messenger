@@ -4,7 +4,7 @@
     padding: 20px; 
     border-radius: 10px; 
     /*background-color: #ffffff; /* Белый фон для мессенджера */
-    background-color: #E0ECE4; /* Белый фон для мессенджера */
+    background-color: #E8F0F5; /* Белый фон для мессенджера */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
@@ -18,7 +18,7 @@
     padding: 10px; /* Добавляем отступы для улучшения внешнего вида */
     border-bottom: 2px solid #0288d1; /* Добавляем линию снизу */
     /*background-color: rgba(255, 255, 255, 0.8); /* Полупрозрачный фон для контраста */
-    background-color: #E0ECE4;
+    background-color: #E8F0F5;
     border-radius: 5px; /* Скругляем углы */
 }
 
