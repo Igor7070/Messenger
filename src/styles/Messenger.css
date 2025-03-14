@@ -202,7 +202,7 @@
 
 .message-content-container {
     margin-Left: 5px;
-    max-width: 85%;
+    width: 85%;
     word-wrap: break-word;
     display: flex;            /* Оставляем flex */
     flex-direction: column;   /* Меняем направление на вертикальное */
