@@ -192,7 +192,6 @@
     box-sizing: border-box; /* Учитываем отступы в общей ширине */
     flex-grow: 1; /* Позволяет тексту занимать оставшееся пространство */
     text-align: justify;
-    font-family: 'Roboto', sans-serif;
 }
 
 .message-content1 {
@@ -204,7 +203,6 @@
     box-sizing: border-box; /* Учитываем отступы в общей ширине */
     flex-grow: 1; /* Позволяет тексту занимать оставшееся пространство */
     text-align: justify;
-    font-family: 'Roboto', sans-serif;
 }
 
 .message-content-container {
