@@ -485,9 +485,18 @@ const PrivateChat = () => {
                                 marginRight: '5px',
                                 border: '2px solid #ccc', // Рамка
                                 borderRadius: '5px', // Закругленные углы
-                                padding: '5px' // Отступы внутри рамки
+                                padding: '5px', // Отступы внутри рамки
+                                maxWidth: '120px'
                             }}>
-                                <strong style={{ textAlign: 'center' }}>{msg.sender.username}:</strong>
+                                <strong style={{ 
+                                    textAlign: 'center', 
+                                    wordWrap: 'break-word', // Перенос слов
+                                    overflowWrap: 'break-word', // Совместимость с современными браузерами
+                                    whiteSpace: 'normal', // Разрешаем перенос строк
+                                    maxWidth: '100%' // Ограничение ширины текста до ширины контейнера
+                                }}>
+                                    {msg.sender.username}:
+                                </strong>
                                 {msg.sender.avatar ? (
                                     <img 
                                         src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
