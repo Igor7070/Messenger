@@ -94,7 +94,7 @@
     font-size: 18px;
     transition: border-color 0.3s; 
     background-color: #F9FBFC;
-    font-family: 'Roboto', sans-serif;
+    /*font-family: 'Roboto', sans-serif;*/
 }
 
 .input-message:focus {
@@ -192,6 +192,7 @@
     box-sizing: border-box; /* Учитываем отступы в общей ширине */
     flex-grow: 1; /* Позволяет тексту занимать оставшееся пространство */
     text-align: justify;
+    /*font-family: 'Roboto', sans-serif;*/
 }
 
 .message-content1 {
@@ -203,6 +204,7 @@
     box-sizing: border-box; /* Учитываем отступы в общей ширине */
     flex-grow: 1; /* Позволяет тексту занимать оставшееся пространство */
     text-align: justify;
+    /*font-family: 'Roboto', sans-serif;*/
 }
 
 .message-content-container {
