@@ -486,7 +486,10 @@ const PrivateChat = () => {
                                 border: '2px solid #ccc', // Рамка
                                 borderRadius: '5px', // Закругленные углы
                                 padding: '5px', // Отступы внутри рамки
-                                width: '100px'
+                                width: '100px',
+                                minWidth: '100px', // Минимальная ширина, чтобы не сжималась
+                                boxSizing: 'border-box', // Учитываем padding и border
+                                flexShrink: 0 // Предотвращаем сжатие
                             }}>
                                 <strong style={{ 
                                     textAlign: 'center', 
