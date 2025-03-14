@@ -487,12 +487,13 @@ const PrivateChat = () => {
                                 borderRadius: '5px', // Закругленные углы
                                 padding: '5px' // Отступы внутри рамки
                             }}>
-                                <strong>{msg.sender.username}:</strong>
+                                <strong style={{ textAlign: 'center' }}>{msg.sender.username}:</strong>
                                 {msg.sender.avatar ? (
                                     <img 
                                         src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
                                         alt={`${msg.sender.username} avatar`} 
                                         className="message-avatar"
+                                        style={{ display: 'block', margin: '0 auto' }} // Центрирование изображения
                                     />
                                 ) : (
                                     <div className="message-avatar">
