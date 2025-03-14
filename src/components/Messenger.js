@@ -543,7 +543,7 @@ const Messenger = () => {
                                     border: '2px solid #ccc', // Рамка
                                     borderRadius: '5px', // Закругленные углы
                                     padding: '5px', // Отступы внутри рамки
-                                    maxWidth: '120px'
+                                    width: '100px'
 
                                 }}>
                                     <strong style={{ 
