@@ -3,7 +3,7 @@
     flex-direction: column;
     padding: 20px; 
     border-radius: 10px; 
-    background-color: #e3e6e6; /* Белый фон для мессенджера */
+    background-color: #bfc2c2; /* Белый фон для мессенджера */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
@@ -17,7 +17,7 @@
     padding: 10px; /* Добавляем отступы для улучшения внешнего вида */
     border-bottom: 2px solid #0288d1; /* Добавляем линию снизу */
     /*background-color: rgba(255, 255, 255, 0.8); /* Полупрозрачный фон для контраста */
-    background-color: #e3e6e6;
+    background-color: #bfc2c2;
     border-radius: 5px; /* Скругляем углы */
 }
 
