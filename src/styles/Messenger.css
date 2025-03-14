@@ -73,7 +73,7 @@
     overflow-y: scroll;
     margin-bottom: 15px;
     /*background-color: #f1f8e9; /* Светлый фон для списка сообщений */
-    background-color: #F5FAFD;
+    background-color: #EDF5F0;
     border-radius: 5px;
     display: flex;
     flex-direction: column; /* Обеспечиваем вертикальное выравнивание */
