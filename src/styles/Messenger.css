@@ -184,9 +184,9 @@
     overflow-wrap: break-word; /* Поддержка для современных браузеров */
     white-space: pre-wrap; /* Перенос по пробелам и перенос строк */
     max-width: 100%; /* Ограничиваем ширину до 100% родительского элемента */
-    /*box-sizing: border-box; /* Учитываем отступы в общей ширине */
+    box-sizing: border-box; /* Учитываем отступы в общей ширине */
     flex-grow: 1; /* Позволяет тексту занимать оставшееся пространство */
-    text-align: right;
+    text-align: justify;
 }
 
 .message-content1 {
@@ -197,7 +197,7 @@
     max-width: 100%; /* Ограничиваем ширину до 100% родительского элемента */
     box-sizing: border-box; /* Учитываем отступы в общей ширине */
     flex-grow: 1; /* Позволяет тексту занимать оставшееся пространство */
-    text-align: right;
+    text-align: justify;
 }
 
 .message-content-container {
