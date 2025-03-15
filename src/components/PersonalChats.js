@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import '../styles/PersonalChats.css';
 import { Client } from '@stomp/stompjs';
@@ -23,6 +23,7 @@ const PersonalChats = () => {
     audioRef.current.loop = true; // Устанавливаем зацикливание
 
     const currentUserName = location.state?.currentUserName || 'User';
+    const currentUserId = userId;
 
     // Уведомления о новых сообщениях
     useEffect(() => {
