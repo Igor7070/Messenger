@@ -91,6 +91,7 @@ const PrivateChat = () => {
                             autoClose: false,
                             onClick: () => {
                                 navigate(`/private-chat/${notificationChatId}`);
+                                toast.dismiss(toastId); // Закрываем уведомление при нажатии
                             },
                         });
                     }
