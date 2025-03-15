@@ -188,6 +188,8 @@ const PersonalChats = () => {
                     <button onClick={handleDeleteChat}>Delete chat</button>
                 </div>
             )}
+
+            <ToastContainer />
         </div>
     );
 };
