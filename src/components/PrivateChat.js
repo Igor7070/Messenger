@@ -78,12 +78,16 @@ const PrivateChat = () => {
 
                 // Подписка на уведомления
                 stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
-                    const notification = JSON.parse(message.body);
-                    const notificationChatId = notification.chatId; // Предполагается, что chatId в уведомлении
-
+                    const notification = message.body; // Получаем текст уведомления
+                    console.log("Received notification:", notification);
+    
+                    // Используем регулярное выражение для извлечения chatId
+                    const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
+                    const notificationChatId = chatIdMatch ? chatIdMatch[1] : null; // Извлекаем chatId, если найдено
+    
                     // Проверка, совпадает ли chatId уведомления с текущим chatId
-                    if (notificationChatId !== chatId) {
-                        toast.info(`Новое сообщение от ${notification.from}: "${notification.content}"`, {
+                    if (notificationChatId && notificationChatId !== chatId) {
+                        toast.info(`Новое сообщение от: ${notification}`, {
                             autoClose: false,
                             onClick: () => {
                                 navigate(`/private-chat/${notificationChatId}`);
