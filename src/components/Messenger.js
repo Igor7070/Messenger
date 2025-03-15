@@ -555,6 +555,7 @@ const Messenger = () => {
                                         overflowWrap: 'break-word', // Совместимость с современными браузерами
                                         whiteSpace: 'normal', // Разрешаем перенос строк
                                         maxWidth: '100%', // Ограничение ширины текста до ширины контейнера
+                                        fontFamily: 'sans-serif'
                                     }}>
                                         {msg.sender.username}:
                                     </strong>
