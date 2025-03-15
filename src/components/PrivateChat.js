@@ -77,13 +77,20 @@ const PrivateChat = () => {
                 });
 
                 // Подписка на уведомления
-                /*stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
-                    const notification = message.body;
-                    console.log("Received notification:", notification);
-                    toast.info(notification, {
-                        autoClose: false,
-                    });
-                });*/
+                stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
+                    const notification = JSON.parse(message.body);
+                    const notificationChatId = notification.chatId; // Предполагается, что chatId в уведомлении
+
+                    // Проверка, совпадает ли chatId уведомления с текущим chatId
+                    if (notificationChatId !== chatId) {
+                        toast.info(`Новое сообщение от ${notification.from}: "${notification.content}"`, {
+                            autoClose: false,
+                            onClick: () => {
+                                navigate(`/private-chat/${notificationChatId}`);
+                            },
+                        });
+                    }
+                });
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
