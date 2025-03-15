@@ -12,6 +12,7 @@ const PersonalChats = () => {
     const [privateChats, setPrivateChats] = useState([]);
     const [chatPartners, setChatPartners] = useState({});
     const [contextMenu, setContextMenu] = useState({ visible: false, chatId: null, x: 0, y: 0 });
+    const [client, setClient] = useState(null);
 
     const currentUserName = location.state?.currentUserName || 'User';
 
