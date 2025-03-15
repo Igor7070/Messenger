@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import '../styles/PersonalChats.css';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+import { toast } from 'react-toastify';
 
 const PersonalChats = () => {
     const { userId } = useParams();
@@ -11,6 +14,49 @@ const PersonalChats = () => {
     const [contextMenu, setContextMenu] = useState({ visible: false, chatId: null, x: 0, y: 0 });
 
     const currentUserName = location.state?.currentUserName || 'User';
+
+    // Уведомления о новых сообщениях
+    useEffect(() => {
+        const stompClient = new Client({
+            webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
+            onConnect: () => {
+                console.log('Connected to WebSocket');
+
+                // Подписка на уведомления
+                stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
+                    const notification = message.body;
+                    console.log("Received notification:", notification);
+
+                    // Используйте регулярное выражение для извлечения chatId
+                    const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
+                    const chatId = chatIdMatch ? chatIdMatch[1] : null; // Извлекаем chatId, если найдено
+
+                    // Отображение уведомления
+                    toast.info(notification, {
+                        autoClose: false,
+                        onClick: () => {
+                            if (chatId) {
+                                // Переход к личному чату при нажатии на уведомление
+                                navigate(`/private-chat/${chatId}`);
+                            } else {
+                                console.error("chatId не найден в уведомлении");
+                            }
+                        },
+                    });
+                });
+            },
+            onWebSocketError: (error) => {
+                console.error('WebSocket error:', error);
+            },
+        });
+
+        setClient(stompClient);
+        stompClient.activate();
+
+        return () => {
+            stompClient.deactivate();
+        };
+    }, [userId]);
 
     useEffect(() => {
         const fetchPrivateChats = async () => {
