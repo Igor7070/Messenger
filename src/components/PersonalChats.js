@@ -3,7 +3,8 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import '../styles/PersonalChats.css';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { toast } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const PersonalChats = () => {
     const { userId } = useParams();
