@@ -1,9 +1,20 @@
 .personal-chats-container {
     padding: 20px;
+    background-color: #F1F8E9; /* Светло-зеленый, как в UserProfile */
+    border-radius: 12px;
+    max-width: 600px; /* Ограничим ширину для удобства */
+    margin: 20px auto; /* Центрируем с отступами */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 2px solid #C8E6C9; /* Тонкая рамка в тон */
 }
 
 .custom-h1 {
-    color: #00796b;
+    color: #2E7D32; /* Темно-зеленый, как в UserProfile */
+    font-size: 28px;
+    font-weight: 600;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    text-align: center; /* Центрируем заголовок */
 }
 
 .personal-chats-container ul {
@@ -16,32 +27,34 @@
 .chat-item1 {
     display: flex;
     align-items: center;
-    padding: 10px;
-    margin: 5px 0;
-    background-color: #c4cac5;
-    border-radius: 5px;
+    padding: 12px;
+    margin: 8px 0;
+    background-color: #E8F5E9; /* Очень светло-зеленый */
+    border-radius: 8px;
     cursor: pointer;
-    border: none; /* Убираем любые границы */
-    border-bottom: none; /* Явно убираем нижнюю границу */
+    border: 1px solid #A5D6A7; /* Тонкая рамка */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .chat-item1:hover {
-    background-color: #e0e0e0;
+    background-color: #DCEDC8; /* Чуть ярче при наведении */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Легкая тень */
 }
 
 .chat-avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    margin-right: 10px;
-    background-color: #999;
+    margin-right: 12px;
+    background-color: #81C784; /* Средний зеленый как акцент */
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
     color: #fff;
     flex-shrink: 0;
-    border: none; /* Убираем границы у аватара */
+    border: 2px solid #66BB6A; /* Рамка чуть темнее */
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .chat-avatar img {
@@ -53,33 +66,37 @@
 }
 
 .chat-name-list-item {
-    font-size: 24px;
+    font-size: 20px;
     line-height: 40px;
     margin: 0;
+    color: #424242; /* Темно-серый, как в UserProfile */
     background-color: transparent;
     border: none; /* Убираем границы у текста */
-    border-bottom: none; /* Явно убираем нижнюю границу */
-    text-decoration: none; /* Убираем подчёркивание текста */
+    text-decoration: none;
+    font-weight: 500; /* Полужирный для акцента */
 }
 
 .context-menu {
     position: absolute;
-    background: white;
-    border: 1px solid #ccc;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    background: #FFFFFF;
+    border: 1px solid #A5D6A7; /* Зеленая рамка */
+    border-radius: 5px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
     z-index: 1000;
-    padding: 10px;
+    padding: 8px;
 }
 
 .context-menu button {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 5px;
+    padding: 6px 10px;
     width: 100%;
     text-align: left;
+    color: #2E7D32; /* Зеленый текст */
+    transition: background-color 0.2s ease;
 }
 
 .context-menu button:hover {
-    background-color: #f0f0f0;
+    background-color: #F1F8E9; /* Светло-зеленый фон */
 }
