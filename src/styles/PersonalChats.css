@@ -1,6 +1,6 @@
 .personal-chats-container {
     padding: 20px;
-    background-color: #F1F8E9; /* Светло-зеленый, как в UserProfile */
+    background-color: #DCEDC8; /* Светло-зеленый, как в UserProfile */
     border-radius: 12px;
     max-width: 600px; /* Ограничим ширину для удобства */
     margin: 20px auto; /* Центрируем с отступами */
