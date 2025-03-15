@@ -87,11 +87,11 @@ const PrivateChat = () => {
     
                     // Проверка, совпадает ли chatId уведомления с текущим chatId
                     if (notificationChatId && notificationChatId !== chatId) {
-                        toast.info(`Новое сообщение от: ${notification}`, {
+                        const toastId = toast.info(`Новое сообщение от: ${notification}`, {
                             autoClose: false,
                             onClick: () => {
                                 navigate(`/private-chat/${notificationChatId}`);
-                                toast.dismiss(toastId); // Закрываем уведомление при нажатии
+                                toast.dismiss(toastId); // Закрываем уведомление после перехода
                             },
                         });
                     }
