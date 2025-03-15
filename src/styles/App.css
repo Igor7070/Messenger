@@ -30,4 +30,5 @@ h1 {
   color: #0d47a1; /* Тёмно-синий цвет для заголовка */
   margin-bottom: 20px;
   font-weight: 700; 
+  font-family: sans-serif; /* Устанавливаем базовый шрифт */
 }
