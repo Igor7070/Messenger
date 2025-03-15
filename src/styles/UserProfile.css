@@ -3,10 +3,19 @@
     padding: 20px;
     /*background-color: #f9f9f9;*/
     background-color: #DAF7A9;
-    border-radius: 8px;
+    border-radius: 12px;
     max-width: 600px;
     margin: auto;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Чуть глубже тень */
+    border: 2px solid #A5D6A7; /* Тонкая рамка светло-зеленого оттенка */
+}
+
+.user-profile-username {
+    color: #2E7D32;
+    font-size: 28px;
+    font-weight: 600;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
 }
 
 .user-avatar-profile {
@@ -20,6 +29,8 @@
     justify-content: center; /* Горизонтальное выравнивание */
     font-size: 40px; /* Размер шрифта для текста */
     color: #757575; /* Цвет текста */
+    border: 3px solid #81C784; /* Рамка среднего зеленого оттенка */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); /* Легкая тень для объема */
 }
 
 .avatar-input {
@@ -28,6 +39,10 @@
 
 .user-info {
     margin-top: 20px; /* Отступ сверху от аватара */
+    padding: 15px;
+    background-color: #F1F8E9; /* Очень светлый зеленый для контраста с основным фоном */
+    border-radius: 8px;
+    border: 1px solid #C8E6C9; /* Тонкая рамка в тон дизайну */
 }
 
 .user-info-input {
@@ -72,8 +87,18 @@
     cursor: pointer; /* Курсор указателя при наведении */
 }
 
-h2 {
-    margin: 0; /* Убираем отступы для заголовка "О себе:" */
+.user-info-title {
+    color: #388E3C; /* Зеленый чуть светлее имени пользователя */
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.user-info-description {
+    margin: 0;
+    word-wrap: break-word;
+    width: 100%;
+    max-width: 100%;
+    color: #424242;
 }
 
 .user-profile-modal {

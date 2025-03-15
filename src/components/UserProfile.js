@@ -423,7 +423,7 @@ const UserProfile = () => {
     return (
         <div className="user-profile-container">
             <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-            <h1>{user.username}</h1>
+            <h1 className="user-profile-username">{user.username}</h1>
             {user.avatar ? (
                 <img 
                     src={`https://unlimitedpossibilities12.org${user.avatar}`} 
@@ -440,7 +440,7 @@ const UserProfile = () => {
                 <input type="file" onChange={handleAvatarChange} className="avatar-input" />
             )}
             <div className="user-info">
-                <h2>О себе:</h2>
+                <h2 className="user-info-title">About me:</h2>
                 {isEditing ? (
                     <textarea 
                         value={info}
@@ -451,7 +451,7 @@ const UserProfile = () => {
                     />
                 ) : (
                     <div className="user-info-text">
-                        <p>{info}</p>
+                        <p className="user-info-description">{info}</p>
                         {userId === String(currentUserId) && ( 
                             <FaEdit className="edit-icon" onClick={() => setIsEditing(true)} />
                         )}
