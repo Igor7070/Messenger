@@ -110,7 +110,7 @@ public class RabotaUaStrategy implements Strategy {
             System.out.println("Initializing WebDriver...");
             //Для Railway
             //String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub";
-            String remoteUrl = "https://CHANGEME.up.railway.app/wd/hub";
+            String remoteUrl = "https://CHANGEME.up.railway.app/";
             ChromeOptions options = new ChromeOptions();
             //options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
