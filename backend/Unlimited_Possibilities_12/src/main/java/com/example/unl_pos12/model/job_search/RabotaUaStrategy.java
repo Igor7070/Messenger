@@ -109,7 +109,8 @@ public class RabotaUaStrategy implements Strategy {
 
             System.out.println("Initializing WebDriver...");
             //Для Railway
-            String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
+            //String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub";
+            String remoteUrl = "https://https://CHANGEME.up.railway.app/wd/hub";
             ChromeOptions options = new ChromeOptions();
             //options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
@@ -374,7 +375,8 @@ public class RabotaUaStrategy implements Strategy {
 
             System.out.println("Initializing WebDriver...");
             //Для Railway
-            String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub"; // Замените на ваш URL
+            //String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub";
+            String remoteUrl = "https://https://CHANGEME.up.railway.app/wd/hub";
             ChromeOptions options = new ChromeOptions();
             //options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
