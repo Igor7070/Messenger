@@ -447,7 +447,7 @@ const PrivateChat = () => {
 
     const handleMenuAction = (action) => {
         if (contextMenu.message.sender.id !== userId) {
-            toast.error('Вы можете редактировать или удалять только свои сообщения.');
+            toast.error('You can only edit or delete your own messages.');
             return;
         }
 
@@ -467,9 +467,9 @@ const PrivateChat = () => {
                 body: JSON.stringify(id),
             });
             setMessages(prevMessages => prevMessages.filter(msg => msg.id !== id));
-            toast.success('Сообщение удалено!');
+            toast.success('Message deleted!');
         } else {
-            toast.error('Не удалось удалить сообщение. Попробуйте снова.');
+            toast.error('Failed to delete message. Try again.');
         }
     };
 

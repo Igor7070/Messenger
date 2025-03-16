@@ -332,7 +332,7 @@ const Messenger = () => {
                             )
                         );
                     } else {
-                        toast.error('Вы можете редактировать только свои сообщения.');
+                        toast.error('You can only edit your own messages.');
                         return;
                     }
                 } else {
@@ -381,7 +381,7 @@ const Messenger = () => {
 
     const handleMenuAction = (action) => {
         if (contextMenu.message.sender.id !== userId) {
-            toast.error('Вы можете редактировать или удалять только свои сообщения.');
+            toast.error('You can only edit or delete your own messages.');
             return;
         }
     
@@ -403,9 +403,9 @@ const Messenger = () => {
             
             setMessages(prevMessages => prevMessages.filter(msg => msg.id !== id));
             
-            toast.success('Сообщение удалено!');
+            toast.success('Message deleted!');
         } else {
-            toast.error('Не удалось удалить сообщение. Попробуйте снова.');
+            toast.error('Failed to delete message. Try again.');
         }
     };
 
@@ -420,21 +420,21 @@ const Messenger = () => {
                 setIsLoggedIn(true);
                 localStorage.setItem('userId', newUser.id);
                 localStorage.setItem('username', newUser.username);
-                toast.success('Пользователь успешно создан!');
+                toast.success('User successfully created!');
             } catch (error) {
-                let errorMessage = 'Не удалось создать пользователя. Пожалуйста, попробуйте снова.';
+                let errorMessage = 'Failed to create user. Please try again.';
                 console.warn(error.message);
 
                 if (error.message.includes('User already exists')) {
-                    errorMessage = 'Пользователь с таким именем уже существует. Пожалуйста, выберите другое имя.';
+                    errorMessage = 'A user with this name already exists. Please choose an other name.';
                 } else if (error.message.includes('Password must be at least 9 characters long, contain letters and numbers')) {
-                    errorMessage = 'Пароль должен содержать минимум 9 символов, включая буквы и цифры.';
+                    errorMessage = 'The password must contain at least 9 characters, including letters and numbers.';
                 }
 
                 toast.error(errorMessage);
             }
         } else {
-            toast.error('Пожалуйста, заполните все поля.');
+            toast.error('Please fill in all fields.');
         }
     };
 
@@ -447,19 +447,19 @@ const Messenger = () => {
                 setErrorMessage('');
                 localStorage.setItem('userId', loggedUser.id);
                 localStorage.setItem('username', loggedUser.username);
-                toast.success('Вы успешно вошли в систему!');
+                toast.success('You have successfully logged in!');
             } catch (error) {
-                let errorMessage = 'Не удалось войти. Пожалуйста, попробуйте снова.';
+                let errorMessage = 'Failed to log in. Please try again.';
                 console.warn(error.message);
 
                 if (error.message.includes('Invalid username or password')) {
-                    errorMessage = 'Неверное имя пользователя или пароль.';
+                    errorMessage = 'Incorrect username or password.';
                 }
 
                 toast.error(errorMessage);
             }
         } else {
-            toast.error('Пожалуйста, заполните все поля.');
+            toast.error('Please fill in all fields.');
         }
     };
 
@@ -469,7 +469,7 @@ const Messenger = () => {
         setUserId(null);
         setUsername('');
         setIsLoggedIn(false);
-        toast.success('Вы вышли из системы!');
+        toast.success('You are logged out!');
     };
 
     const handleInputChange = (e) => {
