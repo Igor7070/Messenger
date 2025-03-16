@@ -109,7 +109,6 @@ public class RabotaUaStrategy implements Strategy {
 
             System.out.println("Initializing WebDriver...");
             //Для Railway
-            //String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub";
             String remoteUrl = "https://standalone-chrome-production-4953.up.railway.app/wd/hub";
             ChromeOptions options = new ChromeOptions();
             //options.addArguments("--headless"); // Запуск без графического интерфейса
@@ -135,7 +134,7 @@ public class RabotaUaStrategy implements Strategy {
             /*int scrollStep = 2500;
             int maxWaitTime = 5000; // 5 секунд
             Thread.sleep(1000);*/
-            int scrollStep = 4000;
+            int scrollStep = 5000;
             int maxWaitTime = 5000;
             Thread.sleep(1500);
 
@@ -375,7 +374,6 @@ public class RabotaUaStrategy implements Strategy {
 
             System.out.println("Initializing WebDriver...");
             //Для Railway
-            //String remoteUrl = "https://standalone-chrome-production-5dca.up.railway.app/wd/hub";
             String remoteUrl = "https://standalone-chrome-production-4953.up.railway.app/wd/hub";
             ChromeOptions options = new ChromeOptions();
             //options.addArguments("--headless"); // Запуск без графического интерфейса
@@ -406,7 +404,7 @@ public class RabotaUaStrategy implements Strategy {
             /*int scrollStep = 2500;
             int maxWaitTime = 5000; // 5 секунд
             Thread.sleep(1000);*/
-            int scrollStep = 4000;
+            int scrollStep = 5000;
             int maxWaitTime = 5000;
             Thread.sleep(1500);
 
