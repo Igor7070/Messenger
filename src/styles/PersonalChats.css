@@ -29,15 +29,15 @@
     align-items: center;
     padding: 12px;
     margin: 8px 0;
-    background-color: #D6EAF8; /* Светлый голубовато-зеленый */
+    background-color: #ECEFF1; /* Светлый серый */
     border-radius: 8px;
     cursor: pointer;
-    border: 1px solid #B3E5FC; /* Рамка в тон */
+    border: 1px solid #CFD8DC; /* Рамка чуть темнее серого */
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .chat-item1:hover {
-    background-color: #BBDEFB; /* Чуть темнее голубой при наведении */
+    background-color: #CFD8DC; /* Чуть темнее серый при наведении */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Легкая тень */
 }
 
