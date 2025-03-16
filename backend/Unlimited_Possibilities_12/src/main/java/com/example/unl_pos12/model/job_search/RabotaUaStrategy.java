@@ -135,7 +135,7 @@ public class RabotaUaStrategy implements Strategy {
             /*int scrollStep = 2500;
             int maxWaitTime = 5000; // 5 секунд
             Thread.sleep(1000);*/
-            int scrollStep = 7000;
+            int scrollStep = 3000;
             int maxWaitTime = 5000;
             Thread.sleep(1500);
 
@@ -406,7 +406,7 @@ public class RabotaUaStrategy implements Strategy {
             /*int scrollStep = 2500;
             int maxWaitTime = 5000; // 5 секунд
             Thread.sleep(1000);*/
-            int scrollStep = 4000;
+            int scrollStep = 3000;
             int maxWaitTime = 5000;
             Thread.sleep(1500);
 
