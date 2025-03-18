@@ -57,7 +57,7 @@ body {
 
 /* Ссылка "To Home" (слева) */
 .nav-link-home {
-  left: 0;
+  right: 0;
   color: #42a5f5; /* Голубой */
   text-decoration-color: #42a5f5; /* Цвет подчёркивания совпадает с текстом */
 }
@@ -70,7 +70,7 @@ body {
 
 /* Ссылка "To Main" (справа) */
 .nav-link-main {
-  right: 0;
+  left: 0;
   color: #ef5350; /* Красный */
   text-decoration-color: #ef5350; /* Цвет подчёркивания */
 }

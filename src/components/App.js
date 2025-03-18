@@ -20,13 +20,13 @@ const App = () => {
                         {/* Контейнер для заголовка и ссылок */}
                         <div className="header-container">
                             {/* Ссылка слева */}
-                            <a href="https://unlimitedpossibilities12.org" className="nav-link nav-link-home" rel="noopener noreferrer">
+                            <a href="https://unlimitedpossibilities12.org" className="nav-link nav-link-main" rel="noopener noreferrer">
                                 To Main
                             </a>
                             {/* Заголовок */}
                             <h1 className="app-title">Messenger UP12</h1>
                             {/* Ссылка справа */}
-                            <Link to="/" className="nav-link nav-link-main">
+                            <Link to="/" className="nav-link nav-link-home">
                                 To Home
                             </Link>
                         </div>
