@@ -1,14 +1,14 @@
 import React from 'react';
-import { HashRouter as Router, Route, Routes } from 'react-router-dom';
-import Home from './Home'; // Компонент главной страницы
-import Messenger from './Messenger'; // Компонент группового чата
-import UserProfile from './UserProfile'; // Компонент профиля пользователя
-import PrivateChat from './PrivateChat'; // Импорт нового компонента
-import VoiceCall from './VoiceCall'; // Импорт компонента для видеозвонка
+import { HashRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import Home from './Home';
+import Messenger from './Messenger';
+import UserProfile from './UserProfile';
+import PrivateChat from './PrivateChat';
+import VoiceCall from './VoiceCall';
 import PersonalChats from './PersonalChats';
-import { NotificationProvider } from './NotificationContext'; // Импортируем контекст уведомлений
+import { NotificationProvider } from './NotificationContext';
 import { UserInteractionProvider } from './UserInteractionContext';
-import { ToastContainer } from 'react-toastify'; // Импортируем ToastContainer
+import { ToastContainer } from 'react-toastify';
 import '../styles/App.css';
 
 const App = () => {
@@ -17,15 +17,27 @@ const App = () => {
             <NotificationProvider>
                 <Router>
                     <div className="app">
-                        <h1>Messenger UP12</h1>
-                        <ToastContainer /> {/* Размещаем ToastContainer для уведомлений */}
+                        {/* Контейнер для заголовка и ссылок */}
+                        <div className="header-container">
+                            {/* Ссылка слева */}
+                            <Link to="/" className="nav-link nav-link-home">
+                                To Home
+                            </Link>
+                            {/* Заголовок */}
+                            <h1 className="app-title">Messenger UP12</h1>
+                            {/* Ссылка справа */}
+                            <a href="https://unlimitedpossibilities12.org" className="nav-link nav-link-main" target="_blank" rel="noopener noreferrer">
+                                To Main
+                            </a>
+                        </div>
+                        <ToastContainer />
                         <Routes>
-                            <Route path="/" element={<Home />} /> {/* Главная страница */}
-                            <Route path="/chat/:chatId" element={<Messenger />} /> {/* Групповой чат */}
-                            <Route path="/user/:userId" element={<UserProfile />} /> {/* Профиль пользователя */}
-                            <Route path="/private-chat/:chatId" element={<PrivateChat />} /> {/* Личный чат */}
-                            <Route path="/voice-call/:roomId" element={<VoiceCall />} /> {/* Видеозвонок */}
-                            <Route path="/user/:userId/personal-chats" element={<PersonalChats />} /> {/* Личные чаты */}
+                            <Route path="/" element={<Home />} />
+                            <Route path="/chat/:chatId" element={<Messenger />} />
+                            <Route path="/user/:userId" element={<UserProfile />} />
+                            <Route path="/private-chat/:chatId" element={<PrivateChat />} />
+                            <Route path="/voice-call/:roomId" element={<VoiceCall />} />
+                            <Route path="/user/:userId/personal-chats" element={<PersonalChats />} />
                         </Routes>
                     </div>
                 </Router>

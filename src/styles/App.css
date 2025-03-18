@@ -4,7 +4,6 @@ html, body {
 }
 
 body {
-  /*background-color: #66CDAA; /* Мягкий светло-синий фон для всего приложения */
   background-image: url('https://igor7070.github.io/Messenger/Background_messenger_1.png'); 
   background-size: cover;
   background-repeat: no-repeat;
@@ -25,10 +24,61 @@ body {
   overflow: auto; 
 }
 
+/* Контейнер для заголовка и ссылок */
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  margin-bottom: 20px; /* Отступ снизу, чтобы отделить от контента */
+}
+
+/* Заголовок */
 h1 {
   text-align: center;
   color: #0d47a1; /* Тёмно-синий цвет для заголовка */
-  margin-bottom: 20px;
+  margin-bottom: 0; /* Убираем нижний отступ, так как он в header-container */
   font-weight: 700; 
   font-family: sans-serif; /* Устанавливаем базовый шрифт */
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+/* Общие стили для ссылок */
+.nav-link {
+  font-size: 0.9rem; /* Мелкий шрифт */
+  text-decoration: none;
+  font-weight: 500;
+  font-family: 'Roboto', sans-serif; /* Соответствует шрифту приложения */
+  padding: 5px 10px;
+  transition: color 0.3s ease, transform 0.2s ease; /* Плавные эффекты */
+  position: absolute;
+  top: 100%; /* Чуть ниже заголовка */
+}
+
+/* Ссылка "To Home" (слева) */
+.nav-link-home {
+  left: 0;
+  color: #42a5f5; /* Голубой, гармонирующий с градиентом фона */
+}
+
+.nav-link-home:hover {
+  color: #1976d2; /* Темнее при наведении, ближе к цвету заголовка */
+  transform: scale(1.05); /* Лёгкое увеличение */
+}
+
+/* Ссылка "To Main" (справа) */
+.nav-link-main {
+  right: 0;
+  color: #ef5350; /* Красный, контрастный, но мягкий */
+}
+
+.nav-link-main:hover {
+  color: #d81b60; /* Темнее при наведении, стильный оттенок */
+  transform: scale(1.05); /* Лёгкое увеличение */
+}
+
+/* Убедимся, что контент ниже не перекрывается */
+.app > *:not(.header-container) {
+  margin-top: 20px;
 }
