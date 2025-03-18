@@ -53,7 +53,8 @@
     width: 20%; /* Занимает всю ширину */
 }
 
-.login-button-home:hover {
+.login-button-home:hover,
+.logout-button-home:hover {
     background-color: #0056b3;
 }
 
