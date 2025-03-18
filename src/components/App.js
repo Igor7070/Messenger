@@ -26,7 +26,7 @@ const App = () => {
                             {/* Заголовок */}
                             <h1 className="app-title">Messenger UP12</h1>
                             {/* Ссылка справа */}
-                            <a href="https://unlimitedpossibilities12.org" className="nav-link nav-link-main" target="_blank" rel="noopener noreferrer">
+                            <a href="https://unlimitedpossibilities12.org" className="nav-link nav-link-main" rel="noopener noreferrer">
                                 To Main
                             </a>
                         </div>
