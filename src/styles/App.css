@@ -26,56 +26,59 @@ body {
 
 /* Контейнер для заголовка и ссылок */
 .header-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   position: relative;
-  margin-bottom: 20px; /* Отступ снизу, чтобы отделить от контента */
+  text-align: center; /* Центрируем заголовок */
+  margin-bottom: 30px; /* Увеличиваем отступ снизу для отделения от контента */
 }
 
 /* Заголовок */
-h1 {
-  text-align: center;
+.app-title {
   color: #0d47a1; /* Тёмно-синий цвет для заголовка */
-  margin-bottom: 0; /* Убираем нижний отступ, так как он в header-container */
+  margin: 0; /* Убираем отступы */
   font-weight: 700; 
-  font-family: sans-serif; /* Устанавливаем базовый шрифт */
+  font-family: sans-serif;
   font-size: 2rem;
   line-height: 1.2;
+  display: inline-block; /* Делаем заголовок блочно-строчным для центрирования */
 }
 
 /* Общие стили для ссылок */
 .nav-link {
   font-size: 0.9rem; /* Мелкий шрифт */
-  text-decoration: none;
   font-weight: 500;
-  font-family: 'Roboto', sans-serif; /* Соответствует шрифту приложения */
-  padding: 5px 10px;
-  transition: color 0.3s ease, transform 0.2s ease; /* Плавные эффекты */
+  font-family: 'Roboto', sans-serif;
+  text-decoration: underline; /* Добавляем подчёркивание */
+  text-decoration-thickness: 2px; /* Толщина подчёркивания */
+  text-underline-offset: 3px; /* Отступ подчёркивания от текста */
   position: absolute;
-  top: 100%; /* Чуть ниже заголовка */
+  top: -10px; /* Поднимаем ссылки выше заголовка */
+  transition: color 0.3s ease, transform 0.2s ease; /* Плавные эффекты */
 }
 
 /* Ссылка "To Home" (слева) */
 .nav-link-home {
   left: 0;
-  color: #42a5f5; /* Голубой, гармонирующий с градиентом фона */
+  color: #42a5f5; /* Голубой */
+  text-decoration-color: #42a5f5; /* Цвет подчёркивания совпадает с текстом */
 }
 
 .nav-link-home:hover {
-  color: #1976d2; /* Темнее при наведении, ближе к цвету заголовка */
-  transform: scale(1.05); /* Лёгкое увеличение */
+  color: #1976d2; /* Темнее при наведении */
+  text-decoration-color: #1976d2; /* Подчёркивание тоже темнеет */
+  transform: translateY(-2px); /* Лёгкий подъём вверх */
 }
 
 /* Ссылка "To Main" (справа) */
 .nav-link-main {
   right: 0;
-  color: #ef5350; /* Красный, контрастный, но мягкий */
+  color: #ef5350; /* Красный */
+  text-decoration-color: #ef5350; /* Цвет подчёркивания */
 }
 
 .nav-link-main:hover {
-  color: #d81b60; /* Темнее при наведении, стильный оттенок */
-  transform: scale(1.05); /* Лёгкое увеличение */
+  color: #d81b60; /* Темнее при наведении */
+  text-decoration-color: #d81b60; /* Подчёркивание тоже меняется */
+  transform: translateY(-2px); /* Лёгкий подъём вверх */
 }
 
 /* Убедимся, что контент ниже не перекрывается */
