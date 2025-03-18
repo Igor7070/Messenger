@@ -123,6 +123,10 @@ h1, h2 {
     box-sizing: border-box; /* Учитываем границы и отступы в ширину и высоту */
 }
 
+.create-user-button-main:hover {
+    background-color: #00796b; /* Чуть темнее при наведении */
+}
+
 .create-chat-button {
     padding: 10px 10px;
     border: none;
