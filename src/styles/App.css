@@ -71,13 +71,13 @@ body {
 /* Ссылка "To Main" (справа) */
 .nav-link-main {
   left: 0;
-  color: #e57373; /* Красный */
-  text-decoration-color: #e57373; /* Цвет подчёркивания */
+  color: #7e57c2;
+  text-decoration-color: #7e57c2; /* Цвет подчёркивания */
 }
 
 .nav-link-main:hover {
-  color: #d81b60; /* Темнее при наведении */
-  text-decoration-color: #d81b60; /* Подчёркивание тоже меняется */
+  color: #5e35b1; /* Темнее при наведении */
+  text-decoration-color: #5e35b1; /* Подчёркивание тоже меняется */
   transform: translateY(-2px); /* Лёгкий подъём вверх */
 }
 
