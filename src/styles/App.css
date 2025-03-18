@@ -71,8 +71,8 @@ body {
 /* Ссылка "To Main" (справа) */
 .nav-link-main {
   left: 0;
-  color: #ef5350; /* Красный */
-  text-decoration-color: #ef5350; /* Цвет подчёркивания */
+  color: #e57373; /* Красный */
+  text-decoration-color: #e57373; /* Цвет подчёркивания */
 }
 
 .nav-link-main:hover {
