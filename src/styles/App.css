@@ -28,7 +28,7 @@ body {
 .header-container {
   position: relative;
   text-align: center; /* Центрируем заголовок */
-  margin-bottom: 30px; /* Увеличиваем отступ снизу для отделения от контента */
+  margin-bottom: 15px; /* Увеличиваем отступ снизу для отделения от контента */
 }
 
 /* Заголовок */
@@ -83,5 +83,5 @@ body {
 
 /* Убедимся, что контент ниже не перекрывается */
 .app > *:not(.header-container) {
-  margin-top: 20px;
+  margin-top: 10px;
 }
