@@ -91,14 +91,14 @@ public class RabotaUaStrategy implements Strategy {
             driver.get(url);
             System.out.println("Открыта страница: " + url);
 
-            WebElement appRootElement = driver.findElement(By.cssSelector("app-root"));
+            /*WebElement appRootElement = driver.findElement(By.cssSelector("app-root"));
             String appRootContent = appRootElement.getAttribute("outerHTML");
-            System.out.println(appRootContent);
+            System.out.println(appRootContent);*/
 
             // Прокрутка вниз до конца страницы
             JavascriptExecutor js = (JavascriptExecutor) driver;
             long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
-            int scrollStep = 5000;
+            int scrollStep = 3000;
             int maxWaitTime = 5000;
 
             while (true) {
@@ -322,7 +322,7 @@ public class RabotaUaStrategy implements Strategy {
             // Прокрутка вниз
             JavascriptExecutor js = (JavascriptExecutor) driver;
             long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
-            int scrollStep = 5000;
+            int scrollStep = 3000;
             int maxWaitTime = 5000;
             Thread.sleep(1500);
 
