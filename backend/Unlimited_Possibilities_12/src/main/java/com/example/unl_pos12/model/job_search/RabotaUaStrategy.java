@@ -167,6 +167,8 @@ public class RabotaUaStrategy implements Strategy {
                         vacancy.setCompanyName(spans.get(0).getText().trim());
                         vacancy.setSalary("");
                         vacancy.setCity(spans.get(1).getText().trim());
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c98]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
                     } else if (spansSize == 4) {
                         String salaryOrCompanyName = spans.get(0).getText().trim();
                         if (salaryOrCompanyName.matches("\\D+")) {
@@ -186,6 +188,8 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(1).getText().trim());
                             }
                         }
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c98]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
                     } else if (spansSize == 5) {
                         String salaryOrCompanyName = spans.get(0).getText().trim();
                         if (salaryOrCompanyName.matches("\\D+")) {
@@ -204,20 +208,16 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(3).getText().trim());
                             }
                         }
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c98]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
                     } else if (spansSize == 6) {
                         vacancy.setCompanyName(spans.get(2).getText().trim());
                         vacancy.setSalary(spans.get(0).getText().trim());
                         vacancy.setCity(spans.get(3).getText().trim());
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c98]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
                     }
 
-                    // Явное ожидание ссылки
-                    WebElement linkElement = wait.until(
-                            ExpectedConditions.presenceOfElementLocated(
-                                    By.cssSelector("a[_ngcontent-app-desktop-c98]")
-                            )
-                    );
-                    String urlHref = linkElement.getAttribute("href").trim();
-                    vacancy.setUrl(urlHref);
                     vacancy.setSiteName("https://robota.ua/");
 
                     printVacancy(vacancy);
@@ -392,6 +392,8 @@ public class RabotaUaStrategy implements Strategy {
                         vacancy.setCompanyName(spans.get(0).getText().trim());
                         vacancy.setSalary("");
                         vacancy.setCity(spans.get(1).getText().trim());
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c98]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
                     } else if (spansSize == 4) {
                         String salaryOrCompanyName = spans.get(0).getText().trim();
                         if (salaryOrCompanyName.matches("\\D+")) {
@@ -411,6 +413,8 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(1).getText().trim());
                             }
                         }
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c98]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
                     } else if (spansSize == 5) {
                         String salaryOrCompanyName = spans.get(0).getText().trim();
                         if (salaryOrCompanyName.matches("\\D+")) {
@@ -429,10 +433,14 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(3).getText().trim());
                             }
                         }
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c98]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
                     } else if (spansSize == 6) {
                         vacancy.setCompanyName(spans.get(2).getText().trim());
                         vacancy.setSalary(spans.get(0).getText().trim());
                         vacancy.setCity(spans.get(3).getText().trim());
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c98]")).getAttribute("href").trim();
+                        vacancy.setUrl(urlHref);
                     }
 
                     // Явное ожидание ссылки
