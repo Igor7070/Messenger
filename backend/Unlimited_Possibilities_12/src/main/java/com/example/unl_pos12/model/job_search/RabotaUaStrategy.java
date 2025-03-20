@@ -91,9 +91,9 @@ public class RabotaUaStrategy implements Strategy {
             driver.get(url);
             System.out.println("Открыта страница: " + url);
 
-            /*WebElement appRootElement = driver.findElement(By.cssSelector("app-root"));
+            WebElement appRootElement = driver.findElement(By.cssSelector("app-root"));
             String appRootContent = appRootElement.getAttribute("outerHTML");
-            System.out.println(appRootContent);*/
+            System.out.println(appRootContent);
 
             // Прокрутка вниз до конца страницы
             JavascriptExecutor js = (JavascriptExecutor) driver;
@@ -453,12 +453,6 @@ public class RabotaUaStrategy implements Strategy {
                         vacancy.setUrl(urlHref);
                     }
 
-                    // Явное ожидание ссылки
-                    WebElement linkElement = wait.until(
-                            ExpectedConditions.presenceOfElementLocated(By.cssSelector("a[_ngcontent-app-desktop-c98]"))
-                    );
-                    String urlHref = linkElement.getAttribute("href").trim();
-                    vacancy.setUrl(urlHref);
                     vacancy.setSiteName("https://robota.ua/");
 
                     printVacancy(vacancy);
