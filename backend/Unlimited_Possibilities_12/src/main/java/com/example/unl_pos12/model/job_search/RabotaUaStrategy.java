@@ -7,7 +7,6 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -78,15 +77,15 @@ public class RabotaUaStrategy implements Strategy {
 
         try {
             //Для Railway
-            /*String remoteUrl = "https://standalone-chrome-production-4953.up.railway.app/wd/hub";
+            String remoteUrl = "https://standalone-chrome-production-4953.up.railway.app/wd/hub";
             ChromeOptions options = new ChromeOptions();
             //options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
             options.addArguments("--lang=" + "ru"); // Установка языка в зависимости от параметра, например, "ru" или "en"
-            driver = new RemoteWebDriver(new URL(remoteUrl), options);*/
+            driver = new RemoteWebDriver(new URL(remoteUrl), options);
 
             //Для локальной работы
-            driver = new ChromeDriver();
+            //driver = new ChromeDriver();
             driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
             String url = String.format(URL_FORMAT, position, page);
             driver.get(url);
