@@ -2,7 +2,6 @@ package com.example.unl_pos12.controller.messenger;
 
 import com.example.unl_pos12.model.messenger.CallRequest;
 import com.example.unl_pos12.model.messenger.signal.SignalMessage;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -21,27 +20,16 @@ public class WebRTCController {
     private SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping("/signal/{roomId}")
-    public void signal(@DestinationVariable String roomId, String rawMessage) {
+    public void signal(@DestinationVariable String roomId, SignalMessage signalMessage) {
         System.out.println("Method signal is working...");
         System.out.println("roomId in method signal: " + roomId);
-        System.out.println("Raw message received: " + rawMessage);
+        System.out.println(String.format("Received signal from: %s, type: %s, sdp: %s, " +
+                        "iceCandidate: %s", signalMessage.getFrom(), signalMessage.getSignal().getType(),
+                signalMessage.getSignal().getSdp(), signalMessage.getSignal().getIceCandidate()));
 
-        if ("h".equals(rawMessage)) {
-            System.out.println("Ignoring heartbeat message: " + rawMessage);
-            return;
-        }
-
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            SignalMessage signalMessage = objectMapper.readValue(rawMessage, SignalMessage.class);
-            System.out.println(String.format("Received signal from: %s, type: %s, sdp: %s, iceCandidate: %s",
-                    signalMessage.getFrom(), signalMessage.getSignal().getType(),
-                    signalMessage.getSignal().getSdp(), signalMessage.getSignal().getIceCandidate()));
-            messagingTemplate.convertAndSend("/topic/room/" + roomId, signalMessage);
-            System.out.println("Method signal worked success.");
-        } catch (Exception e) {
-            System.err.println("Error processing signal message: " + e.getMessage());
-        }
+        // Отправка сигнала другому участнику
+        messagingTemplate.convertAndSend("/topic/room/" + roomId, signalMessage);
+        System.out.println("Method signal worked success.");
     }
 
     @PostMapping("/call")
