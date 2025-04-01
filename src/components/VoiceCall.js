@@ -143,8 +143,19 @@ const VoiceCall = ({ recipientId }) => {
         //------------------------------------------------------------------------------------------
 
         peerConnectionRef.current.ontrack = (event) => {
-            remoteAudioRef.current.srcObject = event.streams[0];
-            console.log('Remote stream received:', event.streams[0]);
+            /*remoteAudioRef.current.srcObject = event.streams[0];
+            console.log('Remote stream received:', event.streams[0]);*/
+            console.log('ontrack triggered:', event);
+            console.log('Event streams:', event.streams);
+            console.log('Event track:', event.track);
+            if (event.streams[0]) {
+                console.log('Stream active:', event.streams[0].active);
+                console.log('Track enabled:', event.track.enabled);
+                remoteAudioRef.current.srcObject = event.streams[0];
+                remoteAudioRef.current.play().catch(err => console.error('Audio play error:', err));
+            } else {
+                console.error('No streams in ontrack event');
+            }
         };
 
         stream.getTracks().forEach(track => {
@@ -213,8 +224,19 @@ const VoiceCall = ({ recipientId }) => {
     
         // Обработчик входящих треков
         peerConnectionRef.current.ontrack = (event) => {
-            remoteAudioRef.current.srcObject = event.streams[0];
-            console.log('Remote stream received:', event.streams[0]);
+            /*remoteAudioRef.current.srcObject = event.streams[0];
+            console.log('Remote stream received:', event.streams[0]);*/
+            console.log('ontrack triggered:', event);
+            console.log('Event streams:', event.streams);
+            console.log('Event track:', event.track);
+            if (event.streams[0]) {
+                console.log('Stream active:', event.streams[0].active);
+                console.log('Track enabled:', event.track.enabled);
+                remoteAudioRef.current.srcObject = event.streams[0];
+                remoteAudioRef.current.play().catch(err => console.error('Audio play error:', err));
+            } else {
+                console.error('No streams in ontrack event');
+            }
         };
 
         // Добавляем треки в peer connection
