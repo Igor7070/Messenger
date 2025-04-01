@@ -363,6 +363,7 @@ const VoiceCall = ({ recipientId }) => {
     const sendSignal = (signalMessage) => {
         console.log('Function sendSignal in VoiceCall.js working...');
         console.log("Sending signal:", JSON.stringify(signalMessage, null, 2));
+        console.log("Raw message:", `/app/signal/${roomId}`, JSON.stringify(signalMessage));
         stompClient.current.publish({
             destination: `/app/signal/${roomId}`, 
             body: JSON.stringify(signalMessage),
