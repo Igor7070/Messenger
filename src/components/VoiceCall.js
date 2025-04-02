@@ -145,7 +145,7 @@ const VoiceCall = ({ recipientId }) => {
         peerConnectionRef.current.ontrack = (event) => {
             /*remoteAudioRef.current.srcObject = event.streams[0];
             console.log('Remote stream received:', event.streams[0]);*/
-            console.log('ontrack triggered:', event);
+            /*console.log('ontrack triggered:', event);
             console.log('Event streams:', event.streams);
             console.log('Event track:', event.track);
 
@@ -168,6 +168,19 @@ const VoiceCall = ({ recipientId }) => {
             if (event.track.muted) {
                 console.log('Track is muted, attempting to unmute');
                 event.track.muted = false; // Это редко работает, но стоит попробовать
+            }*/
+            console.log('ontrack triggered:', event);
+            console.log('Event streams:', event.streams);
+            console.log('Event track:', event.track);
+            
+            const stream = event.streams[0];
+            if (stream) {
+                console.log('Stream active:', stream.active);
+                console.log('Track enabled:', event.track.enabled);
+                remoteAudioRef.current.srcObject = stream;
+                remoteAudioRef.current.play().catch(err => console.error('Audio play error:', err));
+            } else {
+                console.error('No streams received in ontrack event');
             }
         };
 
@@ -239,7 +252,7 @@ const VoiceCall = ({ recipientId }) => {
         peerConnectionRef.current.ontrack = (event) => {
             /*remoteAudioRef.current.srcObject = event.streams[0];
             console.log('Remote stream received:', event.streams[0]);*/
-            console.log('ontrack triggered:', event);
+            /*console.log('ontrack triggered:', event);
             console.log('Event streams:', event.streams);
             console.log('Event track:', event.track);
 
@@ -262,6 +275,19 @@ const VoiceCall = ({ recipientId }) => {
             if (event.track.muted) {
                 console.log('Track is muted, attempting to unmute');
                 event.track.muted = false; // Это редко работает, но стоит попробовать
+            }*/
+            console.log('ontrack triggered:', event);
+            console.log('Event streams:', event.streams);
+            console.log('Event track:', event.track);
+            
+            const stream = event.streams[0];
+            if (stream) {
+                console.log('Stream active:', stream.active);
+                console.log('Track enabled:', event.track.enabled);
+                remoteAudioRef.current.srcObject = stream;
+                remoteAudioRef.current.play().catch(err => console.error('Audio play error:', err));
+            } else {
+                console.error('No streams received in ontrack event');
             }
         };
 
