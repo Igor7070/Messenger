@@ -7,7 +7,7 @@ import '../styles/Messenger.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams, useNavigate } from 'react-router-dom';
-import IncomingCallNotification from './IncomingCallNotification'; // Импорт компонента уведомления
+import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 
 const getChatName = async (chatId) => {
@@ -41,11 +41,12 @@ const Messenger = () => {
     const { chatId } = useParams();
 
     const [currentUserId, setCurrentUserId] = useState(null);
-    const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
+    const [incomingCall, setIncomingCall] = useState(null);
     const { userInteracted, handleInteraction } = useUserInteraction();
-    const stompClient = useRef(null); // Используем useRef для stompClient
-    const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3')); // Инициализация
-    audioRef.current.loop = true; // Устанавливаем зацикливание
+    const stompClient = useRef(null);
+    const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
+    audioRef.current.loop = true;
+    const messageAudioRef = useRef(null); // Для сообщений
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -53,7 +54,7 @@ const Messenger = () => {
         const storedUsername = localStorage.getItem('username');
 
         if (storedUserId && storedUsername) {
-            setUserId(Number(storedUserId)); // Преобразуем в число
+            setUserId(Number(storedUserId));
             setUsername(storedUsername);
             setIsLoggedIn(true);
         }
@@ -96,19 +97,38 @@ const Messenger = () => {
                     const notification = message.body;
                     console.log("Received notification:", notification);
 
-                    // Используйте регулярное выражение для извлечения chatId
                     const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
-                    const chatId = chatIdMatch ? chatIdMatch[1] : null; // Извлекаем chatId, если найдено
+                    const chatId = chatIdMatch ? chatIdMatch[1] : null;
+
+                    // Воспроизведение звука уведомления
+                    if (userInteracted && messageAudioRef && messageAudioRef.current) {
+                        console.log('Attempting to play message audio');
+                        messageAudioRef.current.play()
+                            .then(() => console.log('Message audio played successfully'))
+                            .catch(error => {
+                                console.error('Failed to play message audio:', error);
+                                toast.warn('Please interact with the page to enable notification sounds.');
+                            });
+                    } else {
+                        console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef?.current);
+                    }
 
                     // Отображение уведомления
                     toast.info(notification, {
                         autoClose: false,
                         onClick: () => {
+                            // Остановка звука при клике на тост
+                            if (messageAudioRef && messageAudioRef.current) {
+                                console.log('Pausing message audio on toast click');
+                                messageAudioRef.current.pause();
+                                messageAudioRef.current.currentTime = 0;
+                            }
+
                             if (chatId) {
-                                // Переход к личному чату при нажатии на уведомление
                                 window.location.href = `/Messenger/#/private-chat/${chatId}`;
                             } else {
                                 console.error("chatId не найден в уведомлении");
+                                toast.error('Invalid notification format');
                             }
                         },
                     });
@@ -125,7 +145,7 @@ const Messenger = () => {
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId, userId]);
+    }, [chatId, userId, userInteracted]);
 
     // Обработка события клика на документе
     useEffect(() => {
@@ -139,25 +159,24 @@ const Messenger = () => {
         };
     }, [handleInteraction]);
             
-    // Второе useEffect: управление воспроизведением звука
+    // Управление звуком звонка
     useEffect(() => {
         if (incomingCall && userInteracted) {
             audioRef.current.play().catch(error => {
                 console.error('Autoplay was prevented.', error);
-            }); // Запускаем звук при входящем звонке
+            });
         } else {
-            audioRef.current.pause(); // Останавливаем звук, если звонка нет
-            audioRef.current.currentTime = 0; // Сбрасываем время
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
         }
-    }, [incomingCall, userInteracted]); // Добавляем userInteracted в зависимости
+    }, [incomingCall, userInteracted]);
         
-    useEffect(() => {         
-        // Подключение к WebSocket
+    useEffect(() => {
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
-                console.log('Connected to WebSocket in Home.js');
+                console.log('Connected to WebSocket in Messenger');
                 console.log("currentUserId:", currentUserId);
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
                     const callRequest = JSON.parse(message.body);
@@ -173,18 +192,17 @@ const Messenger = () => {
     }, [currentUserId]);
         
     const handleIncomingCall = async (callRequest) => {
-        console.log("Incoming call request:", callRequest); // Логируем объект вызова
-        setIncomingCall(callRequest); // Устанавливаем входящий вызов
+        console.log("Incoming call request:", callRequest);
+        setIncomingCall(callRequest);
             
-        // Получаем имя звонящего
         const callerId = callRequest.callerId;
             
         try {
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
             if (response.ok) {
                 const callerData = await response.json();
-                const callerName = callerData.username; // Извлекаем имя звонящего
-                setIncomingCall({ ...callRequest, callerName }); // Добавляем имя звонящего к объекту вызова
+                const callerName = callerData.username;
+                setIncomingCall({ ...callRequest, callerName });
             } else {
                 console.error('Error fetching caller name');
             }
@@ -194,17 +212,15 @@ const Messenger = () => {
     };
         
     const acceptCall = () => {
-        // Остановка звука при принятии звонка
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
         
-        console.log('Function acceptCall in Home.js working...');
-        console.log("Incoming call accepted:", incomingCall); // Логируем входящий вызов
+        console.log('Function acceptCall in Messenger working...');
+        console.log("Incoming call accepted:", incomingCall);
                 
         const callerId = incomingCall.callerId;
-        const recipientId = currentUserId; // Получаем ID текущего пользователя
+        const recipientId = currentUserId;
             
-        // Получаем имена пользователей (можно использовать Promise.all для параллельных запросов)
         const fetchUserNames = async () => {
             try {
                 const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
@@ -226,8 +242,8 @@ const Messenger = () => {
                             incomingCall, 
                             isCaller: false, 
                             currentUserId: currentUserId, 
-                            callerName: callerData.username, // Передаем имя звонящего
-                            recipientName: recipientData.username // Передаем имя получателя
+                            callerName: callerData.username,
+                            recipientName: recipientData.username
                         } 
                     });
                 } else {
@@ -242,18 +258,16 @@ const Messenger = () => {
     };
         
     const rejectCall = () => {
-        // Остановка звука при принятии звонка
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
         
-        setIncomingCall(null); // Скрыть уведомление
+        setIncomingCall(null);
         sendSignal({
             from: currentUserId,
             signal: {
                 type: 'rejectCall'
             }
         });
-        //toast.info(`Call from ${incomingCall.callerId} rejected.`);
     };
         
     const sendSignal = (signalMessage) => {
@@ -532,7 +546,7 @@ const Messenger = () => {
                             key={msg.id}
                             className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`} 
                             onContextMenu={(e) => handleRightClick(e, msg)}
-                            style={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }} // Изменено на column
+                            style={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }}
                         >
                             <div style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
                                 <div style={{ 
@@ -540,21 +554,20 @@ const Messenger = () => {
                                     flexDirection: 'column', 
                                     alignItems: 'center', 
                                     marginRight: '5px',
-                                    border: '2px solid #ccc', // Рамка
-                                    borderRadius: '5px', // Закругленные углы
-                                    padding: '5px', // Отступы внутри рамки
+                                    border: '2px solid #ccc',
+                                    borderRadius: '5px',
+                                    padding: '5px',
                                     width: '100px',
-                                    minWidth: '100px', // Минимальная ширина, чтобы не сжималась
-                                    boxSizing: 'border-box', // Учитываем padding и border
-                                    flexShrink: 0 // Предотвращаем сжатие
-
+                                    minWidth: '100px',
+                                    boxSizing: 'border-box',
+                                    flexShrink: 0
                                 }}>
                                     <strong style={{ 
                                         textAlign: 'center', 
-                                        wordWrap: 'break-word', // Перенос слов
-                                        overflowWrap: 'break-word', // Совместимость с современными браузерами
-                                        whiteSpace: 'normal', // Разрешаем перенос строк
-                                        maxWidth: '100%', // Ограничение ширины текста до ширины контейнера
+                                        wordWrap: 'break-word',
+                                        overflowWrap: 'break-word',
+                                        whiteSpace: 'normal',
+                                        maxWidth: '100%',
                                         fontFamily: 'sans-serif'
                                     }}>
                                         {msg.sender.username}:
@@ -564,7 +577,7 @@ const Messenger = () => {
                                             src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
                                             alt={`${msg.sender.username} avatar`} 
                                             className="message-avatar"
-                                            style={{ display: 'block', margin: '0 auto' }} // Центрирование изображения
+                                            style={{ display: 'block', margin: '0 auto' }}
                                         />
                                     ) : (
                                         <div 
@@ -572,8 +585,8 @@ const Messenger = () => {
                                             style={{ 
                                                 display: 'flex', 
                                                 justifyContent: 'center', 
-                                                alignItems: 'center', // Добавлено для вертикального центрирования буквы
-                                                margin: '0 auto' // Центрирование самого div
+                                                alignItems: 'center',
+                                                margin: '0 auto'
                                             }}
                                         >
                                             {msg.sender.username.charAt(0).toUpperCase()}
@@ -586,7 +599,7 @@ const Messenger = () => {
                                         <a 
                                             href={msg.fileUrl} 
                                             download 
-                                            style={{ display: 'block', marginTop: '5px' }} // Отступ для ссылки
+                                            style={{ display: 'block', marginTop: '5px' }}
                                         >
                                             📥 Download file
                                         </a>
@@ -596,7 +609,7 @@ const Messenger = () => {
                         </div>
                     ) : null
                 ))}
-                <div ref={messagesEndRef} /> {/* Элемент для прокрутки */}
+                <div ref={messagesEndRef} />
             </div>
             <textarea
                 ref={textAreaRef}
@@ -615,6 +628,24 @@ const Messenger = () => {
             />
             <button onClick={sendMessage} className="send-button">Send</button>
             <ToastContainer />
+            <audio ref={messageAudioRef}>
+                <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
+                Ваш браузер не поддерживает аудио.
+            </audio>
+            {/* Тестовая кнопка для проверки звука (раскомментируйте для теста)
+            <button onClick={() => {
+                if (messageAudioRef.current) {
+                    console.log('Testing message audio');
+                    messageAudioRef.current.play()
+                        .then(() => console.log('Message audio played successfully'))
+                        .catch(error => console.error('Message audio failed:', error));
+                } else {
+                    console.error('messageAudioRef is not defined');
+                }
+            }}>
+                Test Message Sound
+            </button>
+            */}
             {contextMenu.visible && (
                 <div 
                     className="context-menu" 
@@ -625,8 +656,6 @@ const Messenger = () => {
                     <button onClick={() => handleMenuAction('delete')}>Delete</button>
                 </div>
             )}
-
-            {/* Уведомление о входящем звонке */}
             {incomingCall && (
                 <IncomingCallNotification 
                     callerId={incomingCall.callerId} 

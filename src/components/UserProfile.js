@@ -27,11 +27,12 @@ const UserProfile = () => {
     const stompClient = useRef(null); // Используем useRef для stompClient
     const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3')); // Инициализация
     audioRef.current.loop = true; // Устанавливаем зацикливание
+    const messageAudioRef = useRef(null); // Новый реф для звука уведомлений
 
     const [settingsMenuVisible, setSettingsMenuVisible] = useState(false); // Состояние для управления видимостью меню настроек
 
     // Используем хук для подключения к WebSocket
-    useWebSocket(currentUserId);
+    useWebSocket(currentUserId, messageAudioRef);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -423,6 +424,10 @@ const UserProfile = () => {
     return (
         <div className="user-profile-container">
             <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+            <audio ref={messageAudioRef}>
+                <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
+                Ваш браузер не поддерживает аудио.
+            </audio>
             <h1 className="user-profile-username">{user.username}</h1>
             {user.avatar ? (
                 <img 
