@@ -2,8 +2,11 @@ import { useEffect } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { toast } from 'react-toastify';
+import { useUserInteraction } from '../components/UserInteractionContext'; // Импортируем контекст
 
 const useWebSocket = (currentUserId) => {
+    const { userInteracted } = useUserInteraction(); // Получаем userInteracted из контекста
+
     useEffect(() => {
         if (!currentUserId) {
             console.error('No currentUserId provided');
@@ -23,6 +26,16 @@ const useWebSocket = (currentUserId) => {
                     // Извлечение chatId из уведомления
                     const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
                     const chatId = chatIdMatch ? chatIdMatch[1] : null;
+
+                    // Воспроизведение звука уведомления, если пользователь взаимодействовал
+                    if (userInteracted) {
+                        const messageAudio = document.querySelector('audio[src*="zvuk-dlya-soobsen.mp3"]');
+                        if (messageAudio) {
+                            messageAudio.play().catch(error => {
+                                console.error('Autoplay was prevented for message notification.', error);
+                            });
+                        }
+                    }
 
                     // Отображение уведомления
                     toast.info(notification, {
@@ -83,7 +96,9 @@ const useWebSocket = (currentUserId) => {
         return () => {
             stompClient.deactivate();
         };
-    }, [currentUserId]); // Зависимость от currentUserId
+    }, [currentUserId, userInteracted]); // Добавляем userInteracted в зависимости
+
+    return null; // Хук ничего не возвращает
 };
 
 export default useWebSocket;

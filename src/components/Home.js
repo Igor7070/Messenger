@@ -29,6 +29,7 @@ const Home = () => {
     const { userInteracted, handleInteraction } = useUserInteraction();
     const stompClient = useRef(null); // Используем useRef для stompClient
     const audioRef = useRef(null); // Используем useRef для аудиоплеера
+    const messageAudioRef = useRef(null); // Новый реф для звука уведомления о сообщениях
     const navigate = useNavigate();
 
     // Используем хук для подключения к WebSocket
@@ -356,6 +357,12 @@ const Home = () => {
             {/* Вставляем аудиофайл */}
             <audio ref={audioRef} loop>
                 <source src="https://igor7070.github.io/Messenger/melodiya_kovboy.mp3" type="audio/mpeg" />
+                Ваш браузер не поддерживает аудио.
+            </audio>
+
+            {/* Новый аудиоэлемент для уведомлений о сообщениях */}
+            <audio ref={messageAudioRef}>
+                <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
             </audio>
 
