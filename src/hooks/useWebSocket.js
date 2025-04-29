@@ -13,8 +13,8 @@ const useWebSocket = (currentUserId, messageAudioRef) => {
             return;
         }
 
-        // Логируем userInteracted для проверки
         console.log('useWebSocket: userInteracted =', userInteracted);
+        console.log('useWebSocket: messageAudioRef =', messageAudioRef);
 
         const stompClient = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
@@ -29,7 +29,7 @@ const useWebSocket = (currentUserId, messageAudioRef) => {
                     const chatId = chatIdMatch ? chatIdMatch[1] : null;
 
                     // Проверяем и воспроизводим звук
-                    if (userInteracted && messageAudioRef.current) {
+                    if (userInteracted && messageAudioRef && messageAudioRef.current) {
                         console.log('Attempting to play message audio');
                         messageAudioRef.current.play()
                             .then(() => console.log('Message audio played successfully'))
@@ -38,14 +38,15 @@ const useWebSocket = (currentUserId, messageAudioRef) => {
                                 toast.warn('Please interact with the page to enable notification sounds.');
                             });
                     } else {
-                        console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef.current =', messageAudioRef.current);
+                        console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef, 'messageAudioRef.current =', messageAudioRef?.current);
                     }
 
+                    // Отображаем уведомление
                     toast.info(notification, {
                         autoClose: false,
                         onClick: async () => {
-                            // Остановка звука при клике на уведомление
-                            if (messageAudioRef.current) {
+                            // Остановка звука при клике
+                            if (messageAudioRef && messageAudioRef.current) {
                                 console.log('Pausing message audio on toast click');
                                 messageAudioRef.current.pause();
                                 messageAudioRef.current.currentTime = 0;
