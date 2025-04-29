@@ -2,45 +2,55 @@ import { useEffect } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { toast } from 'react-toastify';
-import { useUserInteraction } from '../components/UserInteractionContext'; // Импортируем контекст
+import { useUserInteraction } from '../components/UserInteractionContext';
 
-const useWebSocket = (currentUserId) => {
-    const { userInteracted } = useUserInteraction(); // Получаем userInteracted из контекста
+const useWebSocket = (currentUserId, messageAudioRef) => {
+    const { userInteracted } = useUserInteraction();
 
     useEffect(() => {
         if (!currentUserId) {
             console.error('No currentUserId provided');
-            return; // Если currentUserId не установлен, ничего не делаем
+            return;
         }
+
+        // Логируем userInteracted для проверки
+        console.log('useWebSocket: userInteracted =', userInteracted);
 
         const stompClient = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
                 console.log('Connected to WebSocket');
 
-                // Подписка на уведомления
                 stompClient.subscribe(`/topic/notifications/${currentUserId}`, (message) => {
                     const notification = message.body;
-                    console.log("Received notification:", notification);
+                    console.log('Received notification:', notification);
 
-                    // Извлечение chatId из уведомления
                     const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
                     const chatId = chatIdMatch ? chatIdMatch[1] : null;
 
-                    // Воспроизведение звука уведомления, если пользователь взаимодействовал
-                    if (userInteracted) {
-                        const messageAudio = document.querySelector('audio[src*="zvuk-dlya-soobsen.mp3"]');
-                        if (messageAudio) {
-                            messageAudio.play().catch(error => {
-                                console.error('Autoplay was prevented for message notification.', error);
+                    // Проверяем и воспроизводим звук
+                    if (userInteracted && messageAudioRef.current) {
+                        console.log('Attempting to play message audio');
+                        messageAudioRef.current.play()
+                            .then(() => console.log('Message audio played successfully'))
+                            .catch(error => {
+                                console.error('Failed to play message audio:', error);
+                                toast.warn('Please interact with the page to enable notification sounds.');
                             });
-                        }
+                    } else {
+                        console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef.current =', messageAudioRef.current);
                     }
 
-                    // Отображение уведомления
                     toast.info(notification, {
                         autoClose: false,
                         onClick: async () => {
+                            // Остановка звука при клике на уведомление
+                            if (messageAudioRef.current) {
+                                console.log('Pausing message audio on toast click');
+                                messageAudioRef.current.pause();
+                                messageAudioRef.current.currentTime = 0;
+                            }
+
                             if (chatId) {
                                 try {
                                     const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
@@ -79,7 +89,7 @@ const useWebSocket = (currentUserId) => {
                                     toast.error('Failed to process notification');
                                 }
                             } else {
-                                console.error("chatId не найден в уведомлении");
+                                console.error('chatId не найден в уведомлении');
                                 toast.error('Invalid notification format');
                             }
                         },
@@ -96,9 +106,9 @@ const useWebSocket = (currentUserId) => {
         return () => {
             stompClient.deactivate();
         };
-    }, [currentUserId, userInteracted]); // Добавляем userInteracted в зависимости
+    }, [currentUserId, userInteracted, messageAudioRef]);
 
-    return null; // Хук ничего не возвращает
+    return null;
 };
 
 export default useWebSocket;
