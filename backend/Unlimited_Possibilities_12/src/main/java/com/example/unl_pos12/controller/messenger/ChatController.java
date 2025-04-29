@@ -30,7 +30,7 @@ public class ChatController {
             // Создаем чат
             Chat createdChat = chatService.createChat(chat);
 
-            // Если чат приватный, добавляем его обоим пользователям
+            // Если чат приватный, добавляем его обоим пользователям...
             if (chat.isPrivate()) {
                 String[] usernames = chat.getName().split("_"); // Предполагаем, что имя чата состоит из "Имя1_Имя2"
                 if (usernames.length == 2) {
