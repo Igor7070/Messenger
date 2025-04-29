@@ -300,7 +300,7 @@ const UserProfile = () => {
                 } else {
                     const newChat = { 
                         name: chatName, 
-                        isPrivate: true // Устанавливаем isPrivate в true
+                        private: true // Устанавливаем isPrivate в true
                     };
     
                     console.log('New chat data:', newChat);
