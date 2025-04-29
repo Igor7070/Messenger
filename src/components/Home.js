@@ -33,7 +33,7 @@ const Home = () => {
     const navigate = useNavigate();
 
     // Используем хук для подключения к WebSocket
-    useWebSocket(currentUserId);
+    useWebSocket(currentUserId, messageAudioRef);
 
     // Обработка события клика на документе
     useEffect(() => {
