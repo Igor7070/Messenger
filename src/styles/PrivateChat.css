@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
 .private-chat {
     display: flex;
     flex-direction: column;
@@ -11,15 +13,20 @@
 }
 
 .private-chat-name {
-    font-size: 20px;
-    font-weight: bold;
-    color: #212121;
+    font-family: 'Inter', 'Open Sans', sans-serif; /* Мягкий и современный шрифт */
+    font-size: 18px; /* Уменьшено с 20px для большей мягкости */
+    font-weight: 600; /* Semi-bold вместо bold */
+    color: #333333; /* Мягкий темно-серый вместо #212121 */
     padding: 12px;
     background-color: #FFFFFF;
     border-radius: 5px;
     text-align: center;
     margin-bottom: 15px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    letter-spacing: 0.2px; /* Легкое увеличение межбуквенного интервала */
+    -webkit-font-smoothing: antialiased; /* Плавное рендеринг текста */
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility; /* Оптимизация читаемости */
 }
 
 .private-message-list {
@@ -207,8 +214,8 @@
 .private-file-input-label {
     all: unset;
     flex: 1;
-    padding: 8px; /* Уменьшено с 12px */
-    height: 36px; /* Уменьшено с 48px */
+    padding: 8px;
+    height: 36px;
     background-color: #B0BEC5;
     color: #FFFFFF;
     border-radius: 5px;
@@ -230,8 +237,8 @@
 
 .private-send-button {
     flex: 1;
-    padding: 8px; /* Уменьшено с 12px */
-    height: 36px; /* Уменьшено с 48px */
+    padding: 8px;
+    height: 36px;
     background-color: #42a5f5;
     color: #FFFFFF;
     border: none;
@@ -282,7 +289,7 @@
     }
 
     .private-chat-name {
-        font-size: 18px;
+        font-size: 16px; /* Уменьшено с 18px для мобильных */
         padding: 10px;
     }
 
@@ -325,7 +332,7 @@
     .private-file-input-label,
     .private-send-button {
         font-size: 12px;
-        padding: 6px; /* Уменьшено с 10px */
-        height: 32px; /* Уменьшено с 40px */
+        padding: 6px;
+        height: 32px;
     }
 }
