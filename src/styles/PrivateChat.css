@@ -1,0 +1,228 @@
+.private-chat {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    font-family: 'Inter', sans-serif;
+}
+
+.chat-name {
+    font-size: 22px;
+    font-weight: 600;
+    color: #2c3e50;
+    padding: 12px 0;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.message-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.message {
+    display: flex;
+    flex-direction: column;
+    max-width: 70%;
+    margin: 4px 0;
+}
+
+.message-wrapper {
+    display: flex;
+    align-items: flex-end;
+}
+
+.current-user {
+    align-self: flex-end;
+}
+
+.other-user {
+    align-self: flex-start;
+}
+
+.avatar-container {
+    margin-right: 10px;
+    margin-bottom: 5px;
+}
+
+.message-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.message-content-container {
+    background: #ffffff;
+    padding: 10px 14px;
+    border-radius: 18px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.message-content-container.no-avatar {
+    margin-left: 46px; /* Сдвиг для сообщений без аватара */
+}
+
+.current-user .message-content-container {
+    background: #007bff;
+    color: #ffffff;
+    border-radius: 18px 18px 4px 18px;
+}
+
+.other-user .message-content-container {
+    background: #e9ecef;
+    color: #333;
+    border-radius: 18px 18px 18px 4px;
+}
+
+.message-content {
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+.file-link {
+    display: block;
+    margin-top: 8px;
+    color: #007bff;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.file-link:hover {
+    text-decoration: underline;
+}
+
+.message-status {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+    font-size: 12px;
+}
+
+.delivery-indicator {
+    color: #ffffff;
+    opacity: 0.7;
+}
+
+.read-indicator {
+    color: #ffffff;
+}
+
+.input-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.input-message {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #dfe1e5;
+    border-radius: 20px;
+    resize: none;
+    font-size: 15px;
+    min-height: 40px;
+    background: #ffffff;
+    transition: border-color 0.2s;
+    font-family: 'Inter', sans-serif;
+}
+
+.input-message:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.file-input {
+    display: none;
+}
+
+.send-button {
+    padding: 10px 20px;
+    background-color: #42a5f5;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.send-button:hover {
+    background-color: #1976d2;
+}
+
+.context-menu {
+    position: absolute;
+    background: #ffffff;
+    border: 1px solid #dfe1e5;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 120px;
+}
+
+.context-menu button {
+    display: block;
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    font-size: 14px;
+    color: #333;
+}
+
+.context-menu button:hover {
+    background-color: #f1f3f5;
+}
+
+@media (max-width: 768px) {
+    .private-chat {
+        padding: 10px;
+    }
+
+    .message {
+        max-width: 85%;
+    }
+
+    .chat-name {
+        font-size: 18px;
+        padding: 10px;
+    }
+
+    .input-message {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .send-button {
+        padding: 8px 16px;
+    }
+}

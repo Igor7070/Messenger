@@ -2,12 +2,12 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getMessages } from '../api/messages';
-import '../styles/Messenger.css';
+import '../styles/PrivateChat.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getChatById } from '../api/chats';
-import IncomingCallNotification from './IncomingCallNotification'; // Импорт компонента уведомления
+import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 
 const PrivateChat = () => {
@@ -19,6 +19,7 @@ const PrivateChat = () => {
     const [client, setClient] = useState(null);
     const [chatId, setChatId] = useState(null);
     const [chatName, setChatName] = useState('');
+    const [displayChatName, setDisplayChatName] = useState(''); // Для отображения "Chat with имя_собеседника"
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
     const messagesEndRef = useRef(null);
@@ -26,11 +27,11 @@ const PrivateChat = () => {
     const { chatId: chatIdParam } = useParams();
 
     const [currentUserId, setCurrentUserId] = useState(null);
-    const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
+    const [incomingCall, setIncomingCall] = useState(null);
     const { userInteracted, handleInteraction } = useUserInteraction();
-    const stompClient = useRef(null); // Используем useRef для stompClient
-    const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3')); // Инициализация
-    audioRef.current.loop = true; // Устанавливаем зацикливание
+    const stompClient = useRef(null);
+    const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
+    audioRef.current.loop = true;
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -40,7 +41,10 @@ const PrivateChat = () => {
 
             try {
                 const chatData = await getChatById(chatIdParam);
-                setChatName(chatData.name);
+                setChatName(chatData.name); // Оригинальное имя чата для логики
+                const names = chatData.name.split('_');
+                const interlocutorName = names.find(name => name !== username);
+                setDisplayChatName(`Chat with ${interlocutorName}`);
                 setChatId(chatIdParam);
 
                 const initialMessages = await getMessages(chatIdParam);
@@ -50,7 +54,6 @@ const PrivateChat = () => {
                     read: msg.read_status
                 }));
 
-                // Сохраняем сообщения в состояние
                 setMessages(updatedMessages);
             } catch (error) {
                 console.error('Ошибка при загрузке данных о чате:', error);
@@ -76,22 +79,19 @@ const PrivateChat = () => {
                     updateMessages(newMessage);
                 });
 
-                // Подписка на уведомления
                 stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
-                    const notification = message.body; // Получаем текст уведомления
+                    const notification = message.body;
                     console.log("Received notification:", notification);
     
-                    // Используем регулярное выражение для извлечения chatId
                     const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
-                    const notificationChatId = chatIdMatch ? chatIdMatch[1] : null; // Извлекаем chatId, если найдено
+                    const notificationChatId = chatIdMatch ? chatIdMatch[1] : null;
     
-                    // Проверка, совпадает ли chatId уведомления с текущим chatId
                     if (notificationChatId && notificationChatId !== chatId) {
                         const toastId = toast.info(`Новое сообщение от: ${notification}`, {
                             autoClose: false,
                             onClick: () => {
                                 navigate(`/private-chat/${notificationChatId}`);
-                                toast.dismiss(toastId); // Закрываем уведомление после перехода
+                                toast.dismiss(toastId);
                             },
                         });
                     }
@@ -110,22 +110,20 @@ const PrivateChat = () => {
         };
     }, [chatId, userId]);
 
-    // Проверка подключения клиента и непрочитанных сообщений
     useEffect(() => {
         const interval = setInterval(() => {
             if (client && client.connected && messages.length > 0) {
                 const unreadMessages = messages.some(msg => !msg.read);
                 if (unreadMessages) {
                     markAllMessagesAsRead(messages);
-                    clearInterval(interval); // Останавливаем проверку после успешного вызова
+                    clearInterval(interval);
                 }
             }
-        }, 1000); // Проверяем каждую секунду
+        }, 1000);
 
-        return () => clearInterval(interval); // Очищаем интервал при размонтировании
+        return () => clearInterval(interval);
     }, [messages, client]);
 
-    // Обработка события клика на документе
     useEffect(() => {
         const handleClick = () => {
             handleInteraction();
@@ -137,20 +135,18 @@ const PrivateChat = () => {
         };
     }, [handleInteraction]);
         
-    // Второе useEffect: управление воспроизведением звука
     useEffect(() => {
         if (incomingCall && userInteracted) {
             audioRef.current.play().catch(error => {
                 console.error('Autoplay was prevented.', error);
-            }); // Запускаем звук при входящем звонке
+            });
         } else {
-            audioRef.current.pause(); // Останавливаем звук, если звонка нет
-            audioRef.current.currentTime = 0; // Сбрасываем время
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
         }
-    }, [incomingCall, userInteracted]); // Добавляем userInteracted в зависимости
+    }, [incomingCall, userInteracted]);
     
     useEffect(() => {         
-        // Подключение к WebSocket
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
@@ -171,18 +167,17 @@ const PrivateChat = () => {
     }, [currentUserId]);
     
     const handleIncomingCall = async (callRequest) => {
-        console.log("Incoming call request:", callRequest); // Логируем объект вызова
-        setIncomingCall(callRequest); // Устанавливаем входящий вызов
+        console.log("Incoming call request:", callRequest);
+        setIncomingCall(callRequest);
         
-        // Получаем имя звонящего
         const callerId = callRequest.callerId;
         
         try {
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
             if (response.ok) {
                 const callerData = await response.json();
-                const callerName = callerData.username; // Извлекаем имя звонящего
-                setIncomingCall({ ...callRequest, callerName }); // Добавляем имя звонящего к объекту вызова
+                const callerName = callerData.username;
+                setIncomingCall({ ...callRequest, callerName });
             } else {
                 console.error('Error fetching caller name');
             }
@@ -192,17 +187,15 @@ const PrivateChat = () => {
     };
     
     const acceptCall = () => {
-        // Остановка звука при принятии звонка
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
     
         console.log('Function acceptCall in Home.js working...');
-        console.log("Incoming call accepted:", incomingCall); // Логируем входящий вызов
+        console.log("Incoming call accepted:", incomingCall);
             
         const callerId = incomingCall.callerId;
-        const recipientId = currentUserId; // Получаем ID текущего пользователя
+        const recipientId = currentUserId;
         
-        // Получаем имена пользователей (можно использовать Promise.all для параллельных запросов)
         const fetchUserNames = async () => {
             try {
                 const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
@@ -224,8 +217,8 @@ const PrivateChat = () => {
                             incomingCall, 
                             isCaller: false, 
                             currentUserId: currentUserId, 
-                            callerName: callerData.username, // Передаем имя звонящего
-                            recipientName: recipientData.username // Передаем имя получателя
+                            callerName: callerData.username,
+                            recipientName: recipientData.username
                         } 
                     });
                 } else {
@@ -240,18 +233,16 @@ const PrivateChat = () => {
     };
     
     const rejectCall = () => {
-        // Остановка звука при принятии звонка
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
     
-        setIncomingCall(null); // Скрыть уведомление
+        setIncomingCall(null);
         sendSignal({
             from: currentUserId,
             signal: {
                 type: 'rejectCall'
             }
         });
-        //toast.info(`Call from ${incomingCall.callerId} rejected.`);
     };
     
     const sendSignal = (signalMessage) => {
@@ -342,34 +333,26 @@ const PrivateChat = () => {
             if (client && client.connected) {
                 client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
     
-                // Таймер на 1.5 секунды для проверки статуса прочтения
                 setTimeout(async () => {
-                    // Запрос для получения ID сообщения по содержимому
                     const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(content)}&senderId=${userId}&chatId=${chatId}`);
                     
                     if (response.ok) {
                         const updatedMessage = await response.json();
                         console.log('updatedMessage:', updatedMessage);
     
-                        // Получаем ID сообщения
-                        const messageId = updatedMessage.id; // Предполагается, что это поле существует
-    
-                        // Запрос на сервер для проверки статуса сообщения
+                        const messageId = updatedMessage.id;
                         const statusResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/${messageId}`);
                         
                         if (statusResponse.ok) {
                             const messageStatus = await statusResponse.json();
-                            
-                            // Извлечение имени получателя из имени чата
                             const recipientName = chatName.split('_').find(name => name !== username);
                             console.log('recipientName:', recipientName);
     
-                            // Запрос на получение ID получателя
                             const userResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
                             
                             if (userResponse.ok) {
                                 const recipient = await userResponse.json();
-                                const recipientId = recipient.id; // Получаем ID получателя
+                                const recipientId = recipient.id;
 
                                 console.log('recipientId:', recipientId);   
                                 console.log('updatedMessage.read: ' + updatedMessage.read);
@@ -378,16 +361,8 @@ const PrivateChat = () => {
                                 console.log('messageStatus.read_status: ' + messageStatus.read_status);
                                 console.log('userId: ' + userId);
 
-                                // Проверка, прочитано ли сообщение
                                 if (messageStatus.read_status === false || messageStatus.read_status === null) {
                                     console.log('Notification must be sent...');
-                                    /*toast.info(`Новое сообщение от ${username}: "${content}"`, {
-                                        onClick: () => {
-                                            window.location.href = `/chat/${chatId}`;
-                                        },
-                                        autoClose: false,
-                                    });*/
-                                    // Отправка уведомления на сервер
                                     await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
@@ -473,102 +448,82 @@ const PrivateChat = () => {
         }
     };
 
-    // Прокрутка вниз при обновлении сообщений
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    const shouldShowAvatar = (msg, index) => {
+        if (msg.sender.id === userId) return false;
+        if (index === 0) return true;
+        const prevMessage = messages[index - 1];
+        return prevMessage.sender.id !== msg.sender.id;
+    };
+
     return (
-        <div className="messenger">
-            <div className="chat-name">Chat: {chatName}</div>
+        <div className="private-chat">
+            <div className="chat-name">{displayChatName}</div>
             <div className="message-list">
-                {messages.map((msg) => (
+                {messages.map((msg, index) => (
                     <div 
                         key={msg.id}
                         className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
                         onContextMenu={(e) => handleRightClick(e, msg)}
-                        style={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }} // Изменено на column
                     >
-                        <div style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
-                            <div style={{ 
-                                display: 'flex', 
-                                flexDirection: 'column', 
-                                alignItems: 'center', 
-                                marginRight: '5px',
-                                border: '2px solid #ccc', // Рамка
-                                borderRadius: '5px', // Закругленные углы
-                                padding: '5px', // Отступы внутри рамки
-                                width: '100px',
-                                minWidth: '100px', // Минимальная ширина, чтобы не сжималась
-                                boxSizing: 'border-box', // Учитываем padding и border
-                                flexShrink: 0 // Предотвращаем сжатие
-                            }}>
-                                <strong style={{ 
-                                    textAlign: 'center', 
-                                    wordWrap: 'break-word', // Перенос слов
-                                    overflowWrap: 'break-word', // Совместимость с современными браузерами
-                                    whiteSpace: 'normal', // Разрешаем перенос строк
-                                    maxWidth: '100%', // Ограничение ширины текста до ширины контейнера
-                                    fontFamily: 'sans-serif'
-                                }}>
-                                    {msg.sender.username}:
-                                </strong>
-                                {msg.sender.avatar ? (
-                                    <img 
-                                        src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
-                                        alt={`${msg.sender.username} avatar`} 
-                                        className="message-avatar"
-                                        style={{ display: 'block', margin: '0 auto' }} // Центрирование изображения
-                                    />
-                                ) : (
-                                    <div 
+                        <div className="message-wrapper">
+                            {shouldShowAvatar(msg, index) && (
+                                <div className="avatar-container">
+                                    {msg.sender.avatar ? (
+                                        <img 
+                                            src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
+                                            alt={`${msg.sender.username} avatar`} 
                                             className="message-avatar"
-                                            style={{ 
-                                                display: 'flex', 
-                                                justifyContent: 'center', 
-                                                alignItems: 'center', // Добавлено для вертикального центрирования буквы
-                                                margin: '0 auto' // Центрирование самого div
-                                            }}
-                                        >
+                                        />
+                                    ) : (
+                                        <div className="message-avatar">
                                             {msg.sender.username.charAt(0).toUpperCase()}
                                         </div>
-                                )}
-                            </div>
-                            <div className="message-content-container">
+                                    )}
+                                </div>
+                            )}
+                            <div className={`message-content-container ${shouldShowAvatar(msg, index) ? '' : 'no-avatar'}`}>
                                 <span className="message-content">{msg.content}</span>
                                 {msg.fileUrl && (
                                     <a 
                                         href={msg.fileUrl} 
                                         download 
-                                        style={{ display: 'block', marginTop: '5px' }}
+                                        className="file-link"
                                     >
                                         📥 Download file
                                     </a>
                                 )}
-                                <div style={{ marginTop: '5px', display: 'flex', justifyContent: 'flex-end' }} className="message-status">
-                                    {msg.sender.id === userId && msg.delivered && <span className="delivery-indicator">✔️</span>}
-                                    {msg.sender.id === userId && msg.read && <span className="read-indicator">✔️</span>}
-                                </div>
+                                {msg.sender.id === userId && (
+                                    <div className="message-status">
+                                        {msg.delivered && <span className="delivery-indicator">✓</span>}
+                                        {msg.read && <span className="read-indicator">✓✓</span>}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
                 ))}
-                <div ref={messagesEndRef} /> {/* Элемент для прокрутки */}
+                <div ref={messagesEndRef} />
             </div>
-            <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Enter your message"
-                className="input-message"
-            />
-            <input
-                type="file"
-                onChange={(e) => setSelectedFile(e.target.files[0])}
-                className="file-input"
-                ref={fileInputRef}
-            />
-            <button onClick={sendMessage} className="send-button">Send</button>
+            <div className="input-container">
+                <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type a message..."
+                    className="input-message"
+                />
+                <input
+                    type="file"
+                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                    className="file-input"
+                    ref={fileInputRef}
+                />
+                <button onClick={sendMessage} className="send-button">Send</button>
+            </div>
             <ToastContainer />
             {contextMenu.visible && (
                 <div 
@@ -581,7 +536,6 @@ const PrivateChat = () => {
                 </div>
             )}
 
-            {/* Уведомление о входящем звонке */}
             {incomingCall && (
                 <IncomingCallNotification 
                     callerId={incomingCall.callerId} 
