@@ -461,46 +461,46 @@ const PrivateChat = () => {
 
     return (
         <div className="private-chat">
-            <div className="chat-name">{displayChatName}</div>
-            <div className="message-list">
+            <div className="private-chat-name">{displayChatName}</div>
+            <div className="private-message-list">
                 {messages.map((msg, index) => (
                     <div 
                         key={msg.id}
-                        className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
+                        className={`private-message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
                         onContextMenu={(e) => handleRightClick(e, msg)}
                     >
-                        <div className="message-wrapper">
+                        <div className="private-message-wrapper">
                             {shouldShowAvatar(msg, index) && (
-                                <div className="avatar-container">
+                                <div className="private-avatar-container">
                                     {msg.sender.avatar ? (
                                         <img 
                                             src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
                                             alt={`${msg.sender.username} avatar`} 
-                                            className="message-avatar"
+                                            className="private-message-avatar"
                                         />
                                     ) : (
-                                        <div className="message-avatar">
+                                        <div className="private-message-avatar">
                                             {msg.sender.username.charAt(0).toUpperCase()}
                                         </div>
                                     )}
                                 </div>
                             )}
-                            <div className={`message-content-container ${shouldShowAvatar(msg, index) ? '' : 'no-avatar'}`}>
-                                <div className="message-body">
-                                    <span className="message-content">{msg.content}</span>
+                            <div className={`private-message-content-container ${shouldShowAvatar(msg, index) ? '' : 'no-avatar'}`}>
+                                <div className="private-message-body">
+                                    <span className="private-message-content">{msg.content}</span>
                                     {msg.fileUrl && (
                                         <a 
                                             href={msg.fileUrl} 
                                             download 
-                                            className="file-link"
+                                            className="private-file-link"
                                         >
                                             📥 Download file
                                         </a>
                                     )}
                                     {msg.sender.id === userId && (
-                                        <div className="message-status">
-                                            {msg.delivered && <span className="delivery-indicator">✔️</span>}
-                                            {msg.read && <span className="read-indicator">✔️</span>}
+                                        <div className="private-message-status">
+                                            {msg.delivered && <span className="private-delivery-indicator">✔️</span>}
+                                            {msg.read && <span className="private-read-indicator">✔️</span>}
                                         </div>
                                     )}
                                 </div>
@@ -510,30 +510,30 @@ const PrivateChat = () => {
                 ))}
                 <div ref={messagesEndRef} />
             </div>
-            <div className="input-container">
+            <div className="private-input-container">
                 <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Enter your message..."
-                    className="input-message"
+                    className="private-input-message"
                 />
-                <div className="button-container">
+                <div className="private-button-container">
                     <input
                         type="file"
                         onChange={(e) => setSelectedFile(e.target.files[0])}
-                        className="file-input"
+                        className="private-file-input"
                         ref={fileInputRef}
-                        id="file-input"
+                        id="private-file-input"
                     />
-                    <label htmlFor="file-input" className="file-input-label">Choose File</label>
-                    <button onClick={sendMessage} className="send-button">Send</button>
+                    <label htmlFor="private-file-input" className="private-file-input-label">Choose File</label>
+                    <button onClick={sendMessage} className="private-send-button">Send</button>
                 </div>
             </div>
             <ToastContainer />
             {contextMenu.visible && (
                 <div 
-                    className="context-menu" 
+                    className="private-context-menu" 
                     style={{ top: contextMenu.y, left: contextMenu.x }}
                     onMouseLeave={() => setContextMenu({ visible: false })}
                 >
