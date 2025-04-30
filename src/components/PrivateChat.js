@@ -486,22 +486,24 @@ const PrivateChat = () => {
                                 </div>
                             )}
                             <div className={`message-content-container ${shouldShowAvatar(msg, index) ? '' : 'no-avatar'}`}>
-                                <span className="message-content">{msg.content}</span>
-                                {msg.fileUrl && (
-                                    <a 
-                                        href={msg.fileUrl} 
-                                        download 
-                                        className="file-link"
-                                    >
-                                        📥 Download file
-                                    </a>
-                                )}
-                                {msg.sender.id === userId && (
-                                    <div className="message-status">
-                                        {msg.delivered && <span className="delivery-indicator">✔️</span>}
-                                        {msg.read && <span className="read-indicator">✔️</span>}
-                                    </div>
-                                )}
+                                <div className="message-body">
+                                    <span className="message-content">{msg.content}</span>
+                                    {msg.fileUrl && (
+                                        <a 
+                                            href={msg.fileUrl} 
+                                            download 
+                                            className="file-link"
+                                        >
+                                            📥 Download file
+                                        </a>
+                                    )}
+                                    {msg.sender.id === userId && (
+                                        <div className="message-status">
+                                            {msg.delivered && <span className="delivery-indicator">✔️</span>}
+                                            {msg.read && <span className="read-indicator">✔️</span>}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
