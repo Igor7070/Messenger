@@ -24,7 +24,7 @@ const PrivateChat = () => {
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
     const messagesEndRef = useRef(null);
-    const messageListRef = useRef(null); // Ссылка на контейнер сообщений
+    const messageListRef = useRef(null); // Для проверки готовности контейнера
     const fileInputRef = useRef(null);
     const { chatId: chatIdParam } = useParams();
 
@@ -38,12 +38,8 @@ const PrivateChat = () => {
 
     // Функция прокрутки к последнему сообщению
     const scrollToBottom = () => {
-        if (messageListRef.current) {
-            const { scrollTop, scrollHeight, clientHeight } = messageListRef.current;
-            // Прокручиваем, только если пользователь близко к концу (например, в пределах 100px)
-            if (scrollHeight - scrollTop - clientHeight < 100) {
-                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }
+        if (messagesEndRef.current && messageListRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     };
 
@@ -68,8 +64,6 @@ const PrivateChat = () => {
                 }));
 
                 setMessages(updatedMessages);
-                // Прокрутка после загрузки начальных сообщений
-                setTimeout(scrollToBottom, 0);
             } catch (error) {
                 console.error('Ошибка при загрузке данных о чате:', error);
             }
@@ -314,8 +308,6 @@ const PrivateChat = () => {
                 }];
             }
         });
-        // Прокрутка после получения нового сообщения
-        setTimeout(scrollToBottom, 0);
     };
 
     const uploadFile = async (file) => {
@@ -404,8 +396,6 @@ const PrivateChat = () => {
                 }, 3000);
     
                 resetForm();
-                // Прокрутка после отправки сообщения
-                setTimeout(scrollToBottom, 0);
             } else {
                 console.error('STOMP client is not connected');
             }
@@ -463,12 +453,19 @@ const PrivateChat = () => {
             });
             setMessages(prevMessages => prevMessages.filter(msg => msg.id !== id));
             toast.success('Message deleted!');
-            // Прокрутка после удаления сообщения
-            setTimeout(scrollToBottom, 0);
         } else {
             toast.error('Failed to delete message. Try again.');
         }
     };
+
+    // Прокрутка при каждом изменении messages
+    useEffect(() => {
+        // Используем requestAnimationFrame для надежности после рендеринга
+        const rafId = requestAnimationFrame(() => {
+            scrollToBottom();
+        });
+        return () => cancelAnimationFrame(rafId);
+    }, [messages]);
 
     const formatTimestamp = (timestamp) => {
         if (!timestamp) return '';
