@@ -81,7 +81,6 @@
 .private-message-content-container {
     display: inline-block; /* Подстраивается под содержимое */
     max-width: 90%; /* Ограничение ширины */
-    width: fit-content; /* Точно по содержимому */
     min-width: 0; /* Предотвращает растяжку */
     padding: 8px; /* Компактные отступы */
     border-radius: 12px;
@@ -95,14 +94,18 @@
 .private-message.private-current-user .private-message-content-container {
     background-color: #DCF8C6 !important; /* Зелёный для отправленных */
     border-radius: 12px; /* Все углы закругленные по умолчанию */
-    margin-right: 10px; /* Единообразный отступ от правого края */
-    max-width: calc(90% - 10px); /* Учитываем margin-right */
+    margin-right: 10px; /* Фиксированный отступ от правого края */
+    max-width: calc(80% - 10px); /* Уменьшаем max-width для учета отступа и выравнивания */
+    width: auto; /* Убираем fit-content */
+    box-sizing: border-box;
 }
 
 .private-message.private-current-user.first-message .private-message-content-container {
     border-radius: 12px 0 12px 12px; /* Верхний правый угол квадратный */
-    margin-right: 10px; /* Единообразный отступ от правого края */
-    max-width: calc(90% - 10px); /* Учитываем margin-right */
+    margin-right: 10px; /* Фиксированный отступ от правого края */
+    max-width: calc(80% - 10px); /* Уменьшаем max-width для учета отступа и выравнивания */
+    width: auto; /* Убираем fit-content */
+    box-sizing: border-box;
 }
 
 .private-message.private-other-user .private-message-content-container {
@@ -298,13 +301,17 @@
     .private-message.private-current-user .private-message-content-container {
         border-radius: 10px; /* Все углы закругленные по умолчанию */
         margin-right: 10px; /* Единообразный отступ */
-        max-width: calc(90% - 10px); /* Учитываем margin-right */
+        max-width: calc(80% - 10px); /* Учитываем margin-right */
+        width: auto; /* Убираем fit-content */
+        box-sizing: border-box;
     }
 
     .private-message.private-current-user.first-message .private-message-content-container {
         border-radius: 10px 0 10px 10px; /* Верхний правый угол квадратный */
         margin-right: 10px; /* Единообразный отступ */
-        max-width: calc(90% - 10px); /* Учитываем margin-right */
+        max-width: calc(80% - 10px); /* Учитываем margin-right */
+        width: auto; /* Убираем fit-content */
+        box-sizing: border-box;
     }
 
     .private-input-message {
