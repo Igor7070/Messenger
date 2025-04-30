@@ -24,7 +24,7 @@ const PrivateChat = () => {
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
     const messagesEndRef = useRef(null);
-    const messageListRef = useRef(null); // Для проверки готовности контейнера
+    const messageListRef = useRef(null);
     const fileInputRef = useRef(null);
     const { chatId: chatIdParam } = useParams();
 
@@ -41,6 +41,11 @@ const PrivateChat = () => {
         if (messagesEndRef.current && messageListRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
+    };
+
+    // Обработчик клика по аватару
+    const handleAvatarClick = (senderId) => {
+        navigate(`/user/${senderId}`);
     };
 
     useEffect(() => {
@@ -514,9 +519,15 @@ const PrivateChat = () => {
                                             src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
                                             alt={`${msg.sender.username} avatar`} 
                                             className="private-message-avatar"
+                                            onClick={() => handleAvatarClick(msg.sender.id)}
+                                            style={{ cursor: 'pointer' }}
                                         />
                                     ) : (
-                                        <div className="private-message-avatar">
+                                        <div 
+                                            className="private-message-avatar"
+                                            onClick={() => handleAvatarClick(msg.sender.id)}
+                                            style={{ cursor: 'pointer' }}
+                                        >
                                             {msg.sender.username.charAt(0).toUpperCase()}
                                         </div>
                                     )}
