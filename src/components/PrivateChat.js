@@ -466,7 +466,7 @@ const PrivateChat = () => {
                 {messages.map((msg, index) => (
                     <div 
                         key={msg.id}
-                        className={`private-message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
+                        className={`private-message ${msg.sender.id === userId ? 'private-current-user' : 'private-other-user'}`}
                         onContextMenu={(e) => handleRightClick(e, msg)}
                     >
                         <div className="private-message-wrapper">

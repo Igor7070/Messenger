@@ -40,25 +40,28 @@
     margin-bottom: 5px;
     display: flex;
     flex-direction: column;
+    background: transparent !important; /* Прозрачный фон */
 }
 
 .private-message-wrapper {
     display: flex;
     align-items: flex-start; /* Выравнивание по верхнему краю */
-    background: transparent; /* Без фона */
+    background: transparent !important; /* Без фона */
+    width: 100%; /* Ограничиваем wrapper */
 }
 
-.current-user {
+.private-current-user {
     align-self: flex-end;
 }
 
-.other-user {
+.private-other-user {
     align-self: flex-start;
 }
 
 .private-avatar-container {
     margin-right: 10px;
     align-self: flex-start; /* Аватар по верхнему краю */
+    flex-shrink: 0;
 }
 
 .private-message-avatar {
@@ -79,6 +82,7 @@
     display: inline-block; /* Подстраивается под содержимое */
     max-width: 90%; /* Ограничение ширины */
     width: fit-content; /* Точно по содержимому */
+    min-width: 0; /* Предотвращает растяжку */
     padding: 8px; /* Компактные отступы */
     border-radius: 12px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Лёгкая тень */
@@ -88,16 +92,15 @@
     box-sizing: border-box;
 }
 
-.current-user .private-message-content-container {
-    background-color: #DCF8C6; /* Зелёный для отправленных */
+.private-message.private-current-user .private-message-content-container {
+    background-color: #DCF8C6 !important; /* Зелёный для отправленных */
     border-radius: 12px 12px 0 12px;
 }
 
-.other-user .private-message-content-container {
-    background-color: #ECE0F8; /* Фиолетовый для полученных */
+.private-message.private-other-user .private-message-content-container {
+    background-color: #ECE0F8 !important; /* Фиолетовый для полученных */
     border-radius: 12px 12px 12px 0;
-    margin-left: 0; /* Убрал margin-left, чтобы фон не смещался */
-    padding-left: 10px; /* Отступ внутри, чтобы текст не прилипал к краю */
+    margin-left: 0; /* Без смещения */
 }
 
 .private-message-content-container.no-avatar {
@@ -105,15 +108,16 @@
 }
 
 .private-message-body {
-    background: transparent; /* Прозрачный */
+    background: transparent !important; /* Прозрачный */
     display: block; /* Для правильной компоновки */
+    padding-left: 10px; /* Отступ для текста */
 }
 
 .private-message-content {
     font-size: 16px;
     line-height: 1.4;
     font-family: 'Roboto', sans-serif;
-    background: transparent; /* Прозрачный */
+    background: transparent !important; /* Прозрачный */
 }
 
 .private-file-link {
@@ -122,7 +126,7 @@
     color: #0288d1;
     text-decoration: none;
     font-size: 14px;
-    background: transparent; /* Прозрачный */
+    background: transparent !important; /* Прозрачный */
 }
 
 .private-file-link:hover {
@@ -135,7 +139,7 @@
     margin-top: 5px;
     justify-content: flex-end;
     font-size: 12px;
-    background: transparent; /* Прозрачный */
+    background: transparent !important; /* Прозрачный */
 }
 
 .private-delivery-indicator,
