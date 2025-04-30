@@ -5,8 +5,8 @@
     flex-direction: column;
     padding: 20px;
     border-radius: 10px;
-    background-color: #D7E0E6; /* Новый серо-голубой фон */
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); /* Усиленная тень */
+    background-color: #D7E0E6;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Мягкая тень */
     font-family: 'Roboto', sans-serif;
     max-width: 800px;
     margin: 20px auto;
