@@ -9,6 +9,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getChatById } from '../api/chats';
 import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
+import { format, isToday, parseISO } from 'date-fns';
 
 const PrivateChat = () => {
     const [messages, setMessages] = useState([]);
@@ -68,18 +69,18 @@ const PrivateChat = () => {
 
         setCurrentUserId(Number(userId));
 
-        const stompClient = new Client({
+        const stompClientInstance = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
                 console.log('Connected to WebSocket');
                 
-                stompClient.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
+                stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
                     console.log('NewMessage: ', newMessage);
                     updateMessages(newMessage);
                 });
 
-                stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
+                stompClientInstance.subscribe(`/topic/notifications/${userId}`, (message) => {
                     const notification = message.body;
                     console.log("Received notification:", notification);
 
@@ -102,11 +103,11 @@ const PrivateChat = () => {
             },
         });
 
-        setClient(stompClient);
-        stompClient.activate();
+        setClient(stompClientInstance);
+        stompClientInstance.activate();
 
         return () => {
-            stompClient.deactivate();
+            stompClientInstance.deactivate();
         };
     }, [chatId, userId]);
 
@@ -328,6 +329,7 @@ const PrivateChat = () => {
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
                 delivered: false,
                 read: false,
+                timestamp: new Date().toISOString(), // Добавляем timestamp для новых сообщений
             };
     
             if (client && client.connected) {
@@ -448,9 +450,20 @@ const PrivateChat = () => {
         }
     };
 
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    const formatTimestamp = (timestamp) => {
+        if (!timestamp) return '';
+        try {
+            const date = parseISO(timestamp);
+            const kievDate = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Kiev' }));
+            if (isToday(kievDate)) {
+                return format(kievDate, 'HH:mm');
+            }
+            return format(kievDate, 'dd.MM.yy');
+        } catch (error) {
+            console.error('Error formatting timestamp:', error);
+            return '';
+        }
+    };
 
     const shouldShowAvatar = (msg, index) => {
         if (msg.sender.id === userId) return false;
@@ -504,12 +517,15 @@ const PrivateChat = () => {
                                             📥 Download file
                                         </a>
                                     )}
-                                    {msg.sender.id === userId && (
-                                        <div className="private-message-status">
-                                            {msg.delivered && <span className="private-delivery-indicator">✔️</span>}
-                                            {msg.read && <span className="private-read-indicator">✔️</span>}
-                                        </div>
-                                    )}
+                                    <div className="private-message-status">
+                                        {msg.sender.id === userId && (
+                                            <>
+                                                {msg.delivered && <span className="private-delivery-indicator">✔️</span>}
+                                                {msg.read && <span className="private-read-indicator">✔️</span>}
+                                            </>
+                                        )}
+                                    </div>
+                                    <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                                 </div>
                             </div>
                         </div>
