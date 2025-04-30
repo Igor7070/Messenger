@@ -50,6 +50,10 @@
     width: 100%; /* Ограничиваем wrapper */
 }
 
+.private-current-user .private-message-wrapper {
+    justify-content: flex-end; /* Прижимаем к правому краю */
+}
+
 .private-current-user {
     align-self: flex-end;
 }
@@ -79,8 +83,8 @@
 }
 
 .private-message-content-container {
-    display: inline-block; /* Подстраивается под содержимое */
-    max-width: 90%; /* Ограничение ширины */
+    display: block; /* Изменено с inline-block на block для стабильной ширины */
+    max-width: 80%; /* Ограничение ширины */
     min-width: 0; /* Предотвращает растяжку */
     padding: 8px; /* Компактные отступы */
     border-radius: 12px;
@@ -95,16 +99,16 @@
     background-color: #DCF8C6 !important; /* Зелёный для отправленных */
     border-radius: 12px; /* Все углы закругленные по умолчанию */
     margin-right: 10px; /* Фиксированный отступ от правого края */
-    max-width: calc(80% - 10px); /* Уменьшаем max-width для учета отступа и выравнивания */
-    width: auto; /* Убираем fit-content */
+    max-width: calc(80% - 10px); /* Учитываем margin-right */
+    width: 100%; /* Занимаем всю доступную ширину до max-width */
     box-sizing: border-box;
 }
 
 .private-message.private-current-user.first-message .private-message-content-container {
     border-radius: 12px 0 12px 12px; /* Верхний правый угол квадратный */
     margin-right: 10px; /* Фиксированный отступ от правого края */
-    max-width: calc(80% - 10px); /* Уменьшаем max-width для учета отступа и выравнивания */
-    width: auto; /* Убираем fit-content */
+    max-width: calc(80% - 10px); /* Учитываем margin-right */
+    width: 100%; /* Занимаем всю доступную ширину до max-width */
     box-sizing: border-box;
 }
 
@@ -302,7 +306,7 @@
         border-radius: 10px; /* Все углы закругленные по умолчанию */
         margin-right: 10px; /* Единообразный отступ */
         max-width: calc(80% - 10px); /* Учитываем margin-right */
-        width: auto; /* Убираем fit-content */
+        width: 100%; /* Занимаем всю доступную ширину до max-width */
         box-sizing: border-box;
     }
 
@@ -310,7 +314,7 @@
         border-radius: 10px 0 10px 10px; /* Верхний правый угол квадратный */
         margin-right: 10px; /* Единообразный отступ */
         max-width: calc(80% - 10px); /* Учитываем margin-right */
-        width: auto; /* Убираем fit-content */
+        width: 100%; /* Занимаем всю доступную ширину до max-width */
         box-sizing: border-box;
     }
 
