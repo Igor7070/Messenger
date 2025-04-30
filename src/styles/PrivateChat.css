@@ -13,33 +13,46 @@
 }
 
 .private-chat-name {
-    font-family: 'Inter', 'Open Sans', sans-serif; /* Мягкий и современный шрифт */
-    font-size: 20px; /* Уменьшено с 20px для большей мягкости */
-    font-weight: 600; /* Semi-bold вместо bold */
-    color: #333333; /* Мягкий темно-серый вместо #212121 */
+    font-family: 'Inter', 'Open Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333333;
     padding: 12px;
     background-color: #FFFFFF;
     border-radius: 5px;
     text-align: center;
     margin-bottom: 15px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    letter-spacing: 0.2px; /* Легкое увеличение межбуквенного интервала */
-    -webkit-font-smoothing: antialiased; /* Плавное рендеринг текста */
+    letter-spacing: 0.2px;
+    -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility; /* Оптимизация читаемости */
+    text-rendering: optimizeLegibility;
 }
 
 .private-message-list {
-    border: 1px solid #ccc;
+    border: 1px solid #D8DCE0;
     padding: 10px;
     height: 400px;
     overflow-y: scroll;
     margin-bottom: 15px;
-    background-color: #F5FAFD;
+    background-color: #E8ECEF;
     border-radius: 5px;
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.private-message-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.private-message-list::-webkit-scrollbar-thumb {
+    background-color: #B0BEC5;
+    border-radius: 4px;
+}
+
+.private-message-list::-webkit-scrollbar-track {
+    background-color: #E8ECEF;
 }
 
 .private-message {
@@ -47,18 +60,18 @@
     margin-bottom: 5px;
     display: flex;
     flex-direction: column;
-    background: transparent !important; /* Прозрачный фон */
+    background: transparent !important;
 }
 
 .private-message-wrapper {
     display: flex;
-    align-items: flex-start; /* Выравнивание по верхнему краю */
-    background: transparent !important; /* Без фона */
-    width: 100%; /* Ограничиваем wrapper */
+    align-items: flex-start;
+    background: transparent !important;
+    width: 100%;
 }
 
 .private-current-user .private-message-wrapper {
-    justify-content: flex-end; /* Прижимаем к правому краю */
+    justify-content: flex-end;
 }
 
 .private-current-user {
@@ -71,7 +84,7 @@
 
 .private-avatar-container {
     margin-right: 10px;
-    align-self: flex-start; /* Аватар по верхнему краю */
+    align-self: flex-start;
     flex-shrink: 0;
 }
 
@@ -90,12 +103,12 @@
 }
 
 .private-message-content-container {
-    display: block; /* Для стабильной ширины */
-    max-width: 80%; /* Ограничение ширины */
-    min-width: 0; /* Предотвращает растяжку */
-    padding: 8px; /* Компактные отступы */
+    display: block;
+    max-width: 80%;
+    min-width: 0;
+    padding: 8px;
     border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Лёгкая тень */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     word-wrap: break-word;
     overflow-wrap: break-word;
     white-space: pre-wrap;
@@ -103,47 +116,47 @@
 }
 
 .private-message.private-current-user .private-message-content-container {
-    background-color: #DCF8C6 !important; /* Зелёный для отправленных */
-    border-radius: 12px; /* Все углы закругленные по умолчанию */
-    margin-right: 10px; /* Фиксированный отступ от правого края */
-    max-width: calc(80% - 10px); /* Учитываем margin-right */
-    width: 100%; /* Занимаем всю доступную ширину до max-width */
+    background-color: #DCF8C6 !important;
+    border-radius: 12px;
+    margin-right: 10px;
+    max-width: calc(80% - 10px);
+    width: 100%;
     box-sizing: border-box;
 }
 
 .private-message.private-current-user.first-message .private-message-content-container {
-    border-radius: 12px 0 12px 12px; /* Верхний правый угол квадратный */
-    margin-right: 10px; /* Фиксированный отступ от правого края */
-    max-width: calc(80% - 10px); /* Учитываем margin-right */
-    width: 100%; /* Занимаем всю доступную ширину до max-width */
+    border-radius: 12px 0 12px 12px;
+    margin-right: 10px;
+    max-width: calc(80% - 10px);
+    width: 100%;
     box-sizing: border-box;
 }
 
 .private-message.private-other-user .private-message-content-container {
-    background-color: #ECE0F8 !important; /* Фиолетовый для полученных */
-    border-radius: 0 12px 12px 12px; /* Верхний левый угол квадратный */
-    margin-left: 0; /* Без смещения */
+    background-color: #ECE0F8 !important;
+    border-radius: 0 12px 12px 12px;
+    margin-left: 0;
 }
 
 .private-message.private-other-user .private-message-content-container.no-avatar {
-    border-radius: 12px; /* Все углы закругленные */
+    border-radius: 12px;
 }
 
 .private-message-content-container.no-avatar {
-    margin-left: 45px !important; /* 35px (аватар) + 10px (отступ) */
+    margin-left: 45px !important;
 }
 
 .private-message-body {
-    background: transparent !important; /* Прозрачный */
-    display: block; /* Для правильной компоновки */
-    padding-left: 10px; /* Отступ для текста */
+    background: transparent !important;
+    display: block;
+    padding-left: 10px;
 }
 
 .private-message-content {
     font-size: 16px;
     line-height: 1.4;
     font-family: 'Roboto', sans-serif;
-    background: transparent !important; /* Прозрачный */
+    background: transparent !important;
 }
 
 .private-file-link {
@@ -152,7 +165,7 @@
     color: #0288d1;
     text-decoration: none;
     font-size: 14px;
-    background: transparent !important; /* Прозрачный */
+    background: transparent !important;
 }
 
 .private-file-link:hover {
@@ -165,7 +178,7 @@
     margin-top: 5px;
     justify-content: flex-end;
     font-size: 12px;
-    background: transparent !important; /* Прозрачный */
+    background: transparent !important;
 }
 
 .private-delivery-indicator,
@@ -174,10 +187,10 @@
 }
 
 .private-input-container {
-    background-color: #FFFFFF;
+    background-color: #F0F4F8;
     padding: 10px;
     border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
 }
 
 .private-input-message {
@@ -190,7 +203,7 @@
     box-sizing: border-box;
     min-height: 48px;
     font-size: 16px;
-    background-color: #F9FBFC;
+    background-color: #FFFFFF;
     font-family: 'Roboto', sans-serif;
     transition: border-color 0.3s;
 }
@@ -289,7 +302,7 @@
     }
 
     .private-chat-name {
-        font-size: 18px; /* Уменьшено с 18px для мобильных */
+        font-size: 18px;
         padding: 10px;
     }
 
@@ -298,30 +311,30 @@
     }
 
     .private-message-content-container.no-avatar {
-        margin-left: 40px !important; /* Уменьшенный отступ для мобильных */
+        margin-left: 40px !important;
     }
 
     .private-message.private-other-user .private-message-content-container {
-        border-radius: 0 10px 10px 10px; /* Уменьшенный радиус для первого сообщения */
+        border-radius: 0 10px 10px 10px;
     }
 
     .private-message.private-other-user .private-message-content-container.no-avatar {
-        border-radius: 10px; /* Все углы закругленные для последующих */
+        border-radius: 10px;
     }
 
     .private-message.private-current-user .private-message-content-container {
-        border-radius: 10px; /* Все углы закругленные по умолчанию */
-        margin-right: 10px; /* Единообразный отступ */
-        max-width: calc(80% - 10px); /* Учитываем margin-right */
-        width: 100%; /* Занимаем всю доступную ширину до max-width */
+        border-radius: 10px;
+        margin-right: 10px;
+        max-width: calc(80% - 10px);
+        width: 100%;
         box-sizing: border-box;
     }
 
     .private-message.private-current-user.first-message .private-message-content-container {
-        border-radius: 10px 0 10px 10px; /* Верхний правый угол квадратный */
-        margin-right: 10px; /* Единообразный отступ */
-        max-width: calc(80% - 10px); /* Учитываем margin-right */
-        width: 100%; /* Занимаем всю доступную ширину до max-width */
+        border-radius: 10px 0 10px 10px;
+        margin-right: 10px;
+        max-width: calc(80% - 10px);
+        width: 100%;
         box-sizing: border-box;
     }
 
