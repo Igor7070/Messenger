@@ -82,10 +82,10 @@ const PrivateChat = () => {
                 stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
                     const notification = message.body;
                     console.log("Received notification:", notification);
-    
+
                     const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
                     const notificationChatId = chatIdMatch ? chatIdMatch[1] : null;
-    
+
                     if (notificationChatId && notificationChatId !== chatId) {
                         const toastId = toast.info(`Новое сообщение от: ${notification}`, {
                             autoClose: false,
@@ -459,6 +459,13 @@ const PrivateChat = () => {
         return prevMessage.sender.id !== msg.sender.id;
     };
 
+    const isFirstMessage = (msg, index) => {
+        if (msg.sender.id !== userId) return false; // Только для текущего пользователя
+        if (index === 0) return true;
+        const prevMessage = messages[index - 1];
+        return prevMessage.sender.id !== msg.sender.id;
+    };
+
     return (
         <div className="private-chat">
             <div className="private-chat-name">{displayChatName}</div>
@@ -466,7 +473,7 @@ const PrivateChat = () => {
                 {messages.map((msg, index) => (
                     <div 
                         key={msg.id}
-                        className={`private-message ${msg.sender.id === userId ? 'private-current-user' : 'private-other-user'}`}
+                        className={`private-message ${msg.sender.id === userId ? 'private-current-user' : 'private-other-user'} ${isFirstMessage(msg, index) ? 'first-message' : ''}`}
                         onContextMenu={(e) => handleRightClick(e, msg)}
                     >
                         <div className="private-message-wrapper">

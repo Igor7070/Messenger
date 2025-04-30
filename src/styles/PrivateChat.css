@@ -94,21 +94,25 @@
 
 .private-message.private-current-user .private-message-content-container {
     background-color: #DCF8C6 !important; /* Зелёный для отправленных */
-    border-radius: 12px 0 12px 12px; /* Верхний правый угол квадратный для первого сообщения */
+    border-radius: 12px; /* Все углы закругленные по умолчанию */
+    margin-right: 10px; /* Единообразный отступ от правого края */
+    max-width: calc(90% - 10px); /* Учитываем margin-right */
 }
 
-.private-message.private-current-user .private-message-content-container.no-avatar {
-    border-radius: 12px; /* Все углы закругленные для последующих сообщений */
+.private-message.private-current-user.first-message .private-message-content-container {
+    border-radius: 12px 0 12px 12px; /* Верхний правый угол квадратный */
+    margin-right: 10px; /* Единообразный отступ от правого края */
+    max-width: calc(90% - 10px); /* Учитываем margin-right */
 }
 
 .private-message.private-other-user .private-message-content-container {
     background-color: #ECE0F8 !important; /* Фиолетовый для полученных */
-    border-radius: 0 12px 12px 12px; /* Верхний левый угол квадратный для первого сообщения */
+    border-radius: 0 12px 12px 12px; /* Верхний левый угол квадратный */
     margin-left: 0; /* Без смещения */
 }
 
 .private-message.private-other-user .private-message-content-container.no-avatar {
-    border-radius: 12px; /* Все углы закругленные для последующих сообщений */
+    border-radius: 12px; /* Все углы закругленные */
 }
 
 .private-message-content-container.no-avatar {
@@ -292,11 +296,15 @@
     }
 
     .private-message.private-current-user .private-message-content-container {
-        border-radius: 10px 0 10px 10px; /* Уменьшенный радиус для первого сообщения */
+        border-radius: 10px; /* Все углы закругленные по умолчанию */
+        margin-right: 10px; /* Единообразный отступ */
+        max-width: calc(90% - 10px); /* Учитываем margin-right */
     }
 
-    .private-message.private-current-user .private-message-content-container.no-avatar {
-        border-radius: 10px; /* Все углы закругленные для последующих */
+    .private-message.private-current-user.first-message .private-message-content-container {
+        border-radius: 10px 0 10px 10px; /* Верхний правый угол квадратный */
+        margin-right: 10px; /* Единообразный отступ */
+        max-width: calc(90% - 10px); /* Учитываем margin-right */
     }
 
     .private-input-message {
