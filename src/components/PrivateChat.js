@@ -306,7 +306,7 @@ const PrivateChat = () => {
         formData.append('file', file);
 
         const response = await fetch('https://unlimitedpossibilities12.org/api/files/upload', {
-            method: 'POST', // Исправлено: добавлено двоеточие
+            method: 'POST',
             body: formData,
         });
 
