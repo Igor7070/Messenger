@@ -83,7 +83,7 @@
 }
 
 .private-message-content-container {
-    display: block; /* Изменено с inline-block на block для стабильной ширины */
+    display: block; /* Для стабильной ширины */
     max-width: 80%; /* Ограничение ширины */
     min-width: 0; /* Предотвращает растяжку */
     padding: 8px; /* Компактные отступы */
@@ -207,8 +207,8 @@
 .private-file-input-label {
     all: unset;
     flex: 1;
-    padding: 12px;
-    height: 48px;
+    padding: 8px; /* Уменьшено с 12px */
+    height: 36px; /* Уменьшено с 48px */
     background-color: #B0BEC5;
     color: #FFFFFF;
     border-radius: 5px;
@@ -230,8 +230,8 @@
 
 .private-send-button {
     flex: 1;
-    padding: 12px;
-    height: 48px;
+    padding: 8px; /* Уменьшено с 12px */
+    height: 36px; /* Уменьшено с 48px */
     background-color: #42a5f5;
     color: #FFFFFF;
     border: none;
@@ -325,7 +325,7 @@
     .private-file-input-label,
     .private-send-button {
         font-size: 12px;
-        padding: 10px;
-        height: 40px;
+        padding: 6px; /* Уменьшено с 10px */
+        height: 32px; /* Уменьшено с 40px */
     }
 }
