@@ -24,6 +24,7 @@ const PrivateChat = () => {
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
     const messagesEndRef = useRef(null);
+    const messageListRef = useRef(null); // Ссылка на контейнер сообщений
     const fileInputRef = useRef(null);
     const { chatId: chatIdParam } = useParams();
 
@@ -34,6 +35,17 @@ const PrivateChat = () => {
     const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
     audioRef.current.loop = true;
     const navigate = useNavigate();
+
+    // Функция прокрутки к последнему сообщению
+    const scrollToBottom = () => {
+        if (messageListRef.current) {
+            const { scrollTop, scrollHeight, clientHeight } = messageListRef.current;
+            // Прокручиваем, только если пользователь близко к концу (например, в пределах 100px)
+            if (scrollHeight - scrollTop - clientHeight < 100) {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    };
 
     useEffect(() => {
         const fetchChatData = async () => {
@@ -56,6 +68,8 @@ const PrivateChat = () => {
                 }));
 
                 setMessages(updatedMessages);
+                // Прокрутка после загрузки начальных сообщений
+                setTimeout(scrollToBottom, 0);
             } catch (error) {
                 console.error('Ошибка при загрузке данных о чате:', error);
             }
@@ -300,6 +314,8 @@ const PrivateChat = () => {
                 }];
             }
         });
+        // Прокрутка после получения нового сообщения
+        setTimeout(scrollToBottom, 0);
     };
 
     const uploadFile = async (file) => {
@@ -329,7 +345,7 @@ const PrivateChat = () => {
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
                 delivered: false,
                 read: false,
-                timestamp: new Date().toISOString(), // Добавляем timestamp для новых сообщений
+                timestamp: new Date().toISOString(),
             };
     
             if (client && client.connected) {
@@ -388,6 +404,8 @@ const PrivateChat = () => {
                 }, 3000);
     
                 resetForm();
+                // Прокрутка после отправки сообщения
+                setTimeout(scrollToBottom, 0);
             } else {
                 console.error('STOMP client is not connected');
             }
@@ -445,6 +463,8 @@ const PrivateChat = () => {
             });
             setMessages(prevMessages => prevMessages.filter(msg => msg.id !== id));
             toast.success('Message deleted!');
+            // Прокрутка после удаления сообщения
+            setTimeout(scrollToBottom, 0);
         } else {
             toast.error('Failed to delete message. Try again.');
         }
@@ -482,7 +502,7 @@ const PrivateChat = () => {
     return (
         <div className="private-chat">
             <div className="private-chat-name">{displayChatName}</div>
-            <div className="private-message-list">
+            <div className="private-message-list" ref={messageListRef}>
                 {messages.map((msg, index) => (
                     <div 
                         key={msg.id}
