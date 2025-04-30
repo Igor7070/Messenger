@@ -40,14 +40,18 @@
     margin-bottom: 5px;
     display: flex;
     flex-direction: column;
-    background: transparent !important; /* Прозрачный фон */
+    background: transparent !important;
+    margin: 0 !important; /* Убираем возможные отступы */
+    padding: 0 !important;
 }
 
 .private-message-wrapper {
     display: flex;
     align-items: flex-start; /* Выравнивание по верхнему краю */
-    background: transparent !important; /* Без фона */
-    width: 100%; /* Ограничиваем wrapper */
+    background: transparent !important;
+    width: 100%;
+    margin: 0 !important; /* Убираем отступы */
+    padding: 0 !important;
 }
 
 .private-current-user {
@@ -100,24 +104,26 @@
 .private-message.private-other-user .private-message-content-container {
     background-color: #ECE0F8 !important; /* Фиолетовый для полученных */
     border-radius: 12px 12px 12px 0;
-    margin-left: 0; /* Без смещения */
+    margin-left: 10px; /* Отступ для первого сообщения от аватара */
 }
 
-.private-message-content-container.no-avatar {
-    margin-left: 45px; /* 35px (аватар) + 10px (отступ от аватара) */
+.private-message.private-other-user .private-message-content-container.no-avatar {
+    margin-left: 45px !important; /* 35px (аватар) + 10px (отступ от аватара) */
+    border: 1px solid red !important; /* Отладочный стиль для проверки */
 }
 
 .private-message-body {
     background: transparent !important; /* Прозрачный */
     display: block; /* Для правильной компоновки */
-    padding-left: 10px; /* Отступ для текста */
+    padding: 0 !important; /* Убрали все отступы */
+    margin: 0 !important;
 }
 
 .private-message-content {
     font-size: 16px;
     line-height: 1.4;
     font-family: 'Roboto', sans-serif;
-    background: transparent !important; /* Прозрачный */
+    background: transparent !important;
 }
 
 .private-file-link {
@@ -126,7 +132,7 @@
     color: #0288d1;
     text-decoration: none;
     font-size: 14px;
-    background: transparent !important; /* Прозрачный */
+    background: transparent !important;
 }
 
 .private-file-link:hover {
@@ -139,7 +145,7 @@
     margin-top: 5px;
     justify-content: flex-end;
     font-size: 12px;
-    background: transparent !important; /* Прозрачный */
+    background: transparent !important;
 }
 
 .private-delivery-indicator,
