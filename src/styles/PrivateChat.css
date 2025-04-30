@@ -45,7 +45,7 @@
 .message-wrapper {
     display: flex;
     align-items: flex-end;
-    background: transparent; /* Прозрачный фон для wrapper */
+    background: transparent; /* Без фона */
 }
 
 .current-user {
@@ -58,7 +58,7 @@
 
 .avatar-container {
     margin-right: 10px;
-    margin-bottom: 5px;
+    align-self: flex-end; /* Аватар выровнен по нижнему краю сообщения */
 }
 
 .message-avatar {
@@ -83,7 +83,7 @@
     overflow-wrap: break-word;
     white-space: pre-wrap;
     box-sizing: border-box;
-    background: transparent; /* Прозрачный фон */
+    background: transparent; /* Без фона */
 }
 
 .other-user .message-content-container {
@@ -91,7 +91,7 @@
 }
 
 .message-content-container.no-avatar {
-    margin-left: 55px; /* 35px (аватар) + 10px (отступ от аватара) + 10px (дополнительный отступ) */
+    margin-left: 55px; /* 35px (аватар) + 10px (отступ) + 10px (дополнительно) */
 }
 
 .message-body {
@@ -99,7 +99,7 @@
     max-width: 90%; /* Ограничиваем ширину */
     padding: 8px; /* Компактные отступы */
     border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Лёгкая тень для контейнера */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Лёгкая тень */
 }
 
 .current-user .message-body {
@@ -116,6 +116,7 @@
     font-size: 16px;
     line-height: 1.4;
     font-family: 'Roboto', sans-serif;
+    background: transparent; /* Без фона */
 }
 
 .file-link {
@@ -124,6 +125,7 @@
     color: #0288d1;
     text-decoration: none;
     font-size: 14px;
+    background: transparent; /* Без фона */
 }
 
 .file-link:hover {
@@ -136,6 +138,7 @@
     margin-top: 5px;
     justify-content: flex-end;
     font-size: 12px;
+    background: transparent; /* Без фона */
 }
 
 .delivery-indicator,
