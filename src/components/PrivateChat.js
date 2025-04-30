@@ -493,7 +493,7 @@ const PrivateChat = () => {
                                         download 
                                         className="file-link"
                                     >
-                                        📥 Скачать файл
+                                        📥 Download file
                                     </a>
                                 )}
                                 {msg.sender.id === userId && (
@@ -513,7 +513,7 @@ const PrivateChat = () => {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Введите сообщение..."
+                    placeholder="Enter your message..."
                     className="input-message"
                 />
                 <div className="button-container">
@@ -524,8 +524,8 @@ const PrivateChat = () => {
                         ref={fileInputRef}
                         id="file-input"
                     />
-                    <label htmlFor="file-input" className="file-input-label">Выбрать файл</label>
-                    <button onClick={sendMessage} className="send-button">Отправить</button>
+                    <label htmlFor="file-input" className="file-input-label">Choose File</label>
+                    <button onClick={sendMessage} className="send-button">Send</button>
                 </div>
             </div>
             <ToastContainer />
@@ -535,8 +535,8 @@ const PrivateChat = () => {
                     style={{ top: contextMenu.y, left: contextMenu.x }}
                     onMouseLeave={() => setContextMenu({ visible: false })}
                 >
-                    <button onClick={() => handleMenuAction('edit')}>Редактировать</button>
-                    <button onClick={() => handleMenuAction('delete')}>Удалить</button>
+                    <button onClick={() => handleMenuAction('edit')}>Edit</button>
+                    <button onClick={() => handleMenuAction('delete')}>Delete</button>
                 </div>
             )}
 

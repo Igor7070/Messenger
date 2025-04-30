@@ -6,7 +6,7 @@
     background-color: #E8F0F5;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     font-family: 'Roboto', sans-serif;
-    max-width: 600px;
+    max-width: 800px; /* Увеличено с 600px до 800px */
     margin: 20px auto;
 }
 
@@ -75,34 +75,41 @@
 }
 
 .message-content-container {
-    padding: 10px;
-    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
     max-width: 100%;
     word-wrap: break-word;
     overflow-wrap: break-word;
     white-space: pre-wrap;
     box-sizing: border-box;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: transparent; /* Прозрачный фон */
+}
+
+.other-user .message-content-container {
+    margin-left: 10px; /* Отступ 10px от аватара */
 }
 
 .message-content-container.no-avatar {
-    margin-left: 45px;
+    margin-left: 55px; /* 35px (аватар) + 10px (отступ от аватара) + 10px (дополнительный отступ) */
 }
 
-.current-user .message-content-container {
+.message-content {
+    padding: 10px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    line-height: 1.4;
+    font-family: 'Roboto', sans-serif;
+}
+
+.current-user .message-content {
     background-color: #DCF8C6;
     border-radius: 12px 12px 0 12px;
 }
 
-.other-user .message-content-container {
+.other-user .message-content {
     background-color: #ECE0F8;
     border-radius: 12px 12px 12px 0;
-}
-
-.message-content {
-    font-size: 16px;
-    line-height: 1.4;
-    font-family: 'Roboto', sans-serif;
 }
 
 .file-link {
@@ -160,6 +167,7 @@
 .button-container {
     display: flex;
     gap: 8px;
+    align-items: center; /* Выравнивание кнопок по вертикали */
 }
 
 .file-input {
@@ -168,7 +176,8 @@
 
 .file-input-label {
     flex: 1;
-    padding: 10px;
+    padding: 12px;
+    height: 48px; /* Фиксированная высота */
     background-color: #B0BEC5;
     color: #FFFFFF;
     border: none;
@@ -176,7 +185,9 @@
     text-align: center;
     cursor: pointer;
     font-size: 14px;
+    line-height: 24px; /* Центрирование текста по вертикали */
     transition: background-color 0.3s;
+    box-sizing: border-box;
 }
 
 .file-input-label:hover {
@@ -185,14 +196,17 @@
 
 .send-button {
     flex: 1;
-    padding: 10px;
+    padding: 12px;
+    height: 48px; /* Фиксированная высота */
     background-color: #42a5f5;
     color: #FFFFFF;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     font-size: 14px;
+    line-height: 24px; /* Центрирование текста по вертикали */
     transition: background-color 0.3s;
+    box-sizing: border-box;
 }
 
 .send-button:hover {
@@ -222,10 +236,11 @@
     background-color: #F0F0F0;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 800px) {
     .private-chat {
         margin: 10px;
         padding: 15px;
+        max-width: 100%; /* Адаптивная ширина на маленьких экранах */
     }
 
     .chat-name {
@@ -244,6 +259,8 @@
     .file-input-label,
     .send-button {
         font-size: 12px;
-        padding: 8px;
+        padding: 10px;
+        height: 40px;
+        line-height: 20px;
     }
 }
