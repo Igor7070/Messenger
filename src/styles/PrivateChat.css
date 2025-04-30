@@ -94,17 +94,25 @@
 
 .private-message.private-current-user .private-message-content-container {
     background-color: #DCF8C6 !important; /* Зелёный для отправленных */
-    border-radius: 12px 12px 0 12px;
+    border-radius: 12px 0 12px 12px; /* Верхний правый угол квадратный для первого сообщения */
+}
+
+.private-message.private-current-user .private-message-content-container.no-avatar {
+    border-radius: 12px; /* Все углы закругленные для последующих сообщений */
 }
 
 .private-message.private-other-user .private-message-content-container {
     background-color: #ECE0F8 !important; /* Фиолетовый для полученных */
-    border-radius: 12px 12px 12px 0;
+    border-radius: 0 12px 12px 12px; /* Верхний левый угол квадратный для первого сообщения */
     margin-left: 0; /* Без смещения */
 }
 
+.private-message.private-other-user .private-message-content-container.no-avatar {
+    border-radius: 12px; /* Все углы закругленные для последующих сообщений */
+}
+
 .private-message-content-container.no-avatar {
-    margin-left: 45px !important; /* 35px (аватар) + 10px (отступ) + 10px (дополнительно) */
+    margin-left: 45px !important; /* 35px (аватар) + 10px (отступ) */
 }
 
 .private-message-body {
@@ -269,6 +277,26 @@
 
     .private-message {
         max-width: 85%;
+    }
+
+    .private-message-content-container.no-avatar {
+        margin-left: 40px !important; /* Уменьшенный отступ для мобильных */
+    }
+
+    .private-message.private-other-user .private-message-content-container {
+        border-radius: 0 10px 10px 10px; /* Уменьшенный радиус для первого сообщения */
+    }
+
+    .private-message.private-other-user .private-message-content-container.no-avatar {
+        border-radius: 10px; /* Все углы закругленные для последующих */
+    }
+
+    .private-message.private-current-user .private-message-content-container {
+        border-radius: 10px 0 10px 10px; /* Уменьшенный радиус для первого сообщения */
+    }
+
+    .private-message.private-current-user .private-message-content-container.no-avatar {
+        border-radius: 10px; /* Все углы закругленные для последующих */
     }
 
     .private-input-message {
