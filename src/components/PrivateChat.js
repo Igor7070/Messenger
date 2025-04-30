@@ -19,7 +19,7 @@ const PrivateChat = () => {
     const [client, setClient] = useState(null);
     const [chatId, setChatId] = useState(null);
     const [chatName, setChatName] = useState('');
-    const [displayChatName, setDisplayChatName] = useState(''); // Для отображения "Chat with имя_собеседника"
+    const [displayChatName, setDisplayChatName] = useState('');
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
     const messagesEndRef = useRef(null);
@@ -41,7 +41,7 @@ const PrivateChat = () => {
 
             try {
                 const chatData = await getChatById(chatIdParam);
-                setChatName(chatData.name); // Оригинальное имя чата для логики
+                setChatName(chatData.name);
                 const names = chatData.name.split('_');
                 const interlocutorName = names.find(name => name !== username);
                 setDisplayChatName(`Chat with ${interlocutorName}`);
@@ -493,13 +493,13 @@ const PrivateChat = () => {
                                         download 
                                         className="file-link"
                                     >
-                                        📥 Download file
+                                        📥 Скачать файл
                                     </a>
                                 )}
                                 {msg.sender.id === userId && (
                                     <div className="message-status">
-                                        {msg.delivered && <span className="delivery-indicator">✓</span>}
-                                        {msg.read && <span className="read-indicator">✓✓</span>}
+                                        {msg.delivered && <span className="delivery-indicator">✔️</span>}
+                                        {msg.read && <span className="read-indicator">✔️</span>}
                                     </div>
                                 )}
                             </div>
@@ -513,16 +513,20 @@ const PrivateChat = () => {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Type a message..."
+                    placeholder="Введите сообщение..."
                     className="input-message"
                 />
-                <input
-                    type="file"
-                    onChange={(e) => setSelectedFile(e.target.files[0])}
-                    className="file-input"
-                    ref={fileInputRef}
-                />
-                <button onClick={sendMessage} className="send-button">Send</button>
+                <div className="button-container">
+                    <input
+                        type="file"
+                        onChange={(e) => setSelectedFile(e.target.files[0])}
+                        className="file-input"
+                        ref={fileInputRef}
+                        id="file-input"
+                    />
+                    <label htmlFor="file-input" className="file-input-label">Выбрать файл</label>
+                    <button onClick={sendMessage} className="send-button">Отправить</button>
+                </div>
             </div>
             <ToastContainer />
             {contextMenu.visible && (
@@ -531,8 +535,8 @@ const PrivateChat = () => {
                     style={{ top: contextMenu.y, left: contextMenu.x }}
                     onMouseLeave={() => setContextMenu({ visible: false })}
                 >
-                    <button onClick={() => handleMenuAction('edit')}>Edit</button>
-                    <button onClick={() => handleMenuAction('delete')}>Delete</button>
+                    <button onClick={() => handleMenuAction('edit')}>Редактировать</button>
+                    <button onClick={() => handleMenuAction('delete')}>Удалить</button>
                 </div>
             )}
 
