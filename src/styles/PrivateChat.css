@@ -14,7 +14,7 @@
 
 .private-chat-name {
     font-family: 'Inter', 'Open Sans', sans-serif; /* Мягкий и современный шрифт */
-    font-size: 18px; /* Уменьшено с 20px для большей мягкости */
+    font-size: 20px; /* Уменьшено с 20px для большей мягкости */
     font-weight: 600; /* Semi-bold вместо bold */
     color: #333333; /* Мягкий темно-серый вместо #212121 */
     padding: 12px;
@@ -289,7 +289,7 @@
     }
 
     .private-chat-name {
-        font-size: 16px; /* Уменьшено с 18px для мобильных */
+        font-size: 18px; /* Уменьшено с 18px для мобильных */
         padding: 10px;
     }
 
