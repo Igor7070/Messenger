@@ -6,7 +6,7 @@
     flex-direction: column;
     padding: 20px;
     border-radius: 10px;
-    background-color: #D7E0E6; /* Как в PrivateChat */
+    background-color: #D7E0E6;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     font-family: 'Roboto', sans-serif;
     max-width: 800px;
@@ -149,14 +149,14 @@
 .message-content-container {
     display: block;
     max-width: 80%;
-    min-width: 0;
+    min-width: 100px; /* Добавлено для предотвращения слишком узких контейнеров */
     padding: 8px;
     border-radius: 12px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    word-wrap: break-word;
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere; /* Заменил word-wrap/overflow-wrap для мягкого переноса */
     white-space: pre-wrap;
     box-sizing: border-box;
+    hyphens: manual; /* Отключаем автоматические дефисы */
 }
 
 .message.current-user .message-content-container {
@@ -170,7 +170,7 @@
 
 .message.other-user .message-content-container {
     background-color: #ECE0F8 !important;
-    border-radius: 0 12px 12px 12px; /* Квадратный левый верхний угол */
+    border-radius: 0 12px 12px 12px;
     margin-left: 0;
 }
 
@@ -183,7 +183,7 @@
 
 .sender-name {
     font-size: 15px;
-    font-weight: 600; 
+    font-weight: 570;
     color: #000000;
     margin-bottom: 4px;
     background: transparent !important;
@@ -199,6 +199,7 @@
     line-height: 1.4;
     font-family: 'Roboto', sans-serif;
     background: transparent !important;
+    word-break: keep-all; /* Запрещаем разрыв слов в середине */
 }
 
 .file-link {
@@ -353,7 +354,7 @@
     }
 
     .message.other-user .message-content-container {
-        border-radius: 0 10px 10px 10px; /* Квадратный левый верхний угол для мобильных */
+        border-radius: 0 10px 10px 10px;
     }
 
     .message.current-user .message-content-container {
