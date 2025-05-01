@@ -158,7 +158,7 @@ h2 {
 .chat-item {
     display: flex;
     align-items: center;
-    padding: 8px;
+    padding: 4px;
     border-bottom: 1px solid #e9ecef;
     cursor: pointer;
     transition: background-color 0.2s;
