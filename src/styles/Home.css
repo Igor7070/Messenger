@@ -141,48 +141,42 @@ h1, h2 {
 }
 
 .chat-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    margin: 4px 8px;
-    background-color: #ECEFF1;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    border-bottom: 1px solid #e9ecef;
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
 .chat-item:hover {
-    background-color: #E0E0E0;
+    background-color: #f1f1f1;
 }
 
-.chat-icon {
-    margin-right: 12px;
+.chat-item:last-child {
+    border-bottom: none;
 }
 
-.chat-icon img {
-    width: 48px;
-    height: 48px;
-    object-fit: cover;
-}
-
-.chat-info {
-    flex: 1;
+.chat-content {
     display: flex;
     flex-direction: column;
-}
-
-.chat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 }
 
 .chat-name {
     font-size: 16px;
     font-weight: bold;
     color: #212121;
-    max-width: 70%;
+    margin-bottom: 5px;
+}
+
+.chat-details {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chat-last-message {
+    font-size: 14px;
+    color: #757575;
+    flex: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -191,15 +185,6 @@ h1, h2 {
 .chat-timestamp {
     font-size: 12px;
     color: #757575;
-}
-
-.chat-last-message {
-    font-size: 14px;
-    color: #757575;
-    max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .unread-count {
@@ -221,12 +206,10 @@ h1, h2 {
     align-items: center;
 }
 
-.chat-item:hover,
 .user-item:hover {
     background-color: #f1f1f1;
 }
 
-.chat-item:last-child,
 .user-item:last-child {
     border-bottom: none;
 }
@@ -376,16 +359,6 @@ h1, h2 {
         width: 100%;
     }
 
-    .chat-item {
-        padding: 10px;
-        margin: 4px;
-    }
-
-    .chat-icon img {
-        width: 40px;
-        height: 40px;
-    }
-
     .chat-name {
         font-size: 14px;
     }
@@ -394,13 +367,8 @@ h1, h2 {
         font-size: 12px;
     }
 
-    .chat-timestamp {
-        font-size: 10px;
-    }
-
+    .chat-timestamp,
     .unread-count {
         font-size: 10px;
-        padding: 2px 4px;
-        min-width: 16px;
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
 import { ToastContainer, toast } from 'react-toastify';
@@ -55,27 +55,30 @@ const Home = () => {
         }
     }, [incomingCall, userInteracted]);
 
-    const fetchChats = async () => {
+    const fetchChats = useCallback(async () => {
         try {
             const response = await fetch('https://unlimitedpossibilities12.org/api/chats');
             if (response.ok) {
                 const data = await response.json();
+                console.log('Fetched chats:', data);
                 setChats(data);
                 fetchLastMessages(data);
             } else {
                 toast.error('Failed to fetch chats');
             }
         } catch (error) {
+            console.error('Error fetching chats:', error);
             toast.error('Error fetching chats');
         }
-    };
+    }, []);
 
-    const fetchLastMessages = async (chats) => {
+    const fetchLastMessages = useCallback(async (chats) => {
         const updatedChats = await Promise.all(chats.map(async (chat) => {
             try {
                 const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/chat/${chat.id}`);
                 if (response.ok) {
                     const messages = await response.json();
+                    console.log(`Messages for chat ${chat.id}:`, messages);
                     const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
                     const lastVisit = localStorage.getItem(`last_visit_chat_${chat.id}`);
                     const unreadCount = calculateUnreadCount(messages, lastVisit);
@@ -85,16 +88,19 @@ const Home = () => {
                         timestamp: lastMessage ? lastMessage.timestamp : '',
                         unreadCount
                     };
+                } else {
+                    console.error(`Failed to fetch messages for chat ${chat.id}`);
+                    return { ...chat, lastMessage: 'No messages yet', timestamp: '', unreadCount: 0 };
                 }
             } catch (error) {
                 console.error(`Error fetching messages for chat ${chat.id}:`, error);
+                return { ...chat, lastMessage: 'No messages yet', timestamp: '', unreadCount: 0 };
             }
-            return { ...chat, lastMessage: 'No messages yet', timestamp: '', unreadCount: 0 };
         }));
         setChats(updatedChats);
-    };
+    }, []);
 
-    const calculateUnreadCount = (messages, lastVisit) => {
+    const calculateUnreadCount = useCallback((messages, lastVisit) => {
         if (!lastVisit) {
             return messages.length;
         }
@@ -110,25 +116,24 @@ const Home = () => {
             console.error('Error parsing timestamps:', error);
             return 0;
         }
-    };
+    }, []);
 
-    const formatTimestamp = (timestamp) => {
+    const formatTimestamp = useCallback((timestamp) => {
         if (!timestamp) return '';
         try {
             const date = new Date(timestamp);
             const now = new Date();
             const isToday = date.toDateString() === now.toDateString();
-            if (isToday) {
-                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            }
-            return date.toLocaleDateString();
+            return isToday
+                ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : date.toLocaleDateString();
         } catch (error) {
             console.error('Error formatting timestamp:', error);
             return '';
         }
-    };
+    }, []);
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         try {
             const response = await fetch('https://unlimitedpossibilities12.org/api/users');
             if (response.ok) {
@@ -138,9 +143,10 @@ const Home = () => {
                 toast.error('Failed to fetch users');
             }
         } catch (error) {
+            console.error('Error fetching users:', error);
             toast.error('Error fetching users');
         }
-    };
+    }, []);
 
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
@@ -156,10 +162,13 @@ const Home = () => {
             webSocketFactory: () => socket,
             onConnect: () => {
                 console.log('Connected to WebSocket in Home.js');
-                stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
-                    const callRequest = JSON.parse(message.body);
-                    handleIncomingCall(callRequest);
-                });
+                console.log('Current user ID:', currentUserId);
+                if (currentUserId) {
+                    stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
+                        const callRequest = JSON.parse(message.body);
+                        handleIncomingCall(callRequest);
+                    });
+                }
                 chats.forEach(chat => {
                     stompClient.current.subscribe(`/topic/messages/${chat.id}`, (message) => {
                         const newMessage = JSON.parse(message.body);
@@ -167,15 +176,18 @@ const Home = () => {
                     });
                 });
             },
+            onStompError: (frame) => {
+                console.error('WebSocket error:', frame);
+            },
         });
         stompClient.current.activate();
 
         return () => {
             stompClient.current.deactivate();
         };
-    }, [currentUserId, chats]);
+    }, [currentUserId, chats, fetchChats, fetchUsers]);
 
-    const updateChatWithNewMessage = (chatId, newMessage) => {
+    const updateChatWithNewMessage = useCallback((chatId, newMessage) => {
         setChats(prevChats => {
             const updatedChats = prevChats.map(chat => {
                 if (chat.id === chatId) {
@@ -199,7 +211,7 @@ const Home = () => {
                 console.error('Error playing message sound:', error);
             });
         }
-    };
+    }, [calculateUnreadCount]);
 
     const handleIncomingCall = async (callRequest) => {
         console.log('Incoming call request:', callRequest);
@@ -295,6 +307,7 @@ const Home = () => {
                 toast.error(await response.text());
             }
         } catch (error) {
+            console.error('Error logging in:', error);
             toast.error('Error logging in');
         }
     };
@@ -326,6 +339,7 @@ const Home = () => {
                 toast.error(await response.text());
             }
         } catch (error) {
+            console.error('Error creating chat:', error);
             toast.error('Error creating chat');
         }
     };
@@ -354,6 +368,7 @@ const Home = () => {
                 toast.error(await response.text());
             }
         } catch (error) {
+            console.error('Error creating user:', error);
             toast.error('Error creating user');
         }
     };
@@ -474,19 +489,18 @@ const Home = () => {
                     <ul className="chat-list">
                         {filteredChats.map((chat) => (
                             <li key={chat.id} onClick={() => goToChat(chat.id)} className="chat-item">
-                                <div className="chat-icon">
-                                    <img src="/assets/chat_icon.png" alt="Chat icon" />
-                                </div>
-                                <div className="chat-info">
-                                    <div className="chat-header">
-                                        <span className="chat-name">{chat.name}</span>
-                                        <span className="chat-timestamp">{formatTimestamp(chat.timestamp)}</span>
+                                <div className="chat-content">
+                                    <span className="chat-name">{chat.name}</span>
+                                    <div className="chat-details">
+                                        <span className="chat-last-message">{chat.lastMessage}</span>
+                                        {chat.timestamp && (
+                                            <span className="chat-timestamp">{formatTimestamp(chat.timestamp)}</span>
+                                        )}
+                                        {chat.unreadCount > 0 && (
+                                            <span className="unread-count">{chat.unreadCount}</span>
+                                        )}
                                     </div>
-                                    <span className="chat-last-message">{chat.lastMessage}</span>
                                 </div>
-                                {chat.unreadCount > 0 && (
-                                    <span className="unread-count">{chat.unreadCount}</span>
-                                )}
                             </li>
                         ))}
                     </ul>
