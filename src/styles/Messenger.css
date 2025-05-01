@@ -191,16 +191,17 @@
 }
 
 .sender-name {
-    font-size: 15px; /* Сохранён для заметности */
-    font-weight: 500; /* Жирный для контраста */
-    color: #1A1A1A; /* Мягкий тёмный цвет */
+    font-size: 16px; /* Увеличил для большей заметности */
+    font-weight: 700; /* Жирный для контраста */
+    color: #000000; /* Чёрный для максимальной яркости */
     margin-bottom: 4px;
     background: transparent !important;
-    font-family: 'Lato', sans-serif; /* Компактный и современный шрифт */
-    -webkit-font-smoothing: antialiased; /* Плавное сглаживание */
-    -moz-osx-font-smoothing: grayscale; /* Чёткость для Firefox */
-    text-rendering: optimizeLegibility; /* Оптимизация читаемости */
-    letter-spacing: 0.1px; /* Уменьшил интервал для компактности */
+    font-family: 'Montserrat', sans-serif; /* Выразительный и компактный шрифт */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: 0.1px; /* Компактный интервал */
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.1); /* Лёгкая тень для выделения */
 }
 
 .message-content {
