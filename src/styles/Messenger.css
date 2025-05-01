@@ -192,7 +192,7 @@
 
 .sender-name {
     font-size: 15px; /* Сохранён для заметности */
-    font-weight: 900; /* Жирный для контраста */
+    font-weight: 1200; /* Жирный для контраста */
     color: #1A1A1A; /* Мягкий тёмный цвет */
     margin-bottom: 4px;
     background: transparent !important;
