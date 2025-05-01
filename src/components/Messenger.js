@@ -9,6 +9,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useParams, useNavigate } from 'react-router-dom';
 import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
+import { format, isToday, parseISO } from 'date-fns';
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
@@ -37,6 +38,7 @@ const Messenger = () => {
 
     const textAreaRef = useRef(null);
     const messagesEndRef = useRef(null);
+    const messageListRef = useRef(null);
     const fileInputRef = useRef(null);
     const { chatId } = useParams();
 
@@ -46,8 +48,36 @@ const Messenger = () => {
     const stompClient = useRef(null);
     const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
     audioRef.current.loop = true;
-    const messageAudioRef = useRef(null); // Для сообщений
+    const messageAudioRef = useRef(null);
     const navigate = useNavigate();
+
+    // Форматирование временной метки
+    const formatTimestamp = (timestamp) => {
+        if (!timestamp) return '';
+        try {
+            const date = parseISO(timestamp);
+            const kievDate = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Kiev' }));
+            if (isToday(kievDate)) {
+                return format(kievDate, 'HH:mm');
+            }
+            return format(kievDate, 'dd.MM.yy');
+        } catch (error) {
+            console.error('Error formatting timestamp:', error);
+            return '';
+        }
+    };
+
+    // Прокрутка к последнему сообщению
+    const scrollToBottom = () => {
+        if (messagesEndRef.current && messageListRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
+    // Обработчик клика по аватару
+    const handleAvatarClick = (senderId) => {
+        navigate(`/user/${senderId}`);
+    };
 
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
@@ -58,18 +88,13 @@ const Messenger = () => {
             setUsername(storedUsername);
             setIsLoggedIn(true);
         }
-
-        console.log('Chat ID:', chatId);
     }, []);
 
     useEffect(() => {
-        console.log('Fetching messages for chatId:', chatId);
         const fetchMessages = async () => {
             try {
                 const messages = await getMessages(chatId);
-                console.log('Messages fetched:', messages);
                 setMessages(messages);
-
                 const name = await getChatName(chatId);
                 setChatName(name);
             } catch (error) {
@@ -92,15 +117,13 @@ const Messenger = () => {
                     updateMessages(newMessage);
                 });
 
-                // Подписка на уведомления
                 stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
                     const notification = message.body;
                     console.log("Received notification:", notification);
 
                     const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
-                    const chatId = chatIdMatch ? chatIdMatch[1] : null;
+                    const notificationChatId = chatIdMatch ? chatIdMatch[1] : null;
 
-                    // Воспроизведение звука уведомления
                     if (userInteracted && messageAudioRef && messageAudioRef.current) {
                         console.log('Attempting to play message audio');
                         messageAudioRef.current.play()
@@ -109,23 +132,18 @@ const Messenger = () => {
                                 console.error('Failed to play message audio:', error);
                                 toast.warn('Please interact with the page to enable notification sounds.');
                             });
-                    } else {
-                        console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef?.current);
                     }
 
-                    // Отображение уведомления
                     toast.info(notification, {
                         autoClose: false,
                         onClick: () => {
-                            // Остановка звука при клике на тост
                             if (messageAudioRef && messageAudioRef.current) {
                                 console.log('Pausing message audio on toast click');
                                 messageAudioRef.current.pause();
                                 messageAudioRef.current.currentTime = 0;
                             }
-
-                            if (chatId) {
-                                window.location.href = `/Messenger/#/private-chat/${chatId}`;
+                            if (notificationChatId) {
+                                navigate(`/private-chat/${notificationChatId}`);
                             } else {
                                 console.error("chatId не найден в уведомлении");
                                 toast.error('Invalid notification format');
@@ -138,28 +156,26 @@ const Messenger = () => {
                 console.error('WebSocket error:', error);
             },
         });
-    
+
         setClient(stompClient);
         stompClient.activate();
-    
+
         return () => {
             stompClient.deactivate();
         };
-    }, [chatId, userId, userInteracted]);
+    }, [chatId, userId, userInteracted, navigate]);
 
-    // Обработка события клика на документе
     useEffect(() => {
         const handleClick = () => {
             handleInteraction();
         };
-            
+
         document.addEventListener('click', handleClick);
         return () => {
             document.removeEventListener('click', handleClick);
         };
     }, [handleInteraction]);
-            
-    // Управление звуком звонка
+
     useEffect(() => {
         if (incomingCall && userInteracted) {
             audioRef.current.play().catch(error => {
@@ -170,7 +186,7 @@ const Messenger = () => {
             audioRef.current.currentTime = 0;
         }
     }, [incomingCall, userInteracted]);
-        
+
     useEffect(() => {
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
@@ -185,18 +201,18 @@ const Messenger = () => {
             },
         });
         stompClient.current.activate();
-            
+
         return () => {
             stompClient.current.deactivate();
         };
     }, [currentUserId]);
-        
+
     const handleIncomingCall = async (callRequest) => {
         console.log("Incoming call request:", callRequest);
         setIncomingCall(callRequest);
-            
+
         const callerId = callRequest.callerId;
-            
+
         try {
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
             if (response.ok) {
@@ -210,41 +226,39 @@ const Messenger = () => {
             console.error('Error fetching caller name:', error);
         }
     };
-        
+
     const acceptCall = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-        
+
         console.log('Function acceptCall in Messenger working...');
         console.log("Incoming call accepted:", incomingCall);
-                
+
         const callerId = incomingCall.callerId;
         const recipientId = currentUserId;
-            
+
         const fetchUserNames = async () => {
             try {
                 const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
                 const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`);
-                        
+
                 if (callerResponse.ok && recipientResponse.ok) {
                     const callerData = await callerResponse.json();
                     const recipientData = await recipientResponse.json();
-        
+
                     sendSignal({
                         from: currentUserId,
-                        signal: {
-                            type: 'acceptCall'
-                        }
+                        signal: { type: 'acceptCall' },
                     });
-                            
-                    navigate(`/voice-call/${incomingCall.roomId}`, { 
-                        state: { 
-                            incomingCall, 
-                            isCaller: false, 
-                            currentUserId: currentUserId, 
+
+                    navigate(`/voice-call/${incomingCall.roomId}`, {
+                        state: {
+                            incomingCall,
+                            isCaller: false,
+                            currentUserId: currentUserId,
                             callerName: callerData.username,
-                            recipientName: recipientData.username
-                        } 
+                            recipientName: recipientData.username,
+                        },
                     });
                 } else {
                     console.error('Error fetching user names');
@@ -253,29 +267,27 @@ const Messenger = () => {
                 console.error('Error fetching user names:', error);
             }
         };
-            
+
         fetchUserNames();
     };
-        
+
     const rejectCall = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-        
+
         setIncomingCall(null);
         sendSignal({
             from: currentUserId,
-            signal: {
-                type: 'rejectCall'
-            }
+            signal: { type: 'rejectCall' },
         });
     };
-        
+
     const sendSignal = (signalMessage) => {
         console.log('Function sendSignal in VoiceCall.js working...');
         console.log("Sending signal:", JSON.stringify(signalMessage, null, 2));
         const roomId = incomingCall.roomId;
         stompClient.current.publish({
-            destination: `/app/signal/${roomId}`, 
+            destination: `/app/signal/${roomId}`,
             body: JSON.stringify(signalMessage),
         });
         console.log('Signal sent successfully.');
@@ -296,9 +308,10 @@ const Messenger = () => {
     };
 
     useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-        }
+        const rafId = requestAnimationFrame(() => {
+            scrollToBottom();
+        });
+        return () => cancelAnimationFrame(rafId);
     }, [messages]);
 
     const uploadFile = async (file) => {
@@ -324,25 +337,26 @@ const Messenger = () => {
         if ((content || selectedFile) && userId) {
             const currentUsername = username;
             const chatName = await getChatName(chatId);
-        
+
             const message = {
                 id: editingMessageId || Date.now(),
                 content,
                 sender: { id: userId, username: currentUsername },
                 chat: { id: chatId, name: chatName },
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
+                timestamp: new Date().toISOString(),
             };
-        
+
             console.log('Sending message:', message);
-        
+
             if (client && client.connected) {
                 if (editingMessageId) {
                     const existingMessage = messages.find(msg => msg.id === editingMessageId);
                     if (existingMessage && existingMessage.sender.id === userId) {
                         client.publish({ destination: `/app/editMessage/${chatId}`, body: JSON.stringify(message) });
-                        setMessages(prevMessages => 
-                            prevMessages.map(msg => 
-                                msg.id === editingMessageId ? { ...msg, content } : msg
+                        setMessages(prevMessages =>
+                            prevMessages.map(msg =>
+                                msg.id === editingMessageId ? { ...msg, content, timestamp: message.timestamp } : msg
                             )
                         );
                     } else {
@@ -352,17 +366,17 @@ const Messenger = () => {
                 } else {
                     client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
                 }
-        
+
                 setContent('');
                 setRows(1);
                 setEditingMessageId(null);
                 setContextMenu({ visible: false });
                 setSelectedFile(null);
-        
+
                 if (fileInputRef.current) {
                     fileInputRef.current.value = null;
                 }
-        
+
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
@@ -398,7 +412,7 @@ const Messenger = () => {
             toast.error('You can only edit or delete your own messages.');
             return;
         }
-    
+
         if (action === 'edit') {
             setContent(contextMenu.message.content);
             setEditingMessageId(contextMenu.message.id);
@@ -411,12 +425,12 @@ const Messenger = () => {
     const deleteMessage = async (id) => {
         if (client && client.connected) {
             client.publish({
-                destination: `/app/deleteMessage/${chatId}`, 
+                destination: `/app/deleteMessage/${chatId}`,
                 body: JSON.stringify(id),
             });
-            
+
             setMessages(prevMessages => prevMessages.filter(msg => msg.id !== id));
-            
+
             toast.success('Message deleted!');
         } else {
             toast.error('Failed to delete message. Try again.');
@@ -511,9 +525,16 @@ const Messenger = () => {
         return 1;
     };
 
+    const shouldShowAvatar = (msg, index) => {
+        if (msg.sender.id === userId) return false;
+        if (index === 0) return true;
+        const prevMessage = messages[index - 1];
+        return prevMessage.sender.id !== msg.sender.id;
+    };
+
     return (
         <div className="messenger">
-            <div className="chat-name">Chat: {chatName}</div>
+            <div className="chat-name">Group Chat: {chatName}</div>
             <div className="user-creation">
                 {!isLoggedIn ? (
                     <>
@@ -539,71 +560,53 @@ const Messenger = () => {
                 )}
             </div>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
-            <div className="message-list">
-                {messages.map((msg) => (
+            <div className="message-list" ref={messageListRef}>
+                {messages.map((msg, index) => (
                     msg.sender ? (
-                        <div 
+                        <div
                             key={msg.id}
-                            className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`} 
+                            className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
                             onContextMenu={(e) => handleRightClick(e, msg)}
-                            style={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }}
                         >
-                            <div style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
-                                <div style={{ 
-                                    display: 'flex', 
-                                    flexDirection: 'column', 
-                                    alignItems: 'center', 
-                                    marginRight: '5px',
-                                    border: '2px solid #ccc',
-                                    borderRadius: '5px',
-                                    padding: '5px',
-                                    width: '100px',
-                                    minWidth: '100px',
-                                    boxSizing: 'border-box',
-                                    flexShrink: 0
-                                }}>
-                                    <strong style={{ 
-                                        textAlign: 'center', 
-                                        wordWrap: 'break-word',
-                                        overflowWrap: 'break-word',
-                                        whiteSpace: 'normal',
-                                        maxWidth: '100%',
-                                        fontFamily: 'sans-serif'
-                                    }}>
-                                        {msg.sender.username}:
-                                    </strong>
-                                    {msg.sender.avatar ? (
-                                        <img 
-                                            src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
-                                            alt={`${msg.sender.username} avatar`} 
-                                            className="message-avatar"
-                                            style={{ display: 'block', margin: '0 auto' }}
-                                        />
-                                    ) : (
-                                        <div 
-                                            className="message-avatar"
-                                            style={{ 
-                                                display: 'flex', 
-                                                justifyContent: 'center', 
-                                                alignItems: 'center',
-                                                margin: '0 auto'
-                                            }}
-                                        >
-                                            {msg.sender.username.charAt(0).toUpperCase()}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="message-content-container">
-                                    <span className="message-content">{msg.content}</span>
-                                    {msg.fileUrl && (
-                                        <a 
-                                            href={msg.fileUrl} 
-                                            download 
-                                            style={{ display: 'block', marginTop: '5px' }}
-                                        >
-                                            📥 Download file
-                                        </a>
-                                    )}
+                            <div className="message-wrapper">
+                                {shouldShowAvatar(msg, index) && (
+                                    <div className="avatar-container">
+                                        {msg.sender.avatar ? (
+                                            <img
+                                                src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
+                                                alt={`${msg.sender.username} avatar`}
+                                                className="message-avatar"
+                                                onClick={() => handleAvatarClick(msg.sender.id)}
+                                                style={{ cursor: 'pointer' }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="message-avatar"
+                                                onClick={() => handleAvatarClick(msg.sender.id)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                {msg.sender.username.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                <div className={`message-content-container ${shouldShowAvatar(msg, index) ? '' : 'no-avatar'}`}>
+                                    <div className="message-body">
+                                        {msg.sender.id !== userId && (
+                                            <span className="sender-name">{msg.sender.username}</span>
+                                        )}
+                                        <span className="message-content">{msg.content}</span>
+                                        {msg.fileUrl && (
+                                            <a
+                                                href={msg.fileUrl}
+                                                download
+                                                className="file-link"
+                                            >
+                                                📥 Download file
+                                            </a>
+                                        )}
+                                        <div className="message-timestamp">{formatTimestamp(msg.timestamp)}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -611,44 +614,36 @@ const Messenger = () => {
                 ))}
                 <div ref={messagesEndRef} />
             </div>
-            <textarea
-                ref={textAreaRef}
-                value={content}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder="Enter your message"
-                className="input-message"
-                rows={rows}
-            />
-            <input
-                type="file"
-                onChange={handleFileChange}
-                className="file-input"
-                ref={fileInputRef}
-            />
-            <button onClick={sendMessage} className="send-button">Send</button>
+            <div className="input-container">
+                <textarea
+                    ref={textAreaRef}
+                    value={content}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Enter your message..."
+                    className="input-message"
+                    rows={rows}
+                />
+                <div className="button-container">
+                    <input
+                        type="file"
+                        onChange={handleFileChange}
+                        className="file-input"
+                        ref={fileInputRef}
+                        id="file-input"
+                    />
+                    <label htmlFor="file-input" className="file-input-label">Choose File</label>
+                    <button onClick={sendMessage} className="send-button">Send</button>
+                </div>
+            </div>
             <ToastContainer />
             <audio ref={messageAudioRef}>
                 <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
             </audio>
-            {/* Тестовая кнопка для проверки звука (раскомментируйте для теста)
-            <button onClick={() => {
-                if (messageAudioRef.current) {
-                    console.log('Testing message audio');
-                    messageAudioRef.current.play()
-                        .then(() => console.log('Message audio played successfully'))
-                        .catch(error => console.error('Message audio failed:', error));
-                } else {
-                    console.error('messageAudioRef is not defined');
-                }
-            }}>
-                Test Message Sound
-            </button>
-            */}
             {contextMenu.visible && (
-                <div 
-                    className="context-menu" 
+                <div
+                    className="context-menu"
                     style={{ top: contextMenu.y, left: contextMenu.x }}
                     onMouseLeave={() => setContextMenu({ visible: false })}
                 >
@@ -657,11 +652,11 @@ const Messenger = () => {
                 </div>
             )}
             {incomingCall && (
-                <IncomingCallNotification 
-                    callerId={incomingCall.callerId} 
+                <IncomingCallNotification
+                    callerId={incomingCall.callerId}
                     callerName={incomingCall.callerName}
-                    onAccept={acceptCall} 
-                    onReject={rejectCall} 
+                    onAccept={acceptCall}
+                    onReject={rejectCall}
                 />
             )}
         </div>

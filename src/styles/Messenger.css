@@ -1,156 +1,319 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
 .messenger {
     display: flex;
     flex-direction: column;
-    padding: 20px; 
-    border-radius: 10px; 
-    /*background-color: #ffffff; /* Белый фон для мессенджера */
-    background-color: #E8F0F5; /* Белый фон для мессенджера */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #D7E0E6; /* Как в PrivateChat */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    font-family: 'Roboto', sans-serif;
+    max-width: 800px;
+    margin: 20px auto;
 }
 
 .chat-name {
-    font-size: 24px; /* Увеличиваем размер шрифта */
-    font-weight: bold; /* Делаем текст жирным */
-    color: #00796b; /* Цвет текста */
-    margin-top: -10px;
-    margin-bottom: 15px; /* Отступ снизу */
-    text-align: center; /* Центрируем текст */
-    padding: 10px; /* Добавляем отступы для улучшения внешнего вида */
-    border-bottom: 2px solid #0288d1; /* Добавляем линию снизу */
-    /*background-color: rgba(255, 255, 255, 0.8); /* Полупрозрачный фон для контраста */
-    background-color: #E8F0F5;
-    border-radius: 5px; /* Скругляем углы */
+    font-family: 'Inter', 'Open Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333333;
+    padding: 12px;
+    background-color: #FFFFFF;
+    border-radius: 5px;
+    text-align: center;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    letter-spacing: 0.2px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
 .user-creation {
-    margin-bottom: 15px; 
+    margin-bottom: 15px;
     display: flex;
-    gap: 10px; 
-    flex-wrap: wrap; 
-    /*align-items: center;  Центрируем элементы по вертикали */
-    justify-content: center; /* Центрируем все элементы по горизонтали */
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .input-username,
 .input-password {
-    padding: 10px; 
-    border: 1px solid #0288d1; /* Цвет рамки */
-    border-radius: 5px; 
-    flex: 1; 
-    min-width: 150px; 
-    transition: border-color 0.3s; 
+    padding: 10px;
+    border: 1px solid #0288d1;
+    border-radius: 5px;
+    flex: 1;
+    min-width: 150px;
+    transition: border-color 0.3s;
 }
 
 .input-username:focus,
 .input-password:focus {
-    border-color: #01579b; /* Цвет рамки при фокусе */
-    outline: none; 
+    border-color: #01579b;
+    outline: none;
 }
 
 .create-user-button,
 .login-button,
 .logout-button {
     padding: 10px;
-    background-color: #26a69a; /* Зеленый цвет для кнопок */
+    background-color: #26a69a;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    flex-shrink: 0; 
+    flex-shrink: 0;
     transition: background-color 0.3s;
 }
 
 .create-user-button:hover,
 .login-button:hover,
 .logout-button:hover {
-    background-color: #00796b; 
+    background-color: #00796b;
 }
 
 .message-list {
-    border: 1px solid #ccc;
+    border: 1px solid #D8DCE0;
     padding: 10px;
     height: 400px;
     overflow-y: scroll;
     margin-bottom: 15px;
-    /*background-color: #f1f8e9; /* Светлый фон для списка сообщений */
-    background-color: #F5FAFD;
+    background-color: #E8ECEF;
     border-radius: 5px;
     display: flex;
-    flex-direction: column; /* Обеспечиваем вертикальное выравнивание */
+    flex-direction: column;
+    gap: 8px;
+}
+
+.message-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.message-list::-webkit-scrollbar-thumb {
+    background-color: #B0BEC5;
+    border-radius: 4px;
+}
+
+.message-list::-webkit-scrollbar-track {
+    background-color: #E8ECEF;
+}
+
+.message {
+    max-width: 80%;
+    margin-bottom: 5px;
+    display: flex;
+    flex-direction: column;
+    background: transparent !important;
+}
+
+.message-wrapper {
+    display: flex;
+    align-items: flex-start;
+    background: transparent !important;
+    width: 100%;
+}
+
+.current-user .message-wrapper {
+    justify-content: flex-end;
+}
+
+.current-user {
+    align-self: flex-end;
+}
+
+.other-user {
+    align-self: flex-start;
+}
+
+.avatar-container {
+    margin-right: 10px;
+    align-self: flex-start;
+    flex-shrink: 0;
+}
+
+.message-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #B0BEC5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.message-content-container {
+    display: block;
+    max-width: 80%;
+    min-width: 0;
+    padding: 8px;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    box-sizing: border-box;
+}
+
+.message.current-user .message-content-container {
+    background-color: #DCF8C6 !important;
+    border-radius: 12px;
+    margin-right: 10px;
+    max-width: calc(80% - 10px);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.message.current-user .message-content-container {
+    border-radius: 12px 0 12px 12px;
+}
+
+.message.other-user .message-content-container {
+    background-color: #ECE0F8 !important;
+    border-radius: 0 12px 12px 12px;
+    margin-left: 0;
+}
+
+.message.other-user .message-content-container.no-avatar {
+    border-radius: 12px;
+    margin-left: 45px !important;
+}
+
+.message-body {
+    background: transparent !important;
+    display: flex;
+    flex-direction: column;
+    padding-left: 10px;
+}
+
+.sender-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #212121;
+    margin-bottom: 4px;
+    background: transparent !important;
+}
+
+.message-content {
+    font-size: 16px;
+    line-height: 1.4;
+    font-family: 'Roboto', sans-serif;
+    background: transparent !important;
+}
+
+.file-link {
+    display: block;
+    margin-top: 5px;
+    color: #0288d1;
+    text-decoration: none;
+    font-size: 14px;
+    background: transparent !important;
+}
+
+.file-link:hover {
+    text-decoration: underline;
+}
+
+.message-timestamp {
+    font-size: 12px;
+    color: #666666;
+    text-align: right;
+    margin-top: 2px;
+    font-family: 'Roboto', sans-serif;
+    background: transparent !important;
+}
+
+.input-container {
+    background-color: #F0F4F8;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
 }
 
 .input-message {
-    padding: 10px; 
-    border: 1px solid #0288d1; 
-    border-radius: 5px; 
-    margin-bottom: 10px; 
-    flex: 1; 
-    min-width: 0; 
-    overflow: hidden; 
-    resize: none; 
-    box-sizing: border-box; 
-    height: auto; 
-    min-height: 40px; 
-    font-size: 18px;
-    transition: border-color 0.3s; 
-    background-color: #F9FBFC;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #0288d1;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    resize: none;
+    box-sizing: border-box;
+    min-height: 48px;
+    font-size: 16px;
+    background-color: #FFFFFF;
     font-family: 'Roboto', sans-serif;
+    transition: border-color 0.3s;
 }
 
 .input-message:focus {
-    border-color: #01579b; 
-    outline: none; 
+    border-color: #01579b;
+    outline: none;
+}
+
+.button-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.file-input {
+    display: none;
+}
+
+.file-input-label {
+    all: unset;
+    flex: 1;
+    padding: 8px;
+    height: 36px;
+    background-color: #B0BEC5;
+    color: #FFFFFF;
+    border-radius: 5px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    top: 0;
+}
+
+.file-input-label:hover {
+    background-color: #90A4AE;
 }
 
 .send-button {
-    padding: 10px;
-    background-color: #42a5f5; /* Синий цвет для кнопки отправки */
-    color: white;
+    flex: 1;
+    padding: 8px;
+    height: 36px;
+    background-color: #42a5f5;
+    color: #FFFFFF;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    margin-top: 10px; 
-    transition: background-color 0.3s; 
+    font-size: 14px;
+    transition: background-color 0.3s;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    top: 0;
 }
 
 .send-button:hover {
     background-color: #1976d2;
 }
 
-.error-message {
-    color: #d32f2f; /* Красный цвет для ошибок */
-    margin-top: 10px;
-}
-
-.message {
-    word-wrap: break-word; 
-    overflow-wrap: break-word; 
-    max-width: 80%; /* Ограничиваем ширину сообщений */
-    padding: 10px; 
-    margin-bottom: 5px; 
-    border-radius: 10px; 
-    box-sizing: border-box; /* Учитываем отступы в общей ширине */
-    display: flex; /* Используем флекс для выравнивания текста */
-    flex-direction: center; /* Вертикальное выравнивание содержимого */
-}
-
-.current-user {
-    background-color: #dcf8c6; /* Цвет фона для сообщений текущего пользователя */
-    align-self: flex-end; /* Выравнивание вправо */
-    border-radius: 10px 10px 0 10px; /* Скругление углов */
-    margin-left: auto; /* Отодвигаем сообщение к правому краю */
-}
-
-.other-user {
-    background-color: #ECE0F8; /* Цвет фона для сообщений других пользователей */
-    align-self: flex-start; /* Выравнивание влево */
-    border-radius: 10px 10px 10px 0; /* Скругление углов */
-    margin-right: auto; /* Отодвигаем сообщение к левому краю */
-}
-
 .context-menu {
     position: absolute;
-    background: white;
+    background: #FFFFFF;
     border: 1px solid #ccc;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
     z-index: 1000;
@@ -164,74 +327,62 @@
     cursor: pointer;
     width: 100%;
     text-align: left;
+    font-size: 14px;
 }
 
 .context-menu button:hover {
-    background-color: #f0f0f0;
+    background-color: #F0F0F0;
 }
 
-.message-avatar {
-    width: 35px; /* Ширина аватара */
-    height: 35px; /* Высота аватара */
-    border-radius: 50%; /* Круглая форма */
-    object-fit: cover; /* Обрезка изображения */
-    margin-right: 10px; /* Отступ справа */
-    display: inline-block; /* Отображение в строке */
-    background-color: #e0e0e0; /* Цвет фона по умолчанию */
-    display: flex; /* Используем флексбокс для центрирования текста */
-    align-items: center; /* Вертикальное выравнивание */
-    justify-content: center; /* Горизонтальное выравнивание */
+.error-message {
+    color: #d32f2f;
+    margin-top: 10px;
 }
 
-.message-content {
-    margin-left: 5px; /* Отступ слева от двоеточия */
-    word-wrap: break-word; /* Разрешает перенос слов */
-    overflow-wrap: break-word; /* Поддержка для современных браузеров */
-    white-space: pre-wrap; /* Перенос по пробелам и перенос строк */
-    max-width: 100%; /* Ограничиваем ширину до 100% родительского элемента */
-    box-sizing: border-box; /* Учитываем отступы в общей ширине */
-    flex-grow: 1; /* Позволяет тексту занимать оставшееся пространство */
-    text-align: justify;
-    font-family: 'Roboto', sans-serif;
-}
-
-.message-content1 {
-    margin-left: 5px; /* Отступ слева от двоеточия */
-    word-wrap: break-word; /* Разрешает перенос слов */
-    overflow-wrap: break-word; /* Поддержка для современных браузеров */
-    white-space: pre-wrap; /* Перенос по пробелам и перенос строк */
-    max-width: 100%; /* Ограничиваем ширину до 100% родительского элемента */
-    box-sizing: border-box; /* Учитываем отступы в общей ширине */
-    flex-grow: 1; /* Позволяет тексту занимать оставшееся пространство */
-    text-align: justify;
-    font-family: 'Roboto', sans-serif;
-}
-
-.message-content-container {
-    margin-Left: 5px;
-    width: 85%;
-    word-wrap: break-word;
-    display: flex;            /* Оставляем flex */
-    flex-direction: column;   /* Меняем направление на вертикальное */
-    align-items: flex-end;    /* Выравниваем элементы справа */
-}
-
-/* Дополнительные стили для мобильных устройств */
-@media (max-width: 1080px) {
-    .message-content {
+@media (max-width: 800px) {
+    .messenger {
+        margin: 10px;
+        padding: 15px;
         max-width: 100%;
     }
 
-    .message-content1 {
-        max-width: 100%;
+    .chat-name {
+        font-size: 18px;
+        padding: 10px;
     }
 
     .message {
-        padding: 5px; 
+        max-width: 85%;
     }
 
-    .message-content-container {
-        max-Width: 55%; 
-        margin-Left: 0;
+    .message-content-container.no-avatar {
+        margin-left: 40px !important;
+    }
+
+    .message.other-user .message-content-container {
+        border-radius: 0 10px 10px 10px;
+    }
+
+    .message.other-user .message-content-container.no-avatar {
+        border-radius: 10px;
+    }
+
+    .message.current-user .message-content-container {
+        border-radius: 10px 0 10px 10px;
+        margin-right: 10px;
+        max-width: calc(80% - 10px);
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .input-message {
+        font-size: 14px;
+    }
+
+    .file-input-label,
+    .send-button {
+        font-size: 12px;
+        padding: 6px;
+        height: 32px;
     }
 }
