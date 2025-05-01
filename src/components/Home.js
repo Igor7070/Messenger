@@ -498,7 +498,7 @@ const Home = () => {
                             <li key={chat.id} onClick={() => goToChat(chat.id)} className="chat-item">
                                 <div className="chat-info">
                                     <div className="chat-header">
-                                        <span className="chat-name">{chat.name}</span>
+                                        <span className="chat-name-group">{chat.name}</span>
                                         {chat.unreadCount > 0 && (
                                             <span className="unread-count">{chat.unreadCount}</span>
                                         )}
