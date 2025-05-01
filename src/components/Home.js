@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import '../styles/Home.css';
+import '../styles/Home.css'; 
 import useWebSocket from '../hooks/useWebSocket';
-import IncomingCallNotification from './IncomingCallNotification';
+import IncomingCallNotification from './IncomingCallNotification'; // Импорт компонента уведомления
 import { useUserInteraction } from './UserInteractionContext';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
@@ -25,115 +25,56 @@ const Home = () => {
     const [loginUsername, setLoginUsername] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [incomingCall, setIncomingCall] = useState(null);
+    const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
     const { userInteracted, handleInteraction } = useUserInteraction();
-    const stompClient = useRef(null);
-    const audioRef = useRef(null);
-    const messageAudioRef = useRef(null);
+    const stompClient = useRef(null); // Используем useRef для stompClient
+    const audioRef = useRef(null); // Используем useRef для аудиоплеера
+    const messageAudioRef = useRef(null); // Новый реф для звука уведомления о сообщениях
     const navigate = useNavigate();
 
+    // Используем хук для подключения к WebSocket
     useWebSocket(currentUserId, messageAudioRef);
 
+    // Обработка события клика на документе
     useEffect(() => {
         const handleClick = () => {
             handleInteraction();
         };
+
         document.addEventListener('click', handleClick);
         return () => {
             document.removeEventListener('click', handleClick);
         };
     }, [handleInteraction]);
 
+    // Второе useEffect: управление воспроизведением звука
     useEffect(() => {
         if (incomingCall && userInteracted) {
             audioRef.current.play().catch(error => {
                 console.error('Autoplay was prevented.', error);
-            });
+            }); // Запускаем звук при входящем звонке
         } else {
-            audioRef.current.pause();
-            audioRef.current.currentTime = 0;
+            audioRef.current.pause(); // Останавливаем звук, если звонка нет
+            audioRef.current.currentTime = 0; // Сбрасываем время
         }
-    }, [incomingCall, userInteracted]);
+    }, [incomingCall, userInteracted]); // Добавляем userInteracted в зависимости
 
-    const fetchChats = useCallback(async () => {
+    const fetchChats = async () => {
         try {
             const response = await fetch('https://unlimitedpossibilities12.org/api/chats');
             if (response.ok) {
                 const data = await response.json();
-                console.log('Fetched chats:', data);
+                console.log(data);
                 setChats(data);
-                fetchLastMessages(data);
             } else {
                 toast.error('Failed to fetch chats');
             }
         } catch (error) {
-            console.error('Error fetching chats:', error);
             toast.error('Error fetching chats');
         }
-    }, []);
+    };
 
-    const fetchLastMessages = useCallback(async (chats) => {
-        const updatedChats = await Promise.all(chats.map(async (chat) => {
-            try {
-                const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/chat/${chat.id}`);
-                if (response.ok) {
-                    const messages = await response.json();
-                    console.log(`Messages for chat ${chat.id}:`, messages);
-                    const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
-                    const lastVisit = localStorage.getItem(`last_visit_chat_${chat.id}`);
-                    const unreadCount = calculateUnreadCount(messages, lastVisit);
-                    return {
-                        ...chat,
-                        lastMessage: lastMessage ? lastMessage.content : 'No messages yet',
-                        timestamp: lastMessage ? lastMessage.timestamp : '',
-                        unreadCount
-                    };
-                } else {
-                    console.error(`Failed to fetch messages for chat ${chat.id}`);
-                    return { ...chat, lastMessage: 'No messages yet', timestamp: '', unreadCount: 0 };
-                }
-            } catch (error) {
-                console.error(`Error fetching messages for chat ${chat.id}:`, error);
-                return { ...chat, lastMessage: 'No messages yet', timestamp: '', unreadCount: 0 };
-            }
-        }));
-        setChats(updatedChats);
-    }, []);
-
-    const calculateUnreadCount = useCallback((messages, lastVisit) => {
-        if (!lastVisit) {
-            return messages.length;
-        }
-        try {
-            const lastVisitTime = new Date(lastVisit).toISOString();
-            return messages.reduce((count, message) => {
-                if (message.timestamp && new Date(message.timestamp) > new Date(lastVisitTime)) {
-                    return count + 1;
-                }
-                return count;
-            }, 0);
-        } catch (error) {
-            console.error('Error parsing timestamps:', error);
-            return 0;
-        }
-    }, []);
-
-    const formatTimestamp = useCallback((timestamp) => {
-        if (!timestamp) return '';
-        try {
-            const date = new Date(timestamp);
-            const now = new Date();
-            const isToday = date.toDateString() === now.toDateString();
-            return isToday
-                ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : date.toLocaleDateString();
-        } catch (error) {
-            console.error('Error formatting timestamp:', error);
-            return '';
-        }
-    }, []);
-
-    const fetchUsers = useCallback(async () => {
+    const fetchUsers = async () => {
         try {
             const response = await fetch('https://unlimitedpossibilities12.org/api/users');
             if (response.ok) {
@@ -143,10 +84,9 @@ const Home = () => {
                 toast.error('Failed to fetch users');
             }
         } catch (error) {
-            console.error('Error fetching users:', error);
             toast.error('Error fetching users');
         }
-    }, []);
+    };
 
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
@@ -157,27 +97,17 @@ const Home = () => {
         fetchChats();
         fetchUsers();
 
+        // Подключение к WebSocket
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
                 console.log('Connected to WebSocket in Home.js');
-                console.log('Current user ID:', currentUserId);
-                if (currentUserId) {
-                    stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
-                        const callRequest = JSON.parse(message.body);
-                        handleIncomingCall(callRequest);
-                    });
-                }
-                chats.forEach(chat => {
-                    stompClient.current.subscribe(`/topic/messages/${chat.id}`, (message) => {
-                        const newMessage = JSON.parse(message.body);
-                        updateChatWithNewMessage(chat.id, newMessage);
-                    });
+                console.log("currentUserId:", currentUserId);
+                stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
+                    const callRequest = JSON.parse(message.body);
+                    handleIncomingCall(callRequest);
                 });
-            },
-            onStompError: (frame) => {
-                console.error('WebSocket error:', frame);
             },
         });
         stompClient.current.activate();
@@ -185,42 +115,21 @@ const Home = () => {
         return () => {
             stompClient.current.deactivate();
         };
-    }, [currentUserId, chats, fetchChats, fetchUsers]);
-
-    const updateChatWithNewMessage = useCallback((chatId, newMessage) => {
-        setChats(prevChats => {
-            const updatedChats = prevChats.map(chat => {
-                if (chat.id === chatId) {
-                    const lastVisit = localStorage.getItem(`last_visit_chat_${chat.id}`);
-                    const messages = chat.messages ? [...chat.messages, newMessage] : [newMessage];
-                    const unreadCount = calculateUnreadCount(messages, lastVisit);
-                    return {
-                        ...chat,
-                        messages,
-                        lastMessage: newMessage.content,
-                        timestamp: newMessage.timestamp,
-                        unreadCount
-                    };
-                }
-                return chat;
-            });
-            return updatedChats;
-        });
-        if (messageAudioRef.current) {
-            messageAudioRef.current.play().catch(error => {
-                console.error('Error playing message sound:', error);
-            });
-        }
-    }, [calculateUnreadCount]);
+    }, [currentUserId]);
 
     const handleIncomingCall = async (callRequest) => {
-        console.log('Incoming call request:', callRequest);
-        setIncomingCall(callRequest);
+        console.log("Incoming call request:", callRequest); // Логируем объект вызова
+        setIncomingCall(callRequest); // Устанавливаем входящий вызов
+    
+        // Получаем имя звонящего
+        const callerId = callRequest.callerId;
+    
         try {
-            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
+            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
             if (response.ok) {
                 const callerData = await response.json();
-                setIncomingCall({ ...callRequest, callerName: callerData.username });
+                const callerName = callerData.username; // Извлекаем имя звонящего
+                setIncomingCall({ ...callRequest, callerName }); // Добавляем имя звонящего к объекту вызова
             } else {
                 console.error('Error fetching caller name');
             }
@@ -229,60 +138,76 @@ const Home = () => {
         }
     };
 
-    const acceptCall = async () => {
+    const acceptCall = () => {
+        // Остановка звука при принятии звонка
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-        console.log('Function acceptCall in Home.js working...');
-        console.log('Incoming call accepted:', incomingCall);
-        const callerId = incomingCall.callerId;
-        const recipientId = currentUserId;
 
-        try {
-            const [callerResponse, recipientResponse] = await Promise.all([
-                fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`),
-                fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`)
-            ]);
-            if (callerResponse.ok && recipientResponse.ok) {
-                const callerData = await callerResponse.json();
-                const recipientData = await recipientResponse.json();
-                stompClient.current.publish({
-                    destination: `/app/signal/${incomingCall.roomId}`,
-                    body: JSON.stringify({ from: currentUserId, signal: { type: 'acceptCall' } })
-                });
-                navigate(`/voice-call/${incomingCall.roomId}`, {
-                    state: {
-                        incomingCall,
-                        isCaller: false,
-                        currentUserId,
-                        callerName: callerData.username,
-                        recipientName: recipientData.username
-                    }
-                });
-            } else {
-                console.error('Error fetching user names');
+        console.log('Function acceptCall in Home.js working...');
+        console.log("Incoming call accepted:", incomingCall); // Логируем входящий вызов
+        
+        const callerId = incomingCall.callerId;
+        const recipientId = currentUserId; // Получаем ID текущего пользователя
+    
+        // Получаем имена пользователей (можно использовать Promise.all для параллельных запросов)
+        const fetchUserNames = async () => {
+            try {
+                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
+                const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`);
+                
+                if (callerResponse.ok && recipientResponse.ok) {
+                    const callerData = await callerResponse.json();
+                    const recipientData = await recipientResponse.json();
+
+                    sendSignal({
+                        from: currentUserId,
+                        signal: {
+                            type: 'acceptCall'
+                        }
+                    });
+                    
+                    navigate(`/voice-call/${incomingCall.roomId}`, { 
+                        state: { 
+                            incomingCall, 
+                            isCaller: false, 
+                            currentUserId: currentUserId, 
+                            callerName: callerData.username, // Передаем имя звонящего
+                            recipientName: recipientData.username // Передаем имя получателя
+                        } 
+                    });
+                } else {
+                    console.error('Error fetching user names');
+                }
+            } catch (error) {
+                console.error('Error fetching user names:', error);
             }
-        } catch (error) {
-            console.error('Error fetching user names:', error);
-        }
+        };
+    
+        fetchUserNames();
     };
 
     const rejectCall = () => {
+        // Остановка звука при принятии звонка
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-        setIncomingCall(null);
-        stompClient.current.publish({
-            destination: `/app/signal/${incomingCall.roomId}`,
-            body: JSON.stringify({ from: currentUserId, signal: { type: 'rejectCall' } })
+
+        setIncomingCall(null); // Скрыть уведомление
+        sendSignal({
+            from: currentUserId,
+            signal: {
+                type: 'rejectCall'
+            }
         });
+        //toast.info(`Call from ${incomingCall.callerId} rejected.`);
     };
 
     const sendSignal = (signalMessage) => {
         console.log('Function sendSignal in VoiceCall.js working...');
-        console.log('Sending signal:', JSON.stringify(signalMessage, null, 2));
+        console.log("Sending signal:", JSON.stringify(signalMessage, null, 2));
         const roomId = incomingCall.roomId;
         stompClient.current.publish({
-            destination: `/app/signal/${roomId}`,
-            body: JSON.stringify(signalMessage)
+            destination: `/app/signal/${roomId}`, 
+            body: JSON.stringify(signalMessage),
         });
         console.log('Signal sent successfully.');
     };
@@ -291,23 +216,26 @@ const Home = () => {
         try {
             const response = await fetch('https://unlimitedpossibilities12.org/api/users/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: loginUsername, password: loginPassword })
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username: loginUsername, password: loginPassword }),
             });
+    
             if (response.ok) {
                 const user = await response.json();
                 localStorage.setItem('userId', String(user.id));
-                localStorage.setItem('username', user.username);
+                localStorage.setItem('username', user.username); // Установка имени пользователя
                 setCurrentUserId(Number(user.id));
                 setLoginUsername('');
                 setLoginPassword('');
                 setIsLoggedIn(true);
                 toast.success('Login successful!');
             } else {
-                toast.error(await response.text());
+                const errorMessage = await response.text();
+                toast.error(errorMessage);
             }
         } catch (error) {
-            console.error('Error logging in:', error);
             toast.error('Error logging in');
         }
     };
@@ -320,27 +248,31 @@ const Home = () => {
     };
 
     const createChat = async () => {
-        if (!chatName) {
-            toast.error('Chat name cannot be empty');
-            return;
-        }
-        try {
-            const response = await fetch('https://unlimitedpossibilities12.org/api/chats', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: chatName, private: false })
-            });
-            if (response.ok) {
-                const newChat = await response.json();
-                setChats([...chats, { ...newChat, lastMessage: 'No messages yet', timestamp: '', unreadCount: 0 }]);
-                setChatName('');
-                toast.success('Chat created successfully!');
-            } else {
-                toast.error(await response.text());
+        if (chatName) {
+            try {
+                const response = await fetch('https://unlimitedpossibilities12.org/api/chats', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: chatName, private: false }),
+                });
+
+                if (response.ok) {
+                    const newChat = await response.json();
+                    setChats([...chats, newChat]);
+                    setChatName('');
+                    toast.success('Chat created successfully!');
+                } else {
+                    // Получаем текст ошибки с сервера
+                    const errorMessage = await response.text();
+                    toast.error(errorMessage);
+                }
+            } catch (error) {
+                toast.error('Error creating chat');
             }
-        } catch (error) {
-            console.error('Error creating chat:', error);
-            toast.error('Error creating chat');
+        } else {
+            toast.error('Chat name cannot be empty');
         }
     };
 
@@ -349,12 +281,16 @@ const Home = () => {
         formData.append('username', username);
         formData.append('password', password);
         formData.append('bio', bio);
-        if (avatar) formData.append('avatar', avatar);
+        if (avatar) {
+            formData.append('avatar', avatar);
+        }
+
         try {
             const response = await fetch('https://unlimitedpossibilities12.org/api/users/create', {
                 method: 'POST',
-                body: formData
+                body: formData,
             });
+
             if (response.ok) {
                 const newUser = await response.json();
                 setUsers([...users, newUser]);
@@ -365,10 +301,10 @@ const Home = () => {
                 setAvatar(null);
                 toast.success('User created successfully!');
             } else {
-                toast.error(await response.text());
+                const errorMessage = await response.text();
+                toast.error(errorMessage);
             }
         } catch (error) {
-            console.error('Error creating user:', error);
             toast.error('Error creating user');
         }
     };
@@ -386,9 +322,9 @@ const Home = () => {
     };
 
     const filteredChats = chats
-        .filter(chat => !chat.private)
-        .filter(chat => chat.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
+    .filter(chat => !chat.private)
+    .filter(chat => chat.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    
     const filteredUsers = users.filter(user => user.username.toLowerCase().includes(userSearchTerm.toLowerCase()));
 
     return (
@@ -418,27 +354,31 @@ const Home = () => {
                 )}
             </div>
 
+            {/* Вставляем аудиофайл */}
             <audio ref={audioRef} loop>
                 <source src="https://igor7070.github.io/Messenger/melodiya_kovboy.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
             </audio>
+
+            {/* Новый аудиоэлемент для уведомлений о сообщениях */}
             <audio ref={messageAudioRef}>
                 <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
             </audio>
 
+            {/* Уведомление о входящем звонке */}
             {incomingCall && (
-                <IncomingCallNotification
-                    callerId={incomingCall.callerId}
-                    callerName={incomingCall.callerName}
-                    onAccept={acceptCall}
-                    onReject={rejectCall}
+                <IncomingCallNotification 
+                    callerId={incomingCall.callerId} 
+                    callerName={incomingCall.callerName} // Передаем имя звонящего
+                    onAccept={acceptCall} 
+                    onReject={rejectCall} 
                 />
             )}
 
             <div className="line-divider-container">
                 <div className="users-container">
-                    <h2 className="home-users-h2">Users</h2>
+                <h2 className="home-users-h2">Users</h2>
                     <button type="button" onClick={openModal} className="create-user-button-main">Create a new user</button>
                     <input
                         type="text"
@@ -451,12 +391,15 @@ const Home = () => {
                         {filteredUsers.map(user => {
                             const avatarSrc = user.avatar ? `https://unlimitedpossibilities12.org${user.avatar}` : null;
                             const initials = user.username ? user.username.charAt(0).toUpperCase() : '';
+
                             return (
                                 <li key={user.id} className="user-item" onClick={() => navigate(`/user/${user.id}`)}>
                                     {avatarSrc ? (
                                         <img src={avatarSrc} alt={`${user.username} avatar`} className="user-avatar" />
                                     ) : (
-                                        <div className="user-avatar">{initials}</div>
+                                        <div className="user-avatar">
+                                            {initials}
+                                        </div>
                                     )}
                                     <span className="user-name">{user.username}</span>
                                 </li>
@@ -468,7 +411,7 @@ const Home = () => {
                 <div className="line-divider"></div>
 
                 <div className="chats-container">
-                    <h1 className="home-group-chats-h1">Group chats</h1>
+                <h1 className="home-group-chats-h1">Group chats</h1>
                     <div className="chat-input-container">
                         <input
                             type="text"
@@ -489,18 +432,7 @@ const Home = () => {
                     <ul className="chat-list">
                         {filteredChats.map((chat) => (
                             <li key={chat.id} onClick={() => goToChat(chat.id)} className="chat-item">
-                                <div className="chat-content">
-                                    <span className="chat-name">{chat.name}</span>
-                                    <div className="chat-details">
-                                        <span className="chat-last-message">{chat.lastMessage}</span>
-                                        {chat.timestamp && (
-                                            <span className="chat-timestamp">{formatTimestamp(chat.timestamp)}</span>
-                                        )}
-                                        {chat.unreadCount > 0 && (
-                                            <span className="unread-count">{chat.unreadCount}</span>
-                                        )}
-                                    </div>
-                                </div>
+                                {chat.name}
                             </li>
                         ))}
                     </ul>
