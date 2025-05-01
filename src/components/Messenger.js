@@ -525,11 +525,10 @@ const Messenger = () => {
         return 1;
     };
 
-    const shouldShowAvatar = (msg, index) => {
-        if (msg.sender.id === userId) return false;
-        if (index === 0) return true;
-        const prevMessage = messages[index - 1];
-        return prevMessage.sender.id !== msg.sender.id;
+    // Определяем, показывать ли аватар
+    const shouldShowAvatar = (msg) => {
+        // Показываем аватар только для сообщений других пользователей
+        return msg.sender.id !== userId;
     };
 
     return (
@@ -569,7 +568,7 @@ const Messenger = () => {
                             onContextMenu={(e) => handleRightClick(e, msg)}
                         >
                             <div className="message-wrapper">
-                                {shouldShowAvatar(msg, index) && (
+                                {shouldShowAvatar(msg) && (
                                     <div className="avatar-container">
                                         {msg.sender.avatar ? (
                                             <img
@@ -590,7 +589,7 @@ const Messenger = () => {
                                         )}
                                     </div>
                                 )}
-                                <div className={`message-content-container ${shouldShowAvatar(msg, index) ? '' : 'no-avatar'}`}>
+                                <div className="message-content-container">
                                     <div className="message-body">
                                         {msg.sender.id !== userId && (
                                             <span className="sender-name">{msg.sender.username}</span>

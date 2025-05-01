@@ -14,7 +14,7 @@
 }
 
 .chat-name {
-    font-family: 'Inter', 'Open Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 20px;
     font-weight: 600;
     color: #333333;
@@ -161,26 +161,17 @@
 
 .message.current-user .message-content-container {
     background-color: #DCF8C6 !important;
-    border-radius: 12px;
+    border-radius: 12px 0 12px 12px;
     margin-right: 10px;
     max-width: calc(80% - 10px);
     width: 100%;
     box-sizing: border-box;
 }
 
-.message.current-user .message-content-container {
-    border-radius: 12px 0 12px 12px;
-}
-
 .message.other-user .message-content-container {
     background-color: #ECE0F8 !important;
-    border-radius: 0 12px 12px 12px;
+    border-radius: 0 12px 12px 12px; /* Квадратный левый верхний угол */
     margin-left: 0;
-}
-
-.message.other-user .message-content-container.no-avatar {
-    border-radius: 12px;
-    margin-left: 45px !important;
 }
 
 .message-body {
@@ -191,17 +182,16 @@
 }
 
 .sender-name {
-    font-size: 15px; /* Увеличил для большей заметности */
-    font-weight: 570; /* Жирный для контраста */
-    color: #000000; /* Чёрный для максимальной яркости */
+    font-size: 15px;
+    font-weight: 600; 
+    color: #000000;
     margin-bottom: 4px;
     background: transparent !important;
-    font-family: 'Montserrat', sans-serif; /* Выразительный и компактный шрифт */
+    font-family: 'Montserrat', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    letter-spacing: 0.1px; /* Компактный интервал */
-    /*text-shadow: 0 0 1px rgba(0, 0, 0, 0.1); /* Лёгкая тень для выделения */
+    letter-spacing: 0.1px;
 }
 
 .message-content {
@@ -362,16 +352,8 @@
         max-width: 85%;
     }
 
-    .message-content-container.no-avatar {
-        margin-left: 40px !important;
-    }
-
     .message.other-user .message-content-container {
-        border-radius: 0 10px 10px 10px;
-    }
-
-    .message.other-user .message-content-container.no-avatar {
-        border-radius: 10px;
+        border-radius: 0 10px 10px 10px; /* Квадратный левый верхний угол для мобильных */
     }
 
     .message.current-user .message-content-container {
