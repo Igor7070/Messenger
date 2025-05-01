@@ -1,6 +1,6 @@
-*,
-*::before,
-*::after {
+.home-container *,
+.home-container *::before,
+.home-container *::after {
     box-sizing: border-box;
 }
 
@@ -274,25 +274,25 @@ h2 {
     overflow: hidden;
 }
 
-.chat-info {
+.home-container .chat-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 5px;
 }
 
-.chat-name {
+.home-container .chat-name {
     font-size: 16px;
     font-weight: bold;
     color: #212121;
 }
 
-.chat-timestamp {
+.home-container .chat-timestamp {
     font-size: 12px;
     color: #757575;
 }
 
-.chat-last-message {
+.home-container .chat-last-message {
     font-size: 14px;
     color: #757575;
     white-space: nowrap;
@@ -300,7 +300,7 @@ h2 {
     text-overflow: ellipsis;
 }
 
-.unread-count {
+.home-container .unread-count {
     position: absolute;
     right: 15px;
     top: 50%;
