@@ -158,7 +158,7 @@ h2 {
 .chat-item {
     display: flex;
     align-items: center;
-    padding: 10px;
+    padding: 8px;
     border-bottom: 1px solid #e9ecef;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -314,24 +314,28 @@ h2 {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    line-height: 1.2;
 }
 
 .home-container .chat-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 4px;
+    margin-top: 2px;
+    line-height: 1.2;
 }
 
 .home-container .chat-name {
     font-size: 16px;
     font-weight: bold;
     color: #212121;
+    line-height: 1.2;
 }
 
 .home-container .chat-timestamp {
     font-size: 12px;
     color: #757575;
+    line-height: 1.2;
 }
 
 .home-container .chat-last-message {
@@ -341,6 +345,7 @@ h2 {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 70%;
+    line-height: 1.2;
 }
 
 .home-container .unread-count {
@@ -351,6 +356,7 @@ h2 {
     border-radius: 12px;
     min-width: 20px;
     text-align: center;
+    line-height: 1.2;
 }
 
 @media (max-width: 768px) {
