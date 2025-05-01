@@ -192,7 +192,7 @@
 
 .sender-name {
     font-size: 16px; /* Увеличил для большей заметности */
-    font-weight: 540; /* Жирный для контраста */
+    font-weight: 570; /* Жирный для контраста */
     color: #000000; /* Чёрный для максимальной яркости */
     margin-bottom: 4px;
     background: transparent !important;
@@ -201,7 +201,7 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     letter-spacing: 0.1px; /* Компактный интервал */
-    text-shadow: 0 0 1px rgba(0, 0, 0, 0.1); /* Лёгкая тень для выделения */
+    /*text-shadow: 0 0 1px rgba(0, 0, 0, 0.1); /* Лёгкая тень для выделения */
 }
 
 .message-content {
