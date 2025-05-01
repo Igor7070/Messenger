@@ -497,17 +497,17 @@ const Home = () => {
                         {filteredChats.map((chat) => (
                             <li key={chat.id} onClick={() => goToChat(chat.id)} className="chat-item">
                                 <div className="chat-info">
-                                    <span className="chat-name">{chat.name}</span>
-                                    <span className="chat-timestamp">
-                                        {formatTimestamp(chat.timestamp)}
-                                    </span>
+                                    <div className="chat-header">
+                                        <span className="chat-name">{chat.name}</span>
+                                        {chat.unreadCount > 0 && (
+                                            <span className="unread-count">{chat.unreadCount}</span>
+                                        )}
+                                    </div>
+                                    <div className="chat-footer">
+                                        <span className="chat-last-message">{truncateMessage(chat.lastMessage)}</span>
+                                        <span className="chat-timestamp">{formatTimestamp(chat.timestamp)}</span>
+                                    </div>
                                 </div>
-                                <div className="chat-last-message">
-                                    {truncateMessage(chat.lastMessage)}
-                                </div>
-                                {chat.unreadCount > 0 && (
-                                    <span className="unread-count">{chat.unreadCount}</span>
-                                )}
                             </li>
                         ))}
                     </ul>
