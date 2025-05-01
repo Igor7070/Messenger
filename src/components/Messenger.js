@@ -97,8 +97,14 @@ const Messenger = () => {
                 setMessages(messages);
                 const name = await getChatName(chatId);
                 setChatName(name);
+                // Сохраняем время последнего посещения
+                if (messages.length > 0) {
+                    const lastMessage = messages[messages.length - 1];
+                    localStorage.setItem(`last_visit_chat_${chatId}`, lastMessage.timestamp);
+                }
             } catch (error) {
                 console.error('Ошибка при загрузке сообщений:', error);
+                toast.error('Failed to load messages');
             }
         };
 
@@ -301,7 +307,10 @@ const Messenger = () => {
                 updatedMessages[existingMessageIndex] = newMessage;
                 return updatedMessages;
             } else if (newMessage.content !== "Message deleted") {
-                return [...prevMessages, newMessage];
+                const updatedMessages = [...prevMessages, newMessage];
+                // Обновляем время последнего посещения, если чат открыт
+                localStorage.setItem(`last_visit_chat_${chatId}`, newMessage.timestamp);
+                return updatedMessages;
             }
             return prevMessages;
         });
@@ -527,7 +536,6 @@ const Messenger = () => {
 
     // Определяем, показывать ли аватар
     const shouldShowAvatar = (msg) => {
-        // Показываем аватар только для сообщений других пользователей
         return msg.sender.id !== userId;
     };
 
