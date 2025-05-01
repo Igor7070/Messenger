@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Open+Sans:wght@400;600;700&display=swap');
 
 .messenger {
     display: flex;
@@ -191,10 +192,15 @@
 
 .sender-name {
     font-size: 14px;
-    font-weight: 600;
-    color: #212121;
+    font-weight: 600; /* Средний вес для мягкости и читаемости */
+    color: #1A1A1A; /* Тёмный, но не слишком резкий цвет */
     margin-bottom: 4px;
     background: transparent !important;
+    font-family: 'Open Sans', sans-serif; /* Приятный и комфортный шрифт */
+    -webkit-font-smoothing: antialiased; /* Плавное сглаживание */
+    -moz-osx-font-smoothing: grayscale; /* Чёткость для Firefox */
+    text-rendering: optimizeLegibility; /* Оптимизация читаемости */
+    letter-spacing: 0.2px; /* Лёгкий интервал для комфорта */
 }
 
 .message-content {
