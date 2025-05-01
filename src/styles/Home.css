@@ -1,6 +1,6 @@
-.home-container *,
-.home-container *::before,
-.home-container *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
@@ -31,7 +31,16 @@
     width: 80%;
 }
 
-.login-button-home,
+.login-button-home {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    width: 20%;
+}
+
 .logout-button-home {
     padding: 10px 15px;
     border: none;
@@ -47,7 +56,13 @@
     background-color: #0056b3;
 }
 
-.users-container,
+.users-container {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    max-height: 600px;
+}
+
 .chats-container {
     flex: 1;
     padding: 10px;
@@ -93,8 +108,7 @@ h2 {
     max-width: 100%;
 }
 
-.create-user-button-main,
-.create-chat-button {
+.create-user-button-main {
     padding: 10px 10px;
     border: none;
     border-radius: 5px;
@@ -108,9 +122,26 @@ h2 {
     box-sizing: border-box;
 }
 
-.create-user-button-main:hover,
-.create-chat-button:hover {
+.create-user-button-main:hover {
     background-color: #00796b;
+}
+
+.create-chat-button {
+    padding: 10px 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    min-width: 150px;
+    margin-top: 10px;
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+.create-chat-button:hover {
+    background-color: #0056b3;
 }
 
 .chat-list,
