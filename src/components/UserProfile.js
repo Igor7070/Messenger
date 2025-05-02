@@ -116,23 +116,23 @@ const UserProfile = () => {
     }, [currentUserId]);
 
     const handleIncomingCall = async (callRequest) => {
-        console.log("Incoming call request:", callRequest); // Логируем объект вызова
-        setIncomingCall(callRequest); // Устанавливаем входящий вызов
-    
-        // Получаем имя звонящего
+        console.log("Incoming call request:", callRequest);
+        setIncomingCall(callRequest);
         const callerId = callRequest.callerId;
-    
         try {
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
             if (response.ok) {
                 const callerData = await response.json();
-                const callerName = callerData.username; // Извлекаем имя звонящего
-                setIncomingCall({ ...callRequest, callerName }); // Добавляем имя звонящего к объекту вызова
+                setIncomingCall({
+                    ...callRequest,
+                    callerName: callerData.username,
+                    avatar: callerData.avatar // Добавляем avatar
+                });
             } else {
-                console.error('Error fetching caller name');
+                console.error('Error fetching caller data');
             }
         } catch (error) {
-            console.error('Error fetching caller name:', error);
+            console.error('Error fetching caller data:', error);
         }
     };
 
@@ -506,6 +506,7 @@ const UserProfile = () => {
                 <IncomingCallNotification 
                     callerId={incomingCall.callerId} 
                     callerName={incomingCall.callerName}
+                    avatar={incomingCall.avatar} // Добавляем avatar
                     onAccept={acceptCall} 
                     onReject={rejectCall} 
                 />
