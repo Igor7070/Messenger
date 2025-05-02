@@ -3,28 +3,55 @@
     top: 20%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color:	#D8BFD8; /* Светло-голубой фон для окна вызова */
+    background-color: #D8BFD8;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     padding: 20px;
     text-align: center;
-    z-index: 1000; /* Обеспечивает, что окно поверх других элементов */
+    z-index: 1000;
+}
+
+.caller-avatar {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px; /* Отступ до заголовка */
+}
+
+.caller-avatar-img {
+    width: 60px; /* Крупнее, чем user-avatar (35px) */
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    overflow: hidden;
+}
+
+.caller-avatar-placeholder {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #e0e0e0; /* Как в user-avatar */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px; /* Крупная буква */
+    color: #757575; /* Как в user-avatar */
+    font-family: Arial, sans-serif;
 }
 
 h2 {
-    margin: 0 0 70px; /* Увеличен отступ снизу */
+    margin: 0 0 20px; /* Уменьшен с 70px для баланса */
     font-family: Arial, sans-serif;
     color: #333;
 }
 
 .button-container {
-    margin-top: 35px;
+    margin-top: 20px; /* Уменьшен с 35px */
     display: flex;
     justify-content: space-around;
 }
 
 .accept-button, .reject-button {
-    padding: 12px 25px; /* Увеличены размеры кнопок */
+    padding: 12px 25px;
     border: none;
     border-radius: 5px;
     font-size: 16px;
@@ -32,19 +59,20 @@ h2 {
 }
 
 .accept-button {
-    background-color: #4CAF50; /* Зеленый для кнопки принятия */
+    background-color: #4CAF50;
     color: white;
 }
 
 .reject-button {
-    background-color: #f44336; /* Красный для кнопки отклонения */
+    background-color: #f44336;
     color: white;
 }
 
 .accept-button:hover {
-    background-color: #45a049; /* Темный зеленый при наведении */
+    background-color: #45a049;
 }
 
 .reject-button:hover {
-    background-color: #e53935; /* Темный красный при наведении */
+    background-color: #e53935;
 }
+
