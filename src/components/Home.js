@@ -33,6 +33,7 @@ const Home = () => {
     const audioRef = useRef(null);
     const messageAudioRef = useRef(null);
     const navigate = useNavigate();
+    const subscribedChatIds = useRef(new Set()); // Отслеживаем подписанные чаты
 
     useWebSocket(currentUserId, messageAudioRef);
 
@@ -153,24 +154,15 @@ const Home = () => {
                 console.log('Подключено к WebSocket в Home.js');
                 if (currentUserId) {
                     stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
+                        console.log('Получен запрос на звонок:', message.body);
                         const callRequest = JSON.parse(message.body);
                         handleIncomingCall(callRequest);
                     });
-                    // Подписка на сообщения для всех чатов
                     stompClient.current.subscribe(`/topic/messages`, (message) => {
+                        console.log('Получено сообщение через /topic/messages:', message.body);
                         const newMessage = JSON.parse(message.body);
                         handleNewMessage(newMessage);
                     });
-                    // Подписка на сообщения для каждого группового чата
-                    chats
-                        .filter((chat) => !chat.private)
-                        .forEach((chat) => {
-                            stompClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
-                                const newMessage = JSON.parse(message.body);
-                                console.log(`Сообщение для группового чата ${chat.id}:`, newMessage);
-                                handleNewMessage(newMessage);
-                            });
-                        });
                 }
             },
         });
@@ -179,7 +171,32 @@ const Home = () => {
         return () => {
             stompClient.current.deactivate();
         };
-    }, [currentUserId, chats]);
+    }, [currentUserId]);
+
+    // Отдельный useEffect для подписки на групповые чаты
+    useEffect(() => {
+        if (!stompClient.current || !stompClient.current.connected) return;
+
+        const subscribeToGroupChats = () => {
+            chats
+                .filter((chat) => !chat.private && !subscribedChatIds.current.has(chat.id))
+                .forEach((chat) => {
+                    stompClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
+                        console.log(`Сообщение для группового чата ${chat.id}:`, message.body);
+                        const newMessage = JSON.parse(message.body);
+                        handleNewMessage(newMessage);
+                    });
+                    subscribedChatIds.current.add(chat.id);
+                    console.log(`Подписка на /topic/chat/${chat.id}/messages добавлена`);
+                });
+        };
+
+        subscribeToGroupChats();
+
+        return () => {
+            // Отписка при размонтировании не требуется, так как STOMP-клиент отключается выше
+        };
+    }, [chats]);
 
     const handleNewMessage = async (message) => {
         console.log('Получено новое сообщение:', message);
@@ -224,7 +241,7 @@ const Home = () => {
     };
 
     const handleIncomingCall = async (callRequest) => {
-        console.log('Входящий запрос на звонок:', callRequest);
+        console.log('Обработка входящего звонка:', callRequest);
         setIncomingCall(callRequest);
         try {
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
@@ -233,7 +250,7 @@ const Home = () => {
                 setIncomingCall({
                     ...callRequest,
                     callerName: callerData.username,
-                    avatar: callerData.avatar // Добавляем аватар
+                    avatar: callerData.avatar
                 });
             } else {
                 console.error('Ошибка при получении данных звонящего');
@@ -451,7 +468,7 @@ const Home = () => {
                 <IncomingCallNotification
                     callerId={incomingCall.callerId}
                     callerName={incomingCall.callerName}
-                    avatar={incomingCall.avatar} // Добавляем проп avatar
+                    avatar={incomingCall.avatar}
                     onAccept={acceptCall}
                     onReject={rejectCall}
                 />
