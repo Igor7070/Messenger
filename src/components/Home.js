@@ -234,13 +234,13 @@ const Home = () => {
                 console.log('Сообщение для приватного чата, игнорируем:', chatId);
                 return;
             }
-
+    
             const messages = await getMessages(chatId);
             console.log('Загружены сообщения для чата', chatId, messages);
             const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
             const unreadCount = calculateUnreadCount(messages, chatId);
             console.log('Рассчитан unreadCount:', unreadCount);
-
+    
             setChats((prevChats) => {
                 const updatedChats = prevChats.map((chat) =>
                     chat.id === chatId
@@ -255,12 +255,6 @@ const Home = () => {
                 console.log('Обновлены чаты:', updatedChats);
                 return [...updatedChats];
             });
-
-            if (userInteracted) {
-                messageAudioRef.current.play().catch((error) => {
-                    console.error('Ошибка воспроизведения звука уведомления:', error);
-                });
-            }
         } catch (error) {
             console.error('Ошибка обработки нового сообщения:', error);
             toast.error('Error updating messages');
