@@ -184,8 +184,12 @@ const Home = () => {
 
     // Подписка на сообщения
     useEffect(() => {
-        if (!currentUserId) return;
+        if (!currentUserId || chats.length === 0) {
+            console.log('Пропускаем подписку: нет пользователя или чатов');
+            return;
+        }
 
+        console.log('Инициализация WebSocket для сообщений, чаты:', chats);
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         messageClient.current = new Client({
             webSocketFactory: () => socket,
@@ -201,6 +205,7 @@ const Home = () => {
                 chats
                     .filter((chat) => !chat.private)
                     .forEach((chat) => {
+                        console.log(`Подписываемся на /topic/chat/${chat.id}/messages`);
                         messageClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
                             console.log(`Получено сообщение для чата ${chat.id}:`, message.body);
                             const newMessage = JSON.parse(message.body);
