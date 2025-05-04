@@ -49,7 +49,7 @@ const Home = () => {
     useEffect(() => {
         if (incomingCall && userInteracted) {
             audioRef.current.play().catch(error => {
-                console.error('Autoplay was prevented.', error);
+                console.error('Автовоспроизведение заблокировано:', error);
             });
         } else {
             audioRef.current.pause();
@@ -57,7 +57,7 @@ const Home = () => {
         }
     }, [incomingCall, userInteracted]);
 
-    // Форматирование временной метки (согласованное с Messenger.js)
+    // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
         if (!timestamp) return '';
         try {
@@ -68,7 +68,7 @@ const Home = () => {
             }
             return format(kievDate, 'dd.MM.yy');
         } catch (error) {
-            console.error('Error formatting timestamp:', error);
+            console.error('Ошибка форматирования временной метки:', error);
             return '';
         }
     };
@@ -99,12 +99,10 @@ const Home = () => {
                     })
                 );
                 setChats(chatsWithMessages);
-                console.log('Чаты обновлены:', chatsWithMessages);
             } else {
                 toast.error('Failed to fetch chats');
             }
         } catch (error) {
-            console.error('Ошибка загрузки чатов:', error);
             toast.error('Error fetching chats');
         }
     };
@@ -119,7 +117,7 @@ const Home = () => {
             const lastVisitTime = new Date(lastVisit).getTime();
             return messages.filter((msg) => new Date(msg.timestamp).getTime() > lastVisitTime).length;
         } catch (error) {
-            console.error('Error parsing last visit time:', error);
+            console.error('Ошибка при разборе времени последнего визита:', error);
             return 0;
         }
     };
@@ -139,6 +137,34 @@ const Home = () => {
         }
     };
 
+    // Подписка на звонки
+    useEffect(() => {
+        if (!currentUserId) return;
+
+        const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
+        stompClient.current = new Client({
+            webSocketFactory: () => socket,
+            onConnect: () => {
+                console.log('Подключено к WebSocket для звонков в Home.js');
+                stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
+                    console.log('Получен запрос на звонок:', message.body);
+                    const callRequest = JSON.parse(message.body);
+                    handleIncomingCall(callRequest);
+                });
+            },
+            onWebSocketError: (error) => {
+                console.error('Ошибка WebSocket для звонков:', error);
+            },
+        });
+        stompClient.current.activate();
+
+        return () => {
+            stompClient.current.deactivate();
+            console.log('WebSocket для звонков отключён');
+        };
+    }, [currentUserId]);
+
+    // Подписка на сообщения и инициализация
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
         if (storedUserId) {
@@ -149,32 +175,41 @@ const Home = () => {
         fetchUsers();
 
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
-        stompClient.current = new Client({
+        const messageClient = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
-                console.log('Connected to WebSocket in Home.js');
-                if (currentUserId) {
-                    stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
-                        const callRequest = JSON.parse(message.body);
-                        handleIncomingCall(callRequest);
+                console.log('Подключено к WebSocket для сообщений в Home.js');
+                // Подписка на общий топик сообщений (на всякий случай)
+                messageClient.subscribe(`/topic/messages`, (message) => {
+                    console.log('Получено сообщение через /topic/messages:', message.body);
+                    const newMessage = JSON.parse(message.body);
+                    handleNewMessage(newMessage);
+                });
+                // Подписка на сообщения каждого группового чата
+                chats
+                    .filter((chat) => !chat.private)
+                    .forEach((chat) => {
+                        messageClient.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
+                            console.log(`Получено сообщение для чата ${chat.id}:`, message.body);
+                            const newMessage = JSON.parse(message.body);
+                            handleNewMessage(newMessage);
+                        });
                     });
-                    // Подписка на сообщения для всех чатов
-                    stompClient.current.subscribe(`/topic/messages`, (message) => {
-                        const newMessage = JSON.parse(message.body);
-                        handleNewMessage(newMessage);
-                    });
-                }
+            },
+            onWebSocketError: (error) => {
+                console.error('Ошибка WebSocket для сообщений:', error);
             },
         });
-        stompClient.current.activate();
+        messageClient.activate();
 
         return () => {
-            stompClient.current.deactivate();
+            messageClient.deactivate();
+            console.log('WebSocket для сообщений отключён');
         };
-    }, [currentUserId]);
+    }, [currentUserId, chats]);
 
     const handleNewMessage = async (message) => {
-        console.log('Получено новое сообщение:', message);
+        console.log('Обработка нового сообщения:', message);
         const chatId = message.chatId;
         try {
             // Проверяем, является ли чат групповым
@@ -184,12 +219,30 @@ const Home = () => {
                 return;
             }
 
-            // Перезагружаем все чаты, как в Android
-            await fetchChats();
+            const messages = await getMessages(chatId);
+            console.log('Загружены сообщения для чата', chatId, messages);
+            const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+            const unreadCount = calculateUnreadCount(messages, chatId);
+            console.log('Рассчитан unreadCount:', unreadCount);
+
+            setChats((prevChats) => {
+                const updatedChats = prevChats.map((chat) =>
+                    chat.id === chatId
+                        ? {
+                              ...chat,
+                              lastMessage: lastMessage ? lastMessage.content : null,
+                              timestamp: lastMessage ? lastMessage.timestamp : null,
+                              unreadCount,
+                          }
+                        : chat
+                );
+                console.log('Обновлены чаты:', updatedChats);
+                return [...updatedChats]; // Принудительно новый массив
+            });
 
             if (userInteracted) {
                 messageAudioRef.current.play().catch((error) => {
-                    console.error('Error playing message notification sound:', error);
+                    console.error('Ошибка воспроизведения звука уведомления:', error);
                 });
             }
         } catch (error) {
@@ -199,7 +252,7 @@ const Home = () => {
     };
 
     const handleIncomingCall = async (callRequest) => {
-        console.log('Incoming call request:', callRequest);
+        console.log('Входящий запрос на звонок:', callRequest);
         setIncomingCall(callRequest);
         try {
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
@@ -208,13 +261,13 @@ const Home = () => {
                 setIncomingCall({
                     ...callRequest,
                     callerName: callerData.username,
-                    avatar: callerData.avatar // Добавляем avatar
+                    avatar: callerData.avatar
                 });
             } else {
-                console.error('Error fetching caller data');
+                console.error('Ошибка при получении данных звонящего');
             }
         } catch (error) {
-            console.error('Error fetching caller data:', error);
+            console.error('Ошибка при получении данных звонящего:', error);
         }
     };
 
@@ -222,8 +275,8 @@ const Home = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
 
-        console.log('Function acceptCall in Home.js working...');
-        console.log('Incoming call accepted:', incomingCall);
+        console.log('Функция acceptCall в Home.js работает...');
+        console.log('Входящий звонок принят:', incomingCall);
 
         const callerId = incomingCall.callerId;
         const recipientId = currentUserId;
@@ -253,10 +306,10 @@ const Home = () => {
                     },
                 });
             } else {
-                console.error('Error fetching user names');
+                console.error('Ошибка при получении имен пользователей');
             }
         } catch (error) {
-            console.error('Error fetching user names:', error);
+            console.error('Ошибка при получении имен пользователей:', error);
         }
     };
 
@@ -272,13 +325,13 @@ const Home = () => {
     };
 
     const sendSignal = (signalMessage) => {
-        console.log('Sending signal:', JSON.stringify(signalMessage, null, 2));
+        console.log('Отправка сигнала:', JSON.stringify(signalMessage, null, 2));
         const roomId = incomingCall.roomId;
         stompClient.current.publish({
             destination: `/app/signal/${roomId}`,
             body: JSON.stringify(signalMessage),
         });
-        console.log('Signal sent successfully.');
+        console.log('Сигнал успешно отправлен.');
     };
 
     const loginUserHandler = async () => {
@@ -426,7 +479,7 @@ const Home = () => {
                 <IncomingCallNotification
                     callerId={incomingCall.callerId}
                     callerName={incomingCall.callerName}
-                    avatar={incomingCall.avatar} // Добавляем проп avatar
+                    avatar={incomingCall.avatar}
                     onAccept={acceptCall}
                     onReject={rejectCall}
                 />
