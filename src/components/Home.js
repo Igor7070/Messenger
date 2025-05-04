@@ -99,10 +99,12 @@ const Home = () => {
                     })
                 );
                 setChats(chatsWithMessages);
+                console.log('Чаты обновлены:', chatsWithMessages);
             } else {
                 toast.error('Failed to fetch chats');
             }
         } catch (error) {
+            console.error('Ошибка загрузки чатов:', error);
             toast.error('Error fetching chats');
         }
     };
@@ -182,26 +184,8 @@ const Home = () => {
                 return;
             }
 
-            const messages = await getMessages(chatId);
-            console.log('Загружены сообщения для чата', chatId, messages);
-            const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
-            const unreadCount = calculateUnreadCount(messages, chatId);
-            console.log('Рассчитан unreadCount:', unreadCount);
-
-            setChats((prevChats) => {
-                const updatedChats = prevChats.map((chat) =>
-                    chat.id === chatId
-                        ? {
-                              ...chat,
-                              lastMessage: lastMessage ? lastMessage.content : null,
-                              timestamp: lastMessage ? lastMessage.timestamp : null,
-                              unreadCount,
-                          }
-                        : chat
-                );
-                console.log('Обновлены чаты:', updatedChats);
-                return [...updatedChats]; // Принудительно новый массив для ререндера
-            });
+            // Перезагружаем все чаты, как в Android
+            await fetchChats();
 
             if (userInteracted) {
                 messageAudioRef.current.play().catch((error) => {
@@ -317,7 +301,6 @@ const Home = () => {
         setCurrentUserId(null);
         setIsLoggedIn(false);
         toast.success('Logged out successfully!');
-        navigate('/'); // Перенаправление на главную страницу после выхода
     };
 
     const createChatHandler = async () => {
