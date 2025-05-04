@@ -166,6 +166,7 @@ const Home = () => {
         }
     };
 
+    // Инициализация WebSocket
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
         if (storedUserId) {
@@ -180,23 +181,6 @@ const Home = () => {
             webSocketFactory: () => socket,
             onConnect: () => {
                 console.log('Connected to WebSocket in Home.js');
-                if (currentUserId) {
-                    stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
-                        const callRequest = JSON.parse(message.body);
-                        handleIncomingCall(callRequest);
-                    });
-
-                    // Подписка на сообщения для каждого группового чата
-                    chats.forEach((chat) => {
-                        if (!chat.private) {
-                            stompClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
-                                const newMessage = JSON.parse(message.body);
-                                console.log(`handleNewMessage: New message received for chatId=${chat.id}`, newMessage);
-                                handleNewMessage(newMessage, chat.id);
-                            });
-                        }
-                    });
-                }
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
@@ -207,7 +191,33 @@ const Home = () => {
         return () => {
             stompClient.current.deactivate();
         };
-    }, [currentUserId, chats]);
+    }, []);
+
+    // Подписка на звонки
+    useEffect(() => {
+        if (currentUserId && stompClient.current?.connected) {
+            stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
+                const callRequest = JSON.parse(message.body);
+                console.log('Incoming call received:', callRequest);
+                handleIncomingCall(callRequest);
+            });
+        }
+    }, [currentUserId]);
+
+    // Подписка на сообщения для групповых чатов
+    useEffect(() => {
+        if (currentUserId && stompClient.current?.connected) {
+            chats.forEach((chat) => {
+                if (!chat.private) {
+                    stompClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
+                        const newMessage = JSON.parse(message.body);
+                        console.log(`handleNewMessage: New message received for chatId=${chat.id}`, newMessage);
+                        handleNewMessage(newMessage, chat.id);
+                    });
+                }
+            });
+        }
+    }, [chats, currentUserId]);
 
     const handleNewMessage = (newMessage, chatId) => {
         updateUnreadCount(chatId, newMessage);
@@ -372,9 +382,7 @@ const Home = () => {
     };
 
     const goToChat = (chatId) => {
-        // Сохраняем время посещения чата
         localStorage.setItem(`last_visit_chat_${chatId}`, new Date().toISOString());
-        // Сбрасываем unreadCount для этого чата
         setChats((prevChats) =>
             prevChats.map((chat) =>
                 chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
@@ -446,7 +454,7 @@ const Home = () => {
             </audio>
 
             <audio ref={messageAudioRef}>
-                <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
+                <source src="https://unlimitedpossibilities12.org/static/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
             </audio>
 
