@@ -162,6 +162,7 @@ const Home = () => {
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
+            connectTimeout: 10000, // Увеличиваем таймаут до 10 секунд
             onConnect: () => {
                 console.log('Подключено к WebSocket для звонков в Home.js');
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
@@ -193,14 +194,9 @@ const Home = () => {
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         messageClient.current = new Client({
             webSocketFactory: () => socket,
+            connectTimeout: 10000, // Увеличиваем таймаут до 10 секунд
             onConnect: () => {
                 console.log('Подключено к WebSocket для сообщений в Home.js');
-                // Подписка на общий топик сообщений
-                messageClient.current.subscribe(`/topic/messages`, (message) => {
-                    console.log('Получено сообщение через /topic/messages:', message.body);
-                    const newMessage = JSON.parse(message.body);
-                    handleNewMessage(newMessage);
-                });
                 // Подписка на сообщения каждого группового чата
                 chats
                     .filter((chat) => !chat.private)
@@ -209,7 +205,7 @@ const Home = () => {
                         messageClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
                             console.log(`Получено сообщение для чата ${chat.id}:`, message.body);
                             const newMessage = JSON.parse(message.body);
-                            handleNewMessage(newMessage);
+                            handleNewMessage(newMessage, chat.id);
                         });
                     });
             },
@@ -225,14 +221,17 @@ const Home = () => {
         };
     }, [currentUserId, chats]);
 
-    const handleNewMessage = async (message) => {
-        console.log('Обработка нового сообщения:', message);
-        const chatId = message.chatId;
+    const handleNewMessage = async (message, chatId) => {
+        console.log('Обработка нового сообщения:', message, 'для chatId:', chatId);
         try {
             // Проверяем, является ли чат групповым
             const chat = chats.find((c) => c.id === chatId);
-            if (!chat || chat.private) {
-                console.log('Сообщение для приватного чата или чат не найден, игнорируем:', chatId);
+            if (!chat) {
+                console.log('Чат не найден в состоянии chats:', chatId, 'Chats:', chats);
+                return;
+            }
+            if (chat.private) {
+                console.log('Сообщение для приватного чата, игнорируем:', chatId);
                 return;
             }
 
