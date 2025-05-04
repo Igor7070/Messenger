@@ -30,6 +30,7 @@ const Home = () => {
     const [incomingCall, setIncomingCall] = useState(null);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const stompClient = useRef(null);
+    const messageClient = useRef(null);
     const audioRef = useRef(null);
     const messageAudioRef = useRef(null);
     const navigate = useNavigate();
@@ -82,6 +83,7 @@ const Home = () => {
     // Загрузка чатов
     const fetchChats = async () => {
         try {
+            console.log('Запрашиваем чаты...');
             const response = await fetch('https://unlimitedpossibilities12.org/api/chats');
             if (response.ok) {
                 const data = await response.json();
@@ -98,11 +100,13 @@ const Home = () => {
                         };
                     })
                 );
+                console.log('Чаты загружены:', chatsWithMessages);
                 setChats(chatsWithMessages);
             } else {
                 toast.error('Failed to fetch chats');
             }
         } catch (error) {
+            console.error('Ошибка при загрузке чатов:', error);
             toast.error('Error fetching chats');
         }
     };
@@ -125,17 +129,31 @@ const Home = () => {
     // Загрузка пользователей
     const fetchUsers = async () => {
         try {
+            console.log('Запрашиваем пользователей...');
             const response = await fetch('https://unlimitedpossibilities12.org/api/users');
             if (response.ok) {
                 const data = await response.json();
+                console.log('Пользователи загружены:', data);
                 setUsers(data);
             } else {
                 toast.error('Failed to fetch users');
             }
         } catch (error) {
+            console.error('Ошибка при загрузке пользователей:', error);
             toast.error('Error fetching users');
         }
     };
+
+    // Инициализация данных
+    useEffect(() => {
+        const storedUserId = localStorage.getItem('userId');
+        if (storedUserId) {
+            setCurrentUserId(Number(storedUserId));
+            setIsLoggedIn(true);
+        }
+        fetchChats();
+        fetchUsers();
+    }, [currentUserId]);
 
     // Подписка на звонки
     useEffect(() => {
@@ -164,23 +182,17 @@ const Home = () => {
         };
     }, [currentUserId]);
 
-    // Подписка на сообщения и инициализация
+    // Подписка на сообщения
     useEffect(() => {
-        const storedUserId = localStorage.getItem('userId');
-        if (storedUserId) {
-            setCurrentUserId(Number(storedUserId));
-            setIsLoggedIn(true);
-        }
-        fetchChats();
-        fetchUsers();
+        if (!currentUserId) return;
 
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
-        const messageClient = new Client({
+        messageClient.current = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
                 console.log('Подключено к WebSocket для сообщений в Home.js');
-                // Подписка на общий топик сообщений (на всякий случай)
-                messageClient.subscribe(`/topic/messages`, (message) => {
+                // Подписка на общий топик сообщений
+                messageClient.current.subscribe(`/topic/messages`, (message) => {
                     console.log('Получено сообщение через /topic/messages:', message.body);
                     const newMessage = JSON.parse(message.body);
                     handleNewMessage(newMessage);
@@ -189,7 +201,7 @@ const Home = () => {
                 chats
                     .filter((chat) => !chat.private)
                     .forEach((chat) => {
-                        messageClient.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
+                        messageClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
                             console.log(`Получено сообщение для чата ${chat.id}:`, message.body);
                             const newMessage = JSON.parse(message.body);
                             handleNewMessage(newMessage);
@@ -200,10 +212,10 @@ const Home = () => {
                 console.error('Ошибка WebSocket для сообщений:', error);
             },
         });
-        messageClient.activate();
+        messageClient.current.activate();
 
         return () => {
-            messageClient.deactivate();
+            messageClient.current.deactivate();
             console.log('WebSocket для сообщений отключён');
         };
     }, [currentUserId, chats]);
@@ -237,7 +249,7 @@ const Home = () => {
                         : chat
                 );
                 console.log('Обновлены чаты:', updatedChats);
-                return [...updatedChats]; // Принудительно новый массив
+                return [...updatedChats];
             });
 
             if (userInteracted) {
