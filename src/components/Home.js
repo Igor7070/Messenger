@@ -122,35 +122,6 @@ const Home = () => {
         }
     };
 
-    // Обновление unreadCount в реальном времени
-    const updateUnreadCount = (chatId, newMessage) => {
-        setChats((prevChats) =>
-            prevChats.map((chat) => {
-                if (chat.id === chatId) {
-                    const lastVisit = localStorage.getItem(`last_visit_chat_${chatId}`);
-                    let unreadCount = chat.unreadCount || 0;
-                    // Проверяем, не является ли сообщение удаленным
-                    if (newMessage.content === "Message deleted") {
-                        return chat.unreadCount > 0
-                            ? { ...chat, unreadCount: chat.unreadCount - 1 }
-                            : chat;
-                    }
-                    // Увеличиваем unreadCount, если сообщение новое
-                    if (!lastVisit || new Date(newMessage.timestamp).getTime() > new Date(lastVisit).getTime()) {
-                        unreadCount += 1;
-                    }
-                    return {
-                        ...chat,
-                        lastMessage: newMessage.content,
-                        timestamp: newMessage.timestamp,
-                        unreadCount,
-                    };
-                }
-                return chat;
-            })
-        );
-    };
-
     // Загрузка пользователей
     const fetchUsers = async () => {
         try {
@@ -192,9 +163,6 @@ const Home = () => {
                     });
                 }
             },
-            onWebSocketError: (error) => {
-                console.error('WebSocket error:', error);
-            },
         });
         stompClient.current.activate();
 
@@ -202,26 +170,6 @@ const Home = () => {
             stompClient.current.deactivate();
         };
     }, [currentUserId]);
-
-    // Подписка на сообщения для групповых чатов
-    useEffect(() => {
-        if (currentUserId && stompClient.current?.connected) {
-            chats.forEach((chat) => {
-                if (!chat.private) {
-                    stompClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
-                        const newMessage = JSON.parse(message.body);
-                        console.log(`New message for group chatId=${chat.id}`, newMessage);
-                        updateUnreadCount(chat.id, newMessage);
-                        if (userInteracted) {
-                            messageAudioRef.current.play().catch((error) => {
-                                console.error('Error playing message notification sound:', error);
-                            });
-                        }
-                    });
-                }
-            });
-        }
-    }, [chats, currentUserId]);
 
     const handleNewMessage = async (message) => {
         const chatId = message.chatId;
@@ -259,7 +207,7 @@ const Home = () => {
                 setIncomingCall({
                     ...callRequest,
                     callerName: callerData.username,
-                    avatar: callerData.avatar,
+                    avatar: callerData.avatar // Добавляем avatar
                 });
             } else {
                 console.error('Error fetching caller data');
@@ -403,12 +351,6 @@ const Home = () => {
     };
 
     const goToChat = (chatId) => {
-        localStorage.setItem(`last_visit_chat_${chatId}`, new Date().toISOString());
-        setChats((prevChats) =>
-            prevChats.map((chat) =>
-                chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
-            )
-        );
         navigate(`/chat/${chatId}`);
     };
 
@@ -483,7 +425,7 @@ const Home = () => {
                 <IncomingCallNotification
                     callerId={incomingCall.callerId}
                     callerName={incomingCall.callerName}
-                    avatar={incomingCall.avatar}
+                    avatar={incomingCall.avatar} // Добавляем проп avatar
                     onAccept={acceptCall}
                     onReject={rejectCall}
                 />
