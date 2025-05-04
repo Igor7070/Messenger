@@ -49,7 +49,7 @@ const Home = () => {
     useEffect(() => {
         if (incomingCall && userInteracted) {
             audioRef.current.play().catch(error => {
-                console.error('Autoplay was prevented.', error);
+                console.error('Автовоспроизведение заблокировано:', error);
             });
         } else {
             audioRef.current.pause();
@@ -68,14 +68,14 @@ const Home = () => {
             }
             return format(kievDate, 'dd.MM.yy');
         } catch (error) {
-            console.error('Error formatting timestamp:', error);
+            console.error('Ошибка форматирования временной метки:', error);
             return '';
         }
     };
 
     // Сокращение текста сообщения
     const truncateMessage = (message, maxLength = 30) => {
-        if (!message) return 'No messages yet';
+        if (!message) return 'Сообщений пока нет';
         return message.length > maxLength ? message.substring(0, maxLength) + '...' : message;
     };
 
@@ -100,10 +100,10 @@ const Home = () => {
                 );
                 setChats(chatsWithMessages);
             } else {
-                toast.error('Failed to fetch chats');
+                toast.error('Не удалось загрузить чаты');
             }
         } catch (error) {
-            toast.error('Error fetching chats');
+            toast.error('Ошибка при загрузке чатов');
         }
     };
 
@@ -117,7 +117,7 @@ const Home = () => {
             const lastVisitTime = new Date(lastVisit).getTime();
             return messages.filter((msg) => new Date(msg.timestamp).getTime() > lastVisitTime).length;
         } catch (error) {
-            console.error('Error parsing last visit time:', error);
+            console.error('Ошибка при разборе времени последнего визита:', error);
             return 0;
         }
     };
@@ -130,10 +130,10 @@ const Home = () => {
                 const data = await response.json();
                 setUsers(data);
             } else {
-                toast.error('Failed to fetch users');
+                toast.error('Не удалось загрузить пользователей');
             }
         } catch (error) {
-            toast.error('Error fetching users');
+            toast.error('Ошибка при загрузке пользователей');
         }
     };
 
@@ -150,7 +150,7 @@ const Home = () => {
         stompClient.current = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
-                console.log('Connected to WebSocket in Home.js');
+                console.log('Подключено к WebSocket в Home.js');
                 if (currentUserId) {
                     stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
                         const callRequest = JSON.parse(message.body);
@@ -184,7 +184,7 @@ const Home = () => {
                           ...chat,
                           lastMessage: lastMessage ? lastMessage.content : null,
                           timestamp: lastMessage ? lastMessage.timestamp : null,
-                          unreadCount,
+                          unreadCount, // Обновляем unreadCount в реальном времени
                       }
                     : chat
             )
@@ -192,13 +192,13 @@ const Home = () => {
 
         if (userInteracted) {
             messageAudioRef.current.play().catch((error) => {
-                console.error('Error playing message notification sound:', error);
+                console.error('Ошибка воспроизведения звука уведомления:', error);
             });
         }
     };
 
     const handleIncomingCall = async (callRequest) => {
-        console.log('Incoming call request:', callRequest);
+        console.log('Входящий запрос на звонок:', callRequest);
         setIncomingCall(callRequest);
         try {
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
@@ -207,13 +207,13 @@ const Home = () => {
                 setIncomingCall({
                     ...callRequest,
                     callerName: callerData.username,
-                    avatar: callerData.avatar // Добавляем avatar
+                    avatar: callerData.avatar // Добавляем аватар
                 });
             } else {
-                console.error('Error fetching caller data');
+                console.error('Ошибка при получении данных звонящего');
             }
         } catch (error) {
-            console.error('Error fetching caller data:', error);
+            console.error('Ошибка при получении данных звонящего:', error);
         }
     };
 
@@ -221,8 +221,8 @@ const Home = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
 
-        console.log('Function acceptCall in Home.js working...');
-        console.log('Incoming call accepted:', incomingCall);
+        console.log('Функция acceptCall в Home.js работает...');
+        console.log('Входящий звонок принят:', incomingCall);
 
         const callerId = incomingCall.callerId;
         const recipientId = currentUserId;
@@ -252,10 +252,10 @@ const Home = () => {
                     },
                 });
             } else {
-                console.error('Error fetching user names');
+                console.error('Ошибка при получении имен пользователей');
             }
         } catch (error) {
-            console.error('Error fetching user names:', error);
+            console.error('Ошибка при получении имен пользователей:', error);
         }
     };
 
@@ -271,13 +271,13 @@ const Home = () => {
     };
 
     const sendSignal = (signalMessage) => {
-        console.log('Sending signal:', JSON.stringify(signalMessage, null, 2));
+        console.log('Отправка сигнала:', JSON.stringify(signalMessage, null, 2));
         const roomId = incomingCall.roomId;
         stompClient.current.publish({
             destination: `/app/signal/${roomId}`,
             body: JSON.stringify(signalMessage),
         });
-        console.log('Signal sent successfully.');
+        console.log('Сигнал успешно отправлен.');
     };
 
     const loginUserHandler = async () => {
@@ -289,9 +289,9 @@ const Home = () => {
             setLoginUsername('');
             setLoginPassword('');
             setIsLoggedIn(true);
-            toast.success('Login successful!');
+            toast.success('Вход выполнен успешно!');
         } catch (error) {
-            toast.error(error.message || 'Error logging in');
+            toast.error(error.message || 'Ошибка при входе');
         }
     };
 
@@ -299,7 +299,7 @@ const Home = () => {
         localStorage.removeItem('userId');
         setCurrentUserId(null);
         setIsLoggedIn(false);
-        toast.success('Logged out successfully!');
+        toast.success('Выход выполнен успешно!');
     };
 
     const createChatHandler = async () => {
@@ -308,12 +308,12 @@ const Home = () => {
                 const newChat = await createChat({ name: chatName, private: false });
                 setChats([...chats, { ...newChat, lastMessage: null, timestamp: null, unreadCount: 0 }]);
                 setChatName('');
-                toast.success('Chat created successfully!');
+                toast.success('Чат успешно создан!');
             } catch (error) {
-                toast.error(error.message || 'Error creating chat');
+                toast.error(error.message || 'Ошибка при создании чата');
             }
         } else {
-            toast.error('Chat name cannot be empty');
+            toast.error('Имя чата не может быть пустым');
         }
     };
 
@@ -340,13 +340,13 @@ const Home = () => {
                 setPassword('');
                 setBio('');
                 setAvatar(null);
-                toast.success('User created successfully!');
+                toast.success('Пользователь успешно создан!');
             } else {
                 const errorMessage = await response.text();
                 toast.error(errorMessage);
             }
         } catch (error) {
-            toast.error('Error creating user');
+            toast.error('Ошибка при создании пользователя');
         }
     };
 
@@ -386,7 +386,7 @@ const Home = () => {
             <div className="login-container-home">
                 {isLoggedIn ? (
                     <button onClick={logoutUser} className="logout-button-home">
-                        Logout
+                        Выйти
                     </button>
                 ) : (
                     <>
@@ -394,18 +394,18 @@ const Home = () => {
                             type="text"
                             value={loginUsername}
                             onChange={(e) => setLoginUsername(e.target.value)}
-                            placeholder="Username"
+                            placeholder="Имя пользователя"
                             className="login-input-home"
                         />
                         <input
                             type="password"
                             value={loginPassword}
                             onChange={(e) => setLoginPassword(e.target.value)}
-                            placeholder="Password"
+                            placeholder="Пароль"
                             className="login-input-home"
                         />
                         <button onClick={loginUserHandler} className="login-button-home">
-                            Login
+                            Войти
                         </button>
                     </>
                 )}
@@ -433,15 +433,15 @@ const Home = () => {
 
             <div className="line-divider-container">
                 <div className="users-container">
-                    <h2 className="home-users-h2">Users</h2>
+                    <h2 className="home-users-h2">Пользователи</h2>
                     <button type="button" onClick={openModal} className="create-user-button-main">
-                        Create a new user
+                        Создать нового пользователя
                     </button>
                     <input
                         type="text"
                         value={userSearchTerm}
                         onChange={(e) => setUserSearchTerm(e.target.value)}
-                        placeholder="Search user"
+                        placeholder="Поиск пользователя"
                         className="search-input"
                     />
                     <ul className="user-list">
@@ -460,7 +460,7 @@ const Home = () => {
                                     {avatarSrc ? (
                                         <img
                                             src={avatarSrc}
-                                            alt={`${user.username} avatar`}
+                                            alt={`${user.username} аватар`}
                                             className="user-avatar"
                                         />
                                     ) : (
@@ -476,24 +476,24 @@ const Home = () => {
                 <div className="line-divider"></div>
 
                 <div className="chats-container">
-                    <h1 className="home-group-chats-h1">Group chats</h1>
+                    <h1 className="home-group-chats-h1">Групповые чаты</h1>
                     <div className="chat-input-container">
                         <input
                             type="text"
                             value={chatName}
                             onChange={(e) => setChatName(e.target.value)}
-                            placeholder="Enter the chat name"
+                            placeholder="Введите имя чата"
                             className="chat-input"
                         />
                         <button onClick={createChatHandler} className="create-chat-button">
-                            Create a group chat
+                            Создать групповой чат
                         </button>
                     </div>
                     <input
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search chats..."
+                        placeholder="Поиск чатов..."
                         className="search-input"
                     />
                     <ul className="chat-list">
@@ -523,12 +523,12 @@ const Home = () => {
                 className="modal"
                 overlayClassName="modal-overlay"
             >
-                <h2 className="modal-title">Create User</h2>
+                <h2 className="modal-title">Создать пользователя</h2>
                 <input
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter username"
+                    placeholder="Введите имя пользователя"
                     className="modal-input"
                     required
                 />
@@ -536,14 +536,14 @@ const Home = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
+                    placeholder="Введите пароль"
                     className="modal-input"
                     required
                 />
                 <textarea
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    placeholder="Tell us about yourself (optional)"
+                    placeholder="Расскажите о себе (необязательно)"
                     rows={3}
                     className="modal-textarea"
                     maxLength={244}
@@ -554,10 +554,10 @@ const Home = () => {
                     className="modal-file-input"
                 />
                 <button type="button" onClick={createUserHandler} className="modal-create-button">
-                    Create User
+                    Создать пользователя
                 </button>
                 <button onClick={() => setModalIsOpen(false)} className="modal-close-button">
-                    Close
+                    Закрыть
                 </button>
             </Modal>
         </div>
