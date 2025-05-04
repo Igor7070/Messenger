@@ -161,6 +161,16 @@ const Home = () => {
                         const newMessage = JSON.parse(message.body);
                         handleNewMessage(newMessage);
                     });
+                    // Подписка на сообщения для каждого группового чата
+                    chats
+                        .filter((chat) => !chat.private)
+                        .forEach((chat) => {
+                            stompClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
+                                const newMessage = JSON.parse(message.body);
+                                console.log(`Сообщение для группового чата ${chat.id}:`, newMessage);
+                                handleNewMessage(newMessage);
+                            });
+                        });
                 }
             },
         });
@@ -169,31 +179,47 @@ const Home = () => {
         return () => {
             stompClient.current.deactivate();
         };
-    }, [currentUserId]);
+    }, [currentUserId, chats]);
 
     const handleNewMessage = async (message) => {
+        console.log('Получено новое сообщение:', message);
         const chatId = message.chatId;
-        const messages = await getMessages(chatId);
-        const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
-        const unreadCount = calculateUnreadCount(messages, chatId);
+        try {
+            // Проверяем, является ли чат групповым
+            const chat = chats.find((c) => c.id === chatId);
+            if (!chat || chat.private) {
+                console.log('Сообщение для приватного чата или чат не найден, игнорируем:', chatId);
+                return;
+            }
 
-        setChats((prevChats) =>
-            prevChats.map((chat) =>
-                chat.id === chatId
-                    ? {
-                          ...chat,
-                          lastMessage: lastMessage ? lastMessage.content : null,
-                          timestamp: lastMessage ? lastMessage.timestamp : null,
-                          unreadCount, // Обновляем unreadCount в реальном времени
-                      }
-                    : chat
-            )
-        );
+            const messages = await getMessages(chatId);
+            console.log('Загружены сообщения для чата', chatId, messages);
+            const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+            const unreadCount = calculateUnreadCount(messages, chatId);
+            console.log('Рассчитан unreadCount:', unreadCount);
 
-        if (userInteracted) {
-            messageAudioRef.current.play().catch((error) => {
-                console.error('Ошибка воспроизведения звука уведомления:', error);
-            });
+            setChats((prevChats) =>
+                prevChats.map((chat) =>
+                    chat.id === chatId
+                        ? {
+                              ...chat,
+                              lastMessage: lastMessage ? lastMessage.content : null,
+                              timestamp: lastMessage ? lastMessage.timestamp : null,
+                              unreadCount,
+                          }
+                        : chat
+                )
+            );
+            console.log('Обновлено состояние chats для чата', chatId);
+
+            if (userInteracted) {
+                messageAudioRef.current.play().catch((error) => {
+                    console.error('Ошибка воспроизведения звука уведомления:', error);
+                });
+            }
+        } catch (error) {
+            console.error('Ошибка обработки нового сообщения:', error);
+            toast.error('Ошибка при обновлении сообщений');
         }
     };
 
