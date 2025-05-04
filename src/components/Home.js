@@ -166,7 +166,6 @@ const Home = () => {
         }
     };
 
-    // Инициализация WebSocket
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
         if (storedUserId) {
@@ -181,6 +180,17 @@ const Home = () => {
             webSocketFactory: () => socket,
             onConnect: () => {
                 console.log('Connected to WebSocket in Home.js');
+                if (currentUserId) {
+                    stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
+                        const callRequest = JSON.parse(message.body);
+                        handleIncomingCall(callRequest);
+                    });
+                    // Подписка на сообщения для всех чатов
+                    stompClient.current.subscribe(`/topic/messages`, (message) => {
+                        const newMessage = JSON.parse(message.body);
+                        handleNewMessage(newMessage);
+                    });
+                }
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
@@ -191,17 +201,6 @@ const Home = () => {
         return () => {
             stompClient.current.deactivate();
         };
-    }, []);
-
-    // Подписка на звонки
-    useEffect(() => {
-        if (currentUserId && stompClient.current?.connected) {
-            stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
-                const callRequest = JSON.parse(message.body);
-                console.log('Incoming call received:', callRequest);
-                handleIncomingCall(callRequest);
-            });
-        }
     }, [currentUserId]);
 
     // Подписка на сообщения для групповых чатов
@@ -211,16 +210,38 @@ const Home = () => {
                 if (!chat.private) {
                     stompClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
                         const newMessage = JSON.parse(message.body);
-                        console.log(`handleNewMessage: New message received for chatId=${chat.id}`, newMessage);
-                        handleNewMessage(newMessage, chat.id);
+                        console.log(`New message for group chatId=${chat.id}`, newMessage);
+                        updateUnreadCount(chat.id, newMessage);
+                        if (userInteracted) {
+                            messageAudioRef.current.play().catch((error) => {
+                                console.error('Error playing message notification sound:', error);
+                            });
+                        }
                     });
                 }
             });
         }
     }, [chats, currentUserId]);
 
-    const handleNewMessage = (newMessage, chatId) => {
-        updateUnreadCount(chatId, newMessage);
+    const handleNewMessage = async (message) => {
+        const chatId = message.chatId;
+        const messages = await getMessages(chatId);
+        const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+        const unreadCount = calculateUnreadCount(messages, chatId);
+
+        setChats((prevChats) =>
+            prevChats.map((chat) =>
+                chat.id === chatId
+                    ? {
+                          ...chat,
+                          lastMessage: lastMessage ? lastMessage.content : null,
+                          timestamp: lastMessage ? lastMessage.timestamp : null,
+                          unreadCount,
+                      }
+                    : chat
+            )
+        );
+
         if (userInteracted) {
             messageAudioRef.current.play().catch((error) => {
                 console.error('Error playing message notification sound:', error);
@@ -454,7 +475,7 @@ const Home = () => {
             </audio>
 
             <audio ref={messageAudioRef}>
-                <source src="https://unlimitedpossibilities12.org/static/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
+                <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
             </audio>
 
