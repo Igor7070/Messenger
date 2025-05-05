@@ -188,7 +188,7 @@ const PersonalChats = () => {
                                 audioRef.current.currentTime = 0;
                             }
                             console.log('Отправляем тост: Звонящий отменил вызов.');
-                            toast.info('Звонящий отменил вызов.');
+                            toast.info('The caller cancelled the call.');
                         } else {
                             console.log('Нет активного вызова или звука:', {
                                 incomingCall,

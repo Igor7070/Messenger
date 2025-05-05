@@ -227,7 +227,7 @@ const Messenger = () => {
                                 audioRef.current.pause();
                                 audioRef.current.currentTime = 0;
                             }
-                            toast.info('Звонящий завершил вызов.');
+                            toast.info('The caller cancelled the call.');
                         } else {
                             console.log('No active call or audio:', {
                                 incomingCall,

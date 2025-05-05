@@ -220,7 +220,7 @@ const Home = () => {
                                 audioRef.current.pause();
                                 audioRef.current.currentTime = 0;
                             }
-                            toast.info('Звонящий отменил вызов.');
+                            toast.info('The caller cancelled the call.');
                         } else {
                             console.log('Нет активного вызова или звука:', {
                                 incomingCall,
