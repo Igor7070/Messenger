@@ -1,11 +1,19 @@
 package com.example.unl_pos12.model.messenger;
 
 public class CallRequest {
+    private String type; // Добавляем поле type
     private String callerId; // ID вызывающего
     private String recipientId; // ID получателя
     private String roomId; // ID комнаты для звонка
 
     // Геттеры и сеттеры
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
     public String getCallerId() {
         return callerId;
     }

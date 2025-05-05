@@ -39,12 +39,10 @@ public class WebRTCController {
         System.out.println("Method initiateCall is working...");
         System.out.println("callRequest: " + callRequest);
         System.out.println("callRequest.getRecipientId(): " + callRequest.getRecipientId());
-        // Отправляем уведомление о звонке
+        // Устанавливаем type для начального запроса на звонок
+        callRequest.setType("call");
         messagingTemplate.convertAndSend("/topic/calls/" + callRequest.getRecipientId(), callRequest);
-
-        // Можно отправить roomId, если это необходимо
         messagingTemplate.convertAndSend("/topic/room/" + callRequest.getRoomId(), callRequest);
-
         System.out.println("Method initiateCall worked success.");
         return ResponseEntity.ok("Call initiated");
     }
