@@ -209,7 +209,6 @@ const Home = () => {
                         console.log('Текущее состояние incomingCall:', incomingCall);
                         console.log('Текущее состояние lastCallRequest:', lastCallRequest);
                         console.log('audioRef.current:', audioRef.current, 'src:', audioRef.current?.src);
-                        // Закрываем уведомление, если lastCallRequest, incomingCall или звук активны
                         if (
                             lastCallRequest?.roomId === callRequest.roomId ||
                             incomingCall?.roomId === callRequest.roomId ||
@@ -235,7 +234,7 @@ const Home = () => {
                         console.log('Получен запрос на звонок:', callRequest);
                         handleIncomingCall(callRequest);
                     } else {
-                        console.log('Получено сообщение с неизвестным типом:', callRequest);
+                        console.log('Получено сообщение с неизвестным типом:', callRequest, 'Полное сообщение:', message.body);
                     }
                 });
             },
@@ -334,7 +333,11 @@ const Home = () => {
 
     const handleIncomingCall = async (callRequest) => {
         console.log('Входящий запрос на звонок:', callRequest);
-        // Сохраняем параметры вызова
+        // Проверяем, есть ли активный вызов
+        if (lastCallRequest && lastCallRequest.roomId === callRequest.roomId) {
+            console.log('Вызов с roomId уже обрабатывается:', callRequest.roomId);
+            return;
+        }
         setLastCallRequestWithLog({
             roomId: callRequest.roomId,
             callerId: callRequest.callerId,
@@ -342,7 +345,10 @@ const Home = () => {
         });
         setIncomingCallWithLog(callRequest);
         try {
-            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
+            const response = await Promise.race([
+                fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('API timeout')), 5000))
+            ]);
             if (response.ok) {
                 const callerData = await response.json();
                 setIncomingCallWithLog({
