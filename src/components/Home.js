@@ -179,11 +179,15 @@ const Home = () => {
     
                     if (callRequest.type === 'endCall') {
                         console.log('Получен сигнал endCall:', callRequest);
-                        if (incomingCall && incomingCall.roomId === callRequest.roomId) {
+                        console.log('Текущее состояние incomingCall:', incomingCall);
+                        // Закрываем уведомление, если roomId совпадает или incomingCall существует
+                        if (incomingCall?.roomId === callRequest.roomId || audioRef.current?.src) {
                             console.log('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
                             setIncomingCall(null); // Закрываем уведомление
-                            audioRef.current.pause(); // Останавливаем звук
-                            audioRef.current.currentTime = 0;
+                            if (audioRef.current) {
+                                audioRef.current.pause(); // Останавливаем звук
+                                audioRef.current.currentTime = 0;
+                            }
                             toast.info('Звонящий отменил вызов.');
                         } else {
                             console.log('Несоответствие roomId или нет активного вызова:', {
@@ -192,7 +196,7 @@ const Home = () => {
                             });
                         }
                     } else if (callRequest.type === 'call' || !callRequest.type) {
-                        // Обработка входящего звонка (поддержка старого формата без type)
+                        // Обработка входящего звонка
                         console.log('Получен запрос на звонок:', callRequest);
                         handleIncomingCall(callRequest);
                     } else {
@@ -211,6 +215,11 @@ const Home = () => {
             console.log('WebSocket для звонков отключён');
         };
     }, [currentUserId]);
+    
+    // Отладка изменений incomingCall
+    useEffect(() => {
+        console.log('Состояние incomingCall изменилось:', incomingCall);
+    }, [incomingCall]);
 
     // Подписка на сообщения
     useEffect(() => {
