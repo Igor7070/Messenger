@@ -22,12 +22,27 @@ const PersonalChats = () => {
     const [shouldRefreshChats, setShouldRefreshChats] = useState(true);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const stompClient = useRef(null);
+    const callRequestRef = useRef(null); // Добавляем useRef для хранения данных вызова
     const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
     audioRef.current.loop = true;
     const messageAudioRef = useRef(null);
 
     const currentUserName = location.state?.currentUserName || 'User';
     const currentUserId = userId;
+
+    // Отладка setIncomingCall
+    const setIncomingCallWithLog = (value) => {
+        console.log('Вызов setIncomingCall:', value);
+        console.log('Текущее incomingCall:', incomingCall);
+        console.log('Текущее callRequestRef:', callRequestRef.current);
+        console.log('Стек вызовов:', new Error().stack);
+        setIncomingCall(value);
+    };
+
+    // Отладка изменений incomingCall
+    useEffect(() => {
+        console.log('Состояние incomingCall изменилось:', incomingCall);
+    }, [incomingCall]);
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -122,7 +137,8 @@ const PersonalChats = () => {
     useEffect(() => {
         if (incomingCall && userInteracted) {
             audioRef.current.play().catch(error => {
-                console.error('Autoplay was prevented.', error);
+                console.error('Autoplay was prevented:', error);
+                toast.warn('Please interact with the page to enable call audio.');
             });
         } else {
             audioRef.current.pause();
@@ -132,42 +148,112 @@ const PersonalChats = () => {
 
     // WebSocket для звонков
     useEffect(() => {
+        if (!currentUserId) return;
+
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
+            connectTimeout: 10000,
             onConnect: () => {
                 console.log('Connected to WebSocket in PersonalChats');
                 console.log("currentUserId:", currentUserId);
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
-                    const callRequest = JSON.parse(message.body);
-                    handleIncomingCall(callRequest);
+                    console.log('Получено сообщение в /topic/calls:', message.body);
+                    let callRequest;
+                    try {
+                        callRequest = JSON.parse(message.body);
+                        console.log('Обработанное сообщение:', callRequest);
+                        console.log('Тип сообщения:', callRequest.type);
+                    } catch (error) {
+                        console.error('Ошибка парсинга сообщения:', error, message.body);
+                        return;
+                    }
+
+                    if (callRequest.type === 'endCall') {
+                        console.log('Получен сигнал endCall:', callRequest);
+                        console.log('Текущее состояние incomingCall:', incomingCall);
+                        console.log('Текущее callRequestRef:', callRequestRef.current);
+                        console.log('audioRef.current:', audioRef.current, 'src:', audioRef.current?.src);
+                        // Закрываем уведомление, если roomId совпадает или есть звук
+                        if (
+                            callRequestRef.current?.roomId === callRequest.roomId ||
+                            incomingCall?.roomId === callRequest.roomId ||
+                            audioRef.current?.src
+                        ) {
+                            console.log('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
+                            setIncomingCallWithLog(null);
+                            callRequestRef.current = null;
+                            if (audioRef.current) {
+                                audioRef.current.pause();
+                                audioRef.current.currentTime = 0;
+                            }
+                            console.log('Отправляем тост: Звонящий отменил вызов.');
+                            toast.info('Звонящий отменил вызов.');
+                        } else {
+                            console.log('Нет активного вызова или звука:', {
+                                incomingCall,
+                                callRequestRef: callRequestRef.current,
+                                callRequest,
+                                audioSrc: audioRef.current?.src
+                            });
+                        }
+                    } else if (callRequest.type === 'call' || !callRequest.type) {
+                        console.log('Получен запрос на звонок:', callRequest);
+                        handleIncomingCall(callRequest);
+                    } else {
+                        console.log('Получено сообщение с неизвестным типом:', callRequest);
+                    }
                 });
+            },
+            onWebSocketError: (error) => {
+                console.error('Ошибка WebSocket для звонков:', error);
             },
         });
         stompClient.current.activate();
 
         return () => {
             stompClient.current.deactivate();
+            console.log('WebSocket для звонков отключён');
         };
     }, [currentUserId]);
 
     const handleIncomingCall = async (callRequest) => {
-        console.log('Incoming call request:', callRequest);
-        setIncomingCall(callRequest);
+        console.log('Входящий запрос на звонок:', callRequest);
+        // Сохраняем данные вызова в callRequestRef
+        callRequestRef.current = {
+            roomId: callRequest.roomId,
+            callerId: callRequest.callerId,
+            recipientId: callRequest.recipientId
+        };
+        console.log('callRequestRef установлен:', callRequestRef.current);
+        setIncomingCallWithLog(callRequest);
         try {
+            console.log('Начало fetch для callerId:', callRequest.callerId);
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
+            console.log('fetch завершен, status:', response.status);
             if (response.ok) {
                 const callerData = await response.json();
-                setIncomingCall({
+                console.log('Данные звонящего:', callerData);
+                setIncomingCallWithLog({
                     ...callRequest,
                     callerName: callerData.username,
-                    avatar: callerData.avatar // Добавляем avatar
+                    avatar: callerData.avatar
                 });
             } else {
-                console.error('Error fetching caller data');
+                console.error('Ошибка при получении данных звонящего:', response.status);
+                setIncomingCallWithLog({
+                    ...callRequest,
+                    callerName: 'Unknown',
+                    avatar: null
+                });
             }
         } catch (error) {
-            console.error('Error fetching caller data:', error);
+            console.error('Ошибка при получении данных звонящего:', error);
+            setIncomingCallWithLog({
+                ...callRequest,
+                callerName: 'Unknown',
+                avatar: null
+            });
         }
     };
 
@@ -176,7 +262,7 @@ const PersonalChats = () => {
         audioRef.current.currentTime = 0;
 
         console.log('Function acceptCall in PersonalChats working...');
-        console.log("Incoming call accepted:", incomingCall);
+        console.log('Incoming call accepted:', incomingCall);
 
         const callerId = incomingCall.callerId;
         const recipientId = currentUserId;
@@ -195,6 +281,9 @@ const PersonalChats = () => {
                         signal: { type: 'acceptCall' },
                     });
 
+                    setIncomingCallWithLog(null);
+                    callRequestRef.current = null;
+
                     navigate(`/voice-call/${incomingCall.roomId}`, {
                         state: {
                             incomingCall,
@@ -206,9 +295,11 @@ const PersonalChats = () => {
                     });
                 } else {
                     console.error('Error fetching user names');
+                    toast.error('Failed to fetch user data');
                 }
             } catch (error) {
                 console.error('Error fetching user names:', error);
+                toast.error('Error fetching user data');
             }
         };
 
@@ -219,7 +310,8 @@ const PersonalChats = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
 
-        setIncomingCall(null);
+        setIncomingCallWithLog(null);
+        callRequestRef.current = null;
         sendSignal({
             from: currentUserId,
             signal: { type: 'rejectCall' },
@@ -227,8 +319,8 @@ const PersonalChats = () => {
     };
 
     const sendSignal = (signalMessage) => {
-        console.log('Function sendSignal in VoiceCall.js working...');
-        console.log("Sending signal:", JSON.stringify(signalMessage, null, 2));
+        console.log('Function sendSignal in PersonalChats working...');
+        console.log('Sending signal:', JSON.stringify(signalMessage, null, 2));
         const roomId = incomingCall.roomId;
         stompClient.current.publish({
             destination: `/app/signal/${roomId}`,
@@ -423,8 +515,8 @@ const PersonalChats = () => {
             {incomingCall && (
                 <IncomingCallNotification
                     callerId={incomingCall.callerId}
-                    callerName={incomingCall.callerName}
-                    avatar={incomingCall.avatar} // Добавляем проп avatar
+                    callerName={incomingCall.callerName || 'Unknown'}
+                    avatar={incomingCall.avatar}
                     onAccept={acceptCall}
                     onReject={rejectCall}
                 />
