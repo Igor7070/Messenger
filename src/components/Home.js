@@ -167,16 +167,29 @@ const Home = () => {
                 console.log('Подключено к WebSocket для звонков в Home.js');
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
                     console.log('Получено сообщение в /topic/calls:', message.body);
-                    const callRequest = JSON.parse(message.body);
+                    let callRequest;
+                    try {
+                        callRequest = JSON.parse(message.body);
+                    } catch (error) {
+                        console.error('Ошибка парсинга сообщения:', error, message.body);
+                        return;
+                    }
+    
+                    console.log('Обработанное сообщение:', callRequest);
     
                     if (callRequest.type === 'endCall') {
-                        // Обработка сигнала завершения вызова
                         console.log('Получен сигнал endCall:', callRequest);
                         if (incomingCall && incomingCall.roomId === callRequest.roomId) {
+                            console.log('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
                             setIncomingCall(null); // Закрываем уведомление
                             audioRef.current.pause(); // Останавливаем звук
                             audioRef.current.currentTime = 0;
                             toast.info('Звонящий отменил вызов.');
+                        } else {
+                            console.log('Несоответствие roomId или нет активного вызова:', {
+                                incomingCall,
+                                callRequest
+                            });
                         }
                     } else {
                         // Обработка входящего звонка

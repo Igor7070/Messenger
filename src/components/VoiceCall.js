@@ -431,15 +431,17 @@ const VoiceCall = ({ recipientId }) => {
     
                 // Если это звонящий, отправляем сигнал в канал принимающего
                 if (isCaller && incomingCall?.recipientId) {
+                    const endCallMessage = {
+                        type: 'endCall',
+                        roomId,
+                        callerId: currentUserId,
+                        recipientId: incomingCall.recipientId
+                    };
+                    console.log('Sending endCall to /topic/calls/', incomingCall.recipientId, ':', endCallMessage);
                     stompClient.current.publish({
                         destination: `/topic/calls/${incomingCall.recipientId}`,
-                        body: JSON.stringify({
-                            type: 'endCall',
-                            roomId,
-                            callerId: currentUserId
-                        })
+                        body: JSON.stringify(endCallMessage)
                     });
-                    console.log(`Sent endCall signal to /topic/calls/${incomingCall.recipientId}`);
                 }
             }
     
