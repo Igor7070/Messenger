@@ -46,10 +46,11 @@ const Messenger = () => {
     const [incomingCall, setIncomingCall] = useState(null);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const stompClient = useRef(null);
-    const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
+    const audioRef = useRef(new Audio('https://igor7070.github"io/Messenger/melodiya_kovboy.mp3'));
     audioRef.current.loop = true;
     const messageAudioRef = useRef(null);
     const navigate = useNavigate();
+    const callRequestRef = useRef(null);
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -114,16 +115,16 @@ const Messenger = () => {
     useEffect(() => {
         setCurrentUserId(Number(userId));
 
-        const stompClient = new Client({
+        const stompClientInstance = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
                 console.log('Connected to WebSocket');
-                stompClient.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
+                stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
                     updateMessages(newMessage);
                 });
 
-                stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
+                stompClientInstance.subscribe(`/topic/notifications/${userId}`, (message) => {
                     const notification = message.body;
                     console.log("Received notification:", notification);
 
@@ -163,11 +164,11 @@ const Messenger = () => {
             },
         });
 
-        setClient(stompClient);
-        stompClient.activate();
+        setClient(stompClientInstance);
+        stompClientInstance.activate();
 
         return () => {
-            stompClient.deactivate();
+            stompClientInstance.deactivate();
         };
     }, [chatId, userId, userInteracted, navigate]);
 
@@ -194,6 +195,8 @@ const Messenger = () => {
     }, [incomingCall, userInteracted]);
 
     useEffect(() => {
+        if (!currentUserId) return;
+
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
@@ -201,15 +204,60 @@ const Messenger = () => {
                 console.log('Connected to WebSocket in Messenger');
                 console.log("currentUserId:", currentUserId);
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
-                    const callRequest = JSON.parse(message.body);
-                    handleIncomingCall(callRequest);
+                    let callRequest;
+                    try {
+                        callRequest = JSON.parse(message.body);
+                        console.log('Received call message:', callRequest);
+                    } catch (error) {
+                        console.error('Error parsing call message:', error, message.body);
+                        return;
+                    }
+
+                    if (callRequest.type === 'endCall') {
+                        console.log('Received endCall signal:', callRequest);
+                        if (
+                            callRequestRef.current?.roomId === callRequest.roomId ||
+                            incomingCall?.roomId === callRequest.roomId ||
+                            audioRef.current?.src
+                        ) {
+                            console.log('Closing call notification for roomId:', callRequest.roomId);
+                            setIncomingCall(null);
+                            callRequestRef.current = null;
+                            if (audioRef.current) {
+                                audioRef.current.pause();
+                                audioRef.current.currentTime = 0;
+                            }
+                            toast.info('Caller ended the call.');
+                        } else {
+                            console.log('No active call or audio:', {
+                                incomingCall,
+                                callRequestRef: callRequestRef.current,
+                                callRequest,
+                                audioSrc: audioRef.current?.src
+                            });
+                        }
+                    } else if (callRequest.type === 'call' || !callRequest.type) {
+                        console.log('Received call request:', callRequest);
+                        callRequestRef.current = {
+                            roomId: callRequest.roomId,
+                            callerId: callRequest.callerId,
+                            recipientId: callRequest.recipientId
+                        };
+                        handleIncomingCall(callRequest);
+                    } else {
+                        console.log('Received message with unknown type:', callRequest);
+                    }
                 });
+            },
+            onWebSocketError: (error) => {
+                console.error('WebSocket error for calls:', error);
             },
         });
         stompClient.current.activate();
 
         return () => {
             stompClient.current.deactivate();
+            console.log('WebSocket for calls disconnected');
         };
     }, [currentUserId]);
 
@@ -223,13 +271,23 @@ const Messenger = () => {
                 setIncomingCall({
                     ...callRequest,
                     callerName: callerData.username,
-                    avatar: callerData.avatar // Добавляем avatar
+                    avatar: callerData.avatar
                 });
             } else {
                 console.error('Error fetching caller data');
+                setIncomingCall({
+                    ...callRequest,
+                    callerName: 'Unknown',
+                    avatar: null
+                });
             }
         } catch (error) {
             console.error('Error fetching caller data:', error);
+            setIncomingCall({
+                ...callRequest,
+                callerName: 'Unknown',
+                avatar: null
+            });
         }
     };
 
@@ -250,12 +308,15 @@ const Messenger = () => {
 
                 if (callerResponse.ok && recipientResponse.ok) {
                     const callerData = await callerResponse.json();
-                    const recipientData = await recipientResponse.json();
+                    const recipientData = await response.json();
 
                     sendSignal({
                         from: currentUserId,
                         signal: { type: 'acceptCall' },
                     });
+
+                    setIncomingCall(null);
+                    callRequestRef.current = null;
 
                     navigate(`/voice-call/${incomingCall.roomId}`, {
                         state: {
@@ -268,9 +329,11 @@ const Messenger = () => {
                     });
                 } else {
                     console.error('Error fetching user names');
+                    toast.error('Failed to fetch user data');
                 }
             } catch (error) {
                 console.error('Error fetching user names:', error);
+                toast.error('Error fetching user data');
             }
         };
 
@@ -282,6 +345,7 @@ const Messenger = () => {
         audioRef.current.currentTime = 0;
 
         setIncomingCall(null);
+        callRequestRef.current = null;
         sendSignal({
             from: currentUserId,
             signal: { type: 'rejectCall' },
@@ -289,7 +353,7 @@ const Messenger = () => {
     };
 
     const sendSignal = (signalMessage) => {
-        console.log('Function sendSignal in VoiceCall.js working...');
+        console.log('Function sendSignal in Messenger working...');
         console.log("Sending signal:", JSON.stringify(signalMessage, null, 2));
         const roomId = incomingCall.roomId;
         stompClient.current.publish({
@@ -662,7 +726,7 @@ const Messenger = () => {
                 <IncomingCallNotification
                     callerId={incomingCall.callerId}
                     callerName={incomingCall.callerName}
-                    avatar={incomingCall.avatar} // Добавляем проп avatar
+                    avatar={incomingCall.avatar}
                     onAccept={acceptCall}
                     onReject={rejectCall}
                 />
