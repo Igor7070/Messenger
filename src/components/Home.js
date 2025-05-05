@@ -28,8 +28,7 @@ const Home = () => {
     const [loginPassword, setLoginPassword] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [incomingCall, setIncomingCall] = useState(null);
-    const [lastCallRequest, setLastCallRequest] = useState(null);
-    const [isCallActive, setIsCallActive] = useState(false);
+    const [lastCallRequest, setLastCallRequest] = useState(null); // Новое состояние для хранения параметров вызова
     const { userInteracted, handleInteraction } = useUserInteraction();
     const stompClient = useRef(null);
     const messageClient = useRef(null);
@@ -39,27 +38,12 @@ const Home = () => {
 
     useWebSocket(currentUserId, messageAudioRef);
 
-    // Отладка setIncomingCall
+    // Отладка вызовов setIncomingCall
     const setIncomingCallWithLog = (value) => {
         console.log('Вызов setIncomingCall:', value);
         console.log('Текущее incomingCall:', incomingCall);
         console.log('Стек вызовов:', new Error().stack);
         setIncomingCall(value);
-    };
-
-    // Отладка setLastCallRequest
-    const setLastCallRequestWithLog = (value) => {
-        console.log('Вызов setLastCallRequest:', value);
-        console.log('Текущее lastCallRequest:', lastCallRequest);
-        console.log('Стек вызовов:', new Error().stack);
-        setLastCallRequest(value);
-    };
-
-    // Отладка setIsCallActive
-    const setIsCallActiveWithLog = (value) => {
-        console.log('Вызов setIsCallActive:', value);
-        console.log('Текущее isCallActive:', isCallActive);
-        setIsCallActive(value);
     };
 
     useEffect(() => {
@@ -72,7 +56,7 @@ const Home = () => {
         };
     }, [handleInteraction]);
 
-    // Управление звуком
+    // Управление звуком для входящего звонка
     useEffect(() => {
         if (incomingCall && userInteracted) {
             console.log('Попытка воспроизведения звука, userInteracted:', userInteracted);
@@ -216,28 +200,25 @@ const Home = () => {
                         console.log('Получен сигнал endCall:', callRequest);
                         console.log('Текущее состояние incomingCall:', incomingCall);
                         console.log('Текущее состояние lastCallRequest:', lastCallRequest);
-                        console.log('Текущее состояние isCallActive:', isCallActive);
                         console.log('audioRef.current:', audioRef.current, 'src:', audioRef.current?.src);
+                        // Закрываем уведомление, если lastCallRequest, incomingCall или звук активны
                         if (
-                            isCallActive &&
-                            (lastCallRequest?.roomId === callRequest.roomId ||
-                             incomingCall?.roomId === callRequest.roomId ||
-                             audioRef.current?.src)
+                            lastCallRequest?.roomId === callRequest.roomId ||
+                            incomingCall?.roomId === callRequest.roomId ||
+                            audioRef.current?.src
                         ) {
                             console.log('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
-                            setIsCallActiveWithLog(false);
                             setIncomingCallWithLog(null);
-                            setLastCallRequestWithLog(null);
+                            setLastCallRequest(null);
                             if (audioRef.current) {
                                 audioRef.current.pause();
                                 audioRef.current.currentTime = 0;
                             }
                             toast.info('Звонящий отменил вызов.');
                         } else {
-                            console.log('Нет активного вызова для roomId:', callRequest.roomId, {
+                            console.log('Нет активного вызова или звука:', {
                                 incomingCall,
                                 lastCallRequest,
-                                isCallActive,
                                 callRequest,
                                 audioSrc: audioRef.current?.src
                             });
@@ -246,7 +227,7 @@ const Home = () => {
                         console.log('Получен запрос на звонок:', callRequest);
                         handleIncomingCall(callRequest);
                     } else {
-                        console.log('Получено сообщение с неизвестным типом:', callRequest, 'Полное сообщение:', message.body);
+                        console.log('Получено сообщение с неизвестным типом:', callRequest);
                     }
                 });
             },
@@ -345,39 +326,21 @@ const Home = () => {
 
     const handleIncomingCall = async (callRequest) => {
         console.log('Входящий запрос на звонок:', callRequest);
-        if (isCallActive && lastCallRequest?.roomId === callRequest.roomId) {
-            console.log('Вызов с roomId уже обрабатывается:', callRequest.roomId);
-            return;
-        }
-        setIsCallActiveWithLog(true);
-        setLastCallRequestWithLog((prev) => {
-            console.log('Предыдущее lastCallRequest:', prev);
-            return {
-                roomId: callRequest.roomId,
-                callerId: callRequest.callerId,
-                recipientId: callRequest.recipientId
-            };
+        // Сохраняем параметры вызова в lastCallRequest
+        setLastCallRequest({
+            roomId: callRequest.roomId,
+            callerId: callRequest.callerId,
+            recipientId: callRequest.recipientId
         });
-        setIncomingCallWithLog((prev) => {
-            console.log('Предыдущее incomingCall:', prev);
-            return callRequest;
-        });
+        setIncomingCallWithLog(callRequest);
         try {
-            console.log('Начало API-запроса для callerId:', callRequest.callerId);
-            const response = await Promise.race([
-                fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('API timeout')), 5000))
-            ]);
+            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
             if (response.ok) {
                 const callerData = await response.json();
-                console.log('API-запрос завершён, данные:', callerData);
-                setIncomingCallWithLog((prev) => {
-                    console.log('Предыдущее incomingCall перед добавлением callerName:', prev);
-                    return {
-                        ...callRequest,
-                        callerName: callerData.username,
-                        avatar: callerData.avatar
-                    };
+                setIncomingCallWithLog({
+                    ...callRequest,
+                    callerName: callerData.username,
+                    avatar: callerData.avatar
                 });
             } else {
                 console.error('Ошибка при получении данных звонящего:', response.status);
@@ -390,25 +353,31 @@ const Home = () => {
     const acceptCall = async () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
+
         console.log('Функция acceptCall в Home.js работает...');
         console.log('Входящий звонок принят:', incomingCall);
+
         const callerId = incomingCall.callerId;
         const recipientId = currentUserId;
+
         try {
             const [callerResponse, recipientResponse] = await Promise.all([
                 fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`),
                 fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`),
             ]);
+
             if (callerResponse.ok && recipientResponse.ok) {
                 const callerData = await callerResponse.json();
                 const recipientData = await recipientResponse.json();
+
                 sendSignal({
                     from: currentUserId,
                     signal: { type: 'acceptCall' },
                 });
-                setIsCallActiveWithLog(false);
+
                 setIncomingCallWithLog(null);
-                setLastCallRequestWithLog(null);
+                setLastCallRequest(null); // Сбрасываем lastCallRequest
+
                 navigate(`/voice-call/${incomingCall.roomId}`, {
                     state: {
                         incomingCall,
@@ -429,9 +398,8 @@ const Home = () => {
     const rejectCall = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-        setIsCallActiveWithLog(false);
         setIncomingCallWithLog(null);
-        setLastCallRequestWithLog(null);
+        setLastCallRequest(null); // Сбрасываем lastCallRequest
         sendSignal({
             from: currentUserId,
             signal: { type: 'rejectCall' },
