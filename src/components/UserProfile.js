@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Импортируйте useNavigate
-import '../styles/UserProfile.css'; 
+import { useParams, useNavigate } from 'react-router-dom';
+import '../styles/UserProfile.css';
 import { FaEdit, FaEllipsisV } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -13,7 +13,7 @@ import { Client } from '@stomp/stompjs';
 
 const UserProfile = () => {
     const { userId } = useParams();
-    const navigate = useNavigate(); // Инициализация useNavigate
+    const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [newAvatar, setNewAvatar] = useState(null);
     const [info, setInfo] = useState('');
@@ -22,17 +22,31 @@ const UserProfile = () => {
     const [currentUserId, setCurrentUserId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [avatarFileName, setAvatarFileName] = useState('');
-    const [incomingCall, setIncomingCall] = useState(null); // Состояние для входящего звонка
+    const [incomingCall, setIncomingCall] = useState(null);
+    const callRequestRef = useRef(null); // Добавляем useRef для хранения данных вызова
     const { userInteracted, handleInteraction } = useUserInteraction();
-    const stompClient = useRef(null); // Используем useRef для stompClient
-    const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3')); // Инициализация
-    audioRef.current.loop = true; // Устанавливаем зацикливание
-    const messageAudioRef = useRef(null); // Новый реф для звука уведомлений
+    const stompClient = useRef(null);
+    const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
+    audioRef.current.loop = true;
+    const messageAudioRef = useRef(null);
 
-    const [settingsMenuVisible, setSettingsMenuVisible] = useState(false); // Состояние для управления видимостью меню настроек
+    const [settingsMenuVisible, setSettingsMenuVisible] = useState(false);
 
-    // Используем хук для подключения к WebSocket
     useWebSocket(currentUserId, messageAudioRef);
+
+    // Отладка setIncomingCall
+    const setIncomingCallWithLog = (value) => {
+        console.log('Вызов setIncomingCall:', value);
+        console.log('Текущее incomingCall:', incomingCall);
+        console.log('Текущее callRequestRef:', callRequestRef.current);
+        console.log('Стек вызовов:', new Error().stack);
+        setIncomingCall(value);
+    };
+
+    // Отладка изменений incomingCall
+    useEffect(() => {
+        console.log('Состояние incomingCall изменилось:', incomingCall);
+    }, [incomingCall]);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -69,11 +83,10 @@ const UserProfile = () => {
         }
     }, [userId]);
 
-    // Обработка события клика на документе
     useEffect(() => {
         const handleClick = () => {
             handleInteraction();
-            setSettingsMenuVisible(false); // Закрываем меню настроек при клике вне его
+            setSettingsMenuVisible(false);
         };
     
         document.addEventListener('click', handleClick);
@@ -82,72 +95,139 @@ const UserProfile = () => {
         };
     }, [handleInteraction]);
     
-    // Второе useEffect: управление воспроизведением звука
     useEffect(() => {
         if (incomingCall && userInteracted) {
             audioRef.current.play().catch(error => {
-                console.error('Autoplay was prevented.', error);
-            }); // Запускаем звук при входящем звонке
+                console.error('Autoplay was prevented:', error);
+                toast.warn('Please interact with the page to enable call audio.');
+            });
         } else {
-            audioRef.current.pause(); // Останавливаем звук, если звонка нет
-            audioRef.current.currentTime = 0; // Сбрасываем время
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
         }
-    }, [incomingCall, userInteracted]); // Добавляем userInteracted в зависимости
+    }, [incomingCall, userInteracted]);
 
     useEffect(() => {         
-        // Подключение к WebSocket
+        if (!currentUserId) return;
+
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
+            connectTimeout: 10000,
             onConnect: () => {
-                console.log('Connected to WebSocket in Home.js');
+                console.log('Connected to WebSocket in UserProfile.js');
                 console.log("currentUserId:", currentUserId);
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
-                    const callRequest = JSON.parse(message.body);
-                    handleIncomingCall(callRequest);
+                    console.log('Получено сообщение в /topic/calls:', message.body);
+                    let callRequest;
+                    try {
+                        callRequest = JSON.parse(message.body);
+                        console.log('Обработанное сообщение:', callRequest);
+                        console.log('Тип сообщения:', callRequest.type);
+                    } catch (error) {
+                        console.error('Ошибка парсинга сообщения:', error, message.body);
+                        return;
+                    }
+
+                    if (callRequest.type === 'endCall') {
+                        console.log('Получен сигнал endCall:', callRequest);
+                        console.log('Текущее состояние incomingCall:', incomingCall);
+                        console.log('Текущее callRequestRef:', callRequestRef.current);
+                        console.log('audioRef.current:', audioRef.current, 'src:', audioRef.current?.src);
+                        // Закрываем уведомление, если roomId совпадает или есть звук
+                        if (
+                            callRequestRef.current?.roomId === callRequest.roomId ||
+                            incomingCall?.roomId === callRequest.roomId ||
+                            audioRef.current?.src
+                        ) {
+                            console.log('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
+                            setIncomingCallWithLog(null);
+                            callRequestRef.current = null;
+                            if (audioRef.current) {
+                                audioRef.current.pause();
+                                audioRef.current.currentTime = 0;
+                            }
+                            console.log('Отправляем тост: Звонящий отменил вызов.');
+                            toast.info('Звонящий отменил вызов.');
+                        } else {
+                            console.log('Нет активного вызова или звука:', {
+                                incomingCall,
+                                callRequestRef: callRequestRef.current,
+                                callRequest,
+                                audioSrc: audioRef.current?.src
+                            });
+                        }
+                    } else if (callRequest.type === 'call' || !callRequest.type) {
+                        console.log('Получен запрос на звонок:', callRequest);
+                        handleIncomingCall(callRequest);
+                    } else {
+                        console.log('Получено сообщение с неизвестным типом:', callRequest);
+                    }
                 });
+            },
+            onWebSocketError: (error) => {
+                console.error('Ошибка WebSocket для звонков:', error);
             },
         });
         stompClient.current.activate();
     
         return () => {
             stompClient.current.deactivate();
+            console.log('WebSocket для звонков отключён');
         };
     }, [currentUserId]);
 
     const handleIncomingCall = async (callRequest) => {
-        console.log("Incoming call request:", callRequest);
-        setIncomingCall(callRequest);
+        console.log("Входящий запрос на звонок:", callRequest);
+        // Сохраняем данные вызова в callRequestRef
+        callRequestRef.current = {
+            roomId: callRequest.roomId,
+            callerId: callRequest.callerId,
+            recipientId: callRequest.recipientId
+        };
+        console.log('callRequestRef установлен:', callRequestRef.current);
+        setIncomingCallWithLog(callRequest);
         const callerId = callRequest.callerId;
         try {
+            console.log('Начало fetch для callerId:', callerId);
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
+            console.log('fetch завершен, status:', response.status);
             if (response.ok) {
                 const callerData = await response.json();
-                setIncomingCall({
+                console.log('Данные звонящего:', callerData);
+                setIncomingCallWithLog({
                     ...callRequest,
                     callerName: callerData.username,
-                    avatar: callerData.avatar // Добавляем avatar
+                    avatar: callerData.avatar
                 });
             } else {
-                console.error('Error fetching caller data');
+                console.error('Ошибка при получении данных звонящего:', response.status);
+                setIncomingCallWithLog({
+                    ...callRequest,
+                    callerName: 'Unknown',
+                    avatar: null
+                });
             }
         } catch (error) {
-            console.error('Error fetching caller data:', error);
+            console.error('Ошибка при получении данных звонящего:', error);
+            setIncomingCallWithLog({
+                ...callRequest,
+                callerName: 'Unknown',
+                avatar: null
+            });
         }
     };
 
     const acceptCall = () => {
-        // Остановка звука при принятии звонка
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
 
-        console.log('Function acceptCall in Home.js working...');
-        console.log("Incoming call accepted:", incomingCall); // Логируем входящий вызов
+        console.log('Function acceptCall in UserProfile.js working...');
+        console.log("Incoming call accepted:", incomingCall);
         
         const callerId = incomingCall.callerId;
-        const recipientId = currentUserId; // Получаем ID текущего пользователя
+        const recipientId = currentUserId;
     
-        // Получаем имена пользователей (можно использовать Promise.all для параллельных запросов)
         const fetchUserNames = async () => {
             try {
                 const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
@@ -159,25 +239,28 @@ const UserProfile = () => {
 
                     sendSignal({
                         from: currentUserId,
-                        signal: {
-                            type: 'acceptCall'
-                        }
+                        signal: { type: 'acceptCall' }
                     });
                     
+                    setIncomingCallWithLog(null);
+                    callRequestRef.current = null;
+
                     navigate(`/voice-call/${incomingCall.roomId}`, { 
                         state: { 
                             incomingCall, 
                             isCaller: false, 
                             currentUserId: currentUserId, 
-                            callerName: callerData.username, // Передаем имя звонящего
-                            recipientName: recipientData.username // Передаем имя получателя
+                            callerName: callerData.username,
+                            recipientName: recipientData.username
                         } 
                     });
                 } else {
                     console.error('Error fetching user names');
+                    toast.error('Failed to fetch user data');
                 }
             } catch (error) {
                 console.error('Error fetching user names:', error);
+                toast.error('Error fetching user data');
             }
         };
     
@@ -185,22 +268,19 @@ const UserProfile = () => {
     };
 
     const rejectCall = () => {
-        // Остановка звука при принятии звонка
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
 
-        setIncomingCall(null); // Скрыть уведомление
+        setIncomingCallWithLog(null);
+        callRequestRef.current = null;
         sendSignal({
             from: currentUserId,
-            signal: {
-                type: 'rejectCall'
-            }
+            signal: { type: 'rejectCall' }
         });
-        //toast.info(`Call from ${incomingCall.callerId} rejected.`);
     };
 
     const sendSignal = (signalMessage) => {
-        console.log('Function sendSignal in VoiceCall.js working...');
+        console.log('Function sendSignal in UserProfile.js working...');
         console.log("Sending signal:", JSON.stringify(signalMessage, null, 2));
         const roomId = incomingCall.roomId;
         stompClient.current.publish({
@@ -253,8 +333,8 @@ const UserProfile = () => {
     };
 
     const handleSendMessage = async () => {
-        const currentUsername = localStorage.getItem('username'); // Получаем актуальное имя пользователя
-        const chatName = `${user.username}_${currentUsername}`; // Создаем имя чата
+        const currentUsername = localStorage.getItem('username');
+        const chatName = `${user.username}_${currentUsername}`;
     
         if (currentUserId && userId !== String(currentUserId)) {
             try {
@@ -301,7 +381,7 @@ const UserProfile = () => {
                 } else {
                     const newChat = { 
                         name: chatName, 
-                        private: true // Устанавливаем isPrivate в true
+                        private: true
                     };
     
                     console.log('New chat data:', newChat);
@@ -332,11 +412,9 @@ const UserProfile = () => {
         }
     };
 
-    // Обработчик для звонка
     const handleCall = async () => {
-        // Генерация уникального roomId
-        const roomId = `room-${currentUserId}-${userId}`; // Например, используем комбинацию ID пользователя
-        console.log("Room ID:", roomId); // Логируем roomId
+        const roomId = `room-${currentUserId}-${userId}`;
+        console.log("Room ID:", roomId);
     
         console.log("Call Request: ");
         console.log("callerId - currentUserId: ", currentUserId);
@@ -366,8 +444,8 @@ const UserProfile = () => {
                         incomingCall: callRequest, 
                         isCaller: true, 
                         currentUserId: currentUserId,
-                        callerName: callerData.username, // Передаем имя звонящего
-                        recipientName: user.username // Передаем имя получателя
+                        callerName: callerData.username,
+                        recipientName: user.username
                     } 
                 });
             } else {
@@ -380,17 +458,17 @@ const UserProfile = () => {
     };
 
     const handlePersonalChats = () => {
-        const currentUserName = localStorage.getItem('username'); // Получаем имя из localStorage
-        navigate(`/user/${currentUserId}/personal-chats`, { state: { currentUserName } }); // Переход к личным чатам
+        const currentUserName = localStorage.getItem('username');
+        navigate(`/user/${currentUserId}/personal-chats`, { state: { currentUserName } });
     };
 
     const toggleSettingsMenu = (event) => {
-        event.stopPropagation(); // Останавливаем всплытие события
+        event.stopPropagation();
         setSettingsMenuVisible(prevVisible => !prevVisible);
     };
 
     const handleDeleteAccount = async () => {
-        console.log('Delete account clicked'); 
+        console.log('Delete account clicked');
         const confirmed = window.confirm("Are you sure you want to delete your account?");
         if (confirmed) {
             try {
@@ -400,11 +478,8 @@ const UserProfile = () => {
 
                 if (response.ok) {
                     console.log('User deleted successfully');
-                    // Удаляем данные из localStorage
                     localStorage.removeItem('userId');
                     localStorage.removeItem('username');
-
-                    // Перенаправляем на главную страницу
                     navigate('/');
                     toast.success('Account deleted successfully!');
                 } else {
@@ -425,7 +500,7 @@ const UserProfile = () => {
         <div className="user-profile-container">
             <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
             <audio ref={messageAudioRef}>
-                <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
+                <source src="https://unlimitedpossibilities12.org/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
             </audio>
             <h1 className="user-profile-username">{user.username}</h1>
@@ -465,12 +540,12 @@ const UserProfile = () => {
             </div>
 
             {userId === String(currentUserId) && ( 
-                <div className="button-container"> {/* Новый контейнер */}
+                <div className="button-container">
                     <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
                     <button onClick={handlePersonalChats} className="personal-chats-button">
                         Personal Chats
                     </button>
-                    <FaEllipsisV className="settings-icon" onClick={toggleSettingsMenu} /> {/* Кнопка для открытия меню */}
+                    <FaEllipsisV className="settings-icon" onClick={toggleSettingsMenu} />
                     {settingsMenuVisible && (
                         <div className="settings-menu">
                             <button onClick={handleDeleteAccount}>Delete account</button>
@@ -479,17 +554,14 @@ const UserProfile = () => {
                 </div>
             )}
 
-            {/* Кнопка "Send message" */}
-            {currentUserId && userId !== String(currentUserId) && ( 
+            {currentUserId && userId !== String(currentUserId) && (
                 <button onClick={handleSendMessage} className="send-message-button">Send Message</button>
             )}
 
-            {/* Кнопка "Call" */}
-            {currentUserId && userId !== String(currentUserId) && ( 
+            {currentUserId && userId !== String(currentUserId) && (
                 <button onClick={handleCall} className="call-button">Call</button>
             )}
 
-            {/* Модальное окно для увеличенного изображения */}
             <Modal isOpen={isModalOpen} onRequestClose={closeModal} className="user-profile-modal" overlayClassName="user-profile-modal-overlay">
                 <img 
                     src={`https://unlimitedpossibilities12.org/avatars/${avatarFileName}`} 
@@ -501,12 +573,11 @@ const UserProfile = () => {
                 <button onClick={closeModal} className="user-profile-modal-close-button">Close</button>
             </Modal>
 
-            {/* Уведомление о входящем звонке */}
             {incomingCall && (
                 <IncomingCallNotification 
                     callerId={incomingCall.callerId} 
-                    callerName={incomingCall.callerName}
-                    avatar={incomingCall.avatar} // Добавляем avatar
+                    callerName={incomingCall.callerName || 'Unknown'}
+                    avatar={incomingCall.avatar}
                     onAccept={acceptCall} 
                     onReject={rejectCall} 
                 />
