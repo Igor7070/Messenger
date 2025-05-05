@@ -191,10 +191,12 @@ const Home = () => {
                                 callRequest
                             });
                         }
-                    } else {
-                        // Обработка входящего звонка
+                    } else if (callRequest.type === 'call' || !callRequest.type) {
+                        // Обработка входящего звонка (поддержка старого формата без type)
                         console.log('Получен запрос на звонок:', callRequest);
                         handleIncomingCall(callRequest);
+                    } else {
+                        console.log('Получено сообщение с неизвестным типом:', callRequest);
                     }
                 });
             },

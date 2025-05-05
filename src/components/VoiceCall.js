@@ -431,6 +431,7 @@ const VoiceCall = ({ recipientId }) => {
     
                 // Если это звонящий, отправляем сигнал в канал принимающего через /app/call
                 if (isCaller && incomingCall?.recipientId) {
+                    console.log('incomingCall:', incomingCall); // Отладка
                     const endCallMessage = {
                         type: 'endCall',
                         roomId,
@@ -442,6 +443,8 @@ const VoiceCall = ({ recipientId }) => {
                         destination: `/app/call/${incomingCall.recipientId}`,
                         body: JSON.stringify(endCallMessage)
                     });
+                } else {
+                    console.log('Не отправляем endCall: isCaller=', isCaller, 'recipientId=', incomingCall?.recipientId);
                 }
             }
     
