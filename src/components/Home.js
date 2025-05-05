@@ -28,7 +28,7 @@ const Home = () => {
     const [loginPassword, setLoginPassword] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [incomingCall, setIncomingCall] = useState(null);
-    const [lastCallRequest, setLastCallRequest] = useState(null); // Новое состояние для хранения параметров вызова
+    const [lastCallRequest, setLastCallRequest] = useState(null);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const stompClient = useRef(null);
     const messageClient = useRef(null);
@@ -38,12 +38,20 @@ const Home = () => {
 
     useWebSocket(currentUserId, messageAudioRef);
 
-    // Отладка вызовов setIncomingCall
+    // Отладка setIncomingCall
     const setIncomingCallWithLog = (value) => {
         console.log('Вызов setIncomingCall:', value);
         console.log('Текущее incomingCall:', incomingCall);
         console.log('Стек вызовов:', new Error().stack);
         setIncomingCall(value);
+    };
+
+    // Отладка setLastCallRequest
+    const setLastCallRequestWithLog = (value) => {
+        console.log('Вызов setLastCallRequest:', value);
+        console.log('Текущее lastCallRequest:', lastCallRequest);
+        console.log('Стек вызовов:', new Error().stack);
+        setLastCallRequest(value);
     };
 
     useEffect(() => {
@@ -56,7 +64,7 @@ const Home = () => {
         };
     }, [handleInteraction]);
 
-    // Управление звуком для входящего звонка
+    // Управление звуком
     useEffect(() => {
         if (incomingCall && userInteracted) {
             console.log('Попытка воспроизведения звука, userInteracted:', userInteracted);
@@ -209,7 +217,7 @@ const Home = () => {
                         ) {
                             console.log('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
                             setIncomingCallWithLog(null);
-                            setLastCallRequest(null);
+                            setLastCallRequestWithLog(null);
                             if (audioRef.current) {
                                 audioRef.current.pause();
                                 audioRef.current.currentTime = 0;
@@ -326,8 +334,8 @@ const Home = () => {
 
     const handleIncomingCall = async (callRequest) => {
         console.log('Входящий запрос на звонок:', callRequest);
-        // Сохраняем параметры вызова в lastCallRequest
-        setLastCallRequest({
+        // Сохраняем параметры вызова
+        setLastCallRequestWithLog({
             roomId: callRequest.roomId,
             callerId: callRequest.callerId,
             recipientId: callRequest.recipientId
@@ -376,7 +384,7 @@ const Home = () => {
                 });
 
                 setIncomingCallWithLog(null);
-                setLastCallRequest(null); // Сбрасываем lastCallRequest
+                setLastCallRequestWithLog(null);
 
                 navigate(`/voice-call/${incomingCall.roomId}`, {
                     state: {
@@ -399,7 +407,7 @@ const Home = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
         setIncomingCallWithLog(null);
-        setLastCallRequest(null); // Сбрасываем lastCallRequest
+        setLastCallRequestWithLog(null);
         sendSignal({
             from: currentUserId,
             signal: { type: 'rejectCall' },
