@@ -23,7 +23,7 @@ const UserProfile = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [avatarFileName, setAvatarFileName] = useState('');
     const [incomingCall, setIncomingCall] = useState(null);
-    const callRequestRef = useRef(null); // Добавляем useRef для хранения данных вызова
+    const callRequestRef = useRef(null);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const stompClient = useRef(null);
     const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
@@ -34,7 +34,6 @@ const UserProfile = () => {
 
     useWebSocket(currentUserId, messageAudioRef);
 
-    // Отладка setIncomingCall
     const setIncomingCallWithLog = (value) => {
         console.log('Вызов setIncomingCall:', value);
         console.log('Текущее incomingCall:', incomingCall);
@@ -43,7 +42,6 @@ const UserProfile = () => {
         setIncomingCall(value);
     };
 
-    // Отладка изменений incomingCall
     useEffect(() => {
         console.log('Состояние incomingCall изменилось:', incomingCall);
     }, [incomingCall]);
@@ -134,7 +132,6 @@ const UserProfile = () => {
                         console.log('Текущее состояние incomingCall:', incomingCall);
                         console.log('Текущее callRequestRef:', callRequestRef.current);
                         console.log('audioRef.current:', audioRef.current, 'src:', audioRef.current?.src);
-                        // Закрываем уведомление, если roomId совпадает или есть звук
                         if (
                             callRequestRef.current?.roomId === callRequest.roomId ||
                             incomingCall?.roomId === callRequest.roomId ||
@@ -179,7 +176,6 @@ const UserProfile = () => {
 
     const handleIncomingCall = async (callRequest) => {
         console.log("Входящий запрос на звонок:", callRequest);
-        // Сохраняем данные вызова в callRequestRef
         callRequestRef.current = {
             roomId: callRequest.roomId,
             callerId: callRequest.callerId,
@@ -500,7 +496,7 @@ const UserProfile = () => {
         <div className="user-profile-container">
             <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
             <audio ref={messageAudioRef}>
-                <source src="https://unlimitedpossibilities12.org/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
+                <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
             </audio>
             <h1 className="user-profile-username">{user.username}</h1>
