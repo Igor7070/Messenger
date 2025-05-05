@@ -46,7 +46,7 @@ const Messenger = () => {
     const [incomingCall, setIncomingCall] = useState(null);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const stompClient = useRef(null);
-    const audioRef = useRef(new Audio('https://igor7070.github"io/Messenger/melodiya_kovboy.mp3'));
+    const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
     audioRef.current.loop = true;
     const messageAudioRef = useRef(null);
     const navigate = useNavigate();
@@ -227,7 +227,7 @@ const Messenger = () => {
                                 audioRef.current.pause();
                                 audioRef.current.currentTime = 0;
                             }
-                            toast.info('Caller ended the call.');
+                            toast.info('Звонящий завершил вызов.');
                         } else {
                             console.log('No active call or audio:', {
                                 incomingCall,
@@ -308,7 +308,7 @@ const Messenger = () => {
 
                 if (callerResponse.ok && recipientResponse.ok) {
                     const callerData = await callerResponse.json();
-                    const recipientData = await response.json();
+                    const recipientData = await recipientResponse.json();
 
                     sendSignal({
                         from: currentUserId,
