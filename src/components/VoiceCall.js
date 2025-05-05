@@ -399,7 +399,7 @@ const VoiceCall = ({ recipientId }) => {
         // Закрываем RTCPeerConnection, если он существует
         if (peerConnectionRef.current) {
             peerConnectionRef.current.close();
-            peerConnectionRef.current = null; // Очищаем ссылку
+            peerConnectionRef.current = null;
             console.log('Peer connection closed.');
         }
     
@@ -410,23 +410,43 @@ const VoiceCall = ({ recipientId }) => {
         if (remoteAudioRef.current) {
             remoteAudioRef.current.srcObject = null;
         }
-
+    
+        // Останавливаем мелодию ожидания, если она играет
+        if (isCaller) {
+            setIsWaiting(false);
+            ringtoneRef.current.pause();
+            ringtoneRef.current.currentTime = 0;
+        }
+    
         if (stompClient.current) {
+            // Отправляем сигнал о завершении вызова
+            if (!terminationInitiator) {
+                // Сигнал в канал комнаты
+                sendSignal({
+                    from: currentUserId,
+                    signal: {
+                        type: 'endCall'
+                    }
+                });
+    
+                // Если это звонящий, отправляем сигнал в канал принимающего
+                if (isCaller && incomingCall?.recipientId) {
+                    stompClient.current.publish({
+                        destination: `/topic/calls/${incomingCall.recipientId}`,
+                        body: JSON.stringify({
+                            type: 'endCall',
+                            roomId,
+                            callerId: currentUserId
+                        })
+                    });
+                    console.log(`Sent endCall signal to /topic/calls/${incomingCall.recipientId}`);
+                }
+            }
+    
             stompClient.current.deactivate();
             console.log('WebSocket connection deactivated in endCall.');
         }
     
-        // Отправляем сигнал о завершении вызова
-        if (!terminationInitiator) {
-            // Выполняем sendSignal только если terminationInitiator равно false
-            sendSignal({
-                from: currentUserId,
-                signal: {
-                    type: 'endCall'
-                }
-            });
-        }
-
         // Перенаправляем пользователя на компонент Home
         navigate('/');
     };

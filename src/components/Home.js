@@ -158,17 +158,31 @@ const Home = () => {
     // Подписка на звонки
     useEffect(() => {
         if (!currentUserId) return;
-
+    
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
-            connectTimeout: 10000, // Увеличиваем таймаут до 10 секунд
+            connectTimeout: 10000,
             onConnect: () => {
                 console.log('Подключено к WebSocket для звонков в Home.js');
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
-                    console.log('Получен запрос на звонок:', message.body);
+                    console.log('Получено сообщение в /topic/calls:', message.body);
                     const callRequest = JSON.parse(message.body);
-                    handleIncomingCall(callRequest);
+    
+                    if (callRequest.type === 'endCall') {
+                        // Обработка сигнала завершения вызова
+                        console.log('Получен сигнал endCall:', callRequest);
+                        if (incomingCall && incomingCall.roomId === callRequest.roomId) {
+                            setIncomingCall(null); // Закрываем уведомление
+                            audioRef.current.pause(); // Останавливаем звук
+                            audioRef.current.currentTime = 0;
+                            toast.info('Звонящий отменил вызов.');
+                        }
+                    } else {
+                        // Обработка входящего звонка
+                        console.log('Получен запрос на звонок:', callRequest);
+                        handleIncomingCall(callRequest);
+                    }
                 });
             },
             onWebSocketError: (error) => {
@@ -176,7 +190,7 @@ const Home = () => {
             },
         });
         stompClient.current.activate();
-
+    
         return () => {
             stompClient.current.deactivate();
             console.log('WebSocket для звонков отключён');
