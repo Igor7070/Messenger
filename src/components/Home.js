@@ -28,7 +28,7 @@ const Home = () => {
     const [loginPassword, setLoginPassword] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [incomingCall, setIncomingCall] = useState(null);
-    const callRequestRef = useRef(null); // Промежуточное хранилище для данных вызова
+    const callRequestRef = useRef(null);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const stompClient = useRef(null);
     const messageClient = useRef(null);
@@ -342,6 +342,35 @@ const Home = () => {
         };
         console.log('callRequestRef установлен:', callRequestRef.current);
         setIncomingCallWithLog(callRequest);
+        // Загружаем данные звонящего
+        try {
+            console.log('Начало fetch для callerId:', callRequest.callerId);
+            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
+            console.log('fetch завершен, status:', response.status);
+            if (response.ok) {
+                const callerData = await response.json();
+                console.log('Данные звонящего:', callerData);
+                setIncomingCallWithLog({
+                    ...callRequest,
+                    callerName: callerData.username,
+                    avatar: callerData.avatar
+                });
+            } else {
+                console.error('Ошибка при получении данных звонящего:', response.status);
+                setIncomingCallWithLog({
+                    ...callRequest,
+                    callerName: 'Unknown',
+                    avatar: null
+                });
+            }
+        } catch (error) {
+            console.error('Ошибка при получении данных звонящего:', error);
+            setIncomingCallWithLog({
+                ...callRequest,
+                callerName: 'Unknown',
+                avatar: null
+            });
+        }
     };
 
     const acceptCall = async () => {
@@ -383,9 +412,11 @@ const Home = () => {
                 });
             } else {
                 console.error('Ошибка при получении имен пользователей');
+                toast.error('Failed to fetch user data');
             }
         } catch (error) {
             console.error('Ошибка при получении имен пользователей:', error);
+            toast.error('Error fetching user data');
         }
     };
 
