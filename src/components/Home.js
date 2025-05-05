@@ -29,6 +29,7 @@ const Home = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [incomingCall, setIncomingCall] = useState(null);
     const [lastCallRequest, setLastCallRequest] = useState(null);
+    const [isCallActive, setIsCallActive] = useState(false);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const stompClient = useRef(null);
     const messageClient = useRef(null);
@@ -38,19 +39,21 @@ const Home = () => {
 
     useWebSocket(currentUserId, messageAudioRef);
 
-    // Отладка setIncomingCall
+    const logWithTimestamp = (message, data) => {
+        console.log(`[${new Date().toISOString()}] ${message}`, data);
+    };
+
     const setIncomingCallWithLog = (value) => {
-        console.log('Вызов setIncomingCall:', value);
-        console.log('Текущее incomingCall:', incomingCall);
-        console.log('Стек вызовов:', new Error().stack);
+        logWithTimestamp('Вызов setIncomingCall:', value);
+        logWithTimestamp('Текущее incomingCall:', incomingCall);
+        logWithTimestamp('Стек вызовов:', new Error().stack);
         setIncomingCall(value);
     };
 
-    // Отладка setLastCallRequest
     const setLastCallRequestWithLog = (value) => {
-        console.log('Вызов setLastCallRequest:', value);
-        console.log('Текущее lastCallRequest:', lastCallRequest);
-        console.log('Стек вызовов:', new Error().stack);
+        logWithTimestamp('Вызов setLastCallRequest:', value);
+        logWithTimestamp('Текущее lastCallRequest:', lastCallRequest);
+        logWithTimestamp('Стек вызовов:', new Error().stack);
         setLastCallRequest(value);
     };
 
@@ -64,20 +67,19 @@ const Home = () => {
         };
     }, [handleInteraction]);
 
-    // Управление звуком
     useEffect(() => {
         if (incomingCall && userInteracted) {
-            console.log('Попытка воспроизведения звука, userInteracted:', userInteracted);
+            logWithTimestamp('Попытка воспроизведения звука, userInteracted:', userInteracted);
             if (!audioRef.current.src) {
                 audioRef.current.src = 'https://igor7070.github.io/Messenger/melodiya_kovboy.mp3';
-                console.log('audioRef.current.src установлен:', audioRef.current.src);
+                logWithTimestamp('audioRef.current.src установлен:', audioRef.current.src);
             }
             audioRef.current.play().catch(error => {
-                console.error('Автовоспроизведение заблокировано:', error);
+                logWithTimestamp('Автовоспроизведение заблокировано:', error);
                 toast.warn('Please interact with the page to enable call audio.');
             });
         } else {
-            console.log('Звук не воспроизводится, incomingCall:', incomingCall, 'userInteracted:', userInteracted);
+            logWithTimestamp('Звук не воспроизводится, incomingCall:', incomingCall, 'userInteracted:', userInteracted);
             if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
@@ -85,7 +87,6 @@ const Home = () => {
         }
     }, [incomingCall, userInteracted]);
 
-    // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
         if (!timestamp) return '';
         try {
@@ -96,21 +97,19 @@ const Home = () => {
             }
             return format(kievDate, 'dd.MM.yy');
         } catch (error) {
-            console.error('Ошибка форматирования временной метки:', error);
+            logWithTimestamp('Ошибка форматирования временной метки:', error);
             return '';
         }
     };
 
-    // Сокращение текста сообщения
     const truncateMessage = (message, maxLength = 30) => {
         if (!message) return 'No messages yet';
         return message.length > maxLength ? message.substring(0, maxLength) + '...' : message;
     };
 
-    // Загрузка чатов
     const fetchChats = async () => {
         try {
-            console.log('Запрашиваем чаты...');
+            logWithTimestamp('Запрашиваем чаты...', null);
             const response = await fetch('https://unlimitedpossibilities12.org/api/chats');
             if (response.ok) {
                 const data = await response.json();
@@ -127,18 +126,17 @@ const Home = () => {
                         };
                     })
                 );
-                console.log('Чаты загружены:', chatsWithMessages);
+                logWithTimestamp('Чаты загружены:', chatsWithMessages);
                 setChats(chatsWithMessages);
             } else {
                 toast.error('Failed to fetch chats');
             }
         } catch (error) {
-            console.error('Ошибка при загрузке чатов:', error);
+            logWithTimestamp('Ошибка при загрузке чатов:', error);
             toast.error('Error fetching chats');
         }
     };
 
-    // Вычисление количества непрочитанных сообщений
     const calculateUnreadCount = (messages, chatId) => {
         const lastVisit = localStorage.getItem(`last_visit_chat_${chatId}`);
         if (!lastVisit) {
@@ -148,30 +146,28 @@ const Home = () => {
             const lastVisitTime = new Date(lastVisit).getTime();
             return messages.filter((msg) => new Date(msg.timestamp).getTime() > lastVisitTime).length;
         } catch (error) {
-            console.error('Ошибка при разборе времени последнего визита:', error);
+            logWithTimestamp('Ошибка при разборе времени последнего визита:', error);
             return 0;
         }
     };
 
-    // Загрузка пользователей
     const fetchUsers = async () => {
         try {
-            console.log('Запрашиваем пользователей...');
+            logWithTimestamp('Запрашиваем пользователей...', null);
             const response = await fetch('https://unlimitedpossibilities12.org/api/users');
             if (response.ok) {
                 const data = await response.json();
-                console.log('Пользователи загружены:', data);
+                logWithTimestamp('Пользователи загружены:', data);
                 setUsers(data);
             } else {
                 toast.error('Failed to fetch users');
             }
         } catch (error) {
-            console.error('Ошибка при загрузке пользователей:', error);
+            logWithTimestamp('Ошибка при загрузке пользователей:', error);
             toast.error('Error fetching users');
         }
     };
 
-    // Инициализация данных
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
         if (storedUserId) {
@@ -182,7 +178,6 @@ const Home = () => {
         fetchUsers();
     }, [currentUserId]);
 
-    // Подписка на звонки
     useEffect(() => {
         if (!currentUserId) return;
 
@@ -191,125 +186,125 @@ const Home = () => {
             webSocketFactory: () => socket,
             connectTimeout: 10000,
             onConnect: () => {
-                console.log('Подключено к WebSocket для звонков в Home.js');
+                logWithTimestamp('Подключено к WebSocket для звонков в Home.js', null);
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
-                    console.log('Получено сообщение в /topic/calls:', message.body);
+                    logWithTimestamp('Получено сообщение в /topic/calls:', message.body);
                     let callRequest;
                     try {
                         callRequest = JSON.parse(message.body);
-                        console.log('Обработанное сообщение:', callRequest);
-                        console.log('Тип сообщения:', callRequest.type);
+                        logWithTimestamp('Обработанное сообщение:', callRequest);
+                        logWithTimestamp('Тип сообщения:', callRequest.type);
                     } catch (error) {
-                        console.error('Ошибка парсинга сообщения:', error, message.body);
+                        logWithTimestamp('Ошибка парсинга сообщения:', { error, body: message.body });
                         return;
                     }
 
                     if (callRequest.type === 'endCall') {
-                        console.log('Получен сигнал endCall:', callRequest);
-                        console.log('Текущее состояние incomingCall:', incomingCall);
-                        console.log('Текущее состояние lastCallRequest:', lastCallRequest);
-                        console.log('audioRef.current:', audioRef.current, 'src:', audioRef.current?.src);
+                        logWithTimestamp('Получен сигнал endCall:', callRequest);
+                        logWithTimestamp('Текущее состояние incomingCall:', incomingCall);
+                        logWithTimestamp('Текущее состояние lastCallRequest:', lastCallRequest);
+                        logWithTimestamp('audioRef.current:', { element: audioRef.current, src: audioRef.current?.src });
+                        logWithTimestamp('isCallActive:', isCallActive);
                         if (
-                            lastCallRequest?.roomId === callRequest.roomId ||
-                            incomingCall?.roomId === callRequest.roomId ||
-                            audioRef.current?.src
+                            (isCallActive && lastCallRequest?.roomId === callRequest.roomId) ||
+                            (isCallActive && incomingCall?.roomId === callRequest.roomId)
                         ) {
-                            console.log('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
+                            logWithTimestamp('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
                             setIncomingCallWithLog(null);
                             setLastCallRequestWithLog(null);
+                            setIsCallActive(false);
                             if (audioRef.current) {
                                 audioRef.current.pause();
                                 audioRef.current.currentTime = 0;
                             }
                             toast.info('Звонящий отменил вызов.');
                         } else {
-                            console.log('Нет активного вызова или звука:', {
+                            logWithTimestamp('Нет активного вызова для roomId:', {
+                                roomId: callRequest.roomId,
                                 incomingCall,
                                 lastCallRequest,
-                                callRequest,
+                                isCallActive,
                                 audioSrc: audioRef.current?.src
                             });
                         }
                     } else if (callRequest.type === 'call' || !callRequest.type) {
-                        console.log('Получен запрос на звонок:', callRequest);
+                        logWithTimestamp('Получен запрос на звонок:', callRequest);
                         handleIncomingCall(callRequest);
                     } else {
-                        console.log('Получено сообщение с неизвестным типом:', callRequest, 'Полное сообщение:', message.body);
+                        logWithTimestamp('Получено сообщение с неизвестным типом:', { callRequest, fullMessage: message.body });
                     }
                 });
             },
             onWebSocketError: (error) => {
-                console.error('Ошибка WebSocket для звонков:', error);
+                logWithTimestamp('Ошибка WebSocket для звонков:', error);
             },
         });
         stompClient.current.activate();
 
         return () => {
             stompClient.current.deactivate();
-            console.log('WebSocket для звонков отключён');
+            logWithTimestamp('WebSocket для звонков отключён', null);
         };
     }, [currentUserId]);
 
-    // Отладка изменений incomingCall
     useEffect(() => {
-        console.log('Состояние incomingCall изменилось:', incomingCall);
+        logWithTimestamp('Состояние incomingCall изменилось:', incomingCall);
     }, [incomingCall]);
 
-    // Подписка на сообщения
     useEffect(() => {
         if (!currentUserId || chats.length === 0) {
-            console.log('Пропускаем подписку: нет пользователя или чатов');
+            logWithTimestamp('Пропускаем подписку: нет пользователя или чатов', null);
             return;
         }
 
-        console.log('Инициализация WebSocket для сообщений, чаты:', chats);
+        logWithTimestamp('Инициализация WebSocket для сообщений, чаты:', chats);
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         messageClient.current = new Client({
             webSocketFactory: () => socket,
             connectTimeout: 10000,
             onConnect: () => {
-                console.log('Подключено к WebSocket для сообщений в Home.js');
+                logWithTimestamp('Подключено к WebSocket для сообщений в Home.js', null);
                 chats
                     .filter((chat) => !chat.private)
                     .forEach((chat) => {
-                        console.log(`Подписываемся на /topic/chat/${chat.id}/messages`);
+                        logWithTimestamp(`Подписываемся на /topic/chat/${chat.id}/messages`, null);
                         messageClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
-                            console.log(`Получено сообщение для чата ${chat.id}:`, message.body);
+                            logWithTimestamp(`Получено сообщение для чата ${chat.id}:`, message.body);
                             const newMessage = JSON.parse(message.body);
                             handleNewMessage(newMessage, chat.id);
                         });
                     });
             },
             onWebSocketError: (error) => {
-                console.error('Ошибка WebSocket для сообщений:', error);
+                logWithTimestamp('Ошибка WebSocket для сообщений:', error);
             },
         });
         messageClient.current.activate();
 
         return () => {
             messageClient.current.deactivate();
-            console.log('WebSocket для сообщений отключён');
+            logWithTimestamp('WebSocket для сообщений отключён', null);
         };
     }, [currentUserId, chats]);
 
     const handleNewMessage = async (message, chatId) => {
-        console.log('Обработка нового сообщения:', message, 'для chatId:', chatId);
+        logWithTimestamp('Обработка нового сообщения:', { message, chatId });
         try {
             const chat = chats.find((c) => c.id === chatId);
             if (!chat) {
-                console.log('Чат не найден в состоянии chats:', chatId, 'Chats:', chats);
+                logWithTimestamp('Чат не найден в состоянии chats:', { chatId, chats });
                 return;
             }
             if (chat.private) {
-                console.log('Сообщение для приватного чата, игнорируем:', chatId);
+                logWithTimestamp('Сообщение для приватного чата, игнорируем:', chatId);
                 return;
             }
 
             const messages = await getMessages(chatId);
-            console.log('Загружены сообщения для чата', chatId, messages);
+            logWithTimestamp('Загружены сообщения для чата', { chatId, messages });
             const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
             const unreadCount = calculateUnreadCount(messages, chatId);
-            console.log('Рассчитан unreadCount:', unreadCount);
+            logWithTimestamp('Рассчитан unreadCount:', unreadCount);
 
             setChats((prevChats) => {
                 const updatedChats = prevChats.map((chat) =>
@@ -322,45 +317,56 @@ const Home = () => {
                           }
                         : chat
                 );
-                console.log('Обновлены чаты:', updatedChats);
+                logWithTimestamp('Обновлены чаты:', updatedChats);
                 return [...updatedChats];
             });
         } catch (error) {
-            console.error('Ошибка обработки нового сообщения:', error);
+            logWithTimestamp('Ошибка обработки нового сообщения:', error);
             toast.error('Error updating messages');
         }
     };
 
     const handleIncomingCall = async (callRequest) => {
-        console.log('Входящий запрос на звонок:', callRequest);
-        // Проверяем, есть ли активный вызов
-        if (lastCallRequest && lastCallRequest.roomId === callRequest.roomId) {
-            console.log('Вызов с roomId уже обрабатывается:', callRequest.roomId);
+        logWithTimestamp('Входящий запрос на звонок:', callRequest);
+        if (isCallActive && lastCallRequest?.roomId === callRequest.roomId) {
+            logWithTimestamp('Вызов с roomId уже обрабатывается:', callRequest.roomId);
             return;
         }
-        setLastCallRequestWithLog({
-            roomId: callRequest.roomId,
-            callerId: callRequest.callerId,
-            recipientId: callRequest.recipientId
+        setIsCallActive(true);
+        setLastCallRequestWithLog((prev) => {
+            logWithTimestamp('Предыдущее lastCallRequest:', prev);
+            return {
+                roomId: callRequest.roomId,
+                callerId: callRequest.callerId,
+                recipientId: callRequest.recipientId
+            };
         });
-        setIncomingCallWithLog(callRequest);
+        setIncomingCallWithLog((prev) => {
+            logWithTimestamp('Предыдущее incomingCall:', prev);
+            return callRequest;
+        });
         try {
+            logWithTimestamp('Начало API-запроса для callerId:', callRequest.callerId);
             const response = await Promise.race([
                 fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('API timeout')), 5000))
             ]);
             if (response.ok) {
                 const callerData = await response.json();
-                setIncomingCallWithLog({
-                    ...callRequest,
-                    callerName: callerData.username,
-                    avatar: callerData.avatar
+                logWithTimestamp('API-запрос завершён, данные:', callerData);
+                setIncomingCallWithLog((prev) => {
+                    logWithTimestamp('Предыдущее incomingCall перед добавлением callerName:', prev);
+                    return {
+                        ...callRequest,
+                        callerName: callerData.username,
+                        avatar: callerData.avatar
+                    };
                 });
             } else {
-                console.error('Ошибка при получении данных звонящего:', response.status);
+                logWithTimestamp('Ошибка при получении данных звонящего:', response.status);
             }
         } catch (error) {
-            console.error('Ошибка при получении данных звонящего:', error);
+            logWithTimestamp('Ошибка при получении данных звонящего:', error);
         }
     };
 
@@ -368,8 +374,8 @@ const Home = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
 
-        console.log('Функция acceptCall в Home.js работает...');
-        console.log('Входящий звонок принят:', incomingCall);
+        logWithTimestamp('Функция acceptCall в Home.js работает...', null);
+        logWithTimestamp('Входящий звонок принят:', incomingCall);
 
         const callerId = incomingCall.callerId;
         const recipientId = currentUserId;
@@ -391,6 +397,7 @@ const Home = () => {
 
                 setIncomingCallWithLog(null);
                 setLastCallRequestWithLog(null);
+                setIsCallActive(false);
 
                 navigate(`/voice-call/${incomingCall.roomId}`, {
                     state: {
@@ -402,10 +409,10 @@ const Home = () => {
                     },
                 });
             } else {
-                console.error('Ошибка при получении имен пользователей');
+                logWithTimestamp('Ошибка при получении имен пользователей', null);
             }
         } catch (error) {
-            console.error('Ошибка при получении имен пользователей:', error);
+            logWithTimestamp('Ошибка при получении имен пользователей:', error);
         }
     };
 
@@ -414,6 +421,7 @@ const Home = () => {
         audioRef.current.currentTime = 0;
         setIncomingCallWithLog(null);
         setLastCallRequestWithLog(null);
+        setIsCallActive(false);
         sendSignal({
             from: currentUserId,
             signal: { type: 'rejectCall' },
@@ -421,13 +429,13 @@ const Home = () => {
     };
 
     const sendSignal = (signalMessage) => {
-        console.log('Отправка сигнала:', JSON.stringify(signalMessage, null, 2));
+        logWithTimestamp('Отправка сигнала:', JSON.stringify(signalMessage, null, 2));
         const roomId = incomingCall.roomId;
         stompClient.current.publish({
             destination: `/app/signal/${roomId}`,
             body: JSON.stringify(signalMessage),
         });
-        console.log('Сигнал успешно отправлен.');
+        logWithTimestamp('Сигнал успешно отправлен.', null);
     };
 
     const loginUserHandler = async () => {
@@ -441,6 +449,7 @@ const Home = () => {
             setIsLoggedIn(true);
             toast.success('Login successful!');
         } catch (error) {
+            logWithTimestamp('Ошибка входа:', error);
             toast.error(error.message || 'Error logging in');
         }
     };
@@ -460,6 +469,7 @@ const Home = () => {
                 setChatName('');
                 toast.success('Chat created successfully!');
             } catch (error) {
+                logWithTimestamp('Ошибка создания чата:', error);
                 toast.error(error.message || 'Error creating chat');
             }
         } else {
@@ -496,6 +506,7 @@ const Home = () => {
                 toast.error(errorMessage);
             }
         } catch (error) {
+            logWithTimestamp('Ошибка создания пользователя:', error);
             toast.error('Error creating user');
         }
     };
