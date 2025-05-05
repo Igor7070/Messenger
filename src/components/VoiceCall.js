@@ -429,7 +429,7 @@ const VoiceCall = ({ recipientId }) => {
                     }
                 });
     
-                // Если это звонящий, отправляем сигнал в канал принимающего
+                // Если это звонящий, отправляем сигнал в канал принимающего через /app/call
                 if (isCaller && incomingCall?.recipientId) {
                     const endCallMessage = {
                         type: 'endCall',
@@ -437,9 +437,9 @@ const VoiceCall = ({ recipientId }) => {
                         callerId: currentUserId,
                         recipientId: incomingCall.recipientId
                     };
-                    console.log('Sending endCall to /topic/calls/', incomingCall.recipientId, ':', endCallMessage);
+                    console.log('Sending endCall to /app/call/', incomingCall.recipientId, ':', endCallMessage);
                     stompClient.current.publish({
-                        destination: `/topic/calls/${incomingCall.recipientId}`,
+                        destination: `/app/call/${incomingCall.recipientId}`,
                         body: JSON.stringify(endCallMessage)
                     });
                 }
