@@ -111,7 +111,8 @@
 }
 
 .unread-indicator {
-    background-color: #81C784;
+    /*background-color: #81C784;*/
+    background-color: #f28c38;
     color: #FFFFFF;
     border-radius: 12px;
     padding: 2px 8px;
