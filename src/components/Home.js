@@ -183,7 +183,7 @@ const Home = () => {
     // Подписка на звонки
     useEffect(() => {
         if (!currentUserId) return;
-
+    
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
@@ -201,13 +201,12 @@ const Home = () => {
                         console.error('Ошибка парсинга сообщения:', error, message.body);
                         return;
                     }
-
+    
                     if (callRequest.type === 'endCall') {
                         console.log('Получен сигнал endCall:', callRequest);
                         console.log('Текущее состояние incomingCall:', incomingCall);
                         console.log('Текущее callRequestRef:', callRequestRef.current);
                         console.log('audioRef.current:', audioRef.current, 'src:', audioRef.current?.src);
-                        // Закрываем уведомление, если roomId совпадает или есть звук
                         if (
                             callRequestRef.current?.roomId === callRequest.roomId ||
                             incomingCall?.roomId === callRequest.roomId ||
@@ -220,7 +219,11 @@ const Home = () => {
                                 audioRef.current.pause();
                                 audioRef.current.currentTime = 0;
                             }
-                            toast.info('The caller cancelled the call.');
+                            const cancelMessage = callRequest.type === 'video' ?
+                                'Видеозвонок был отменён.' :
+                                'Голосовой звонок был отменён.';
+                            console.log('Отправляем тост:', cancelMessage);
+                            toast.info(cancelMessage);
                         } else {
                             console.log('Нет активного вызова или звука:', {
                                 incomingCall,
@@ -229,7 +232,7 @@ const Home = () => {
                                 audioSrc: audioRef.current?.src
                             });
                         }
-                    } else if (callRequest.type === 'call' || !callRequest.type) {
+                    } else if (callRequest.type === 'voice' || callRequest.type === 'video') {
                         console.log('Получен запрос на звонок:', callRequest);
                         handleIncomingCall(callRequest);
                     } else {
@@ -242,7 +245,7 @@ const Home = () => {
             },
         });
         stompClient.current.activate();
-
+    
         return () => {
             stompClient.current.deactivate();
             console.log('WebSocket для звонков отключён');
@@ -334,15 +337,14 @@ const Home = () => {
 
     const handleIncomingCall = async (callRequest) => {
         console.log('Входящий запрос на звонок:', callRequest);
-        // Сохраняем данные вызова в callRequestRef
         callRequestRef.current = {
             roomId: callRequest.roomId,
             callerId: callRequest.callerId,
-            recipientId: callRequest.recipientId
+            recipientId: callRequest.recipientId,
+            type: callRequest.type
         };
         console.log('callRequestRef установлен:', callRequestRef.current);
         setIncomingCallWithLog(callRequest);
-        // Загружаем данные звонящего
         try {
             console.log('Начало fetch для callerId:', callRequest.callerId);
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
@@ -376,32 +378,33 @@ const Home = () => {
     const acceptCall = async () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-
+    
         console.log('Функция acceptCall в Home.js работает...');
         console.log('Входящий звонок принят:', incomingCall);
-
+    
         const callerId = incomingCall.callerId;
         const recipientId = currentUserId;
-
+    
         try {
             const [callerResponse, recipientResponse] = await Promise.all([
                 fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`),
                 fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`),
             ]);
-
+    
             if (callerResponse.ok && recipientResponse.ok) {
                 const callerData = await callerResponse.json();
                 const recipientData = await recipientResponse.json();
-
+    
                 sendSignal({
                     from: currentUserId,
                     signal: { type: 'acceptCall' },
                 });
-
+    
                 setIncomingCallWithLog(null);
                 callRequestRef.current = null;
-
-                navigate(`/voice-call/${incomingCall.roomId}`, {
+    
+                const route = incomingCall.type === 'video' ? `/video-call/${incomingCall.roomId}` : `/voice-call/${incomingCall.roomId}`;
+                navigate(route, {
                     state: {
                         incomingCall,
                         isCaller: false,
@@ -410,13 +413,14 @@ const Home = () => {
                         recipientName: recipientData.username,
                     },
                 });
+                toast.success(incomingCall.type === 'video' ? 'Видеозвонок принят' : 'Голосовой звонок принят');
             } else {
                 console.error('Ошибка при получении имен пользователей');
-                toast.error('Failed to fetch user data');
+                toast.error('Не удалось получить данные пользователя');
             }
         } catch (error) {
             console.error('Ошибка при получении имен пользователей:', error);
-            toast.error('Error fetching user data');
+            toast.error('Ошибка при получении данных пользователя');
         }
     };
 
@@ -429,6 +433,7 @@ const Home = () => {
             from: currentUserId,
             signal: { type: 'rejectCall' },
         });
+        toast.info(incomingCall.type === 'video' ? 'Видеозвонок отклонён' : 'Голосовой звонок отклонён');
     };
 
     const sendSignal = (signalMessage) => {
