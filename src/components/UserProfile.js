@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/UserProfile.css';
-import { FaEdit, FaEllipsisV } from 'react-icons/fa';
+import { FaEdit, FaEllipsisV, FaPhone, FaVideo } from 'react-icons/fa'; // Добавляем иконки для звонков
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Modal from 'react-modal';
@@ -86,13 +86,13 @@ const UserProfile = () => {
             handleInteraction();
             setSettingsMenuVisible(false);
         };
-    
+
         document.addEventListener('click', handleClick);
         return () => {
             document.removeEventListener('click', handleClick);
         };
     }, [handleInteraction]);
-    
+
     useEffect(() => {
         if (incomingCall && userInteracted) {
             audioRef.current.play().catch(error => {
@@ -105,7 +105,7 @@ const UserProfile = () => {
         }
     }, [incomingCall, userInteracted]);
 
-    useEffect(() => {         
+    useEffect(() => {
         if (!currentUserId) return;
 
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
@@ -144,8 +144,11 @@ const UserProfile = () => {
                                 audioRef.current.pause();
                                 audioRef.current.currentTime = 0;
                             }
-                            console.log('Отправляем тост: Звонящий отменил вызов.');
-                            toast.info('The caller cancelled the call.');
+                            const cancelMessage = callRequest.type === 'video' ?
+                                'The video call was cancelled.' :
+                                'The voice call was cancelled.';
+                            console.log('Отправляем тост:', cancelMessage);
+                            toast.info(cancelMessage);
                         } else {
                             console.log('Нет активного вызова или звука:', {
                                 incomingCall,
@@ -154,7 +157,7 @@ const UserProfile = () => {
                                 audioSrc: audioRef.current?.src
                             });
                         }
-                    } else if (callRequest.type === 'call' || !callRequest.type) {
+                    } else if (callRequest.type === 'voice' || callRequest.type === 'video') {
                         console.log('Получен запрос на звонок:', callRequest);
                         handleIncomingCall(callRequest);
                     } else {
@@ -167,7 +170,7 @@ const UserProfile = () => {
             },
         });
         stompClient.current.activate();
-    
+
         return () => {
             stompClient.current.deactivate();
             console.log('WebSocket для звонков отключён');
@@ -179,7 +182,8 @@ const UserProfile = () => {
         callRequestRef.current = {
             roomId: callRequest.roomId,
             callerId: callRequest.callerId,
-            recipientId: callRequest.recipientId
+            recipientId: callRequest.recipientId,
+            type: callRequest.type
         };
         console.log('callRequestRef установлен:', callRequestRef.current);
         setIncomingCallWithLog(callRequest);
@@ -220,15 +224,15 @@ const UserProfile = () => {
 
         console.log('Function acceptCall in UserProfile.js working...');
         console.log("Incoming call accepted:", incomingCall);
-        
+
         const callerId = incomingCall.callerId;
         const recipientId = currentUserId;
-    
+
         const fetchUserNames = async () => {
             try {
                 const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
                 const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`);
-                
+
                 if (callerResponse.ok && recipientResponse.ok) {
                     const callerData = await callerResponse.json();
                     const recipientData = await recipientResponse.json();
@@ -237,19 +241,21 @@ const UserProfile = () => {
                         from: currentUserId,
                         signal: { type: 'acceptCall' }
                     });
-                    
+
                     setIncomingCallWithLog(null);
                     callRequestRef.current = null;
 
-                    navigate(`/voice-call/${incomingCall.roomId}`, { 
-                        state: { 
-                            incomingCall, 
-                            isCaller: false, 
-                            currentUserId: currentUserId, 
+                    const route = incomingCall.type === 'video' ? `/video-call/${incomingCall.roomId}` : `/voice-call/${incomingCall.roomId}`;
+                    navigate(route, {
+                        state: {
+                            incomingCall,
+                            isCaller: false,
+                            currentUserId: currentUserId,
                             callerName: callerData.username,
                             recipientName: recipientData.username
-                        } 
+                        }
                     });
+                    toast.success(incomingCall.type === 'video' ? 'Video call accepted' : 'Voice call accepted');
                 } else {
                     console.error('Error fetching user names');
                     toast.error('Failed to fetch user data');
@@ -259,7 +265,7 @@ const UserProfile = () => {
                 toast.error('Error fetching user data');
             }
         };
-    
+
         fetchUserNames();
     };
 
@@ -273,6 +279,7 @@ const UserProfile = () => {
             from: currentUserId,
             signal: { type: 'rejectCall' }
         });
+        toast.info(incomingCall.type === 'video' ? 'Video call rejected' : 'Voice call rejected');
     };
 
     const sendSignal = (signalMessage) => {
@@ -280,10 +287,104 @@ const UserProfile = () => {
         console.log("Sending signal:", JSON.stringify(signalMessage, null, 2));
         const roomId = incomingCall.roomId;
         stompClient.current.publish({
-            destination: `/app/signal/${roomId}`, 
+            destination: `/app/signal/${roomId}`,
             body: JSON.stringify(signalMessage),
         });
         console.log('Signal sent successfully.');
+    };
+
+    const handleCall = async () => {
+        const roomId = `room-${currentUserId}-${userId}`;
+        console.log("Room ID:", roomId);
+
+        console.log("Voice Call Request:");
+        console.log("callerId - currentUserId:", currentUserId);
+        console.log("recipientId - userId:", userId);
+        const callRequest = {
+            callerId: currentUserId,
+            recipientId: parseInt(userId),
+            roomId: roomId,
+            callerName: localStorage.getItem('username') || 'Unknown',
+            type: 'voice'
+        };
+
+        try {
+            const response = await fetch('https://unlimitedpossibilities12.org/api/webrtc/call', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(callRequest),
+            });
+
+            if (response.ok) {
+                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}`);
+                const callerData = await callerResponse.json();
+
+                toast.success(`Calling ${user.username}...`);
+                navigate(`/voice-call/${roomId}`, {
+                    state: {
+                        incomingCall: callRequest,
+                        isCaller: true,
+                        currentUserId: currentUserId,
+                        callerName: callerData.username,
+                        recipientName: user.username
+                    }
+                });
+            } else {
+                toast.error('Failed to initiate voice call');
+            }
+        } catch (error) {
+            console.error('Error initiating voice call:', error);
+            toast.error('Error initiating voice call');
+        }
+    };
+
+    const handleVideoCall = async () => {
+        const roomId = `room-${currentUserId}-${userId}`;
+        console.log("Room ID:", roomId);
+
+        console.log("Video Call Request:");
+        console.log("callerId - currentUserId:", currentUserId);
+        console.log("recipientId - userId:", userId);
+        const callRequest = {
+            callerId: currentUserId,
+            recipientId: parseInt(userId),
+            roomId: roomId,
+            callerName: localStorage.getItem('username') || 'Unknown',
+            type: 'video'
+        };
+
+        try {
+            const response = await fetch('https://unlimitedpossibilities12.org/api/webrtc/call', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(callRequest),
+            });
+
+            if (response.ok) {
+                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}`);
+                const callerData = await callerResponse.json();
+
+                toast.success(`Video calling ${user.username}...`);
+                navigate(`/video-call/${roomId}`, {
+                    state: {
+                        incomingCall: callRequest,
+                        isCaller: true,
+                        currentUserId: currentUserId,
+                        callerName: callerData.username,
+                        recipientName: user.username
+                    }
+                });
+            } else {
+                toast.error('Failed to initiate video call');
+            }
+        } catch (error) {
+            console.error('Error initiating video call:', error);
+            toast.error('Error initiating video call');
+        }
     };
 
     const handleAvatarChange = (e) => {
@@ -331,17 +432,17 @@ const UserProfile = () => {
     const handleSendMessage = async () => {
         const currentUsername = localStorage.getItem('username');
         const chatName = `${user.username}_${currentUsername}`;
-    
+
         if (currentUserId && userId !== String(currentUserId)) {
             try {
                 const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/check?name1=${user.username}&name2=${currentUsername}`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
-    
+
                 const data = await response.json();
                 const chatId = data.chatId;
-    
+
                 if (chatId !== -1) {
                     const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
                     console.log('checkResponse status:', checkResponse.status);
@@ -375,13 +476,13 @@ const UserProfile = () => {
                         toast.error('Error checking chat existence');
                     }
                 } else {
-                    const newChat = { 
-                        name: chatName, 
+                    const newChat = {
+                        name: chatName,
                         private: true
                     };
-    
+
                     console.log('New chat data:', newChat);
-    
+
                     const createResponse = await fetch('https://unlimitedpossibilities12.org/api/chats', {
                         method: 'POST',
                         headers: {
@@ -389,7 +490,7 @@ const UserProfile = () => {
                         },
                         body: JSON.stringify(newChat),
                     });
-    
+
                     if (createResponse.ok) {
                         const createdChat = await createResponse.json();
                         navigate(`/private-chat/${createdChat.id}`);
@@ -397,7 +498,7 @@ const UserProfile = () => {
                         toast.error('Failed to create new chat');
                     }
                 }
-    
+
                 toast.success(`Navigating to chat with ${user.username}!`);
             } catch (error) {
                 console.error('Ошибка при отправке сообщения:', error);
@@ -405,51 +506,6 @@ const UserProfile = () => {
             }
         } else {
             toast.warn('You cannot send a message to yourself.');
-        }
-    };
-
-    const handleCall = async () => {
-        const roomId = `room-${currentUserId}-${userId}`;
-        console.log("Room ID:", roomId);
-    
-        console.log("Call Request: ");
-        console.log("callerId - currentUserId: ", currentUserId);
-        console.log("recipientId - userId: ", userId);
-        const callRequest = {
-            callerId: currentUserId,
-            recipientId: userId,
-            roomId: roomId
-        };
-    
-        try {
-            const response = await fetch('https://unlimitedpossibilities12.org/api/webrtc/call', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(callRequest),
-            });
-    
-            if (response.ok) {
-                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}`);
-                const callerData = await callerResponse.json();
-
-                toast.success(`Calling ${user.username}...`);
-                navigate(`/voice-call/${roomId}`, { 
-                    state: { 
-                        incomingCall: callRequest, 
-                        isCaller: true, 
-                        currentUserId: currentUserId,
-                        callerName: callerData.username,
-                        recipientName: user.username
-                    } 
-                });
-            } else {
-                toast.error('Failed to initiate call');
-            }
-        } catch (error) {
-            console.error('Error initiating call:', error);
-            toast.error('Error initiating call');
         }
     };
 
@@ -501,24 +557,24 @@ const UserProfile = () => {
             </audio>
             <h1 className="user-profile-username">{user.username}</h1>
             {user.avatar ? (
-                <img 
-                    src={`https://unlimitedpossibilities12.org${user.avatar}`} 
-                    alt={`${user.username} avatar`} 
-                    className="user-avatar-profile" 
-                    onClick={openModal} 
+                <img
+                    src={`https://unlimitedpossibilities12.org${user.avatar}`}
+                    alt={`${user.username} avatar`}
+                    className="user-avatar-profile"
+                    onClick={openModal}
                 />
             ) : (
                 <div className="user-avatar-profile" style={{ backgroundColor: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {user.username.charAt(0).toUpperCase()}
                 </div>
             )}
-            {userId === String(currentUserId) && ( 
+            {userId === String(currentUserId) && (
                 <input type="file" onChange={handleAvatarChange} className="avatar-input" />
             )}
             <div className="user-info">
                 <h2 className="user-info-title">About me:</h2>
                 {isEditing ? (
-                    <textarea 
+                    <textarea
                         value={info}
                         onChange={(e) => setInfo(e.target.value)}
                         rows={3}
@@ -528,14 +584,14 @@ const UserProfile = () => {
                 ) : (
                     <div className="user-info-text">
                         <p className="user-info-description">{info}</p>
-                        {userId === String(currentUserId) && ( 
+                        {userId === String(currentUserId) && (
                             <FaEdit className="edit-icon" onClick={() => setIsEditing(true)} />
                         )}
                     </div>
                 )}
             </div>
 
-            {userId === String(currentUserId) && ( 
+            {userId === String(currentUserId) && (
                 <div className="button-container">
                     <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
                     <button onClick={handlePersonalChats} className="personal-chats-button">
@@ -555,27 +611,35 @@ const UserProfile = () => {
             )}
 
             {currentUserId && userId !== String(currentUserId) && (
-                <button onClick={handleCall} className="call-button">Call</button>
+                <div className="call-buttons-container">
+                    <button onClick={handleCall} className="voice-call-button">
+                        <FaPhone /> Voice Call
+                    </button>
+                    <button onClick={handleVideoCall} className="video-call-button">
+                        <FaVideo /> Video Call
+                    </button>
+                </div>
             )}
 
             <Modal isOpen={isModalOpen} onRequestClose={closeModal} className="user-profile-modal" overlayClassName="user-profile-modal-overlay">
-                <img 
-                    src={`https://unlimitedpossibilities12.org/avatars/${avatarFileName}`} 
-                    alt={`${user.username} avatar`} 
-                    className="user-profile-modal-image" 
-                    style={{ width: '100%', height: 'auto' }} 
-                    onClick={closeModal} 
+                <img
+                    src={`https://unlimitedpossibilities12.org/avatars/${avatarFileName}`}
+                    alt={`${user.username} avatar`}
+                    className="user-profile-modal-image"
+                    style={{ width: '100%', height: 'auto' }}
+                    onClick={closeModal}
                 />
                 <button onClick={closeModal} className="user-profile-modal-close-button">Close</button>
             </Modal>
 
             {incomingCall && (
-                <IncomingCallNotification 
-                    callerId={incomingCall.callerId} 
+                <IncomingCallNotification
+                    callerId={incomingCall.callerId}
                     callerName={incomingCall.callerName || 'Unknown'}
                     avatar={incomingCall.avatar}
-                    onAccept={acceptCall} 
-                    onReject={rejectCall} 
+                    callType={incomingCall.type} // Передаем тип звонка
+                    onAccept={acceptCall}
+                    onReject={rejectCall}
                 />
             )}
         </div>

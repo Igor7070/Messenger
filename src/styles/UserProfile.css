@@ -214,3 +214,28 @@
 .settings-menu button:hover {
     background-color: #f0f0f0;
 }
+
+.call-buttons-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px; /* Отступ между кнопками */
+    margin-top: 10px; /* Отступ сверху от send-message-button */
+}
+
+.voice-call-button, .video-call-button {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Отступ между иконкой и текстом */
+    background-color: #4CAF50; /* Зеленый цвет фона */
+    color: white; /* Белый текст */
+    border: none; /* Убираем границы */
+    border-radius: 5px; /* Закругленные углы */
+    padding: 10px 20px; /* Отступы внутри кнопки */
+    font-size: 16px; /* Размер шрифта */
+    cursor: pointer; /* Указатель при наведении */
+    transition: background-color 0.3s; /* Плавный переход цвета фона */
+}
+
+.voice-call-button:hover, .video-call-button:hover {
+    background-color: #45a049; /* Более темный зеленый при наведении */
+}

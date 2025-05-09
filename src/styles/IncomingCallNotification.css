@@ -9,16 +9,17 @@
     padding: 20px;
     text-align: center;
     z-index: 1000;
+    max-width: 400px; /* Добавляем ограничение ширины для лучшего вида */
 }
 
 .caller-avatar {
     display: flex;
     justify-content: center;
-    margin-bottom: 15px; /* Отступ до заголовка */
+    margin-bottom: 15px;
 }
 
 .caller-avatar-img {
-    width: 60px; /* Крупнее, чем user-avatar (35px) */
+    width: 60px;
     height: 60px;
     border-radius: 50%;
     object-fit: cover;
@@ -29,25 +30,39 @@
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background-color: #e0e0e0; /* Как в user-avatar */
+    background-color: #e0e0e0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px; /* Крупная буква */
-    color: #757575; /* Как в user-avatar */
+    font-size: 24px;
+    color: #757575;
     font-family: Arial, sans-serif;
+}
+
+.notification-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px; /* Отступ между иконкой и текстом */
+    margin-bottom: 20px;
+}
+
+.notification-icon {
+    font-size: 24px; /* Размер иконки */
+    color: #333; /* Цвет иконки, совпадает с текстом */
 }
 
 h2 {
-    margin: 0 0 20px; /* Уменьшен с 70px для баланса */
+    margin: 0;
     font-family: Arial, sans-serif;
     color: #333;
+    font-size: 20px; /* Уменьшаем размер для компактности */
 }
 
 .button-container {
-    margin-top: 20px; /* Уменьшен с 35px */
     display: flex;
     justify-content: space-around;
+    margin-top: 20px;
 }
 
 .accept-button, .reject-button {

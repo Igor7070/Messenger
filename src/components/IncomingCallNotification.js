@@ -1,9 +1,12 @@
 import React from 'react';
+import { FaPhone, FaVideo } from 'react-icons/fa'; // Добавляем иконки
 import '../styles/IncomingCallNotification.css';
 
-const IncomingCallNotification = ({ callerId, callerName, avatar, onAccept, onReject }) => {
+const IncomingCallNotification = ({ callerId, callerName, avatar, callType, onAccept, onReject }) => {
     const avatarSrc = avatar ? `https://unlimitedpossibilities12.org${avatar}` : null;
     const initials = callerName ? callerName.charAt(0).toUpperCase() : '';
+    const notificationTitle = callType === 'video' ? 'Incoming Video Call' : 'Incoming Voice Call';
+    const NotificationIcon = callType === 'video' ? FaVideo : FaPhone;
 
     return (
         <div className="incoming-call-notification">
@@ -18,10 +21,17 @@ const IncomingCallNotification = ({ callerId, callerName, avatar, onAccept, onRe
                     <div className="caller-avatar-placeholder">{initials}</div>
                 )}
             </div>
-            <h2>Incoming call from {callerName}</h2>
+            <div className="notification-header">
+                <NotificationIcon className="notification-icon" />
+                <h2>{notificationTitle} from {callerName}</h2>
+            </div>
             <div className="button-container">
-                <button className="accept-button" onClick={onAccept}>Accept</button>
-                <button className="reject-button" onClick={onReject}>Reject</button>
+                <button className="accept-button" onClick={onAccept}>
+                    Accept
+                </button>
+                <button className="reject-button" onClick={onReject}>
+                    Reject
+                </button>
             </div>
         </div>
     );
