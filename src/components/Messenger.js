@@ -52,6 +52,14 @@ const Messenger = () => {
     const navigate = useNavigate();
     const callRequestRef = useRef(null);
 
+    const setIncomingCallWithLog = (value) => {
+        console.log('Вызов setIncomingCall:', value);
+        console.log('Текущее incomingCall:', incomingCall);
+        console.log('Текущее callRequestRef:', callRequestRef.current);
+        console.log('Стек вызовов:', new Error().stack);
+        setIncomingCall(value);
+    };
+
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
         if (!timestamp) return '';
@@ -196,94 +204,103 @@ const Messenger = () => {
 
     useEffect(() => {
         if (!currentUserId) return;
-
+    
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
-                console.log('Connected to WebSocket in Messenger');
+                console.log('Подключено к WebSocket в Messenger');
                 console.log("currentUserId:", currentUserId);
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
                     let callRequest;
                     try {
                         callRequest = JSON.parse(message.body);
-                        console.log('Received call message:', callRequest);
+                        console.log('Получено сообщение о звонке:', callRequest);
                     } catch (error) {
-                        console.error('Error parsing call message:', error, message.body);
+                        console.error('Ошибка парсинга сообщения о звонке:', error, message.body);
                         return;
                     }
-
+    
                     if (callRequest.type === 'endCall') {
-                        console.log('Received endCall signal:', callRequest);
+                        console.log('Получен сигнал endCall:', callRequest);
+                        console.log('Текущее состояние incomingCall:', incomingCall);
+                        console.log('Текущее callRequestRef:', callRequestRef.current);
+                        console.log('audioRef.current:', audioRef.current, 'src:', audioRef.current?.src);
                         if (
                             callRequestRef.current?.roomId === callRequest.roomId ||
                             incomingCall?.roomId === callRequest.roomId ||
                             audioRef.current?.src
                         ) {
-                            console.log('Closing call notification for roomId:', callRequest.roomId);
-                            setIncomingCall(null);
+                            console.log('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
+                            setIncomingCallWithLog(null);
                             callRequestRef.current = null;
                             if (audioRef.current) {
                                 audioRef.current.pause();
                                 audioRef.current.currentTime = 0;
                             }
-                            toast.info('The caller cancelled the call.');
+                            const cancelMessage = callRequest.type === 'video' ?
+                                'Видеозвонок был отменён.' :
+                                'Голосовой звонок был отменён.';
+                            console.log('Отправляем тост:', cancelMessage);
+                            toast.info(cancelMessage);
                         } else {
-                            console.log('No active call or audio:', {
+                            console.log('Нет активного вызова или звука:', {
                                 incomingCall,
                                 callRequestRef: callRequestRef.current,
                                 callRequest,
                                 audioSrc: audioRef.current?.src
                             });
                         }
-                    } else if (callRequest.type === 'call' || !callRequest.type) {
-                        console.log('Received call request:', callRequest);
-                        callRequestRef.current = {
-                            roomId: callRequest.roomId,
-                            callerId: callRequest.callerId,
-                            recipientId: callRequest.recipientId
-                        };
+                    } else if (callRequest.type === 'voice' || callRequest.type === 'video') {
+                        console.log('Получен запрос на звонок:', callRequest);
                         handleIncomingCall(callRequest);
                     } else {
-                        console.log('Received message with unknown type:', callRequest);
+                        console.log('Получено сообщение с неизвестным типом:', callRequest);
                     }
                 });
             },
             onWebSocketError: (error) => {
-                console.error('WebSocket error for calls:', error);
+                console.error('Ошибка WebSocket для звонков:', error);
             },
         });
         stompClient.current.activate();
-
+    
         return () => {
             stompClient.current.deactivate();
-            console.log('WebSocket for calls disconnected');
+            console.log('WebSocket для звонков отключён');
         };
     }, [currentUserId]);
 
     const handleIncomingCall = async (callRequest) => {
-        console.log('Incoming call request:', callRequest);
-        setIncomingCall(callRequest);
+        console.log('Входящий запрос на звонок:', callRequest);
+        callRequestRef.current = {
+            roomId: callRequest.roomId,
+            callerId: callRequest.callerId,
+            recipientId: callRequest.recipientId,
+            type: callRequest.type
+        };
+        console.log('callRequestRef установлен:', callRequestRef.current);
+        setIncomingCallWithLog(callRequest);
         try {
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
             if (response.ok) {
                 const callerData = await response.json();
-                setIncomingCall({
+                setIncomingCallWithLog({
                     ...callRequest,
                     callerName: callerData.username,
                     avatar: callerData.avatar
                 });
             } else {
-                console.error('Error fetching caller data');
-                setIncomingCall({
+                console.error('Ошибка при получении данных звонящего:', response.status);
+                setIncomingCallWithLog({
                     ...callRequest,
                     callerName: 'Unknown',
                     avatar: null
                 });
             }
         } catch (error) {
-            console.error('Error fetching caller data:', error);
-            setIncomingCall({
+            console.error('Ошибка при получении данных звонящего:', error);
+            setIncomingCallWithLog({
                 ...callRequest,
                 callerName: 'Unknown',
                 avatar: null
@@ -291,65 +308,66 @@ const Messenger = () => {
         }
     };
 
-    const acceptCall = () => {
+    const acceptCall = async () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-
-        console.log('Function acceptCall in Messenger working...');
-        console.log("Incoming call accepted:", incomingCall);
-
+    
+        console.log('Функция acceptCall в Messenger работает...');
+        console.log('Входящий звонок принят:', incomingCall);
+    
         const callerId = incomingCall.callerId;
         const recipientId = currentUserId;
-
-        const fetchUserNames = async () => {
-            try {
-                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
-                const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`);
-
-                if (callerResponse.ok && recipientResponse.ok) {
-                    const callerData = await callerResponse.json();
-                    const recipientData = await recipientResponse.json();
-
-                    sendSignal({
-                        from: currentUserId,
-                        signal: { type: 'acceptCall' },
-                    });
-
-                    setIncomingCall(null);
-                    callRequestRef.current = null;
-
-                    navigate(`/voice-call/${incomingCall.roomId}`, {
-                        state: {
-                            incomingCall,
-                            isCaller: false,
-                            currentUserId: currentUserId,
-                            callerName: callerData.username,
-                            recipientName: recipientData.username,
-                        },
-                    });
-                } else {
-                    console.error('Error fetching user names');
-                    toast.error('Failed to fetch user data');
-                }
-            } catch (error) {
-                console.error('Error fetching user names:', error);
-                toast.error('Error fetching user data');
+    
+        try {
+            const [callerResponse, recipientResponse] = await Promise.all([
+                fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`),
+                fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`),
+            ]);
+    
+            if (callerResponse.ok && recipientResponse.ok) {
+                const callerData = await callerResponse.json();
+                const recipientData = await recipientResponse.json();
+    
+                sendSignal({
+                    from: currentUserId,
+                    signal: { type: 'acceptCall' },
+                });
+    
+                setIncomingCallWithLog(null);
+                callRequestRef.current = null;
+    
+                const route = incomingCall.type === 'video' ? `/video-call/${incomingCall.roomId}` : `/voice-call/${incomingCall.roomId}`;
+                navigate(route, {
+                    state: {
+                        incomingCall,
+                        isCaller: false,
+                        currentUserId: currentUserId,
+                        callerName: callerData.username,
+                        recipientName: recipientData.username,
+                    },
+                });
+                toast.success(incomingCall.type === 'video' ? 'Видеозвонок принят' : 'Голосовой звонок принят');
+            } else {
+                console.error('Ошибка при получении имен пользователей');
+                toast.error('Не удалось получить данные пользователя');
             }
-        };
-
-        fetchUserNames();
+        } catch (error) {
+            console.error('Ошибка при получении имен пользователей:', error);
+            toast.error('Ошибка при получении данных пользователя');
+        }
     };
 
     const rejectCall = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-
-        setIncomingCall(null);
+    
+        setIncomingCallWithLog(null);
         callRequestRef.current = null;
         sendSignal({
             from: currentUserId,
             signal: { type: 'rejectCall' },
         });
+        toast.info(incomingCall.type === 'video' ? 'Видеозвонок отклонён' : 'Голосовой звонок отклонён');
     };
 
     const sendSignal = (signalMessage) => {
@@ -727,6 +745,7 @@ const Messenger = () => {
                     callerId={incomingCall.callerId}
                     callerName={incomingCall.callerName}
                     avatar={incomingCall.avatar}
+                    callType={incomingCall.type}
                     onAccept={acceptCall}
                     onReject={rejectCall}
                 />

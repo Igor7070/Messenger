@@ -597,6 +597,7 @@ const Home = () => {
                     callerId={incomingCall.callerId}
                     callerName={incomingCall.callerName || 'Unknown'}
                     avatar={incomingCall.avatar}
+                    callType={incomingCall.type}
                     onAccept={acceptCall}
                     onReject={rejectCall}
                 />
