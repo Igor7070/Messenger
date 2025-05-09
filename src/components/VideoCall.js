@@ -103,9 +103,21 @@ const VideoCall = ({ recipientId }) => {
         setIncomingCallState(callRequest);
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-            localVideoRef.current.srcObject = stream;
-            console.log('Video and audio stream obtained successfully.');
+            let stream;
+            try {
+                // Пробуем получить аудио и видео
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                console.log('Video and audio stream obtained successfully.');
+            } catch (videoError) {
+                console.warn('Failed to access camera, trying audio only:', videoError);
+                // Если камера недоступна, запрашиваем только аудио
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log('Audio stream obtained successfully.');
+            }
+
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = stream;
+            }
 
             const iceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
@@ -128,8 +140,10 @@ const VideoCall = ({ recipientId }) => {
                 if (stream) {
                     console.log('Stream active:', stream.active);
                     console.log('Track enabled:', event.track.enabled);
-                    remoteVideoRef.current.srcObject = stream;
-                    remoteVideoRef.current.play().catch(err => console.error('Video play error:', err));
+                    if (remoteVideoRef.current) {
+                        remoteVideoRef.current.srcObject = stream;
+                        remoteVideoRef.current.play().catch(err => console.error('Video play error:', err));
+                    }
                 } else {
                     console.error('No streams received in ontrack event');
                 }
@@ -171,10 +185,12 @@ const VideoCall = ({ recipientId }) => {
                 }
             };
 
+            // Отправляем сигнал ready, даже если есть только аудио
             sendSignal({ from: currentUserId, signal: { type: 'ready' } });
         } catch (error) {
             console.error('Error accessing media devices:', error);
-            notify('Failed to access camera or microphone.');
+            notify('Failed to access microphone.');
+            endCall();
         }
     };
 
@@ -190,9 +206,19 @@ const VideoCall = ({ recipientId }) => {
         console.log('userName:', userName);
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-            localVideoRef.current.srcObject = stream;
-            console.log('Local video and audio stream obtained.');
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                console.log('Local video and audio stream obtained.');
+            } catch (videoError) {
+                console.warn('Failed to access camera, trying audio only:', videoError);
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log('Local audio stream obtained.');
+            }
+
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = stream;
+            }
 
             const iceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
@@ -215,8 +241,10 @@ const VideoCall = ({ recipientId }) => {
                 if (stream) {
                     console.log('Stream active:', stream.active);
                     console.log('Track enabled:', event.track.enabled);
-                    remoteVideoRef.current.srcObject = stream;
-                    remoteVideoRef.current.play().catch(err => console.error('Video play error:', err));
+                    if (remoteVideoRef.current) {
+                        remoteVideoRef.current.srcObject = stream;
+                        remoteVideoRef.current.play().catch(err => console.error('Video play error:', err));
+                    }
                 } else {
                     console.error('No streams received in ontrack event');
                 }
@@ -266,6 +294,7 @@ const VideoCall = ({ recipientId }) => {
         } catch (error) {
             console.error('Error starting video call:', error);
             notify('Failed to start video call.');
+            endCall();
         }
     };
 
