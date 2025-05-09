@@ -149,7 +149,7 @@ const PersonalChats = () => {
     // WebSocket для звонков
     useEffect(() => {
         if (!currentUserId) return;
-
+    
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
@@ -168,13 +168,12 @@ const PersonalChats = () => {
                         console.error('Ошибка парсинга сообщения:', error, message.body);
                         return;
                     }
-
+    
                     if (callRequest.type === 'endCall') {
                         console.log('Получен сигнал endCall:', callRequest);
                         console.log('Текущее состояние incomingCall:', incomingCall);
                         console.log('Текущее callRequestRef:', callRequestRef.current);
                         console.log('audioRef.current:', audioRef.current, 'src:', audioRef.current?.src);
-                        // Закрываем уведомление, если roomId совпадает или есть звук
                         if (
                             callRequestRef.current?.roomId === callRequest.roomId ||
                             incomingCall?.roomId === callRequest.roomId ||
@@ -187,8 +186,11 @@ const PersonalChats = () => {
                                 audioRef.current.pause();
                                 audioRef.current.currentTime = 0;
                             }
-                            console.log('Отправляем тост: Звонящий отменил вызов.');
-                            toast.info('The caller cancelled the call.');
+                            const cancelMessage = callRequest.type === 'video' ?
+                                'The video call was cancelled.' :
+                                'The voice call was cancelled.';
+                            console.log('Отправляем тост:', cancelMessage);
+                            toast.info(cancelMessage);
                         } else {
                             console.log('Нет активного вызова или звука:', {
                                 incomingCall,
@@ -197,7 +199,7 @@ const PersonalChats = () => {
                                 audioSrc: audioRef.current?.src
                             });
                         }
-                    } else if (callRequest.type === 'call' || !callRequest.type) {
+                    } else if (callRequest.type === 'voice' || callRequest.type === 'video') {
                         console.log('Получен запрос на звонок:', callRequest);
                         handleIncomingCall(callRequest);
                     } else {
@@ -210,7 +212,7 @@ const PersonalChats = () => {
             },
         });
         stompClient.current.activate();
-
+    
         return () => {
             stompClient.current.deactivate();
             console.log('WebSocket для звонков отключён');
@@ -219,11 +221,11 @@ const PersonalChats = () => {
 
     const handleIncomingCall = async (callRequest) => {
         console.log('Входящий запрос на звонок:', callRequest);
-        // Сохраняем данные вызова в callRequestRef
         callRequestRef.current = {
             roomId: callRequest.roomId,
             callerId: callRequest.callerId,
-            recipientId: callRequest.recipientId
+            recipientId: callRequest.recipientId,
+            type: callRequest.type
         };
         console.log('callRequestRef установлен:', callRequestRef.current);
         setIncomingCallWithLog(callRequest);
@@ -260,31 +262,32 @@ const PersonalChats = () => {
     const acceptCall = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-
+    
         console.log('Function acceptCall in PersonalChats working...');
         console.log('Incoming call accepted:', incomingCall);
-
+    
         const callerId = incomingCall.callerId;
         const recipientId = currentUserId;
-
+    
         const fetchUserNames = async () => {
             try {
                 const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
                 const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`);
-
+    
                 if (callerResponse.ok && recipientResponse.ok) {
                     const callerData = await callerResponse.json();
                     const recipientData = await recipientResponse.json();
-
+    
                     sendSignal({
                         from: currentUserId,
                         signal: { type: 'acceptCall' },
                     });
-
+    
                     setIncomingCallWithLog(null);
                     callRequestRef.current = null;
-
-                    navigate(`/voice-call/${incomingCall.roomId}`, {
+    
+                    const route = incomingCall.type === 'video' ? `/video-call/${incomingCall.roomId}` : `/voice-call/${incomingCall.roomId}`;
+                    navigate(route, {
                         state: {
                             incomingCall,
                             isCaller: false,
@@ -293,6 +296,7 @@ const PersonalChats = () => {
                             recipientName: recipientData.username,
                         },
                     });
+                    toast.success(incomingCall.type === 'video' ? 'Video call accepted' : 'Voice call accepted');
                 } else {
                     console.error('Error fetching user names');
                     toast.error('Failed to fetch user data');
@@ -302,20 +306,21 @@ const PersonalChats = () => {
                 toast.error('Error fetching user data');
             }
         };
-
+    
         fetchUserNames();
     };
 
     const rejectCall = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-
+    
         setIncomingCallWithLog(null);
         callRequestRef.current = null;
         sendSignal({
             from: currentUserId,
             signal: { type: 'rejectCall' },
         });
+        toast.info(incomingCall.type === 'video' ? 'Video call rejected' : 'Voice call rejected');
     };
 
     const sendSignal = (signalMessage) => {
@@ -517,6 +522,7 @@ const PersonalChats = () => {
                     callerId={incomingCall.callerId}
                     callerName={incomingCall.callerName || 'Unknown'}
                     avatar={incomingCall.avatar}
+                    callType={incomingCall.type}
                     onAccept={acceptCall}
                     onReject={rejectCall}
                 />

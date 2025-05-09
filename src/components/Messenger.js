@@ -209,20 +209,21 @@ const Messenger = () => {
         stompClient.current = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
-                console.log('Подключено к WebSocket в Messenger');
+                console.log('Connected to WebSocket in Messenger');
                 console.log("currentUserId:", currentUserId);
                 stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
                     let callRequest;
                     try {
                         callRequest = JSON.parse(message.body);
-                        console.log('Получено сообщение о звонке:', callRequest);
+                        console.log('Received call message:', callRequest);
+                        console.log('Тип сообщения:', callRequest.type);
                     } catch (error) {
-                        console.error('Ошибка парсинга сообщения о звонке:', error, message.body);
+                        console.error('Error parsing call message:', error, message.body);
                         return;
                     }
     
                     if (callRequest.type === 'endCall') {
-                        console.log('Получен сигнал endCall:', callRequest);
+                        console.log('Received endCall signal:', callRequest);
                         console.log('Текущее состояние incomingCall:', incomingCall);
                         console.log('Текущее callRequestRef:', callRequestRef.current);
                         console.log('audioRef.current:', audioRef.current, 'src:', audioRef.current?.src);
@@ -231,7 +232,7 @@ const Messenger = () => {
                             incomingCall?.roomId === callRequest.roomId ||
                             audioRef.current?.src
                         ) {
-                            console.log('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
+                            console.log('Closing call notification for roomId:', callRequest.roomId);
                             setIncomingCallWithLog(null);
                             callRequestRef.current = null;
                             if (audioRef.current) {
@@ -239,12 +240,12 @@ const Messenger = () => {
                                 audioRef.current.currentTime = 0;
                             }
                             const cancelMessage = callRequest.type === 'video' ?
-                                'Видеозвонок был отменён.' :
-                                'Голосовой звонок был отменён.';
+                                'The video call was cancelled.' :
+                                'The voice call was cancelled.';
                             console.log('Отправляем тост:', cancelMessage);
                             toast.info(cancelMessage);
                         } else {
-                            console.log('Нет активного вызова или звука:', {
+                            console.log('No active call or audio:', {
                                 incomingCall,
                                 callRequestRef: callRequestRef.current,
                                 callRequest,
@@ -252,27 +253,27 @@ const Messenger = () => {
                             });
                         }
                     } else if (callRequest.type === 'voice' || callRequest.type === 'video') {
-                        console.log('Получен запрос на звонок:', callRequest);
+                        console.log('Received call request:', callRequest);
                         handleIncomingCall(callRequest);
                     } else {
-                        console.log('Получено сообщение с неизвестным типом:', callRequest);
+                        console.log('Received message with unknown type:', callRequest);
                     }
                 });
             },
             onWebSocketError: (error) => {
-                console.error('Ошибка WebSocket для звонков:', error);
+                console.error('WebSocket error for calls:', error);
             },
         });
         stompClient.current.activate();
     
         return () => {
             stompClient.current.deactivate();
-            console.log('WebSocket для звонков отключён');
+            console.log('WebSocket for calls disconnected');
         };
     }, [currentUserId]);
 
     const handleIncomingCall = async (callRequest) => {
-        console.log('Входящий запрос на звонок:', callRequest);
+        console.log('Incoming call request:', callRequest);
         callRequestRef.current = {
             roomId: callRequest.roomId,
             callerId: callRequest.callerId,
@@ -285,13 +286,14 @@ const Messenger = () => {
             const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
             if (response.ok) {
                 const callerData = await response.json();
+                console.log('Данные звонящего:', callerData);
                 setIncomingCallWithLog({
                     ...callRequest,
                     callerName: callerData.username,
                     avatar: callerData.avatar
                 });
             } else {
-                console.error('Ошибка при получении данных звонящего:', response.status);
+                console.error('Error fetching caller data');
                 setIncomingCallWithLog({
                     ...callRequest,
                     callerName: 'Unknown',
@@ -299,7 +301,7 @@ const Messenger = () => {
                 });
             }
         } catch (error) {
-            console.error('Ошибка при получении данных звонящего:', error);
+            console.error('Error fetching caller data:', error);
             setIncomingCallWithLog({
                 ...callRequest,
                 callerName: 'Unknown',
@@ -308,53 +310,55 @@ const Messenger = () => {
         }
     };
 
-    const acceptCall = async () => {
+    const acceptCall = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
     
-        console.log('Функция acceptCall в Messenger работает...');
-        console.log('Входящий звонок принят:', incomingCall);
+        console.log('Function acceptCall in Messenger working...');
+        console.log("Incoming call accepted:", incomingCall);
     
         const callerId = incomingCall.callerId;
         const recipientId = currentUserId;
     
-        try {
-            const [callerResponse, recipientResponse] = await Promise.all([
-                fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`),
-                fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`),
-            ]);
+        const fetchUserNames = async () => {
+            try {
+                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
+                const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`);
     
-            if (callerResponse.ok && recipientResponse.ok) {
-                const callerData = await callerResponse.json();
-                const recipientData = await recipientResponse.json();
+                if (callerResponse.ok && recipientResponse.ok) {
+                    const callerData = await callerResponse.json();
+                    const recipientData = await recipientResponse.json();
     
-                sendSignal({
-                    from: currentUserId,
-                    signal: { type: 'acceptCall' },
-                });
+                    sendSignal({
+                        from: currentUserId,
+                        signal: { type: 'acceptCall' }
+                    });
     
-                setIncomingCallWithLog(null);
-                callRequestRef.current = null;
+                    setIncomingCallWithLog(null);
+                    callRequestRef.current = null;
     
-                const route = incomingCall.type === 'video' ? `/video-call/${incomingCall.roomId}` : `/voice-call/${incomingCall.roomId}`;
-                navigate(route, {
-                    state: {
-                        incomingCall,
-                        isCaller: false,
-                        currentUserId: currentUserId,
-                        callerName: callerData.username,
-                        recipientName: recipientData.username,
-                    },
-                });
-                toast.success(incomingCall.type === 'video' ? 'Видеозвонок принят' : 'Голосовой звонок принят');
-            } else {
-                console.error('Ошибка при получении имен пользователей');
-                toast.error('Не удалось получить данные пользователя');
+                    const route = incomingCall.type === 'video' ? `/video-call/${incomingCall.roomId}` : `/voice-call/${incomingCall.roomId}`;
+                    navigate(route, {
+                        state: {
+                            incomingCall,
+                            isCaller: false,
+                            currentUserId: currentUserId,
+                            callerName: callerData.username,
+                            recipientName: recipientData.username
+                        }
+                    });
+                    toast.success(incomingCall.type === 'video' ? 'Video call accepted' : 'Voice call accepted');
+                } else {
+                    console.error('Error fetching user names');
+                    toast.error('Failed to fetch user data');
+                }
+            } catch (error) {
+                console.error('Error fetching user names:', error);
+                toast.error('Error fetching user data');
             }
-        } catch (error) {
-            console.error('Ошибка при получении имен пользователей:', error);
-            toast.error('Ошибка при получении данных пользователя');
-        }
+        };
+    
+        fetchUserNames();
     };
 
     const rejectCall = () => {
@@ -365,9 +369,9 @@ const Messenger = () => {
         callRequestRef.current = null;
         sendSignal({
             from: currentUserId,
-            signal: { type: 'rejectCall' },
+            signal: { type: 'rejectCall' }
         });
-        toast.info(incomingCall.type === 'video' ? 'Видеозвонок отклонён' : 'Голосовой звонок отклонён');
+        toast.info(incomingCall.type === 'video' ? 'Video call rejected' : 'Voice call rejected');
     };
 
     const sendSignal = (signalMessage) => {

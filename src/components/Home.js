@@ -220,8 +220,8 @@ const Home = () => {
                                 audioRef.current.currentTime = 0;
                             }
                             const cancelMessage = callRequest.type === 'video' ?
-                                'Видеозвонок был отменён.' :
-                                'Голосовой звонок был отменён.';
+                                'The video call was cancelled.' :
+                                'The voice call was cancelled.';
                             console.log('Отправляем тост:', cancelMessage);
                             toast.info(cancelMessage);
                         } else {
@@ -413,14 +413,14 @@ const Home = () => {
                         recipientName: recipientData.username,
                     },
                 });
-                toast.success(incomingCall.type === 'video' ? 'Видеозвонок принят' : 'Голосовой звонок принят');
+                toast.success(incomingCall.type === 'video' ? 'Video call accepted' : 'Voice call accepted');
             } else {
                 console.error('Ошибка при получении имен пользователей');
-                toast.error('Не удалось получить данные пользователя');
+                toast.error('Failed to fetch user data');
             }
         } catch (error) {
             console.error('Ошибка при получении имен пользователей:', error);
-            toast.error('Ошибка при получении данных пользователя');
+            toast.error('Error fetching user data');
         }
     };
 
@@ -433,7 +433,7 @@ const Home = () => {
             from: currentUserId,
             signal: { type: 'rejectCall' },
         });
-        toast.info(incomingCall.type === 'video' ? 'Видеозвонок отклонён' : 'Голосовой звонок отклонён');
+        toast.info(incomingCall.type === 'video' ? 'Video call rejected' : 'Voice call rejected');
     };
 
     const sendSignal = (signalMessage) => {
