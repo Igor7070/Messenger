@@ -5,6 +5,7 @@ import Messenger from './Messenger';
 import UserProfile from './UserProfile';
 import PrivateChat from './PrivateChat';
 import VoiceCall from './VoiceCall';
+import VideoCall from './VideoCall';
 import PersonalChats from './PersonalChats';
 import { NotificationProvider } from './NotificationContext';
 import { UserInteractionProvider } from './UserInteractionContext';
@@ -37,6 +38,7 @@ const App = () => {
                             <Route path="/user/:userId" element={<UserProfile />} />
                             <Route path="/private-chat/:chatId" element={<PrivateChat />} />
                             <Route path="/voice-call/:roomId" element={<VoiceCall />} />
+                            <Route path="/video-call/:roomId" element={<VideoCall />} />
                             <Route path="/user/:userId/personal-chats" element={<PersonalChats />} />
                         </Routes>
                     </div>
