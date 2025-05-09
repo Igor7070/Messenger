@@ -41,35 +41,51 @@ const VideoCall = ({ recipientId }) => {
     let terminationInitiator = false;
 
     useEffect(() => {
-        console.log('isCaller: ' + isCaller);
-        console.log("currentUserId:", currentUserId);
-
+        console.log('isCaller:', isCaller);
+        console.log('currentUserId:', currentUserId);
+        console.log('Room ID from URL:', roomId);
+    
         if (!currentUserId) {
             console.error('currentUserId is undefined. Check the props being passed to VideoCall.');
             return;
         }
-
+    
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         stompClient.current = new Client({
             webSocketFactory: () => socket,
+            reconnectDelay: 5000,
+            heartbeatIncoming: 10000,
+            heartbeatOutgoing: 10000,
             onConnect: () => {
                 console.log('Connected to WebSocket');
-                console.log("Room ID from URL:", roomId);
-
                 stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
-                    console.log('Subscribed to /topic/room/' + roomId);
-                    const signalMessage = JSON.parse(message.body);
-                    handleSignal(signalMessage);
+                    console.log('Received message on /topic/room/' + roomId + ':', message.body);
+                    try {
+                        const signalMessage = JSON.parse(message.body);
+                        handleSignal(signalMessage);
+                    } catch (error) {
+                        console.error('Error parsing WebSocket message:', error);
+                    }
                 });
-
+                console.log('Subscribed to /topic/room/' + roomId);
+    
                 if (!isCaller && incomingCall) {
-                    console.log('Incoming call:', incomingCall);
+                    console.log('Processing incoming call:', incomingCall);
                     handleIncomingCall(incomingCall);
                 }
             },
+            onStompError: (frame) => {
+                console.error('STOMP error:', frame);
+            },
+            onWebSocketError: (error) => {
+                console.error('WebSocket error:', error);
+            },
+            onDisconnect: () => {
+                console.log('WebSocket disconnected');
+            }
         });
         stompClient.current.activate();
-
+    
         return () => {
             console.log('Deactivating WebSocket connection...');
             if (stompClient.current) {
@@ -77,20 +93,20 @@ const VideoCall = ({ recipientId }) => {
                 console.log('WebSocket connection deactivated.');
             }
         };
-    }, [currentUserId, roomId]);
+    }, [currentUserId, roomId, isCaller, incomingCall]);
 
     const handleIncomingCall = async (callRequest) => {
         console.log('Function handleIncomingCall in VideoCall.js working...');
         userName = callerName;
-        console.log('userName: ' + userName);
+        console.log('userName:', userName);
         console.log('callRequest:', JSON.stringify(callRequest, null, 2));
         setIncomingCallState(callRequest);
-
+    
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
             localVideoRef.current.srcObject = stream;
             console.log('Video and audio stream obtained successfully.');
-
+    
             const iceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 {
@@ -99,15 +115,15 @@ const VideoCall = ({ recipientId }) => {
                     credential: 'key2'
                 }
             ];
-
+    
             peerConnectionRef.current = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'all' });
-            console.log('RTCPeerConnection initialized with TURN server:', peerConnectionRef.current);
-
+            console.log('RTCPeerConnection initialized:', peerConnectionRef.current);
+    
             peerConnectionRef.current.ontrack = (event) => {
                 console.log('ontrack triggered:', event);
                 console.log('Event streams:', event.streams);
                 console.log('Event track:', event.track);
-
+    
                 const stream = event.streams[0];
                 if (stream) {
                     console.log('Stream active:', stream.active);
@@ -118,12 +134,12 @@ const VideoCall = ({ recipientId }) => {
                     console.error('No streams received in ontrack event');
                 }
             };
-
+    
             stream.getTracks().forEach(track => {
                 peerConnectionRef.current.addTrack(track, stream);
                 console.log('Track added to peer connection:', track);
             });
-
+    
             peerConnectionRef.current.onicecandidate = (event) => {
                 console.log('onicecandidate event fired:', event);
                 if (event.candidate) {
@@ -132,7 +148,6 @@ const VideoCall = ({ recipientId }) => {
                         from: currentUserId,
                         signal: {
                             type: 'candidate',
-                            sdp: "",
                             iceCandidate: {
                                 candidate: event.candidate.candidate,
                                 sdpMid: event.candidate.sdpMid,
@@ -144,13 +159,25 @@ const VideoCall = ({ recipientId }) => {
                     console.log('No more ICE candidates.');
                 }
             };
-
-            sendSignal({ from: currentUserId, signal: { type: 'ready', sdp: "" } });
+    
+            peerConnectionRef.current.oniceconnectionstatechange = () => {
+                console.log('ICE Connection State:', peerConnectionRef.current.iceConnectionState);
+                if (peerConnectionRef.current.iceConnectionState === 'connected') {
+                    console.log('WebRTC connection established');
+                } else if (peerConnectionRef.current.iceConnectionState === 'failed') {
+                    console.error('WebRTC connection failed');
+                    notify('Failed to establish video connection.');
+                    endCall();
+                }
+            };
+    
+            sendSignal({ from: currentUserId, signal: { type: 'ready' } });
         } catch (error) {
             console.error('Error accessing media devices:', error);
+            notify('Failed to access camera or microphone.');
         }
     };
-
+    
     const rejectCall = () => {
         setIncomingCallState(null);
         console.log(`Call from ${incomingCallState.callerId} rejected.`);
@@ -236,97 +263,128 @@ const VideoCall = ({ recipientId }) => {
     };
 
     const handleSignal = async (signalMessage) => {
-        console.log('Received signal message:', signalMessage);
-
-        if (signalMessage.signal) {
-            console.log('Processing signal type:', signalMessage.signal.type);
-
-            if (signalMessage.signal.type === 'offer') {
-                console.log('Handling offer...');
-                try {
-                    if (peerConnectionRef.current && !isCaller) {
-                        console.log('Installing a remote description (offer)...');
-                        console.log('Received signal offer:', signalMessage.signal);
-                        console.log('Received offer SDP:', signalMessage.signal.sdp);
-
-                        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
+        console.log('Received signal message:', JSON.stringify(signalMessage, null, 2));
+    
+        if (!signalMessage.from || !signalMessage.signal) {
+            console.error('Invalid signal message format:', signalMessage);
+            return;
+        }
+    
+        // Игнорируем собственные сообщения
+        if (signalMessage.from === currentUserId) {
+            console.log('Ignoring own message from:', signalMessage.from);
+            return;
+        }
+    
+        const { type, sdp, iceCandidate } = signalMessage.signal;
+        console.log('Processing signal type:', type);
+    
+        try {
+            switch (type) {
+                case 'offer':
+                    console.log('Handling offer...');
+                    if (!isCaller) {
+                        if (!peerConnectionRef.current) {
+                            console.error('PeerConnection is not initialized for offer, initializing...');
+                            await handleIncomingCall(incomingCall); // Повторная инициализация, если PeerConnection отсутствует
+                        }
+    
+                        console.log('Received offer SDP:', sdp);
+                        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp }));
                         const answer = await peerConnectionRef.current.createAnswer();
                         await peerConnectionRef.current.setLocalDescription(answer);
                         console.log('Sending answer:', answer);
                         sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
                     } else {
-                        console.log('peerConnectionRef.current is not initialized or signal received by caller.');
+                        console.log('Offer received by caller, ignoring.');
                     }
-                } catch (error) {
-                    console.error('Error handling offer:', error);
-                }
-            } else if (signalMessage.signal.type === 'answer') {
-                console.log('Handling answer...');
-                if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
-                    console.log('Cannot set remote description: Already has a remote description.');
-                } else if (isCaller) {
-                    try {
-                        console.log('Installing a remote description (answer)...');
-                        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
-                    } catch (error) {
-                        console.error('Error setting remote description:', error);
+                    break;
+    
+                case 'answer':
+                    console.log('Handling answer...');
+                    if (isCaller && peerConnectionRef.current) {
+                        if (peerConnectionRef.current.remoteDescription) {
+                            console.log('Remote description already set, ignoring answer.');
+                        } else {
+                            console.log('Setting remote answer SDP:', sdp);
+                            await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp }));
+                            console.log('Remote answer set successfully');
+                        }
                     }
-                }
-            } else if (signalMessage.signal.type === 'candidate') {
-                console.log('Handling ICE candidate:', signalMessage.signal.iceCandidate);
-
-                const { iceCandidate } = signalMessage.signal;
-                const { candidate, sdpMid, sdpMLineIndex } = iceCandidate;
-
-                if (candidate && sdpMid !== null && sdpMLineIndex !== null) {
-                    const iceCandidateToAdd = new RTCIceCandidate({
-                        candidate,
-                        sdpMid,
-                        sdpMLineIndex
-                    });
-                    setTimeout(async () => {
+                    break;
+    
+                case 'candidate':
+                    console.log('Handling ICE candidate:', iceCandidate);
+                    if (peerConnectionRef.current && iceCandidate && iceCandidate.candidate && iceCandidate.sdpMid !== null && iceCandidate.sdpMLineIndex !== null) {
+                        const iceCandidateToAdd = new RTCIceCandidate({
+                            candidate: iceCandidate.candidate,
+                            sdpMid: iceCandidate.sdpMid,
+                            sdpMLineIndex: parseInt(iceCandidate.sdpMLineIndex, 10)
+                        });
                         try {
                             await peerConnectionRef.current.addIceCandidate(iceCandidateToAdd);
                             console.log('ICE candidate added:', iceCandidateToAdd);
                         } catch (error) {
                             console.error('Error adding ICE candidate:', error);
                         }
-                    }, 3);
-                } else {
-                    console.error('ICE candidate is missing required fields:', signalMessage.signal);
-                }
-            } else if (signalMessage.signal.type === 'ready' && isCaller) {
-                console.log('Received ready signal from the other party.');
-                setTimeout(() => {
-                    startCall();
-                }, 1000);
-            } else if (signalMessage.signal.type === 'endCall') {
-                console.log('Call ended by the other party.');
-                console.log('userName: ' + userName);
-                if (userName) {
-                    notify(`${userName} interrupted the video conversation.`);
-                } else {
-                    notify(`User ${signalMessage.from} interrupted the video conversation.`);
-                }
-                terminationInitiator = true;
-                endCall();
-            } else if (signalMessage.signal.type === 'rejectCall' && isCaller) {
-                setIsWaiting(false);
-                ringtoneRef.current.pause();
-                ringtoneRef.current.currentTime = 0;
-                notify(`${recipientName} rejected the video call.`);
-                endCall();
-            } else if (signalMessage.signal.type === 'acceptCall' && isCaller) {
-                setIsWaiting(false);
-                ringtoneRef.current.pause();
-                ringtoneRef.current.currentTime = 0;
-                notify(`${recipientName} accepted the video call.`);
+                    } else {
+                        console.error('Invalid ICE candidate or PeerConnection not initialized:', iceCandidate);
+                    }
+                    break;
+    
+                case 'ready':
+                    console.log('Received ready signal from the other party.');
+                    if (isCaller) {
+                        setIsWaiting(false);
+                        ringtoneRef.current.pause();
+                        ringtoneRef.current.currentTime = 0;
+                        setTimeout(() => {
+                            startCall();
+                        }, 1000);
+                    }
+                    break;
+    
+                case 'acceptCall':
+                    console.log('Received acceptCall signal.');
+                    if (isCaller) {
+                        setIsWaiting(false);
+                        ringtoneRef.current.pause();
+                        ringtoneRef.current.currentTime = 0;
+                        notify(`${recipientName} accepted the video call.`);
+                    }
+                    break;
+    
+                case 'rejectCall':
+                    console.log('Received rejectCall signal.');
+                    if (isCaller) {
+                        setIsWaiting(false);
+                        ringtoneRef.current.pause();
+                        ringtoneRef.current.currentTime = 0;
+                        notify(`${recipientName} rejected the video call.`);
+                        endCall();
+                    }
+                    break;
+    
+                case 'endCall':
+                    console.log('Call ended by the other party.');
+                    if (userName) {
+                        notify(`${userName} interrupted the video conversation.`);
+                    } else {
+                        notify(`User ${signalMessage.from} interrupted the video conversation.`);
+                    }
+                    terminationInitiator = true;
+                    endCall();
+                    break;
+    
+                default:
+                    console.warn('Unknown signal type:', type);
+                    break;
             }
-        } else {
-            console.error('Signal message does not contain signal:', signalMessage);
+        } catch (error) {
+            console.error('Error processing signal:', error);
         }
     };
-
+    
     const sendSignal = (signalMessage) => {
         console.log('Function sendSignal in VideoCall.js working...');
         console.log("Sending signal:", JSON.stringify(signalMessage, null, 2));
