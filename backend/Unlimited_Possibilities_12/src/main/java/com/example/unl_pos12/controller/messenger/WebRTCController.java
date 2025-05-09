@@ -39,8 +39,13 @@ public class WebRTCController {
         System.out.println("Method initiateCall is working...");
         System.out.println("callRequest: " + callRequest);
         System.out.println("callRequest.getRecipientId(): " + callRequest.getRecipientId());
-        // Устанавливаем type для начального запроса на звонок
-        callRequest.setType("call");
+
+        // Проверяем, что type установлен клиентом
+        if (callRequest.getType() == null || (!callRequest.getType().equals("voice") && !callRequest.getType().equals("video"))) {
+            System.out.println("Invalid or missing call type, defaulting to 'voice'");
+            callRequest.setType("voice"); // Устанавливаем по умолчанию voice, если type некорректен
+        }
+
         messagingTemplate.convertAndSend("/topic/calls/" + callRequest.getRecipientId(), callRequest);
         messagingTemplate.convertAndSend("/topic/room/" + callRequest.getRoomId(), callRequest);
         System.out.println("Method initiateCall worked success.");
