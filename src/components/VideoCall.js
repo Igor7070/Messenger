@@ -134,12 +134,10 @@ const VideoCall = ({ recipientId }) => {
             peerConnectionRef.current.ontrack = (event) => {
                 console.log('ontrack triggered:', event);
                 console.log('Event streams:', event.streams);
-                console.log('Event track:', event.track);
-
+                console.log('Event track:', event.track, 'kind:', event.track.kind, 'enabled:', event.track.enabled);
                 const stream = event.streams[0];
                 if (stream) {
-                    console.log('Stream active:', stream.active);
-                    console.log('Track enabled:', event.track.enabled);
+                    console.log('Stream active:', stream.active, 'tracks:', stream.getTracks());
                     if (remoteVideoRef.current) {
                         remoteVideoRef.current.srcObject = stream;
                         remoteVideoRef.current.play().catch(err => console.error('Video play error:', err));
@@ -235,12 +233,10 @@ const VideoCall = ({ recipientId }) => {
             peerConnectionRef.current.ontrack = (event) => {
                 console.log('ontrack triggered:', event);
                 console.log('Event streams:', event.streams);
-                console.log('Event track:', event.track);
-
+                console.log('Event track:', event.track, 'kind:', event.track.kind, 'enabled:', event.track.enabled);
                 const stream = event.streams[0];
                 if (stream) {
-                    console.log('Stream active:', stream.active);
-                    console.log('Track enabled:', event.track.enabled);
+                    console.log('Stream active:', stream.active, 'tracks:', stream.getTracks());
                     if (remoteVideoRef.current) {
                         remoteVideoRef.current.srcObject = stream;
                         remoteVideoRef.current.play().catch(err => console.error('Video play error:', err));
@@ -286,9 +282,12 @@ const VideoCall = ({ recipientId }) => {
                 }
             };
 
-            const offer = await peerConnectionRef.current.createOffer();
+            const offer = await peerConnectionRef.current.createOffer({
+                offerToReceiveAudio: true,
+                offerToReceiveVideo: true
+            });
             await peerConnectionRef.current.setLocalDescription(offer);
-            console.log('Local offer created and set:', offer);
+            console.log('Local offer created and set:', offer.sdp);
 
             sendSignal({ from: currentUserId, signal: { type: 'offer', sdp: offer.sdp } });
         } catch (error) {
@@ -315,9 +314,12 @@ const VideoCall = ({ recipientId }) => {
                 if (peerConnectionRef.current && !isCaller) {
                     console.log('Received offer SDP:', sdp);
                     await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp }));
-                    const answer = await peerConnectionRef.current.createAnswer();
+                    const answer = await peerConnectionRef.current.createAnswer({
+                        offerToReceiveAudio: true,
+                        offerToReceiveVideo: true
+                    });
                     await peerConnectionRef.current.setLocalDescription(answer);
-                    console.log('Sending answer:', answer);
+                    console.log('Sending answer SDP:', answer.sdp);
                     sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
                 } else {
                     console.log('peerConnectionRef.current is not initialized or signal received by caller.');
@@ -341,14 +343,12 @@ const VideoCall = ({ recipientId }) => {
                         sdpMid: iceCandidate.sdpMid,
                         sdpMLineIndex: parseInt(iceCandidate.sdpMLineIndex, 10)
                     });
-                    setTimeout(async () => {
-                        try {
-                            await peerConnectionRef.current.addIceCandidate(iceCandidateToAdd);
-                            console.log('ICE candidate added:', iceCandidateToAdd);
-                        } catch (error) {
-                            console.error('Error adding ICE candidate:', error);
-                        }
-                    }, 3);
+                    try {
+                        await peerConnectionRef.current.addIceCandidate(iceCandidateToAdd);
+                        console.log('ICE candidate added:', iceCandidateToAdd);
+                    } catch (error) {
+                        console.error('Error adding ICE candidate:', error);
+                    }
                 } else {
                     console.error('Invalid ICE candidate or PeerConnection not initialized:', iceCandidate);
                 }
