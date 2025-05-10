@@ -467,7 +467,7 @@ const VideoCall = ({ recipientId }) => {
                 <video ref={remoteVideoRef} className="remote-video" autoPlay playsInline />
                 <video ref={localVideoRef} className="local-video" autoPlay playsInline muted />
             </div>
-            <button className="end-call-button" onClick={endCall}>End Call</button>
+            <button className="end-call-button-video" onClick={endCall}>End Call</button>
             <ToastContainer />
         </div>
     );

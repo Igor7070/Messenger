@@ -485,7 +485,7 @@ const VoiceCall = ({ recipientId }) => {
                     },
                 }}/>
             </div>
-            <button className="end-call-button" onClick={endCall}>End Call</button>
+            <button className="end-call-button-voice" onClick={endCall}>End Call</button>
         </div>
     );
 };

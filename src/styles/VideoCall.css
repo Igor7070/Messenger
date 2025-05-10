@@ -48,7 +48,7 @@
     z-index: 10;
 }
 
-.end-call-button {
+.end-call-button-video {
     margin-top: 20px;
     padding: 10px 20px;
     font-size: 16px;
@@ -61,6 +61,6 @@
     transition: background-color 0.3s;
 }
 
-.end-call-button:hover {
+.end-call-button-video:hover {
     background-color: #d9363e;
 }

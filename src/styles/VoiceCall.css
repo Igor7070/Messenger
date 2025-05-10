@@ -21,7 +21,7 @@
     padding: 20px; /* Внутренние отступы */
 }
 
-.end-call-button {
+.end-call-button-voice {
     padding: 15px 30px;
     font-size: 18px;
     color: white; /* Цвет текста */
@@ -34,10 +34,10 @@
     margin-top: 20px; /* Отступ сверху для кнопки */
 }
 
-.end-call-button:hover {
+.end-call-button-voice:hover {
     background-color: #c0392b; /* Теневой цвет при наведении */
 }
 
-.end-call-button:focus {
+.end-call-button-voice:focus {
     outline: none; /* Убираем контур */
 }
