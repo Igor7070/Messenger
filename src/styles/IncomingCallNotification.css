@@ -9,7 +9,7 @@
     padding: 20px;
     text-align: center;
     z-index: 1000;
-    max-width: 400px; /* Добавляем ограничение ширины для лучшего вида */
+    max-width: 400px;
 }
 
 .caller-avatar {
@@ -40,23 +40,36 @@
 }
 
 .notification-header {
+    position: relative;
     display: flex;
-    align-items: center;
     justify-content: center;
-    gap: 10px; /* Отступ между иконкой и текстом */
+    align-items: center;
     margin-bottom: 20px;
 }
 
+.title-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
 .notification-icon {
-    font-size: 24px; /* Размер иконки */
-    color: #333; /* Цвет иконки, совпадает с текстом */
+    font-size: 24px;
+    color: #333;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 10px; /* Отступ от края */
 }
 
 h2 {
     margin: 0;
     font-family: Arial, sans-serif;
     color: #333;
-    font-size: 20px; /* Уменьшаем размер для компактности */
+    font-size: 20px;
+    text-align: center;
 }
 
 .button-container {

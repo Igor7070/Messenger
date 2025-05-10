@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaPhone, FaVideo } from 'react-icons/fa'; // Добавляем иконки
+import { FaPhone, FaVideo } from 'react-icons/fa';
 import '../styles/IncomingCallNotification.css';
 
 const IncomingCallNotification = ({ callerId, callerName, avatar, callType, onAccept, onReject }) => {
@@ -23,7 +23,9 @@ const IncomingCallNotification = ({ callerId, callerName, avatar, callType, onAc
             </div>
             <div className="notification-header">
                 <NotificationIcon className="notification-icon" />
-                <h2>{notificationTitle} from {callerName}</h2>
+                <div className="title-container">
+                    <h2>{notificationTitle} from {callerName}</h2>
+                </div>
             </div>
             <div className="button-container">
                 <button className="accept-button" onClick={onAccept}>
