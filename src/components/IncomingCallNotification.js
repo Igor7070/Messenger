@@ -22,9 +22,9 @@ const IncomingCallNotification = ({ callerId, callerName, avatar, callType, onAc
                 )}
             </div>
             <div className="notification-header">
-                <NotificationIcon className="notification-icon" />
-                <div className="title-container">
-                    <h2>{notificationTitle} from {callerName}</h2>
+                <h2>{notificationTitle} from {callerName}</h2>
+                <div className="notification-icon-container">
+                    <NotificationIcon className="notification-icon" />
                 </div>
             </div>
             <div className="button-container">
