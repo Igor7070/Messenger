@@ -8,8 +8,8 @@
   box-sizing: border-box;
   width: 100%;
   max-width: 900px;
-  margin: 20px auto;
-  height: calc(800px * 9 / 16 + 120px); /* Фиксированная высота: видео + заголовок + кнопки */
+  margin: 0 auto; /* Убираем внешние отступы, так как .app уже имеет margin */
+  height: calc(100vh - 40px - 40px - 50px); /* 100vh - margin .app (40px) - padding .app (40px) - header (50px) */
   overflow: hidden; /* Убираем прокрутку */
 }
 
@@ -68,7 +68,7 @@
   display: flex;
   gap: 10px;
   margin-top: 15px;
-  margin-bottom: 10px; /* Уменьшаем отступ снизу */
+  margin-bottom: 10px;
 }
 
 .orientation-toggle-button {
@@ -107,8 +107,7 @@
 @media (max-width: 600px) {
   .video-call-container {
     padding: 10px;
-    margin: 10px auto;
-    height: calc(600px * 9 / 16 + 100px); /* Уменьшаем высоту для мобильных */
+    height: calc(100vh - 40px - 40px - 50px); /* Та же формула для мобильных */
   }
 
   .video-call-title {
