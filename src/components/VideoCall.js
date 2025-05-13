@@ -19,6 +19,7 @@ const VideoCall = ({ recipientId }) => {
     const stompClient = useRef(null);
     const [incomingCallState, setIncomingCallState] = useState(incomingCall);
     const [isWaiting, setIsWaiting] = useState(false);
+    const [videoOrientation, setVideoOrientation] = useState('horizontal'); // 'horizontal' или 'vertical'
 
     const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
 
@@ -458,19 +459,32 @@ const VideoCall = ({ recipientId }) => {
         navigate('/');
     };
 
+    // Функция для переключения ориентации
+    const toggleVideoOrientation = () => {
+        setVideoOrientation(prev => (prev === 'horizontal' ? 'vertical' : 'horizontal'));
+    };
+
     return (
-        <div className="video-call-container">
-            <div className="video-call-header">
-                <h2 className="video-call-title">Video call with {isCaller ? recipientName : callerName}</h2>
-            </div>
-            <div className="video-container">
-                <video ref={remoteVideoRef} className="remote-video" autoPlay playsInline />
-                <video ref={localVideoRef} className="local-video" autoPlay playsInline muted />
-            </div>
-            <button className="end-call-button-video" onClick={endCall}>End Call</button>
-            <ToastContainer />
-        </div>
-    );
+    <div className="video-call-container">
+      <div className="video-call-header">
+        <h2 className="video-call-title">Video call with {isCaller ? recipientName : callerName}</h2>
+      </div>
+      <div className={`video-container ${videoOrientation}`}>
+        <video ref={remoteVideoRef} className="remote-video" autoPlay playsInline />
+        <video ref={localVideoRef} className="local-video" autoPlay playsInline muted />
+      </div>
+      <div className="video-controls">
+        <button
+          className="orientation-toggle-button"
+          onClick={toggleVideoOrientation}
+        >
+          {videoOrientation === 'horizontal' ? 'Switch to Vertical' : 'Switch to Horizontal'}
+        </button>
+        <button className="end-call-button-video" onClick={endCall}>End Call</button>
+      </div>
+      <ToastContainer />
+    </div>
+  );
 };
 
 export default VideoCall;

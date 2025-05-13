@@ -1,96 +1,136 @@
 .video-call-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start; /* Содержимое начинается сверху */
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    padding: 20px;
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 900px; /* Ограничиваем максимальную ширину контейнера */
-    margin: 20px auto; /* Центрируем контейнер с небольшим отступом сверху */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 20px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 900px;
+  margin: 20px auto;
 }
 
 .video-call-header {
-    margin-bottom: 15px;
-    margin-top: 10px; /* Минимальный отступ сверху */
+  margin-bottom: 15px;
+  margin-top: 10px;
 }
 
 .video-call-title {
-    font-size: 24px;
-    font-weight: bold;
-    color: #333;
-    text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
 }
 
 .video-container {
-    position: relative;
-    width: 100%;
-    max-width: 800px;
-    aspect-ratio: 16 / 9; /* Фиксирован: aspect-ratio для пропорционального видео */
-    background-color: #000;
-    border-radius: 10px;
-    overflow: hidden;
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  background-color: #000;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.video-container.horizontal {
+  aspect-ratio: 16 / 9; /* Горизонтальный режим */
+}
+
+.video-container.vertical {
+  aspect-ratio: 9 / 16; /* Вертикальный режим */
+  max-height: 80vh; /* Ограничиваем высоту, чтобы не растягивать контейнер */
 }
 
 .remote-video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Видео отображается полностью без обрезки */
+  background-color: #000; /* Чёрный background для пустых областей */
 }
 
 .local-video {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 150px;
-    height: 100px;
-    border-radius: 8px;
-    border: 2px solid #fff;
-    object-fit: cover;
-    z-index: 10;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 150px;
+  height: 100px;
+  border-radius: 8px;
+  border: 2px solid #fff;
+  object-fit: cover;
+  z-index: 10;
+}
+
+.video-controls {
+  display: flex;
+  gap: 10px; /* Расстояние между кнопками */
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+
+.orientation-toggle-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  background-color: #007bff; /* Синий цвет для кнопки переключения */
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.orientation-toggle-button:hover {
+  background-color: #0056b3;
 }
 
 .end-call-button-video {
-    margin-top: 15px;
-    margin-bottom: 20px; /* Отступ снизу для кнопки */
-    padding: 10px 20px;
-    font-size: 16px;
-    font-weight: bold;
-    color: #fff;
-    background-color: #ff4d4f;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    transition: background-color 0.3s;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  background-color: #ff4d4f;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background-color 0.3s;
 }
 
 .end-call-button-video:hover {
-    background-color: #d9363e;
+  background-color: #d9363e;
 }
 
 /* Адаптивность для маленьких экранов */
 @media (max-width: 600px) {
-    .video-call-container {
-        padding: 10px;
-        margin: 10px auto;
-    }
+  .video-call-container {
+    padding: 10px;
+    margin: 10px auto;
+  }
 
-    .video-call-title {
-        font-size: 20px;
-    }
+  .video-call-title {
+    font-size: 20px;
+  }
 
-    .video-container {
-        max-width: 100%;
-    }
+  .video-container {
+    max-width: 100%;
+  }
 
-    .local-video {
-        width: 120px;
-        height: 80px;
-    }
+  .video-container.vertical {
+    max-height: 60vh; /* Уменьшаем максимальную высоту для мобильных */
+  }
 
-    .end-call-button-video {
-        padding: 8px 16px;
-        font-size: 14px;
-    }
+  .local-video {
+    width: 120px;
+    height: 80px;
+  }
+
+  .video-controls {
+    flex-direction: column; /* Кнопки в столбец на маленьких экранах */
+    gap: 8px;
+  }
+
+  .orientation-toggle-button,
+  .end-call-button-video {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
 }
