@@ -9,6 +9,7 @@
   width: 100%;
   max-width: 900px;
   margin: 20px auto;
+  overflow: visible; /* Убираем прокрутку в контейнере */
 }
 
 .video-call-header {
@@ -38,14 +39,15 @@
 
 .video-container.vertical {
   aspect-ratio: 9 / 16; /* Вертикальный режим */
-  max-height: 80vh; /* Ограничиваем высоту, чтобы не растягивать контейнер */
+  width: 100%; /* Заполняет ширину контейнера */
+  max-width: 450px; /* Ограничиваем ширину для вертикального режима */
+  max-height: calc(450px * 16 / 9); /* Ограничиваем высоту, чтобы не растягивать */
 }
 
 .remote-video {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* Видео отображается полностью без обрезки */
-  background-color: #000; /* Чёрный background для пустых областей */
+  object-fit: cover; /* Видео заполняет контейнер с обрезкой */
 }
 
 .local-video {
@@ -62,7 +64,7 @@
 
 .video-controls {
   display: flex;
-  gap: 10px; /* Расстояние между кнопками */
+  gap: 10px;
   margin-top: 15px;
   margin-bottom: 20px;
 }
@@ -72,7 +74,7 @@
   font-size: 16px;
   font-weight: bold;
   color: #fff;
-  background-color: #007bff; /* Синий цвет для кнопки переключения */
+  background-color: #007bff;
   border: none;
   border-radius: 25px;
   cursor: pointer;
@@ -115,7 +117,8 @@
   }
 
   .video-container.vertical {
-    max-height: 60vh; /* Уменьшаем максимальную высоту для мобильных */
+    max-width: 300px; /* Уменьшаем ширину для мобильных */
+    max-height: calc(300px * 16 / 9); /* Ограничиваем высоту */
   }
 
   .local-video {
@@ -124,7 +127,7 @@
   }
 
   .video-controls {
-    flex-direction: column; /* Кнопки в столбец на маленьких экранах */
+    flex-direction: column;
     gap: 8px;
   }
 
