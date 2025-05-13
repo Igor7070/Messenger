@@ -9,8 +9,8 @@
   width: 100%;
   max-width: 900px;
   margin: 20px auto;
-  height: auto; /* Контейнер подстраивается под содержимое */
-  overflow: visible; /* Убираем прокрутку */
+  max-height: calc(800px * 9 / 16 + 150px); /* Фиксируем высоту: высота видео в горизонтальном режиме + отступы и кнопки */
+  overflow: hidden; /* Убираем прокрутку */
 }
 
 .video-call-header {
@@ -36,14 +36,14 @@
 
 .video-container.horizontal {
   aspect-ratio: 16 / 9; /* Горизонтальный режим */
+  height: calc(800px * 9 / 16); /* Фиксированная высота для горизонтального режима */
 }
 
 .video-container.vertical {
   aspect-ratio: 9 / 16; /* Вертикальный режим */
   width: 100%;
-  max-width: 450px; /* Ограничиваем ширину */
-  max-height: calc(800px * 16 / 9); /* Ограничиваем высоту на основе ширины горизонтального режима */
-  height: auto; /* Высота подстраивается */
+  max-width: calc(800px * 9 / 16); /* Ширина подстраивается под высоту горизонтального режима */
+  height: calc(800px * 9 / 16); /* Высота равна горизонтальному режиму, чтобы не растягивать */
 }
 
 .remote-video {
@@ -108,6 +108,7 @@
   .video-call-container {
     padding: 10px;
     margin: 10px auto;
+    max-height: calc(600px * 9 / 16 + 120px); /* Уменьшаем высоту для мобильных */
   }
 
   .video-call-title {
@@ -118,9 +119,13 @@
     max-width: 100%;
   }
 
+  .video-container.horizontal {
+    height: calc(600px * 9 / 16); /* Уменьшаем высоту для мобильных */
+  }
+
   .video-container.vertical {
-    max-width: 300px; /* Уменьшаем ширину для мобильных */
-    max-height: calc(600px * 16 / 9); /* Ограничиваем высоту для мобильных */
+    max-width: calc(600px * 9 / 16); /* Уменьшаем ширину для мобильных */
+    height: calc(600px * 9 / 16); /* Высота равна горизонтальному режиму */
   }
 
   .local-video {
