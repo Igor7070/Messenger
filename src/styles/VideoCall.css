@@ -2,17 +2,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: 100vh; /* Минимальная высота равна высоте экрана */
+    justify-content: flex-start; /* Содержимое начинается сверху */
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     padding: 20px;
     box-sizing: border-box;
-    overflow: auto; /* Прокрутка только если контент не помещается */
+    width: 100%;
+    max-width: 900px; /* Ограничиваем максимальную ширину контейнера */
+    margin: 20px auto; /* Центрируем контейнер с небольшим отступом сверху */
 }
 
 .video-call-header {
-    margin-bottom: 20px;
-    margin-top: 20px; /* Добавляем отступ сверху для надписи */
+    margin-bottom: 15px;
+    margin-top: 10px; /* Минимальный отступ сверху */
 }
 
 .video-call-title {
@@ -26,7 +27,7 @@
     position: relative;
     width: 100%;
     max-width: 800px;
-    aspect-ratio: 16 / 9; /* Соотношение сторон для видео */
+    aspect-ratio: 16 / 9; /* Фиксирован: aspect-ratio для пропорционального видео */
     background-color: #000;
     border-radius: 10px;
     overflow: hidden;
@@ -51,8 +52,8 @@
 }
 
 .end-call-button-video {
-    margin-top: 20px;
-    margin-bottom: 20px; /* Добавляем отступ снизу */
+    margin-top: 15px;
+    margin-bottom: 20px; /* Отступ снизу для кнопки */
     padding: 10px 20px;
     font-size: 16px;
     font-weight: bold;
@@ -70,6 +71,11 @@
 
 /* Адаптивность для маленьких экранов */
 @media (max-width: 600px) {
+    .video-call-container {
+        padding: 10px;
+        margin: 10px auto;
+    }
+
     .video-call-title {
         font-size: 20px;
     }
@@ -79,8 +85,8 @@
     }
 
     .local-video {
-        width: 100px;
-        height: 75px;
+        width: 120px;
+        height: 80px;
     }
 
     .end-call-button-video {
