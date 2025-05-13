@@ -9,7 +9,8 @@
   width: 100%;
   max-width: 900px;
   margin: 20px auto;
-  overflow: visible; /* Убираем прокрутку в контейнере */
+  height: auto; /* Контейнер подстраивается под содержимое */
+  overflow: visible; /* Убираем прокрутку */
 }
 
 .video-call-header {
@@ -39,9 +40,10 @@
 
 .video-container.vertical {
   aspect-ratio: 9 / 16; /* Вертикальный режим */
-  width: 100%; /* Заполняет ширину контейнера */
-  max-width: 450px; /* Ограничиваем ширину для вертикального режима */
-  max-height: calc(450px * 16 / 9); /* Ограничиваем высоту, чтобы не растягивать */
+  width: 100%;
+  max-width: 450px; /* Ограничиваем ширину */
+  max-height: calc(800px * 16 / 9); /* Ограничиваем высоту на основе ширины горизонтального режима */
+  height: auto; /* Высота подстраивается */
 }
 
 .remote-video {
@@ -118,7 +120,7 @@
 
   .video-container.vertical {
     max-width: 300px; /* Уменьшаем ширину для мобильных */
-    max-height: calc(300px * 16 / 9); /* Ограничиваем высоту */
+    max-height: calc(600px * 16 / 9); /* Ограничиваем высоту для мобильных */
   }
 
   .local-video {
