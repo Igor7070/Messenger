@@ -1,13 +1,15 @@
 package com.example.unl_pos12.controller.messenger;
 
-import com.example.unl_pos12.model.messenger.Chat;
-import com.example.unl_pos12.model.messenger.Message;
+import com.example.unl_pos12.model.messenger.*;
 import com.example.unl_pos12.repo.ChatRepository;
 import com.example.unl_pos12.service.MessageService;
+import com.example.unl_pos12.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 @Controller
@@ -16,6 +18,10 @@ public class WebSocketMessageController {
     private MessageService messageService;
     @Autowired
     private ChatRepository chatRepository;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping("/sendMessage/chat/{chatId}")
     @SendTo("/topic/chat/{chatId}/messages")
@@ -68,5 +74,19 @@ public class WebSocketMessageController {
         System.out.println("Marking message as read: " + messageId);
         Message message = messageService.markAsRead(messageId);
         return message;
+    }
+
+    @MessageMapping("/heartbeat")
+    public void handleHeartbeat(@Payload HeartbeatMessage message) {
+        System.out.println("Received heartbeat for userId: " + message.getUserId());
+        userService.setUserOnline(message.getUserId(), true);
+        // Рассылаем статус всем клиентам
+        messagingTemplate.convertAndSend("/topic/users/status",
+                new UserStatusMessage(message.getUserId(), getUsername(message.getUserId()), true));
+    }
+
+    private String getUsername(Long userId) {
+        User user = userService.getUserById(userId);
+        return user != null ? user.getUsername() : "Unknown";
     }
 }

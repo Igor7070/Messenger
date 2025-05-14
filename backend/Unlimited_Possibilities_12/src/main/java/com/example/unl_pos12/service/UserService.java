@@ -166,4 +166,15 @@ public class UserService {
         }
         return false;
     }
+
+    public void setUserOnline(Long userId, boolean online) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setOnline(online);
+        userRepository.save(user);
+    }
+
+    public List<User> getOnlineUsers() {
+        return userRepository.findByOnline(true);
+    }
 }

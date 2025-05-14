@@ -17,6 +17,7 @@ public class User {
     //@Lob // Указываем, что это большое поле
     private String info; // Информация о пользователе
     private String avatar; // Путь к аватару или байтовый массив
+    private boolean online; // "online" или "offline"
 
     @ManyToMany
     @JoinTable(
@@ -74,4 +75,8 @@ public class User {
     public void setPrivateChats(List<Chat> privateChats) {
         this.privateChats = privateChats;
     }
+
+    public boolean isOnline() { return online; }
+
+    public void setOnline(boolean online) { this.online = online; }
 }
