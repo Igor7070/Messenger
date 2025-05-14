@@ -8,10 +8,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class WebSocketService {
-    private final SimpMessagingTemplate messagingTemplate;
-
     @Autowired
     private UserService userService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public WebSocketService(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;

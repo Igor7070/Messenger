@@ -3,7 +3,6 @@ package com.example.unl_pos12.controller.messenger;
 import com.example.unl_pos12.model.messenger.Chat;
 import com.example.unl_pos12.model.messenger.HeartbeatMessage;
 import com.example.unl_pos12.model.messenger.Message;
-import com.example.unl_pos12.model.messenger.User;
 import com.example.unl_pos12.repo.ChatRepository;
 import com.example.unl_pos12.service.MessageService;
 import com.example.unl_pos12.service.UserService;
@@ -84,10 +83,5 @@ public class WebSocketMessageController {
         System.out.println("Received heartbeat for userId: " + message.getUserId());
         userService.setUserOnline(message.getUserId(), true);
         webSocketService.sendUserStatusUpdate(message.getUserId(), true);
-    }
-
-    private String getUsername(Long userId) {
-        User user = userService.getUserById(userId);
-        return user != null ? user.getUsername() : "Unknown";
     }
 }
