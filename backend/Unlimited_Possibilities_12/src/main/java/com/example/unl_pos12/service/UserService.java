@@ -64,6 +64,14 @@ public class UserService {
         return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
     }
 
+    public String getUsername(Long userId) {
+        try {
+            return getUserById(userId).getUsername();
+        } catch (Exception e) {
+            return "Unknown";
+        }
+    }
+
     public User updateUser(User user) {
         return userRepository.save(user);
     }
@@ -167,6 +175,7 @@ public class UserService {
         return false;
     }
 
+    @Transactional
     public void setUserOnline(Long userId, boolean online) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
