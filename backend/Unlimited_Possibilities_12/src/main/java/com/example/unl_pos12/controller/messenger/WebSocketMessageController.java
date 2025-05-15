@@ -14,6 +14,8 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 
+import java.util.Map;
+
 @Controller
 public class WebSocketMessageController {
     @Autowired
@@ -83,5 +85,21 @@ public class WebSocketMessageController {
         System.out.println("Received heartbeat for userId: " + message.getUserId());
         userService.setUserOnline(message.getUserId(), true);
         webSocketService.sendUserStatusUpdate(message.getUserId(), true);
+    }
+
+    @MessageMapping("/requestUserStatus")
+    public void handleRequestUserStatus(@Payload Map<String, Long> payload) {
+        Long userId = payload.get("userId");
+        if (userId != null) {
+            try {
+                boolean isOnline = userService.getUserById(userId).isOnline();
+                webSocketService.sendUserStatusUpdate(userId, isOnline);
+                System.out.println("Requested status for userId: " + userId + ", online: " + isOnline);
+            } catch (RuntimeException e) {
+                System.err.println("User not found for userId: " + userId);
+            }
+        } else {
+            System.err.println("Invalid userId in requestUserStatus payload");
+        }
     }
 }
