@@ -102,4 +102,11 @@ public class WebSocketMessageController {
             System.err.println("Invalid userId in requestUserStatus payload");
         }
     }
+
+    @MessageMapping("/setOffline")
+    public void handleSetOffline(@Payload HeartbeatMessage message) {
+        System.out.println("Received setOffline for userId: " + message.getUserId());
+        userService.setUserOnline(message.getUserId(), false);
+        webSocketService.sendUserStatusUpdate(message.getUserId(), false);
+    }
 }
