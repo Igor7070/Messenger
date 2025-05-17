@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 
 const useWebSocketStatus = (userId, username) => {
   const [usersStatus, setUsersStatus] = useState({});
   const stompClientRef = useRef(null);
   const heartbeatIntervalRef = useRef(null);
   const isTabActiveRef = useRef(true);
+  const userIdRef = useRef(userId); // Сохраняем userId
 
   useEffect(() => {
     console.log('useWebSocketStatus: userId=', userId, 'username=', username);
@@ -14,6 +14,8 @@ const useWebSocketStatus = (userId, username) => {
       console.log('useWebSocketStatus: No userId, skipping');
       return;
     }
+
+    userIdRef.current = userId; // Обновляем userId
 
     const client = new Client({
       brokerURL: 'wss://unlimitedpossibilities12.org/ws/websocket',
@@ -80,15 +82,15 @@ const useWebSocketStatus = (userId, username) => {
   }, [userId]);
 
   const sendHeartbeat = () => {
-    if (stompClientRef.current && stompClientRef.current.connected) {
-      const message = { userId }; // Совместимо с Android
+    if (stompClientRef.current && stompClientRef.current.connected && userIdRef.current) {
+      const message = { userId: userIdRef.current };
       stompClientRef.current.publish({
         destination: '/app/heartbeat',
         body: JSON.stringify(message),
       });
-      console.log(`Heartbeat sent for userId: ${userId}`);
+      console.log(`Heartbeat sent for userId: ${userIdRef.current}`);
     } else {
-      console.log('Cannot send heartbeat: STOMP client not connected');
+      console.log('Cannot send heartbeat: STOMP client not connected or no userId');
     }
   };
 
@@ -114,15 +116,15 @@ const useWebSocketStatus = (userId, username) => {
   };
 
   const sendOfflineStatus = () => {
-    if (stompClientRef.current && stompClientRef.current.connected) {
-      const message = { userId }; // Совместимо с Android
+    if (stompClientRef.current && stompClientRef.current.connected && userIdRef.current) {
+      const message = { userId: userIdRef.current };
       stompClientRef.current.publish({
         destination: '/app/setOffline',
         body: JSON.stringify(message),
       });
-      console.log(`Offline status sent for userId: ${userId}`);
+      console.log(`Offline status sent for userId: ${userIdRef.current}`);
     } else {
-      console.log('Cannot send offline status: STOMP client not connected');
+      console.log('Cannot send offline status: STOMP client not connected or no userId');
     }
   };
 
