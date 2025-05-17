@@ -5,6 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Home.css';
 import useWebSocket from '../hooks/useWebSocket';
+import useWebSocketStatus from '../hooks/useWebSocketStatus';
 import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 import SockJS from 'sockjs-client';
@@ -37,6 +38,7 @@ const Home = () => {
     const navigate = useNavigate();
 
     useWebSocket(currentUserId, messageAudioRef);
+    const { usersStatus } = useWebSocketStatus(currentUserId, localStorage.getItem('username') || '');
 
     // Отладка setIncomingCall
     const setIncomingCallWithLog = (value) => {
@@ -622,6 +624,7 @@ const Home = () => {
                                 ? `https://unlimitedpossibilities12.org${user.avatar}`
                                 : null;
                             const initials = user.username ? user.username.charAt(0).toUpperCase() : '';
+                            const userStatus = usersStatus[user.id] || { online: false };
 
                             return (
                                 <li
@@ -639,6 +642,13 @@ const Home = () => {
                                         <div className="user-avatar">{initials}</div>
                                     )}
                                     <span className="user-name">{user.username}</span>
+                                    {/* Добавляем индикатор статуса */}
+                                    <span
+                                        className="status-indicator"
+                                        style={{
+                                            backgroundColor: userStatus.online ? '#4CAF50' : '#B0BEC5',
+                                        }}
+                                    ></span>
                                 </li>
                             );
                         })}
