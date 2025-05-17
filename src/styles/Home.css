@@ -387,7 +387,7 @@ h2 {
         width: 100%;
     }
 
-    .status-indicator {
+    .status-indicator-online {
         width: 10px;
         height: 10px;
         border-radius: 50%;
