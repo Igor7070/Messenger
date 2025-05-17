@@ -364,6 +364,15 @@ h2 {
     line-height: 1.2;
 }
 
+.status-indicator-online {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
 @media (max-width: 768px) {
     .home-container {
         padding: 10px;
@@ -385,14 +394,5 @@ h2 {
     .modal-create-button,
     .modal-close-button {
         width: 100%;
-    }
-
-    .status-indicator-online {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-left: 8px;
-        vertical-align: middle;
     }
 }
