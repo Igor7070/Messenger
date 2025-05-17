@@ -9,9 +9,12 @@ const useWebSocketStatus = (userId, username) => {
   const isTabActiveRef = useRef(true);
 
   useEffect(() => {
-    if (!userId) return;
+    console.log('useWebSocketStatus: userId=', userId, 'username=', username); // Отладка
+    if (!userId) {
+      console.log('useWebSocketStatus: No userId, skipping');
+      return;
+    }
 
-    // Исправляем URL: используем https вместо wss
     const socket = new SockJS('https://unlimitedpossibilities12.org/ws/websocket');
     const client = new Client({
       webSocketFactory: () => socket,
@@ -23,13 +26,20 @@ const useWebSocketStatus = (userId, username) => {
         stompClientRef.current = client;
 
         client.subscribe('/topic/users/status', (message) => {
-          const payload = JSON.parse(message.body);
-          if (payload.userId !== userId) {
-            setUsersStatus((prev) => ({
-              ...prev,
-              [payload.userId]: { username: payload.username, online: payload.online },
-            }));
-            console.log(`Status update: userId=${payload.userId}, online=${payload.online}`);
+          try {
+            const payload = JSON.parse(message.body);
+            console.log('Received status update:', payload);
+            if (payload.userId !== userId) {
+              setUsersStatus((prev) => ({
+                ...prev,
+                [payload.userId]: { username: payload.username, online: payload.online },
+              }));
+              console.log(`Status update: userId=${payload.userId}, online=${payload.online}`);
+            } else {
+              console.log(`Ignoring own status: userId=${payload.userId}`);
+            }
+          } catch (error) {
+            console.error('Error parsing status message:', error, message.body);
           }
         });
 
@@ -50,6 +60,7 @@ const useWebSocketStatus = (userId, username) => {
       },
     });
 
+    console.log('Activating STOMP client...');
     try {
       client.activate();
     } catch (error) {
@@ -57,6 +68,7 @@ const useWebSocketStatus = (userId, username) => {
     }
 
     return () => {
+      console.log('Cleaning up STOMP client...');
       stopHeartbeat();
       if (client && client.connected) {
         try {
@@ -70,12 +82,14 @@ const useWebSocketStatus = (userId, username) => {
 
   const sendHeartbeat = () => {
     if (stompClientRef.current && stompClientRef.current.connected) {
-      const message = { userId };
+      const message = { userId, username: username || 'Unknown' };
       stompClientRef.current.publish({
         destination: '/app/heartbeat',
         body: JSON.stringify(message),
       });
-      console.log(`Heartbeat sent for userId: ${userId}`);
+      console.log(`Heartbeat sent for userId: ${userId}, username: ${username || 'Unknown'}`);
+    } else {
+      console.log('Cannot send heartbeat: STOMP client not connected');
     }
   };
 
@@ -102,12 +116,14 @@ const useWebSocketStatus = (userId, username) => {
 
   const sendOfflineStatus = () => {
     if (stompClientRef.current && stompClientRef.current.connected) {
-      const message = { userId };
+      const message = { userId, username: username || 'Unknown' };
       stompClientRef.current.publish({
         destination: '/app/setOffline',
         body: JSON.stringify(message),
       });
-      console.log(`Offline status sent for userId: ${userId}`);
+      console.log(`Offline status sent for userId: ${userId}, username: ${username || 'Unknown'}`);
+    } else {
+      console.log('Cannot send offline status: STOMP client not connected');
     }
   };
 

@@ -40,6 +40,8 @@ const Home = () => {
     useWebSocket(currentUserId, messageAudioRef);
     const { usersStatus } = useWebSocketStatus(currentUserId, localStorage.getItem('username') || '');
 
+    console.log('Rendering Home, usersStatus:', usersStatus); // Отладка
+
     // Отладка setIncomingCall
     const setIncomingCallWithLog = (value) => {
         console.log('Вызов setIncomingCall:', value);
@@ -625,6 +627,7 @@ const Home = () => {
                                 : null;
                             const initials = user.username ? user.username.charAt(0).toUpperCase() : '';
                             const userStatus = usersStatus[user.id] || { online: false };
+                            console.log(`User ${user.id}: online=${userStatus.online}`); // Отладка
 
                             return (
                                 <li
