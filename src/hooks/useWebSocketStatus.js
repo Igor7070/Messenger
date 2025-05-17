@@ -3,29 +3,28 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 const useWebSocketStatus = (userId, username) => {
-  const [usersStatus, setUsersStatus] = useState({}); // Статусы других пользователей: { userId: { username, online } }
+  const [usersStatus, setUsersStatus] = useState({});
   const stompClientRef = useRef(null);
   const heartbeatIntervalRef = useRef(null);
-  const isTabActiveRef = useRef(true); // Отслеживаем активность вкладки
+  const isTabActiveRef = useRef(true);
 
-  // Настройка WebSocket и STOMP
   useEffect(() => {
-    if (!userId) return; // Не подключаемся, если userId отсутствует
+    if (!userId) return;
 
-    const socket = new SockJS('wss://unlimitedpossibilities12.org/ws/websocket');
+    // Исправляем URL: используем https вместо wss
+    const socket = new SockJS('https://unlimitedpossibilities12.org/ws/websocket');
     const client = new Client({
       webSocketFactory: () => socket,
-      reconnectDelay: 5000, // Переподключение через 5 секунд
-      heartbeatIncoming: 10000, // Серверный heartbeat
-      heartbeatOutgoing: 10000, // Клиентский heartbeat
+      reconnectDelay: 5000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
       onConnect: () => {
         console.log(`STOMP connected for userId: ${userId}`);
         stompClientRef.current = client;
 
-        // Подписка на статусы пользователей
         client.subscribe('/topic/users/status', (message) => {
           const payload = JSON.parse(message.body);
-          if (payload.userId !== userId) { // Игнорируем собственный статус
+          if (payload.userId !== userId) {
             setUsersStatus((prev) => ({
               ...prev,
               [payload.userId]: { username: payload.username, online: payload.online },
@@ -34,7 +33,6 @@ const useWebSocketStatus = (userId, username) => {
           }
         });
 
-        // Отправка heartbeat, если вкладка активна
         if (isTabActiveRef.current) {
           sendHeartbeat();
           startHeartbeat();
@@ -47,19 +45,29 @@ const useWebSocketStatus = (userId, username) => {
         console.log(`WebSocket closed for userId: ${userId}`);
         stopHeartbeat();
       },
+      onWebSocketError: (error) => {
+        console.error('WebSocket error:', error);
+      },
     });
 
-    client.activate();
+    try {
+      client.activate();
+    } catch (error) {
+      console.error('Failed to activate STOMP client:', error);
+    }
 
     return () => {
       stopHeartbeat();
       if (client && client.connected) {
-        client.deactivate();
+        try {
+          client.deactivate();
+        } catch (error) {
+          console.error('Failed to deactivate STOMP client:', error);
+        }
       }
     };
   }, [userId]);
 
-  // Отправка heartbeat
   const sendHeartbeat = () => {
     if (stompClientRef.current && stompClientRef.current.connected) {
       const message = { userId };
@@ -71,7 +79,6 @@ const useWebSocketStatus = (userId, username) => {
     }
   };
 
-  // Запуск heartbeat
   const startHeartbeat = () => {
     if (!heartbeatIntervalRef.current) {
       heartbeatIntervalRef.current = setInterval(() => {
@@ -85,7 +92,6 @@ const useWebSocketStatus = (userId, username) => {
     }
   };
 
-  // Остановка heartbeat
   const stopHeartbeat = () => {
     if (heartbeatIntervalRef.current) {
       clearInterval(heartbeatIntervalRef.current);
@@ -94,7 +100,6 @@ const useWebSocketStatus = (userId, username) => {
     }
   };
 
-  // Отправка статуса offline
   const sendOfflineStatus = () => {
     if (stompClientRef.current && stompClientRef.current.connected) {
       const message = { userId };
@@ -106,7 +111,6 @@ const useWebSocketStatus = (userId, username) => {
     }
   };
 
-  // Отслеживание активности вкладки
   useEffect(() => {
     const handleVisibilityChange = () => {
       isTabActiveRef.current = !document.hidden;
