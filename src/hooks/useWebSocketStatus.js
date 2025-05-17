@@ -9,15 +9,14 @@ const useWebSocketStatus = (userId, username) => {
   const isTabActiveRef = useRef(true);
 
   useEffect(() => {
-    console.log('useWebSocketStatus: userId=', userId, 'username=', username); // Отладка
+    console.log('useWebSocketStatus: userId=', userId, 'username=', username);
     if (!userId) {
       console.log('useWebSocketStatus: No userId, skipping');
       return;
     }
 
-    const socket = new SockJS('https://unlimitedpossibilities12.org/ws/websocket');
     const client = new Client({
-      webSocketFactory: () => socket,
+      brokerURL: 'wss://unlimitedpossibilities12.org/ws/websocket',
       reconnectDelay: 5000,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
@@ -82,12 +81,12 @@ const useWebSocketStatus = (userId, username) => {
 
   const sendHeartbeat = () => {
     if (stompClientRef.current && stompClientRef.current.connected) {
-      const message = { userId, username: username || 'Unknown' };
+      const message = { userId }; // Совместимо с Android
       stompClientRef.current.publish({
         destination: '/app/heartbeat',
         body: JSON.stringify(message),
       });
-      console.log(`Heartbeat sent for userId: ${userId}, username: ${username || 'Unknown'}`);
+      console.log(`Heartbeat sent for userId: ${userId}`);
     } else {
       console.log('Cannot send heartbeat: STOMP client not connected');
     }
@@ -116,12 +115,12 @@ const useWebSocketStatus = (userId, username) => {
 
   const sendOfflineStatus = () => {
     if (stompClientRef.current && stompClientRef.current.connected) {
-      const message = { userId, username: username || 'Unknown' };
+      const message = { userId }; // Совместимо с Android
       stompClientRef.current.publish({
         destination: '/app/setOffline',
         body: JSON.stringify(message),
       });
-      console.log(`Offline status sent for userId: ${userId}, username: ${username || 'Unknown'}`);
+      console.log(`Offline status sent for userId: ${userId}`);
     } else {
       console.log('Cannot send offline status: STOMP client not connected');
     }
