@@ -7,6 +7,9 @@
     margin: auto;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     border: 2px solid #A5D6A7;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Центрирование содержимого */
 }
 
 .user-profile-username {
@@ -15,7 +18,7 @@
     font-weight: 600;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
     margin-bottom: 15px;
-    text-align: center; /* Центрирование имени */
+    text-align: center;
 }
 
 .user-avatar-profile {
@@ -36,7 +39,7 @@
 .userprofile-avatar-container {
     position: relative;
     display: flex;
-    justify-content: center; /* Центрирование аватара */
+    justify-content: center;
     align-items: center;
     margin: 0 auto;
 }
@@ -50,13 +53,14 @@
     background-color: #4CAF50;
     border-radius: 50%;
     border: 2px solid #DAF7A9;
+    z-index: 10; /* Убедиться, что кружок поверх аватара */
 }
 
 .userprofile-status-text {
     display: block;
     text-align: center;
-    margin-top: 0; /* Без отступа от имени */
-    line-height: 1; /* Уменьшает вертикальный зазор */
+    margin-top: 0;
+    line-height: 1;
 }
 
 .userprofile-status-label {
@@ -73,11 +77,16 @@
     color: #757575;
 }
 
-.avatar-input-user-profile {
-    margin: 10px auto 0 auto;
+.avatar-input {
+    margin: 10px 0 0 0;
     display: block;
-    text-align: center;
     width: fit-content;
+}
+
+.userprofile-avatar-input-container {
+    display: flex;
+    justify-content: center;
+    width: 100%; /* Полная ширина для центрирования */
 }
 
 .user-info {
@@ -86,6 +95,7 @@
     background-color: #F1F8E9;
     border-radius: 8px;
     border: 1px solid #C8E6C9;
+    width: 100%; /* Убедиться, что блок занимает всю ширину */
 }
 
 .user-info-input {
@@ -106,10 +116,6 @@
 
 .update-button:hover {
     background-color: #00b327;
-}
-
-.user-info {
-    position: relative;
 }
 
 .user-info-text {
@@ -209,6 +215,7 @@
     display: flex;
     justify-content: space-between;
     margin-top: 10px;
+    width: 100%; /* Убедиться, что кнопки занимают всю ширину */
 }
 
 .personal-chats-button {
@@ -262,6 +269,7 @@
     justify-content: center;
     gap: 10px;
     margin-top: 10px;
+    width: 100%; /* Убедиться, что кнопки центрированы */
 }
 
 .voice-call-button, .video-call-button {
