@@ -1,5 +1,5 @@
 .user-profile-container {
-    position: relative; 
+    position: relative;
     padding: 20px;
     background-color: #DAF7A9;
     border-radius: 12px;
@@ -46,20 +46,20 @@
 
 .userprofile-status-indicator-online {
     position: absolute;
-    bottom: 2px; /* Точно на ободе, с учетом границы 3px */
-    right: 2px; /* Точно на ободе, правый нижний угол */
+    bottom: 3px; /* Точно на ободе, с учетом границы 3px */
+    right: 3px; /* Точно на ободе, правый нижний угол */
     width: 12px;
     height: 12px;
     background-color: #4CAF50;
     border-radius: 50%;
     border: 2px solid #DAF7A9;
-    z-index: 10;
+    z-index: 10 !important;
 }
 
 .userprofile-status-text {
     display: block;
     text-align: center;
-    margin-top: 0;
+    margin-top: 0 !important;
     line-height: 1;
 }
 
@@ -82,14 +82,15 @@
     justify-content: center;
     align-items: center;
     width: 100%;
-    margin-top: 10px;
+    margin-top: 10px !important;
 }
 
 .avatar-input {
-    display: block;
+    display: block !important;
     margin: 0 auto !important;
     width: fit-content !important;
     text-align: center !important;
+    padding: 0 !important;
 }
 
 .user-info {
@@ -292,4 +293,3 @@
 .voice-call-button:hover, .video-call-button:hover {
     background-color: #45a049;
 }
-
