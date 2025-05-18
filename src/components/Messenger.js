@@ -679,7 +679,7 @@ const Messenger = () => {
                                                 style={{ cursor: 'pointer' }}
                                             />
                                             {(usersStatus[msg.sender.id]?.online) && (
-                                                <span className="status-indicator-online"></span>
+                                                <span className="status-indicator-online-groupchat"></span>
                                             )}
                                             </div>
                                         ) : (
@@ -692,7 +692,7 @@ const Messenger = () => {
                                                 {msg.sender.username.charAt(0).toUpperCase()}
                                             </div>
                                             {(usersStatus[msg.sender.id]?.online) && (
-                                                <span className="status-indicator-online"></span>
+                                                <span className="status-indicator-online-groupchat"></span>
                                             )}
                                             </div>
                                         )}

@@ -342,7 +342,7 @@
     display: inline-block;
 }
 
-.status-indicator-online {
+.status-indicator-online-groupchat {
     position: absolute;
     bottom: 0;
     right: 0;
