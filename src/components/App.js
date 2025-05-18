@@ -9,7 +9,7 @@ import VideoCall from './VideoCall';
 import PersonalChats from './PersonalChats';
 import { NotificationProvider } from './NotificationContext';
 import { UserInteractionProvider } from './UserInteractionContext';
-import { UserStatusProvider, useUserStatusContext } from './UserStatusContext';
+import { UserStatusProvider, useUserStatusContext } from '../context/UserStatusContext';
 import { ToastContainer } from 'react-toastify';
 import '../styles/App.css';
 

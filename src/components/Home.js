@@ -5,7 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Home.css';
 import useWebSocket from '../hooks/useWebSocket';
-import { useUserStatusContext } from './UserStatusContext';
+import { useUserStatusContext } from '../context/UserStatusContext';
 import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 import SockJS from 'sockjs-client';
