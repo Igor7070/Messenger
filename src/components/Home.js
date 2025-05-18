@@ -5,7 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Home.css';
 import useWebSocket from '../hooks/useWebSocket';
-import useWebSocketStatus from '../hooks/useWebSocketStatus';
+import { useUserStatusContext } from './UserStatusContext';
 import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 import SockJS from 'sockjs-client';
@@ -38,7 +38,7 @@ const Home = () => {
     const navigate = useNavigate();
 
     useWebSocket(currentUserId, messageAudioRef);
-    const { usersStatus } = useWebSocketStatus(currentUserId, localStorage.getItem('username') || '');
+    const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
 
     console.log('Rendering Home, usersStatus:', usersStatus); // Отладка
 
@@ -459,6 +459,7 @@ const Home = () => {
             setLoginUsername('');
             setLoginPassword('');
             setIsLoggedIn(true);
+            initializeWebSocket(Number(user.id), user.username); // Инициализация WebSocket
             toast.success('Login successful!');
         } catch (error) {
             toast.error(error.message || 'Error logging in');
@@ -466,7 +467,9 @@ const Home = () => {
     };
 
     const logoutUser = () => {
+        disconnectWebSocket(); // Отключаем WebSocket
         localStorage.removeItem('userId');
+        localStorage.removeItem('username');// Добавлено
         setCurrentUserId(null);
         setIsLoggedIn(false);
         toast.success('Logged out successfully!');
