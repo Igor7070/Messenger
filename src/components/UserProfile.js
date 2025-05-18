@@ -568,10 +568,10 @@ const UserProfile = () => {
             <div className="userprofile-avatar-container">
                 {user.avatar ? (
                     <img
-                    src={`https://unlimitedpossibilities12.org${user.avatar}`}
-                    alt={`${user.username} avatar`}
-                    className="user-avatar-profile"
-                    onClick={openModal}
+                        src={`https://unlimitedpossibilities12.org${user.avatar}`}
+                        alt={`${user.username} avatar`}
+                        className="user-avatar-profile"
+                        onClick={openModal}
                     />
                 ) : (
                     <div className="user-avatar-profile" style={{ backgroundColor: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

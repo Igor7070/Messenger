@@ -1,13 +1,12 @@
 .user-profile-container {
     position: relative; 
     padding: 20px;
-    /*background-color: #f9f9f9;*/
     background-color: #DAF7A9;
     border-radius: 12px;
     max-width: 600px;
     margin: auto;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Чуть глубже тень */
-    border: 2px solid #A5D6A7; /* Тонкая рамка светло-зеленого оттенка */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 2px solid #A5D6A7;
 }
 
 .user-profile-username {
@@ -16,56 +15,97 @@
     font-weight: 600;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
     margin-bottom: 15px;
+    text-align: center; /* Центрирование имени */
 }
 
 .user-avatar-profile {
-    width: 100px; /* Ширина аватара */
-    height: 100px; /* Высота аватара */
-    border-radius: 50%; /* Круглая форма */
-    object-fit: cover; /* Обрезка изображения */
-    background-color: #e0e0e0; /* Цвет фона по умолчанию */
-    display: flex; /* Используем флексбокс для центрирования текста */
-    align-items: center; /* Вертикальное выравнивание */
-    justify-content: center; /* Горизонтальное выравнивание */
-    font-size: 40px; /* Размер шрифта для текста */
-    color: #757575; /* Цвет текста */
-    border: 3px solid #81C784; /* Рамка среднего зеленого оттенка */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); /* Легкая тень для объема */
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: #757575;
+    border: 3px solid #81C784;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.userprofile-avatar-container {
+    position: relative;
+    display: flex;
+    justify-content: center; /* Центрирование аватара */
+    align-items: center;
+    margin: 0 auto;
+}
+
+.userprofile-status-indicator-online {
+    position: absolute;
+    bottom: 4px; /* На ободе аватара, с учетом границы 3px */
+    right: 4px; /* На ободе, в правом нижнем углу */
+    width: 12px;
+    height: 12px;
+    background-color: #4CAF50;
+    border-radius: 50%;
+    border: 2px solid #DAF7A9;
+}
+
+.userprofile-status-text {
+    display: block;
+    text-align: center;
+    margin-top: 0; /* Без отступа от имени */
+    line-height: 1; /* Уменьшает вертикальный зазор */
+}
+
+.userprofile-status-label {
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Roboto', sans-serif;
+}
+
+.userprofile-status-label.userprofile-online {
+    color: #4CAF50;
+}
+
+.userprofile-status-label.userprofile-offline {
+    color: #757575;
 }
 
 .avatar-input {
-    margin: 10px auto 0 auto; /* Отступ сверху и центрирование */
+    margin: 10px auto 0 auto;
     display: block;
-    text-align: center; /* Гарантирует центрирование */
-    width: fit-content; /* Уменьшает ширину до содержимого */
+    text-align: center;
+    width: fit-content;
 }
 
 .user-info {
-    margin-top: 20px; /* Отступ сверху от аватара */
+    margin-top: 20px;
     padding: 15px;
-    background-color: #F1F8E9; /* Очень светлый зеленый для контраста с основным фоном */
+    background-color: #F1F8E9;
     border-radius: 8px;
-    border: 1px solid #C8E6C9; /* Тонкая рамка в тон дизайну */
+    border: 1px solid #C8E6C9;
 }
 
 .user-info-input {
-    width: 100%; /* 100% ширины контейнера */
-    margin-top: 10px; /* Отступ сверху */
+    width: 100%;
+    margin-top: 10px;
 }
 
 .update-button {
-    margin-top: 20px; /* Отступ сверху */
-    padding: 10px 15px; /* Внутренние отступы */
-    background-color: #007bff; /* Цвет фона кнопки */
-    color: white; /* Цвет текста кнопки */
-    border: none; /* Без рамки */
-    border-radius: 5px; /* Закругленные углы */
-    cursor: pointer; /* Курсор указателя при наведении */
-    align-self: flex-end; /* Выравнивание кнопки вправо */
+    margin-top: 20px;
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    align-self: flex-end;
 }
 
 .update-button:hover {
-    background-color: #00b327; /* Цвет фона при наведении */
+    background-color: #00b327;
 }
 
 .user-info {
@@ -75,23 +115,23 @@
 .user-info-text {
     display: flex;
     align-items: center;
-    flex-direction: column; /* Изменяем на столбец для переноса текста */
+    flex-direction: column;
 }
 
 .user-info-text p {
-    margin: 0; /* Убираем отступы */
-    word-wrap: break-word; /* Перенос длинных слов */
-    width: 100%; /* Занимает всю ширину контейнера */
-    max-width: 100%; /* Ограничиваем ширину текста */
+    margin: 0;
+    word-wrap: break-word;
+    width: 100%;
+    max-width: 100%;
 }
 
 .edit-icon {
-    margin-left: 10px; /* Отступ слева от иконки */
-    cursor: pointer; /* Курсор указателя при наведении */
+    margin-left: 10px;
+    cursor: pointer;
 }
 
 .user-info-title {
-    color: #388E3C; /* Зеленый чуть светлее имени пользователя */
+    color: #388E3C;
     font-size: 20px;
     margin-bottom: 10px;
 }
@@ -121,7 +161,7 @@
 .user-profile-modal-image {
     max-width: 90%;
     max-height: 90%;
-    cursor: pointer; /* Указывает, что изображение может быть нажато */
+    cursor: pointer;
 }
 
 .user-profile-modal-close-button {
@@ -133,71 +173,70 @@
 }
 
 .send-message-button {
-    background-color: #4CAF50; /* Зеленый цвет фона */
-    color: white; /* Белый текст */
-    border: none; /* Убираем границы */
-    border-radius: 5px; /* Закругленные углы */
-    padding: 10px 20px; /* Отступы внутри кнопки */
-    font-size: 16px; /* Размер шрифта */
-    cursor: pointer; /* Указатель при наведении */
-    transition: background-color 0.3s; /* Плавный переход цвета фона */
-    margin-top: 20px; /* Отступ сверху */
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 20px;
 }
 
 .send-message-button:hover {
-    background-color: #45a049; /* Более темный зеленый при наведении */
+    background-color: #45a049;
 }
 
 .call-button {
-    background-color: #4CAF50; /* Зеленый цвет фона */
-    color: white; /* Белый текст */
-    border: none; /* Убираем границы */
-    border-radius: 5px; /* Закругленные углы */
-    padding: 10px 20px; /* Отступы внутри кнопки */
-    font-size: 16px; /* Размер шрифта */
-    cursor: pointer; /* Указатель при наведении */
-    transition: background-color 0.3s; /* Плавный переход цвета фона */
-    margin-top: 20px; /* Отступ сверху */
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 20px;
     margin-left: 10px;
 }
 
 .call-button:hover {
-    background-color: #45a049; /* Более темный зеленый при наведении */
+    background-color: #45a049;
 }
 
 .button-container {
     display: flex;
-    /*justify-content: flex-end; /* Выравнивание по правому краю */
-    justify-content: space-between; /* Разделяет кнопки по краям */
-    margin-top: 10px; /* Отступ сверху */
+    justify-content: space-between;
+    margin-top: 10px;
 }
 
 .personal-chats-button {
-    margin-top: 20px; /* Отступ сверху */
-    padding: 10px 15px; /* Внутренние отступы */
-    background-color: #6f00ff; /* Цвет фона */
-    color: white; /* Цвет текста */
-    border: none; /* Без рамки */
-    border-radius: 5px; /* Закругление углов */
-    cursor: pointer; /* Курсор при наведении */
-    margin-left: 10px; /* Отступ между кнопками */
+    margin-top: 20px;
+    padding: 10px 15px;
+    background-color: #6f00ff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 10px;
 }
 
 .personal-chats-button:hover {
-    background-color: #00b327; /* Цвет фона при наведении */
+    background-color: #00b327;
 }
 
 .settings-icon {
-    position: absolute; /* Абсолютное позиционирование для иконки */
-    top: 10px; /* Отступ сверху */
-    right: 10px; /* Отступ справа */
-    cursor: pointer; /* Курсор при наведении */
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
 }
 
 .settings-menu {
-    position: absolute; /* Абсолютное позиционирование для меню */
-    top: 30px; /* Отступ сверху от иконки */
-    right: 0; /* Выравнивание по правому краю */
+    position: absolute;
+    top: 30px;
+    right: 0;
     background: white;
     border: 1px solid #ccc;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
@@ -221,63 +260,25 @@
 .call-buttons-container {
     display: flex;
     justify-content: center;
-    gap: 10px; /* Отступ между кнопками */
-    margin-top: 10px; /* Отступ сверху от send-message-button */
+    gap: 10px;
+    margin-top: 10px;
 }
 
 .voice-call-button, .video-call-button {
     display: flex;
     align-items: center;
-    gap: 8px; /* Отступ между иконкой и текстом */
-    background-color: #4CAF50; /* Зеленый цвет фона */
-    color: white; /* Белый текст */
-    border: none; /* Убираем границы */
-    border-radius: 5px; /* Закругленные углы */
-    padding: 10px 20px; /* Отступы внутри кнопки */
-    font-size: 16px; /* Размер шрифта */
-    cursor: pointer; /* Указатель при наведении */
-    transition: background-color 0.3s; /* Плавный переход цвета фона */
+    gap: 8px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 .voice-call-button:hover, .video-call-button:hover {
-    background-color: #45a049; /* Более темный зеленый при наведении */
-}
-
-.userprofile-status-indicator-online {
-    position: absolute;
-    bottom: 4px; /* На ободе аватара, с учетом границы 3px */
-    right: 4px; /* На ободе, в правом нижнем углу */
-    width: 12px;
-    height: 12px;
-    background-color: #4CAF50;
-    border-radius: 50%;
-    border: 2px solid #DAF7A9; /* Цвет фона .user-profile-container */
-}
-
-.userprofile-avatar-container {
-    position: relative;
-    display: block;
-    margin: 0 auto; /* Центрирование аватара */
-    text-align: center; /* Дополнительное выравнивание */
-}
-
-.userprofile-status-text {
-    display: block;
-    text-align: center;
-    margin-top: 1px; /* Минимальный отступ от имени */
-}
-
-.userprofile-status-label {
-    font-size: 14px;
-    font-weight: 500;
-    font-family: 'Roboto', sans-serif;
-}
-
-.userprofile-status-label.userprofile-online {
-    color: #4CAF50;
-}
-
-.userprofile-status-label.userprofile-offline {
-    color: #757575;
+    background-color: #45a049;
 }
 
