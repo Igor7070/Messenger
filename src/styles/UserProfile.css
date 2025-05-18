@@ -9,7 +9,7 @@
     border: 2px solid #A5D6A7;
     display: flex;
     flex-direction: column;
-    align-items: center; /* Центрирование содержимого */
+    align-items: center;
 }
 
 .user-profile-username {
@@ -46,14 +46,14 @@
 
 .userprofile-status-indicator-online {
     position: absolute;
-    bottom: 4px; /* На ободе аватара, с учетом границы 3px */
-    right: 4px; /* На ободе, в правом нижнем углу */
+    bottom: 2px; /* Точно на ободе, с учетом границы 3px */
+    right: 2px; /* Точно на ободе, правый нижний угол */
     width: 12px;
     height: 12px;
     background-color: #4CAF50;
     border-radius: 50%;
     border: 2px solid #DAF7A9;
-    z-index: 10; /* Убедиться, что кружок поверх аватара */
+    z-index: 10;
 }
 
 .userprofile-status-text {
@@ -77,16 +77,19 @@
     color: #757575;
 }
 
-.avatar-input {
-    margin: 10px 0 0 0;
-    display: block;
-    width: fit-content;
-}
-
 .userprofile-avatar-input-container {
     display: flex;
     justify-content: center;
-    width: 100%; /* Полная ширина для центрирования */
+    align-items: center;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.avatar-input {
+    display: block;
+    margin: 0 auto !important;
+    width: fit-content !important;
+    text-align: center !important;
 }
 
 .user-info {
@@ -95,7 +98,7 @@
     background-color: #F1F8E9;
     border-radius: 8px;
     border: 1px solid #C8E6C9;
-    width: 100%; /* Убедиться, что блок занимает всю ширину */
+    width: 100%;
 }
 
 .user-info-input {
@@ -215,7 +218,7 @@
     display: flex;
     justify-content: space-between;
     margin-top: 10px;
-    width: 100%; /* Убедиться, что кнопки занимают всю ширину */
+    width: 100%;
 }
 
 .personal-chats-button {
@@ -269,7 +272,7 @@
     justify-content: center;
     gap: 10px;
     margin-top: 10px;
-    width: 100%; /* Убедиться, что кнопки центрированы */
+    width: 100%;
 }
 
 .voice-call-button, .video-call-button {
