@@ -35,6 +35,9 @@
 
 .avatar-input {
     margin-top: 10px; /* Отступ сверху для поля выбора файла */
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .user-info {
