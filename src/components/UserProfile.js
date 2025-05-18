@@ -10,6 +10,7 @@ import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
+import { useUserStatusContext } from '../context/UserStatusContext';
 
 const UserProfile = () => {
     const { userId } = useParams();
@@ -33,6 +34,8 @@ const UserProfile = () => {
     const [settingsMenuVisible, setSettingsMenuVisible] = useState(false);
 
     useWebSocket(currentUserId, messageAudioRef);
+
+    const { usersStatus, disconnectWebSocket } = useUserStatusContext();
 
     const setIncomingCallWithLog = (value) => {
         console.log('Вызов setIncomingCall:', value);
@@ -532,6 +535,7 @@ const UserProfile = () => {
                     console.log('User deleted successfully');
                     localStorage.removeItem('userId');
                     localStorage.removeItem('username');
+                    disconnectWebSocket(); // Отключаем WebSocket
                     navigate('/');
                     toast.success('Account deleted successfully!');
                 } else {
@@ -556,16 +560,31 @@ const UserProfile = () => {
                 Ваш браузер не поддерживает аудио.
             </audio>
             <h1 className="user-profile-username">{user.username}</h1>
+            <div className="user-status">
+                <span className={`status-text ${usersStatus[userId]?.online ? 'online' : 'offline'}`}>
+                    {usersStatus[userId]?.online ? 'Online' : 'Offline'}
+                </span>
+            </div>
             {user.avatar ? (
-                <img
-                    src={`https://unlimitedpossibilities12.org${user.avatar}`}
-                    alt={`${user.username} avatar`}
-                    className="user-avatar-profile"
-                    onClick={openModal}
-                />
+                <div className="avatar-wrapper">
+                    <img
+                        src={`https://unlimitedpossibilities12.org${user.avatar}`}
+                        alt={`${user.username} avatar`}
+                        className="user-avatar-profile"
+                        onClick={openModal}
+                    />
+                    {(usersStatus[userId]?.online) && (
+                        <span className="status-indicator-online-userprofile"></span>
+                    )}
+                </div>
             ) : (
-                <div className="user-avatar-profile" style={{ backgroundColor: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {user.username.charAt(0).toUpperCase()}
+                <div className="avatar-wrapper">
+                    <div className="user-avatar-profile" style={{ backgroundColor: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {user.username.charAt(0).toUpperCase()}
+                    </div>
+                    {(usersStatus[userId]?.online) && (
+                        <span className="status-indicator-online-userprofile"></span>
+                    )}
                 </div>
             )}
             {userId === String(currentUserId) && (
