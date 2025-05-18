@@ -10,7 +10,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 import { format, isToday, parseISO } from 'date-fns';
-import { useUserStatusContext } from './UserStatusContext';
+import { useUserStatusContext } from '../context/UserStatusContext';
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
