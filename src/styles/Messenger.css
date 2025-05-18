@@ -337,6 +337,22 @@
     margin-top: 10px;
 }
 
+.avatar-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.status-indicator-online {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    background-color: #4CAF50;
+    border-radius: 50%;
+    border: 2px solid #D7E0E6; /* Цвет фона .messenger для обводки */
+}
+
 @media (max-width: 800px) {
     .messenger {
         margin: 10px;

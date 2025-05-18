@@ -10,6 +10,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 import { format, isToday, parseISO } from 'date-fns';
+import { useUserStatusContext } from './UserStatusContext';
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
@@ -51,6 +52,8 @@ const Messenger = () => {
     const messageAudioRef = useRef(null);
     const navigate = useNavigate();
     const callRequestRef = useRef(null);
+
+    const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
 
     const setIncomingCallWithLog = (value) => {
         console.log('Вызов setIncomingCall:', value);
@@ -570,6 +573,7 @@ const Messenger = () => {
                 setErrorMessage('');
                 localStorage.setItem('userId', loggedUser.id);
                 localStorage.setItem('username', loggedUser.username);
+                initializeWebSocket(loggedUser.id, loggedUser.username); // Инициализация WebSocket
                 toast.success('You have successfully logged in!');
             } catch (error) {
                 let errorMessage = 'Failed to log in. Please try again.';
@@ -587,6 +591,7 @@ const Messenger = () => {
     };
 
     const handleLogout = () => {
+        disconnectWebSocket(); // Отключаем WebSocket
         localStorage.removeItem('userId');
         localStorage.removeItem('username');
         setUserId(null);
@@ -665,6 +670,7 @@ const Messenger = () => {
                                 {shouldShowAvatar(msg) && (
                                     <div className="avatar-container">
                                         {msg.sender.avatar ? (
+                                            <div className="avatar-wrapper">
                                             <img
                                                 src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
                                                 alt={`${msg.sender.username} avatar`}
@@ -672,13 +678,22 @@ const Messenger = () => {
                                                 onClick={() => handleAvatarClick(msg.sender.id)}
                                                 style={{ cursor: 'pointer' }}
                                             />
+                                            {(usersStatus[msg.sender.id]?.online) && (
+                                                <span className="status-indicator-online"></span>
+                                            )}
+                                            </div>
                                         ) : (
+                                            <div className="avatar-wrapper">
                                             <div
                                                 className="message-avatar"
                                                 onClick={() => handleAvatarClick(msg.sender.id)}
                                                 style={{ cursor: 'pointer' }}
                                             >
                                                 {msg.sender.username.charAt(0).toUpperCase()}
+                                            </div>
+                                            {(usersStatus[msg.sender.id]?.online) && (
+                                                <span className="status-indicator-online"></span>
+                                            )}
                                             </div>
                                         )}
                                     </div>
