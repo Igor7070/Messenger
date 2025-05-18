@@ -559,13 +559,13 @@ const UserProfile = () => {
                 <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
             </audio>
-            <div className="username-status-wrapper">
             <h1 className="user-profile-username">{user.username}</h1>
-                <span className={`status-text ${usersStatus[userId]?.online ? 'online' : 'offline'}`}>
+            <span className="userprofile-status-text">
+                <span className={`userprofile-status-label ${usersStatus[userId]?.online ? 'userprofile-online' : 'userprofile-offline'}`}>
                     {usersStatus[userId]?.online ? 'Online' : 'Offline'}
                 </span>
-            </div>
-            <div className="avatar-status-wrapper">
+            </span>
+            <div className="userprofile-avatar-container">
                 {user.avatar ? (
                     <img
                     src={`https://unlimitedpossibilities12.org${user.avatar}`}
@@ -579,7 +579,7 @@ const UserProfile = () => {
                     </div>
                 )}
                 {(usersStatus[userId]?.online) && (
-                    <span className="status-indicator-online-userprofile"></span>
+                    <span className="userprofile-status-indicator-online"></span>
                 )}
             </div>
             {userId === String(currentUserId) && (

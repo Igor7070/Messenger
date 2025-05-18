@@ -34,10 +34,10 @@
 }
 
 .avatar-input {
-    margin-top: 10px; /* Отступ сверху для поля выбора файла */
+    margin: 10px auto 0 auto; /* Отступ сверху и центрирование */
     display: block;
-    margin-left: auto;
-    margin-right: auto;
+    text-align: center; /* Гарантирует центрирование */
+    width: fit-content; /* Уменьшает ширину до содержимого */
 }
 
 .user-info {
@@ -243,47 +243,41 @@
     background-color: #45a049; /* Более темный зеленый при наведении */
 }
 
-.avatar-status-wrapper {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.status-indicator-online-userprofile {
+.userprofile-status-indicator-online {
     position: absolute;
-    bottom: -10px; /* Смещение вниз, чтобы быть вне круга аватара */
-    right: calc(50% - 30px); /* Смещение влево от центра аватара (половина ширины аватара минус половина ширины индикатора) */
-    width: 14px;
-    height: 14px;
+    bottom: 4px; /* На ободе аватара, с учетом границы 3px */
+    right: 4px; /* На ободе, в правом нижнем углу */
+    width: 12px;
+    height: 12px;
     background-color: #4CAF50;
     border-radius: 50%;
     border: 2px solid #DAF7A9; /* Цвет фона .user-profile-container */
 }
 
-.user-status {
-    text-align: center;
-    margin-bottom: 15px;
+.userprofile-avatar-container {
+    position: relative;
+    display: block;
+    margin: 0 auto; /* Центрирование аватара */
+    text-align: center; /* Дополнительное выравнивание */
 }
 
-.status-text {
+.userprofile-status-text {
+    display: block;
+    text-align: center;
+    margin-top: 1px; /* Минимальный отступ от имени */
+}
+
+.userprofile-status-label {
     font-size: 14px;
     font-weight: 500;
     font-family: 'Roboto', sans-serif;
-    margin-top: 4px; /* Минимальный отступ от имени */
 }
 
-.status-text.online {
+.userprofile-status-label.userprofile-online {
     color: #4CAF50;
 }
 
-.status-text.offline {
+.userprofile-status-label.userprofile-offline {
     color: #757575;
 }
 
-.username-status-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 10px; /* Исходный отступ под именем */
-}
