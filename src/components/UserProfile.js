@@ -559,34 +559,29 @@ const UserProfile = () => {
                 <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
             </audio>
+            <div className="username-status-wrapper">
             <h1 className="user-profile-username">{user.username}</h1>
-            <div className="user-status">
                 <span className={`status-text ${usersStatus[userId]?.online ? 'online' : 'offline'}`}>
                     {usersStatus[userId]?.online ? 'Online' : 'Offline'}
                 </span>
             </div>
-            {user.avatar ? (
-                <div className="avatar-wrapper">
+            <div className="avatar-status-wrapper">
+                {user.avatar ? (
                     <img
-                        src={`https://unlimitedpossibilities12.org${user.avatar}`}
-                        alt={`${user.username} avatar`}
-                        className="user-avatar-profile"
-                        onClick={openModal}
+                    src={`https://unlimitedpossibilities12.org${user.avatar}`}
+                    alt={`${user.username} avatar`}
+                    className="user-avatar-profile"
+                    onClick={openModal}
                     />
-                    {(usersStatus[userId]?.online) && (
-                        <span className="status-indicator-online-userprofile"></span>
-                    )}
-                </div>
-            ) : (
-                <div className="avatar-wrapper">
+                ) : (
                     <div className="user-avatar-profile" style={{ backgroundColor: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {user.username.charAt(0).toUpperCase()}
                     </div>
-                    {(usersStatus[userId]?.online) && (
-                        <span className="status-indicator-online-userprofile"></span>
-                    )}
-                </div>
-            )}
+                )}
+                {(usersStatus[userId]?.online) && (
+                    <span className="status-indicator-online-userprofile"></span>
+                )}
+            </div>
             {userId === String(currentUserId) && (
                 <input type="file" onChange={handleAvatarChange} className="avatar-input" />
             )}

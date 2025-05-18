@@ -240,15 +240,17 @@
     background-color: #45a049; /* Более темный зеленый при наведении */
 }
 
-.avatar-wrapper {
+.avatar-status-wrapper {
     position: relative;
-    display: inline-block;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .status-indicator-online-userprofile {
     position: absolute;
-    bottom: 0;
-    right: 0;
+    bottom: -10px; /* Смещение вниз, чтобы быть вне круга аватара */
+    right: calc(50% - 30px); /* Смещение влево от центра аватара (половина ширины аватара минус половина ширины индикатора) */
     width: 14px;
     height: 14px;
     background-color: #4CAF50;
@@ -262,9 +264,10 @@
 }
 
 .status-text {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 500;
     font-family: 'Roboto', sans-serif;
+    margin-top: 4px; /* Минимальный отступ от имени */
 }
 
 .status-text.online {
@@ -273,4 +276,11 @@
 
 .status-text.offline {
     color: #757575;
+}
+
+.username-status-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px; /* Исходный отступ под именем */
 }
