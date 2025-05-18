@@ -649,12 +649,12 @@ const Home = () => {
                                     )}
                                     <span className="user-name">{user.username}</span>
                                     {/* Добавляем индикатор статуса */}
-                                    <span
-                                        className="status-indicator-online"
-                                        style={{
-                                            backgroundColor: userStatus.online ? '#4CAF50' : '#B0BEC5',
-                                        }}
-                                    ></span>
+                                    {userStatus.online && (
+                                        <span
+                                            className="status-indicator-online"
+                                            style={{ backgroundColor: '#4CAF50' }}
+                                        ></span>
+                                    )}
                                 </li>
                             );
                         })}
