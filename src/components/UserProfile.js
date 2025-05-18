@@ -583,7 +583,7 @@ const UserProfile = () => {
                 )}
             </div>
             {userId === String(currentUserId) && (
-                <input type="file" onChange={handleAvatarChange} className="avatar-input" />
+                <input type="file" onChange={handleAvatarChange} className="avatar-input-user-profile" />
             )}
             <div className="user-info">
                 <h2 className="user-info-title">About me:</h2>
