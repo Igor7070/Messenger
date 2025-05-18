@@ -305,6 +305,22 @@
     background-color: #F0F0F0;
 }
 
+.private-avatar-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.status-indicator-online-privatechat {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    background-color: #4CAF50;
+    border-radius: 50%;
+    border: 2px solid #F0F4F8; /* Цвет фона .private-chat для обводки */
+}
+
 @media (max-width: 800px) {
     .private-chat {
         margin: 10px;

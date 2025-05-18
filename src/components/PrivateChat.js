@@ -10,6 +10,7 @@ import { getChatById } from '../api/chats';
 import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 import { format, isToday, parseISO } from 'date-fns';
+import { useUserStatusContext } from '../context/UserStatusContext';
 
 const PrivateChat = () => {
     const [messages, setMessages] = useState([]);
@@ -36,6 +37,8 @@ const PrivateChat = () => {
     const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
     audioRef.current.loop = true;
     const navigate = useNavigate();
+
+    const { usersStatus } = useUserStatusContext();
 
     // Отладка setIncomingCall
     const setIncomingCallWithLog = (value) => {
@@ -608,20 +611,30 @@ const PrivateChat = () => {
                             {shouldShowAvatar(msg, index) && (
                                 <div className="private-avatar-container">
                                     {msg.sender.avatar ? (
-                                        <img 
-                                            src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`} 
-                                            alt={`${msg.sender.username} avatar`} 
+                                        <div className="private-avatar-wrapper">
+                                        <img
+                                            src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
+                                            alt={`${msg.sender.username} avatar`}
                                             className="private-message-avatar"
                                             onClick={() => handleAvatarClick(msg.sender.id)}
                                             style={{ cursor: 'pointer' }}
                                         />
+                                        {(usersStatus[msg.sender.id]?.online) && (
+                                            <span className="status-indicator-online-privatechat"></span>
+                                        )}
+                                        </div>
                                     ) : (
-                                        <div 
+                                        <div className="private-avatar-wrapper">
+                                        <div
                                             className="private-message-avatar"
                                             onClick={() => handleAvatarClick(msg.sender.id)}
                                             style={{ cursor: 'pointer' }}
                                         >
                                             {msg.sender.username.charAt(0).toUpperCase()}
+                                        </div>
+                                        {(usersStatus[msg.sender.id]?.online) && (
+                                            <span className="status-indicator-online-privatechat"></span>
+                                        )}
                                         </div>
                                     )}
                                 </div>

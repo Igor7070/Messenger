@@ -651,7 +651,7 @@ const Home = () => {
                                     {/* Добавляем индикатор статуса */}
                                     {userStatus.online && (
                                         <span
-                                            className="status-indicator-online"
+                                            className="status-indicator-online-home"
                                             style={{ backgroundColor: '#4CAF50' }}
                                         ></span>
                                     )}
