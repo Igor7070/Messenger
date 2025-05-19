@@ -42,6 +42,7 @@
 }
 
 .chat-avatar-container {
+    position: relative;
     margin-right: 12px;
 }
 
@@ -144,3 +145,17 @@
 .context-menu button:hover {
     background-color: #F1F8E9; /* Светло-зеленый фон */
 }
+
+.chat-status-indicator-online {
+    position: absolute;
+    bottom: 0 !important; /* На ободе аватара */
+    right: 0 !important; /* На ободе аватара */
+    width: 10px;
+    height: 10px;
+    background-color: #4CAF50 !important;
+    border-radius: 50%;
+    border: 2px solid #DCEDC8; /* Фон контейнера */
+    z-index: 10 !important;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3) !important;
+}
+

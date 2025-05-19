@@ -9,6 +9,7 @@ import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 import { getMessages } from '../api/messages';
 import { format, isToday, parseISO } from 'date-fns';
+import { useUserStatusContext } from '../context/UserStatusContext';
 
 const PersonalChats = () => {
     const { userId } = useParams();
@@ -29,6 +30,8 @@ const PersonalChats = () => {
 
     const currentUserName = location.state?.currentUserName || 'User';
     const currentUserId = userId;
+
+    const { usersStatus } = useUserStatusContext();
 
     // Отладка setIncomingCall
     const setIncomingCallWithLog = (value) => {
@@ -481,6 +484,9 @@ const PersonalChats = () => {
                                     <div className="chat-avatar">
                                         {initials}
                                     </div>
+                                )}
+                                {usersStatus[partner.id]?.online && (
+                                    <span className="chat-status-indicator-online"></span>
                                 )}
                             </div>
                             <div className="chat-info">
