@@ -46,11 +46,12 @@
 
 .userprofile-avatar-container .userprofile-status-indicator-online {
     position: absolute;
-    bottom: 3px !important; /* Тестовая позиция для проверки изменений */
-    right: 3px !important; /* Тестовая позиция для проверки изменений */
+    bottom: 0 !important; /* Базовая позиция */
+    right: 0 !important; /* Базовая позиция */
+    transform: translate(-2px, -2px) !important; /* Точная настройка на обод */
     width: 12px;
     height: 12px;
-    background-color: #4CAF50; /* Тест: если не зеленый, стиль не применяется */
+    background-color: red !important; /* Диагностика: должен быть красный */
     border-radius: 50%;
     border: 2px solid #DAF7A9;
     z-index: 10 !important;
@@ -89,12 +90,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 8px 16px; /* Уменьшено для меньшего размера */
+    padding: 10px 20px; /* Восстановлено исходное */
     background-color: #4CAF50;
     color: white;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 15px; /* Уменьшено для меньшего размера */
+    font-size: 16px;
     font-family: 'Roboto', sans-serif;
     font-weight: 500;
     text-align: center;
@@ -128,13 +129,18 @@
 
 .update-button {
     margin-top: 20px;
-    padding: 10px 15px;
+    padding: 10px 20px; /* Увеличено до Select New Avatar */
     background-color: #007bff;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    align-self: flex-end;
+    font-size: 16px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    text-align: center;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .update-button:hover {
@@ -243,13 +249,19 @@
 
 .personal-chats-button {
     margin-top: 20px;
-    padding: 10px 15px;
+    padding: 10px 20px; /* Увеличено до Select New Avatar */
     background-color: #6f00ff;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     margin-left: 10px;
+    font-size: 16px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    text-align: center;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .personal-chats-button:hover {
