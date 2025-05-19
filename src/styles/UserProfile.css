@@ -44,12 +44,12 @@
     margin: 0 auto;
 }
 
-.userprofile-avatar-container .userprofile-status-indicator-online {
+.userprofile-status-indicator-online {
     position: absolute;
-    top: 85px !important; /* Аватар 100px + 3px граница, кружок на ободе */
-    left: 85px !important; /* Позиция для правого нижнего угла */
-    width: 20px !important; /* Временно увеличено для диагностики */
-    height: 20px !important;
+    bottom: -2px !important; /* На ободе, учитывая границу 3px и обводку 2px */
+    right: -2px !important; /* Позиция на внешнем крае обода */
+    width: 12px !important;
+    height: 12px !important;
     background-color: #4CAF50 !important;
     border-radius: 50%;
     border: 2px solid #DAF7A9;
