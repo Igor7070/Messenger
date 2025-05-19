@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import { toast } from 'react-toastify';
-import { useUserInteraction } from './UserInteractionContext';
+import { useUserInteraction } from '../components/UserInteractionContext';
 
 const CallWebSocketContext = createContext();
 
