@@ -11,6 +11,7 @@ import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 import { format, isToday, parseISO } from 'date-fns';
 import { useUserStatusContext } from '../context/UserStatusContext';
+import { useCallWebSocket } from '../context/CallWebSocketContext'; // Новый импорт
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
@@ -36,32 +37,18 @@ const Messenger = () => {
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
     const [chatName, setChatName] = useState('');
+    const [currentUserId, setCurrentUserId] = useState(null);
 
     const textAreaRef = useRef(null);
     const messagesEndRef = useRef(null);
     const messageListRef = useRef(null);
     const fileInputRef = useRef(null);
     const { chatId } = useParams();
-
-    const [currentUserId, setCurrentUserId] = useState(null);
-    const [incomingCall, setIncomingCall] = useState(null);
-    const { userInteracted, handleInteraction } = useUserInteraction();
-    const stompClient = useRef(null);
-    const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
-    audioRef.current.loop = true;
-    const messageAudioRef = useRef(null);
     const navigate = useNavigate();
-    const callRequestRef = useRef(null);
-
+    const messageAudioRef = useRef(null);
+    const { userInteracted, handleInteraction } = useUserInteraction();
     const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
-
-    const setIncomingCallWithLog = (value) => {
-        console.log('Вызов setIncomingCall:', value);
-        console.log('Текущее incomingCall:', incomingCall);
-        console.log('Текущее callRequestRef:', callRequestRef.current);
-        console.log('Стек вызовов:', new Error().stack);
-        setIncomingCall(value);
-    };
+    const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -96,11 +83,14 @@ const Messenger = () => {
         const storedUsername = localStorage.getItem('username');
 
         if (storedUserId && storedUsername) {
-            setUserId(Number(storedUserId));
+            const userIdNum = Number(storedUserId);
+            setUserId(userIdNum);
+            setCurrentUserId(userIdNum);
+            setContextUserId(userIdNum); // Синхронизируем с контекстом
             setUsername(storedUsername);
             setIsLoggedIn(true);
         }
-    }, []);
+    }, [setContextUserId]);
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -124,8 +114,6 @@ const Messenger = () => {
     }, [chatId]);
 
     useEffect(() => {
-        setCurrentUserId(Number(userId));
-
         const stompClientInstance = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
@@ -193,200 +181,6 @@ const Messenger = () => {
             document.removeEventListener('click', handleClick);
         };
     }, [handleInteraction]);
-
-    useEffect(() => {
-        if (incomingCall && userInteracted) {
-            audioRef.current.play().catch(error => {
-                console.error('Autoplay was prevented.', error);
-            });
-        } else {
-            audioRef.current.pause();
-            audioRef.current.currentTime = 0;
-        }
-    }, [incomingCall, userInteracted]);
-
-    useEffect(() => {
-        if (!currentUserId) return;
-    
-        const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
-        stompClient.current = new Client({
-            webSocketFactory: () => socket,
-            onConnect: () => {
-                console.log('Connected to WebSocket in Messenger');
-                console.log("currentUserId:", currentUserId);
-                stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
-                    let callRequest;
-                    try {
-                        callRequest = JSON.parse(message.body);
-                        console.log('Received call message:', callRequest);
-                        console.log('Тип сообщения:', callRequest.type);
-                    } catch (error) {
-                        console.error('Error parsing call message:', error, message.body);
-                        return;
-                    }
-    
-                    if (callRequest.type === 'endCall') {
-                        console.log('Received endCall signal:', callRequest);
-                        console.log('Текущее состояние incomingCall:', incomingCall);
-                        console.log('Текущее callRequestRef:', callRequestRef.current);
-                        console.log('audioRef.current:', audioRef.current, 'src:', audioRef.current?.src);
-                        if (
-                            callRequestRef.current?.roomId === callRequest.roomId ||
-                            incomingCall?.roomId === callRequest.roomId ||
-                            audioRef.current?.src
-                        ) {
-                            console.log('Closing call notification for roomId:', callRequest.roomId);
-                            setIncomingCallWithLog(null);
-                            callRequestRef.current = null;
-                            if (audioRef.current) {
-                                audioRef.current.pause();
-                                audioRef.current.currentTime = 0;
-                            }
-                            const cancelMessage = callRequest.type === 'video' ?
-                                'The video call was cancelled.' :
-                                'The voice call was cancelled.';
-                            console.log('Отправляем тост:', cancelMessage);
-                            toast.info(cancelMessage);
-                        } else {
-                            console.log('No active call or audio:', {
-                                incomingCall,
-                                callRequestRef: callRequestRef.current,
-                                callRequest,
-                                audioSrc: audioRef.current?.src
-                            });
-                        }
-                    } else if (callRequest.type === 'voice' || callRequest.type === 'video') {
-                        console.log('Received call request:', callRequest);
-                        handleIncomingCall(callRequest);
-                    } else {
-                        console.log('Received message with unknown type:', callRequest);
-                    }
-                });
-            },
-            onWebSocketError: (error) => {
-                console.error('WebSocket error for calls:', error);
-            },
-        });
-        stompClient.current.activate();
-    
-        return () => {
-            stompClient.current.deactivate();
-            console.log('WebSocket for calls disconnected');
-        };
-    }, [currentUserId]);
-
-    const handleIncomingCall = async (callRequest) => {
-        console.log('Incoming call request:', callRequest);
-        callRequestRef.current = {
-            roomId: callRequest.roomId,
-            callerId: callRequest.callerId,
-            recipientId: callRequest.recipientId,
-            type: callRequest.type
-        };
-        console.log('callRequestRef установлен:', callRequestRef.current);
-        setIncomingCallWithLog(callRequest);
-        try {
-            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
-            if (response.ok) {
-                const callerData = await response.json();
-                console.log('Данные звонящего:', callerData);
-                setIncomingCallWithLog({
-                    ...callRequest,
-                    callerName: callerData.username,
-                    avatar: callerData.avatar
-                });
-            } else {
-                console.error('Error fetching caller data');
-                setIncomingCallWithLog({
-                    ...callRequest,
-                    callerName: 'Unknown',
-                    avatar: null
-                });
-            }
-        } catch (error) {
-            console.error('Error fetching caller data:', error);
-            setIncomingCallWithLog({
-                ...callRequest,
-                callerName: 'Unknown',
-                avatar: null
-            });
-        }
-    };
-
-    const acceptCall = () => {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-    
-        console.log('Function acceptCall in Messenger working...');
-        console.log("Incoming call accepted:", incomingCall);
-    
-        const callerId = incomingCall.callerId;
-        const recipientId = currentUserId;
-    
-        const fetchUserNames = async () => {
-            try {
-                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
-                const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`);
-    
-                if (callerResponse.ok && recipientResponse.ok) {
-                    const callerData = await callerResponse.json();
-                    const recipientData = await recipientResponse.json();
-    
-                    sendSignal({
-                        from: currentUserId,
-                        signal: { type: 'acceptCall' }
-                    });
-    
-                    setIncomingCallWithLog(null);
-                    callRequestRef.current = null;
-    
-                    const route = incomingCall.type === 'video' ? `/video-call/${incomingCall.roomId}` : `/voice-call/${incomingCall.roomId}`;
-                    navigate(route, {
-                        state: {
-                            incomingCall,
-                            isCaller: false,
-                            currentUserId: currentUserId,
-                            callerName: callerData.username,
-                            recipientName: recipientData.username
-                        }
-                    });
-                    toast.success(incomingCall.type === 'video' ? 'Video call accepted' : 'Voice call accepted');
-                } else {
-                    console.error('Error fetching user names');
-                    toast.error('Failed to fetch user data');
-                }
-            } catch (error) {
-                console.error('Error fetching user names:', error);
-                toast.error('Error fetching user data');
-            }
-        };
-    
-        fetchUserNames();
-    };
-
-    const rejectCall = () => {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-    
-        setIncomingCallWithLog(null);
-        callRequestRef.current = null;
-        sendSignal({
-            from: currentUserId,
-            signal: { type: 'rejectCall' }
-        });
-        toast.info(incomingCall.type === 'video' ? 'Video call rejected' : 'Voice call rejected');
-    };
-
-    const sendSignal = (signalMessage) => {
-        console.log('Function sendSignal in Messenger working...');
-        console.log("Sending signal:", JSON.stringify(signalMessage, null, 2));
-        const roomId = incomingCall.roomId;
-        stompClient.current.publish({
-            destination: `/app/signal/${roomId}`,
-            body: JSON.stringify(signalMessage),
-        });
-        console.log('Signal sent successfully.');
-    };
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
@@ -546,6 +340,8 @@ const Messenger = () => {
                 setIsLoggedIn(true);
                 localStorage.setItem('userId', newUser.id);
                 localStorage.setItem('username', newUser.username);
+                setCurrentUserId(newUser.id);
+                setContextUserId(newUser.id); // Синхронизируем
                 toast.success('User successfully created!');
             } catch (error) {
                 let errorMessage = 'Failed to create user. Please try again.';
@@ -569,11 +365,13 @@ const Messenger = () => {
             try {
                 const loggedUser = await loginUser({ username, password });
                 setUserId(loggedUser.id);
+                setCurrentUserId(loggedUser.id);
+                setContextUserId(loggedUser.id); // Синхронизируем
                 setIsLoggedIn(true);
                 setErrorMessage('');
                 localStorage.setItem('userId', loggedUser.id);
                 localStorage.setItem('username', loggedUser.username);
-                initializeWebSocket(loggedUser.id, loggedUser.username); // Инициализация WebSocket
+                initializeWebSocket(loggedUser.id, loggedUser.username);
                 toast.success('You have successfully logged in!');
             } catch (error) {
                 let errorMessage = 'Failed to log in. Please try again.';
@@ -591,10 +389,12 @@ const Messenger = () => {
     };
 
     const handleLogout = () => {
-        disconnectWebSocket(); // Отключаем WebSocket
+        disconnectWebSocket();
         localStorage.removeItem('userId');
         localStorage.removeItem('username');
         setUserId(null);
+        setCurrentUserId(null);
+        setContextUserId(null); // Сбрасываем
         setUsername('');
         setIsLoggedIn(false);
         toast.success('You are logged out!');
@@ -671,29 +471,29 @@ const Messenger = () => {
                                     <div className="avatar-container">
                                         {msg.sender.avatar ? (
                                             <div className="avatar-wrapper">
-                                            <img
-                                                src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
-                                                alt={`${msg.sender.username} avatar`}
-                                                className="message-avatar"
-                                                onClick={() => handleAvatarClick(msg.sender.id)}
-                                                style={{ cursor: 'pointer' }}
-                                            />
-                                            {(usersStatus[msg.sender.id]?.online) && (
-                                                <span className="status-indicator-online-groupchat"></span>
-                                            )}
+                                                <img
+                                                    src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
+                                                    alt={`${msg.sender.username} avatar`}
+                                                    className="message-avatar"
+                                                    onClick={() => handleAvatarClick(msg.sender.id)}
+                                                    style={{ cursor: 'pointer' }}
+                                                />
+                                                {(usersStatus[msg.sender.id]?.online) && (
+                                                    <span className="status-indicator-online-groupchat"></span>
+                                                )}
                                             </div>
                                         ) : (
                                             <div className="avatar-wrapper">
-                                            <div
-                                                className="message-avatar"
-                                                onClick={() => handleAvatarClick(msg.sender.id)}
-                                                style={{ cursor: 'pointer' }}
-                                            >
-                                                {msg.sender.username.charAt(0).toUpperCase()}
-                                            </div>
-                                            {(usersStatus[msg.sender.id]?.online) && (
-                                                <span className="status-indicator-online-groupchat"></span>
-                                            )}
+                                                <div
+                                                    className="message-avatar"
+                                                    onClick={() => handleAvatarClick(msg.sender.id)}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    {msg.sender.username.charAt(0).toUpperCase()}
+                                                </div>
+                                                {(usersStatus[msg.sender.id]?.online) && (
+                                                    <span className="status-indicator-online-groupchat"></span>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -765,7 +565,7 @@ const Messenger = () => {
                     callerName={incomingCall.callerName}
                     avatar={incomingCall.avatar}
                     callType={incomingCall.type}
-                    onAccept={acceptCall}
+                    onAccept={() => acceptCall(navigate)} // Передаём navigate
                     onReject={rejectCall}
                 />
             )}
