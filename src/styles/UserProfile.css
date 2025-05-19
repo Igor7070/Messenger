@@ -44,13 +44,13 @@
     margin: 0 auto;
 }
 
-.userprofile-status-indicator-online {
+.userprofile-avatar-container .userprofile-status-indicator-online {
     position: absolute;
-    bottom: 1px; /* На ободе, с учетом границы 3px */
-    right: 1px; /* На ободе, правый нижний угол */
+    bottom: 3px !important; /* Тестовая позиция для проверки изменений */
+    right: 3px !important; /* Тестовая позиция для проверки изменений */
     width: 12px;
     height: 12px;
-    background-color: #4CAF50;
+    background-color: #4CAF50; /* Тест: если не зеленый, стиль не применяется */
     border-radius: 50%;
     border: 2px solid #DAF7A9;
     z-index: 10 !important;
@@ -89,12 +89,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 20px;
+    padding: 8px 16px; /* Уменьшено для меньшего размера */
     background-color: #4CAF50;
     color: white;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 15px; /* Уменьшено для меньшего размера */
     font-family: 'Roboto', sans-serif;
     font-weight: 500;
     text-align: center;
