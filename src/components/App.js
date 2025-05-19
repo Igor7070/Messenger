@@ -10,6 +10,7 @@ import PersonalChats from './PersonalChats';
 import { NotificationProvider } from './NotificationContext';
 import { UserInteractionProvider } from './UserInteractionContext';
 import { UserStatusProvider, useUserStatusContext } from '../context/UserStatusContext';
+import { CallWebSocketProvider } from './context/CallWebSocketContext'; // Новый импорт
 import { ToastContainer } from 'react-toastify';
 import '../styles/App.css';
 
@@ -54,9 +55,11 @@ const App = () => {
     <UserInteractionProvider>
       <NotificationProvider>
         <UserStatusProvider>
-          <Router>
-            <AppContent />
-          </Router>
+          <CallWebSocketProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </CallWebSocketProvider>
         </UserStatusProvider>
       </NotificationProvider>
     </UserInteractionProvider>

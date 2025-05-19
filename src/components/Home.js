@@ -8,8 +8,7 @@ import useWebSocket from '../hooks/useWebSocket';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
-import SockJS from 'sockjs-client';
-import { Client } from '@stomp/stompjs';
+import { useCallWebSocket } from '../context/CallWebSocketContext'; // Новый импорт
 import { getMessages, createChat, createUser, loginUser } from '../api/messages';
 import { format, isToday, parseISO } from 'date-fns';
 
@@ -28,28 +27,16 @@ const Home = () => {
     const [loginUsername, setLoginUsername] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [incomingCall, setIncomingCall] = useState(null);
-    const callRequestRef = useRef(null);
-    const { userInteracted, handleInteraction } = useUserInteraction();
-    const stompClient = useRef(null);
     const messageClient = useRef(null);
-    const audioRef = useRef(null);
     const messageAudioRef = useRef(null);
     const navigate = useNavigate();
+    const { userInteracted, handleInteraction } = useUserInteraction();
+    const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
+    const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket(); // Новый хук
 
     useWebSocket(currentUserId, messageAudioRef);
-    const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
 
     console.log('Rendering Home, usersStatus:', usersStatus); // Отладка
-
-    // Отладка setIncomingCall
-    const setIncomingCallWithLog = (value) => {
-        console.log('Вызов setIncomingCall:', value);
-        console.log('Текущее incomingCall:', incomingCall);
-        console.log('Текущее callRequestRef:', callRequestRef.current);
-        console.log('Стек вызовов:', new Error().stack);
-        setIncomingCall(value);
-    };
 
     useEffect(() => {
         const handleClick = () => {
@@ -60,32 +47,6 @@ const Home = () => {
             document.removeEventListener('click', handleClick);
         };
     }, [handleInteraction]);
-
-    // Управление звуком
-    useEffect(() => {
-        if (incomingCall && userInteracted) {
-            console.log('Попытка воспроизведения звука, userInteracted:', userInteracted);
-            if (!audioRef.current.src) {
-                audioRef.current.src = 'https://igor7070.github.io/Messenger/melodiya_kovboy.mp3';
-                console.log('audioRef.current.src установлен:', audioRef.current.src);
-            }
-            audioRef.current.play().catch(error => {
-                console.error('Автовоспроизведение заблокировано:', error);
-                toast.warn('Please interact with the page to enable call audio.');
-            });
-        } else {
-            console.log('Звук не воспроизводится, incomingCall:', incomingCall, 'userInteracted:', userInteracted);
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.currentTime = 0;
-            }
-        }
-    }, [incomingCall, userInteracted]);
-
-    // Отладка изменений incomingCall
-    useEffect(() => {
-        console.log('Состояние incomingCall изменилось:', incomingCall);
-    }, [incomingCall]);
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -177,84 +138,14 @@ const Home = () => {
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
         if (storedUserId) {
-            setCurrentUserId(Number(storedUserId));
+            const userId = Number(storedUserId);
+            setCurrentUserId(userId);
+            setContextUserId(userId); // Синхронизируем с контекстом
             setIsLoggedIn(true);
         }
         fetchChats();
         fetchUsers();
-    }, [currentUserId]);
-
-    // Подписка на звонки
-    useEffect(() => {
-        if (!currentUserId) return;
-    
-        const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
-        stompClient.current = new Client({
-            webSocketFactory: () => socket,
-            connectTimeout: 10000,
-            onConnect: () => {
-                console.log('Подключено к WebSocket для звонков в Home.js');
-                stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
-                    console.log('Получено сообщение в /topic/calls:', message.body);
-                    let callRequest;
-                    try {
-                        callRequest = JSON.parse(message.body);
-                        console.log('Обработанное сообщение:', callRequest);
-                        console.log('Тип сообщения:', callRequest.type);
-                    } catch (error) {
-                        console.error('Ошибка парсинга сообщения:', error, message.body);
-                        return;
-                    }
-    
-                    if (callRequest.type === 'endCall') {
-                        console.log('Получен сигнал endCall:', callRequest);
-                        console.log('Текущее состояние incomingCall:', incomingCall);
-                        console.log('Текущее callRequestRef:', callRequestRef.current);
-                        console.log('audioRef.current:', audioRef.current, 'src:', audioRef.current?.src);
-                        if (
-                            callRequestRef.current?.roomId === callRequest.roomId ||
-                            incomingCall?.roomId === callRequest.roomId ||
-                            audioRef.current?.src
-                        ) {
-                            console.log('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
-                            setIncomingCallWithLog(null);
-                            callRequestRef.current = null;
-                            if (audioRef.current) {
-                                audioRef.current.pause();
-                                audioRef.current.currentTime = 0;
-                            }
-                            const cancelMessage = callRequest.type === 'video' ?
-                                'The video call was cancelled.' :
-                                'The voice call was cancelled.';
-                            console.log('Отправляем тост:', cancelMessage);
-                            toast.info(cancelMessage);
-                        } else {
-                            console.log('Нет активного вызова или звука:', {
-                                incomingCall,
-                                callRequestRef: callRequestRef.current,
-                                callRequest,
-                                audioSrc: audioRef.current?.src
-                            });
-                        }
-                    } else if (callRequest.type === 'voice' || callRequest.type === 'video') {
-                        console.log('Получен запрос на звонок:', callRequest);
-                        handleIncomingCall(callRequest);
-                    } else {
-                        console.log('Получено сообщение с неизвестным типом:', callRequest);
-                    }
-                });
-            },
-            onWebSocketError: (error) => {
-                console.error('Ошибка WebSocket для звонков:', error);
-            },
-        });
-        stompClient.current.activate();
-    
-        return () => {
-            stompClient.current.deactivate();
-            console.log('WebSocket для звонков отключён');
-        };
-    }, [currentUserId]);
+    }, [setContextUserId]);
 
     // Подписка на сообщения
     useEffect(() => {
@@ -339,127 +230,18 @@ const Home = () => {
         }
     };
 
-    const handleIncomingCall = async (callRequest) => {
-        console.log('Входящий запрос на звонок:', callRequest);
-        callRequestRef.current = {
-            roomId: callRequest.roomId,
-            callerId: callRequest.callerId,
-            recipientId: callRequest.recipientId,
-            type: callRequest.type
-        };
-        console.log('callRequestRef установлен:', callRequestRef.current);
-        setIncomingCallWithLog(callRequest);
-        try {
-            console.log('Начало fetch для callerId:', callRequest.callerId);
-            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
-            console.log('fetch завершен, status:', response.status);
-            if (response.ok) {
-                const callerData = await response.json();
-                console.log('Данные звонящего:', callerData);
-                setIncomingCallWithLog({
-                    ...callRequest,
-                    callerName: callerData.username,
-                    avatar: callerData.avatar
-                });
-            } else {
-                console.error('Ошибка при получении данных звонящего:', response.status);
-                setIncomingCallWithLog({
-                    ...callRequest,
-                    callerName: 'Unknown',
-                    avatar: null
-                });
-            }
-        } catch (error) {
-            console.error('Ошибка при получении данных звонящего:', error);
-            setIncomingCallWithLog({
-                ...callRequest,
-                callerName: 'Unknown',
-                avatar: null
-            });
-        }
-    };
-
-    const acceptCall = async () => {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-    
-        console.log('Функция acceptCall в Home.js работает...');
-        console.log('Входящий звонок принят:', incomingCall);
-    
-        const callerId = incomingCall.callerId;
-        const recipientId = currentUserId;
-    
-        try {
-            const [callerResponse, recipientResponse] = await Promise.all([
-                fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`),
-                fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`),
-            ]);
-    
-            if (callerResponse.ok && recipientResponse.ok) {
-                const callerData = await callerResponse.json();
-                const recipientData = await recipientResponse.json();
-    
-                sendSignal({
-                    from: currentUserId,
-                    signal: { type: 'acceptCall' },
-                });
-    
-                setIncomingCallWithLog(null);
-                callRequestRef.current = null;
-    
-                const route = incomingCall.type === 'video' ? `/video-call/${incomingCall.roomId}` : `/voice-call/${incomingCall.roomId}`;
-                navigate(route, {
-                    state: {
-                        incomingCall,
-                        isCaller: false,
-                        currentUserId: currentUserId,
-                        callerName: callerData.username,
-                        recipientName: recipientData.username,
-                    },
-                });
-                toast.success(incomingCall.type === 'video' ? 'Video call accepted' : 'Voice call accepted');
-            } else {
-                console.error('Ошибка при получении имен пользователей');
-                toast.error('Failed to fetch user data');
-            }
-        } catch (error) {
-            console.error('Ошибка при получении имен пользователей:', error);
-            toast.error('Error fetching user data');
-        }
-    };
-
-    const rejectCall = () => {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        setIncomingCallWithLog(null);
-        callRequestRef.current = null;
-        sendSignal({
-            from: currentUserId,
-            signal: { type: 'rejectCall' },
-        });
-        toast.info(incomingCall.type === 'video' ? 'Video call rejected' : 'Voice call rejected');
-    };
-
-    const sendSignal = (signalMessage) => {
-        console.log('Отправка сигнала:', JSON.stringify(signalMessage, null, 2));
-        const roomId = incomingCall.roomId;
-        stompClient.current.publish({
-            destination: `/app/signal/${roomId}`,
-            body: JSON.stringify(signalMessage),
-        });
-        console.log('Сигнал успешно отправлен.');
-    };
-
     const loginUserHandler = async () => {
         try {
             const user = await loginUser({ username: loginUsername, password: loginPassword });
-            localStorage.setItem('userId', String(user.id));
+            const userId = Number(user.id);
+            localStorage.setItem('userId', String(userId));
             localStorage.setItem('username', user.username);
-            setCurrentUserId(Number(user.id));
+            setCurrentUserId(userId);
+            setContextUserId(userId); // Синхронизируем с контекстом
             setLoginUsername('');
             setLoginPassword('');
             setIsLoggedIn(true);
-            initializeWebSocket(Number(user.id), user.username); // Инициализация WebSocket
+            initializeWebSocket(userId, user.username); // Инициализация WebSocket
             toast.success('Login successful!');
         } catch (error) {
             toast.error(error.message || 'Error logging in');
@@ -469,8 +251,9 @@ const Home = () => {
     const logoutUser = () => {
         disconnectWebSocket(); // Отключаем WebSocket
         localStorage.removeItem('userId');
-        localStorage.removeItem('username');// Добавлено
+        localStorage.removeItem('username');
         setCurrentUserId(null);
+        setContextUserId(null); // Сбрасываем в контексте
         setIsLoggedIn(false);
         toast.success('Logged out successfully!');
     };
@@ -589,11 +372,6 @@ const Home = () => {
                 )}
             </div>
 
-            <audio ref={audioRef} loop>
-                <source src="https://igor7070.github.io/Messenger/melodiya_kovboy.mp3" type="audio/mpeg" />
-                Ваш браузер не поддерживает аудио.
-            </audio>
-
             <audio ref={messageAudioRef}>
                 <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
@@ -605,7 +383,7 @@ const Home = () => {
                     callerName={incomingCall.callerName || 'Unknown'}
                     avatar={incomingCall.avatar}
                     callType={incomingCall.type}
-                    onAccept={acceptCall}
+                    onAccept={() => acceptCall(navigate)} // Передаём navigate
                     onReject={rejectCall}
                 />
             )}
@@ -648,7 +426,6 @@ const Home = () => {
                                         <div className="user-avatar">{initials}</div>
                                     )}
                                     <span className="user-name">{user.username}</span>
-                                    {/* Добавляем индикатор статуса */}
                                     {userStatus.online && (
                                         <span
                                             className="status-indicator-online-home"
