@@ -8,6 +8,8 @@ import useWebSocket from '../hooks/useWebSocket';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
+import SockJS from 'sockjs-client'; // Сохранён для сообщений
+import { Client } from '@stomp/stompjs'; // Сохранён для сообщений
 import { useCallWebSocket } from '../context/CallWebSocketContext'; // Новый импорт
 import { getMessages, createChat, createUser, loginUser } from '../api/messages';
 import { format, isToday, parseISO } from 'date-fns';
@@ -32,7 +34,7 @@ const Home = () => {
     const navigate = useNavigate();
     const { userInteracted, handleInteraction } = useUserInteraction();
     const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
-    const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket(); // Новый хук
+    const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
 
     useWebSocket(currentUserId, messageAudioRef);
 
