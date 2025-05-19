@@ -46,8 +46,8 @@
 
 .userprofile-avatar-container .userprofile-status-indicator-online {
     position: absolute;
-    bottom: 4px !important; /* На ободе аватара */
-    right: 4px !important; /* На ободе аватара */
+    bottom: 8px !important; /* На ободе аватара */
+    right: 8px !important; /* На ободе аватара */
     width: 12px;
     height: 12px;
     background-color: #4CAF50 !important;
