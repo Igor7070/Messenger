@@ -46,8 +46,8 @@
 
 .userprofile-status-indicator-online {
     position: absolute;
-    bottom: 2px !important; /* Точно на ободе, с учетом границы 3px */
-    right: 2px !important; /* Точно на ободе, правый нижний угол */
+    bottom: 1px; /* На ободе, с учетом границы 3px */
+    right: 1px; /* На ободе, правый нижний угол */
     width: 12px;
     height: 12px;
     background-color: #4CAF50;
@@ -128,18 +128,13 @@
 
 .update-button {
     margin-top: 20px;
-    padding: 10px 20px; /* Увеличено для соответствия Select New Avatar */
+    padding: 10px 15px;
     background-color: #007bff;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 16px;
-    font-family: 'Roboto', sans-serif;
-    font-weight: 500;
-    text-align: center;
-    transition: background-color 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    align-self: flex-end;
 }
 
 .update-button:hover {
@@ -248,19 +243,13 @@
 
 .personal-chats-button {
     margin-top: 20px;
-    padding: 10px 20px; /* Увеличено для соответствия Select New Avatar */
+    padding: 10px 15px;
     background-color: #6f00ff;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     margin-left: 10px;
-    font-size: 16px;
-    font-family: 'Roboto', sans-serif;
-    font-weight: 500;
-    text-align: center;
-    transition: background-color 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .personal-chats-button:hover {
