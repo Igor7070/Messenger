@@ -567,25 +567,19 @@ const UserProfile = () => {
             </span>
             <div className="userprofile-avatar-container">
                 {user.avatar ? (
-                    <div className="user-avatar-profile" style={{ position: 'relative' }}>
-                        <img
-                            src={`https://unlimitedpossibilities12.org${user.avatar}`}
-                            alt={`${user.username} avatar`}
-                            className="user-avatar-profile"
-                            onClick={openModal}
-                            style={{ width: '100%', height: '100%' }}
-                        />
-                        {(usersStatus[userId]?.online) && (
-                            <span className="userprofile-status-indicator-online"></span>
-                        )}
-                    </div>
+                    <img
+                        src={`https://unlimitedpossibilities12.org${user.avatar}`}
+                        alt={`${user.username} avatar`}
+                        className="user-avatar-profile"
+                        onClick={openModal}
+                    />
                 ) : (
-                    <div className="user-avatar-profile" style={{ position: 'relative', backgroundColor: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="user-avatar-profile" style={{ backgroundColor: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {user.username.charAt(0).toUpperCase()}
-                        {(usersStatus[userId]?.online) && (
-                            <span className="userprofile-status-indicator-online"></span>
-                        )}
                     </div>
+                )}
+                {(usersStatus[userId]?.online) && (
+                    <span className="userprofile-status-indicator-online"></span>
                 )}
             </div>
             {userId === String(currentUserId) && (
