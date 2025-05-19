@@ -46,15 +46,15 @@
 
 .userprofile-avatar-container .userprofile-status-indicator-online {
     position: absolute;
-    bottom: 2px !important; /* На ободе, с учетом границы 3px */
-    right: 2px !important; /* На ободе, правый нижний угол */
+    bottom: 4px !important; /* На ободе аватара */
+    right: 4px !important; /* На ободе аватара */
     width: 12px;
     height: 12px;
-    background-color: #4CAF50 !important; /* Вернули зеленый */
+    background-color: #4CAF50 !important;
     border-radius: 50%;
     border: 2px solid #DAF7A9;
     z-index: 10 !important;
-    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3) !important; /* Диагностика: должна быть тень */
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3) !important;
 }
 
 .userprofile-status-text {
