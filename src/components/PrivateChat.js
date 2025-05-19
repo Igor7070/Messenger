@@ -11,6 +11,7 @@ import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 import { format, isToday, parseISO } from 'date-fns';
 import { useUserStatusContext } from '../context/UserStatusContext';
+import { useCallWebSocket } from '../context/CallWebSocketContext'; // Новый импорт
 
 const PrivateChat = () => {
     const [messages, setMessages] = useState([]);
@@ -28,31 +29,11 @@ const PrivateChat = () => {
     const messageListRef = useRef(null);
     const fileInputRef = useRef(null);
     const { chatId: chatIdParam } = useParams();
-
-    const [currentUserId, setCurrentUserId] = useState(null);
-    const [incomingCall, setIncomingCall] = useState(null);
-    const { userInteracted, handleInteraction } = useUserInteraction();
-    const stompClient = useRef(null);
-    const callRequestRef = useRef(null); // Добавляем useRef для хранения данных вызова
-    const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
-    audioRef.current.loop = true;
     const navigate = useNavigate();
-
+    const { userInteracted, handleInteraction } = useUserInteraction();
     const { usersStatus } = useUserStatusContext();
-
-    // Отладка setIncomingCall
-    const setIncomingCallWithLog = (value) => {
-        console.log('Вызов setIncomingCall:', value);
-        console.log('Текущее incomingCall:', incomingCall);
-        console.log('Текущее callRequestRef:', callRequestRef.current);
-        console.log('Стек вызовов:', new Error().stack);
-        setIncomingCall(value);
-    };
-
-    // Отладка изменений incomingCall
-    useEffect(() => {
-        console.log('Состояние incomingCall изменилось:', incomingCall);
-    }, [incomingCall]);
+    const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
+    const [currentUserId, setCurrentUserId] = useState(null);
 
     // Функция прокрутки к последнему сообщению
     const scrollToBottom = () => {
@@ -93,18 +74,23 @@ const PrivateChat = () => {
         };
 
         fetchChatData();
-    }, [chatIdParam, username]);
+
+        const storedUserId = localStorage.getItem('userId');
+        if (storedUserId) {
+            const userIdNum = Number(storedUserId);
+            setCurrentUserId(userIdNum);
+            setContextUserId(userIdNum); // Синхронизируем с контекстом
+        }
+    }, [chatIdParam, username, setContextUserId]);
 
     useEffect(() => {
         if (!chatId) return;
-
-        setCurrentUserId(Number(userId));
 
         const stompClientInstance = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
                 console.log('Connected to WebSocket');
-                
+
                 stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
                     console.log('NewMessage: ', newMessage);
@@ -140,7 +126,7 @@ const PrivateChat = () => {
         return () => {
             stompClientInstance.deactivate();
         };
-    }, [chatId, userId]);
+    }, [chatId, userId, navigate]);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -160,211 +146,12 @@ const PrivateChat = () => {
         const handleClick = () => {
             handleInteraction();
         };
-        
+
         document.addEventListener('click', handleClick);
         return () => {
             document.removeEventListener('click', handleClick);
         };
     }, [handleInteraction]);
-        
-    useEffect(() => {
-        if (incomingCall && userInteracted) {
-            audioRef.current.play().catch(error => {
-                console.error('Autoplay was prevented:', error);
-                toast.warn('Please interact with the page to enable call audio.');
-            });
-        } else {
-            audioRef.current.pause();
-            audioRef.current.currentTime = 0;
-        }
-    }, [incomingCall, userInteracted]);
-    
-    useEffect(() => {         
-        if (!currentUserId) return;
-    
-        const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
-        stompClient.current = new Client({
-            webSocketFactory: () => socket,
-            connectTimeout: 10000,
-            onConnect: () => {
-                console.log('Connected to WebSocket in PrivateChat.js');
-                console.log("currentUserId:", currentUserId);
-                stompClient.current.subscribe(`/topic/calls/${currentUserId}`, (message) => {
-                    console.log('Получено сообщение в /topic/calls:', message.body);
-                    let callRequest;
-                    try {
-                        callRequest = JSON.parse(message.body);
-                        console.log('Обработанное сообщение:', callRequest);
-                        console.log('Тип сообщения:', callRequest.type);
-                    } catch (error) {
-                        console.error('Ошибка парсинга сообщения:', error, message.body);
-                        return;
-                    }
-    
-                    if (callRequest.type === 'endCall') {
-                        console.log('Получен сигнал endCall:', callRequest);
-                        console.log('Текущее состояние incomingCall:', incomingCall);
-                        console.log('Текущее callRequestRef:', callRequestRef.current);
-                        console.log('audioRef.current:', audioRef.current, 'src:', audioRef.current?.src);
-                        if (
-                            callRequestRef.current?.roomId === callRequest.roomId ||
-                            incomingCall?.roomId === callRequest.roomId ||
-                            audioRef.current?.src
-                        ) {
-                            console.log('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
-                            setIncomingCallWithLog(null);
-                            callRequestRef.current = null;
-                            if (audioRef.current) {
-                                audioRef.current.pause();
-                                audioRef.current.currentTime = 0;
-                            }
-                            const cancelMessage = callRequest.type === 'video' ?
-                                'The video call was cancelled.' :
-                                'The voice call was cancelled.';
-                            console.log('Отправляем тост:', cancelMessage);
-                            toast.info(cancelMessage);
-                        } else {
-                            console.log('Нет активного вызова или звука:', {
-                                incomingCall,
-                                callRequestRef: callRequestRef.current,
-                                callRequest,
-                                audioSrc: audioRef.current?.src
-                            });
-                        }
-                    } else if (callRequest.type === 'voice' || callRequest.type === 'video') {
-                        console.log('Получен запрос на звонок:', callRequest);
-                        handleIncomingCall(callRequest);
-                    } else {
-                        console.log('Получено сообщение с неизвестным типом:', callRequest);
-                    }
-                });
-            },
-            onWebSocketError: (error) => {
-                console.error('Ошибка WebSocket для звонков:', error);
-            },
-        });
-        stompClient.current.activate();
-        
-        return () => {
-            stompClient.current.deactivate();
-            console.log('WebSocket для звонков отключён');
-        };
-    }, [currentUserId]);
-
-    const handleIncomingCall = async (callRequest) => {
-        console.log('Входящий запрос на звонок:', callRequest);
-        callRequestRef.current = {
-            roomId: callRequest.roomId,
-            callerId: callRequest.callerId,
-            recipientId: callRequest.recipientId,
-            type: callRequest.type
-        };
-        console.log('callRequestRef установлен:', callRequestRef.current);
-        setIncomingCallWithLog(callRequest);
-        try {
-            console.log('Начало fetch для callerId:', callRequest.callerId);
-            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
-            console.log('fetch завершен, status:', response.status);
-            if (response.ok) {
-                const callerData = await response.json();
-                console.log('Данные звонящего:', callerData);
-                setIncomingCallWithLog({
-                    ...callRequest,
-                    callerName: callerData.username,
-                    avatar: callerData.avatar
-                });
-            } else {
-                console.error('Ошибка при получении данных звонящего:', response.status);
-                setIncomingCallWithLog({
-                    ...callRequest,
-                    callerName: 'Unknown',
-                    avatar: null
-                });
-            }
-        } catch (error) {
-            console.error('Ошибка при получении данных звонящего:', error);
-            setIncomingCallWithLog({
-                ...callRequest,
-                callerName: 'Unknown',
-                avatar: null
-            });
-        }
-    };
-
-    const acceptCall = () => {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-    
-        console.log('Function acceptCall in PrivateChat.js working...');
-        console.log('Incoming call accepted:', incomingCall);
-    
-        const callerId = incomingCall.callerId;
-        const recipientId = currentUserId;
-    
-        const fetchUserNames = async () => {
-            try {
-                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
-                const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`);
-    
-                if (callerResponse.ok && recipientResponse.ok) {
-                    const callerData = await callerResponse.json();
-                    const recipientData = await recipientResponse.json();
-    
-                    sendSignal({
-                        from: currentUserId,
-                        signal: { type: 'acceptCall' }
-                    });
-    
-                    setIncomingCallWithLog(null);
-                    callRequestRef.current = null;
-    
-                    const route = incomingCall.type === 'video' ? `/video-call/${incomingCall.roomId}` : `/voice-call/${incomingCall.roomId}`;
-                    navigate(route, { 
-                        state: { 
-                            incomingCall, 
-                            isCaller: false, 
-                            currentUserId: currentUserId, 
-                            callerName: callerData.username,
-                            recipientName: recipientData.username
-                        } 
-                    });
-                    toast.success(incomingCall.type === 'video' ? 'Video call accepted' : 'Voice call accepted');
-                } else {
-                    console.error('Error fetching user names');
-                    toast.error('Failed to fetch user data');
-                }
-            } catch (error) {
-                console.error('Error fetching user names:', error);
-                toast.error('Error fetching user data');
-            }
-        };
-    
-        fetchUserNames();
-    };
-
-    const rejectCall = () => {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-    
-        setIncomingCallWithLog(null);
-        callRequestRef.current = null;
-        sendSignal({
-            from: currentUserId,
-            signal: { type: 'rejectCall' }
-        });
-        toast.info(incomingCall.type === 'video' ? 'Video call rejected' : 'Voice call rejected');
-    };
-
-    const sendSignal = (signalMessage) => {
-        console.log('Function sendSignal in PrivateChat.js working...');
-        console.log('Sending signal:', JSON.stringify(signalMessage, null, 2));
-        const roomId = incomingCall.roomId;
-        stompClient.current.publish({
-            destination: `/app/signal/${roomId}`, 
-            body: JSON.stringify(signalMessage),
-        });
-        console.log('Signal sent successfully.');
-    };
 
     const markAllMessagesAsRead = (updatedMessages) => {
         console.log('markAllMessagesAsRead is working...');
@@ -373,8 +160,8 @@ const PrivateChat = () => {
                 if (msg.sender.id !== userId && (msg.read === false || msg.read === null)) {
                     if (client && client.connected) {
                         client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
-                        setMessages(prevMessages => 
-                            prevMessages.map(message => 
+                        setMessages(prevMessages =>
+                            prevMessages.map(message =>
                                 message.id === msg.id ? { ...message, read: true } : message
                             )
                         );
@@ -440,32 +227,32 @@ const PrivateChat = () => {
                 read: false,
                 timestamp: new Date().toISOString(),
             };
-    
+
             if (client && client.connected) {
                 client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
-    
+
                 setTimeout(async () => {
                     const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(content)}&senderId=${userId}&chatId=${chatId}`);
-                    
+
                     if (response.ok) {
                         const updatedMessage = await response.json();
                         console.log('updatedMessage:', updatedMessage);
-    
+
                         const messageId = updatedMessage.id;
                         const statusResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/${messageId}`);
-                        
+
                         if (statusResponse.ok) {
                             const messageStatus = await statusResponse.json();
                             const recipientName = chatName.split('_').find(name => name !== username);
                             console.log('recipientName:', recipientName);
-    
+
                             const userResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
-                            
+
                             if (userResponse.ok) {
                                 const recipient = await userResponse.json();
                                 const recipientId = recipient.id;
 
-                                console.log('recipientId:', recipientId);   
+                                console.log('recipientId:', recipientId);
                                 console.log('updatedMessage.read: ' + updatedMessage.read);
                                 console.log('updatedMessage.read_status: ' + updatedMessage.read_status);
                                 console.log('messageStatus.read: ' + messageStatus.read);
@@ -495,7 +282,7 @@ const PrivateChat = () => {
                         console.error('Ошибка при поиске сообщения');
                     }
                 }, 3000);
-    
+
                 resetForm();
             } else {
                 console.error('STOMP client is not connected');
@@ -602,7 +389,7 @@ const PrivateChat = () => {
             <div className="private-chat-name">{displayChatName}</div>
             <div className="private-message-list" ref={messageListRef}>
                 {messages.map((msg, index) => (
-                    <div 
+                    <div
                         key={msg.id}
                         className={`private-message ${msg.sender.id === userId ? 'private-current-user' : 'private-other-user'} ${isFirstMessage(msg, index) ? 'first-message' : ''}`}
                         onContextMenu={(e) => handleRightClick(e, msg)}
@@ -612,29 +399,29 @@ const PrivateChat = () => {
                                 <div className="private-avatar-container">
                                     {msg.sender.avatar ? (
                                         <div className="private-avatar-wrapper">
-                                        <img
-                                            src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
-                                            alt={`${msg.sender.username} avatar`}
-                                            className="private-message-avatar"
-                                            onClick={() => handleAvatarClick(msg.sender.id)}
-                                            style={{ cursor: 'pointer' }}
-                                        />
-                                        {(usersStatus[msg.sender.id]?.online) && (
-                                            <span className="status-indicator-online-privatechat"></span>
-                                        )}
+                                            <img
+                                                src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
+                                                alt={`${msg.sender.username} avatar`}
+                                                className="private-message-avatar"
+                                                onClick={() => handleAvatarClick(msg.sender.id)}
+                                                style={{ cursor: 'pointer' }}
+                                            />
+                                            {(usersStatus[msg.sender.id]?.online) && (
+                                                <span className="status-indicator-online-privatechat"></span>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="private-avatar-wrapper">
-                                        <div
-                                            className="private-message-avatar"
-                                            onClick={() => handleAvatarClick(msg.sender.id)}
-                                            style={{ cursor: 'pointer' }}
-                                        >
-                                            {msg.sender.username.charAt(0).toUpperCase()}
-                                        </div>
-                                        {(usersStatus[msg.sender.id]?.online) && (
-                                            <span className="status-indicator-online-privatechat"></span>
-                                        )}
+                                            <div
+                                                className="private-message-avatar"
+                                                onClick={() => handleAvatarClick(msg.sender.id)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                {msg.sender.username.charAt(0).toUpperCase()}
+                                            </div>
+                                            {(usersStatus[msg.sender.id]?.online) && (
+                                                <span className="status-indicator-online-privatechat"></span>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -643,9 +430,9 @@ const PrivateChat = () => {
                                 <div className="private-message-body">
                                     <span className="private-message-content">{msg.content}</span>
                                     {msg.fileUrl && (
-                                        <a 
-                                            href={msg.fileUrl} 
-                                            download 
+                                        <a
+                                            href={msg.fileUrl}
+                                            download
                                             className="private-file-link"
                                         >
                                             📥 Download file
@@ -689,8 +476,8 @@ const PrivateChat = () => {
             </div>
             <ToastContainer />
             {contextMenu.visible && (
-                <div 
-                    className="private-context-menu" 
+                <div
+                    className="private-context-menu"
                     style={{ top: contextMenu.y, left: contextMenu.x }}
                     onMouseLeave={() => setContextMenu({ visible: false })}
                 >
@@ -698,14 +485,13 @@ const PrivateChat = () => {
                     <button onClick={() => handleMenuAction('delete')}>Delete</button>
                 </div>
             )}
-
             {incomingCall && (
                 <IncomingCallNotification
                     callerId={incomingCall.callerId}
                     callerName={incomingCall.callerName || 'Unknown'}
                     avatar={incomingCall.avatar}
                     callType={incomingCall.type}
-                    onAccept={acceptCall}
+                    onAccept={() => acceptCall(navigate)}
                     onReject={rejectCall}
                 />
             )}
