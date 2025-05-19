@@ -48,8 +48,8 @@
     position: absolute;
     bottom: 8px !important; /* На ободе аватара */
     right: 8px !important; /* На ободе аватара */
-    width: 12px;
-    height: 12px;
+    width: 18px;
+    height: 18px;
     background-color: #4CAF50 !important;
     border-radius: 50%;
     border: 2px solid #DAF7A9;
