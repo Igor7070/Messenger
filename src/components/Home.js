@@ -4,13 +4,13 @@ import Modal from 'react-modal';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Home.css';
-import useWebSocket from '../hooks/useWebSocket';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
-import SockJS from 'sockjs-client'; // Сохранён для сообщений
-import { Client } from '@stomp/stompjs'; // Сохранён для сообщений
-import { useCallWebSocket } from '../context/CallWebSocketContext'; // Новый импорт
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
+import { useCallWebSocket } from '../context/CallWebSocketContext';
+import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 import { getMessages, createChat, createUser, loginUser } from '../api/messages';
 import { format, isToday, parseISO } from 'date-fns';
 
@@ -35,8 +35,7 @@ const Home = () => {
     const { userInteracted, handleInteraction } = useUserInteraction();
     const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
-
-    useWebSocket(currentUserId, messageAudioRef);
+    const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification();
 
     console.log('Rendering Home, usersStatus:', usersStatus); // Отладка
 
@@ -142,12 +141,13 @@ const Home = () => {
         if (storedUserId) {
             const userId = Number(storedUserId);
             setCurrentUserId(userId);
-            setContextUserId(userId); // Синхронизируем с контекстом
+            setContextUserId(userId); // Синхронизируем с CallWebSocketContext
+            setNotificationUserId(userId); // Синхронизируем с PrivateMessageNotificationContext
             setIsLoggedIn(true);
         }
         fetchChats();
         fetchUsers();
-    }, [setContextUserId]);
+    }, [setContextUserId, setNotificationUserId]);
 
     // Подписка на сообщения
     useEffect(() => {
@@ -239,7 +239,8 @@ const Home = () => {
             localStorage.setItem('userId', String(userId));
             localStorage.setItem('username', user.username);
             setCurrentUserId(userId);
-            setContextUserId(userId); // Синхронизируем с контекстом
+            setContextUserId(userId); // Синхронизируем с CallWebSocketContext
+            setNotificationUserId(userId); // Синхронизируем с PrivateMessageNotificationContext
             setLoginUsername('');
             setLoginPassword('');
             setIsLoggedIn(true);
@@ -255,7 +256,8 @@ const Home = () => {
         localStorage.removeItem('userId');
         localStorage.removeItem('username');
         setCurrentUserId(null);
-        setContextUserId(null); // Сбрасываем в контексте
+        setContextUserId(null); // Сбрасываем в CallWebSocketContext
+        setNotificationUserId(null); // Сбрасываем в PrivateMessageNotificationContext
         setIsLoggedIn(false);
         toast.success('Logged out successfully!');
     };
@@ -385,7 +387,7 @@ const Home = () => {
                     callerName={incomingCall.callerName || 'Unknown'}
                     avatar={incomingCall.avatar}
                     callType={incomingCall.type}
-                    onAccept={() => acceptCall(navigate)} // Передаём navigate
+                    onAccept={() => acceptCall(navigate)}
                     onReject={rejectCall}
                 />
             )}
