@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
-import { toast } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Home.css';
 import { getMessages, createChat, createUser, loginUser } from '../api/messages';
 import IncomingCallNotification from './IncomingCallNotification';
 import SockJS from 'sockjs-client';
-import { Client } from '@stomp/stompjs'; // Исправлен импорт: Clientлана → Client
+import { Client } from '@stomp/stompjs';
 import { useUserInteraction } from '../context/UserInteractionContext';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
@@ -34,7 +35,7 @@ const Home = () => {
     const { userInteracted, handleInteraction } = useUserInteraction();
     const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
-    const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification();
+    const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification();
 
     console.log('Rendering Home, usersStatus:', usersStatus); // Отладка
 
@@ -93,15 +94,11 @@ const Home = () => {
                 console.log('Чаты загружены:', chatsWithMessages);
                 setChats(chatsWithMessages);
             } else {
-                toast.error('Failed to fetch chats', {
-                    toastId: `error-fetch-chats-${Date.now()}`,
-                });
+                toast.error('Failed to fetch chats');
             }
         } catch (error) {
             console.error('Ошибка при загрузке чатов:', error);
-            toast.error('Error fetching chats', {
-                toastId: `error-fetch-chats-${Date.now()}`,
-            });
+            toast.error('Error fetching chats');
         }
     };
 
@@ -130,15 +127,11 @@ const Home = () => {
                 console.log('Пользователи загружены:', data);
                 setUsers(data);
             } else {
-                toast.error('Failed to fetch users', {
-                    toastId: `error-fetch-users-${Date.now()}`,
-                });
+                toast.error('Failed to fetch users');
             }
         } catch (error) {
             console.error('Ошибка при загрузке пользователей:', error);
-            toast.error('Error fetching users', {
-                toastId: `error-fetch-users-${Date.now()}`,
-            });
+            toast.error('Error fetching users');
         }
     };
 
@@ -154,9 +147,7 @@ const Home = () => {
         }
         fetchChats();
         fetchUsers();
-        // Сбрасываем currentChatId при загрузке Home
-        setCurrentChatId(null);
-    }, [setContextUserId, setNotificationUserId, setCurrentChatId]);
+    }, [setContextUserId, setNotificationUserId]);
 
     // Подписка на сообщения
     useEffect(() => {
@@ -167,18 +158,18 @@ const Home = () => {
 
         let isMounted = true;
 
-        console.log('Инициализация WebSocket для сообщений, чаты:', chats, 'Timestamp:', Date.now());
+        console.log('Инициализация WebSocket для сообщений, чаты:', chats);
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         messageClient.current = new Client({
             webSocketFactory: () => socket,
             connectTimeout: 20000,
             onConnect: () => {
                 if (!isMounted) return;
-                console.log('Подключено к WebSocket для сообщений в Home.js, Timestamp:', Date.now());
+                console.log('Подключено к WebSocket для сообщений в Home.js');
                 chats
                     .filter((chat) => !chat.private)
                     .forEach((chat) => {
-                        console.log(`Подписываемся на /topic/chat/${chat.id}/messages, Timestamp:`, Date.now());
+                        console.log(`Подписываемся на /topic/chat/${chat.id}/messages`);
                         messageClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
                             console.log(`Получено сообщение для чата ${chat.id}:`, message.body);
                             const newMessage = JSON.parse(message.body);
@@ -235,18 +226,9 @@ const Home = () => {
                 console.log('Обновлены чаты:', updatedChats);
                 return [...updatedChats];
             });
-
-            // Воспроизведение звука для групповых чатов
-            if (messageAudioRef.current && userInteracted) {
-                messageAudioRef.current.play().catch((error) => {
-                    console.error('Ошибка воспроизведения звука уведомления:', error);
-                });
-            }
         } catch (error) {
             console.error('Ошибка обработки нового сообщения:', error);
-            toast.error('Error updating messages', {
-                toastId: `error-update-messages-${chatId}-${Date.now()}`,
-            });
+            toast.error('Error updating messages');
         }
     };
 
@@ -263,13 +245,9 @@ const Home = () => {
             setLoginPassword('');
             setIsLoggedIn(true);
             initializeWebSocket(userId, user.username); // Инициализация WebSocket
-            toast.success('Login successful!', {
-                toastId: `success-login-${Date.now()}`,
-            });
+            toast.success('Login successful!');
         } catch (error) {
-            toast.error(error.message || 'Error logging in', {
-                toastId: `error-login-${Date.now()}`,
-            });
+            toast.error(error.message || 'Error logging in');
         }
     };
 
@@ -280,11 +258,8 @@ const Home = () => {
         setCurrentUserId(null);
         setContextUserId(null); // Сбрасываем в CallWebSocketContext
         setNotificationUserId(null); // Сбрасываем в PrivateMessageNotificationContext
-        setCurrentChatId(null); // Сбрасываем currentChatId
         setIsLoggedIn(false);
-        toast.success('Logged out successfully!', {
-            toastId: `success-logout-${Date.now()}`,
-        });
+        toast.success('Logged out successfully!');
     };
 
     const createChatHandler = async () => {
@@ -293,18 +268,12 @@ const Home = () => {
                 const newChat = await createChat({ name: chatName, private: false });
                 setChats([...chats, { ...newChat, lastMessage: null, timestamp: null, unreadCount: 0 }]);
                 setChatName('');
-                toast.success('Chat created successfully!', {
-                    toastId: `success-create-chat-${Date.now()}`,
-                });
+                toast.success('Chat created successfully!');
             } catch (error) {
-                toast.error(error.message || 'Error creating chat', {
-                    toastId: `error-create-chat-${Date.now()}`,
-                });
+                toast.error(error.message || 'Error creating chat');
             }
         } else {
-            toast.error('Chat name cannot be empty', {
-                toastId: `error-empty-chat-name-${Date.now()}`,
-            });
+            toast.error('Chat name cannot be empty');
         }
     };
 
@@ -331,31 +300,22 @@ const Home = () => {
                 setPassword('');
                 setBio('');
                 setAvatar(null);
-                toast.success('User created successfully!', {
-                    toastId: `success-create-user-${Date.now()}`,
-                });
+                toast.success('User created successfully!');
             } else {
                 const errorMessage = await response.text();
-                toast.error(errorMessage, {
-                    toastId: `error-create-user-${Date.now()}`,
-                });
+                toast.error(errorMessage);
             }
         } catch (error) {
-            toast.error('Error creating user', {
-                toastId: `error-create-user-${Date.now()}`,
-            });
+            toast.error('Error creating user');
         }
     };
 
     const goToChat = (chatId) => {
         if (!isLoggedIn || currentUserId === null) {
-            toast.error("You need to create an account or log in", {
-                toastId: `error-unauthorized-chat-${chatId}-${Date.now()}`,
-            });
+            toast.error("You need to create an account or log in");
             console.log(`Unauthorized user attempted to access group chat: ${chatId}`);
             return;
         }
-        setCurrentChatId(chatId); // Устанавливаем текущий чат
         navigate(`/chat/${chatId}`);
     };
 
@@ -377,6 +337,17 @@ const Home = () => {
 
     return (
         <div className="home-container">
+            <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+            />
             <div className="login-container-home">
                 {isLoggedIn ? (
                     <button onClick={logoutUser} className="logout-button-home">
