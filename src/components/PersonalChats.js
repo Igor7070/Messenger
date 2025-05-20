@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import '../styles/PersonalChats.css';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import IncomingCallNotification from './IncomingCallNotification';
@@ -11,7 +9,7 @@ import { getMessages } from '../api/messages';
 import { format, isToday, parseISO } from 'date-fns';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
-import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext'; // Новый импорт
+import { usePrivateMessageNotification } from './PrivateMessageNotificationContext';
 
 const PersonalChats = () => {
     const { userId } = useParams();
@@ -20,7 +18,6 @@ const PersonalChats = () => {
     const [privateChats, setPrivateChats] = useState([]);
     const [chatPartners, setChatPartners] = useState({});
     const [contextMenu, setContextMenu] = useState({ visible: false, chatId: null, x: 0, y: 0 });
-    const [client, setClient] = useState(null);
     const [shouldRefreshChats, setShouldRefreshChats] = useState(true);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const messageAudioRef = useRef(null);
@@ -28,7 +25,7 @@ const PersonalChats = () => {
     const currentUserId = userId;
     const { usersStatus } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
-    const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification(); // Используем контекст уведомлений
+    const { setCurrentUserId: setNotificationUserId, setCurrentChatId, subscribeToNotifications } = usePrivateMessageNotification();
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -49,11 +46,23 @@ const PersonalChats = () => {
     // Синхронизация currentUserId и сброс currentChatId
     useEffect(() => {
         if (currentUserId) {
-            setContextUserId(currentUserId); // Устанавливаем userId в CallWebSocketContext
-            setNotificationUserId(currentUserId); // Устанавливаем userId в PrivateMessageNotificationContext
-            setCurrentChatId(null); // Сбрасываем currentChatId, так как это список чатов
+            setContextUserId(currentUserId);
+            setNotificationUserId(currentUserId);
+            setCurrentChatId(null);
         }
     }, [currentUserId, setContextUserId, setNotificationUserId, setCurrentChatId]);
+
+    // Подписка на уведомления для обновления списка чатов
+    useEffect(() => {
+        const handleNotification = ({ chatId }) => {
+            if (chatId) {
+                setShouldRefreshChats(true);
+            }
+        };
+
+        const unsubscribe = subscribeToNotifications(handleNotification);
+        return () => unsubscribe();
+    }, [subscribeToNotifications]);
 
     // Обработка клика для userInteracted
     useEffect(() => {
