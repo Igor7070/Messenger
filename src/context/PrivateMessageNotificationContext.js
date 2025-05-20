@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { toast } from 'react-toastify';
-import { useUserInteraction } from '../components/UserInteractionContext';
+import { useUserInteraction } from './UserInteractionContext';
 
 const PrivateMessageNotificationContext = createContext();
 
