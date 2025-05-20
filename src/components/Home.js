@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import '../styles/Home.css';
 import { getMessages, createChat, createUser, loginUser } from '../api/messages';
 import IncomingCallNotification from './IncomingCallNotification';
@@ -94,11 +93,15 @@ const Home = () => {
                 console.log('Чаты загружены:', chatsWithMessages);
                 setChats(chatsWithMessages);
             } else {
-                toast.error('Failed to fetch chats');
+                toast.error('Failed to fetch chats', {
+                    toastId: `error-fetch-chats-${Date.now()}`,
+                });
             }
         } catch (error) {
             console.error('Ошибка при загрузке чатов:', error);
-            toast.error('Error fetching chats');
+            toast.error('Error fetching chats', {
+                toastId: `error-fetch-chats-${Date.now()}`,
+            });
         }
     };
 
@@ -127,11 +130,15 @@ const Home = () => {
                 console.log('Пользователи загружены:', data);
                 setUsers(data);
             } else {
-                toast.error('Failed to fetch users');
+                toast.error('Failed to fetch users', {
+                    toastId: `error-fetch-users-${Date.now()}`,
+                });
             }
         } catch (error) {
             console.error('Ошибка при загрузке пользователей:', error);
-            toast.error('Error fetching users');
+            toast.error('Error fetching users', {
+                toastId: `error-fetch-users-${Date.now()}`,
+            });
         }
     };
 
@@ -228,7 +235,9 @@ const Home = () => {
             });
         } catch (error) {
             console.error('Ошибка обработки нового сообщения:', error);
-            toast.error('Error updating messages');
+            toast.error('Error updating messages', {
+                toastId: `error-update-messages-${chatId}-${Date.now()}`,
+            });
         }
     };
 
@@ -245,9 +254,13 @@ const Home = () => {
             setLoginPassword('');
             setIsLoggedIn(true);
             initializeWebSocket(userId, user.username); // Инициализация WebSocket
-            toast.success('Login successful!');
+            toast.success('Login successful!', {
+                toastId: `success-login-${Date.now()}`,
+            });
         } catch (error) {
-            toast.error(error.message || 'Error logging in');
+            toast.error(error.message || 'Error logging in', {
+                toastId: `error-login-${Date.now()}`,
+            });
         }
     };
 
@@ -259,7 +272,9 @@ const Home = () => {
         setContextUserId(null); // Сбрасываем в CallWebSocketContext
         setNotificationUserId(null); // Сбрасываем в PrivateMessageNotificationContext
         setIsLoggedIn(false);
-        toast.success('Logged out successfully!');
+        toast.success('Logged out successfully!', {
+            toastId: `success-logout-${Date.now()}`,
+        });
     };
 
     const createChatHandler = async () => {
@@ -268,12 +283,18 @@ const Home = () => {
                 const newChat = await createChat({ name: chatName, private: false });
                 setChats([...chats, { ...newChat, lastMessage: null, timestamp: null, unreadCount: 0 }]);
                 setChatName('');
-                toast.success('Chat created successfully!');
+                toast.success('Chat created successfully!', {
+                    toastId: `success-create-chat-${Date.now()}`,
+                });
             } catch (error) {
-                toast.error(error.message || 'Error creating chat');
+                toast.error(error.message || 'Error creating chat', {
+                    toastId: `error-create-chat-${Date.now()}`,
+                });
             }
         } else {
-            toast.error('Chat name cannot be empty');
+            toast.error('Chat name cannot be empty', {
+                toastId: `error-empty-chat-name-${Date.now()}`,
+            });
         }
     };
 
@@ -300,19 +321,27 @@ const Home = () => {
                 setPassword('');
                 setBio('');
                 setAvatar(null);
-                toast.success('User created successfully!');
+                toast.success('User created successfully!', {
+                    toastId: `success-create-user-${Date.now()}`,
+                });
             } else {
                 const errorMessage = await response.text();
-                toast.error(errorMessage);
+                toast.error(errorMessage, {
+                    toastId: `error-create-user-${Date.now()}`,
+                });
             }
         } catch (error) {
-            toast.error('Error creating user');
+            toast.error('Error creating user', {
+                toastId: `error-create-user-${Date.now()}`,
+            });
         }
     };
 
     const goToChat = (chatId) => {
         if (!isLoggedIn || currentUserId === null) {
-            toast.error("You need to create an account or log in");
+            toast.error("You need to create an account or log in", {
+                toastId: `error-unauthorized-chat-${chatId}-${Date.now()}`,
+            });
             console.log(`Unauthorized user attempted to access group chat: ${chatId}`);
             return;
         }
@@ -337,17 +366,6 @@ const Home = () => {
 
     return (
         <div className="home-container">
-            <ToastContainer
-                position="top-right"
-                autoClose={5000}
-                hideProgressBar={false}
-                newestOnTop={false}
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-            />
             <div className="login-container-home">
                 {isLoggedIn ? (
                     <button onClick={logoutUser} className="logout-button-home">
