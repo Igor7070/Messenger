@@ -5,13 +5,13 @@ import { FaEdit, FaEllipsisV, FaPhone, FaVideo } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Modal from 'react-modal';
-import useWebSocket from '../hooks/useWebSocket';
 import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import { useUserStatusContext } from '../context/UserStatusContext';
-import { useCallWebSocket } from '../context/CallWebSocketContext'; // Новый импорт
+import { useCallWebSocket } from '../context/CallWebSocketContext';
+import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 
 const UserProfile = () => {
     const { userId } = useParams();
@@ -29,8 +29,7 @@ const UserProfile = () => {
     const { userInteracted, handleInteraction } = useUserInteraction();
     const { usersStatus, disconnectWebSocket } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
-
-    useWebSocket(currentUserId, messageAudioRef);
+    const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification();
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -65,9 +64,10 @@ const UserProfile = () => {
         if (storedUserId) {
             const userIdNum = Number(storedUserId);
             setCurrentUserId(userIdNum);
-            setContextUserId(userIdNum); // Синхронизируем с контекстом
+            setContextUserId(userIdNum); // Синхронизируем с CallWebSocketContext
+            setNotificationUserId(userIdNum); // Синхронизируем с PrivateMessageNotificationContext
         }
-    }, [userId, setContextUserId]);
+    }, [userId, setContextUserId, setNotificationUserId]);
 
     useEffect(() => {
         const handleClick = () => {
@@ -321,7 +321,8 @@ const UserProfile = () => {
                     localStorage.removeItem('userId');
                     localStorage.removeItem('username');
                     disconnectWebSocket();
-                    setContextUserId(null); // Сбрасываем в контексте
+                    setContextUserId(null); // Сбрасываем в CallWebSocketContext
+                    setNotificationUserId(null); // Сбрасываем в PrivateMessageNotificationContext
                     navigate('/');
                     toast.success('Account deleted successfully!');
                 } else {
@@ -443,7 +444,7 @@ const UserProfile = () => {
                     callerName={incomingCall.callerName || 'Unknown'}
                     avatar={incomingCall.avatar}
                     callType={incomingCall.type}
-                    onAccept={() => acceptCall(navigate)} // Передаём navigate
+                    onAccept={() => acceptCall(navigate)}
                     onReject={rejectCall}
                 />
             )}
