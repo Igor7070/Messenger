@@ -10,7 +10,8 @@ import { useUserInteraction } from './UserInteractionContext';
 import { getMessages } from '../api/messages';
 import { format, isToday, parseISO } from 'date-fns';
 import { useUserStatusContext } from '../context/UserStatusContext';
-import { useCallWebSocket } from '../context/CallWebSocketContext'; // Новый импорт
+import { useCallWebSocket } from '../context/CallWebSocketContext';
+import { usePrivateMessageNotification } from './PrivateMessageNotificationContext'; // Новый импорт
 
 const PersonalChats = () => {
     const { userId } = useParams();
@@ -27,6 +28,7 @@ const PersonalChats = () => {
     const currentUserId = userId;
     const { usersStatus } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
+    const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification(); // Используем контекст уведомлений
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -44,67 +46,18 @@ const PersonalChats = () => {
         }
     };
 
-    // WebSocket для уведомлений
+    // Синхронизация currentUserId и currentChatId с контекстом
     useEffect(() => {
-        const stompClient = new Client({
-            webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
-            onConnect: () => {
-                console.log('Connected to WebSocket for notifications');
-
-                stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
-                    const notification = message.body;
-                    console.log("Received notification:", notification);
-
-                    const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
-                    const chatId = chatIdMatch ? chatIdMatch[1] : null;
-
-                    if (userInteracted && messageAudioRef && messageAudioRef.current) {
-                        console.log('Attempting to play message audio');
-                        messageAudioRef.current.play()
-                            .then(() => console.log('Message audio played successfully'))
-                            .catch(error => {
-                                console.error('Failed to play message audio:', error);
-                                toast.warn('Please interact with the page to enable notification sounds.');
-                            });
-                    } else {
-                        console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef?.current);
-                    }
-
-                    toast.info(notification, {
-                        autoClose: false,
-                        onClick: () => {
-                            if (messageAudioRef && messageAudioRef.current) {
-                                console.log('Pausing message audio on toast click');
-                                messageAudioRef.current.pause();
-                                messageAudioRef.current.currentTime = 0;
-                            }
-                            if (chatId) {
-                                navigate(`/private-chat/${chatId}`);
-                            } else {
-                                console.error("chatId не найден в уведомлении");
-                                toast.error('Invalid notification format');
-                            }
-                        },
-                    });
-
-                    // Обновляем список чатов при новом сообщении
-                    if (chatId) {
-                        setShouldRefreshChats(true);
-                    }
-                });
-            },
-            onWebSocketError: (error) => {
-                console.error('WebSocket error:', error);
-            },
-        });
-
-        setClient(stompClient);
-        stompClient.activate();
+        if (currentUserId) {
+            setContextUserId(currentUserId); // Устанавливаем userId в CallWebSocketContext
+            setNotificationUserId(currentUserId); // Устанавливаем userId в PrivateMessageNotificationContext
+            setCurrentChatId(null); // Устанавливаем currentChatId в null, так как это список чатов
+        }
 
         return () => {
-            stompClient.deactivate();
+            setCurrentChatId(null); // Сбрасываем currentChatId при размонтировании
         };
-    }, [userId, userInteracted, navigate]);
+    }, [currentUserId, setContextUserId, setNotificationUserId, setCurrentChatId]);
 
     // Обработка клика для userInteracted
     useEffect(() => {
@@ -116,13 +69,6 @@ const PersonalChats = () => {
             document.removeEventListener('click', handleClick);
         };
     }, [handleInteraction]);
-
-    // Синхронизация currentUserId с контекстом
-    useEffect(() => {
-        if (currentUserId) {
-            setContextUserId(currentUserId); // Устанавливаем userId в контекст
-        }
-    }, [currentUserId, setContextUserId]);
 
     // Получение списка чатов и обновление
     useEffect(() => {
@@ -249,6 +195,33 @@ const PersonalChats = () => {
     const closeContextMenu = () => {
         setContextMenu({ ...contextMenu, visible: false });
     };
+
+    // Обновление списка чатов при получении уведомления
+    const handleNotification = (chatId) => {
+        if (chatId) {
+            setShouldRefreshChats(true);
+        }
+    };
+
+    // Подписка на уведомления через контекст
+    useEffect(() => {
+        if (!client) {
+            const stompClient = new Client({
+                webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
+                onConnect: () => {
+                    console.log('Connected to WebSocket for notifications');
+                    setClient(stompClient);
+                },
+                onWebSocketError: (error) => {
+                    console.error('WebSocket error:', error);
+                },
+            });
+            stompClient.activate();
+            return () => {
+                stompClient.deactivate();
+            };
+        }
+    }, [client]);
 
     return (
         <div className="personal-chats-container" onClick={closeContextMenu}>

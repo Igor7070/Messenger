@@ -3,15 +3,17 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { toast } from 'react-toastify';
 import { useUserInteraction } from '../components/UserInteractionContext';
+import { useNavigate } from 'react-router-dom'; // Добавляем useNavigate
 
 const PrivateMessageNotificationContext = createContext();
 
 export const PrivateMessageNotificationProvider = ({ children }) => {
     const { userInteracted } = useUserInteraction();
     const [currentUserId, setCurrentUserId] = useState(null);
-    const [currentChatId, setCurrentChatId] = useState(null); // Новое состояние для текущего chatId
+    const [currentChatId, setCurrentChatId] = useState(null); // Текущее состояние для chatId
     const messageAudioRef = useRef(null);
     const stompClientRef = useRef(null);
+    const navigate = useNavigate(); // Для навигации
 
     useEffect(() => {
         if (!currentUserId) {
@@ -34,8 +36,8 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                     const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
                     const chatId = chatIdMatch ? chatIdMatch[1] : null;
 
-                    // Показываем уведомление только если сообщение из другого чата
-                    if (chatId && chatId !== currentChatId) {
+                    // Показываем уведомление, если нет текущего чата (currentChatId === null) или сообщение из другого чата
+                    if (!currentChatId || (chatId && chatId !== currentChatId)) {
                         if (userInteracted && messageAudioRef.current) {
                             console.log('Attempting to play message audio');
                             messageAudioRef.current.play()
@@ -67,7 +69,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                                             console.log('checkResponse text:', text);
                                             const exists = text === "Chat exists in user's private chats";
                                             if (exists) {
-                                                window.location.href = `/Messenger/#/private-chat/${chatId}`;
+                                                navigate(`/private-chat/${chatId}`);
                                                 toast.success('Navigating to chat!');
                                             } else {
                                                 console.error('Unexpected response for OK status:', text);
@@ -81,7 +83,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                                             console.log('addResponse status:', addResponse.status, 'text:', await addResponse.text());
 
                                             if (addResponse.ok) {
-                                                window.location.href = `/Messenger/#/private-chat/${chatId}`;
+                                                navigate(`/private-chat/${chatId}`);
                                                 toast.success('Navigating to chat!');
                                             } else {
                                                 toast.error('Failed to add chat to user');
@@ -120,7 +122,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                 console.log('WebSocket для уведомлений личных чатов отключён');
             }
         };
-    }, [currentUserId, userInteracted, currentChatId]);
+    }, [currentUserId, userInteracted, currentChatId, navigate]);
 
     return (
         <PrivateMessageNotificationContext.Provider value={{ setCurrentUserId, setCurrentChatId }}>
