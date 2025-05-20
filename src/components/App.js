@@ -7,7 +7,7 @@ import PrivateChat from './PrivateChat';
 import VoiceCall from './VoiceCall';
 import VideoCall from './VideoCall';
 import PersonalChats from './PersonalChats';
-import { NotificationProvider } from './NotificationContext';
+import { NotificationProvider } from '../context/NotificationContext';
 import { UserInteractionProvider } from '../context/UserInteractionContext';
 import { UserStatusProvider, useUserStatusContext } from '../context/UserStatusContext';
 import { CallWebSocketProvider } from '../context/CallWebSocketContext';

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { useNotification } from './NotificationContext';
+import { useNotification } from '../context/NotificationContext';
 import { ToastContainer, toast } from 'react-toastify';
 import '../styles/VideoCall.css';
 

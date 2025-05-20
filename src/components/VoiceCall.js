@@ -5,7 +5,7 @@ import SockJS from 'sockjs-client';
 import IncomingCallNotification from './IncomingCallNotification';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js'; 
-import { useNotification } from './NotificationContext'; // Импортируем контекст
+import { useNotification } from '../context/NotificationContext'; // Импортируем контекст
 import { ToastContainer, toast } from 'react-toastify';
 import '../styles/VoiceCall.css';
 
