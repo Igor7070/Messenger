@@ -12,7 +12,7 @@ import { useUserInteraction } from './UserInteractionContext';
 import { format, isToday, parseISO } from 'date-fns';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
-import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext'; // Новый импорт
+import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 
 const PrivateChat = () => {
     const [messages, setMessages] = useState([]);
@@ -34,7 +34,7 @@ const PrivateChat = () => {
     const { userInteracted, handleInteraction } = useUserInteraction();
     const { usersStatus } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
-    const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification(); // Используем контекст уведомлений
+    const { setCurrentUserId: setNotificationUserId, setCurrentChatId, setNavigate } = usePrivateMessageNotification();
     const [currentUserId, setCurrentUserId] = useState(null);
 
     // Функция прокрутки к последнему сообщению
@@ -84,12 +84,13 @@ const PrivateChat = () => {
             setCurrentUserId(userIdNum);
             setContextUserId(userIdNum); // Синхронизируем с CallWebSocketContext
             setNotificationUserId(userIdNum); // Синхронизируем с PrivateMessageNotificationContext
+            setNavigate(() => navigate); // Устанавливаем функцию navigate
         }
 
         return () => {
             setCurrentChatId(null); // Сбрасываем currentChatId при размонтировании
         };
-    }, [chatIdParam, username, setContextUserId, setNotificationUserId, setCurrentChatId]);
+    }, [chatIdParam, username, setContextUserId, setNotificationUserId, setCurrentChatId, navigate, setNavigate]);
 
     useEffect(() => {
         if (!chatId) return;

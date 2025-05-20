@@ -3,17 +3,16 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { toast } from 'react-toastify';
 import { useUserInteraction } from '../components/UserInteractionContext';
-import { useNavigate } from 'react-router-dom'; // Добавляем useNavigate
 
 const PrivateMessageNotificationContext = createContext();
 
 export const PrivateMessageNotificationProvider = ({ children }) => {
     const { userInteracted } = useUserInteraction();
     const [currentUserId, setCurrentUserId] = useState(null);
-    const [currentChatId, setCurrentChatId] = useState(null); // Текущее состояние для chatId
+    const [currentChatId, setCurrentChatId] = useState(null);
+    const [navigate, setNavigate] = useState(null); // Состояние для функции navigate
     const messageAudioRef = useRef(null);
     const stompClientRef = useRef(null);
-    const navigate = useNavigate(); // Для навигации
 
     useEffect(() => {
         if (!currentUserId) {
@@ -36,7 +35,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                     const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
                     const chatId = chatIdMatch ? chatIdMatch[1] : null;
 
-                    // Показываем уведомление, если нет текущего чата (currentChatId === null) или сообщение из другого чата
+                    // Показываем уведомление, если нет текущего чата или сообщение из другого чата
                     if (!currentChatId || (chatId && chatId !== currentChatId)) {
                         if (userInteracted && messageAudioRef.current) {
                             console.log('Attempting to play message audio');
@@ -59,7 +58,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                                     messageAudioRef.current.currentTime = 0;
                                 }
 
-                                if (chatId) {
+                                if (chatId && navigate) {
                                     try {
                                         const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
                                         console.log('checkResponse status:', checkResponse.status);
@@ -97,7 +96,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                                         toast.error('Failed to process notification');
                                     }
                                 } else {
-                                    console.error('chatId не найден в уведомлении');
+                                    console.error('chatId не найден в уведомлении или navigate не установлен');
                                     toast.error('Invalid notification format');
                                 }
                             },
@@ -125,7 +124,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
     }, [currentUserId, userInteracted, currentChatId, navigate]);
 
     return (
-        <PrivateMessageNotificationContext.Provider value={{ setCurrentUserId, setCurrentChatId }}>
+        <PrivateMessageNotificationContext.Provider value={{ setCurrentUserId, setCurrentChatId, setNavigate }}>
             <audio ref={messageAudioRef}>
                 <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.

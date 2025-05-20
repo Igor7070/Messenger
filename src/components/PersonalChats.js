@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import '../styles/PersonalChats.css';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import IncomingCallNotification from './IncomingCallNotification';
@@ -11,7 +9,7 @@ import { getMessages } from '../api/messages';
 import { format, isToday, parseISO } from 'date-fns';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
-import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext'; // Новый импорт
+import { usePrivateMessageNotification } from './PrivateMessageNotificationContext';
 
 const PersonalChats = () => {
     const { userId } = useParams();
@@ -20,7 +18,6 @@ const PersonalChats = () => {
     const [privateChats, setPrivateChats] = useState([]);
     const [chatPartners, setChatPartners] = useState({});
     const [contextMenu, setContextMenu] = useState({ visible: false, chatId: null, x: 0, y: 0 });
-    const [client, setClient] = useState(null);
     const [shouldRefreshChats, setShouldRefreshChats] = useState(true);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const messageAudioRef = useRef(null);
@@ -28,7 +25,7 @@ const PersonalChats = () => {
     const currentUserId = userId;
     const { usersStatus } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
-    const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification(); // Используем контекст уведомлений
+    const { setCurrentUserId: setNotificationUserId, setCurrentChatId, setNavigate } = usePrivateMessageNotification();
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -46,18 +43,19 @@ const PersonalChats = () => {
         }
     };
 
-    // Синхронизация currentUserId и currentChatId с контекстом
+    // Синхронизация currentUserId, currentChatId и navigate с контекстом
     useEffect(() => {
         if (currentUserId) {
             setContextUserId(currentUserId); // Устанавливаем userId в CallWebSocketContext
             setNotificationUserId(currentUserId); // Устанавливаем userId в PrivateMessageNotificationContext
-            setCurrentChatId(null); // Устанавливаем currentChatId в null, так как это список чатов
+            setCurrentChatId(null); // Устанавливаем currentChatId в null
+            setNavigate(() => navigate); // Устанавливаем функцию navigate
         }
 
         return () => {
             setCurrentChatId(null); // Сбрасываем currentChatId при размонтировании
         };
-    }, [currentUserId, setContextUserId, setNotificationUserId, setCurrentChatId]);
+    }, [currentUserId, setContextUserId, setNotificationUserId, setCurrentChatId, navigate, setNavigate]);
 
     // Обработка клика для userInteracted
     useEffect(() => {
@@ -195,33 +193,6 @@ const PersonalChats = () => {
     const closeContextMenu = () => {
         setContextMenu({ ...contextMenu, visible: false });
     };
-
-    // Обновление списка чатов при получении уведомления
-    const handleNotification = (chatId) => {
-        if (chatId) {
-            setShouldRefreshChats(true);
-        }
-    };
-
-    // Подписка на уведомления через контекст
-    useEffect(() => {
-        if (!client) {
-            const stompClient = new Client({
-                webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
-                onConnect: () => {
-                    console.log('Connected to WebSocket for notifications');
-                    setClient(stompClient);
-                },
-                onWebSocketError: (error) => {
-                    console.error('WebSocket error:', error);
-                },
-            });
-            stompClient.activate();
-            return () => {
-                stompClient.deactivate();
-            };
-        }
-    }, [client]);
 
     return (
         <div className="personal-chats-container" onClick={closeContextMenu}>
