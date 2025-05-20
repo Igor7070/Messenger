@@ -8,7 +8,7 @@ import VoiceCall from './VoiceCall';
 import VideoCall from './VideoCall';
 import PersonalChats from './PersonalChats';
 import { NotificationProvider } from './NotificationContext';
-import { UserInteractionProvider } from './UserInteractionContext';
+import { UserInteractionProvider } from '../context/UserInteractionContext';
 import { UserStatusProvider, useUserStatusContext } from '../context/UserStatusContext';
 import { CallWebSocketProvider } from '../context/CallWebSocketContext';
 import { PrivateMessageNotificationProvider } from '../context/PrivateMessageNotificationContext';

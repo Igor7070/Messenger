@@ -4,14 +4,14 @@ import Modal from 'react-modal';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/Home.css';
-import { useUserStatusContext } from '../context/UserStatusContext';
+import { getMessages, createChat, createUser, loginUser } from '../api/messages';
 import IncomingCallNotification from './IncomingCallNotification';
-import { useUserInteraction } from './UserInteractionContext';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
+import { useUserInteraction } from '../context/UserInteractionContext';
+import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
-import { getMessages, createChat, createUser, loginUser } from '../api/messages';
 import { format, isToday, parseISO } from 'date-fns';
 
 const Home = () => {
