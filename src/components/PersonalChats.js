@@ -10,6 +10,8 @@ import { format, isToday, parseISO } from 'date-fns';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 const PersonalChats = () => {
     const { userId } = useParams();
@@ -26,6 +28,7 @@ const PersonalChats = () => {
     const { usersStatus } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
     const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification();
+    const stompClientRef = useRef(null);
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -62,6 +65,59 @@ const PersonalChats = () => {
             document.removeEventListener('click', handleClick);
         };
     }, [handleInteraction, contextMenu]);
+
+    // Инициализация WebSocket для получения сообщений
+    useEffect(() => {
+        if (!privateChats.length || !currentUserId) return;
+
+        const stompClient = new Client({
+            webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
+            onConnect: () => {
+                console.log('Connected to WebSocket for private chats');
+
+                privateChats.forEach((chat) => {
+                    stompClient.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
+                        const newMessage = JSON.parse(message.body);
+                        console.log('New message received for chat', chat.id, ':', newMessage);
+
+                        // Обновляем список чатов с новым сообщением
+                        setPrivateChats((prevChats) =>
+                            prevChats.map((prevChat) => {
+                                if (prevChat.id === chat.id) {
+                                    const isOwnMessage = newMessage.sender.id === Number(currentUserId);
+                                    return {
+                                        ...prevChat,
+                                        lastMessage: newMessage.content || 'No messages yet',
+                                        timestamp: newMessage.timestamp || '',
+                                        unreadCount: isOwnMessage
+                                            ? prevChat.unreadCount
+                                            : prevChat.unreadCount + 1,
+                                    };
+                                }
+                                return prevChat;
+                            })
+                        );
+                    });
+                });
+            },
+            onWebSocketError: (error) => {
+                console.error('WebSocket error:', error);
+            },
+            onStompError: (frame) => {
+                console.error('STOMP error:', frame);
+            },
+        });
+
+        stompClientRef.current = stompClient;
+        stompClient.activate();
+
+        return () => {
+            if (stompClientRef.current) {
+                stompClientRef.current.deactivate();
+                console.log('WebSocket for private chats disconnected');
+            }
+        };
+    }, [privateChats, currentUserId]);
 
     // Получение списка чатов и обновление
     useEffect(() => {
@@ -191,82 +247,6 @@ const PersonalChats = () => {
     const closeContextMenu = () => {
         setContextMenu({ ...contextMenu, visible: false });
     };
-
-    // Обработка уведомлений через PrivateMessageNotificationContext
-    useEffect(() => {
-        const handleNotification = async (notification) => {
-            console.log("Received notification in PersonalChats:", notification);
-            const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
-            const chatId = chatIdMatch ? chatIdMatch[1] : null;
-
-            if (chatId) {
-                if (userInteracted && messageAudioRef.current) {
-                    console.log('Attempting to play message audio');
-                    messageAudioRef.current.play()
-                        .then(() => console.log('Message audio played successfully'))
-                        .catch(error => {
-                            console.error('Failed to play message audio:', error);
-                            toast.warn('Please interact with the page to enable notification sounds.');
-                        });
-                } else {
-                    console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef?.current);
-                }
-
-                toast.info(notification, {
-                    autoClose: false,
-                    onClick: async () => {
-                        if (messageAudioRef.current) {
-                            console.log('Pausing message audio on toast click');
-                            messageAudioRef.current.pause();
-                            messageAudioRef.current.currentTime = 0;
-                        }
-
-                        try {
-                            const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
-                            console.log('checkResponse status:', checkResponse.status);
-
-                            if (checkResponse.ok) {
-                                const text = await checkResponse.text();
-                                console.log('checkResponse text:', text);
-                                const exists = text === "Chat exists in user's private chats";
-                                if (exists) {
-                                    navigate(`/private-chat/${chatId}`);
-                                    toast.success('Navigating to chat!');
-                                } else {
-                                    console.error('Unexpected response for OK status:', text);
-                                    toast.error('Unexpected server response');
-                                }
-                            } else if (checkResponse.status === 404) {
-                                console.log('Чат не существует у текущего пользователя, добавляем его');
-                                const addResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`, {
-                                    method: 'POST',
-                                });
-                                console.log('addResponse status:', addResponse.status, 'text:', await addResponse.text());
-
-                                if (addResponse.ok) {
-                                    navigate(`/private-chat/${chatId}`);
-                                    toast.success('Navigating to chat!');
-                                } else {
-                                    toast.error('Failed to add chat to user');
-                                }
-                            } else {
-                                console.log('checkResponse error text:', await checkResponse.text());
-                                toast.error('Error checking chat existence');
-                            }
-                        } catch (error) {
-                            console.error('Error handling notification click:', error);
-                            toast.error('Failed to process notification');
-                        }
-                    },
-                });
-
-                setShouldRefreshChats(true);
-            } else {
-                console.error("chatId не найден в уведомлении");
-                toast.error('Invalid notification format');
-            }
-        };
-    }, [userInteracted, currentUserId, navigate]);
 
     return (
         <div className="personal-chats-container" onClick={closeContextMenu}>
