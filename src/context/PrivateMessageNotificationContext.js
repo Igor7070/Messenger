@@ -9,18 +9,9 @@ const PrivateMessageNotificationContext = createContext();
 export const PrivateMessageNotificationProvider = ({ children }) => {
     const { userInteracted } = useUserInteraction();
     const [currentUserId, setCurrentUserId] = useState(null);
-    const [currentChatId, setCurrentChatId] = useState(null);
-    const [notificationSubscribers, setNotificationSubscribers] = useState([]); // Новое состояние для подписчиков
+    const [currentChatId, setCurrentChatId] = useState(null); // Новое состояние для текущего chatId
     const messageAudioRef = useRef(null);
     const stompClientRef = useRef(null);
-
-    // Функция для подписки на уведомления
-    const subscribeToNotifications = (callback) => {
-        setNotificationSubscribers((prev) => [...prev, callback]);
-        return () => {
-            setNotificationSubscribers((prev) => prev.filter((cb) => cb !== callback));
-        };
-    };
 
     useEffect(() => {
         if (!currentUserId) {
@@ -42,9 +33,6 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
 
                     const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
                     const chatId = chatIdMatch ? chatIdMatch[1] : null;
-
-                    // Уведомляем подписчиков (например, PersonalChats для обновления списка)
-                    notificationSubscribers.forEach((callback) => callback({ chatId, notification }));
 
                     // Показываем уведомление только если сообщение из другого чата
                     if (chatId && chatId !== currentChatId) {
@@ -132,10 +120,10 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                 console.log('WebSocket для уведомлений личных чатов отключён');
             }
         };
-    }, [currentUserId, userInteracted, currentChatId, notificationSubscribers]);
+    }, [currentUserId, userInteracted, currentChatId]);
 
     return (
-        <PrivateMessageNotificationContext.Provider value={{ setCurrentUserId, setCurrentChatId, subscribeToNotifications }}>
+        <PrivateMessageNotificationContext.Provider value={{ setCurrentUserId, setCurrentChatId }}>
             <audio ref={messageAudioRef}>
                 <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.

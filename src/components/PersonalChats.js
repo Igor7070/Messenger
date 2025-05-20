@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import '../styles/PersonalChats.css';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import IncomingCallNotification from './IncomingCallNotification';
@@ -8,8 +10,7 @@ import { useUserInteraction } from './UserInteractionContext';
 import { getMessages } from '../api/messages';
 import { format, isToday, parseISO } from 'date-fns';
 import { useUserStatusContext } from '../context/UserStatusContext';
-import { useCallWebSocket } from '../context/CallWebSocketContext';
-import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
+import { useCallWebSocket } from '../context/CallWebSocketContext'; // Новый импорт
 
 const PersonalChats = () => {
     const { userId } = useParams();
@@ -18,6 +19,7 @@ const PersonalChats = () => {
     const [privateChats, setPrivateChats] = useState([]);
     const [chatPartners, setChatPartners] = useState({});
     const [contextMenu, setContextMenu] = useState({ visible: false, chatId: null, x: 0, y: 0 });
+    const [client, setClient] = useState(null);
     const [shouldRefreshChats, setShouldRefreshChats] = useState(true);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const messageAudioRef = useRef(null);
@@ -25,7 +27,6 @@ const PersonalChats = () => {
     const currentUserId = userId;
     const { usersStatus } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
-    const { setCurrentUserId: setNotificationUserId, setCurrentChatId, subscribeToNotifications } = usePrivateMessageNotification();
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -43,26 +44,67 @@ const PersonalChats = () => {
         }
     };
 
-    // Синхронизация currentUserId и сброс currentChatId
+    // WebSocket для уведомлений
     useEffect(() => {
-        if (currentUserId) {
-            setContextUserId(currentUserId);
-            setNotificationUserId(currentUserId);
-            setCurrentChatId(null);
-        }
-    }, [currentUserId, setContextUserId, setNotificationUserId, setCurrentChatId]);
+        const stompClient = new Client({
+            webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
+            onConnect: () => {
+                console.log('Connected to WebSocket for notifications');
 
-    // Подписка на уведомления для обновления списка чатов
-    useEffect(() => {
-        const handleNotification = ({ chatId }) => {
-            if (chatId) {
-                setShouldRefreshChats(true);
-            }
+                stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
+                    const notification = message.body;
+                    console.log("Received notification:", notification);
+
+                    const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
+                    const chatId = chatIdMatch ? chatIdMatch[1] : null;
+
+                    if (userInteracted && messageAudioRef && messageAudioRef.current) {
+                        console.log('Attempting to play message audio');
+                        messageAudioRef.current.play()
+                            .then(() => console.log('Message audio played successfully'))
+                            .catch(error => {
+                                console.error('Failed to play message audio:', error);
+                                toast.warn('Please interact with the page to enable notification sounds.');
+                            });
+                    } else {
+                        console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef?.current);
+                    }
+
+                    toast.info(notification, {
+                        autoClose: false,
+                        onClick: () => {
+                            if (messageAudioRef && messageAudioRef.current) {
+                                console.log('Pausing message audio on toast click');
+                                messageAudioRef.current.pause();
+                                messageAudioRef.current.currentTime = 0;
+                            }
+                            if (chatId) {
+                                navigate(`/private-chat/${chatId}`);
+                            } else {
+                                console.error("chatId не найден в уведомлении");
+                                toast.error('Invalid notification format');
+                            }
+                        },
+                    });
+
+                    // Обновляем список чатов при новом сообщении
+                    if (chatId) {
+                        setShouldRefreshChats(true);
+                    }
+                });
+            },
+            onWebSocketError: (error) => {
+                console.error('WebSocket error:', error);
+            },
+        });
+
+        setClient(stompClient);
+        stompClient.activate();
+
+        return () => {
+            stompClient.deactivate();
         };
-
-        const unsubscribe = subscribeToNotifications(handleNotification);
-        return () => unsubscribe();
-    }, [subscribeToNotifications]);
+    }, [userId, userInteracted, navigate]);
 
     // Обработка клика для userInteracted
     useEffect(() => {
@@ -74,6 +116,13 @@ const PersonalChats = () => {
             document.removeEventListener('click', handleClick);
         };
     }, [handleInteraction]);
+
+    // Синхронизация currentUserId с контекстом
+    useEffect(() => {
+        if (currentUserId) {
+            setContextUserId(currentUserId); // Устанавливаем userId в контекст
+        }
+    }, [currentUserId, setContextUserId]);
 
     // Получение списка чатов и обновление
     useEffect(() => {
