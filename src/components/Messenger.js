@@ -11,7 +11,8 @@ import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 import { format, isToday, parseISO } from 'date-fns';
 import { useUserStatusContext } from '../context/UserStatusContext';
-import { useCallWebSocket } from '../context/CallWebSocketContext'; // Новый импорт
+import { useCallWebSocket } from '../context/CallWebSocketContext';
+import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext'; // Новый импорт
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
@@ -49,6 +50,7 @@ const Messenger = () => {
     const { userInteracted, handleInteraction } = useUserInteraction();
     const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
+    const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification(); // Используем контекст уведомлений
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -86,11 +88,12 @@ const Messenger = () => {
             const userIdNum = Number(storedUserId);
             setUserId(userIdNum);
             setCurrentUserId(userIdNum);
-            setContextUserId(userIdNum); // Синхронизируем с контекстом
+            setContextUserId(userIdNum); // Синхронизируем с CallWebSocketContext
+            setNotificationUserId(userIdNum); // Синхронизируем с PrivateMessageNotificationContext
             setUsername(storedUsername);
             setIsLoggedIn(true);
         }
-    }, [setContextUserId]);
+    }, [setContextUserId, setNotificationUserId]);
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -122,41 +125,6 @@ const Messenger = () => {
                     const newMessage = JSON.parse(message.body);
                     updateMessages(newMessage);
                 });
-
-                stompClientInstance.subscribe(`/topic/notifications/${userId}`, (message) => {
-                    const notification = message.body;
-                    console.log("Received notification:", notification);
-
-                    const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
-                    const notificationChatId = chatIdMatch ? chatIdMatch[1] : null;
-
-                    if (userInteracted && messageAudioRef && messageAudioRef.current) {
-                        console.log('Attempting to play message audio');
-                        messageAudioRef.current.play()
-                            .then(() => console.log('Message audio played successfully'))
-                            .catch(error => {
-                                console.error('Failed to play message audio:', error);
-                                toast.warn('Please interact with the page to enable notification sounds.');
-                            });
-                    }
-
-                    toast.info(notification, {
-                        autoClose: false,
-                        onClick: () => {
-                            if (messageAudioRef && messageAudioRef.current) {
-                                console.log('Pausing message audio on toast click');
-                                messageAudioRef.current.pause();
-                                messageAudioRef.current.currentTime = 0;
-                            }
-                            if (notificationChatId) {
-                                navigate(`/private-chat/${notificationChatId}`);
-                            } else {
-                                console.error("chatId не найден в уведомлении");
-                                toast.error('Invalid notification format');
-                            }
-                        },
-                    });
-                });
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
@@ -169,7 +137,7 @@ const Messenger = () => {
         return () => {
             stompClientInstance.deactivate();
         };
-    }, [chatId, userId, userInteracted, navigate]);
+    }, [chatId]);
 
     useEffect(() => {
         const handleClick = () => {
@@ -342,6 +310,7 @@ const Messenger = () => {
                 localStorage.setItem('username', newUser.username);
                 setCurrentUserId(newUser.id);
                 setContextUserId(newUser.id); // Синхронизируем
+                setNotificationUserId(newUser.id); // Синхронизируем с уведомлениями
                 toast.success('User successfully created!');
             } catch (error) {
                 let errorMessage = 'Failed to create user. Please try again.';
@@ -367,6 +336,7 @@ const Messenger = () => {
                 setUserId(loggedUser.id);
                 setCurrentUserId(loggedUser.id);
                 setContextUserId(loggedUser.id); // Синхронизируем
+                setNotificationUserId(loggedUser.id); // Синхронизируем с уведомлениями
                 setIsLoggedIn(true);
                 setErrorMessage('');
                 localStorage.setItem('userId', loggedUser.id);
@@ -395,6 +365,7 @@ const Messenger = () => {
         setUserId(null);
         setCurrentUserId(null);
         setContextUserId(null); // Сбрасываем
+        setNotificationUserId(null); // Сбрасываем уведомления
         setUsername('');
         setIsLoggedIn(false);
         toast.success('You are logged out!');
@@ -565,7 +536,7 @@ const Messenger = () => {
                     callerName={incomingCall.callerName}
                     avatar={incomingCall.avatar}
                     callType={incomingCall.type}
-                    onAccept={() => acceptCall(navigate)} // Передаём navigate
+                    onAccept={() => acceptCall(navigate)}
                     onReject={rejectCall}
                 />
             )}
