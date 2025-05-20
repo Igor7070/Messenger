@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import '../styles/PersonalChats.css';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import IncomingCallNotification from './IncomingCallNotification';
@@ -10,7 +8,8 @@ import { useUserInteraction } from './UserInteractionContext';
 import { getMessages } from '../api/messages';
 import { format, isToday, parseISO } from 'date-fns';
 import { useUserStatusContext } from '../context/UserStatusContext';
-import { useCallWebSocket } from '../context/CallWebSocketContext'; // Новый импорт
+import { useCallWebSocket } from '../context/CallWebSocketContext';
+import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 
 const PersonalChats = () => {
     const { userId } = useParams();
@@ -19,7 +18,6 @@ const PersonalChats = () => {
     const [privateChats, setPrivateChats] = useState([]);
     const [chatPartners, setChatPartners] = useState({});
     const [contextMenu, setContextMenu] = useState({ visible: false, chatId: null, x: 0, y: 0 });
-    const [client, setClient] = useState(null);
     const [shouldRefreshChats, setShouldRefreshChats] = useState(true);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const messageAudioRef = useRef(null);
@@ -27,6 +25,7 @@ const PersonalChats = () => {
     const currentUserId = userId;
     const { usersStatus } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
+    const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification();
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -44,85 +43,25 @@ const PersonalChats = () => {
         }
     };
 
-    // WebSocket для уведомлений
+    // Синхронизация currentUserId с контекстом
     useEffect(() => {
-        const stompClient = new Client({
-            webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
-            onConnect: () => {
-                console.log('Connected to WebSocket for notifications');
-
-                stompClient.subscribe(`/topic/notifications/${userId}`, (message) => {
-                    const notification = message.body;
-                    console.log("Received notification:", notification);
-
-                    const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
-                    const chatId = chatIdMatch ? chatIdMatch[1] : null;
-
-                    if (userInteracted && messageAudioRef && messageAudioRef.current) {
-                        console.log('Attempting to play message audio');
-                        messageAudioRef.current.play()
-                            .then(() => console.log('Message audio played successfully'))
-                            .catch(error => {
-                                console.error('Failed to play message audio:', error);
-                                toast.warn('Please interact with the page to enable notification sounds.');
-                            });
-                    } else {
-                        console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef?.current);
-                    }
-
-                    toast.info(notification, {
-                        autoClose: false,
-                        onClick: () => {
-                            if (messageAudioRef && messageAudioRef.current) {
-                                console.log('Pausing message audio on toast click');
-                                messageAudioRef.current.pause();
-                                messageAudioRef.current.currentTime = 0;
-                            }
-                            if (chatId) {
-                                navigate(`/private-chat/${chatId}`);
-                            } else {
-                                console.error("chatId не найден в уведомлении");
-                                toast.error('Invalid notification format');
-                            }
-                        },
-                    });
-
-                    // Обновляем список чатов при новом сообщении
-                    if (chatId) {
-                        setShouldRefreshChats(true);
-                    }
-                });
-            },
-            onWebSocketError: (error) => {
-                console.error('WebSocket error:', error);
-            },
-        });
-
-        setClient(stompClient);
-        stompClient.activate();
-
-        return () => {
-            stompClient.deactivate();
-        };
-    }, [userId, userInteracted, navigate]);
+        if (currentUserId) {
+            setContextUserId(currentUserId);
+            setNotificationUserId(currentUserId);
+        }
+    }, [currentUserId, setContextUserId, setNotificationUserId]);
 
     // Обработка клика для userInteracted
     useEffect(() => {
         const handleClick = () => {
             handleInteraction();
+            setContextMenu({ ...contextMenu, visible: false });
         };
         document.addEventListener('click', handleClick);
         return () => {
             document.removeEventListener('click', handleClick);
         };
-    }, [handleInteraction]);
-
-    // Синхронизация currentUserId с контекстом
-    useEffect(() => {
-        if (currentUserId) {
-            setContextUserId(currentUserId); // Устанавливаем userId в контекст
-        }
-    }, [currentUserId, setContextUserId]);
+    }, [handleInteraction, contextMenu]);
 
     // Получение списка чатов и обновление
     useEffect(() => {
@@ -136,9 +75,11 @@ const PersonalChats = () => {
                     fetchChatMessages(chats);
                 } else {
                     console.error('Failed to fetch private chats:', response.statusText);
+                    toast.error('Failed to fetch private chats');
                 }
             } catch (error) {
                 console.error('Error fetching private chats:', error);
+                toast.error('Error fetching private chats');
             }
         };
 
@@ -231,24 +172,101 @@ const PersonalChats = () => {
             if (response.ok) {
                 setPrivateChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
                 console.log("Chat deleted from user list successfully");
-
                 const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/private-chats/check/${chatId}`, {
                     method: 'DELETE',
                 });
-
                 const result = await checkResponse.text();
                 console.log(result);
+                toast.success('Chat deleted successfully');
             } else {
                 console.error('Failed to delete chat from user list:', response.statusText);
+                toast.error('Failed to delete chat');
             }
         } catch (error) {
             console.error('Error deleting chat:', error);
+            toast.error('Error deleting chat');
         }
     };
 
     const closeContextMenu = () => {
         setContextMenu({ ...contextMenu, visible: false });
     };
+
+    // Обработка уведомлений через PrivateMessageNotificationContext
+    useEffect(() => {
+        const handleNotification = async (notification) => {
+            console.log("Received notification in PersonalChats:", notification);
+            const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
+            const chatId = chatIdMatch ? chatIdMatch[1] : null;
+
+            if (chatId) {
+                if (userInteracted && messageAudioRef.current) {
+                    console.log('Attempting to play message audio');
+                    messageAudioRef.current.play()
+                        .then(() => console.log('Message audio played successfully'))
+                        .catch(error => {
+                            console.error('Failed to play message audio:', error);
+                            toast.warn('Please interact with the page to enable notification sounds.');
+                        });
+                } else {
+                    console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef?.current);
+                }
+
+                toast.info(notification, {
+                    autoClose: false,
+                    onClick: async () => {
+                        if (messageAudioRef.current) {
+                            console.log('Pausing message audio on toast click');
+                            messageAudioRef.current.pause();
+                            messageAudioRef.current.currentTime = 0;
+                        }
+
+                        try {
+                            const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
+                            console.log('checkResponse status:', checkResponse.status);
+
+                            if (checkResponse.ok) {
+                                const text = await checkResponse.text();
+                                console.log('checkResponse text:', text);
+                                const exists = text === "Chat exists in user's private chats";
+                                if (exists) {
+                                    navigate(`/private-chat/${chatId}`);
+                                    toast.success('Navigating to chat!');
+                                } else {
+                                    console.error('Unexpected response for OK status:', text);
+                                    toast.error('Unexpected server response');
+                                }
+                            } else if (checkResponse.status === 404) {
+                                console.log('Чат не существует у текущего пользователя, добавляем его');
+                                const addResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`, {
+                                    method: 'POST',
+                                });
+                                console.log('addResponse status:', addResponse.status, 'text:', await addResponse.text());
+
+                                if (addResponse.ok) {
+                                    navigate(`/private-chat/${chatId}`);
+                                    toast.success('Navigating to chat!');
+                                } else {
+                                    toast.error('Failed to add chat to user');
+                                }
+                            } else {
+                                console.log('checkResponse error text:', await checkResponse.text());
+                                toast.error('Error checking chat existence');
+                            }
+                        } catch (error) {
+                            console.error('Error handling notification click:', error);
+                            toast.error('Failed to process notification');
+                        }
+                    },
+                });
+
+                setShouldRefreshChats(true);
+            } else {
+                console.error("chatId не найден в уведомлении");
+                toast.error('Invalid notification format');
+            }
+        };
+    }, [userInteracted, currentUserId, navigate]);
 
     return (
         <div className="personal-chats-container" onClick={closeContextMenu}>
@@ -261,16 +279,17 @@ const PersonalChats = () => {
                     const partnerName = getChatPartnerName(chat.name);
 
                     return (
-                        <li key={chat.id} onClick={() => handleChatClick(chat.id)}
+                        <li
+                            key={chat.id}
+                            onClick={() => handleChatClick(chat.id)}
                             onContextMenu={(event) => handleContextMenu(event, chat.id)}
-                            className="chat-item1">
+                            className="chat-item1"
+                        >
                             <div className="chat-avatar-container">
                                 {avatarSrc ? (
                                     <img src={avatarSrc} alt={`${partnerName} avatar`} className="chat-avatar" />
                                 ) : (
-                                    <div className="chat-avatar">
-                                        {initials}
-                                    </div>
+                                    <div className="chat-avatar">{initials}</div>
                                 )}
                                 {usersStatus[partner.id]?.online && (
                                     <span className="chat-status-indicator-online"></span>
@@ -296,10 +315,7 @@ const PersonalChats = () => {
             </ul>
 
             {contextMenu.visible && (
-                <div
-                    className="context-menu"
-                    style={{ top: contextMenu.y, left: contextMenu.x }}
-                >
+                <div className="context-menu" style={{ top: contextMenu.y, left: contextMenu.x }}>
                     <button onClick={handleDeleteChat}>Delete chat</button>
                 </div>
             )}
