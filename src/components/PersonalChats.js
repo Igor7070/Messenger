@@ -25,7 +25,7 @@ const PersonalChats = () => {
     const currentUserId = userId;
     const { usersStatus } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
-    const { setCurrentUserId: setNotificationUserId, setCurrentChatId, setNavigate } = usePrivateMessageNotification();
+    const { setCurrentUserId: setNotificationUserId, setCurrentChatId, setNavigate, setRefreshChatsCallback } = usePrivateMessageNotification();
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -43,19 +43,25 @@ const PersonalChats = () => {
         }
     };
 
-    // Синхронизация currentUserId, currentChatId и navigate с контекстом
+    // Синхронизация currentUserId, currentChatId, navigate и refreshChatsCallback
     useEffect(() => {
         if (currentUserId) {
-            setContextUserId(currentUserId); // Устанавливаем userId в CallWebSocketContext
-            setNotificationUserId(currentUserId); // Устанавливаем userId в PrivateMessageNotificationContext
-            setCurrentChatId(null); // Устанавливаем currentChatId в null
-            setNavigate(() => navigate); // Устанавливаем функцию navigate
+            setContextUserId(currentUserId);
+            setNotificationUserId(currentUserId);
+            setCurrentChatId(null);
+            setNavigate(() => navigate);
+            setRefreshChatsCallback(() => (chatId) => {
+                if (chatId) {
+                    setShouldRefreshChats(true);
+                }
+            });
         }
 
         return () => {
-            setCurrentChatId(null); // Сбрасываем currentChatId при размонтировании
+            setCurrentChatId(null);
+            setRefreshChatsCallback(null); // Сбрасываем callback при размонтировании
         };
-    }, [currentUserId, setContextUserId, setNotificationUserId, setCurrentChatId, navigate, setNavigate]);
+    }, [currentUserId, setContextUserId, setNotificationUserId, setCurrentChatId, navigate, setNavigate, setRefreshChatsCallback]);
 
     // Обработка клика для userInteracted
     useEffect(() => {
