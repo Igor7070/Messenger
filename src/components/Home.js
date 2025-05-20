@@ -6,7 +6,7 @@ import '../styles/Home.css';
 import { getMessages, createChat, createUser, loginUser } from '../api/messages';
 import IncomingCallNotification from './IncomingCallNotification';
 import SockJS from 'sockjs-client';
-import { Clientлана } from '@stomp/stompjs';
+import { Client } from '@stomp/stompjs'; // Исправлен импорт: Clientлана → Client
 import { useUserInteraction } from '../context/UserInteractionContext';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
