@@ -9,8 +9,7 @@ const PrivateMessageNotificationContext = createContext();
 export const PrivateMessageNotificationProvider = ({ children }) => {
     const { userInteracted } = useUserInteraction();
     const [currentUserId, setCurrentUserId] = useState(null);
-    const [currentChatId, setCurrentChatId] = useState(null);
-    const [navigate, setNavigate] = useState(null); // Состояние для функции navigate
+    const [currentChatId, setCurrentChatId] = useState(null); // Новое состояние для текущего chatId
     const messageAudioRef = useRef(null);
     const stompClientRef = useRef(null);
 
@@ -35,8 +34,8 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                     const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
                     const chatId = chatIdMatch ? chatIdMatch[1] : null;
 
-                    // Показываем уведомление, если нет текущего чата или сообщение из другого чата
-                    if (!currentChatId || (chatId && chatId !== currentChatId)) {
+                    // Показываем уведомление только если сообщение из другого чата
+                    if (chatId && chatId !== currentChatId) {
                         if (userInteracted && messageAudioRef.current) {
                             console.log('Attempting to play message audio');
                             messageAudioRef.current.play()
@@ -58,7 +57,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                                     messageAudioRef.current.currentTime = 0;
                                 }
 
-                                if (chatId && navigate) {
+                                if (chatId) {
                                     try {
                                         const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
                                         console.log('checkResponse status:', checkResponse.status);
@@ -68,7 +67,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                                             console.log('checkResponse text:', text);
                                             const exists = text === "Chat exists in user's private chats";
                                             if (exists) {
-                                                navigate(`/private-chat/${chatId}`);
+                                                window.location.href = `/Messenger/#/private-chat/${chatId}`;
                                                 toast.success('Navigating to chat!');
                                             } else {
                                                 console.error('Unexpected response for OK status:', text);
@@ -82,7 +81,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                                             console.log('addResponse status:', addResponse.status, 'text:', await addResponse.text());
 
                                             if (addResponse.ok) {
-                                                navigate(`/private-chat/${chatId}`);
+                                                window.location.href = `/Messenger/#/private-chat/${chatId}`;
                                                 toast.success('Navigating to chat!');
                                             } else {
                                                 toast.error('Failed to add chat to user');
@@ -96,7 +95,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                                         toast.error('Failed to process notification');
                                     }
                                 } else {
-                                    console.error('chatId не найден в уведомлении или navigate не установлен');
+                                    console.error('chatId не найден в уведомлении');
                                     toast.error('Invalid notification format');
                                 }
                             },
@@ -121,10 +120,10 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                 console.log('WebSocket для уведомлений личных чатов отключён');
             }
         };
-    }, [currentUserId, userInteracted, currentChatId, navigate]);
+    }, [currentUserId, userInteracted, currentChatId]);
 
     return (
-        <PrivateMessageNotificationContext.Provider value={{ setCurrentUserId, setCurrentChatId, setNavigate }}>
+        <PrivateMessageNotificationContext.Provider value={{ setCurrentUserId, setCurrentChatId }}>
             <audio ref={messageAudioRef}>
                 <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
