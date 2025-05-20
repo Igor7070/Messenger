@@ -11,7 +11,8 @@ import IncomingCallNotification from './IncomingCallNotification';
 import { useUserInteraction } from './UserInteractionContext';
 import { format, isToday, parseISO } from 'date-fns';
 import { useUserStatusContext } from '../context/UserStatusContext';
-import { useCallWebSocket } from '../context/CallWebSocketContext'; // Новый импорт
+import { useCallWebSocket } from '../context/CallWebSocketContext';
+import { usePrivateMessageNotification } from './PrivateMessageNotificationContext'; // Новый импорт
 
 const PrivateChat = () => {
     const [messages, setMessages] = useState([]);
@@ -33,6 +34,7 @@ const PrivateChat = () => {
     const { userInteracted, handleInteraction } = useUserInteraction();
     const { usersStatus } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
+    const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification(); // Используем контекст уведомлений
     const [currentUserId, setCurrentUserId] = useState(null);
 
     // Функция прокрутки к последнему сообщению
@@ -59,6 +61,7 @@ const PrivateChat = () => {
                 const interlocutorName = names.find(name => name !== username);
                 setDisplayChatName(`Chat with ${interlocutorName}`);
                 setChatId(chatIdParam);
+                setCurrentChatId(chatIdParam); // Устанавливаем текущий chatId для уведомлений
 
                 const initialMessages = await getMessages(chatIdParam);
                 const updatedMessages = initialMessages.map(msg => ({
@@ -79,9 +82,14 @@ const PrivateChat = () => {
         if (storedUserId) {
             const userIdNum = Number(storedUserId);
             setCurrentUserId(userIdNum);
-            setContextUserId(userIdNum); // Синхронизируем с контекстом
+            setContextUserId(userIdNum); // Синхронизируем с CallWebSocketContext
+            setNotificationUserId(userIdNum); // Синхронизируем с PrivateMessageNotificationContext
         }
-    }, [chatIdParam, username, setContextUserId]);
+
+        return () => {
+            setCurrentChatId(null); // Сбрасываем currentChatId при размонтировании
+        };
+    }, [chatIdParam, username, setContextUserId, setNotificationUserId, setCurrentChatId]);
 
     useEffect(() => {
         if (!chatId) return;
@@ -96,24 +104,6 @@ const PrivateChat = () => {
                     console.log('NewMessage: ', newMessage);
                     updateMessages(newMessage);
                 });
-
-                stompClientInstance.subscribe(`/topic/notifications/${userId}`, (message) => {
-                    const notification = message.body;
-                    console.log("Received notification:", notification);
-
-                    const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
-                    const notificationChatId = chatIdMatch ? chatIdMatch[1] : null;
-
-                    if (notificationChatId && notificationChatId !== chatId) {
-                        const toastId = toast.info(`Новое сообщение от: ${notification}`, {
-                            autoClose: false,
-                            onClick: () => {
-                                navigate(`/private-chat/${notificationChatId}`);
-                                toast.dismiss(toastId);
-                            },
-                        });
-                    }
-                });
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
@@ -126,7 +116,7 @@ const PrivateChat = () => {
         return () => {
             stompClientInstance.deactivate();
         };
-    }, [chatId, userId, navigate]);
+    }, [chatId]);
 
     useEffect(() => {
         const interval = setInterval(() => {

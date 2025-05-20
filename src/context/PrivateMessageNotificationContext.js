@@ -9,6 +9,7 @@ const PrivateMessageNotificationContext = createContext();
 export const PrivateMessageNotificationProvider = ({ children }) => {
     const { userInteracted } = useUserInteraction();
     const [currentUserId, setCurrentUserId] = useState(null);
+    const [currentChatId, setCurrentChatId] = useState(null); // Новое состояние для текущего chatId
     const messageAudioRef = useRef(null);
     const stompClientRef = useRef(null);
 
@@ -33,70 +34,73 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                     const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
                     const chatId = chatIdMatch ? chatIdMatch[1] : null;
 
-                    if (userInteracted && messageAudioRef.current) {
-                        console.log('Attempting to play message audio');
-                        messageAudioRef.current.play()
-                            .then(() => console.log('Message audio played successfully'))
-                            .catch(error => {
-                                console.error('Failed to play message audio:', error);
-                                toast.warn('Please interact with the page to enable notification sounds.');
-                            });
-                    } else {
-                        console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef, 'messageAudioRef.current =', messageAudioRef?.current);
-                    }
+                    // Показываем уведомление только если сообщение из другого чата
+                    if (chatId && chatId !== currentChatId) {
+                        if (userInteracted && messageAudioRef.current) {
+                            console.log('Attempting to play message audio');
+                            messageAudioRef.current.play()
+                                .then(() => console.log('Message audio played successfully'))
+                                .catch(error => {
+                                    console.error('Failed to play message audio:', error);
+                                    toast.warn('Please interact with the page to enable notification sounds.');
+                                });
+                        } else {
+                            console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef, 'messageAudioRef.current =', messageAudioRef?.current);
+                        }
 
-                    toast.info(notification, {
-                        autoClose: false,
-                        onClick: async () => {
-                            if (messageAudioRef.current) {
-                                console.log('Pausing message audio on toast click');
-                                messageAudioRef.current.pause();
-                                messageAudioRef.current.currentTime = 0;
-                            }
-
-                            if (chatId) {
-                                try {
-                                    const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
-                                    console.log('checkResponse status:', checkResponse.status);
-
-                                    if (checkResponse.ok) {
-                                        const text = await checkResponse.text();
-                                        console.log('checkResponse text:', text);
-                                        const exists = text === "Chat exists in user's private chats";
-                                        if (exists) {
-                                            window.location.href = `/Messenger/#/private-chat/${chatId}`;
-                                            toast.success('Navigating to chat!');
-                                        } else {
-                                            console.error('Unexpected response for OK status:', text);
-                                            toast.error('Unexpected server response');
-                                        }
-                                    } else if (checkResponse.status === 404) {
-                                        console.log('Чат не существует у текущего пользователя, добавляем его');
-                                        const addResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`, {
-                                            method: 'POST',
-                                        });
-                                        console.log('addResponse status:', addResponse.status, 'text:', await addResponse.text());
-
-                                        if (addResponse.ok) {
-                                            window.location.href = `/Messenger/#/private-chat/${chatId}`;
-                                            toast.success('Navigating to chat!');
-                                        } else {
-                                            toast.error('Failed to add chat to user');
-                                        }
-                                    } else {
-                                        console.log('checkResponse error text:', await checkResponse.text());
-                                        toast.error('Error checking chat existence');
-                                    }
-                                } catch (error) {
-                                    console.error('Error handling notification click:', error);
-                                    toast.error('Failed to process notification');
+                        toast.info(notification, {
+                            autoClose: false,
+                            onClick: async () => {
+                                if (messageAudioRef.current) {
+                                    console.log('Pausing message audio on toast click');
+                                    messageAudioRef.current.pause();
+                                    messageAudioRef.current.currentTime = 0;
                                 }
-                            } else {
-                                console.error('chatId не найден в уведомлении');
-                                toast.error('Invalid notification format');
-                            }
-                        },
-                    });
+
+                                if (chatId) {
+                                    try {
+                                        const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
+                                        console.log('checkResponse status:', checkResponse.status);
+
+                                        if (checkResponse.ok) {
+                                            const text = await checkResponse.text();
+                                            console.log('checkResponse text:', text);
+                                            const exists = text === "Chat exists in user's private chats";
+                                            if (exists) {
+                                                window.location.href = `/Messenger/#/private-chat/${chatId}`;
+                                                toast.success('Navigating to chat!');
+                                            } else {
+                                                console.error('Unexpected response for OK status:', text);
+                                                toast.error('Unexpected server response');
+                                            }
+                                        } else if (checkResponse.status === 404) {
+                                            console.log('Чат не существует у текущего пользователя, добавляем его');
+                                            const addResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`, {
+                                                method: 'POST',
+                                            });
+                                            console.log('addResponse status:', addResponse.status, 'text:', await addResponse.text());
+
+                                            if (addResponse.ok) {
+                                                window.location.href = `/Messenger/#/private-chat/${chatId}`;
+                                                toast.success('Navigating to chat!');
+                                            } else {
+                                                toast.error('Failed to add chat to user');
+                                            }
+                                        } else {
+                                            console.log('checkResponse error text:', await checkResponse.text());
+                                            toast.error('Error checking chat existence');
+                                        }
+                                    } catch (error) {
+                                        console.error('Error handling notification click:', error);
+                                        toast.error('Failed to process notification');
+                                    }
+                                } else {
+                                    console.error('chatId не найден в уведомлении');
+                                    toast.error('Invalid notification format');
+                                }
+                            },
+                        });
+                    }
                 });
             },
             onWebSocketError: (error) => {
@@ -116,10 +120,10 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                 console.log('WebSocket для уведомлений личных чатов отключён');
             }
         };
-    }, [currentUserId, userInteracted]);
+    }, [currentUserId, userInteracted, currentChatId]);
 
     return (
-        <PrivateMessageNotificationContext.Provider value={{ setCurrentUserId }}>
+        <PrivateMessageNotificationContext.Provider value={{ setCurrentUserId, setCurrentChatId }}>
             <audio ref={messageAudioRef}>
                 <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
                 Ваш браузер не поддерживает аудио.
