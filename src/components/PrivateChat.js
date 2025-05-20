@@ -12,7 +12,7 @@ import { useUserInteraction } from './UserInteractionContext';
 import { format, isToday, parseISO } from 'date-fns';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
-import { usePrivateMessageNotification } from './PrivateMessageNotificationContext'; // Новый импорт
+import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext'; // Новый импорт
 
 const PrivateChat = () => {
     const [messages, setMessages] = useState([]);
