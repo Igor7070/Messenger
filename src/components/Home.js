@@ -6,7 +6,7 @@ import '../styles/Home.css';
 import { getMessages, createChat, createUser, loginUser } from '../api/messages';
 import IncomingCallNotification from './IncomingCallNotification';
 import SockJS from 'sockjs-client';
-import { Client } from '@stomp/stompjs';
+import { Clientлана } from '@stomp/stompjs';
 import { useUserInteraction } from '../context/UserInteractionContext';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
@@ -34,7 +34,7 @@ const Home = () => {
     const { userInteracted, handleInteraction } = useUserInteraction();
     const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
-    const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification();
+    const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification();
 
     console.log('Rendering Home, usersStatus:', usersStatus); // Отладка
 
@@ -154,7 +154,9 @@ const Home = () => {
         }
         fetchChats();
         fetchUsers();
-    }, [setContextUserId, setNotificationUserId]);
+        // Сбрасываем currentChatId при загрузке Home
+        setCurrentChatId(null);
+    }, [setContextUserId, setNotificationUserId, setCurrentChatId]);
 
     // Подписка на сообщения
     useEffect(() => {
@@ -165,18 +167,18 @@ const Home = () => {
 
         let isMounted = true;
 
-        console.log('Инициализация WebSocket для сообщений, чаты:', chats);
+        console.log('Инициализация WebSocket для сообщений, чаты:', chats, 'Timestamp:', Date.now());
         const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
         messageClient.current = new Client({
             webSocketFactory: () => socket,
             connectTimeout: 20000,
             onConnect: () => {
                 if (!isMounted) return;
-                console.log('Подключено к WebSocket для сообщений в Home.js');
+                console.log('Подключено к WebSocket для сообщений в Home.js, Timestamp:', Date.now());
                 chats
                     .filter((chat) => !chat.private)
                     .forEach((chat) => {
-                        console.log(`Подписываемся на /topic/chat/${chat.id}/messages`);
+                        console.log(`Подписываемся на /topic/chat/${chat.id}/messages, Timestamp:`, Date.now());
                         messageClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
                             console.log(`Получено сообщение для чата ${chat.id}:`, message.body);
                             const newMessage = JSON.parse(message.body);
@@ -233,6 +235,13 @@ const Home = () => {
                 console.log('Обновлены чаты:', updatedChats);
                 return [...updatedChats];
             });
+
+            // Воспроизведение звука для групповых чатов
+            if (messageAudioRef.current && userInteracted) {
+                messageAudioRef.current.play().catch((error) => {
+                    console.error('Ошибка воспроизведения звука уведомления:', error);
+                });
+            }
         } catch (error) {
             console.error('Ошибка обработки нового сообщения:', error);
             toast.error('Error updating messages', {
@@ -271,6 +280,7 @@ const Home = () => {
         setCurrentUserId(null);
         setContextUserId(null); // Сбрасываем в CallWebSocketContext
         setNotificationUserId(null); // Сбрасываем в PrivateMessageNotificationContext
+        setCurrentChatId(null); // Сбрасываем currentChatId
         setIsLoggedIn(false);
         toast.success('Logged out successfully!', {
             toastId: `success-logout-${Date.now()}`,
@@ -345,6 +355,7 @@ const Home = () => {
             console.log(`Unauthorized user attempted to access group chat: ${chatId}`);
             return;
         }
+        setCurrentChatId(chatId); // Устанавливаем текущий чат
         navigate(`/chat/${chatId}`);
     };
 
