@@ -47,12 +47,12 @@ const Home = () => {
     };
   }, [handleInteraction]);
 
-  //useEffect(() => {
+  useEffect(() => {
     // Сброс всех тостов и тестовый тост
-    //toast.dismiss(); // Очищаем очередь тостов
-    //console.log('Testing toast rendering in Home');
+    toast.dismiss(); // Очищаем очередь тостов
+    console.log('Testing toast rendering in Home');
     //toast.info('Test toast in Home', { toastId: 'test-home', autoClose: 3000 });
-  //}, []);
+  }, []);
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
