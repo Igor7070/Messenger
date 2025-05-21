@@ -103,6 +103,13 @@
   background-color: #d9363e;
 }
 
+.Toastify__toast-container {
+  z-index: 9999 !important;
+  position: fixed !important;
+  top: 10px !important;
+  right: 10px !important;
+}
+
 /* Адаптивность для маленьких экранов */
 @media (max-width: 600px) {
   .video-call-container {
