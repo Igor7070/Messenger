@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom'; // Добавляем useNavigate
+import { useNavigate } from 'react-router-dom';
 import { useUserInteraction } from './UserInteractionContext';
 
 const PrivateMessageNotificationContext = createContext();
@@ -13,7 +13,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
   const [currentChatId, setCurrentChatId] = useState(null);
   const messageAudioRef = useRef(null);
   const stompClientRef = useRef(null);
-  const navigate = useNavigate(); // Инициализируем navigate
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!currentUserId) {
@@ -26,8 +26,8 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
 
     const stompClient = new Client({
       webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
-      connectTimeout: 20000,
-      reconnectDelay: 5000, // Добавляем повторное подключение через 5 секунд
+      connectTimeout: 30000,
+      reconnectDelay: 5000,
       onConnect: () => {
         console.log('Connected to WebSocket for private chat notifications');
 
@@ -45,15 +45,16 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                 .then(() => console.log('Message audio played successfully'))
                 .catch((error) => {
                   console.error('Failed to play message audio:', error);
-                  toast.warn('Please interact with the page to enable notification sounds.');
+                  toast.warn('Пожалуйста, взаимодействуйте со страницей, чтобы включить звук уведомлений.');
                 });
             } else {
               console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef?.current);
             }
 
+            const toastId = `private-message-${chatId}-${Date.now()}`;
             toast.info(notification, {
               autoClose: false,
-              toastId: `private-message-${chatId}-${Date.now()}`, // Уникальный ID для тоста
+              toastId,
               onClick: async () => {
                 if (messageAudioRef.current) {
                   console.log('Pausing message audio on toast click');
@@ -63,7 +64,9 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
 
                 if (chatId) {
                   try {
-                    const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
+                    const checkResponse = await fetch(
+                      `https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`
+                    );
                     console.log('checkResponse status:', checkResponse.status);
 
                     if (checkResponse.ok) {
@@ -71,37 +74,45 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                       console.log('checkResponse text:', text);
                       const exists = text === "Chat exists in user's private chats";
                       if (exists) {
-                        navigate(`/private-chat/${chatId}`); // Используем navigate вместо window.location.href
-                        toast.success('Navigating to chat!');
+                        toast.dismiss(toastId);
+                        navigate(`/private-chat/${chatId}`);
+                        toast.success('Переход в чат!');
                       } else {
                         console.error('Unexpected response for OK status:', text);
-                        toast.error('Unexpected server response');
+                        toast.error('Непредвиденный ответ сервера');
                       }
                     } else if (checkResponse.status === 404) {
                       console.log('Чат не существует у текущего пользователя, добавляем его');
-                      const addResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`, {
-                        method: 'POST',
-                      });
+                      const addResponse = await fetch(
+                        `https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`,
+                        {
+                          method: 'POST',
+                        }
+                      );
                       console.log('addResponse status:', addResponse.status, 'text:', await addResponse.text());
 
                       if (addResponse.ok) {
-                        navigate(`/private-chat/${chatId}`); // Используем navigate
-                        toast.success('Navigating to chat!');
+                        toast.dismiss(toastId);
+                        navigate(`/private-chat/${chatId}`);
+                        toast.success('Переход в чат!');
                       } else {
-                        toast.error('Failed to add chat to user');
+                        toast.error('Не удалось добавить чат пользователю');
                       }
                     } else {
                       console.log('checkResponse error text:', await checkResponse.text());
-                      toast.error('Error checking chat existence');
+                      toast.error('Ошибка проверки существования чата');
                     }
                   } catch (error) {
                     console.error('Error handling notification click:', error);
-                    toast.error('Failed to process notification');
+                    toast.error('Не удалось обработать уведомление');
                   }
                 } else {
                   console.error('chatId не найден в уведомлении');
-                  toast.error('Invalid notification format');
+                  toast.error('Неверный формат уведомления');
                 }
+              },
+              onClose: () => {
+                console.log('Toast closed:', toastId);
               },
             });
           }
@@ -109,11 +120,11 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
       },
       onWebSocketError: (error) => {
         console.error('WebSocket error:', error);
-        toast.error('WebSocket connection error');
+        toast.error('Ошибка соединения WebSocket');
       },
       onStompError: (frame) => {
         console.error('STOMP error:', frame);
-        toast.error('STOMP protocol error');
+        toast.error('Ошибка протокола STOMP');
       },
     });
 

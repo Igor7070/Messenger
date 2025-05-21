@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { HashRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css'; // Импорт стилей для react-toastify
+import 'react-toastify/dist/ReactToastify.css';
 import Home from './Home';
 import Messenger from './Messenger';
 import UserProfile from './UserProfile';
@@ -16,7 +16,6 @@ import { CallWebSocketProvider } from '../context/CallWebSocketContext';
 import { PrivateMessageNotificationProvider } from '../context/PrivateMessageNotificationContext';
 import '../styles/App.css';
 
-// Компонент ErrorBoundary для обработки ошибок рендеринга
 class ErrorBoundary extends React.Component {
   state = { hasError: false };
 
@@ -26,6 +25,7 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary caught:', error, errorInfo);
+    console.log('Error details:', error.message, error.stack);
   }
 
   render() {
@@ -40,6 +40,7 @@ const AppContent = () => {
   const { initializeWebSocket } = useUserStatusContext();
 
   useEffect(() => {
+    console.log('Rendering AppContent');
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username');
     if (userId && username) {
@@ -66,23 +67,27 @@ const AppContent = () => {
         position="top-right"
         autoClose={5000}
         hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
+        newestOnTop={true}
+        closeOnClick={false}
         rtl={false}
         pauseOnFocusLoss
         draggable
         pauseOnHover
+        limit={3}
+        enableMultiContainer={false}
       />
       <ErrorBoundary>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/chat/:chatId" element={<Messenger />} />
-          <Route path="/user/:userId" element={<UserProfile />} />
-          <Route path="/private-chat/:chatId" element={<PrivateChat />} />
-          <Route path="/voice-call/:roomId" element={<VoiceCall />} />
-          <Route path="/video-call/:roomId" element={<VideoCall />} />
-          <Route path="/user/:userId/personal-chats" element={<PersonalChats />} />
-        </Routes>
+        <PrivateMessageNotificationProvider>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/chat/:chatId" element={<Messenger />} />
+            <Route path="/user/:userId" element={<UserProfile />} />
+            <Route path="/private-chat/:chatId" element={<PrivateChat />} />
+            <Route path="/voice-call/:roomId" element={<VoiceCall />} />
+            <Route path="/video-call/:roomId" element={<VideoCall />} />
+            <Route path="/user/:userId/personal-chats" element={<PersonalChats />} />
+          </Routes>
+        </PrivateMessageNotificationProvider>
       </ErrorBoundary>
     </div>
   );
@@ -94,11 +99,9 @@ const App = () => {
       <NotificationProvider>
         <UserStatusProvider>
           <CallWebSocketProvider>
-            <PrivateMessageNotificationProvider>
-              <Router>
-                <AppContent />
-              </Router>
-            </PrivateMessageNotificationProvider>
+            <Router>
+              <AppContent />
+            </Router>
           </CallWebSocketProvider>
         </UserStatusProvider>
       </NotificationProvider>
