@@ -78,12 +78,12 @@ const Messenger = () => {
         navigate(`/user/${senderId}`);
     };
 
-    useEffect(() => {
+    //useEffect(() => {
         // Сброс всех тостов и тестовый тост
-        toast.dismiss(); // Очищаем очередь тостов
-        console.log('Testing toast rendering in Messenger');
+        //toast.dismiss(); // Очищаем очередь тостов
+        //console.log('Testing toast rendering in Messenger');
         //toast.info('Test toast in Messenger', { toastId: 'test-messenger', autoClose: 3000 });
-    }, []);
+    //}, []);
 
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
