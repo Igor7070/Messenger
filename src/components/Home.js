@@ -29,7 +29,6 @@ const Home = () => {
   const [loginPassword, setLoginPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const messageClient = useRef(null);
-  const messageAudioRef = useRef(null);
   const navigate = useNavigate();
   const { userInteracted, handleInteraction } = useUserInteraction();
   const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
@@ -48,6 +47,12 @@ const Home = () => {
     };
   }, [handleInteraction]);
 
+  useEffect(() => {
+    // Тестовый тост для проверки рендеринга
+    console.log('Testing toast rendering in Home');
+    toast.info('Test toast in Home', { toastId: 'test-home', autoClose: 3000 });
+  }, []);
+
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
     try {
@@ -58,7 +63,7 @@ const Home = () => {
       }
       return format(kievDate, 'dd.MM.yy');
     } catch (error) {
-      console.error('Ошибка форматирования временной метки:', error);
+      console.error('Error formatting timestamp:', error);
       return '';
     }
   };
@@ -70,7 +75,7 @@ const Home = () => {
 
   const fetchChats = async () => {
     try {
-      console.log('Запрашиваем чаты...');
+      console.log('Fetching chats...');
       const response = await fetch('https://unlimitedpossibilities12.org/api/chats');
       if (response.ok) {
         const data = await response.json();
@@ -87,14 +92,14 @@ const Home = () => {
             };
           })
         );
-        console.log('Чаты загружены:', chatsWithMessages);
+        console.log('Chats loaded:', chatsWithMessages);
         setChats(chatsWithMessages);
       } else {
-        toast.error('Не удалось загрузить чаты');
+        toast.error('Failed to fetch chats');
       }
     } catch (error) {
-      console.error('Ошибка при загрузке чатов:', error);
-      toast.error('Ошибка загрузки чатов');
+      console.error('Error fetching chats:', error);
+      toast.error('Error fetching chats');
     }
   };
 
@@ -107,25 +112,25 @@ const Home = () => {
       const lastVisitTime = new Date(lastVisit).getTime();
       return messages.filter((msg) => new Date(msg.timestamp).getTime() > lastVisitTime).length;
     } catch (error) {
-      console.error('Ошибка при разборе времени последнего визита:', error);
+      console.error('Error parsing last visit time:', error);
       return 0;
     }
   };
 
   const fetchUsers = async () => {
     try {
-      console.log('Запрашиваем пользователей...');
+      console.log('Fetching users...');
       const response = await fetch('https://unlimitedpossibilities12.org/api/users');
       if (response.ok) {
         const data = await response.json();
-        console.log('Пользователи загружены:', data);
+        console.log('Users loaded:', data);
         setUsers(data);
       } else {
-        toast.error('Не удалось загрузить пользователей');
+        toast.error('Failed to fetch users');
       }
     } catch (error) {
-      console.error('Ошибка при загрузке пользователей:', error);
-      toast.error('Ошибка загрузки пользователей');
+      console.error('Error fetching users:', error);
+      toast.error('Error fetching users');
     }
   };
 
@@ -145,13 +150,13 @@ const Home = () => {
 
   useEffect(() => {
     if (!currentUserId || chats.length === 0) {
-      console.log('Пропускаем подписку: нет пользователя или чатов');
+      console.log('Skipping subscription: no user or chats');
       return;
     }
 
     let isMounted = true;
 
-    console.log('Инициализация WebSocket для сообщений, чаты:', chats);
+    console.log('Initializing WebSocket for messages, chats:', chats);
     const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
     messageClient.current = new Client({
       webSocketFactory: () => socket,
@@ -161,24 +166,24 @@ const Home = () => {
       heartbeatOutgoing: 4000,
       onConnect: () => {
         if (!isMounted) return;
-        console.log('Подключено к WebSocket для сообщений в Home.js');
+        console.log('Connected to WebSocket for messages in Home.js');
         chats
           .filter((chat) => !chat.private)
           .forEach((chat) => {
-            console.log(`Подписываемся на /topic/chat/${chat.id}/messages`);
+            console.log(`Subscribing to /topic/chat/${chat.id}/messages`);
             messageClient.current.subscribe(`/topic/chat/${chat.id}/messages`, (message) => {
-              console.log(`Получено сообщение для чата ${chat.id}:`, message.body);
+              console.log(`Received message for chat ${chat.id}:`, message.body);
               const newMessage = JSON.parse(message.body);
               handleNewMessage(newMessage, chat.id);
             });
           });
       },
       onWebSocketError: (error) => {
-        console.error('Ошибка WebSocket для сообщений:', error);
+        console.error('WebSocket error for messages:', error);
       },
       onStompError: (frame) => {
         console.error('STOMP error:', frame);
-        toast.error('Ошибка протокола STOMP');
+        toast.error('STOMP protocol error');
       },
       onDisconnect: () => {
         console.log('WebSocket disconnected in Home');
@@ -196,23 +201,23 @@ const Home = () => {
   }, [currentUserId, chats]);
 
   const handleNewMessage = async (message, chatId) => {
-    console.log('Обработка нового сообщения:', message, 'для chatId:', chatId);
+    console.log('Handling new message:', message, 'for chatId:', chatId);
     try {
       const chat = chats.find((c) => c.id === chatId);
       if (!chat) {
-        console.log('Чат не найден в состоянии chats:', chatId, 'Chats:', chats);
+        console.log('Chat not found in chats state:', chatId, 'Chats:', chats);
         return;
       }
       if (chat.private) {
-        console.log('Сообщение для приватного чата, игнорируем:', chatId);
+        console.log('Message for private chat, ignoring:', chatId);
         return;
       }
 
       const messages = await getMessages(chatId);
-      console.log('Загружены сообщения для чата', chatId, messages);
+      console.log('Loaded messages for chat', chatId, messages);
       const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
       const unreadCount = calculateUnreadCount(messages, chatId);
-      console.log('Рассчитан unreadCount:', unreadCount);
+      console.log('Calculated unreadCount:', unreadCount);
 
       setChats((prevChats) => {
         const updatedChats = prevChats.map((chat) =>
@@ -225,12 +230,12 @@ const Home = () => {
               }
             : chat
         );
-        console.log('Обновлены чаты:', updatedChats);
+        console.log('Updated chats:', updatedChats);
         return [...updatedChats];
       });
     } catch (error) {
-      console.error('Ошибка обработки нового сообщения:', error);
-      toast.error('Ошибка обновления сообщений');
+      console.error('Error handling new message:', error);
+      toast.error('Error updating messages');
     }
   };
 
@@ -247,9 +252,9 @@ const Home = () => {
       setLoginPassword('');
       setIsLoggedIn(true);
       initializeWebSocket(userId, user.username);
-      toast.success('Вход выполнен успешно!');
+      toast.success('Login successful!');
     } catch (error) {
-      toast.error(error.message || 'Ошибка входа');
+      toast.error(error.message || 'Error logging in');
     }
   };
 
@@ -261,7 +266,7 @@ const Home = () => {
     setContextUserId(null);
     setNotificationUserId(null);
     setIsLoggedIn(false);
-    toast.success('Выход выполнен успешно!');
+    toast.success('Logged out successfully!');
   };
 
   const createChatHandler = async () => {
@@ -270,12 +275,12 @@ const Home = () => {
         const newChat = await createChat({ name: chatName, private: false });
         setChats([...chats, { ...newChat, lastMessage: null, timestamp: null, unreadCount: 0 }]);
         setChatName('');
-        toast.success('Чат успешно создан!');
+        toast.success('Chat created successfully!');
       } catch (error) {
-        toast.error(error.message || 'Ошибка создания чата');
+        toast.error(error.message || 'Error creating chat');
       }
     } else {
-      toast.error('Название чата не может быть пустым');
+      toast.error('Chat name cannot be empty');
     }
   };
 
@@ -302,19 +307,19 @@ const Home = () => {
         setPassword('');
         setBio('');
         setAvatar(null);
-        toast.success('Пользователь успешно создан!');
+        toast.success('User created successfully!');
       } else {
         const errorMessage = await response.text();
         toast.error(errorMessage);
       }
     } catch (error) {
-      toast.error('Ошибка создания пользователя');
+      toast.error('Error creating user');
     }
   };
 
   const goToChat = (chatId) => {
     if (!isLoggedIn || currentUserId === null) {
-      toast.error('Необходимо создать аккаунт или войти');
+      toast.error('You need to create an account or log in');
       console.log(`Unauthorized user attempted to access group chat: ${chatId}`);
       return;
     }
@@ -342,7 +347,7 @@ const Home = () => {
       <div className="login-container-home">
         {isLoggedIn ? (
           <button onClick={logoutUser} className="logout-button-home">
-            Выйти
+            Logout
           </button>
         ) : (
           <>
@@ -350,27 +355,22 @@ const Home = () => {
               type="text"
               value={loginUsername}
               onChange={(e) => setLoginUsername(e.target.value)}
-              placeholder="Имя пользователя"
+              placeholder="Username"
               className="login-input-home"
             />
             <input
               type="password"
               value={loginPassword}
               onChange={(e) => setLoginPassword(e.target.value)}
-              placeholder="Пароль"
+              placeholder="Password"
               className="login-input-home"
             />
             <button onClick={loginUserHandler} className="login-button-home">
-              Войти
+              Login
             </button>
           </>
         )}
       </div>
-
-      <audio ref={messageAudioRef}>
-        <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
-        Ваш браузер не поддерживает аудио.
-      </audio>
 
       {incomingCall && (
         <IncomingCallNotification
@@ -385,15 +385,15 @@ const Home = () => {
 
       <div className="line-divider-container">
         <div className="users-container">
-          <h2 className="home-users-h2">Пользователи</h2>
+          <h2 className="home-users-h2">Users</h2>
           <button type="button" onClick={openModal} className="create-user-button-main">
-            Создать нового пользователя
+            Create a new user
           </button>
           <input
             type="text"
             value={userSearchTerm}
             onChange={(e) => setUserSearchTerm(e.target.value)}
-            placeholder="Поиск пользователя"
+            placeholder="Search user"
             className="search-input"
           />
           <ul className="user-list">
@@ -436,24 +436,24 @@ const Home = () => {
         <div className="line-divider"></div>
 
         <div className="chats-container">
-          <h1 className="home-group-chats-h1">Групповые чаты</h1>
+          <h1 className="home-group-chats-h1">Group chats</h1>
           <div className="chat-input-container">
             <input
               type="text"
               value={chatName}
               onChange={(e) => setChatName(e.target.value)}
-              placeholder="Введите название чата"
+              placeholder="Enter the chat name"
               className="chat-input"
             />
             <button onClick={createChatHandler} className="create-chat-button">
-              Создать групповой чат
+              Create a group chat
             </button>
           </div>
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Поиск чатов..."
+            placeholder="Search chats..."
             className="search-input"
           />
           <ul className="chat-list">
@@ -483,12 +483,12 @@ const Home = () => {
         className="modal"
         overlayClassName="modal-overlay"
       >
-        <h2 className="modal-title">Создать пользователя</h2>
+        <h2 className="modal-title">Create User</h2>
         <input
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="Введите имя пользователя"
+          placeholder="Enter username"
           className="modal-input"
           required
         />
@@ -496,14 +496,14 @@ const Home = () => {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Введите пароль"
+          placeholder="Enter password"
           className="modal-input"
           required
         />
         <textarea
           value={bio}
           onChange={(e) => setBio(e.target.value)}
-          placeholder="Расскажите о себе (необязательно)"
+          placeholder="Tell us about yourself (optional)"
           rows={3}
           className="modal-textarea"
           maxLength={244}
@@ -514,10 +514,10 @@ const Home = () => {
           className="modal-file-input"
         />
         <button type="button" onClick={createUserHandler} className="modal-create-button">
-          Создать пользователя
+          Create User
         </button>
         <button onClick={() => setModalIsOpen(false)} className="modal-close-button">
-          Закрыть
+          Close
         </button>
       </Modal>
     </div>

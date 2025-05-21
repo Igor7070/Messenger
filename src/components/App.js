@@ -30,7 +30,7 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      return <div>Произошла ошибка. Пожалуйста, перезагрузите страницу.</div>;
+      return <div>Something went wrong. Please reload the page.</div>;
     }
     return this.props.children;
   }
@@ -75,6 +75,7 @@ const AppContent = () => {
         pauseOnHover
         limit={3}
         enableMultiContainer={false}
+        toastStyle={{ zIndex: 9999 }} // Добавлено для тостов
       />
       <ErrorBoundary>
         <PrivateMessageNotificationProvider>
