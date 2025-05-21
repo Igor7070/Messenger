@@ -159,3 +159,10 @@
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.3) !important;
 }
 
+.Toastify__toast-container {
+    z-index: 9999 !important;
+    position: fixed !important;
+    top: 10px !important;
+    right: 10px !important;
+}
+

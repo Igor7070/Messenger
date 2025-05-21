@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import '../styles/PersonalChats.css';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import IncomingCallNotification from './IncomingCallNotification';
 import { getMessages } from '../api/messages';
 import { format, isToday, parseISO } from 'date-fns';
@@ -22,7 +21,6 @@ const PersonalChats = () => {
     const [contextMenu, setContextMenu] = useState({ visible: false, chatId: null, x: 0, y: 0 });
     const [shouldRefreshChats, setShouldRefreshChats] = useState(true);
     const { userInteracted, handleInteraction } = useUserInteraction();
-    const messageAudioRef = useRef(null);
     const currentUserName = location.state?.currentUserName || 'User';
     const currentUserId = userId;
     const { usersStatus } = useUserStatusContext();
@@ -45,6 +43,13 @@ const PersonalChats = () => {
             return '';
         }
     };
+
+    // Сброс тостов и тестовый тост
+    useEffect(() => {
+        toast.dismiss(); // Очищаем очередь тостов
+        console.log('Testing toast rendering in PersonalChats');
+        toast.info('Test toast in PersonalChats', { toastId: 'test-personalchats', autoClose: 3000 });
+    }, []);
 
     // Синхронизация currentUserId с контекстом
     useEffect(() => {
@@ -299,12 +304,6 @@ const PersonalChats = () => {
                     <button onClick={handleDeleteChat}>Delete chat</button>
                 </div>
             )}
-
-            <ToastContainer />
-            <audio ref={messageAudioRef}>
-                <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
-                Ваш браузер не поддерживает аудио.
-            </audio>
 
             {incomingCall && (
                 <IncomingCallNotification
