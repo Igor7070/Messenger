@@ -65,7 +65,7 @@ const AppContent = () => {
         </Link>
       </div>
       <ToastContainer
-        key={location.pathname} // Принудительный ререндер при смене маршрута
+        //key={location.pathname} // Принудительный ререндер при смене маршрута
         position="top-right"
         autoClose={5000}
         hideProgressBar={false}
