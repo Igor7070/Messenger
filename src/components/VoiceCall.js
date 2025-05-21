@@ -29,8 +29,7 @@ const VoiceCall = ({ recipientId }) => {
   const [incomingCallState, setIncomingCallState] = useState(incomingCall);
   const [isWaiting, setIsWaiting] = useState(false);
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
-  const hasNotifiedEndCall = useRef(false);
-  const hasNotifiedAcceptCall = useRef(false); // Новый флаг для acceptCall
+  const hasNotifiedAcceptCall = useRef(false); // Флаг для acceptCall
 
   useEffect(() => {
     if (isCaller) {
@@ -394,15 +393,13 @@ const VoiceCall = ({ recipientId }) => {
           }, 1000);
         } else if (signalMessage.signal.type === 'endCall') {
           console.log('Call ended by the other party.');
-          if (!hasNotifiedEndCall.current) {
-            hasNotifiedEndCall.current = true;
-            if (userName) {
-              notify(`${userName} interrupted the conversation.`, { toastId: `end-call-${roomId}` });
-            } else {
-              notify(`Пользователь с ID ${signalMessage.from} interrupted the conversation.`, {
-                toastId: `end-call-${roomId}`,
-              });
-            }
+          console.log('Attempting to notify end call:', { userName, from: signalMessage.from });
+          if (userName) {
+            notify(`${userName} interrupted the conversation.`, { toastId: `end-call-${roomId}` });
+          } else {
+            notify(`Пользователь с ID ${signalMessage.from} interrupted the conversation.`, {
+              toastId: `end-call-${roomId}`,
+            });
           }
           terminationInitiator = true;
           endCall();
@@ -496,7 +493,10 @@ const VoiceCall = ({ recipientId }) => {
       console.log('WebSocket connection deactivated in endCall.');
     }
 
-    navigate('/');
+    // Задержка для отображения тоста
+    setTimeout(() => {
+      navigate('/');
+    }, 1000);
   };
 
   return (
