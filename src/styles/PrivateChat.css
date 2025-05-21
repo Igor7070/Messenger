@@ -321,6 +321,13 @@
     border: 2px solid #F0F4F8; /* Цвет фона .private-chat для обводки */
 }
 
+.Toastify__toast-container {
+    z-index: 9999 !important;
+    position: fixed !important;
+    top: 10px !important;
+    right: 10px !important;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         margin: 10px;

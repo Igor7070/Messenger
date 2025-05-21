@@ -47,6 +47,13 @@ const PrivateChat = () => {
   };
 
   useEffect(() => {
+    // Сброс всех тостов и тестовый тост
+    toast.dismiss(); // Очищаем очередь тостов
+    console.log('Testing toast rendering in PrivateChat');
+    toast.info('Test toast in PrivateChat', { toastId: 'test-privatechat', autoClose: 3000 });
+  }, []);
+
+  useEffect(() => {
     const fetchChatData = async () => {
       console.log('fetchChatData is working...');
       if (!chatIdParam || !username) {
