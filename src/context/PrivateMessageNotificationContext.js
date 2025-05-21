@@ -13,7 +13,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
   const [currentChatId, setCurrentChatId] = useState(null);
   const messageAudioRef = useRef(null);
   const stompClientRef = useRef(null);
-  const errorToastRef = useRef(null); // Для ограничения тостов
+  const errorToastRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -59,10 +59,12 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
             }
 
             const toastId = `private-message-${chatId}-${Date.now()}`;
+            console.log('Attempting to show toast:', notification, 'toastId:', toastId); // Отладка
             toast.info(notification, {
               autoClose: false,
               toastId,
               onClick: async () => {
+                console.log('Toast clicked:', toastId);
                 if (messageAudioRef.current) {
                   console.log('Pausing message audio on toast click');
                   messageAudioRef.current.pause();
@@ -122,12 +124,13 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                 console.log('Toast closed:', toastId);
               },
             });
+          } else {
+            console.log('Notification ignored: chatId=', chatId, 'currentChatId=', currentChatId);
           }
         });
       },
       onWebSocketError: (error) => {
         console.error('WebSocket error in PrivateMessageNotification:', error);
-        // Показываем тост только если он ещё не отображается
         if (!errorToastRef.current) {
           errorToastRef.current = toast.error('Ошибка соединения WebSocket', {
             autoClose: 5000,
