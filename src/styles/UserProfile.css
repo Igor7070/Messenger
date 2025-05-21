@@ -191,6 +191,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 1000 !important; /* Ниже тостов */
 }
 
 .user-profile-modal-image {
@@ -323,4 +324,11 @@
 
 .voice-call-button:hover, .video-call-button:hover {
     background-color: #45a049;
+}
+
+.Toastify__toast-container {
+    z-index: 9999 !important;
+    position: fixed !important;
+    top: 10px !important;
+    right: 10px !important;
 }

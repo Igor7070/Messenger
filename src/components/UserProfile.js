@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/UserProfile.css';
 import { FaEdit, FaEllipsisV, FaPhone, FaVideo } from 'react-icons/fa';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import Modal from 'react-modal';
 import IncomingCallNotification from './IncomingCallNotification';
-import SockJS from 'sockjs-client';
-import { Client } from '@stomp/stompjs';
 import { useUserInteraction } from '../context/UserInteractionContext';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
@@ -24,7 +21,6 @@ const UserProfile = () => {
     const [currentUserId, setCurrentUserId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [avatarFileName, setAvatarFileName] = useState('');
-    const messageAudioRef = useRef(null);
     const [settingsMenuVisible, setSettingsMenuVisible] = useState(false);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const { usersStatus, disconnectWebSocket } = useUserStatusContext();
@@ -64,10 +60,17 @@ const UserProfile = () => {
         if (storedUserId) {
             const userIdNum = Number(storedUserId);
             setCurrentUserId(userIdNum);
-            setContextUserId(userIdNum); // Синхронизируем с CallWebSocketContext
-            setNotificationUserId(userIdNum); // Синхронизируем с PrivateMessageNotificationContext
+            setContextUserId(userIdNum);
+            setNotificationUserId(userIdNum);
         }
     }, [userId, setContextUserId, setNotificationUserId]);
+
+    useEffect(() => {
+        // Сброс всех тостов и тестовый тост
+        toast.dismiss(); // Очищаем очередь тостов
+        console.log('Testing toast rendering in UserProfile');
+        toast.info('Test toast in UserProfile', { toastId: 'test-userprofile', autoClose: 3000 });
+    }, []);
 
     useEffect(() => {
         const handleClick = () => {
@@ -321,8 +324,8 @@ const UserProfile = () => {
                     localStorage.removeItem('userId');
                     localStorage.removeItem('username');
                     disconnectWebSocket();
-                    setContextUserId(null); // Сбрасываем в CallWebSocketContext
-                    setNotificationUserId(null); // Сбрасываем в PrivateMessageNotificationContext
+                    setContextUserId(null);
+                    setNotificationUserId(null);
                     navigate('/');
                     toast.success('Account deleted successfully!');
                 } else {
@@ -341,11 +344,6 @@ const UserProfile = () => {
 
     return (
         <div className="user-profile-container">
-            <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-            <audio ref={messageAudioRef}>
-                <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
-                Ваш браузер не поддерживает аудио.
-            </audio>
             <h1 className="user-profile-username">{user.username}</h1>
             <span className="userprofile-status-text">
                 <span className={`userprofile-status-label ${usersStatus[userId]?.online ? 'userprofile-online' : 'userprofile-offline'}`}>
