@@ -137,19 +137,23 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
         });
       },
       onWebSocketError: (error) => {
-        console.error('WebSocket error in PrivateMessageNotification:', error);
+        console.warn('WebSocket temporary error in PrivateMessageNotification:', {
+          error,
+          timestamp: new Date().toISOString(),
+          route: window.location.pathname,
+        });
+        // Тост не показываем, так как ошибка временная и переподключение автоматическое
+      },
+      onStompError: (frame) => {
+        console.error('STOMP error in PrivateMessageNotification:', frame);
         if (!errorToastRef.current) {
-          errorToastRef.current = toast.error('WebSocket connection error', {
+          errorToastRef.current = toast.error('STOMP protocol error', {
             autoClose: 5000,
             onClose: () => {
               errorToastRef.current = null;
             },
           });
         }
-      },
-      onStompError: (frame) => {
-        console.error('STOMP error in PrivateMessageNotification:', frame);
-        toast.error('STOMP protocol error');
       },
       onDisconnect: () => {
         console.log('WebSocket disconnected in PrivateMessageNotification');
