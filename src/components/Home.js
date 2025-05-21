@@ -48,7 +48,8 @@ const Home = () => {
   }, [handleInteraction]);
 
   useEffect(() => {
-    // Тестовый тост для проверки рендеринга
+    // Сброс всех тостов и тестовый тост
+    toast.dismiss(); // Очищаем очередь тостов
     console.log('Testing toast rendering in Home');
     toast.info('Test toast in Home', { toastId: 'test-home', autoClose: 3000 });
   }, []);

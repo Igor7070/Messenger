@@ -59,7 +59,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
             }
 
             const toastId = `private-message-${chatId}-${Date.now()}`;
-            console.log('Calling toast.info:', { notification, toastId, currentChatId, chatId }); // Отладка
+            console.log('Calling toast.info:', { notification, toastId, currentChatId, chatId });
             toast.info(notification, {
               autoClose: false,
               toastId,
@@ -122,9 +122,15 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                 console.log('Toast closed:', toastId);
               },
               onOpen: () => {
-                console.log('Toast opened:', toastId); // Отладка
+                console.log('Toast opened:', toastId);
               },
             });
+
+            // Принудительное обновление тоста
+            setTimeout(() => {
+              console.log('Forcing toast update:', toastId);
+              toast.update(toastId, { render: notification });
+            }, 100);
           } else {
             console.log('Notification ignored: chatId=', chatId, 'currentChatId=', currentChatId);
           }

@@ -216,7 +216,7 @@ h2 {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    z-index: 1000 !important; /* Явно ниже тостов */
 }
 
 .ReactModal__Content {
@@ -371,6 +371,13 @@ h2 {
     display: inline-block;
     margin-left: 8px;
     vertical-align: middle;
+}
+
+.Toastify__toast-container {
+    z-index: 9999 !important; /* Выше всех элементов, включая модал */
+    position: fixed !important; /* Гарантирует правильное позиционирование */
+    top: 10px !important; /* Отступ сверху */
+    right: 10px !important; /* Отступ справа */
 }
 
 @media (max-width: 768px) {

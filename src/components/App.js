@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { HashRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import { HashRouter as Router, Route, Routes, Link, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Home from './Home';
@@ -38,15 +38,16 @@ class ErrorBoundary extends React.Component {
 
 const AppContent = () => {
   const { initializeWebSocket } = useUserStatusContext();
+  const location = useLocation(); // Для получения текущего маршрута
 
   useEffect(() => {
-    console.log('Rendering AppContent');
+    console.log('Rendering AppContent, location:', location.pathname);
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username');
     if (userId && username) {
       initializeWebSocket(Number(userId), username);
     }
-  }, [initializeWebSocket]);
+  }, [initializeWebSocket, location.pathname]);
 
   return (
     <div className="app">
@@ -64,6 +65,7 @@ const AppContent = () => {
         </Link>
       </div>
       <ToastContainer
+        key={location.pathname} // Принудительный ререндер при смене маршрута
         position="top-right"
         autoClose={5000}
         hideProgressBar={false}
@@ -75,7 +77,7 @@ const AppContent = () => {
         pauseOnHover
         limit={3}
         enableMultiContainer={false}
-        toastStyle={{ zIndex: 9999 }} // Добавлено для тостов
+        toastStyle={{ zIndex: 9999 }}
       />
       <ErrorBoundary>
         <PrivateMessageNotificationProvider>
