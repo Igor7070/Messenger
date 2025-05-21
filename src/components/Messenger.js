@@ -82,7 +82,7 @@ const Messenger = () => {
         // Сброс всех тостов и тестовый тост
         toast.dismiss(); // Очищаем очередь тостов
         console.log('Testing toast rendering in Messenger');
-        toast.info('Test toast in Messenger', { toastId: 'test-messenger', autoClose: 3000 });
+        //toast.info('Test toast in Messenger', { toastId: 'test-messenger', autoClose: 3000 });
     }, []);
 
     useEffect(() => {

@@ -48,7 +48,7 @@ const PersonalChats = () => {
     useEffect(() => {
         toast.dismiss(); // Очищаем очередь тостов
         console.log('Testing toast rendering in PersonalChats');
-        toast.info('Test toast in PersonalChats', { toastId: 'test-personalchats', autoClose: 3000 });
+        //toast.info('Test toast in PersonalChats', { toastId: 'test-personalchats', autoClose: 3000 });
     }, []);
 
     // Синхронизация currentUserId с контекстом

@@ -69,7 +69,7 @@ const UserProfile = () => {
         // Сброс всех тостов и тестовый тост
         toast.dismiss(); // Очищаем очередь тостов
         console.log('Testing toast rendering in UserProfile');
-        toast.info('Test toast in UserProfile', { toastId: 'test-userprofile', autoClose: 3000 });
+        //toast.info('Test toast in UserProfile', { toastId: 'test-userprofile', autoClose: 3000 });
     }, []);
 
     useEffect(() => {
