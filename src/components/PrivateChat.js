@@ -3,7 +3,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getMessages } from '../api/messages';
 import '../styles/PrivateChat.css';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify'; // Оставляем только toast
 import { useParams, useNavigate } from 'react-router-dom';
 import { getChatById } from '../api/chats';
 import IncomingCallNotification from './IncomingCallNotification';
