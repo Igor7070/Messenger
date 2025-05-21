@@ -3,7 +3,6 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getMessages } from '../api/messages';
 import '../styles/PrivateChat.css';
-import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getChatById } from '../api/chats';
@@ -464,7 +463,6 @@ const PrivateChat = () => {
                     <button onClick={sendMessage} className="private-send-button">Send</button>
                 </div>
             </div>
-            <ToastContainer />
             {contextMenu.visible && (
                 <div
                     className="private-context-menu"
