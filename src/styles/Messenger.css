@@ -353,6 +353,13 @@
     border: 2px solid #D7E0E6; /* Цвет фона .messenger для обводки */
 }
 
+.Toastify__toast-container {
+    z-index: 9999 !important;
+    position: fixed !important;
+    top: 10px !important;
+    right: 10px !important;
+}
+
 @media (max-width: 800px) {
     .messenger {
         margin: 10px;

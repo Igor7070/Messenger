@@ -4,15 +4,14 @@ import SockJS from 'sockjs-client';
 import { getMessages, sendMessage as apiSendMessage, loginUser } from '../api/messages';
 import { createUser } from '../api/users';
 import '../styles/Messenger.css';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { useParams, useNavigate } from 'react-router-dom';
 import IncomingCallNotification from './IncomingCallNotification';
 import { format, isToday, parseISO } from 'date-fns';
 import { useUserInteraction } from '../context/UserInteractionContext';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
-import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext'; // Новый импорт
+import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
@@ -46,11 +45,10 @@ const Messenger = () => {
     const fileInputRef = useRef(null);
     const { chatId } = useParams();
     const navigate = useNavigate();
-    const messageAudioRef = useRef(null);
     const { userInteracted, handleInteraction } = useUserInteraction();
     const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
-    const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification(); // Используем контекст уведомлений
+    const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification();
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -81,6 +79,13 @@ const Messenger = () => {
     };
 
     useEffect(() => {
+        // Сброс всех тостов и тестовый тост
+        toast.dismiss(); // Очищаем очередь тостов
+        console.log('Testing toast rendering in Messenger');
+        toast.info('Test toast in Messenger', { toastId: 'test-messenger', autoClose: 3000 });
+    }, []);
+
+    useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
         const storedUsername = localStorage.getItem('username');
 
@@ -88,8 +93,8 @@ const Messenger = () => {
             const userIdNum = Number(storedUserId);
             setUserId(userIdNum);
             setCurrentUserId(userIdNum);
-            setContextUserId(userIdNum); // Синхронизируем с CallWebSocketContext
-            setNotificationUserId(userIdNum); // Синхронизируем с PrivateMessageNotificationContext
+            setContextUserId(userIdNum);
+            setNotificationUserId(userIdNum);
             setUsername(storedUsername);
             setIsLoggedIn(true);
         }
@@ -309,8 +314,8 @@ const Messenger = () => {
                 localStorage.setItem('userId', newUser.id);
                 localStorage.setItem('username', newUser.username);
                 setCurrentUserId(newUser.id);
-                setContextUserId(newUser.id); // Синхронизируем
-                setNotificationUserId(newUser.id); // Синхронизируем с уведомлениями
+                setContextUserId(newUser.id);
+                setNotificationUserId(newUser.id);
                 toast.success('User successfully created!');
             } catch (error) {
                 let errorMessage = 'Failed to create user. Please try again.';
@@ -335,8 +340,8 @@ const Messenger = () => {
                 const loggedUser = await loginUser({ username, password });
                 setUserId(loggedUser.id);
                 setCurrentUserId(loggedUser.id);
-                setContextUserId(loggedUser.id); // Синхронизируем
-                setNotificationUserId(loggedUser.id); // Синхронизируем с уведомлениями
+                setContextUserId(loggedUser.id);
+                setNotificationUserId(loggedUser.id);
                 setIsLoggedIn(true);
                 setErrorMessage('');
                 localStorage.setItem('userId', loggedUser.id);
@@ -364,8 +369,8 @@ const Messenger = () => {
         localStorage.removeItem('username');
         setUserId(null);
         setCurrentUserId(null);
-        setContextUserId(null); // Сбрасываем
-        setNotificationUserId(null); // Сбрасываем уведомления
+        setContextUserId(null);
+        setNotificationUserId(null);
         setUsername('');
         setIsLoggedIn(false);
         toast.success('You are logged out!');
@@ -515,11 +520,6 @@ const Messenger = () => {
                     <button onClick={sendMessage} className="send-button">Send</button>
                 </div>
             </div>
-            <ToastContainer />
-            <audio ref={messageAudioRef}>
-                <source src="https://igor7070.github.io/Messenger/zvuk-dlya-soobsen.mp3" type="audio/mpeg" />
-                Ваш браузер не поддерживает аудио.
-            </audio>
             {contextMenu.visible && (
                 <div
                     className="context-menu"
