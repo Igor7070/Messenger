@@ -13,6 +13,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
   const [currentChatId, setCurrentChatId] = useState(null);
   const messageAudioRef = useRef(null);
   const stompClientRef = useRef(null);
+  const errorToastRef = useRef(null); // Для ограничения тостов
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,8 +29,14 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
       webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
       connectTimeout: 30000,
       reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
       onConnect: () => {
         console.log('Connected to WebSocket for private chat notifications');
+        if (errorToastRef.current) {
+          toast.dismiss(errorToastRef.current);
+          errorToastRef.current = null;
+        }
 
         stompClient.subscribe(`/topic/notifications/${currentUserId}`, (message) => {
           const notification = message.body;
@@ -119,12 +126,23 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
         });
       },
       onWebSocketError: (error) => {
-        console.error('WebSocket error:', error);
-        toast.error('Ошибка соединения WebSocket');
+        console.error('WebSocket error in PrivateMessageNotification:', error);
+        // Показываем тост только если он ещё не отображается
+        if (!errorToastRef.current) {
+          errorToastRef.current = toast.error('Ошибка соединения WebSocket', {
+            autoClose: 5000,
+            onClose: () => {
+              errorToastRef.current = null;
+            },
+          });
+        }
       },
       onStompError: (frame) => {
-        console.error('STOMP error:', frame);
+        console.error('STOMP error in PrivateMessageNotification:', frame);
         toast.error('Ошибка протокола STOMP');
+      },
+      onDisconnect: () => {
+        console.log('WebSocket disconnected in PrivateMessageNotification');
       },
     });
 
@@ -132,9 +150,9 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
     stompClient.activate();
 
     return () => {
+      console.log('Deactivating WebSocket in PrivateMessageNotification');
       if (stompClientRef.current) {
         stompClientRef.current.deactivate();
-        console.log('WebSocket для уведомлений личных чатов отключён');
       }
     };
   }, [currentUserId, userInteracted, currentChatId, navigate]);
