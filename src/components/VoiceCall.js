@@ -30,7 +30,6 @@ const VoiceCall = ({ recipientId }) => {
   const [isWaiting, setIsWaiting] = useState(false);
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
   const hasNotifiedAcceptCall = useRef(false); // Флаг для acceptCall
-  const hasNotifiedRejectCall = useRef(false); // Новый флаг для rejectCall
 
   useEffect(() => {
     if (isCaller) {
@@ -83,18 +82,10 @@ const VoiceCall = ({ recipientId }) => {
         console.log('Connected to WebSocket');
         console.log('Room ID from URL:', roomId);
 
-        // Проверяем, не существует ли уже подписка
-        if (stompClient.current.subscriptions[`/topic/room/${roomId}`]) {
-          console.log('Subscription already exists for /topic/room/' + roomId);
-          return;
-        }
-
         const subscription = stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
           console.log('Received message on /topic/room/' + roomId + ':', message.body);
-          console.log('Message timestamp:', new Date().toISOString());
           try {
             const signalMessage = JSON.parse(message.body);
-            console.log('Parsed signal message:', signalMessage);
             handleSignal(signalMessage);
           } catch (error) {
             console.error('Error parsing WebSocket message:', error);
@@ -157,7 +148,7 @@ const VoiceCall = ({ recipientId }) => {
       }
       clearInterval(interval);
     };
-  }, [currentUserId, roomId, isCaller, incomingCall]); // Добавлены isCaller и incomingCall в зависимости
+  }, [currentUserId, roomId]);
 
   const handleIncomingCall = async (callRequest) => {
     console.log('Function handleIncomingCall in VoiceCall.js working...');
@@ -413,12 +404,6 @@ const VoiceCall = ({ recipientId }) => {
           terminationInitiator = true;
           endCall();
         } else if (signalMessage.signal.type === 'rejectCall' && isCaller) {
-          console.log('Processing rejectCall signal at:', new Date().toISOString());
-          if (hasNotifiedRejectCall.current) {
-            console.log('Reject call already notified, ignoring duplicate signal.');
-            return;
-          }
-          hasNotifiedRejectCall.current = true;
           console.log('Received rejectCall signal.');
           setIsWaiting(false);
           ringtoneRef.current.pause();
