@@ -8,7 +8,7 @@ import { Chart, registerables } from 'chart.js';
 import { useNotification } from '../context/NotificationContext';
 import '../styles/VoiceCall.css';
 
-Chart.register(...registerables); // Регистрация всех необходимых модулей
+Chart.register(...registerables);
 
 const VoiceCall = ({ recipientId }) => {
   const navigate = useNavigate();
@@ -29,7 +29,8 @@ const VoiceCall = ({ recipientId }) => {
   const [incomingCallState, setIncomingCallState] = useState(incomingCall);
   const [isWaiting, setIsWaiting] = useState(false);
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
-  const hasNotifiedEndCall = useRef(false); // Флаг для предотвращения дублирования тостов в endCall
+  const hasNotifiedEndCall = useRef(false);
+  const hasNotifiedAcceptCall = useRef(false); // Новый флаг для acceptCall
 
   useEffect(() => {
     if (isCaller) {
@@ -82,16 +83,25 @@ const VoiceCall = ({ recipientId }) => {
         console.log('Connected to WebSocket');
         console.log('Room ID from URL:', roomId);
 
-        stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
-          console.log('Subscribed to /topic/room/' + roomId);
-          const signalMessage = JSON.parse(message.body);
-          handleSignal(signalMessage);
+        const subscription = stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
+          console.log('Received message on /topic/room/' + roomId + ':', message.body);
+          try {
+            const signalMessage = JSON.parse(message.body);
+            handleSignal(signalMessage);
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
         });
 
         if (!isCaller && incomingCall) {
-          console.log('Incoming call:', incomingCall);
+          console.log('Processing incoming call:', incomingCall);
           handleIncomingCall(incomingCall);
         }
+
+        return () => {
+          console.log('Unsubscribing from /topic/room/' + roomId);
+          subscription.unsubscribe();
+        };
       },
       onStompError: (frame) => {
         console.error('STOMP error:', frame);
@@ -181,6 +191,17 @@ const VoiceCall = ({ recipientId }) => {
         }
       };
 
+      peerConnectionRef.current.oniceconnectionstatechange = () => {
+        console.log('ICE Connection State:', peerConnectionRef.current.iceConnectionState);
+        if (peerConnectionRef.current.iceConnectionState === 'connected') {
+          console.log('WebRTC connection established');
+        } else if (peerConnectionRef.current.iceConnectionState === 'failed') {
+          console.error('WebRTC connection failed');
+          notify('Failed to establish voice connection.', { toastId: 'voice-connection-failed' });
+          endCall();
+        }
+      };
+
       stream.getTracks().forEach((track) => {
         peerConnectionRef.current.addTrack(track, stream);
         console.log('Track added to peer connection:', track);
@@ -259,6 +280,17 @@ const VoiceCall = ({ recipientId }) => {
         }
       };
 
+      peerConnectionRef.current.oniceconnectionstatechange = () => {
+        console.log('ICE Connection State:', peerConnectionRef.current.iceConnectionState);
+        if (peerConnectionRef.current.iceConnectionState === 'connected') {
+          console.log('WebRTC connection established');
+        } else if (peerConnectionRef.current.iceConnectionState === 'failed') {
+          console.error('WebRTC connection failed');
+          notify('Failed to establish voice connection.', { toastId: 'voice-connection-failed' });
+          endCall();
+        }
+      };
+
       stream.getTracks().forEach((track) => {
         peerConnectionRef.current.addTrack(track, stream);
         console.log('Track added to peer connection:', track);
@@ -302,7 +334,7 @@ const VoiceCall = ({ recipientId }) => {
   };
 
   const handleSignal = async (signalMessage) => {
-    console.log('Received signal message:', signalMessage);
+    console.log('Received signal message:', JSON.stringify(signalMessage, null, 2));
 
     if (signalMessage.signal) {
       console.log('Processing signal type:', signalMessage.signal.type);
@@ -365,10 +397,10 @@ const VoiceCall = ({ recipientId }) => {
           if (!hasNotifiedEndCall.current) {
             hasNotifiedEndCall.current = true;
             if (userName) {
-              notify(`${userName} interrupted the conversation.`, { toastId: `end-call-${Date.now()}` });
+              notify(`${userName} interrupted the conversation.`, { toastId: `end-call-${roomId}` });
             } else {
               notify(`Пользователь с ID ${signalMessage.from} interrupted the conversation.`, {
-                toastId: `end-call-${Date.now()}`,
+                toastId: `end-call-${roomId}`,
               });
             }
           }
@@ -379,14 +411,17 @@ const VoiceCall = ({ recipientId }) => {
           setIsWaiting(false);
           ringtoneRef.current.pause();
           ringtoneRef.current.currentTime = 0;
-          notify(`${recipientName} rejected the call.`, { toastId: `reject-call-${Date.now()}` });
+          notify(`${recipientName} rejected the call.`, { toastId: `reject-call-${roomId}` });
           endCall();
         } else if (signalMessage.signal.type === 'acceptCall' && isCaller) {
           console.log('Received acceptCall signal.');
-          setIsWaiting(false);
-          ringtoneRef.current.pause();
-          ringtoneRef.current.currentTime = 0;
-          notify(`${recipientName} accepted the call.`, { toastId: `accept-call-${Date.now()}` });
+          if (!hasNotifiedAcceptCall.current) {
+            hasNotifiedAcceptCall.current = true;
+            setIsWaiting(false);
+            ringtoneRef.current.pause();
+            ringtoneRef.current.currentTime = 0;
+            notify(`${recipientName} accepted the call.`, { toastId: `accept-call-${roomId}` });
+          }
         }
       } catch (error) {
         console.error('Error processing signal:', error);
