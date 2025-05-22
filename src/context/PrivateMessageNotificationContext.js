@@ -85,7 +85,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                       if (exists) {
                         toast.dismiss(toastId);
                         navigate(`/private-chat/${chatId}`);
-                        toast.success('Navigated to chat!');
+                        //toast.success('Navigated to chat!');
                       } else {
                         console.error('Unexpected response for OK status:', text);
                         toast.error('Unexpected server response');
@@ -101,7 +101,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                       if (addResponse.ok) {
                         toast.dismiss(toastId);
                         navigate(`/private-chat/${chatId}`);
-                        toast.success('Navigated to chat!');
+                        //toast.success('Navigated to chat!');
                       } else {
                         toast.error('Failed to add chat to user');
                       }
