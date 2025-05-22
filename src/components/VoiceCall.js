@@ -407,21 +407,22 @@ const VoiceCall = ({ recipientId }) => {
           terminationInitiator = true;
           endCall();
         } else if (signalMessage.signal.type === 'rejectCall' && isCaller) {
-          console.log('Received rejectCall signal.');
-          setIsWaiting(false);
-          ringtoneRef.current.pause();
-          ringtoneRef.current.currentTime = 0;
-          notify(`${recipientName} rejected the call.`, { toastId: `reject-call-${roomId}` });
-          endCall();
-        } else if (signalMessage.signal.type === 'acceptCall' && isCaller) {
-          console.log('Received acceptCall signal.');
-          if (!hasNotifiedAcceptCall.current) {
-            hasNotifiedAcceptCall.current = true;
+            console.log('Received rejectCall signal.');
             setIsWaiting(false);
             ringtoneRef.current.pause();
             ringtoneRef.current.currentTime = 0;
-            notify(`${recipientName} accepted the call.`, { toastId: `accept-call-${roomId}` });
-          }
+            notify(`${recipientName} rejected the call.`, { toastId: `reject-call-${roomId}` });
+            terminationInitiator = true;
+            endCall();
+        } else if (signalMessage.signal.type === 'acceptCall' && isCaller) {
+            console.log('Received acceptCall signal.');
+            if (!hasNotifiedAcceptCall.current) {
+              hasNotifiedAcceptCall.current = true;
+              setIsWaiting(false);
+              ringtoneRef.current.pause();
+              ringtoneRef.current.currentTime = 0;
+              notify(`${recipientName} accepted the call.`, { toastId: `accept-call-${roomId}` });
+            }
         }
       } catch (error) {
         console.error('Error processing signal:', error);

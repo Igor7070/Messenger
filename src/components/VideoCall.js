@@ -397,6 +397,7 @@ const VideoCall = ({ recipientId }) => {
               ringtoneRef.current.pause();
               ringtoneRef.current.currentTime = 0;
               notify(`${recipientName} rejected the video call.`, { toastId: `reject-call-${roomId}` });
+              terminationInitiator = true;
               endCall();
           }
       } else if (type === 'endCall') {
