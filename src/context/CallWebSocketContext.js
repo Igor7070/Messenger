@@ -82,13 +82,15 @@ export const CallWebSocketProvider = ({ children }) => {
                             incomingCall?.roomId === callRequest.roomId
                         ) {
                             console.log('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
+                            // Используем тип звонка из incomingCall или callRequestRef
+                            const callType = incomingCall?.type || callRequestRef.current?.type || 'voice'; // Запасной вариант — 'voice'
+                            const cancelMessage = callType === 'video'
+                                ? 'The video call was cancelled.'
+                                : 'The voice call was cancelled.';
                             setIncomingCallWithLog(null);
                             callRequestRef.current = null;
                             audioRef.current.pause();
                             audioRef.current.currentTime = 0;
-                            const cancelMessage = callRequest.callType === 'video'
-                                ? 'The video call was cancelled.'
-                                : 'The voice call was cancelled.';
                             console.log('Отправляем тост:', cancelMessage);
                             toast.info(cancelMessage);
                         } else {

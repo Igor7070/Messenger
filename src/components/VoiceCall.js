@@ -399,7 +399,7 @@ const VoiceCall = ({ recipientId }) => {
             if (userName) {
               notify(`${userName} interrupted the conversation.`, { toastId: `end-call-${roomId}` });
             } else {
-              notify(`Пользователь с ID ${signalMessage.from} interrupted the conversation.`, {
+              notify(`User with ID ${signalMessage.from} interrupted the conversation.`, {
                 toastId: `end-call-${roomId}`,
               });
             }

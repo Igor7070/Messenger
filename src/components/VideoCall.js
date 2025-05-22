@@ -398,7 +398,7 @@ const VideoCall = ({ recipientId }) => {
           if (userName) {
             notify(`${userName} interrupted the video conversation.`, { toastId: `end-call-${Date.now()}` });
           } else {
-            notify(`User ${signalMessage.from} interrupted the video conversation.`, { toastId: `end-call-${Date.now()}` });
+            notify(`User with ID ${signalMessage.from} interrupted the video conversation.`, { toastId: `end-call-${Date.now()}` });
           }
         }
         terminationInitiator = true;
