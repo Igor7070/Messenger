@@ -26,6 +26,7 @@ const VideoCall = ({ recipientId }) => {
   const [videoOrientation, setVideoOrientation] = useState('horizontal'); // 'horizontal' или 'vertical'
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
   const hasNotifiedEndCall = useRef(false); // Флаг для предотвращения дублирования тостов в endCall
+  const hasNotifiedAcceptCall = useRef(false); // Флаг для предотвращения дублирования тостов acceptCall
 
   useEffect(() => {
     if (isCaller) {
@@ -380,17 +381,20 @@ const VideoCall = ({ recipientId }) => {
         }, 1000);
       } else if (type === 'acceptCall' && isCaller) {
         console.log('Received acceptCall signal.');
-        setIsWaiting(false);
-        ringtoneRef.current.pause();
-        ringtoneRef.current.currentTime = 0;
-        notify(`${recipientName} accepted the video call.`, { toastId: `accept-call-${Date.now()}` });
+        if (!hasNotifiedAcceptCall.current) {
+            hasNotifiedAcceptCall.current = true;
+            setIsWaiting(false);
+            ringtoneRef.current.pause();
+            ringtoneRef.current.currentTime = 0;
+            notify(`${recipientName} accepted the video call.`, { toastId: `accept-call-${roomId}` });
+        }
       } else if (type === 'rejectCall' && isCaller) {
-        console.log('Received rejectCall signal.');
-        setIsWaiting(false);
-        ringtoneRef.current.pause();
-        ringtoneRef.current.currentTime = 0;
-        notify(`${recipientName} rejected the video call.`, { toastId: `reject-call-${Date.now()}` });
-        endCall();
+          console.log('Received rejectCall signal.');
+          setIsWaiting(false);
+          ringtoneRef.current.pause();
+          ringtoneRef.current.currentTime = 0;
+          notify(`${recipientName} rejected the video call.`, { toastId: `reject-call-${Date.now()}` });
+          endCall();
       } else if (type === 'endCall') {
         console.log('Call ended by the other party.');
         if (!hasNotifiedEndCall.current) {
@@ -476,6 +480,8 @@ const VideoCall = ({ recipientId }) => {
       console.log('WebSocket connection deactivated in endCall.');
     }
 
+    hasNotifiedAcceptCall.current = false; // Сброс флага
+    hasNotifiedEndCall.current = false; // Сброс флага для endCall (на случай повторного использования)
     navigate('/');
   };
 
