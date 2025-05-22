@@ -77,12 +77,6 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                         const usernameMatch = notification.match(/from: (\w+)/);
                         const recipientName = usernameMatch ? usernameMatch[1] : 'Unknown';
 
-                        // Отображение тоста с именем собеседника
-                        toast.success(`Navigating to chat with ${recipientName}!`, {
-                            toastId: `navigate-chat-${chatId}-${Date.now()}`,
-                            autoClose: 3000,
-                        });
-
                         const checkResponse = await fetch(
                             `https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`
                         );
@@ -95,6 +89,11 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                             if (exists) {
                                 toast.dismiss(toastId);
                                 navigate(`/private-chat/${chatId}`);
+                                // Отображение тоста с именем собеседника
+                                toast.success(`Navigating to chat with ${recipientName}!`, {
+                                    toastId: `navigate-chat-${chatId}-${Date.now()}`,
+                                    autoClose: 3000,
+                                });
                             } else {
                                 console.error('Unexpected response for OK status:', text);
                                 toast.error('Unexpected server response');
@@ -110,6 +109,11 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                             if (addResponse.ok) {
                                 toast.dismiss(toastId);
                                 navigate(`/private-chat/${chatId}`);
+                                // Отображение тоста с именем собеседника
+                                toast.success(`Navigating to chat with ${recipientName}!`, {
+                                    toastId: `navigate-chat-${chatId}-${Date.now()}`,
+                                    autoClose: 3000,
+                                });
                             } else {
                                 toast.error('Failed to add chat to user');
                             }
