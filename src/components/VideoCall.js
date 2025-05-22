@@ -27,6 +27,7 @@ const VideoCall = ({ recipientId }) => {
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
   const hasNotifiedEndCall = useRef(false); // Флаг для предотвращения дублирования тостов в endCall
   const hasNotifiedAcceptCall = useRef(false); // Флаг для предотвращения дублирования тостов acceptCall
+  const hasNotifiedRejectCall = useRef(false); // Флаг для предотвращения дублирования тостов rejectCall
 
   useEffect(() => {
     if (isCaller) {
@@ -390,11 +391,14 @@ const VideoCall = ({ recipientId }) => {
         }
       } else if (type === 'rejectCall' && isCaller) {
           console.log('Received rejectCall signal.');
-          setIsWaiting(false);
-          ringtoneRef.current.pause();
-          ringtoneRef.current.currentTime = 0;
-          notify(`${recipientName} rejected the video call.`, { toastId: `reject-call-${Date.now()}` });
-          endCall();
+          if (!hasNotifiedRejectCall.current) {
+              hasNotifiedRejectCall.current = true;
+              setIsWaiting(false);
+              ringtoneRef.current.pause();
+              ringtoneRef.current.currentTime = 0;
+              notify(`${recipientName} rejected the video call.`, { toastId: `reject-call-${roomId}` });
+              endCall();
+          }
       } else if (type === 'endCall') {
         console.log('Call ended by the other party.');
         if (!hasNotifiedEndCall.current) {
@@ -482,6 +486,7 @@ const VideoCall = ({ recipientId }) => {
 
     hasNotifiedAcceptCall.current = false; // Сброс флага
     hasNotifiedEndCall.current = false; // Сброс флага для endCall (на случай повторного использования)
+    hasNotifiedRejectCall.current = false; // Сброс флага для rejectCall
     navigate('/');
   };
 
