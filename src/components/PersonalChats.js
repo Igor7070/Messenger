@@ -136,7 +136,7 @@ const PersonalChats = () => {
                     fetchChatMessages(chats);
                 } else {
                     console.error('Failed to fetch private chats:', response.statusText);
-                    toast.error('Failed to fetch private chats');
+                    //toast.error('Failed to fetch private chats');
                 }
             } catch (error) {
                 console.error('Error fetching private chats:', error);
