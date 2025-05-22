@@ -244,7 +244,6 @@ const UserProfile = () => {
                         const exists = text === "Chat exists in user's private chats";
                         if (exists) {
                             navigate(`/private-chat/${chatId}`);
-                            toast.success(`Navigating to chat with ${user.username}!`);
                         } else {
                             console.error('Unexpected response for OK status:', text);
                             toast.error('Unexpected server response');
@@ -258,7 +257,6 @@ const UserProfile = () => {
 
                         if (addResponse.ok) {
                             navigate(`/private-chat/${chatId}`);
-                            toast.success(`Navigating to chat with ${user.username}!`);
                         } else {
                             toast.error('Failed to add chat to user');
                         }

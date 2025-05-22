@@ -66,56 +66,64 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
               onClick: async () => {
                 console.log('Toast clicked:', toastId);
                 if (messageAudioRef.current) {
-                  console.log('Pausing message audio on toast click');
-                  messageAudioRef.current.pause();
-                  messageAudioRef.current.currentTime = 0;
+                    console.log('Pausing message audio on toast click');
+                    messageAudioRef.current.pause();
+                    messageAudioRef.current.currentTime = 0;
                 }
 
                 if (chatId) {
-                  try {
-                    const checkResponse = await fetch(
-                      `https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`
-                    );
-                    console.log('checkResponse status:', checkResponse.status);
+                    try {
+                        // Извлечение имени собеседника из текста уведомления
+                        const usernameMatch = notification.match(/New message from (\w+)/);
+                        const recipientName = usernameMatch ? usernameMatch[1] : 'Unknown';
 
-                    if (checkResponse.ok) {
-                      const text = await checkResponse.text();
-                      console.log('checkResponse text:', text);
-                      const exists = text === "Chat exists in user's private chats";
-                      if (exists) {
-                        toast.dismiss(toastId);
-                        navigate(`/private-chat/${chatId}`);
-                        //toast.success('Navigated to chat!');
-                      } else {
-                        console.error('Unexpected response for OK status:', text);
-                        toast.error('Unexpected server response');
-                      }
-                    } else if (checkResponse.status === 404) {
-                      console.log('Chat does not exist for user, adding it');
-                      const addResponse = await fetch(
-                        `https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`,
-                        { method: 'POST' }
-                      );
-                      console.log('addResponse status:', addResponse.status, 'text:', await addResponse.text());
+                        // Отображение тоста с именем собеседника
+                        toast.success(`Navigating to chat with ${recipientName}!`, {
+                            toastId: `navigate-chat-${chatId}-${Date.now()}`,
+                            autoClose: 3000,
+                        });
 
-                      if (addResponse.ok) {
-                        toast.dismiss(toastId);
-                        navigate(`/private-chat/${chatId}`);
-                        //toast.success('Navigated to chat!');
-                      } else {
-                        toast.error('Failed to add chat to user');
-                      }
-                    } else {
-                      console.log('checkResponse error text:', await checkResponse.text());
-                      toast.error('Error checking chat existence');
+                        const checkResponse = await fetch(
+                            `https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`
+                        );
+                        console.log('checkResponse status:', checkResponse.status);
+
+                        if (checkResponse.ok) {
+                            const text = await checkResponse.text();
+                            console.log('checkResponse text:', text);
+                            const exists = text === "Chat exists in user's private chats";
+                            if (exists) {
+                                toast.dismiss(toastId);
+                                navigate(`/private-chat/${chatId}`);
+                            } else {
+                                console.error('Unexpected response for OK status:', text);
+                                toast.error('Unexpected server response');
+                            }
+                        } else if (checkResponse.status === 404) {
+                            console.log('Chat does not exist for user, adding it');
+                            const addResponse = await fetch(
+                                `https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`,
+                                { method: 'POST' }
+                            );
+                            console.log('addResponse status:', addResponse.status, 'text:', await addResponse.text());
+
+                            if (addResponse.ok) {
+                                toast.dismiss(toastId);
+                                navigate(`/private-chat/${chatId}`);
+                            } else {
+                                toast.error('Failed to add chat to user');
+                            }
+                        } else {
+                            console.log('checkResponse error text:', await checkResponse.text());
+                            toast.error('Error checking chat existence');
+                        }
+                    } catch (error) {
+                        console.error('Error handling notification click:', error);
+                        toast.error('Failed to process notification');
                     }
-                  } catch (error) {
-                    console.error('Error handling notification click:', error);
-                    toast.error('Failed to process notification');
-                  }
                 } else {
-                  console.error('chatId not found in notification');
-                  toast.error('Invalid notification format');
+                    console.error('chatId not found in notification');
+                    toast.error('Invalid notification format');
                 }
               },
               onClose: () => {
