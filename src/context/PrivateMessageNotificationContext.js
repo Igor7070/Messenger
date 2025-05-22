@@ -93,7 +93,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                             console.log('checkResponse text:', text);
                             const exists = text === "Chat exists in user's private chats";
                             if (exists) {
-                                toast.dismiss(toastId);
+                                //toast.dismiss(toastId);
                                 navigate(`/private-chat/${chatId}`);
                             } else {
                                 console.error('Unexpected response for OK status:', text);
@@ -108,7 +108,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                             console.log('addResponse status:', addResponse.status, 'text:', await addResponse.text());
 
                             if (addResponse.ok) {
-                                toast.dismiss(toastId);
+                                //toast.dismiss(toastId);
                                 navigate(`/private-chat/${chatId}`);
                             } else {
                                 toast.error('Failed to add chat to user');
