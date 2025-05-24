@@ -87,6 +87,12 @@ public class WebSocketMessageController {
         webSocketService.sendUserStatusUpdate(message.getUserId(), true);
     }
 
+    // Новый эндпоинт для Android
+    @MessageMapping("/connectionHeartbeat")
+    public void handleConnectionHeartbeat(@Payload HeartbeatMessage message) {
+        System.out.println("Received connection heartbeat for userId: " + message.getUserId());
+    }
+
     @MessageMapping("/requestUserStatus")
     public void handleRequestUserStatus(@Payload Map<String, Long> payload) {
         Long userId = payload.get("userId");
@@ -102,6 +108,15 @@ public class WebSocketMessageController {
             System.err.println("Invalid userId in requestUserStatus payload");
         }
     }
+
+    // Новый эндпоинт для установки статуса онлайн (Android)
+    @MessageMapping("/setOnline")
+    public void handleSetOnline(@Payload HeartbeatMessage message) {
+        System.out.println("Received setOnline for userId: " + message.getUserId());
+        userService.setUserOnline(message.getUserId(), true);
+        webSocketService.sendUserStatusUpdate(message.getUserId(), true);
+    }
+
 
     @MessageMapping("/setOffline")
     public void handleSetOffline(@Payload HeartbeatMessage message) {
