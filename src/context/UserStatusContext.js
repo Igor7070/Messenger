@@ -116,6 +116,19 @@ export const UserStatusProvider = ({ children }) => {
     }
   };
 
+  const sendOnlineStatus = () => {
+    if (stompClientRef.current && stompClientRef.current.connected && userIdRef.current) {
+      const message = { userId: userIdRef.current, username: usernameRef.current };
+      stompClientRef.current.publish({
+        destination: '/app/setOnline',
+        body: JSON.stringify(message),
+      });
+      console.log(`Online status sent for userId: ${userIdRef.current}, username: ${usernameRef.current}`);
+    } else {
+      console.log('Cannot send online status: STOMP client not connected or no userId');
+    }
+  };
+
   const sendOfflineStatus = () => {
     if (stompClientRef.current && stompClientRef.current.connected && userIdRef.current) {
       const message = { userId: userIdRef.current, username: usernameRef.current };
@@ -145,8 +158,9 @@ export const UserStatusProvider = ({ children }) => {
     const handleFocus = () => {
       isTabActiveRef.current = true;
       console.log('Window focused');
-      sendHeartbeat();
+      //sendHeartbeat();
       startHeartbeat();
+      sendOnlineStatus();
     };
 
     const handleBlur = () => {
