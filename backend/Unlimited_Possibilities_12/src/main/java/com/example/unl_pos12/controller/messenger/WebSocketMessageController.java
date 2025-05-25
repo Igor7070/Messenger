@@ -84,7 +84,7 @@ public class WebSocketMessageController {
     public void handleHeartbeat(@Payload HeartbeatMessage message) {
         System.out.println("Received heartbeat for userId: " + message.getUserId());
         userService.setUserOnline(message.getUserId(), true);
-        //webSocketService.sendUserStatusUpdate(message.getUserId(), true);
+        webSocketService.sendUserStatusUpdate(message.getUserId(), true);
     }
 
     @MessageMapping("/requestUserStatus")
