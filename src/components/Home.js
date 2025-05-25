@@ -253,6 +253,7 @@ const Home = () => {
       setLoginPassword('');
       setIsLoggedIn(true);
       initializeWebSocket(userId, user.username);
+      sendOnlineStatus();
       toast.success('Login successful!');
     } catch (error) {
       toast.error(error.message || 'Error logging in');
