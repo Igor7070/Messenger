@@ -18,6 +18,7 @@ public class User {
     private String info; // Информация о пользователе
     private String avatar; // Путь к аватару или байтовый массив
     private boolean online; // "online" или "offline"
+    private Long lastHeartbeat; // Временная метка последнего сердцебиения (в миллисекундах)
 
     @ManyToMany
     @JoinTable(
@@ -79,4 +80,11 @@ public class User {
     public boolean isOnline() { return online; }
 
     public void setOnline(boolean online) { this.online = online; }
+    public Long getLastHeartbeat() {
+        return lastHeartbeat;
+    }
+
+    public void setLastHeartbeat(Long lastHeartbeat) {
+        this.lastHeartbeat = lastHeartbeat;
+    }
 }

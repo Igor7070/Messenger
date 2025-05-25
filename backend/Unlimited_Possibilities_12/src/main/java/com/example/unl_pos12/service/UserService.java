@@ -180,7 +180,26 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setOnline(online);
+        if (online) {
+            user.setLastHeartbeat(System.currentTimeMillis()); // Обновляем метку при установке онлайн
+        } else {
+            user.setLastHeartbeat(null); // Сбрасываем метку при оффлайн
+        }
         userRepository.save(user);
+    }
+
+    @Transactional
+    public void updateHeartbeat(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setLastHeartbeat(System.currentTimeMillis());
+        userRepository.save(user);
+    }
+
+    public boolean isUserOnline(Long userId) {
+        return userRepository.findById(userId)
+                .map(User::isOnline)
+                .orElse(false);
     }
 
     public List<User> getOnlineUsers() {

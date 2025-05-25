@@ -3,10 +3,12 @@ package com.example.unl_pos12.controller.messenger;
 import com.example.unl_pos12.model.messenger.Chat;
 import com.example.unl_pos12.model.messenger.HeartbeatMessage;
 import com.example.unl_pos12.model.messenger.Message;
+import com.example.unl_pos12.model.messenger.User;
 import com.example.unl_pos12.repo.ChatRepository;
 import com.example.unl_pos12.service.MessageService;
 import com.example.unl_pos12.service.UserService;
 import com.example.unl_pos12.service.WebSocketService;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -14,7 +16,11 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Controller
 public class WebSocketMessageController {
@@ -26,6 +32,13 @@ public class WebSocketMessageController {
     private UserService userService;
     @Autowired
     private WebSocketService webSocketService;
+
+    private static final long OFFLINE_TIMEOUT = 20_000; // 20 секунд
+
+    @PostConstruct
+    public void init() {
+        startHeartbeatCheck(); // Запускаем проверку таймаута при старте
+    }
 
     @MessageMapping("/sendMessage/chat/{chatId}")
     @SendTo("/topic/chat/{chatId}/messages")
@@ -82,9 +95,14 @@ public class WebSocketMessageController {
 
     @MessageMapping("/heartbeat")
     public void handleHeartbeat(@Payload HeartbeatMessage message) {
-        System.out.println("Received heartbeat for userId: " + message.getUserId());
-        userService.setUserOnline(message.getUserId(), true);
-        //webSocketService.sendUserStatusUpdate(message.getUserId(), true);
+        Long userId = message.getUserId();
+        System.out.println("Received heartbeat for userId: " + userId);
+        boolean wasOnline = userService.isUserOnline(userId);
+        userService.updateHeartbeat(userId); // Обновляем lastHeartbeat
+        userService.setUserOnline(userId, true); // Устанавливаем онлайн
+        if (!wasOnline) {
+            webSocketService.sendUserStatusUpdate(userId, true); // Отправляем при смене статуса
+        }
     }
 
     @MessageMapping("/requestUserStatus")
@@ -103,19 +121,44 @@ public class WebSocketMessageController {
         }
     }
 
-    // Новый эндпоинт для установки статуса онлайн (Пока неиспользуемый)
     @MessageMapping("/setOnline")
     public void handleSetOnline(@Payload HeartbeatMessage message) {
-        System.out.println("Received setOnline for userId: " + message.getUserId());
-        userService.setUserOnline(message.getUserId(), true);
-        webSocketService.sendUserStatusUpdate(message.getUserId(), true);
+        Long userId = message.getUserId();
+        System.out.println("Received setOnline for userId: " + userId);
+        boolean wasOnline = userService.isUserOnline(userId);
+        userService.setUserOnline(userId, true); // Устанавливаем онлайн и lastHeartbeat
+        if (!wasOnline) {
+            webSocketService.sendUserStatusUpdate(userId, true);
+        }
     }
-
 
     @MessageMapping("/setOffline")
     public void handleSetOffline(@Payload HeartbeatMessage message) {
-        System.out.println("Received setOffline for userId: " + message.getUserId());
-        userService.setUserOnline(message.getUserId(), false);
-        webSocketService.sendUserStatusUpdate(message.getUserId(), false);
+        Long userId = message.getUserId();
+        System.out.println("Received setOffline for userId: " + userId);
+        boolean wasOnline = userService.isUserOnline(userId);
+        userService.setUserOnline(userId, false); // Устанавливаем оффлайн и сбрасываем lastHeartbeat
+        if (wasOnline) {
+            webSocketService.sendUserStatusUpdate(userId, false);
+        }
+    }
+
+    private void startHeartbeatCheck() {
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        scheduler.scheduleAtFixedRate(() -> {
+            long currentTime = System.currentTimeMillis();
+            List<User> onlineUsers = userService.getOnlineUsers();
+            for (User user : onlineUsers) {
+                Long lastHeartbeat = user.getLastHeartbeat();
+                if (lastHeartbeat != null && currentTime - lastHeartbeat > OFFLINE_TIMEOUT) {
+                    System.out.println("User " + user.getId() + " timed out, setting offline");
+                    boolean wasOnline = userService.isUserOnline(user.getId());
+                    userService.setUserOnline(user.getId(), false);
+                    if (wasOnline) {
+                        webSocketService.sendUserStatusUpdate(user.getId(), false);
+                    }
+                }
+            }
+        }, 5, 5, TimeUnit.SECONDS); // Проверяем каждые 5 секунд
     }
 }
