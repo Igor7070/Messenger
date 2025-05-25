@@ -50,7 +50,8 @@ export const UserStatusProvider = ({ children }) => {
         });
 
         if (isTabActiveRef.current) {
-          sendHeartbeat();
+          //sendHeartbeat();
+          sendOnlineStatus();
           startHeartbeat();
         }
       },
