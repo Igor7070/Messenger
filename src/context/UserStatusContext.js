@@ -195,6 +195,7 @@ export const UserStatusProvider = ({ children }) => {
         initializeWebSocket,
         disconnectWebSocket,
         sendHeartbeat,
+        sendOnlineStatus,
         sendOfflineStatus,
       }}
     >

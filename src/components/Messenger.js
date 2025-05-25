@@ -46,7 +46,7 @@ const Messenger = () => {
     const { chatId } = useParams();
     const navigate = useNavigate();
     const { userInteracted, handleInteraction } = useUserInteraction();
-    const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
+    const { usersStatus, initializeWebSocket, disconnectWebSocket, sendOnlineStatus } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
     const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification();
 
@@ -347,6 +347,7 @@ const Messenger = () => {
                 localStorage.setItem('userId', loggedUser.id);
                 localStorage.setItem('username', loggedUser.username);
                 initializeWebSocket(loggedUser.id, loggedUser.username);
+                sendOnlineStatus();
                 toast.success('You have successfully logged in!');
             } catch (error) {
                 let errorMessage = 'Failed to log in. Please try again.';

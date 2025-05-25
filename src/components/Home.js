@@ -31,7 +31,7 @@ const Home = () => {
   const messageClient = useRef(null);
   const navigate = useNavigate();
   const { userInteracted, handleInteraction } = useUserInteraction();
-  const { usersStatus, initializeWebSocket, disconnectWebSocket } = useUserStatusContext();
+  const { usersStatus, initializeWebSocket, disconnectWebSocket, sendOnlineStatus } = useUserStatusContext();
   const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
   const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification();
 
