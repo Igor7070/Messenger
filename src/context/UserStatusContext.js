@@ -147,8 +147,10 @@ export const UserStatusProvider = ({ children }) => {
       isTabActiveRef.current = !document.hidden;
       console.log(`Tab active: ${isTabActiveRef.current}`);
       if (isTabActiveRef.current) {
-        sendHeartbeat();
+        //sendHeartbeat();
         startHeartbeat();
+        sendOnlineStatus();
+
       } else {
         sendOfflineStatus();
         stopHeartbeat();
