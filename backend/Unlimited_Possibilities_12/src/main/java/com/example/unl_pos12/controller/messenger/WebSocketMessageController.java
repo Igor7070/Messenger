@@ -87,7 +87,7 @@ public class WebSocketMessageController {
         webSocketService.sendUserStatusUpdate(message.getUserId(), true);
     }
 
-    // Новый эндпоинт для Android
+    // Новый эндпоинт (Пока неиспользуемый)
     @MessageMapping("/connectionHeartbeat")
     public void handleConnectionHeartbeat(@Payload HeartbeatMessage message) {
         System.out.println("Received connection heartbeat for userId: " + message.getUserId());
@@ -109,7 +109,7 @@ public class WebSocketMessageController {
         }
     }
 
-    // Новый эндпоинт для установки статуса онлайн (Android)
+    // Новый эндпоинт для установки статуса онлайн (Пока неиспользуемый)
     @MessageMapping("/setOnline")
     public void handleSetOnline(@Payload HeartbeatMessage message) {
         System.out.println("Received setOnline for userId: " + message.getUserId());
