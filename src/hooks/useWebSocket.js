@@ -41,7 +41,7 @@ const useWebSocket = (currentUserId, messageAudioRef) => {
                         console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef, 'messageAudioRef.current =', messageAudioRef?.current);
                     }
 
-                    // Отображаем уведомление
+                    // Отображаем уведомление...
                     toast.info(notification, {
                         autoClose: false,
                         onClick: async () => {
