@@ -52,6 +52,7 @@ export const UserStatusProvider = ({ children }) => {
         if (isTabActiveRef.current) {
           //sendHeartbeat();
           startHeartbeat();
+          sendOnlineStatus();
         }
       },
       onStompError: (error) => {
@@ -150,6 +151,7 @@ export const UserStatusProvider = ({ children }) => {
       if (isTabActiveRef.current) {
         //sendHeartbeat();
         startHeartbeat();
+        sendOnlineStatus();
       } else {
         sendOfflineStatus();
         stopHeartbeat();
@@ -161,6 +163,7 @@ export const UserStatusProvider = ({ children }) => {
       console.log('Window focused');
       //sendHeartbeat();
       startHeartbeat();
+      sendOnlineStatus();
     };
 
     const handleBlur = () => {
