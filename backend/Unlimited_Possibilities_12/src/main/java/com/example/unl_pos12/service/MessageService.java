@@ -79,7 +79,7 @@ public class MessageService {
             throw new RuntimeException("File size exceeds 100 MB");
         }
 
-        String uploadDir = "Uploads/";
+        String uploadDir = "uploads/";
         File directory = new File(uploadDir);
         if (!directory.exists()) {
             directory.mkdirs();
