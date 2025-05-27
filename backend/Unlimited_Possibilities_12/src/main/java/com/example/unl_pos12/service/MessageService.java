@@ -68,12 +68,18 @@ public class MessageService {
             throw new RuntimeException("Uploaded file is empty");
         }
 
-        // Проверка типа файла
-        if (!isValidFileType(file.getContentType())) {
-            throw new RuntimeException("Unsupported file type: " + file.getContentType());
+        if (file.getOriginalFilename() == null) {
+            throw new RuntimeException("Filename is null");
         }
 
-        String uploadDir = "uploads/";
+        // Проверка размера файла (100 МБ = 100 * 1024 * 1024 байт)
+        long maxFileSize = 100 * 1024 * 1024;
+        if (file.getSize() > maxFileSize) {
+            System.out.println("File size exceeds 100 MB: size=" + file.getSize());
+            throw new RuntimeException("File size exceeds 100 MB");
+        }
+
+        String uploadDir = "Uploads/";
         File directory = new File(uploadDir);
         if (!directory.exists()) {
             directory.mkdirs();
@@ -88,7 +94,9 @@ public class MessageService {
         Path filePath = Paths.get(uploadDir + filename);
 
         try {
+            System.out.println("Uploading file: name=" + originalFilename + ", size=" + file.getSize() + ", type=" + file.getContentType());
             Files.copy(file.getInputStream(), filePath);
+            System.out.println("File uploaded successfully: path=" + filePath);
         } catch (IOException e) {
             System.out.println("Error while uploading file: " + e.getMessage());
             throw new RuntimeException("Failed to upload file: " + e.getMessage(), e);
