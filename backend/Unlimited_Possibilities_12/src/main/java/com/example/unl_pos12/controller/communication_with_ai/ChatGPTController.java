@@ -64,6 +64,7 @@ public class ChatGPTController {
                 request.getTargetLanguage().equals("auto") ? "English" : request.getTargetLanguage(),
                 request.getPrompt());
         String result = openAIService.generateCompletion(prompt);
+        System.out.println(result);
         return ResponseEntity.ok(result);
     }
 
