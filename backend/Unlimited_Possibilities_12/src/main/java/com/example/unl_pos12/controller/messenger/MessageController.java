@@ -92,4 +92,10 @@ public class MessageController {
 
         return ResponseEntity.ok("Notification sent");
     }
+
+    @GetMapping("/chats/{chatId}/messages")
+    public ResponseEntity<List<Message>> getMessagesByChatId(@PathVariable Long chatId) {
+        List<Message> messages = messageService.findByChatId(chatId);
+        return ResponseEntity.ok(messages);
+    }
 }

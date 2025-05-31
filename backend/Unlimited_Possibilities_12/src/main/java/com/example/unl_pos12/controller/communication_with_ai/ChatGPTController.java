@@ -1,6 +1,9 @@
 package com.example.unl_pos12.controller.communication_with_ai;
 
 import com.example.unl_pos12.model.chat_ai.MessageRequest;
+import com.example.unl_pos12.model.messenger.Message;
+import com.example.unl_pos12.model.messenger.TranslationUpdateRequest;
+import com.example.unl_pos12.repo.MessageRepository;
 import com.example.unl_pos12.service.OpenAIService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +19,8 @@ import java.util.List;
 public class ChatGPTController {
     @Autowired
     private OpenAIService openAIService;
+    @Autowired
+    private MessageRepository messageRepository;
 
     @GetMapping("/communicating_with_a_advanced_ai_model")
     public String chatGPT(HttpSession session, Model model) {
@@ -49,5 +54,30 @@ public class ChatGPTController {
     public ResponseEntity<String> generateApiCompletion(@RequestBody MessageRequest request) {
         String result = openAIService.generateCompletion(request.getPrompt());
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/api/translate")
+    @ResponseBody
+    public ResponseEntity<String> translateMessage(@RequestBody MessageRequest request) {
+        String prompt = String.format("Translate the following text to %s: %s",
+                request.getTargetLanguage().equals("auto") ? "English" : request.getTargetLanguage(),
+                request.getPrompt());
+        String result = openAIService.generateCompletion(prompt);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/api/messages/{messageId}/translate")
+    @ResponseBody
+    public ResponseEntity<Void> saveTranslation(@PathVariable Long messageId,
+                                                @RequestBody TranslationUpdateRequest request) {
+        Message message = messageRepository.findById(messageId)
+                .orElse(null);
+        if (message == null) {
+            return ResponseEntity.notFound().build();
+        }
+        message.setTranslatedContent(request.getTranslatedContent());
+        message.setTranslationLanguage(request.getTargetLanguage());
+        messageRepository.save(message);
+        return ResponseEntity.ok().build();
     }
 }

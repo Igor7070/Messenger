@@ -12,6 +12,8 @@ public class Message {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String content;
+    private String translatedContent;
+    private String translationLanguage;
     private String fileUrl; // URL файла...
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sender_id")
@@ -44,6 +46,22 @@ public class Message {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getTranslatedContent() {
+        return translatedContent;
+    }
+
+    public void setTranslatedContent(String translatedContent) {
+        this.translatedContent = translatedContent;
+    }
+
+    public String getTranslationLanguage() {
+        return translationLanguage;
+    }
+
+    public void setTranslationLanguage(String translationLanguage) {
+        this.translationLanguage = translationLanguage;
     }
 
     public User getSender() {

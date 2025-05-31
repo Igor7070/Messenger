@@ -139,4 +139,8 @@ public class MessageService {
     public Message getMessageById(Long id) {
         return messageRepository.findById(id).orElse(null);
     }
+
+    public List<Message> findByChatId(Long chatId) {
+        return messageRepository.findByChatId(chatId);
+    }
 }
