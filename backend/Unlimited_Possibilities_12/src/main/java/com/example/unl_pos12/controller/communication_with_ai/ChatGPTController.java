@@ -60,7 +60,10 @@ public class ChatGPTController {
     @ResponseBody
     public ResponseEntity<String> translateMessage(@RequestBody MessageRequest request) {
         System.out.println("Translate message: " + request.getPrompt());
-        String prompt = String.format("Translate the following text to %s: %s",
+        if (request.getTargetLanguage() == null || request.getPrompt() == null) {
+            return ResponseEntity.badRequest().body("Prompt and targetLanguage are required");
+        }
+        String prompt = String.format("Translate the following text to %s and return only the translated phrase in double quotes: \"%s\"",
                 request.getTargetLanguage().equals("auto") ? "English" : request.getTargetLanguage(),
                 request.getPrompt());
         String result = openAIService.generateCompletion(prompt);
