@@ -59,6 +59,7 @@ public class ChatGPTController {
     @PostMapping("/api/translate")
     @ResponseBody
     public ResponseEntity<String> translateMessage(@RequestBody MessageRequest request) {
+        System.out.println("Translate message: " + request.getPrompt());
         String prompt = String.format("Translate the following text to %s: %s",
                 request.getTargetLanguage().equals("auto") ? "English" : request.getTargetLanguage(),
                 request.getPrompt());
@@ -70,6 +71,7 @@ public class ChatGPTController {
     @ResponseBody
     public ResponseEntity<Void> saveTranslation(@PathVariable Long messageId,
                                                 @RequestBody TranslationUpdateRequest request) {
+        System.out.println("Method saveTranslation is working...");
         Message message = messageRepository.findById(messageId)
                 .orElse(null);
         if (message == null) {
