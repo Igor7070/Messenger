@@ -526,19 +526,23 @@ const Messenger = () => {
 
     // Добавлено: очистка переводов
     const clearTranslations = () => {
-    setTranslationQueue([]);
-        setMessages((prevMessages) =>
-            prevMessages.map((msg) =>
-            msg.translatedContent || msg.translationLanguage
-                ? {
-                    ...msg,
-                    translatedContent: null,
-                    translationLanguage: null,
-                    showOriginal: true,
-                }
+        setTranslationQueue([]);
+        setMessages((prevMessages) => {
+            const hasTranslations = prevMessages.some(
+                (msg) => msg.translatedContent || msg.translationLanguage
+            );
+            if (!hasTranslations) return prevMessages; // Пропускаем, если нет переводов
+            return prevMessages.map((msg) =>
+                msg.translatedContent || msg.translationLanguage
+                    ? {
+                        ...msg,
+                        translatedContent: null,
+                        translationLanguage: null,
+                        showOriginal: true,
+                    }
                 : msg
-            )
-        );
+            );
+        });
     };
 
     // Добавлено: запуск перевода при изменении настроек
@@ -548,7 +552,7 @@ const Messenger = () => {
         } else {
             clearTranslations();
         }
-    }, [isTranslationEnabled, translationLanguage, translateNewOnly, messages]);
+    }, [isTranslationEnabled, translationLanguage, translateNewOnly]);
 
     // Добавлено: обработка очереди переводов
     useEffect(() => {
