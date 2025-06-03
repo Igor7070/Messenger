@@ -69,3 +69,22 @@ export const createChat = async (chat) => {
     const data = await response.json();
     return data;
 };
+
+export const translateMessage = async (content, targetLanguage) => {
+  const response = await fetch('https://unlimitedpossibilities12.org/api/translate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: content, targetLanguage }),
+  });
+  if (!response.ok) throw new Error('Failed to translate message');
+  return await response.json();
+};
+
+export const saveTranslation = async (messageId, translatedContent, targetLanguage) => {
+  const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/${messageId}/translate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ translatedContent, targetLanguage }),
+  });
+  if (!response.ok) throw new Error('Failed to save translation');
+};

@@ -12,6 +12,8 @@ import { useUserInteraction } from '../context/UserInteractionContext';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
+import TranslationSettingsModal from './TranslationSettingsModal';
+import { translateMessage, saveTranslation } from '../api/messages';
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
@@ -49,6 +51,13 @@ const Messenger = () => {
     const { usersStatus, initializeWebSocket, disconnectWebSocket, sendOnlineStatus } = useUserStatusContext();
     const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
     const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification();
+
+    const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
+    const [translationLanguage, setTranslationLanguage] = useState('auto');
+    const [translateNewOnly, setTranslateNewOnly] = useState(false);
+    const [translationQueue, setTranslationQueue] = useState([]);
+    const [isTranslating, setIsTranslating] = useState(false);
+    const [showTranslationModal, setShowTranslationModal] = useState(false);
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -97,14 +106,28 @@ const Messenger = () => {
             setNotificationUserId(userIdNum);
             setUsername(storedUsername);
             setIsLoggedIn(true);
+            // Добавлено: загрузка настроек перевода
+            setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatId}`) === 'true');
+            setTranslationLanguage(localStorage.getItem(`translation_language_${chatId}`) || 'auto');
+            setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatId}`) === 'true');
         }
-    }, [setContextUserId, setNotificationUserId]);
+    }, [setContextUserId, setNotificationUserId, chatId]);
 
     useEffect(() => {
         const fetchMessages = async () => {
             try {
                 const messages = await getMessages(chatId);
-                setMessages(messages);
+                // Добавлено: восстановление локальных переводов
+                const updatedMessages = messages.map((msg) => {
+                    const translationKey = `translation_${chatId}_${msg.id}`;
+                    const savedTranslation = localStorage.getItem(translationKey);
+                    if (savedTranslation) {
+                        const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
+                        return { ...msg, translatedContent, translationLanguage, showOriginal: true };
+                    }
+                    return { ...msg, showOriginal: true };
+                });
+                setMessages(updatedMessages);
                 const name = await getChatName(chatId);
                 setChatName(name);
                 // Сохраняем время последнего посещения
@@ -157,15 +180,34 @@ const Messenger = () => {
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
-            const existingMessageIndex = prevMessages.findIndex(msg => msg.id === newMessage.id);
+            const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
                 const updatedMessages = [...prevMessages];
-                updatedMessages[existingMessageIndex] = newMessage;
+                updatedMessages[existingMessageIndex] = {
+                    ...newMessage,
+                    // Добавлено: сохраняем существующий перевод, если он есть
+                    translatedContent: updatedMessages[existingMessageIndex].translatedContent,
+                    translationLanguage: updatedMessages[existingMessageIndex].translationLanguage,
+                    showOriginal: updatedMessages[existingMessageIndex].showOriginal,
+                };
+                // Добавлено: перевод обновленного сообщения, если нужно
+                if (
+                    isTranslationEnabled &&
+                    isMessageNew(newMessage) &&
+                    (!updatedMessages[existingMessageIndex].translatedContent ||
+                    updatedMessages[existingMessageIndex].translationLanguage !== translationLanguage)
+                ) {
+                    setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+                }
                 return updatedMessages;
-            } else if (newMessage.content !== "Message deleted") {
+            } else if (newMessage.content !== 'Message deleted') {
                 const updatedMessages = [...prevMessages, newMessage];
                 // Обновляем время последнего посещения, если чат открыт
                 localStorage.setItem(`last_visit_chat_${chatId}`, newMessage.timestamp);
+                // Добавлено: перевод нового сообщения
+                if (isTranslationEnabled && isMessageNew(newMessage)) {
+                    setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+                }
                 return updatedMessages;
             }
             return prevMessages;
@@ -407,9 +449,163 @@ const Messenger = () => {
         return msg.sender.id !== userId;
     };
 
+    // Добавлено: проверка, является ли сообщение новым
+    const isMessageNew = (message) => {
+        if (!translateNewOnly) return true;
+        const enabledTimestamp = localStorage.getItem(`translation_enabled_timestamp_${chatId}`);
+        if (!enabledTimestamp) return false;
+        try {
+            const messageTime = new Date(message.timestamp).getTime();
+            const enabledTime = new Date(enabledTimestamp).getTime();
+            return messageTime > enabledTime;
+        } catch (e) {
+            console.error('Error parsing timestamps:', e);
+            return false;
+        }
+    };
+
+    // Добавлено: перевод существующего сообщения
+    const translateExistingMessages = () => {
+        if (!isTranslationEnabled) return;
+        const queue = messages
+            .filter(
+            (msg) =>
+                isMessageNew(msg) &&
+                (!msg.translatedContent || msg.translationLanguage !== translationLanguage)
+            )
+            .map((msg) => ({ ...msg }));
+        setTranslationQueue(queue);
+    };
+
+    // Добавлено: обработка следующего сообщения в очереди
+    const translateNextMessage = () => {
+        if (translationQueue.length === 0 || isTranslating) return;
+        setIsTranslating(true);
+        const message = translationQueue[0];
+        translateMessageFunc(message);
+    };
+
+    // Добавлено: перевод одного сообщения
+    const translateMessageFunc = async (message) => {
+        try {
+            const translatedContent = await translateMessage(message.content, translationLanguage);
+            const updatedMessage = {
+                ...message,
+                translatedContent,
+                translationLanguage,
+                showOriginal: true,
+            };
+
+            // Сохранение перевода локально
+            localStorage.setItem(
+                `translation_${chatId}_${message.id}`,
+                JSON.stringify({ translatedContent, translationLanguage })
+            );
+
+            // Сохранение перевода на сервере
+            await saveTranslation(message.id, translatedContent, translationLanguage);
+
+            setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                    msg.id === message.id ? updatedMessage : msg
+                )
+            );
+
+            setTranslationQueue((prevQueue) => prevQueue.slice(1));
+            setIsTranslating(false);
+        } catch (error) {
+            console.error('Translation error:', error);
+            setTranslationQueue((prevQueue) => prevQueue.slice(1));
+            setIsTranslating(false);
+        }
+    };
+
+    // Добавлено: очистка переводов
+    const clearTranslations = () => {
+        setTranslationQueue([]);
+        setMessages((prevMessages) =>
+            prevMessages.map((msg) => ({
+            ...msg,
+            translatedContent: null,
+            translationLanguage: null,
+            showOriginal: true,
+            }))
+        );
+    };
+
+    // Добавлено: запуск перевода при изменении настроек
+    useEffect(() => {
+        if (isTranslationEnabled) {
+            translateExistingMessages();
+        } else {
+            clearTranslations();
+        }
+    }, [isTranslationEnabled, translationLanguage, translateNewOnly, messages]);
+
+    // Добавлено: обработка очереди переводов
+    useEffect(() => {
+        translateNextMessage();
+    }, [translationQueue, isTranslating]);
+
+    // Добавлено: обработка новых сообщений для перевода
+    useEffect(() => {
+        const stompClientInstance = new Client({
+            webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
+            onConnect: () => {
+            console.log('Connected to WebSocket');
+            stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
+                const newMessage = JSON.parse(message.body);
+                updateMessages(newMessage);
+                // Добавлено: перевод нового сообщения
+                if (isTranslationEnabled && isMessageNew(newMessage)) {
+                setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+                }
+            });
+            },
+            onWebSocketError: (error) => {
+            console.error('WebSocket error:', error);
+            },
+        });
+
+        setClient(stompClientInstance);
+        stompClientInstance.activate();
+
+        return () => {
+            stompClientInstance.deactivate();
+        };
+    }, [chatId, isTranslationEnabled, translationLanguage]); // Изменено: добавлены зависимости
+
+    // Добавлено: обработка сохранения настроек перевода
+    const handleTranslationSettingsSave = (enabled, language, newOnly) => {
+        setIsTranslationEnabled(enabled);
+        setTranslationLanguage(language);
+        setTranslateNewOnly(newOnly);
+    };
+
     return (
         <div className="messenger">
             <div className="chat-name">Group Chat: {chatName}</div>
+            <div className="translation-controls">
+                <button
+                    className="translation-button"
+                    onClick={() => setShowTranslationModal(true)}
+                    style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
+                >
+                    🌐
+                </button>
+            {isTranslationEnabled && (
+                <span className="translation-indicator">
+                {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
+                </span>
+            )}
+            </div>
+            {showTranslationModal && (
+                <TranslationSettingsModal
+                    chatId={chatId}
+                    onSave={handleTranslationSettingsSave}
+                    onClose={() => setShowTranslationModal(false)}
+                />
+            )}
             <div className="user-creation">
                 {!isLoggedIn ? (
                     <>
@@ -447,31 +643,31 @@ const Messenger = () => {
                                 {shouldShowAvatar(msg) && (
                                     <div className="avatar-container">
                                         {msg.sender.avatar ? (
-                                            <div className="avatar-wrapper">
-                                                <img
-                                                    src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
-                                                    alt={`${msg.sender.username} avatar`}
-                                                    className="message-avatar"
-                                                    onClick={() => handleAvatarClick(msg.sender.id)}
-                                                    style={{ cursor: 'pointer' }}
-                                                />
-                                                {(usersStatus[msg.sender.id]?.online) && (
-                                                    <span className="status-indicator-online-groupchat"></span>
-                                                )}
-                                            </div>
+                                        <div className="avatar-wrapper">
+                                            <img
+                                                src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
+                                                alt={`${msg.sender.username} avatar`}
+                                                className="message-avatar"
+                                                onClick={() => handleAvatarClick(msg.sender.id)}
+                                                style={{ cursor: 'pointer' }}
+                                            />
+                                            {usersStatus[msg.sender.id]?.online && (
+                                                <span className="status-indicator-online-groupchat"></span>
+                                            )}
+                                        </div>
                                         ) : (
-                                            <div className="avatar-wrapper">
-                                                <div
-                                                    className="message-avatar"
-                                                    onClick={() => handleAvatarClick(msg.sender.id)}
-                                                    style={{ cursor: 'pointer' }}
-                                                >
-                                                    {msg.sender.username.charAt(0).toUpperCase()}
-                                                </div>
-                                                {(usersStatus[msg.sender.id]?.online) && (
-                                                    <span className="status-indicator-online-groupchat"></span>
-                                                )}
+                                        <div className="avatar-wrapper">
+                                            <div
+                                                className="message-avatar"
+                                                onClick={() => handleAvatarClick(msg.sender.id)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                {msg.sender.username.charAt(0).toUpperCase()}
                                             </div>
+                                            {usersStatus[msg.sender.id]?.online && (
+                                                <span className="status-indicator-online-groupchat"></span>
+                                            )}
+                                        </div>
                                         )}
                                     </div>
                                 )}
@@ -480,13 +676,22 @@ const Messenger = () => {
                                         {msg.sender.id !== userId && (
                                             <span className="sender-name">{msg.sender.username}</span>
                                         )}
-                                        <span className="message-content">{msg.content}</span>
+                                        <span
+                                            className="message-content"
+                                            onClick={() =>
+                                                msg.translatedContent &&
+                                                setMessages((prevMessages) =>
+                                                    prevMessages.map((m) =>
+                                                        m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                                    )
+                                                )
+                                            }
+                                            style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                                        >
+                                            {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                                        </span>
                                         {msg.fileUrl && (
-                                            <a
-                                                href={msg.fileUrl}
-                                                download
-                                                className="file-link"
-                                            >
+                                            <a href={msg.fileUrl} download className="file-link">
                                                 📥 Download file
                                             </a>
                                         )}
