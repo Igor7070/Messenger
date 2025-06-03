@@ -117,7 +117,6 @@ const Messenger = () => {
         const fetchMessages = async () => {
             try {
                 const messages = await getMessages(chatId);
-                // Добавлено: восстановление локальных переводов
                 const updatedMessages = messages.map((msg) => {
                     const translationKey = `translation_${chatId}_${msg.id}`;
                     const savedTranslation = localStorage.getItem(translationKey);
@@ -130,11 +129,13 @@ const Messenger = () => {
                 setMessages(updatedMessages);
                 const name = await getChatName(chatId);
                 setChatName(name);
-                // Сохраняем время последнего посещения
                 if (messages.length > 0) {
-                    const lastMessage = messages[messages.length - 1];
-                    localStorage.setItem(`last_visit_chat_${chatId}`, lastMessage.timestamp);
+                    localStorage.setItem(`last_visit_chat_${chatId}`, messages[messages.length - 1].timestamp);
                 }
+                // Добавлено: прокрутка вниз после загрузки сообщений
+                setTimeout(() => {
+                    scrollToBottom();
+                }, 0); // setTimeout для выполнения после рендера
             } catch (error) {
                 console.error('Ошибка при загрузке сообщений:', error);
                 toast.error('Failed to load messages');
@@ -216,24 +217,13 @@ const Messenger = () => {
     };
 
     useEffect(() => {
-        // Прокрутка при открытии компонента
-        const messageList = messageListRef.current;
-        if (messageList) {
-            scrollToBottom();
-        }
-    }, [chatId]); // Зависимость от chatId, чтобы сработало при открытии чата
-
-    useEffect(() => {
         // Прокрутка при добавлении нового сообщения
-        const messageList = messageListRef.current;
-        if (messageList && messages.length > 0) {
-            const isAtBottom =
-            messageList.scrollHeight - messageList.scrollTop <= messageList.clientHeight + 50; // Допуск 50px
-            if (isAtBottom) {
+        if (messages.length > 0) {
+            setTimeout(() => {
             scrollToBottom();
-            }
+            }, 0); // setTimeout для выполнения после рендера
         }
-    }, [messages.length]); // Зависимость только от длины messages
+    }, [messages.length]);
 
     const uploadFile = async (file) => {
         const formData = new FormData();
