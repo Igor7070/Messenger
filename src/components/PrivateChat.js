@@ -71,9 +71,6 @@ const PrivateChat = () => {
         return;
       }
 
-      // Добавлено: синхронно загружаем isTranslationEnabled из localStorage
-      const isTranslationEnabledLocal = localStorage.getItem(`translation_enabled_${chatIdParam}`) === 'true';
-
       try {
         const chatData = await getChatById(chatIdParam);
         setChatName(chatData.name);
@@ -85,21 +82,18 @@ const PrivateChat = () => {
 
         const initialMessages = await getMessages(chatIdParam);
         const updatedMessages = initialMessages.map((msg) => {
-          // Изменено: используем isTranslationEnabledLocal
-          if (isTranslationEnabledLocal) {
-            const translationKey = `translation_${chatIdParam}_${msg.id}`;
-            const savedTranslation = localStorage.getItem(translationKey);
-            if (savedTranslation) {
-              const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
-              return {
-                ...msg,
-                delivered: msg.delivered_status,
-                read: msg.read_status,
-                translatedContent,
-                translationLanguage,
-                showOriginal: true,
-              };
-            }
+          const translationKey = `translation_${chatIdParam}_${msg.id}`;
+          const savedTranslation = localStorage.getItem(translationKey);
+          if (savedTranslation) {
+            const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
+            return {
+              ...msg,
+              delivered: msg.delivered_status,
+              read: msg.read_status,
+              translatedContent,
+              translationLanguage,
+              showOriginal: true,
+            };
           }
           return {
             ...msg,
@@ -110,8 +104,6 @@ const PrivateChat = () => {
         });
 
         setMessages(updatedMessages);
-        // Добавлено: прокрутка вниз после загрузки сообщений
-        scrollToBottom();
       } catch (error) {
         console.error('Ошибка при загрузке данных о чате:', error);
         toast.error('Не удалось загрузить данные чата');
@@ -127,6 +119,7 @@ const PrivateChat = () => {
       setCurrentUserId(userIdNum);
       setContextUserId(userIdNum);
       setNotificationUserId(userIdNum);
+      // Добавлено: загрузка настроек перевода
       setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatIdParam}`) === 'true');
       setTranslationLanguage(localStorage.getItem(`translation_language_${chatIdParam}`) || 'auto');
       setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatIdParam}`) === 'true');
@@ -257,8 +250,6 @@ const PrivateChat = () => {
           read: newMessage.read_status,
           showOriginal: true,
         };
-        // Добавлено: прокрутка вниз при добавлении нового сообщения
-        scrollToBottom();
         console.log('New message added:', newMsg); // Отладка
         return [...prevMessages, newMsg];
       }
@@ -359,8 +350,6 @@ const PrivateChat = () => {
         }, 3000);
 
         resetForm();
-        // Добавлено: прокрутка вниз после отправки сообщения
-        scrollToBottom();
       } else {
         console.error('STOMP client is not connected');
         toast.error('Failed to send message: no connection');
@@ -423,6 +412,13 @@ const PrivateChat = () => {
       toast.error('Failed to delete message. Try again.');
     }
   };
+
+  useEffect(() => {
+    const rafId = requestAnimationFrame(() => {
+      scrollToBottom();
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [messages]);
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
