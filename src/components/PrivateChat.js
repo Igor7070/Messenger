@@ -46,8 +46,8 @@ const PrivateChat = () => {
   const [showTranslationModal, setShowTranslationModal] = useState(false);
 
   const scrollToBottom = () => {
-    if (messagesEndRef.current && messageListRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (messageListRef.current && messagesEndRef.current) {
+      messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
   };
 
