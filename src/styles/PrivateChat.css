@@ -13,20 +13,24 @@
 }
 
 .private-chat-name {
-    font-family: 'Inter', 'Open Sans', sans-serif;
-    font-size: 20px;
-    font-weight: 600;
-    color: #333333;
-    padding: 12px;
-    background-color: #FFFFFF;
-    border-radius: 5px;
-    text-align: center;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    letter-spacing: 0.2px;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
+  font-family: 'Inter', 'Open Sans', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333333;
+  padding: 12px;
+  background-color: #FFFFFF;
+  border-radius: 5px;
+  text-align: center;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.2px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  display: flex; /* Добавлено */
+  align-items: center; /* Добавлено */
+  justify-content: center; /* Добавлено */
+  position: relative; /* Добавлено */
 }
 
 .private-message-list {
@@ -326,6 +330,44 @@
     position: fixed !important;
     top: 10px !important;
     right: 10px !important;
+}
+
+.translation-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  right: 12px;
+}
+
+.translation-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.translation-indicator {
+  font-size: 14px;
+  color: #42a5f5;
+  font-weight: 500;
+}
+
+.original-content {
+  display: block;
+  font-family: 'Roboto', sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.translated-content {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #666;
+  margin-top: 4px;
+  line-height: 1.4;
 }
 
 @media (max-width: 800px) {

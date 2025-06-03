@@ -12,6 +12,8 @@ import { useUserInteraction } from '../context/UserInteractionContext';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
+import TranslationSettingsModal from './TranslationSettingsModal';
+import { translateMessage, saveTranslation } from '../api/messages';
 
 const PrivateChat = () => {
   const [messages, setMessages] = useState([]);
@@ -35,6 +37,13 @@ const PrivateChat = () => {
   const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
   const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification();
   const [currentUserId, setCurrentUserId] = useState(null);
+
+  const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
+  const [translationLanguage, setTranslationLanguage] = useState('auto');
+  const [translateNewOnly, setTranslateNewOnly] = useState(false);
+  const [translationQueue, setTranslationQueue] = useState([]);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [showTranslationModal, setShowTranslationModal] = useState(false);
 
   const scrollToBottom = () => {
     if (messagesEndRef.current && messageListRef.current) {
@@ -72,11 +81,27 @@ const PrivateChat = () => {
         setCurrentChatId(chatIdParam);
 
         const initialMessages = await getMessages(chatIdParam);
-        const updatedMessages = initialMessages.map((msg) => ({
-          ...msg,
-          delivered: msg.delivered_status,
-          read: msg.read_status,
-        }));
+        const updatedMessages = initialMessages.map((msg) => {
+          const translationKey = `translation_${chatIdParam}_${msg.id}`;
+          const savedTranslation = localStorage.getItem(translationKey);
+          if (savedTranslation) {
+            const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
+            return {
+              ...msg,
+              delivered: msg.delivered_status,
+              read: msg.read_status,
+              translatedContent,
+              translationLanguage,
+              showOriginal: true,
+            };
+          }
+          return {
+            ...msg,
+            delivered: msg.delivered_status,
+            read: msg.read_status,
+            showOriginal: true,
+          };
+        });
 
         setMessages(updatedMessages);
       } catch (error) {
@@ -90,10 +115,14 @@ const PrivateChat = () => {
 
     const storedUserId = localStorage.getItem('userId');
     if (storedUserId) {
-      const userIdNum = Number(storedUserId);
+      const userIdNum = parseInt(storedUserId, 10);
       setCurrentUserId(userIdNum);
       setContextUserId(userIdNum);
       setNotificationUserId(userIdNum);
+      // Добавлено: загрузка настроек перевода
+      setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatIdNum}`) === 'true');
+      setTranslationLanguage(localStorage.getItem(`translation_language_${chatIdParam}`) || 'auto');
+      setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatIdParam}`) === 'true');
     }
 
     return () => {
@@ -114,11 +143,14 @@ const PrivateChat = () => {
           const newMessage = JSON.parse(message.body);
           console.log('NewMessage:', newMessage);
           updateMessages(newMessage);
+          // Добавлено: перевод нового сообщения
+          if (isTranslationEnabled && isMessageNew(newMessage)) {
+            setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+          }
         });
       },
       onWebSocketError: (error) => {
         console.error('WebSocket error in PrivateChat:', error);
-        // Не показываем тост для временных ошибок
       },
       onStompError: (frame) => {
         console.error('STOMP error in PrivateChat:', frame);
@@ -136,7 +168,7 @@ const PrivateChat = () => {
       console.log('Deactivating WebSocket in PrivateChat');
       stompClientInstance.deactivate();
     };
-  }, [chatId]);
+  }, [chatId, isTranslationEnabled, translationLanguage]); // Добавлено: isTranslationEnabled, translationLanguage
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -196,7 +228,19 @@ const PrivateChat = () => {
           ...newMessage,
           delivered: newMessage.delivered_status,
           read: newMessage.read_status,
+          translatedContent: updatedMessages[existingMessageIndex].translatedContent, // Добавлено
+          translationLanguage: updatedMessages[existingMessageIndex].translationLanguage, // Добавлено
+          showOriginal: updatedMessages[existingMessageIndex].showOriginal, // Добавлено
         };
+        // Добавлено: перевод обновленного сообщения
+        if (
+          isTranslationEnabled &&
+          isMessageNew(newMessage) &&
+          (!updatedMessages[existingMessageIndex].translatedContent ||
+            updatedMessages[existingMessageIndex].translationLanguage !== translationLanguage)
+        ) {
+          setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+        }
         return updatedMessages;
       } else {
         return [
@@ -205,6 +249,7 @@ const PrivateChat = () => {
             ...newMessage,
             delivered: newMessage.delivered_status,
             read: newMessage.read_status,
+            showOriginal: true, // Добавлено
           },
         ];
       }
@@ -404,9 +449,145 @@ const PrivateChat = () => {
     return prevMessage.sender.id !== msg.sender.id;
   };
 
+  // Добавлено: проверка, является ли сообщение новым
+  const isMessageNew = (message) => {
+    if (!translateNewOnly) return true;
+    const enabledTimestamp = localStorage.getItem(`translation_enabled_timestamp_${chatId}`);
+    if (!enabledTimestamp) return false;
+    try {
+      const messageTime = new Date(message.timestamp).getTime();
+      const enabledTime = new Date(enabledTimestamp).getTime();
+      return messageTime > enabledTime;
+    } catch (e) {
+      console.error('Error parsing timestamps:', e);
+      return false;
+    }
+  };
+
+  // Добавлено: перевод существующих сообщений
+  const translateExistingMessages = () => {
+    if (!isTranslationEnabled) return;
+    const queue = messages
+      .filter(
+        (msg) =>
+          isMessageNew(msg) &&
+          (!msg.translatedContent || msg.translationLanguage !== translationLanguage)
+      )
+      .map((msg) => ({ ...msg }));
+    setTranslationQueue(queue);
+  };
+
+  // Добавлено: обработка следующего сообщения в очереди
+  const translateNextMessage = () => {
+    if (translationQueue.length === 0 || isTranslating) return;
+    setIsTranslating(true);
+    const message = translationQueue[0];
+    translateMessageFunc(message);
+  };
+
+  // Добавлено: перевод одного сообщения
+  const translateMessageFunc = async (message) => {
+    try {
+      const translatedContent = await translateMessage(message.content, translationLanguage);
+      const updatedMessage = {
+        ...message,
+        translatedContent,
+        translationLanguage,
+        showOriginal: true,
+      };
+
+      // Сохранение перевода локально
+      localStorage.setItem(
+        `translation_${chatId}_${message.id}`,
+        JSON.stringify({ translatedContent, translationLanguage })
+      );
+
+      // Сохранение перевода на сервере
+      await saveTranslation(message.id, translatedContent, translationLanguage);
+
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) =>
+          msg.id === message.id ? updatedMessage : msg
+        )
+      );
+
+      setTranslationQueue((prevQueue) => prevQueue.slice(1));
+      setIsTranslating(false);
+    } catch (error) {
+      console.error('Translation error:', error);
+      setTranslationQueue((prevQueue) => prevQueue.slice(1));
+      setIsTranslating(false);
+    }
+  };
+
+  // Добавлено: очистка переводов
+  const clearTranslations = () => {
+    setTranslationQueue([]);
+    setMessages((prevMessages) => {
+      const hasTranslations = prevMessages.some(
+        (msg) => msg.translatedContent || msg.translationLanguage
+      );
+      if (!hasTranslations) return prevMessages;
+      return prevMessages.map((msg) =>
+        msg.translatedContent || msg.translationLanguage
+          ? {
+              ...msg,
+              translatedContent: null,
+              translationLanguage: null,
+              showOriginal: true,
+            }
+          : msg
+      );
+    });
+  };
+
+  // Добавлено: обработка сохранения настроек перевода
+  const handleTranslationSettingsSave = (enabled, language, newOnly) => {
+    setIsTranslationEnabled(enabled);
+    setTranslationLanguage(language);
+    setTranslateNewOnly(newOnly);
+  };
+
+  // Добавлено: запуск перевода при изменении настроек
+  useEffect(() => {
+    if (isTranslationEnabled) {
+      translateExistingMessages();
+    } else {
+      clearTranslations();
+    }
+  }, [isTranslationEnabled, translationLanguage, translateNewOnly]);
+
+  // Добавлено: обработка очереди переводов
+  useEffect(() => {
+    translateNextMessage();
+  }, [translationQueue, isTranslating]);
+
   return (
     <div className="private-chat">
-      <div className="private-chat-name">{displayChatName}</div>
+      <div className="private-chat-name">
+        {displayChatName}
+        <div className="translation-controls">
+          <button
+            className="translation-button"
+            onClick={() => setShowTranslationModal(true)}
+            style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
+          >
+            🌐
+          </button>
+          {isTranslationEnabled && (
+            <span className="translation-indicator">
+              {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
+            </span>
+          )}
+        </div>
+      </div>
+      {showTranslationModal && (
+        <TranslationSettingsModal
+          chatId={chatId}
+          onSave={handleTranslationSettingsSave}
+          onClose={() => setShowTranslationModal(false)}
+        />
+      )}
       <div className="private-message-list" ref={messageListRef}>
         {messages.map((msg, index) => (
           <div
@@ -454,7 +635,27 @@ const PrivateChat = () => {
                 }`}
               >
                 <div className="private-message-body">
-                  <span className="private-message-content">{msg.content}</span>
+                  <span
+                    className="private-message-content"
+                    onClick={(e) => {
+                      if (e.target.tagName === 'A') return;
+                      if (msg.translatedContent) {
+                        setMessages((prevMessages) =>
+                          prevMessages.map((m) =>
+                            m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                          )
+                        );
+                      }
+                    }}
+                    style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                  >
+                    <span className="original-content">
+                      {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                    </span>
+                    {msg.translatedContent && (
+                      <span className="translated-content">{msg.translatedContent}</span>
+                    )}
+                  </span>
                   {msg.fileUrl && (
                     <a href={msg.fileUrl} download className="private-file-link">
                       📥 Download file
