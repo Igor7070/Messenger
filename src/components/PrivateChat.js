@@ -66,7 +66,7 @@ const PrivateChat = () => {
     const fetchChatData = async () => {
       console.log('fetchChatData is working...');
       if (!chatIdParam || !username) {
-        toast.error('Неверный ID чата или пользователь не авторизован');
+        toast.error('Invalid chat ID or user is not authorized');
         navigate('/');
         return;
       }
@@ -339,23 +339,23 @@ const PrivateChat = () => {
                   });
                 }
               } else {
-                console.error('Ошибка при получении ID получателя');
+                console.error('Error getting recipient ID');
               }
             } else {
-              console.error('Ошибка при получении статуса сообщения');
+              console.error('Error getting message status');
             }
           } else {
-            console.error('Ошибка при поиске сообщения');
+            console.error('Error while searching for message');
           }
         }, 3000);
 
         resetForm();
       } else {
         console.error('STOMP client is not connected');
-        toast.error('Не удалось отправить сообщение: нет соединения');
+        toast.error('Failed to send message: no connection');
       }
     } else {
-      toast.warn('Введите сообщение или выберите файл');
+      toast.warn('Enter a message or select a file');
     }
   };
 
@@ -387,7 +387,7 @@ const PrivateChat = () => {
 
   const handleMenuAction = (action) => {
     if (contextMenu.message.sender.id !== userId) {
-      toast.error('Вы можете редактировать или удалять только свои сообщения');
+      toast.error('You can only edit or delete your own messages.');
       return;
     }
 
@@ -407,9 +407,9 @@ const PrivateChat = () => {
         body: JSON.stringify(id),
       });
       setMessages((prevMessages) => prevMessages.filter((msg) => msg.id !== id));
-      toast.success('Сообщение удалено!');
+      toast.success('Message deleted!');
     } else {
-      toast.error('Не удалось удалить сообщение. Попробуйте снова.');
+      toast.error('Failed to delete message. Try again.');
     }
   };
 
@@ -490,7 +490,7 @@ const PrivateChat = () => {
     try {
       const translatedContent = await translateMessage(message.content, translationLanguage);
       const updatedMessage = {
-        ...message,
+        ...message, // Копируем все поля исходного сообщения
         translatedContent,
         translationLanguage,
         showOriginal: true,
