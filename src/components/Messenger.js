@@ -584,20 +584,22 @@ const Messenger = () => {
 
     return (
         <div className="messenger">
-            <div className="chat-name">Group Chat: {chatName}</div>
-            <div className="translation-controls">
-                <button
-                    className="translation-button"
-                    onClick={() => setShowTranslationModal(true)}
-                    style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
-                >
-                    🌐
-                </button>
-            {isTranslationEnabled && (
-                <span className="translation-indicator">
-                {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
-                </span>
-            )}
+            <div className="chat-header">
+                <div className="chat-name">Group Chat: {chatName}</div>
+                <div className="translation-controls">
+                    <button
+                        className="translation-button"
+                        onClick={() => setShowTranslationModal(true)}
+                        style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
+                    >
+                        🌐
+                    </button>
+                    {isTranslationEnabled && (
+                        <span className="translation-indicator">
+                            {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
+                        </span>
+                    )}
+                </div>
             </div>
             {showTranslationModal && (
                 <TranslationSettingsModal
@@ -643,31 +645,31 @@ const Messenger = () => {
                                 {shouldShowAvatar(msg) && (
                                     <div className="avatar-container">
                                         {msg.sender.avatar ? (
-                                        <div className="avatar-wrapper">
-                                            <img
+                                            <div className="avatar-wrapper">
+                                                <img
                                                 src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
                                                 alt={`${msg.sender.username} avatar`}
                                                 className="message-avatar"
                                                 onClick={() => handleAvatarClick(msg.sender.id)}
                                                 style={{ cursor: 'pointer' }}
-                                            />
-                                            {usersStatus[msg.sender.id]?.online && (
+                                                />
+                                                {usersStatus[msg.sender.id]?.online && (
                                                 <span className="status-indicator-online-groupchat"></span>
-                                            )}
-                                        </div>
-                                        ) : (
-                                        <div className="avatar-wrapper">
-                                            <div
-                                                className="message-avatar"
-                                                onClick={() => handleAvatarClick(msg.sender.id)}
-                                                style={{ cursor: 'pointer' }}
-                                            >
-                                                {msg.sender.username.charAt(0).toUpperCase()}
+                                                )}
                                             </div>
-                                            {usersStatus[msg.sender.id]?.online && (
-                                                <span className="status-indicator-online-groupchat"></span>
-                                            )}
-                                        </div>
+                                        ) : (
+                                            <div className="avatar-wrapper">
+                                                <div
+                                                    className="message-avatar"
+                                                    onClick={() => handleAvatarClick(msg.sender.id)}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    {msg.sender.username.charAt(0).toUpperCase()}
+                                                </div>
+                                                {usersStatus[msg.sender.id]?.online && (
+                                                    <span className="status-indicator-online-groupchat"></span>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 )}
@@ -676,7 +678,7 @@ const Messenger = () => {
                                         {msg.sender.id !== userId && (
                                             <span className="sender-name">{msg.sender.username}</span>
                                         )}
-                                        <span
+                                        <div
                                             className="message-content"
                                             onClick={() =>
                                                 msg.translatedContent &&
@@ -688,12 +690,17 @@ const Messenger = () => {
                                             }
                                             style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
                                         >
-                                            {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
-                                        </span>
+                                            <span className="original-content">
+                                                {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                                            </span>
+                                            {msg.translatedContent && msg.showOriginal && (
+                                                <span className="translated-content">{msg.translatedContent}</span>
+                                            )}
+                                        </div>
                                         {msg.fileUrl && (
-                                            <a href={msg.fileUrl} download className="file-link">
-                                                📥 Download file
-                                            </a>
+                                        <a href={msg.fileUrl} download className="file-link">
+                                            📥 Download file
+                                        </a>
                                         )}
                                         <div className="message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                                     </div>
