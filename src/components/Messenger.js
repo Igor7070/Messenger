@@ -77,8 +77,8 @@ const Messenger = () => {
 
     // Прокрутка к последнему сообщению
     const scrollToBottom = () => {
-        if (messagesEndRef.current && messageListRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        if (messageListRef.current) {
+            messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
         }
     };
 
