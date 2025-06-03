@@ -216,6 +216,7 @@ const PrivateChat = () => {
   };
 
   const updateMessages = (newMessage) => {
+    console.log('Updating message:', newMessage); // Отладка
     setMessages((prevMessages) => {
       if (newMessage.content === 'Message deleted') {
         return prevMessages.filter((msg) => msg.id !== newMessage.id);
@@ -228,11 +229,11 @@ const PrivateChat = () => {
           ...newMessage,
           delivered: newMessage.delivered_status,
           read: newMessage.read_status,
-          translatedContent: updatedMessages[existingMessageIndex].translatedContent, // Добавлено
-          translationLanguage: updatedMessages[existingMessageIndex].translationLanguage, // Добавлено
-          showOriginal: updatedMessages[existingMessageIndex].showOriginal, // Добавлено
+          translatedContent: updatedMessages[existingMessageIndex].translatedContent,
+          translationLanguage: updatedMessages[existingMessageIndex].translationLanguage,
+          showOriginal: updatedMessages[existingMessageIndex].showOriginal,
         };
-        // Добавлено: перевод обновленного сообщения
+        console.log('Updated existing message:', updatedMessages[existingMessageIndex]); // Отладка
         if (
           isTranslationEnabled &&
           isMessageNew(newMessage) &&
@@ -243,15 +244,14 @@ const PrivateChat = () => {
         }
         return updatedMessages;
       } else {
-        return [
-          ...prevMessages,
-          {
-            ...newMessage,
-            delivered: newMessage.delivered_status,
-            read: newMessage.read_status,
-            showOriginal: true, // Добавлено
-          },
-        ];
+        const newMsg = {
+          ...newMessage,
+          delivered: newMessage.delivered_status,
+          read: newMessage.read_status,
+          showOriginal: true,
+        };
+        console.log('New message added:', newMsg); // Отладка
+        return [...prevMessages, newMsg];
       }
     });
   };
@@ -473,7 +473,12 @@ const PrivateChat = () => {
           isMessageNew(msg) &&
           (!msg.translatedContent || msg.translationLanguage !== translationLanguage)
       )
-      .map((msg) => ({ ...msg }));
+      .map((msg) => ({
+        ...msg,
+        delivered: msg.delivered ?? msg.delivered_status, // Явно сохраняем
+        read: msg.read ?? msg.read_status, // Явно сохраняем
+      }));
+    console.log('Translation queue:', queue); // Отладка
     setTranslationQueue(queue);
   };
 
@@ -488,13 +493,18 @@ const PrivateChat = () => {
   // Добавлено: перевод одного сообщения
   const translateMessageFunc = async (message) => {
     try {
+      console.log('Translating message:', message); // Отладка: проверяем структуру сообщения
       const translatedContent = await translateMessage(message.content, translationLanguage);
       const updatedMessage = {
-        ...message, // Копируем все поля исходного сообщения
+        ...message, // Копируем все поля
         translatedContent,
         translationLanguage,
         showOriginal: true,
+        delivered: message.delivered ?? message.delivered_status, // Явно сохраняем
+        read: message.read ?? message.read_status, // Явно сохраняем
       };
+
+      console.log('Updated message after translation:', updatedMessage); // Отладка
 
       // Сохранение перевода локально
       localStorage.setItem(
