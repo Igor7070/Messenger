@@ -144,18 +144,23 @@ const Messenger = () => {
         fetchMessages();
     }, [chatId]);
 
+    // Добавлено: обработка новых сообщений для перевода
     useEffect(() => {
         const stompClientInstance = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
-                console.log('Connected to WebSocket');
-                stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
-                    const newMessage = JSON.parse(message.body);
-                    updateMessages(newMessage);
-                });
+            console.log('Connected to WebSocket');
+            stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
+                const newMessage = JSON.parse(message.body);
+                updateMessages(newMessage);
+                // Добавлено: перевод нового сообщения
+                if (isTranslationEnabled && isMessageNew(newMessage)) {
+                setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+                }
+            });
             },
             onWebSocketError: (error) => {
-                console.error('WebSocket error:', error);
+            console.error('WebSocket error:', error);
             },
         });
 
@@ -165,7 +170,7 @@ const Messenger = () => {
         return () => {
             stompClientInstance.deactivate();
         };
-    }, [chatId]);
+    }, [chatId, isTranslationEnabled, translationLanguage]); // Изменено: добавлены зависимости
 
     useEffect(() => {
         const handleClick = () => {
@@ -185,12 +190,10 @@ const Messenger = () => {
                 const updatedMessages = [...prevMessages];
                 updatedMessages[existingMessageIndex] = {
                     ...newMessage,
-                    // Добавлено: сохраняем существующий перевод, если он есть
                     translatedContent: updatedMessages[existingMessageIndex].translatedContent,
                     translationLanguage: updatedMessages[existingMessageIndex].translationLanguage,
                     showOriginal: updatedMessages[existingMessageIndex].showOriginal,
                 };
-                // Добавлено: перевод обновленного сообщения, если нужно
                 if (
                     isTranslationEnabled &&
                     isMessageNew(newMessage) &&
@@ -202,9 +205,7 @@ const Messenger = () => {
                 return updatedMessages;
             } else if (newMessage.content !== 'Message deleted') {
                 const updatedMessages = [...prevMessages, newMessage];
-                // Обновляем время последнего посещения, если чат открыт
                 localStorage.setItem(`last_visit_chat_${chatId}`, newMessage.timestamp);
-                // Добавлено: перевод нового сообщения
                 if (isTranslationEnabled && isMessageNew(newMessage)) {
                     setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
                 }
@@ -215,11 +216,24 @@ const Messenger = () => {
     };
 
     useEffect(() => {
-        const rafId = requestAnimationFrame(() => {
+        // Прокрутка при открытии компонента
+        const messageList = messageListRef.current;
+        if (messageList) {
             scrollToBottom();
-        });
-        return () => cancelAnimationFrame(rafId);
-    }, [messages]);
+        }
+    }, [chatId]); // Зависимость от chatId, чтобы сработало при открытии чата
+
+    useEffect(() => {
+        // Прокрутка при добавлении нового сообщения
+        const messageList = messageListRef.current;
+        if (messageList && messages.length > 0) {
+            const isAtBottom =
+            messageList.scrollHeight - messageList.scrollTop <= messageList.clientHeight + 50; // Допуск 50px
+            if (isAtBottom) {
+            scrollToBottom();
+            }
+        }
+    }, [messages.length]); // Зависимость только от длины messages
 
     const uploadFile = async (file) => {
         const formData = new FormData();
@@ -522,14 +536,18 @@ const Messenger = () => {
 
     // Добавлено: очистка переводов
     const clearTranslations = () => {
-        setTranslationQueue([]);
+    setTranslationQueue([]);
         setMessages((prevMessages) =>
-            prevMessages.map((msg) => ({
-            ...msg,
-            translatedContent: null,
-            translationLanguage: null,
-            showOriginal: true,
-            }))
+            prevMessages.map((msg) =>
+            msg.translatedContent || msg.translationLanguage
+                ? {
+                    ...msg,
+                    translatedContent: null,
+                    translationLanguage: null,
+                    showOriginal: true,
+                }
+                : msg
+            )
         );
     };
 
@@ -546,34 +564,6 @@ const Messenger = () => {
     useEffect(() => {
         translateNextMessage();
     }, [translationQueue, isTranslating]);
-
-    // Добавлено: обработка новых сообщений для перевода
-    useEffect(() => {
-        const stompClientInstance = new Client({
-            webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
-            onConnect: () => {
-            console.log('Connected to WebSocket');
-            stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
-                const newMessage = JSON.parse(message.body);
-                updateMessages(newMessage);
-                // Добавлено: перевод нового сообщения
-                if (isTranslationEnabled && isMessageNew(newMessage)) {
-                setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
-                }
-            });
-            },
-            onWebSocketError: (error) => {
-            console.error('WebSocket error:', error);
-            },
-        });
-
-        setClient(stompClientInstance);
-        stompClientInstance.activate();
-
-        return () => {
-            stompClientInstance.deactivate();
-        };
-    }, [chatId, isTranslationEnabled, translationLanguage]); // Изменено: добавлены зависимости
 
     // Добавлено: обработка сохранения настроек перевода
     const handleTranslationSettingsSave = (enabled, language, newOnly) => {
@@ -643,35 +633,35 @@ const Messenger = () => {
                         >
                             <div className="message-wrapper">
                                 {shouldShowAvatar(msg) && (
-                                    <div className="avatar-container">
-                                        {msg.sender.avatar ? (
-                                            <div className="avatar-wrapper">
-                                                <img
-                                                    src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
-                                                    alt={`${msg.sender.username} avatar`}
-                                                    className="message-avatar"
-                                                    onClick={() => handleAvatarClick(msg.sender.id)}
-                                                    style={{ cursor: 'pointer' }}
-                                                />
-                                                {usersStatus[msg.sender.id]?.online && (
-                                                    <span className="status-indicator-online-groupchat"></span>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="avatar-wrapper">
-                                                <div
-                                                    className="message-avatar"
-                                                    onClick={() => handleAvatarClick(msg.sender.id)}
-                                                    style={{ cursor: 'pointer' }}
-                                                >
+                                <div className="avatar-container">
+                                    {msg.sender.avatar ? (
+                                        <div className="avatar-wrapper">
+                                            <img
+                                                src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
+                                                alt={`${msg.sender.username} avatar`}
+                                                className="message-avatar"
+                                                onClick={() => handleAvatarClick(msg.sender.id)}
+                                                style={{ cursor: 'pointer' }}
+                                            />
+                                            {usersStatus[msg.sender.id]?.online && (
+                                                <span className="status-indicator-online-groupchat"></span>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="avatar-wrapper">
+                                            <div
+                                                className="message-avatar"
+                                                onClick={() => handleAvatarClick(msg.sender.id)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
                                                 {msg.sender.username.charAt(0).toUpperCase()}
-                                                </div>
-                                                {usersStatus[msg.sender.id]?.online && (
-                                                    <span className="status-indicator-online-groupchat"></span>
-                                                )}
                                             </div>
-                                        )}
-                                    </div>
+                                            {usersStatus[msg.sender.id]?.online && (
+                                                <span className="status-indicator-online-groupchat"></span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                                 )}
                                 <div className="message-content-container">
                                     <div className="message-body">
@@ -680,15 +670,17 @@ const Messenger = () => {
                                         )}
                                         <div
                                             className="message-content"
-                                            onClick={() =>
-                                                msg.translatedContent &&
+                                            onClick={(e) => {
+                                                if (e.target.tagName === 'A') return; // Пропускаем клики по ссылкам
+                                                if (msg.translatedContent) {
                                                 setMessages((prevMessages) =>
                                                     prevMessages.map((m) =>
-                                                        m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                                    m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
                                                     )
-                                                )
-                                            }
-                                            style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                                                );
+                                                }
+                                            }}
+                                        s   tyle={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
                                         >
                                             <span className="original-content">
                                                 {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
