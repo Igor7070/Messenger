@@ -22,7 +22,7 @@
   flex-grow: 1; /* Центрирование заголовка */
 }
 
-.chat-header {
+.chat-header-group {
   display: flex;
   align-items: center;
   justify-content: space-between;

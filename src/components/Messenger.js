@@ -584,7 +584,7 @@ const Messenger = () => {
 
     return (
         <div className="messenger">
-            <div className="chat-header">
+            <div className="chat-header-group">
                 <div className="chat-name">Group Chat: {chatName}</div>
                 <div className="translation-controls">
                     <button
