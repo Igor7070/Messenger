@@ -120,7 +120,7 @@ const PrivateChat = () => {
       setContextUserId(userIdNum);
       setNotificationUserId(userIdNum);
       // Добавлено: загрузка настроек перевода
-      setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatIdNum}`) === 'true');
+      setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatIdParam}`) === 'true');
       setTranslationLanguage(localStorage.getItem(`translation_language_${chatIdParam}`) || 'auto');
       setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatIdParam}`) === 'true');
     }
