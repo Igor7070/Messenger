@@ -82,18 +82,20 @@ const PrivateChat = () => {
 
         const initialMessages = await getMessages(chatIdParam);
         const updatedMessages = initialMessages.map((msg) => {
-          const translationKey = `translation_${chatIdParam}_${msg.id}`;
-          const savedTranslation = localStorage.getItem(translationKey);
-          if (savedTranslation) {
-            const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
-            return {
-              ...msg,
-              delivered: msg.delivered_status,
-              read: msg.read_status,
-              translatedContent,
-              translationLanguage,
-              showOriginal: true,
-            };
+          if (isTranslationEnabled) {
+            const translationKey = `translation_${chatIdParam}_${msg.id}`;
+            const savedTranslation = localStorage.getItem(translationKey);
+            if (savedTranslation) {
+              const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
+              return {
+                ...msg,
+                delivered: msg.delivered_status,
+                read: msg.read_status,
+                translatedContent,
+                translationLanguage,
+                showOriginal: true,
+              };
+            }
           }
           return {
             ...msg,
