@@ -257,6 +257,8 @@ const PrivateChat = () => {
           read: newMessage.read_status,
           showOriginal: true,
         };
+        // Добавлено: прокрутка вниз при добавлении нового сообщения
+        scrollToBottom();
         console.log('New message added:', newMsg); // Отладка
         return [...prevMessages, newMsg];
       }
@@ -357,6 +359,8 @@ const PrivateChat = () => {
         }, 3000);
 
         resetForm();
+        // Добавлено: прокрутка вниз после отправки сообщения
+        scrollToBottom();
       } else {
         console.error('STOMP client is not connected');
         toast.error('Failed to send message: no connection');
