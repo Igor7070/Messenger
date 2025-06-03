@@ -63,6 +63,10 @@ const PrivateChat = () => {
   //}, []);
 
   useEffect(() => {
+    scrollToBottom();
+  }, []); // Прокрутка только при монтировании компонента
+
+  useEffect(() => {
     const fetchChatData = async () => {
       console.log('fetchChatData is working...');
       if (!chatIdParam || !username) {
@@ -251,6 +255,7 @@ const PrivateChat = () => {
           showOriginal: true,
         };
         console.log('New message added:', newMsg); // Отладка
+        scrollToBottom();
         return [...prevMessages, newMsg];
       }
     });
@@ -350,6 +355,7 @@ const PrivateChat = () => {
         }, 3000);
 
         resetForm();
+        scrollToBottom();
       } else {
         console.error('STOMP client is not connected');
         toast.error('Failed to send message: no connection');
@@ -412,13 +418,6 @@ const PrivateChat = () => {
       toast.error('Failed to delete message. Try again.');
     }
   };
-
-  useEffect(() => {
-    const rafId = requestAnimationFrame(() => {
-      scrollToBottom();
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, [messages]);
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
