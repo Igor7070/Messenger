@@ -566,16 +566,16 @@ const PrivateChat = () => {
     <div className="private-chat">
       <div className="private-chat-name">
         {displayChatName}
-        <div className="translation-controls">
+        <div className="private-translation-controls"> 
           <button
-            className="translation-button"
+            className="private-translation-button" 
             onClick={() => setShowTranslationModal(true)}
             style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
           >
             🌐
           </button>
           {isTranslationEnabled && (
-            <span className="translation-indicator">
+            <span className="private-translation-indicator"> 
               {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
             </span>
           )}
@@ -649,11 +649,11 @@ const PrivateChat = () => {
                     }}
                     style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
                   >
-                    <span className="original-content">
+                    <span className="private-original-content"> 
                       {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
                     </span>
                     {msg.translatedContent && (
-                      <span className="translated-content">{msg.translatedContent}</span>
+                      <span className="private-translated-content">{msg.translatedContent}</span>
                     )}
                   </span>
                   {msg.fileUrl && (

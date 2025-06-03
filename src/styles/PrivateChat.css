@@ -332,7 +332,7 @@
     right: 10px !important;
 }
 
-.translation-controls {
+.private-translation-controls { /* Изменено */
   display: flex;
   align-items: center;
   gap: 8px;
@@ -340,7 +340,7 @@
   right: 12px;
 }
 
-.translation-button {
+.private-translation-button { /* Изменено */
   background: none;
   border: none;
   font-size: 20px;
@@ -348,20 +348,20 @@
   padding: 0;
 }
 
-.translation-indicator {
+.private-translation-indicator { /* Изменено */
   font-size: 14px;
   color: #42a5f5;
   font-weight: 500;
 }
 
-.original-content {
+.private-original-content { /* Изменено */
   display: block;
   font-family: 'Roboto', sans-serif;
   font-size: 16px;
   line-height: 1.4;
 }
 
-.translated-content {
+.private-translated-content { /* Изменено */
   display: block;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
