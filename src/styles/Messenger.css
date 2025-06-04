@@ -23,18 +23,26 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  position: absolute; /* Центрируем надпись */
+  left: 50%;
+  transform: translateX(-50%); /* Смещаем на 50% влево для центрирования */
+  width: 100%; /* Убедимся, что надпись не растягивается */
+  max-width: 60%; /* Ограничиваем ширину, чтобы не перекрывать кнопки */
+  white-space: nowrap; /* Предотвращаем перенос текста */
+  overflow: hidden; /* Обрезаем, если текст слишком длинный */
+  text-overflow: ellipsis; /* Добавляем многоточие для длинных названий */
 }
 
 .chat-header-group {
   display: flex;
   align-items: center;
-  justify-content: center; /* Центрирование содержимого */
+  justify-content: space-between; 
   padding: 12px;
   background-color: #FFFFFF;
   border-radius: 5px;
   margin-bottom: 15px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: relative; /* Для позиционирования других элементов, если нужно */
+  position: relative; /* Для абсолютного позиционирования .chat-name */
 }
 
 .user-creation {
@@ -371,6 +379,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  position: absolute; /* Позиционируем справа, как в PrivateChat.css */
+  right: 12px; /* Отступ справа */
 }
 
 .translation-button {
@@ -412,7 +422,7 @@
 
     .chat-name {
         font-size: 18px;
-        padding: 10px;
+        max-width: 50%; /* Уменьшаем ширину на мобильных для кнопок */
     }
 
     .message {
@@ -440,5 +450,9 @@
         font-size: 12px;
         padding: 6px;
         height: 32px;
+    }
+
+    .translation-controls {
+        right: 8px; /* Меньший отступ на мобильных */
     }
 }
