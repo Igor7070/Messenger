@@ -116,10 +116,16 @@
   transform: translateY(-1px);
 }
 
-/* Флаг в выбранном элементе */
+/* Текстовый код языка в выбранном элементе */
 .select-selected .select-flag {
   margin-right: 10px;
-  font-size: 18px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #3b4c88;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #e6e9ef;
+  line-height: 1.5;
 }
 
 /* Выпадающий список */
@@ -158,10 +164,16 @@
   font-weight: 600;
 }
 
-/* Флаг в опции */
+/* Текстовый код языка в опции */
 .select-option .select-flag {
   margin-right: 10px;
-  font-size: 18px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #3b4c88;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #e6e9ef;
+  line-height: 1.5;
 }
 
 /* Стили для скроллбара в выпадающем списке */
@@ -254,7 +266,8 @@
 
   .select-selected .select-flag,
   .select-option .select-flag {
-    font-size: 16px;
+    font-size: 12px;
+    padding: 2px 6px;
   }
 
   .select-selected,
