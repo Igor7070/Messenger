@@ -84,7 +84,7 @@ const PrivateChat = () => {
         const updatedMessages = initialMessages.map((msg) => {
           const translationKey = `translation_${chatIdParam}_${msg.id}`;
           const savedTranslation = localStorage.getItem(translationKey);
-          if (savedTranslation) {
+          if (savedTranslation && isTranslationEnabled) {
             const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
             return {
               ...msg,
@@ -542,6 +542,10 @@ const PrivateChat = () => {
         (msg) => msg.translatedContent || msg.translationLanguage
       );
       if (!hasTranslations) return prevMessages;
+      // Удаляем переводы из localStorage
+      prevMessages.forEach((msg) => {
+        localStorage.removeItem(`translation_${chatId}_${msg.id}`);
+      });
       return prevMessages.map((msg) =>
         msg.translatedContent || msg.translationLanguage
           ? {
