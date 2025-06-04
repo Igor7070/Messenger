@@ -5,28 +5,28 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(10, 25, 47, 0.7); /* Полупрозрачный тёмно-синий фон для контраста */
+  background: rgba(10, 25, 47, 0.7); /* Полупрозрачный тёмно-синий фон */
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(4px); /* Усиленное размытие для премиального эффекта */
+  backdrop-filter: blur(4px); /* Размытие для премиального эффекта */
 }
 
 /* Контейнер контента модального окна */
 .modal-content {
-  background: linear-gradient(145deg, #1e2a44, #2a3b66); /* Тёмно-синий градиент для стильного фона */
+  background: linear-gradient(145deg, #1e2a44, #2a3b66); /* Тёмно-синий градиент */
   padding: 28px;
-  border-radius: 16px; /* Округлые углы для современности */
+  border-radius: 16px;
   width: 90%;
-  max-width: 440px; /* Чуть шире для удобства */
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(66, 165, 245, 0.1); /* Глубокая тень и тонкая бирюзовая обводка */
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; /* Современный шрифт */
-  color: #e6e9ef; /* Светло-серый текст для читаемости */
-  animation: fadeInScale 0.3s ease-out; /* Анимация появления */
+  max-width: 440px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(66, 165, 245, 0.1);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #e6e9ef;
+  animation: fadeInScale 0.3s ease-out;
 }
 
-/* Анимация появления с масштабированием */
+/* Анимация появления */
 @keyframes fadeInScale {
   from {
     transform: scale(0.9);
@@ -38,12 +38,12 @@
   }
 }
 
-/* Заголовок модального окна */
+/* Заголовок */
 .modal-content h2 {
   margin: 0 0 24px;
-  font-size: 26px; /* Крупный для акцента */
-  font-weight: 700; /* Жирный для выразительности */
-  color: #42a5f5; /* Бирюзовый акцент для заголовка */
+  font-size: 26px;
+  font-weight: 700;
+  color: #42a5f5; /* Бирюзовый акцент */
   line-height: 1.2;
 }
 
@@ -51,10 +51,10 @@
 .modal-content label {
   display: flex;
   align-items: center;
-  margin: 18px 0; /* Пространство для читаемости */
+  margin: 18px 0;
   font-size: 15px;
   font-weight: 500;
-  color: #c0c7d6; /* Светло-серый для мягкости */
+  color: #c0c7d6;
 }
 
 /* Стили для чекбоксов */
@@ -62,37 +62,125 @@
   margin-right: 12px;
   width: 20px;
   height: 20px;
-  accent-color: #42a5f5; /* Бирюзовый акцент */
+  accent-color: #42a5f5;
   cursor: pointer;
   border-radius: 4px;
-  background: #2a3b66; /* Тёмный фон для чекбокса */
-  border: 1px solid #4a5b88; /* Тонкая граница */
+  background: #2a3b66;
+  border: 1px solid #4a5b88;
 }
 
-/* Стили для выпадающего списка */
-.modal-content select {
+/* Обёртка для кастомного select */
+.select-label {
+  display: block;
+}
+
+/* Кастомный выпадающий список */
+.custom-select {
+  position: relative;
   width: 100%;
-  padding: 12px;
   margin-top: 8px;
-  border: none;
+}
+
+/* Выбранный элемент */
+.select-selected {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: #2a3b66;
   border-radius: 10px;
+  color: #e6e9ef;
   font-size: 15px;
-  background: #2a3b66; /* Тёмно-синий фон для гармонии */
-  color: #e6e9ef; /* Светлый текст */
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2); /* Внутренняя тень для глубины */
+  cursor: pointer;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
   transition: box-shadow 0.2s ease, transform 0.1s ease;
 }
 
-.modal-content select:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.3); /* Бирюзовая тень при фокусе */
-  transform: translateY(-1px); /* Лёгкий подъём */
+/* Стрелка для выпадающего списка */
+.select-selected::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+  border-top-color: #c0c7d6;
+  transition: transform 0.2s ease;
 }
 
-/* Стили для опций в выпадающем списке */
-.modal-content select option {
-  background: #2a3b66; /* Тёмный фон для опций */
+.select-selected.open::after {
+  transform: rotate(180deg);
+}
+
+.select-selected:hover {
+  box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Флаг в выбранном элементе */
+.select-selected .select-flag {
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+/* Выпадающий список */
+.select-items {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #2a3b66;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+  margin-top: 4px;
+}
+
+/* Элемент списка */
+.select-option {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
   color: #e6e9ef;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.select-option:hover {
+  background: #3b4c88;
+}
+
+/* Выделенный элемент */
+.select-option.selected {
+  background: #3b4c88;
+  font-weight: 600;
+}
+
+/* Флаг в опции */
+.select-option .select-flag {
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+/* Стили для скроллбара в выпадающем списке */
+.select-items::-webkit-scrollbar {
+  width: 8px;
+}
+
+.select-items::-webkit-scrollbar-track {
+  background: #2a3b66;
+  border-radius: 10px;
+}
+
+.select-items::-webkit-scrollbar-thumb {
+  background: #4a5b88;
+  border-radius: 10px;
+}
+
+.select-items::-webkit-scrollbar-thumb:hover {
+  background: #5b6ea3;
 }
 
 /* Контейнер кнопок */
@@ -103,7 +191,7 @@
   margin-top: 28px;
 }
 
-/* Общие стили для кнопок */
+/* Стили для кнопок */
 .modal-buttons button {
   padding: 12px 24px;
   border: none;
@@ -116,24 +204,24 @@
 
 /* Кнопка отмены */
 .modal-buttons button:first-child {
-  background: #4a5b88; /* Тёмно-синий для кнопки отмены */
+  background: #4a5b88;
   color: #e6e9ef;
 }
 
 .modal-buttons button:first-child:hover {
-  background: #5b6ea3; /* Светлее при наведении */
+  background: #5b6ea3;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Кнопка сохранения */
 .modal-buttons button:last-child {
-  background: #42a5f5; /* Яркий бирюзовый для акцента */
+  background: #42a5f5;
   color: #ffffff;
 }
 
 .modal-buttons button:last-child:hover {
-  background: #3b8cd9; /* Темнее при наведении */
+  background: #3b8cd9;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
@@ -161,6 +249,17 @@
 
   .modal-buttons button {
     padding: 10px 18px;
+    font-size: 14px;
+  }
+
+  .select-selected .select-flag,
+  .select-option .select-flag {
+    font-size: 16px;
+  }
+
+  .select-selected,
+  .select-option {
+    padding: 10px;
     font-size: 14px;
   }
 }

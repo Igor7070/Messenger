@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../styles/TranslationSettingsModal.css';
 
 const TranslationSettingsModal = ({ chatId, onSave, onClose }) => {
   const [enableTranslation, setEnableTranslation] = useState(false);
   const [translateNewOnly, setTranslateNewOnly] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('auto');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const languages = [
     { name: 'Auto', code: 'auto', flag: '🌐' },
@@ -128,6 +130,16 @@ const TranslationSettingsModal = ({ chatId, onSave, onClose }) => {
     setTranslateNewOnly(translateNewOnly);
   }, [chatId]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleSave = () => {
     localStorage.setItem(`translation_enabled_${chatId}`, enableTranslation);
     localStorage.setItem(`translation_language_${chatId}`, selectedLanguage);
@@ -140,6 +152,8 @@ const TranslationSettingsModal = ({ chatId, onSave, onClose }) => {
     onSave(enableTranslation, selectedLanguage, translateNewOnly);
     onClose();
   };
+
+  const currentLanguage = languages.find(lang => lang.code === selectedLanguage) || languages[0];
 
   return (
     <div className="modal-overlay">
@@ -161,18 +175,34 @@ const TranslationSettingsModal = ({ chatId, onSave, onClose }) => {
           />
           Translate only new messages
         </label>
-        <label>
+        <label className="select-label">
           Language:
-          <select
-            value={selectedLanguage}
-            onChange={(e) => setSelectedLanguage(e.target.value)}
-          >
-            {languages.map((lang) => (
-              <option key={lang.code} value={lang.code}>
-                {lang.flag} {lang.name}
-              </option>
-            ))}
-          </select>
+          <div className="custom-select" ref={dropdownRef}>
+            <div
+              className="select-selected"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            >
+              <span className="select-flag">{currentLanguage.flag}</span>
+              <span>{currentLanguage.name}</span>
+            </div>
+            {isDropdownOpen && (
+              <div className="select-items">
+                {languages.map((lang) => (
+                  <div
+                    key={lang.code}
+                    className={`select-option ${lang.code === selectedLanguage ? 'selected' : ''}`}
+                    onClick={() => {
+                      setSelectedLanguage(lang.code);
+                      setIsDropdownOpen(false);
+                    }}
+                  >
+                    <span className="select-flag">{lang.flag}</span>
+                    <span>{lang.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </label>
         <div className="modal-buttons">
           <button onClick={onClose}>Cancel</button>
