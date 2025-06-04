@@ -421,6 +421,10 @@
         max-width: 100%;
     }
 
+    .chat-header-group {
+        min-height: 40px; /* Чуть меньше на мобильных */
+    }
+
     .chat-name {
         font-size: 18px;
         max-width: 50%; /* Уменьшаем ширину на мобильных для кнопок */
