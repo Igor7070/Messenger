@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
+
 /* Основной контейнер для модального окна */
 .modal-overlay {
   position: fixed;
@@ -119,13 +121,27 @@
 /* Текстовый код языка в выбранном элементе */
 .select-selected .select-flag {
   margin-right: 10px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   background: #3b4c88;
   padding: 2px 8px;
   border-radius: 4px;
   color: #e6e9ef;
   line-height: 1.5;
+}
+
+/* Название языка */
+.select-selected .select-name {
+  flex: 1;
+  font-size: 15px;
+}
+
+/* Эмодзи флаг справа */
+.select-selected .select-emoji-flag {
+  margin-left: 10px;
+  font-size: 18px;
+  font-family: 'Noto Color Emoji', sans-serif;
+  line-height: 1;
 }
 
 /* Выпадающий список */
@@ -167,13 +183,27 @@
 /* Текстовый код языка в опции */
 .select-option .select-flag {
   margin-right: 10px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   background: #3b4c88;
   padding: 2px 8px;
   border-radius: 4px;
   color: #e6e9ef;
   line-height: 1.5;
+}
+
+/* Название языка в опции */
+.select-option .select-name {
+  flex: 1;
+  font-size: 15px;
+}
+
+/* Эмодзи флаг справа в опции */
+.select-option .select-emoji-flag {
+  margin-left: 10px;
+  font-size: 18px;
+  font-family: 'Noto Color Emoji', sans-serif;
+  line-height: 1;
 }
 
 /* Стили для скроллбара в выпадающем списке */
@@ -266,13 +296,22 @@
 
   .select-selected .select-flag,
   .select-option .select-flag {
-    font-size: 12px;
+    font-size: 11px;
     padding: 2px 6px;
+  }
+
+  .select-selected .select-name,
+  .select-option .select-name {
+    font-size: 14px;
+  }
+
+  .select-selected .select-emoji-flag,
+  .select-option .select-emoji-flag {
+    font-size: 16px;
   }
 
   .select-selected,
   .select-option {
     padding: 10px;
-    font-size: 14px;
   }
 }
