@@ -19,18 +19,22 @@
   font-weight: 600;
   color: #333333;
   text-align: center;
-  flex-grow: 1; /* Центрирование заголовка */
+  letter-spacing: 0.2px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 .chat-header-group {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center; /* Центрирование содержимого */
   padding: 12px;
   background-color: #FFFFFF;
   border-radius: 5px;
   margin-bottom: 15px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative; /* Для позиционирования других элементов, если нужно */
 }
 
 .user-creation {
