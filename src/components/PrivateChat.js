@@ -46,8 +46,8 @@ const PrivateChat = () => {
   const [showTranslationModal, setShowTranslationModal] = useState(false);
 
   const scrollToBottom = () => {
-    if (messageListRef.current && messagesEndRef.current) {
-      messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+    if (messagesEndRef.current && messageListRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -61,10 +61,6 @@ const PrivateChat = () => {
     //console.log('Testing toast rendering in PrivateChat');
     //toast.info('Test toast in PrivateChat', { toastId: 'test-privatechat', autoClose: 3000 });
   //}, []);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, []); // Прокрутка только при монтировании компонента
 
   useEffect(() => {
     const fetchChatData = async () => {
@@ -108,6 +104,9 @@ const PrivateChat = () => {
         });
 
         setMessages(updatedMessages);
+        setTimeout(() => {
+          scrollToBottom();
+        }, 0); // Прокрутка после загрузки
       } catch (error) {
         console.error('Ошибка при загрузке данных о чате:', error);
         toast.error('Не удалось загрузить данные чата');
@@ -199,6 +198,14 @@ const PrivateChat = () => {
     };
   }, [handleInteraction]);
 
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => {
+        scrollToBottom();
+      }, 0); // setTimeout для выполнения после рендера
+    }
+  }, [messages.length]);
+
   const markAllMessagesAsRead = (updatedMessages) => {
     console.log('markAllMessagesAsRead is working...');
     if (Array.isArray(updatedMessages)) {
@@ -255,7 +262,6 @@ const PrivateChat = () => {
           showOriginal: true,
         };
         console.log('New message added:', newMsg); // Отладка
-        scrollToBottom();
         return [...prevMessages, newMsg];
       }
     });
@@ -355,7 +361,6 @@ const PrivateChat = () => {
         }, 3000);
 
         resetForm();
-        scrollToBottom();
       } else {
         console.error('STOMP client is not connected');
         toast.error('Failed to send message: no connection');
