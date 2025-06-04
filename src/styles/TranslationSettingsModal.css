@@ -1,38 +1,39 @@
-/* Основной контейнер для модального окна с полупрозрачным фоном */
+/* Основной контейнер для модального окна */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6); /* Чуть темнее фон для большей контрастности */
+  background: rgba(10, 25, 47, 0.7); /* Полупрозрачный тёмно-синий фон для контраста */
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(2px); /* Легкий эффект размытия фона для современного вида */
+  backdrop-filter: blur(4px); /* Усиленное размытие для премиального эффекта */
 }
 
 /* Контейнер контента модального окна */
 .modal-content {
-  background: linear-gradient(145deg, #f5f7fa, #e8ecef); /* Градиентный фон для мягкости */
-  padding: 24px;
-  border-radius: 16px; /* Более округлые углы для современности */
+  background: linear-gradient(145deg, #1e2a44, #2a3b66); /* Тёмно-синий градиент для стильного фона */
+  padding: 28px;
+  border-radius: 16px; /* Округлые углы для современности */
   width: 90%;
-  max-width: 420px; /* Чуть шире для удобства */
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); /* Более выраженная тень для глубины */
+  max-width: 440px; /* Чуть шире для удобства */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(66, 165, 245, 0.1); /* Глубокая тень и тонкая бирюзовая обводка */
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; /* Современный шрифт */
-  animation: slideIn 0.3s ease-out; /* Анимация появления */
+  color: #e6e9ef; /* Светло-серый текст для читаемости */
+  animation: fadeInScale 0.3s ease-out; /* Анимация появления */
 }
 
-/* Анимация для плавного появления окна */
-@keyframes slideIn {
+/* Анимация появления с масштабированием */
+@keyframes fadeInScale {
   from {
-    transform: translateY(20px);
+    transform: scale(0.9);
     opacity: 0;
   }
   to {
-    transform: translateY(0);
+    transform: scale(1);
     opacity: 1;
   }
 }
@@ -40,48 +41,58 @@
 /* Заголовок модального окна */
 .modal-content h2 {
   margin: 0 0 24px;
-  font-size: 24px; /* Чуть крупнее для акцента */
-  font-weight: 600; /* Полужирный для современного вида */
-  color: #1a1d2b; /* Темно-синий для контраста */
+  font-size: 26px; /* Крупный для акцента */
+  font-weight: 700; /* Жирный для выразительности */
+  color: #42a5f5; /* Бирюзовый акцент для заголовка */
   line-height: 1.2;
 }
 
-/* Стили для меток (label) */
+/* Стили для меток */
 .modal-content label {
   display: flex;
   align-items: center;
-  margin: 16px 0; /* Больше пространства для читаемости */
-  font-size: 15px; /* Чуть меньше для баланса */
-  color: #2e3440; /* Темно-серый для текста */
+  margin: 18px 0; /* Пространство для читаемости */
+  font-size: 15px;
   font-weight: 500;
+  color: #c0c7d6; /* Светло-серый для мягкости */
 }
 
 /* Стили для чекбоксов */
 .modal-content input[type="checkbox"] {
-  margin-right: 10px;
-  width: 18px;
-  height: 18px;
-  accent-color: #42a5f5; /* Основной акцентный цвет (синий) */
+  margin-right: 12px;
+  width: 20px;
+  height: 20px;
+  accent-color: #42a5f5; /* Бирюзовый акцент */
   cursor: pointer;
+  border-radius: 4px;
+  background: #2a3b66; /* Тёмный фон для чекбокса */
+  border: 1px solid #4a5b88; /* Тонкая граница */
 }
 
 /* Стили для выпадающего списка */
 .modal-content select {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px;
   margin-top: 8px;
-  border: 1px solid #d1d9e0; /* Мягкая серая граница */
-  border-radius: 8px; /* Округлые углы */
+  border: none;
+  border-radius: 10px;
   font-size: 15px;
-  background: #ffffff; /* Белый фон для контраста */
-  color: #2e3440;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease; /* Плавные переходы */
+  background: #2a3b66; /* Тёмно-синий фон для гармонии */
+  color: #e6e9ef; /* Светлый текст */
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2); /* Внутренняя тень для глубины */
+  transition: box-shadow 0.2s ease, transform 0.1s ease;
 }
 
 .modal-content select:focus {
   outline: none;
-  border-color: #42a5f5; /* Синий акцент при фокусе */
-  box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.2); /* Легкая тень при фокусе */
+  box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.3); /* Бирюзовая тень при фокусе */
+  transform: translateY(-1px); /* Лёгкий подъём */
+}
+
+/* Стили для опций в выпадающем списке */
+.modal-content select option {
+  background: #2a3b66; /* Тёмный фон для опций */
+  color: #e6e9ef;
 }
 
 /* Контейнер кнопок */
@@ -89,60 +100,67 @@
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 24px;
+  margin-top: 28px;
 }
 
 /* Общие стили для кнопок */
 .modal-buttons button {
-  padding: 10px 20px;
+  padding: 12px 24px;
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease; /* Плавные эффекты */
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
 }
 
 /* Кнопка отмены */
 .modal-buttons button:first-child {
-  background: #e0e4e8; /* Светло-серый фон */
-  color: #2e3440;
+  background: #4a5b88; /* Тёмно-синий для кнопки отмены */
+  color: #e6e9ef;
 }
 
 .modal-buttons button:first-child:hover {
-  background: #d1d9e0; /* Темнее при наведении */
-  transform: translateY(-1px); /* Легкий подъем */
+  background: #5b6ea3; /* Светлее при наведении */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Кнопка сохранения */
 .modal-buttons button:last-child {
-  background: #42a5f5; /* Основной синий акцент */
+  background: #42a5f5; /* Яркий бирюзовый для акцента */
   color: #ffffff;
 }
 
 .modal-buttons button:last-child:hover {
   background: #3b8cd9; /* Темнее при наведении */
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Активное состояние кнопок */
 .modal-buttons button:active {
-  transform: translateY(0); /* Возврат при нажатии */
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-/* Медиа-запрос для адаптивности на маленьких экранах */
+/* Медиа-запрос для мобильных устройств */
 @media (max-width: 480px) {
   .modal-content {
-    width: 95%;
-    padding: 16px;
+    width: 92%;
+    padding: 20px;
   }
 
   .modal-content h2 {
-    font-size: 20px;
+    font-size: 22px;
+  }
+
+  .modal-content label {
+    font-size: 14px;
   }
 
   .modal-buttons button {
-    padding: 8px 16px;
-    font-size: 13px;
+    padding: 10px 18px;
+    font-size: 14px;
   }
 }
