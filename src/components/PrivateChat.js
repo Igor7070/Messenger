@@ -63,22 +63,8 @@ const PrivateChat = () => {
   //}, []);
 
   useEffect(() => {
-    // Загружаем настройки перевода синхронно
-    const storedTranslationEnabled = localStorage.getItem(`translation_enabled_${chatIdParam}`) === 'true';
-    setIsTranslationEnabled(storedTranslationEnabled);
-    setTranslationLanguage(localStorage.getItem(`translation_language_${chatIdParam}`) || 'auto');
-    setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatIdParam}`) === 'true');
-
-    const storedUserId = localStorage.getItem('userId');
-    if (storedUserId) {
-      const userIdNum = parseInt(storedUserId, 10);
-      setCurrentUserId(userIdNum);
-      setContextUserId(userIdNum);
-      setNotificationUserId(userIdNum);
-    }
-
     const fetchChatData = async () => {
-      console.log('fetchChatData is working... isTranslationEnabled:', storedTranslationEnabled);
+      console.log('fetchChatData is working...');
       if (!chatIdParam || !username) {
         toast.error('Invalid chat ID or user is not authorized');
         navigate('/');
@@ -98,8 +84,7 @@ const PrivateChat = () => {
         const updatedMessages = initialMessages.map((msg) => {
           const translationKey = `translation_${chatIdParam}_${msg.id}`;
           const savedTranslation = localStorage.getItem(translationKey);
-          console.log(`Message ${msg.id}: savedTranslation=`, savedTranslation, 'isTranslationEnabled=', storedTranslationEnabled); // Отладка
-          if (savedTranslation && storedTranslationEnabled) {
+          if (savedTranslation) {
             const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
             return {
               ...msg,
@@ -131,10 +116,40 @@ const PrivateChat = () => {
 
     fetchChatData();
 
+    const storedUserId = localStorage.getItem('userId');
+    if (storedUserId) {
+      const userIdNum = parseInt(storedUserId, 10);
+      setCurrentUserId(userIdNum);
+      setContextUserId(userIdNum);
+      setNotificationUserId(userIdNum);
+      // Добавлено: загрузка настроек перевода
+      setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatIdParam}`) === 'true');
+      setTranslationLanguage(localStorage.getItem(`translation_language_${chatIdParam}`) || 'auto');
+      setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatIdParam}`) === 'true');
+    }
+
     return () => {
       setCurrentChatId(null);
     };
   }, [chatIdParam, username, setContextUserId, setNotificationUserId, setCurrentChatId, navigate]);
+
+  useEffect(() => {
+    if (!isTranslationEnabled && messages.some((msg) => msg.translatedContent || msg.translationLanguage)) {
+      console.log('Cleaning translations in messages due to disabled translation');
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) =>
+          msg.translatedContent || msg.translationLanguage
+            ? {
+                ...msg,
+                translatedContent: null,
+                translationLanguage: null,
+                showOriginal: true,
+              }
+            : msg
+        )
+      );
+    }
+  }, [isTranslationEnabled, messages]);
 
   useEffect(() => {
     if (!chatId) return;
