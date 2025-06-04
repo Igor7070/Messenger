@@ -145,6 +145,24 @@ const Messenger = () => {
         fetchMessages();
     }, [chatId]);
 
+    useEffect(() => {
+        if (!isTranslationEnabled && messages.some((msg) => msg.translatedContent || msg.translationLanguage)) {
+            console.log('Cleaning translations in messages due to disabled translation');
+            setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                    msg.translatedContent || msg.translationLanguage
+                    ? {
+                        ...msg,
+                        translatedContent: null,
+                        translationLanguage: null,
+                        showOriginal: true,
+                        }
+                    : msg
+                )
+            );
+        }
+    }, [isTranslationEnabled, messages]);
+
     // Добавлено: обработка новых сообщений для перевода
     useEffect(() => {
         const stompClientInstance = new Client({
@@ -526,20 +544,24 @@ const Messenger = () => {
 
     // Добавлено: очистка переводов
     const clearTranslations = () => {
-        setTranslationQueue([]);
+    setTranslationQueue([]);
         setMessages((prevMessages) => {
             const hasTranslations = prevMessages.some(
                 (msg) => msg.translatedContent || msg.translationLanguage
             );
-            if (!hasTranslations) return prevMessages; // Пропускаем, если нет переводов
+            if (!hasTranslations) return prevMessages;
+            // Удаляем переводы из localStorage
+            prevMessages.forEach((msg) => {
+                localStorage.removeItem(`translation_${chatId}_${msg.id}`);
+            });
             return prevMessages.map((msg) =>
-                msg.translatedContent || msg.translationLanguage
-                    ? {
-                        ...msg,
-                        translatedContent: null,
-                        translationLanguage: null,
-                        showOriginal: true,
-                    }
+            msg.translatedContent || msg.translationLanguage
+                ? {
+                    ...msg,
+                    translatedContent: null,
+                    translationLanguage: null,
+                    showOriginal: true,
+                }
                 : msg
             );
         });
