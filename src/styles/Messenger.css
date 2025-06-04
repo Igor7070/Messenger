@@ -36,13 +36,14 @@
 .chat-header-group {
   display: flex;
   align-items: center;
-  justify-content: space-between; 
-  padding: 12px;
+  justify-content: space-between; /* Распределяет пространство */
+  padding: 12px; /* Исходный отступ */
   background-color: #FFFFFF;
   border-radius: 5px;
   margin-bottom: 15px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: relative; /* Для абсолютного позиционирования .chat-name */
+  position: relative; /* Для абсолютного позиционирования дочерних элементов */
+  min-height: 44px; /* Минимальная высота для предотвращения сжатия (12px padding сверху + 12px снизу + ~20px текста) */
 }
 
 .user-creation {
