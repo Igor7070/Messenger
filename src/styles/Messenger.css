@@ -528,4 +528,28 @@
     .translation-controls {
         right: 8px; /* Меньший отступ на мобильных */
     }
+
+    .translation-button,
+    .spellcheck-button {
+        font-size: 18px;
+        padding: 3px;
+    }
+
+    .translation-button[data-tooltip]::after,
+    .spellcheck-button[data-tooltip]::after {
+        font-size: 11px;
+        padding: 5px 10px;
+        top: -32px;
+    }
+
+    .translation-button[data-tooltip]::before,
+    .spellcheck-button[data-tooltip]::before {
+        top: -6px;
+    }
+
+    .translation-indicator,
+    .spellcheck-indicator {
+        font-size: 12px;
+        padding: 2px 5px;
+    }
 }
