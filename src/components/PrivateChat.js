@@ -615,11 +615,12 @@ const PrivateChat = () => {
   const handleSpellCheckToggle = () => {
     setIsSpellCheckEnabled((prev) => {
       const newState = !prev;
-      localStorage.setItem(`spellcheck_enabled_${chatIdParam}`, newState);
+      console.log(`Toggling spell check for chatId ${chatId}: ${newState}`); // Отладка
+      localStorage.setItem(`spellcheck_enabled_${chatId}`, newState);
       if (newState) {
-        localStorage.setItem(`spellcheck_enabled_timestamp_${chatIdParam}`, new Date().toISOString());
+        localStorage.setItem(`spellcheck_enabled_timestamp_${chatId}`, new Date().toISOString());
       } else {
-        localStorage.removeItem(`spellcheck_enabled_timestamp_${chatIdParam}`);
+        localStorage.removeItem(`spellcheck_enabled_timestamp_${chatId}`);
       }
       return newState;
     });
