@@ -604,11 +604,12 @@ const Messenger = () => {
                     <button
                         className="spellcheck-button" // Новая кнопка
                         onClick={handleSpellCheckToggle}
-                        data-tooltip="Toggle spell check for messages" // Подсказка
+                        data-tooltip={isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF'} // Подсказка
                         style={{ color: isSpellCheckEnabled ? '#42a5f5' : '#B0BEC5' }}
                     >
                         ✍️
                     </button>
+                    {isSpellCheckEnabled && <span className="spellcheck-indicator">SC</span>}
                     <button
                         className="translation-button"
                         onClick={() => setShowTranslationModal(true)}
