@@ -206,6 +206,29 @@ const Messenger = () => {
         };
     }, [handleInteraction]);
 
+    useEffect(() => {
+        // Прокрутка при добавлении нового сообщения
+        if (messages.length > 0) {
+            setTimeout(() => {
+            scrollToBottom();
+            }, 0); // setTimeout для выполнения после рендера
+        }
+    }, [messages.length]);
+
+    // Добавлено: запуск перевода при изменении настроек
+    useEffect(() => {
+        if (isTranslationEnabled) {
+            translateExistingMessages();
+        } else {
+            clearTranslations();
+        }
+    }, [isTranslationEnabled, translationLanguage, translateNewOnly]);
+
+    // Добавлено: обработка очереди переводов
+    useEffect(() => {
+        translateNextMessage();
+    }, [translationQueue, isTranslating]);
+
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
             const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
@@ -237,15 +260,6 @@ const Messenger = () => {
             return prevMessages;
         });
     };
-
-    useEffect(() => {
-        // Прокрутка при добавлении нового сообщения
-        if (messages.length > 0) {
-            setTimeout(() => {
-            scrollToBottom();
-            }, 0); // setTimeout для выполнения после рендера
-        }
-    }, [messages.length]);
 
     const uploadFile = async (file) => {
         const formData = new FormData();
@@ -579,20 +593,6 @@ const Messenger = () => {
             );
         });
     };
-
-    // Добавлено: запуск перевода при изменении настроек
-    useEffect(() => {
-        if (isTranslationEnabled) {
-            translateExistingMessages();
-        } else {
-            clearTranslations();
-        }
-    }, [isTranslationEnabled, translationLanguage, translateNewOnly]);
-
-    // Добавлено: обработка очереди переводов
-    useEffect(() => {
-        translateNextMessage();
-    }, [translationQueue, isTranslating]);
 
     // Добавлено: обработка сохранения настроек перевода
     const handleTranslationSettingsSave = (enabled, language, newOnly) => {

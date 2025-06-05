@@ -230,6 +230,20 @@ const PrivateChat = () => {
     }
   }, [messages.length]);
 
+  // Добавлено: запуск перевода при изменении настроек
+  useEffect(() => {
+    if (isTranslationEnabled) {
+      translateExistingMessages();
+    } else {
+      clearTranslations();
+    }
+  }, [isTranslationEnabled, translationLanguage, translateNewOnly]);
+
+  // Добавлено: обработка очереди переводов
+  useEffect(() => {
+    translateNextMessage();
+  }, [translationQueue, isTranslating]);
+
   const markAllMessagesAsRead = (updatedMessages) => {
     console.log('markAllMessagesAsRead is working...');
     if (Array.isArray(updatedMessages)) {
@@ -598,20 +612,6 @@ const PrivateChat = () => {
     setTranslationLanguage(language);
     setTranslateNewOnly(newOnly);
   };
-
-  // Добавлено: запуск перевода при изменении настроек
-  useEffect(() => {
-    if (isTranslationEnabled) {
-      translateExistingMessages();
-    } else {
-      clearTranslations();
-    }
-  }, [isTranslationEnabled, translationLanguage, translateNewOnly]);
-
-  // Добавлено: обработка очереди переводов
-  useEffect(() => {
-    translateNextMessage();
-  }, [translationQueue, isTranslating]);
 
   // Для переключения орфографии
   const handleSpellCheckToggle = () => {
