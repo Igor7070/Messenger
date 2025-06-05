@@ -384,12 +384,75 @@
   right: 12px; /* Отступ справа */
 }
 
-.translation-button {
+.translation-button,
+.spellcheck-button { /* Общие стили для обеих кнопок */
   background: none;
   border: none;
   font-size: 20px;
   cursor: pointer;
-  padding: 0;
+  padding: 4px; /* Небольшой padding для удобства клика */
+  position: relative; /* Для позиционирования tooltip */
+  transition: color 0.3s ease, transform 0.2s ease; /* Плавные переходы */
+}
+
+.translation-button:hover,
+.spellcheck-button:hover {
+  transform: scale(1.1); /* Лёгкое увеличение при наведении */
+}
+
+/* Стили для всплывающих подсказок */
+.translation-button[data-tooltip],
+.spellcheck-button[data-tooltip] {
+  position: relative;
+}
+
+.translation-button[data-tooltip]::after,
+.spellcheck-button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -36px; /* Над кнопкой */
+  right: 50%;
+  transform: translateX(50%); /* Центрируем по горизонтали */
+  background-color: #333333; /* Тёмный фон */
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.translation-button[data-tooltip]:hover::after,
+.spellcheck-button[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Стрелка для tooltip */
+.translation-button[data-tooltip]::before,
+.spellcheck-button[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  top: -8px; /* Под tooltip */
+  right: 50%;
+  transform: translateX(50%);
+  border: 4px solid transparent;
+  border-top-color: #333333; /* Цвет стрелки совпадает с tooltip */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.translation-button[data-tooltip]:hover::before,
+.spellcheck-button[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
 }
 
 .translation-indicator {

@@ -59,6 +59,8 @@ const Messenger = () => {
     const [isTranslating, setIsTranslating] = useState(false);
     const [showTranslationModal, setShowTranslationModal] = useState(false);
 
+    const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
+
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
         if (!timestamp) return '';
@@ -588,14 +590,29 @@ const Messenger = () => {
         setTranslateNewOnly(newOnly);
     };
 
+    // Заглушка для переключения орфографии
+    const handleSpellCheckToggle = () => {
+        setIsSpellCheckEnabled((prev) => !prev);
+        // Логика проверки орфографии через ChatGPT-4o будет добавлена позже
+    };
+
     return (
         <div className="messenger">
             <div className="chat-header-group">
                 <div className="chat-name">Group Chat: {chatName}</div>
                 <div className="translation-controls">
                     <button
+                        className="spellcheck-button" // Новая кнопка
+                        onClick={handleSpellCheckToggle}
+                        data-tooltip="Toggle spell check for messages" // Подсказка
+                        style={{ color: isSpellCheckEnabled ? '#42a5f5' : '#B0BEC5' }}
+                    >
+                        ✍️
+                    </button>
+                    <button
                         className="translation-button"
                         onClick={() => setShowTranslationModal(true)}
+                        data-tooltip="Toggle translation for messages" // Подсказка
                         style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
                     >
                         🌐
