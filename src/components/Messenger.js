@@ -601,7 +601,7 @@ const Messenger = () => {
         setTranslateNewOnly(newOnly);
     };
 
-    // Заглушка для переключения орфографии
+    // Для переключения орфографии
     const handleSpellCheckToggle = () => {
         setIsSpellCheckEnabled((prev) => {
             const newState = !prev;

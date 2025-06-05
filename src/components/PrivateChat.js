@@ -128,6 +128,8 @@ const PrivateChat = () => {
       setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatIdParam}`) === 'true');
       setTranslationLanguage(localStorage.getItem(`translation_language_${chatIdParam}`) || 'auto');
       setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatIdParam}`) === 'true');
+      // Загрузка настройки орфографии
+      setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatIdParam}`) === 'true');
     }
 
     return () => {
@@ -306,9 +308,18 @@ const PrivateChat = () => {
 
   const sendMessage = async () => {
     if ((content || selectedFile) && userId) {
+       // Проверяем орфографию, если включена
+      let finalContent = content;
+      if (isSpellCheckEnabled) {
+        const spellCheckTimestamp = localStorage.getItem(`spellcheck_enabled_timestamp_${chatId}`);
+        if (spellCheckTimestamp) {
+          finalContent = await spellCheckMessage(content);
+        }
+      }
+
       const message = {
         id: editingMessageId || Date.now(),
-        content,
+        content: finalContent, // Используем исправленный текст
         sender: { id: userId, username },
         chat: { id: chatId, name: chatName },
         fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
@@ -600,10 +611,38 @@ const PrivateChat = () => {
     translateNextMessage();
   }, [translationQueue, isTranslating]);
 
-  // Заглушка для переключения орфографии
+  // Для переключения орфографии
   const handleSpellCheckToggle = () => {
-    setIsSpellCheckEnabled((prev) => !prev);
-    // Логика проверки орфографии через ChatGPT-4o будет добавлена позже
+    setIsSpellCheckEnabled((prev) => {
+      const newState = !prev;
+      localStorage.setItem(`spellcheck_enabled_${chatIdParam}`, newState);
+      if (newState) {
+        localStorage.setItem(`spellcheck_enabled_timestamp_${chatIdParam}`, new Date().toISOString());
+      } else {
+        localStorage.removeItem(`spellcheck_enabled_timestamp_${chatIdParam}`);
+      }
+      return newState;
+    });
+  };
+
+  const spellCheckMessage = async (content) => {
+    if (!content.trim()) return content; // Пропускаем пустые сообщения
+    try {
+      const response = await fetch('https://unlimitedpossibilities12.org/api/spellcheck', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: content }),
+      });
+      if (!response.ok) {
+        throw new Error('Spell check failed');
+      }
+      const result = await response.text(); // Получаем текст ответа
+      return result.replace(/^"|"$/g, ''); // Удаляем кавычки
+    } catch (error) {
+      console.error('Spell check error:', error);
+      toast.error('Failed to spell check message. Sending original text.');
+      return content; // Возвращаем исходный текст при ошибке
+    }
   };
 
   return (
