@@ -45,6 +45,8 @@ const PrivateChat = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [showTranslationModal, setShowTranslationModal] = useState(false);
 
+  const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false); 
+
   const scrollToBottom = () => {
     if (messagesEndRef.current && messageListRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -598,11 +600,26 @@ const PrivateChat = () => {
     translateNextMessage();
   }, [translationQueue, isTranslating]);
 
+  // Заглушка для переключения орфографии
+  const handleSpellCheckToggle = () => {
+    setIsSpellCheckEnabled((prev) => !prev);
+    // Логика проверки орфографии через ChatGPT-4o будет добавлена позже
+  };
+
   return (
     <div className="private-chat">
       <div className="private-chat-name">
         {displayChatName}
         <div className="private-translation-controls"> 
+          <button
+            className="private-spellcheck-button" 
+            onClick={handleSpellCheckToggle}
+            data-tooltip={isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF'}
+            style={{ color: isSpellCheckEnabled ? '#42a5f5' : '#B0BEC5' }}
+          >
+            ✍️
+          </button>
+          {isSpellCheckEnabled && <span className="private-spellcheck-indicator">SC</span>} 
           <button
             className="private-translation-button" 
             onClick={() => setShowTranslationModal(true)}

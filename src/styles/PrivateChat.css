@@ -340,18 +340,86 @@
   right: 12px;
 }
 
-.private-translation-button { /* Изменено */
+.private-translation-button,
+.private-spellcheck-button { /* Новые стили */
   background: none;
   border: none;
   font-size: 20px;
   cursor: pointer;
-  padding: 0;
+  padding: 4px;
+  position: relative;
+  transition: color 0.3s ease, transform 0.2s ease;
 }
 
-.private-translation-indicator { /* Изменено */
+.private-translation-button:hover,
+.private-spellcheck-button:hover {
+  transform: scale(1.1);
+}
+
+/* Стили для всплывающих подсказок */
+.private-translation-button[data-tooltip],
+.private-spellcheck-button[data-tooltip] {
+  position: relative;
+}
+
+.private-translation-button[data-tooltip]::after,
+.private-spellcheck-button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -36px;
+  right: 50%;
+  transform: translateX(50%);
+  background-color: #333333;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.private-translation-button[data-tooltip]:hover::after,
+.private-spellcheck-button[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Стрелка для tooltip */
+.private-translation-button[data-tooltip]::before,
+.private-spellcheck-button[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: 50%;
+  transform: translateX(50%);
+  border: 4px solid transparent;
+  border-top-color: #333333;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.private-translation-button[data-tooltip]:hover::before,
+.private-spellcheck-button[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.private-translation-indicator,
+.private-spellcheck-indicator { /* Новые стили */
   font-size: 14px;
   color: #42a5f5;
   font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  background: rgba(66, 165, 245, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .private-original-content { /* Изменено */
@@ -423,5 +491,34 @@
         font-size: 12px;
         padding: 6px;
         height: 32px;
+    }
+
+    .private-translation-controls {
+        right: 8px;
+        gap: 6px;
+    }
+
+    .private-translation-button,
+    .private-spellcheck-button {
+        font-size: 18px;
+        padding: 3px;
+    }
+
+    .private-translation-button[data-tooltip]::after,
+    .private-spellcheck-button[data-tooltip]::after {
+        font-size: 11px;
+        padding: 5px 10px;
+        top: -32px;
+    }
+
+    .private-translation-button[data-tooltip]::before,
+    .private-spellcheck-button[data-tooltip]::before {
+        top: -6px;
+    }
+
+    .private-translation-indicator,
+    .private-spellcheck-indicator {
+        font-size: 12px;
+        padding: 2px 5px;
     }
 }
