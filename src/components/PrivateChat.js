@@ -106,6 +106,8 @@ const PrivateChat = () => {
         });
 
         setMessages(updatedMessages);
+        // Загрузка настройки орфографии
+        setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatIdParam}`) === 'true');
         setTimeout(() => {
           scrollToBottom();
         }, 0); // Прокрутка после загрузки
@@ -129,7 +131,7 @@ const PrivateChat = () => {
       setTranslationLanguage(localStorage.getItem(`translation_language_${chatIdParam}`) || 'auto');
       setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatIdParam}`) === 'true');
       // Загрузка настройки орфографии
-      setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatIdParam}`) === 'true');
+      //setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatIdParam}`) === 'true');
     }
 
     return () => {
