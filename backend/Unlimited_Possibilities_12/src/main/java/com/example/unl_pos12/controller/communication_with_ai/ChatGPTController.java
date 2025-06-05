@@ -86,4 +86,18 @@ public class ChatGPTController {
         messageRepository.save(message);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/api/spellcheck")
+    @ResponseBody
+    public ResponseEntity<String> spellCheckMessage(@RequestBody MessageRequest request) {
+        System.out.println("Spell check message: " + request.getPrompt());
+        if (request.getPrompt() == null || request.getPrompt().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Prompt is required");
+        }
+        String prompt = String.format("Correct the spelling and grammar of the following text and return only the corrected text in double quotes: \"%s\"",
+                request.getPrompt());
+        String result = openAIService.generateCompletion(prompt);
+        System.out.println("Spell checked result: " + result);
+        return ResponseEntity.ok(result);
+    }
 }
