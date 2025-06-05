@@ -311,7 +311,7 @@ const PrivateChat = () => {
        // Проверяем орфографию, если включена
       let finalContent = content;
       if (isSpellCheckEnabled) {
-        const spellCheckTimestamp = localStorage.getItem(`spellcheck_enabled_timestamp_${chatId}`);
+        const spellCheckTimestamp = localStorage.getItem(`spellcheck_enabled_timestamp_${chatIdParam}`); // Используем chatIdParam
         if (spellCheckTimestamp) {
           finalContent = await spellCheckMessage(content);
         }
@@ -334,7 +334,7 @@ const PrivateChat = () => {
         setTimeout(async () => {
           const response = await fetch(
             `https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(
-              content
+              finalContent // Используем исправленный текст
             )}&senderId=${userId}&chatId=${chatId}`
           );
 
@@ -375,7 +375,7 @@ const PrivateChat = () => {
                     body: JSON.stringify({
                       userId,
                       recipientId,
-                      content: message.content,
+                      content: finalContent, // Используем исправленный текст
                       chatId,
                     }),
                   });
@@ -615,12 +615,11 @@ const PrivateChat = () => {
   const handleSpellCheckToggle = () => {
     setIsSpellCheckEnabled((prev) => {
       const newState = !prev;
-      console.log(`Toggling spell check for chatId ${chatId}: ${newState}`); // Отладка
-      localStorage.setItem(`spellcheck_enabled_${chatId}`, newState);
+      localStorage.setItem(`spellcheck_enabled_${chatIdParam}`, newState); // Используем chatIdParam
       if (newState) {
-        localStorage.setItem(`spellcheck_enabled_timestamp_${chatId}`, new Date().toISOString());
+        localStorage.setItem(`spellcheck_enabled_timestamp_${chatIdParam}`, new Date().toISOString());
       } else {
-        localStorage.removeItem(`spellcheck_enabled_timestamp_${chatId}`);
+        localStorage.removeItem(`spellcheck_enabled_timestamp_${chatIdParam}`);
       }
       return newState;
     });
