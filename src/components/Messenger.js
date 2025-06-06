@@ -14,7 +14,7 @@ import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 import TranslationSettingsModal from './TranslationSettingsModal';
 import { translateMessage, saveTranslation } from '../api/messages';
-import useWebSocket from '../hooks/useTranslationAndSpellCheck';
+import useTranslationAndSpellCheck from '../hooks/useTranslationAndSpellCheck';
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
