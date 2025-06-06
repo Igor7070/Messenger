@@ -185,3 +185,5 @@ const usePrivateChatTranslationAndSpellCheck = ({
     spellCheckMessage,
   };
 };
+
+export default usePrivateChatTranslationAndSpellCheck;
