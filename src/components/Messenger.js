@@ -13,7 +13,7 @@ import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 import TranslationSettingsModal from './TranslationSettingsModal';
-import useTranslationAndSpellCheck from '../hooks/useTranslationAndSpellCheck';
+import { translateMessage, saveTranslation } from '../api/messages';
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
@@ -55,31 +55,11 @@ const Messenger = () => {
     const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
     const [translationLanguage, setTranslationLanguage] = useState('auto');
     const [translateNewOnly, setTranslateNewOnly] = useState(false);
+    const [translationQueue, setTranslationQueue] = useState([]);
+    const [isTranslating, setIsTranslating] = useState(false);
     const [showTranslationModal, setShowTranslationModal] = useState(false);
 
-    // ДОБАВЛЕНО: использование хука для перевода и орфографии
-    const {
-        isSpellCheckEnabled,
-        handleSpellCheckToggle,
-        spellCheckMessage,
-        handleTranslationSettingsSave,
-        isMessageNew,
-        translateExistingMessages,
-        clearTranslations,
-        translationQueue,
-        setTranslationQueue,
-        isTranslating,
-    } = useTranslationAndSpellCheck({
-        chatId,
-        messages,
-        setMessages,
-        isTranslationEnabled,
-        setIsTranslationEnabled,
-        translationLanguage,
-        setTranslationLanguage,
-        translateNewOnly,
-        setTranslateNewOnly,
-    });
+    const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -132,6 +112,8 @@ const Messenger = () => {
             setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatId}`) === 'true');
             setTranslationLanguage(localStorage.getItem(`translation_language_${chatId}`) || 'auto');
             setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatId}`) === 'true');
+            // Загрузка настройки орфографии
+            setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatId}`) === 'true');
         }
     }, [setContextUserId, setNotificationUserId, chatId]);
 
@@ -170,33 +152,38 @@ const Messenger = () => {
     useEffect(() => {
         if (!isTranslationEnabled && messages.some((msg) => msg.translatedContent || msg.translationLanguage)) {
             console.log('Cleaning translations in messages due to disabled translation');
-            clearTranslations(); // ИЗМЕНЕНО: используем clearTranslations из хука
+            setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                    msg.translatedContent || msg.translationLanguage
+                    ? {
+                        ...msg,
+                        translatedContent: null,
+                        translationLanguage: null,
+                        showOriginal: true,
+                        }
+                    : msg
+                )
+            );
         }
-    }, [isTranslationEnabled, messages, clearTranslations]); // ИЗМЕНЕНО: добавлена зависимость clearTranslations
+    }, [isTranslationEnabled, messages]);
 
     // Добавлено: обработка новых сообщений для перевода
     useEffect(() => {
         const stompClientInstance = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
-                console.log('Connected to WebSocket');
-                stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
-                    const newMessage = JSON.parse(message.body);
-                    updateMessages(newMessage);
-                    if (isTranslationEnabled && isMessageNew(newMessage)) {
-                        setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
-                    }
-                });
+            console.log('Connected to WebSocket');
+            stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
+                const newMessage = JSON.parse(message.body);
+                updateMessages(newMessage);
+                // Добавлено: перевод нового сообщения
+                if (isTranslationEnabled && isMessageNew(newMessage)) {
+                setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+                }
+            });
             },
             onWebSocketError: (error) => {
-                console.error('WebSocket error:', error);
-                // Добавлено: предотвращение тостов при нормальном закрытии соединения
-                if (error.message !== 'WebSocket closed normally') {
-                    toast.error('WebSocket connection error. Please check your connection.');
-                }
-            },
-            onDisconnect: () => {
-                console.log('Disconnected from WebSocket');
+            console.error('WebSocket error:', error);
             },
         });
 
@@ -204,12 +191,9 @@ const Messenger = () => {
         stompClientInstance.activate();
 
         return () => {
-            console.log('Deactivating WebSocket client');
-            stompClientInstance.deactivate().catch((err) => {
-                console.error('Error during WebSocket deactivation:', err);
-            });
+            stompClientInstance.deactivate();
         };
-    }, [chatId, isTranslationEnabled]); 
+    }, [chatId, isTranslationEnabled, translationLanguage]); // Изменено: добавлены зависимости
 
     useEffect(() => {
         const handleClick = () => {
@@ -231,14 +215,19 @@ const Messenger = () => {
         }
     }, [messages.length]);
 
-    // ИЗМЕНЕНО: запуск перевода при изменении настроек с использованием функций из хука
+    // Добавлено: запуск перевода при изменении настроек
     useEffect(() => {
         if (isTranslationEnabled) {
-            translateExistingMessages(); // ИЗМЕНЕНО: используется translateExistingMessages из хука
+            translateExistingMessages();
         } else {
-            clearTranslations(); // ИЗМЕНЕНО: используется clearTranslations из хука
+            clearTranslations();
         }
-    }, [isTranslationEnabled, translationLanguage, translateNewOnly, translateExistingMessages, clearTranslations]); // ИЗМЕНЕНО: добавлены зависимости
+    }, [isTranslationEnabled, translationLanguage, translateNewOnly]);
+
+    // Добавлено: обработка очереди переводов
+    useEffect(() => {
+        translateNextMessage();
+    }, [translationQueue, isTranslating]);
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
@@ -253,18 +242,18 @@ const Messenger = () => {
                 };
                 if (
                     isTranslationEnabled &&
-                    isMessageNew(newMessage) && // ИЗМЕНЕНО: используется isMessageNew из хука
+                    isMessageNew(newMessage) &&
                     (!updatedMessages[existingMessageIndex].translatedContent ||
                     updatedMessages[existingMessageIndex].translationLanguage !== translationLanguage)
                 ) {
-                    setTranslationQueue((prevQueue) => [...prevQueue, newMessage]); // ИЗМЕНЕНО: используется setTranslationQueue из хука
+                    setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
                 }
                 return updatedMessages;
             } else if (newMessage.content !== 'Message deleted') {
                 const updatedMessages = [...prevMessages, newMessage];
                 localStorage.setItem(`last_visit_chat_${chatId}`, newMessage.timestamp);
-                if (isTranslationEnabled && isMessageNew(newMessage)) { // ИЗМЕНЕНО: используется isMessageNew из хука
-                    setTranslationQueue((prevQueue) => [...prevQueue, newMessage]); // ИЗМЕНЕНО: используется setTranslationQueue из хука
+                if (isTranslationEnabled && isMessageNew(newMessage)) {
+                    setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
                 }
                 return updatedMessages;
             }
@@ -296,12 +285,12 @@ const Messenger = () => {
             const currentUsername = username;
             const chatName = await getChatName(chatId);
 
-            // ИЗМЕНЕНО: используем isSpellCheckEnabled и spellCheckMessage из хука
+            // Проверяем орфографию, если включена
             let finalContent = content;
             if (isSpellCheckEnabled) {
                 const spellCheckTimestamp = localStorage.getItem(`spellcheck_enabled_timestamp_${chatId}`);
                 if (spellCheckTimestamp) {
-                    finalContent = await spellCheckMessage(content); // ИЗМЕНЕНО: spellCheckMessage из хука
+                    finalContent = await spellCheckMessage(content);
                 }
             }
 
@@ -507,6 +496,143 @@ const Messenger = () => {
     // Определяем, показывать ли аватар
     const shouldShowAvatar = (msg) => {
         return msg.sender.id !== userId;
+    };
+
+    // Добавлено: проверка, является ли сообщение новым
+    const isMessageNew = (message) => {
+        if (!translateNewOnly) return true;
+        const enabledTimestamp = localStorage.getItem(`translation_enabled_timestamp_${chatId}`);
+        if (!enabledTimestamp) return false;
+        try {
+            const messageTime = new Date(message.timestamp).getTime();
+            const enabledTime = new Date(enabledTimestamp).getTime();
+            return messageTime > enabledTime;
+        } catch (e) {
+            console.error('Error parsing timestamps:', e);
+            return false;
+        }
+    };
+
+    // Добавлено: перевод существующего сообщения
+    const translateExistingMessages = () => {
+        if (!isTranslationEnabled) return;
+        const queue = messages
+            .filter(
+            (msg) =>
+                isMessageNew(msg) &&
+                (!msg.translatedContent || msg.translationLanguage !== translationLanguage)
+            )
+            .map((msg) => ({ ...msg }));
+        setTranslationQueue(queue);
+    };
+
+    // Добавлено: обработка следующего сообщения в очереди
+    const translateNextMessage = () => {
+        if (translationQueue.length === 0 || isTranslating) return;
+        setIsTranslating(true);
+        const message = translationQueue[0];
+        translateMessageFunc(message);
+    };
+
+    // Добавлено: перевод одного сообщения
+    const translateMessageFunc = async (message) => {
+        try {
+            const translatedContent = await translateMessage(message.content, translationLanguage);
+            const updatedMessage = {
+                ...message,
+                translatedContent,
+                translationLanguage,
+                showOriginal: true,
+            };
+
+            // Сохранение перевода локально
+            localStorage.setItem(
+                `translation_${chatId}_${message.id}`,
+                JSON.stringify({ translatedContent, translationLanguage })
+            );
+
+            // Сохранение перевода на сервере
+            await saveTranslation(message.id, translatedContent, translationLanguage);
+
+            setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                    msg.id === message.id ? updatedMessage : msg
+                )
+            );
+
+            setTranslationQueue((prevQueue) => prevQueue.slice(1));
+            setIsTranslating(false);
+        } catch (error) {
+            console.error('Translation error:', error);
+            setTranslationQueue((prevQueue) => prevQueue.slice(1));
+            setIsTranslating(false);
+        }
+    };
+
+    // Добавлено: очистка переводов
+    const clearTranslations = () => {
+    setTranslationQueue([]);
+        setMessages((prevMessages) => {
+            const hasTranslations = prevMessages.some(
+                (msg) => msg.translatedContent || msg.translationLanguage
+            );
+            if (!hasTranslations) return prevMessages;
+            // Удаляем переводы из localStorage
+            prevMessages.forEach((msg) => {
+                localStorage.removeItem(`translation_${chatId}_${msg.id}`);
+            });
+            return prevMessages.map((msg) =>
+            msg.translatedContent || msg.translationLanguage
+                ? {
+                    ...msg,
+                    translatedContent: null,
+                    translationLanguage: null,
+                    showOriginal: true,
+                }
+                : msg
+            );
+        });
+    };
+
+    // Добавлено: обработка сохранения настроек перевода
+    const handleTranslationSettingsSave = (enabled, language, newOnly) => {
+        setIsTranslationEnabled(enabled);
+        setTranslationLanguage(language);
+        setTranslateNewOnly(newOnly);
+    };
+
+    // Для переключения орфографии
+    const handleSpellCheckToggle = () => {
+        setIsSpellCheckEnabled((prev) => {
+            const newState = !prev;
+            localStorage.setItem(`spellcheck_enabled_${chatId}`, newState);
+            if (newState) {
+                localStorage.setItem(`spellcheck_enabled_timestamp_${chatId}`, new Date().toISOString());
+            } else {
+                localStorage.removeItem(`spellcheck_enabled_timestamp_${chatId}`);
+            }
+            return newState;
+        });
+    };
+
+    const spellCheckMessage = async (content) => {
+    if (!content.trim()) return content; // Пропускаем пустые сообщения
+        try {
+            const response = await fetch('https://unlimitedpossibilities12.org/api/spellcheck', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: content }),
+            });
+            if (!response.ok) {
+                throw new Error('Spell check failed');
+            }
+            const result = await response.text(); // Получаем текст ответа
+            return result.replace(/^"|"$/g, ''); // Удаляем кавычки
+        } catch (error) {
+            console.error('Spell check error:', error);
+            toast.error('Failed to spell check message. Sending original text.');
+            return content; // Возвращаем исходный текст при ошибке
+        }
     };
 
     return (
