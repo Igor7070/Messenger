@@ -183,7 +183,6 @@ const Messenger = () => {
                 stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
                     updateMessages(newMessage);
-                    // ИЗМЕНЕНО: перевод нового сообщения с использованием isMessageNew из хука
                     if (isTranslationEnabled && isMessageNew(newMessage)) {
                         setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
                     }
@@ -191,6 +190,13 @@ const Messenger = () => {
             },
             onWebSocketError: (error) => {
                 console.error('WebSocket error:', error);
+                // Добавлено: предотвращение тостов при нормальном закрытии соединения
+                if (error.message !== 'WebSocket closed normally') {
+                    toast.error('WebSocket connection error. Please check your connection.');
+                }
+            },
+            onDisconnect: () => {
+                console.log('Disconnected from WebSocket');
             },
         });
 
@@ -198,9 +204,12 @@ const Messenger = () => {
         stompClientInstance.activate();
 
         return () => {
-            stompClientInstance.deactivate();
+            console.log('Deactivating WebSocket client');
+            stompClientInstance.deactivate().catch((err) => {
+                console.error('Error during WebSocket deactivation:', err);
+            });
         };
-    }, [chatId, isTranslationEnabled, isMessageNew, setTranslationQueue]); // ИЗМЕНЕНО: обновлены зависимости
+    }, [chatId, isTranslationEnabled]); 
 
     useEffect(() => {
         const handleClick = () => {
