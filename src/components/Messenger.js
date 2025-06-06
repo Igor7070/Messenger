@@ -13,7 +13,6 @@ import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 import TranslationSettingsModal from './TranslationSettingsModal';
-import { translateMessage, saveTranslation } from '../api/messages';
 import useTranslationAndSpellCheck from '../hooks/useTranslationAndSpellCheck';
 
 const getChatName = async (chatId) => {
@@ -133,8 +132,6 @@ const Messenger = () => {
             setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatId}`) === 'true');
             setTranslationLanguage(localStorage.getItem(`translation_language_${chatId}`) || 'auto');
             setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatId}`) === 'true');
-            // Загрузка настройки орфографии
-            setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatId}`) === 'true');
         }
     }, [setContextUserId, setNotificationUserId, chatId]);
 
