@@ -14,6 +14,7 @@ import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 import TranslationSettingsModal from './TranslationSettingsModal';
 import { translateMessage, saveTranslation } from '../api/messages';
+import useGroupChatTranslationAndSpellCheck from '../hooks/useGroupChatTranslationAndSpellCheck';
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
@@ -61,6 +62,33 @@ const Messenger = () => {
 
     const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
 
+    // ДОБАВЛЕНО: использование хука
+    const {
+        isMessageNew,
+        translateExistingMessages,
+        translateNextMessage,
+        translateMessageFunc,
+        clearTranslations,
+        handleTranslationSettingsSave,
+        handleSpellCheckToggle,
+        spellCheckMessage,
+    } = useGroupChatTranslationAndSpellCheck({
+        chatId,
+        messages,
+        setMessages,
+        isTranslationEnabled,
+        setIsTranslationEnabled,
+        translationLanguage,
+        setTranslationLanguage,
+        translateNewOnly,
+        setTranslateNewOnly,
+        translationQueue,
+        setTranslationQueue,
+        isTranslating,
+        setIsTranslating,
+        setIsSpellCheckEnabled,
+    });
+
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
         if (!timestamp) return '';
@@ -88,13 +116,6 @@ const Messenger = () => {
     const handleAvatarClick = (senderId) => {
         navigate(`/user/${senderId}`);
     };
-
-    //useEffect(() => {
-        // Сброс всех тостов и тестовый тост
-        //toast.dismiss(); // Очищаем очередь тостов
-        //console.log('Testing toast rendering in Messenger');
-        //toast.info('Test toast in Messenger', { toastId: 'test-messenger', autoClose: 3000 });
-    //}, []);
 
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
@@ -496,143 +517,6 @@ const Messenger = () => {
     // Определяем, показывать ли аватар
     const shouldShowAvatar = (msg) => {
         return msg.sender.id !== userId;
-    };
-
-    // Добавлено: проверка, является ли сообщение новым
-    const isMessageNew = (message) => {
-        if (!translateNewOnly) return true;
-        const enabledTimestamp = localStorage.getItem(`translation_enabled_timestamp_${chatId}`);
-        if (!enabledTimestamp) return false;
-        try {
-            const messageTime = new Date(message.timestamp).getTime();
-            const enabledTime = new Date(enabledTimestamp).getTime();
-            return messageTime > enabledTime;
-        } catch (e) {
-            console.error('Error parsing timestamps:', e);
-            return false;
-        }
-    };
-
-    // Добавлено: перевод существующего сообщения
-    const translateExistingMessages = () => {
-        if (!isTranslationEnabled) return;
-        const queue = messages
-            .filter(
-            (msg) =>
-                isMessageNew(msg) &&
-                (!msg.translatedContent || msg.translationLanguage !== translationLanguage)
-            )
-            .map((msg) => ({ ...msg }));
-        setTranslationQueue(queue);
-    };
-
-    // Добавлено: обработка следующего сообщения в очереди
-    const translateNextMessage = () => {
-        if (translationQueue.length === 0 || isTranslating) return;
-        setIsTranslating(true);
-        const message = translationQueue[0];
-        translateMessageFunc(message);
-    };
-
-    // Добавлено: перевод одного сообщения
-    const translateMessageFunc = async (message) => {
-        try {
-            const translatedContent = await translateMessage(message.content, translationLanguage);
-            const updatedMessage = {
-                ...message,
-                translatedContent,
-                translationLanguage,
-                showOriginal: true,
-            };
-
-            // Сохранение перевода локально
-            localStorage.setItem(
-                `translation_${chatId}_${message.id}`,
-                JSON.stringify({ translatedContent, translationLanguage })
-            );
-
-            // Сохранение перевода на сервере
-            await saveTranslation(message.id, translatedContent, translationLanguage);
-
-            setMessages((prevMessages) =>
-                prevMessages.map((msg) =>
-                    msg.id === message.id ? updatedMessage : msg
-                )
-            );
-
-            setTranslationQueue((prevQueue) => prevQueue.slice(1));
-            setIsTranslating(false);
-        } catch (error) {
-            console.error('Translation error:', error);
-            setTranslationQueue((prevQueue) => prevQueue.slice(1));
-            setIsTranslating(false);
-        }
-    };
-
-    // Добавлено: очистка переводов
-    const clearTranslations = () => {
-    setTranslationQueue([]);
-        setMessages((prevMessages) => {
-            const hasTranslations = prevMessages.some(
-                (msg) => msg.translatedContent || msg.translationLanguage
-            );
-            if (!hasTranslations) return prevMessages;
-            // Удаляем переводы из localStorage
-            prevMessages.forEach((msg) => {
-                localStorage.removeItem(`translation_${chatId}_${msg.id}`);
-            });
-            return prevMessages.map((msg) =>
-            msg.translatedContent || msg.translationLanguage
-                ? {
-                    ...msg,
-                    translatedContent: null,
-                    translationLanguage: null,
-                    showOriginal: true,
-                }
-                : msg
-            );
-        });
-    };
-
-    // Добавлено: обработка сохранения настроек перевода
-    const handleTranslationSettingsSave = (enabled, language, newOnly) => {
-        setIsTranslationEnabled(enabled);
-        setTranslationLanguage(language);
-        setTranslateNewOnly(newOnly);
-    };
-
-    // Для переключения орфографии
-    const handleSpellCheckToggle = () => {
-        setIsSpellCheckEnabled((prev) => {
-            const newState = !prev;
-            localStorage.setItem(`spellcheck_enabled_${chatId}`, newState);
-            if (newState) {
-                localStorage.setItem(`spellcheck_enabled_timestamp_${chatId}`, new Date().toISOString());
-            } else {
-                localStorage.removeItem(`spellcheck_enabled_timestamp_${chatId}`);
-            }
-            return newState;
-        });
-    };
-
-    const spellCheckMessage = async (content) => {
-    if (!content.trim()) return content; // Пропускаем пустые сообщения
-        try {
-            const response = await fetch('https://unlimitedpossibilities12.org/api/spellcheck', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: content }),
-            });
-            if (!response.ok) {
-                throw new Error('Spell check failed');
-            }
-            const result = await response.text(); // Получаем текст ответа
-            return result.replace(/^"|"$/g, ''); // Удаляем кавычки
-        } catch (error) {
-            console.error('Spell check error:', error);
-            toast.error('Failed to spell check message. Sending original text.');
-            return content; // Возвращаем исходный текст при ошибке
-        }
     };
 
     return (
