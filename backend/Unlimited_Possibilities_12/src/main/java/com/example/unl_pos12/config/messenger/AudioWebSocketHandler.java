@@ -32,7 +32,7 @@ public class AudioWebSocketHandler extends BinaryWebSocketHandler {
         String sessionId = session.getId();
         byte[] audioData = message.getPayload().array();
         WebSocket openAiWebSocket = openAiSessions.computeIfAbsent(roomId,
-                k -> openAIService.createOpenAIWebSocket(roomId, sessionId)); // MODIFIED: Убрано messagingTemplate
+                k -> openAIService.createOpenAIWebSocket(roomId, sessionId)); // MODIFIED: Убрано messagingTemplate...
         if (openAiWebSocket != null) {
             openAiWebSocket.send(ByteString.of(audioData));
         }
