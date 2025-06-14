@@ -41,7 +41,7 @@ public class OpenAIService {
         return response;
     }
 
-    public WebSocket createOpenAIWebSocket(String roomId, String sessionId) { // MODIFIED: Убрано messagingTemplate как параметр
+    public WebSocket createOpenAIWebSocket(String roomId, String sessionId) {
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
                 .url("wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview")
@@ -66,33 +66,40 @@ public class OpenAIService {
                 sessionConfig.put("output_audio_format", "pcm16");
                 config.set("session", sessionConfig);
                 try {
-                    webSocket.send(mapper.writeValueAsString(config));
+                    String configJson = mapper.writeValueAsString(config);
+                    System.out.println("Sending OpenAI config: " + configJson);
+                    webSocket.send(configJson);
                 } catch (Exception e) {
-                    System.err.println("Error sending OpenAI config: " + e.getMessage());
+                    System.err.println("Error sending OpenAI config for roomId " + roomId + ": " + e.getMessage());
                 }
             }
 
             @Override
             public void onMessage(WebSocket webSocket, String text) {
+                System.out.println("Received OpenAI message for roomId " + roomId + ": " + text);
                 try {
                     ObjectNode json = (ObjectNode) mapper.readTree(text);
-                    if ("response.audio_transcript.delta".equals(json.get("type").asText())) {
+                    String messageType = json.get("type").asText();
+                    System.out.println("Message type: " + messageType);
+                    if ("response.audio_transcript.delta".equals(messageType)) {
                         String transcription = json.get("delta").asText();
                         System.out.println("Transcription delta for roomId " + roomId + ": " + transcription);
                         ObjectNode transcriptionMessage = mapper.createObjectNode();
                         transcriptionMessage.put("transcription", transcription);
                         transcriptionMessage.put("sessionId", sessionId);
-                        messagingTemplate.convertAndSend("/topic/transcription/" + roomId,
-                                mapper.writeValueAsString(transcriptionMessage));
+                        // Попробуем отправить без перевода пока
+                        String messageJson = mapper.writeValueAsString(transcriptionMessage);
+                        System.out.println("Sending to STOMP topic /topic/transcription/" + roomId + ": " + messageJson);
+                        messagingTemplate.convertAndSend("/topic/transcription/" + roomId, messageJson);
                     }
                 } catch (Exception e) {
-                    System.err.println("Error parsing OpenAI message: " + e.getMessage());
+                    System.err.println("Error parsing OpenAI message for roomId " + roomId + ": " + e.getMessage());
                 }
             }
 
             @Override
             public void onMessage(WebSocket webSocket, ByteString bytes) {
-                // Игнорируем входящие аудиоданные от OpenAI
+                System.out.println("Received binary message from OpenAI for roomId " + roomId + ": " + bytes.size() + " bytes");
             }
 
             @Override
@@ -103,9 +110,17 @@ public class OpenAIService {
             @Override
             public void onFailure(WebSocket webSocket, Throwable t, Response response) {
                 System.err.println("OpenAI WebSocket failure for roomId " + roomId + ": " + t.getMessage());
+                ObjectNode errorMessage = mapper.createObjectNode();
+                errorMessage.put("error", "Transcription service failed: " + t.getMessage());
+                try {
+                    messagingTemplate.convertAndSend("/topic/transcription/" + roomId, mapper.writeValueAsString(errorMessage));
+                } catch (Exception e) {
+                    System.err.println("Error sending error message to STOMP for roomId " + roomId + ": " + e.getMessage());
+                }
             }
         };
 
+        System.out.println("Creating OpenAI WebSocket for roomId: " + roomId);
         return client.newWebSocket(request, listener);
     }
 }
