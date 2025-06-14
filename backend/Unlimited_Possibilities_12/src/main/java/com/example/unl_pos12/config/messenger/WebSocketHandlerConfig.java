@@ -20,7 +20,13 @@ public class WebSocketHandlerConfig {
             @Override
             public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
                 registry.addHandler(audioWebSocketHandler, "/audio-transcription")
-                        .setAllowedOrigins("https://igor7070.github.io", "https://unlimitedpossibilities12.org");
+                        .setAllowedOrigins(
+                                "https://igor7070.github.io",
+                                "https://unlimitedpossibilities12.org",
+                                "http://localhost:3000", // Для локального тестирования фронтенда
+                                "http://10.0.2.2:3000"  // Для Android-эмулятора
+                        )
+                        .withSockJS(); // Добавляем поддержку SockJS
             }
         };
     }
