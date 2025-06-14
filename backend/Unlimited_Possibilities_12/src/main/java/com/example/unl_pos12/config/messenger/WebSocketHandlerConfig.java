@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 
 @Configuration
 public class WebSocketHandlerConfig {
@@ -20,13 +21,8 @@ public class WebSocketHandlerConfig {
             @Override
             public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
                 registry.addHandler(audioWebSocketHandler, "/audio-transcription")
-                        .setAllowedOrigins(
-                                "https://igor7070.github.io",
-                                "https://unlimitedpossibilities12.org",
-                                "http://localhost:3000", // Для локального тестирования фронтенда
-                                "http://10.0.2.2:3000"  // Для Android-эмулятора
-                        )
-                        .withSockJS(); // Добавляем поддержку SockJS
+                        .setAllowedOrigins("https://unlimitedpossibilities12.org", "https://igor7070.github.io")
+                        .setHandshakeHandler(new DefaultHandshakeHandler()); // Явный handshake
             }
         };
     }
