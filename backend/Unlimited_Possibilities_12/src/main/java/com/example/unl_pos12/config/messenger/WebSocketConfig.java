@@ -1,15 +1,14 @@
 package com.example.unl_pos12.config.messenger;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.web.socket.config.annotation.*;
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 @Configuration
 @EnableWebSocketMessageBroker
-public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSocketConfigurer {
-    @Autowired // ADDED: Инъецируем AudioWebSocketHandler
-    private AudioWebSocketHandler audioWebSocketHandler;
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic");
@@ -19,15 +18,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSoc
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("https://igor7070.github.io")
+                .setAllowedOrigins("https://igor7070.github.io", "https://unlimitedpossibilities12.org")
                 .withSockJS();
-    }
-
-    // ADDED: Регистрация WebSocket-эндпоинта для аудио
-    @Override
-    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(audioWebSocketHandler, "/audio-transcription") // MODIFIED: Используем инъецированный бин
-                .setAllowedOrigins("https://igor7070.github.io");
     }
 
     /*@Override

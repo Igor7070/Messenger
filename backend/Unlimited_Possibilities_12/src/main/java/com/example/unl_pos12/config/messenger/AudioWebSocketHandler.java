@@ -3,8 +3,6 @@ package com.example.unl_pos12.config.messenger;
 import com.example.unl_pos12.service.OpenAIService;
 import okhttp3.WebSocket;
 import okio.ByteString;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.CloseStatus;
@@ -14,14 +12,14 @@ import org.springframework.web.socket.handler.BinaryWebSocketHandler;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Component // ADDED: Делаем класс Spring-бином
+@Component
 public class AudioWebSocketHandler extends BinaryWebSocketHandler {
-    @Autowired
-    private OpenAIService openAIService;
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
-
+    private final OpenAIService openAIService;
     private final Map<String, WebSocket> openAiSessions = new ConcurrentHashMap<>();
+
+    public AudioWebSocketHandler(OpenAIService openAIService) { // MODIFIED: Убрано SimpMessagingTemplate
+        this.openAIService = openAIService;
+    }
 
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
@@ -31,8 +29,10 @@ public class AudioWebSocketHandler extends BinaryWebSocketHandler {
             return;
         }
 
+        String sessionId = session.getId();
         byte[] audioData = message.getPayload().array();
-        WebSocket openAiWebSocket = openAiSessions.computeIfAbsent(roomId, k -> openAIService.createOpenAIWebSocket(roomId, messagingTemplate));
+        WebSocket openAiWebSocket = openAiSessions.computeIfAbsent(roomId,
+                k -> openAIService.createOpenAIWebSocket(roomId, sessionId)); // MODIFIED: Убрано messagingTemplate
         if (openAiWebSocket != null) {
             openAiWebSocket.send(ByteString.of(audioData));
         }

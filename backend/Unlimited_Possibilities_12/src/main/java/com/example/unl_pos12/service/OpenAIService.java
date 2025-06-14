@@ -20,6 +20,11 @@ public class OpenAIService {
     @Value("${openai.api.key}")
     private String apiKey;
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(60);
+    private final SimpMessagingTemplate messagingTemplate; // ADDED
+
+    public OpenAIService(SimpMessagingTemplate messagingTemplate) { // ADDED: Конструктор
+        this.messagingTemplate = messagingTemplate;
+    }
 
     public String generateCompletion(String prompt) {
         OpenAiService service = new OpenAiService(apiKey, DEFAULT_TIMEOUT);
@@ -36,7 +41,7 @@ public class OpenAIService {
         return response;
     }
 
-    public WebSocket createOpenAIWebSocket(String roomId, SimpMessagingTemplate messagingTemplate) {
+    public WebSocket createOpenAIWebSocket(String roomId, String sessionId) { // MODIFIED: Убрано messagingTemplate как параметр
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
                 .url("wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview")
@@ -50,7 +55,6 @@ public class OpenAIService {
             @Override
             public void onOpen(WebSocket webSocket, Response response) {
                 System.out.println("Connected to OpenAI Realtime API for roomId: " + roomId);
-                // Отправляем конфигурацию сессии
                 ObjectNode config = mapper.createObjectNode();
                 config.put("type", "session.update");
                 ObjectNode sessionConfig = mapper.createObjectNode();
@@ -77,6 +81,7 @@ public class OpenAIService {
                         System.out.println("Transcription delta for roomId " + roomId + ": " + transcription);
                         ObjectNode transcriptionMessage = mapper.createObjectNode();
                         transcriptionMessage.put("transcription", transcription);
+                        transcriptionMessage.put("sessionId", sessionId);
                         messagingTemplate.convertAndSend("/topic/transcription/" + roomId,
                                 mapper.writeValueAsString(transcriptionMessage));
                     }
