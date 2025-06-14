@@ -93,6 +93,10 @@ public class OpenAIService {
                 sessionConfig.putNull("turn_detection");
                 sessionConfig.put("input_audio_format", "pcm16");
                 sessionConfig.put("output_audio_format", "pcm16");
+                // Включаем транскрипцию
+                ObjectNode transcriptionConfig = mapper.createObjectNode();
+                transcriptionConfig.put("model", "whisper-1");
+                sessionConfig.set("input_audio_transcription", transcriptionConfig);
                 config.set("session", sessionConfig);
                 try {
                     webSocket.send(mapper.writeValueAsString(config));
@@ -116,6 +120,8 @@ public class OpenAIService {
                         String messageJson = mapper.writeValueAsString(transcriptionMessage);
                         messagingTemplate.convertAndSend("/topic/transcription/" + roomId, messageJson);
                         LOGGER.info("Sent transcription to /topic/transcription/" + roomId + ": " + transcription);
+                    } else if ("error".equals(messageType)) {
+                        LOGGER.severe("OpenAI error for roomId " + roomId + ": " + json.get("error").toString());
                     }
                 } catch (Exception e) {
                     LOGGER.severe("Error parsing OpenAI message for roomId " + roomId + ": " + e.getMessage());
