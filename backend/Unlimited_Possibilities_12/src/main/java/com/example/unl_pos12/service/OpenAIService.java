@@ -101,10 +101,10 @@ public class OpenAIService {
                 ObjectNode config = mapper.createObjectNode();
                 config.put("type", "session.update");
                 ObjectNode sessionConfig = mapper.createObjectNode();
-                sessionConfig.putArray("modalities").add("text").add("audio");
+                sessionConfig.putArray("modalities").add("text");
                 sessionConfig.put("input_audio_format", "pcm16");
                 sessionConfig.put("output_audio_format", "pcm16");
-                sessionConfig.put("instructions", "Transcribe the audio in real-time and return the text in Russian. Respond only in Russian.");
+                sessionConfig.put("instructions", "Transcribe the audio in real-time and return the text in Russian.");
                 ObjectNode transcriptionConfig = mapper.createObjectNode();
                 transcriptionConfig.put("model", "whisper-1");
                 sessionConfig.set("input_audio_transcription", transcriptionConfig);
@@ -112,15 +112,6 @@ public class OpenAIService {
                 try {
                     webSocket.send(mapper.writeValueAsString(config));
                     LOGGER.info("Sent config to OpenAI for roomId: " + roomId);
-                    // Активируем потоковую транскрипцию
-                    ObjectNode transcriptionCommand = mapper.createObjectNode();
-                    transcriptionCommand.put("type", "response.create");
-                    ObjectNode responseConfig = mapper.createObjectNode();
-                    responseConfig.putArray("modalities").add("text");
-                    responseConfig.put("stream_transcription", true);
-                    transcriptionCommand.set("response", responseConfig);
-                    webSocket.send(mapper.writeValueAsString(transcriptionCommand));
-                    LOGGER.info("Sent response.create with stream_transcription for roomId: " + roomId);
                 } catch (Exception e) {
                     LOGGER.severe("Error sending OpenAI config for roomId " + roomId + ": " + e.getMessage());
                 }
@@ -153,6 +144,7 @@ public class OpenAIService {
                 ObjectNode transcriptionMessage = mapper.createObjectNode();
                 transcriptionMessage.put("transcription", transcription);
                 transcriptionMessage.put("sessionId", sessionId);
+                transcriptionMessage.put("from", sessionId); // Добавляем идентификатор отправителя
                 try {
                     String messageJson = mapper.writeValueAsString(transcriptionMessage);
                     messagingTemplate.convertAndSend("/topic/transcription/" + roomId, messageJson);
