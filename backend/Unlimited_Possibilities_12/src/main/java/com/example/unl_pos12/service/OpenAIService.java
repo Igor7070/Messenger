@@ -104,7 +104,7 @@ public class OpenAIService {
                 sessionConfig.putArray("modalities").add("text");
                 sessionConfig.put("input_audio_format", "pcm16");
                 sessionConfig.put("output_audio_format", "pcm16");
-                sessionConfig.put("instructions", "Transcribe the audio in real-time and return the text in Russian.");
+                sessionConfig.put("instructions", "Transcribe the audio in real-time and return the text in Russian. Do not generate responses or replies.");
                 ObjectNode transcriptionConfig = mapper.createObjectNode();
                 transcriptionConfig.put("model", "whisper-1");
                 sessionConfig.set("input_audio_transcription", transcriptionConfig);
@@ -144,7 +144,6 @@ public class OpenAIService {
                 ObjectNode transcriptionMessage = mapper.createObjectNode();
                 transcriptionMessage.put("transcription", transcription);
                 transcriptionMessage.put("sessionId", sessionId);
-                transcriptionMessage.put("from", sessionId); // Добавляем идентификатор отправителя
                 try {
                     String messageJson = mapper.writeValueAsString(transcriptionMessage);
                     messagingTemplate.convertAndSend("/topic/transcription/" + roomId, messageJson);
