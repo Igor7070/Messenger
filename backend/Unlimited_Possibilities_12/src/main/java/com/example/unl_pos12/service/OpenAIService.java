@@ -104,6 +104,7 @@ public class OpenAIService {
                 sessionConfig.putArray("modalities").add("text").add("audio");
                 sessionConfig.put("input_audio_format", "pcm16");
                 sessionConfig.put("output_audio_format", "pcm16");
+                sessionConfig.put("instructions", "Transcribe the audio in real-time and return the text in Russian. Respond only in Russian.");
                 ObjectNode transcriptionConfig = mapper.createObjectNode();
                 transcriptionConfig.put("model", "whisper-1");
                 sessionConfig.set("input_audio_transcription", transcriptionConfig);
@@ -111,11 +112,15 @@ public class OpenAIService {
                 try {
                     webSocket.send(mapper.writeValueAsString(config));
                     LOGGER.info("Sent config to OpenAI for roomId: " + roomId);
-                    // Отправляем команду для начала обработки аудио
-                    ObjectNode inputAudio = mapper.createObjectNode();
-                    inputAudio.put("type", "input_audio_buffer.append");
-                    webSocket.send(mapper.writeValueAsString(inputAudio));
-                    LOGGER.info("Sent input_audio_buffer.append to OpenAI for roomId: " + roomId);
+                    // Активируем потоковую транскрипцию
+                    ObjectNode transcriptionCommand = mapper.createObjectNode();
+                    transcriptionCommand.put("type", "response.create");
+                    ObjectNode responseConfig = mapper.createObjectNode();
+                    responseConfig.putArray("modalities").add("text");
+                    responseConfig.put("stream_transcription", true);
+                    transcriptionCommand.set("response", responseConfig);
+                    webSocket.send(mapper.writeValueAsString(transcriptionCommand));
+                    LOGGER.info("Sent response.create with stream_transcription for roomId: " + roomId);
                 } catch (Exception e) {
                     LOGGER.severe("Error sending OpenAI config for roomId " + roomId + ": " + e.getMessage());
                 }
@@ -129,19 +134,42 @@ public class OpenAIService {
                     String messageType = json.get("type").asText();
                     if ("response.audio_transcript.delta".equals(messageType)) {
                         String transcription = json.get("delta").asText();
-                        ObjectNode transcriptionMessage = mapper.createObjectNode();
-                        transcriptionMessage.put("transcription", transcription);
-                        transcriptionMessage.put("sessionId", sessionId);
-                        String messageJson = mapper.writeValueAsString(transcriptionMessage);
-                        messagingTemplate.convertAndSend("/topic/transcription/" + roomId, messageJson);
-                        LOGGER.info("Sent transcription to /topic/transcription/" + roomId + ": " + transcription);
+                        sendTranscription(roomId, sessionId, transcription);
+                    } else if ("response.content_part.done".equals(messageType)) {
+                        String transcription = json.get("part").get("transcript").asText();
+                        sendTranscription(roomId, sessionId, transcription);
                     } else if ("error".equals(messageType)) {
                         LOGGER.severe("OpenAI error for roomId " + roomId + ": " + json.get("error").toString());
+                        sendError(roomId, sessionId, json.get("error").toString());
                     } else if ("session.created".equals(messageType)) {
                         LOGGER.info("Session created for roomId " + roomId + ": " + json.get("session").get("id").asText());
                     }
                 } catch (Exception e) {
                     LOGGER.severe("Error parsing OpenAI message for roomId " + roomId + ": " + e.getMessage());
+                }
+            }
+
+            private void sendTranscription(String roomId, String sessionId, String transcription) {
+                ObjectNode transcriptionMessage = mapper.createObjectNode();
+                transcriptionMessage.put("transcription", transcription);
+                transcriptionMessage.put("sessionId", sessionId);
+                try {
+                    String messageJson = mapper.writeValueAsString(transcriptionMessage);
+                    messagingTemplate.convertAndSend("/topic/transcription/" + roomId, messageJson);
+                    LOGGER.info("Sent transcription to /topic/transcription/" + roomId + ": " + transcription);
+                } catch (Exception e) {
+                    LOGGER.severe("Error sending transcription for roomId " + roomId + ": " + e.getMessage());
+                }
+            }
+
+            private void sendError(String roomId, String sessionId, String error) {
+                ObjectNode errorMessage = mapper.createObjectNode();
+                errorMessage.put("error", error);
+                errorMessage.put("sessionId", sessionId);
+                try {
+                    messagingTemplate.convertAndSend("/topic/transcription/" + roomId, mapper.writeValueAsString(errorMessage));
+                } catch (Exception e) {
+                    LOGGER.severe("Error sending error message for roomId " + roomId + ": " + e.getMessage());
                 }
             }
 
@@ -160,13 +188,7 @@ public class OpenAIService {
             public void onFailure(WebSocket webSocket, Throwable t, Response response) {
                 openAiSessions.remove(roomId);
                 LOGGER.severe("OpenAI WebSocket failure for roomId " + roomId + ": " + t.getMessage());
-                ObjectNode errorMessage = mapper.createObjectNode();
-                errorMessage.put("error", "Transcription service failed: " + t.getMessage());
-                try {
-                    messagingTemplate.convertAndSend("/topic/transcription/" + roomId, mapper.writeValueAsString(errorMessage));
-                } catch (Exception e) {
-                    LOGGER.severe("Error sending error message to STOMP for roomId " + roomId + ": " + e.getMessage());
-                }
+                sendError(roomId, sessionId, "Transcription service failed: " + t.getMessage());
             }
         };
 
