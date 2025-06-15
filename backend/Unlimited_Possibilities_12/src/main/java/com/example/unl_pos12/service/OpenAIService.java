@@ -83,9 +83,9 @@ public class OpenAIService {
 
     private WebSocket createOpenAIWebSocket(String roomId, String sessionId) {
         OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
                 .build();
 
         Request request = new Request.Builder()
@@ -101,13 +101,21 @@ public class OpenAIService {
                 ObjectNode config = mapper.createObjectNode();
                 config.put("type", "session.update");
                 ObjectNode sessionConfig = mapper.createObjectNode();
-                sessionConfig.putArray("modalities").add("text");
+                sessionConfig.putArray("modalities").add("audio").add("text");
                 sessionConfig.put("input_audio_format", "pcm16");
                 sessionConfig.put("output_audio_format", "pcm16");
-                sessionConfig.put("instructions", "Transcribe the audio in real-time and return the text in Russian. Do not generate responses or replies.");
+                sessionConfig.put("instructions", "Transcribe the audio in real-time and return the text in Russian. Do not generate any responses, replies, or additional text beyond the transcription.");
                 ObjectNode transcriptionConfig = mapper.createObjectNode();
                 transcriptionConfig.put("model", "whisper-1");
                 sessionConfig.set("input_audio_transcription", transcriptionConfig);
+                ObjectNode vadConfig = mapper.createObjectNode();
+                vadConfig.put("type", "server_vad");
+                vadConfig.put("threshold", 0.3);
+                vadConfig.put("prefix_padding_ms", 300);
+                vadConfig.put("silence_duration_ms", 200);
+                vadConfig.put("create_response", false);
+                vadConfig.put("interrupt_response", false);
+                sessionConfig.set("turn_detection", vadConfig);
                 config.set("session", sessionConfig);
                 try {
                     webSocket.send(mapper.writeValueAsString(config));
@@ -128,6 +136,9 @@ public class OpenAIService {
                         sendTranscription(roomId, sessionId, transcription);
                     } else if ("response.content_part.done".equals(messageType)) {
                         String transcription = json.get("part").get("transcript").asText();
+                        sendTranscription(roomId, sessionId, transcription);
+                    } else if ("response.text.delta".equals(messageType)) {
+                        String transcription = json.get("delta").asText();
                         sendTranscription(roomId, sessionId, transcription);
                     } else if ("error".equals(messageType)) {
                         LOGGER.severe("OpenAI error for roomId " + roomId + ": " + json.get("error").toString());
@@ -172,7 +183,7 @@ public class OpenAIService {
             @Override
             public void onClosing(WebSocket webSocket, int code, String reason) {
                 openAiSessions.remove(roomId);
-                LOGGER.info("OpenAI WebSocket closing for roomId " + roomId + ": " + reason);
+                LOGGER.info("OpenAI WebSocket closing for roomId: " + roomId + ": " + reason);
             }
 
             @Override
