@@ -88,12 +88,8 @@ public class OpenAIService {
                 config.put("type", "session.update");
                 ObjectNode sessionConfig = mapper.createObjectNode();
                 sessionConfig.putArray("modalities").add("text").add("audio");
-                sessionConfig.put("instructions", "Transcribe the audio in real-time and return the text.");
-                sessionConfig.put("voice", "alloy");
-                sessionConfig.putNull("turn_detection");
                 sessionConfig.put("input_audio_format", "pcm16");
                 sessionConfig.put("output_audio_format", "pcm16");
-                // Включаем транскрипцию
                 ObjectNode transcriptionConfig = mapper.createObjectNode();
                 transcriptionConfig.put("model", "whisper-1");
                 sessionConfig.set("input_audio_transcription", transcriptionConfig);
@@ -101,6 +97,11 @@ public class OpenAIService {
                 try {
                     webSocket.send(mapper.writeValueAsString(config));
                     LOGGER.info("Sent config to OpenAI for roomId: " + roomId);
+                    // Отправляем команду для начала обработки аудио
+                    ObjectNode inputAudio = mapper.createObjectNode();
+                    inputAudio.put("type", "input_audio_buffer.append");
+                    webSocket.send(mapper.writeValueAsString(inputAudio));
+                    LOGGER.info("Sent input_audio_buffer.append to OpenAI for roomId: " + roomId);
                 } catch (Exception e) {
                     LOGGER.severe("Error sending OpenAI config for roomId " + roomId + ": " + e.getMessage());
                 }
@@ -122,6 +123,8 @@ public class OpenAIService {
                         LOGGER.info("Sent transcription to /topic/transcription/" + roomId + ": " + transcription);
                     } else if ("error".equals(messageType)) {
                         LOGGER.severe("OpenAI error for roomId " + roomId + ": " + json.get("error").toString());
+                    } else if ("session.created".equals(messageType)) {
+                        LOGGER.info("Session created for roomId " + roomId + ": " + json.get("session").get("id").asText());
                     }
                 } catch (Exception e) {
                     LOGGER.severe("Error parsing OpenAI message for roomId " + roomId + ": " + e.getMessage());
@@ -130,7 +133,7 @@ public class OpenAIService {
 
             @Override
             public void onMessage(WebSocket webSocket, ByteString bytes) {
-                LOGGER.info("Received binary message from OpenAI for roomId " + roomId);
+                LOGGER.info("Received binary message from OpenAI for roomId " + roomId + ", length: " + bytes.size());
             }
 
             @Override
