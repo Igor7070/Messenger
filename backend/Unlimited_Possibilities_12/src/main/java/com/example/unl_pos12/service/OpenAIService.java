@@ -104,23 +104,15 @@ public class OpenAIService {
                 sessionConfig.putArray("modalities").add("text").add("audio");
                 sessionConfig.put("input_audio_format", "pcm16");
                 sessionConfig.put("output_audio_format", "pcm16");
-                sessionConfig.put("instructions", "Transcribe the audio in real-time and return the text in Russian. Respond only in Russian.");
+                sessionConfig.put("instructions", "Transcribe the input audio in real-time and return only the transcription in Russian. Do not generate any responses or assistant messages.");
                 ObjectNode transcriptionConfig = mapper.createObjectNode();
                 transcriptionConfig.put("model", "whisper-1");
                 sessionConfig.set("input_audio_transcription", transcriptionConfig);
+                sessionConfig.putNull("turn_detection"); // Отключаем детекцию поворотов
                 config.set("session", sessionConfig);
                 try {
                     webSocket.send(mapper.writeValueAsString(config));
                     LOGGER.info("Sent config to OpenAI for roomId: " + roomId);
-                    // Активируем потоковую транскрипцию
-                    ObjectNode transcriptionCommand = mapper.createObjectNode();
-                    transcriptionCommand.put("type", "response.create");
-                    ObjectNode responseConfig = mapper.createObjectNode();
-                    responseConfig.putArray("modalities").add("text");
-                    responseConfig.put("stream_transcription", true);
-                    transcriptionCommand.set("response", responseConfig);
-                    webSocket.send(mapper.writeValueAsString(transcriptionCommand));
-                    LOGGER.info("Sent response.create with stream_transcription for roomId: " + roomId);
                 } catch (Exception e) {
                     LOGGER.severe("Error sending OpenAI config for roomId " + roomId + ": " + e.getMessage());
                 }
@@ -134,6 +126,9 @@ public class OpenAIService {
                     String messageType = json.get("type").asText();
                     if ("response.audio_transcript.delta".equals(messageType)) {
                         String transcription = json.get("delta").asText();
+                        sendTranscription(roomId, sessionId, transcription);
+                    } else if ("input_audio_buffer.committed".equals(messageType)) {
+                        String transcription = json.get("transcript").asText();
                         sendTranscription(roomId, sessionId, transcription);
                     } else if ("response.content_part.done".equals(messageType)) {
                         String transcription = json.get("part").get("transcript").asText();
