@@ -99,20 +99,21 @@ public class OpenAIService {
                 ObjectNode transcriptionConfig = mapper.createObjectNode();
                 transcriptionConfig.put("model", "whisper-1");
                 sessionConfig.set("input_audio_transcription", transcriptionConfig);
-                ObjectNode vadConfig = mapper.createObjectNode();
-                vadConfig.put("type", "server_vad");
-                vadConfig.put("threshold", 0.3);
-                vadConfig.put("prefix_padding_ms", 300);
-                vadConfig.put("silence_duration_ms", 200);
-                vadConfig.put("create_response", false);
-                vadConfig.put("interrupt_response", false);
-                sessionConfig.set("turn_detection", vadConfig);
+                sessionConfig.putNull("turn_detection"); // Убираем turn_detection
                 config.set("session", sessionConfig);
                 try {
                     webSocket.send(mapper.writeValueAsString(config));
                     LOGGER.info("Sent session.update config to OpenAI for roomId: " + roomId + ": " + config.toString());
+                    // Отправляем response.create для активации транскрипций
+                    ObjectNode responseCreate = mapper.createObjectNode();
+                    responseCreate.put("type", "response.create");
+                    ObjectNode responseConfig = mapper.createObjectNode();
+                    responseConfig.putArray("modalities").add("text");
+                    responseCreate.set("response", responseConfig);
+                    webSocket.send(mapper.writeValueAsString(responseCreate));
+                    LOGGER.info("Sent response.create to OpenAI for roomId: " + roomId + ": " + responseCreate.toString());
                 } catch (Exception e) {
-                    LOGGER.severe("Error sending OpenAI config for roomId " + roomId + ": " + e.getMessage());
+                    LOGGER.severe("Error sending OpenAI config or response.create for roomId " + roomId + ": " + e.getMessage());
                 }
             }
 
@@ -182,7 +183,7 @@ public class OpenAIService {
             @Override
             public void onFailure(WebSocket webSocket, Throwable t, Response response) {
                 openAiSessions.remove(roomId);
-                LOGGER.severe("OpenAI WebSocket failure for roomId " + roomId + ": " + t.getMessage() + ", response: " + response);
+                LOGGER.severe("OpenAI WebSocket failure for roomId: " + roomId + ": " + t.getMessage() + ", response: " + response);
                 sendError(roomId, sessionId, "Transcription service failed: " + t.getMessage());
             }
         };
