@@ -13,7 +13,6 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,25 +50,56 @@ public class OpenAIService {
 
     public void handleAudioMessage(String roomId, String sessionId, byte[] audioData) {
         LOGGER.info("Handling audio message for roomId: " + roomId + ", data length: " + audioData.length);
-        if (audioData == null || audioData.length == 0) {
-            LOGGER.warning("Empty audio data for roomId: " + roomId);
-            return;
-        }
-        WebSocket openAiWebSocket = openAiSessions.computeIfAbsent(roomId, k -> createOpenAIWebSocket(roomId, sessionId));
-        if (openAiWebSocket != null) {
+        String transcription = transcribeAudio(audioData);
+        if (transcription != null) {
+            ObjectNode transcriptionMessage = mapper.createObjectNode();
+            transcriptionMessage.put("transcription", transcription);
+            transcriptionMessage.put("sessionId", sessionId);
             try {
-                // Формируем сообщение input_audio_buffer.append
-                ObjectNode audioMessage = mapper.createObjectNode();
-                audioMessage.put("type", "input_audio_buffer.append");
-                audioMessage.put("audio", Base64.getEncoder().encodeToString(audioData));
-                String messageJson = mapper.writeValueAsString(audioMessage);
-                openAiWebSocket.send(messageJson);
-                LOGGER.info("Sent input_audio_buffer.append to OpenAI WebSocket for roomId: " + roomId + ", audio length: " + audioData.length);
+                String messageJson = mapper.writeValueAsString(transcriptionMessage);
+                messagingTemplate.convertAndSend("/topic/transcription/" + roomId, messageJson);
+                LOGGER.info("Sent transcription to /topic/transcription/" + roomId + ": " + transcription);
             } catch (Exception e) {
-                LOGGER.severe("Error sending audio to OpenAI WebSocket for roomId " + roomId + ": " + e.getMessage());
+                LOGGER.severe("Error sending transcription for roomId " + roomId + ": " + e.getMessage());
             }
-        } else {
-            LOGGER.severe("Failed to create OpenAI WebSocket for roomId: " + roomId);
+        }
+    }
+
+    public String transcribeAudio(byte[] audioData) {
+        try {
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(10, TimeUnit.SECONDS)
+                    .writeTimeout(10, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .build();
+
+            RequestBody requestBody = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("file", "audio.pcm",
+                            RequestBody.create(audioData, MediaType.parse("audio/pcm")))
+                    .addFormDataPart("model", "whisper-1")
+                    .addFormDataPart("language", "ru")
+                    .addFormDataPart("response_format", "text")
+                    .build();
+
+            Request request = new Request.Builder()
+                    .url("https://api.openai.com/v1/audio/transcriptions")
+                    .header("Authorization", "Bearer " + apiKey)
+                    .post(requestBody)
+                    .build();
+
+            Response response = client.newCall(request).execute();
+            if (response.isSuccessful()) {
+                String transcription = response.body().string();
+                LOGGER.info("Received Whisper transcription: " + transcription);
+                return transcription;
+            } else {
+                LOGGER.severe("Whisper API error: " + response.code() + " " + response.message());
+                return null;
+            }
+        } catch (Exception e) {
+            LOGGER.severe("Error transcribing audio with Whisper: " + e.getMessage());
+            return null;
         }
     }
 
