@@ -13,6 +13,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,10 +51,23 @@ public class OpenAIService {
 
     public void handleAudioMessage(String roomId, String sessionId, byte[] audioData) {
         LOGGER.info("Handling audio message for roomId: " + roomId + ", data length: " + audioData.length);
+        if (audioData == null || audioData.length == 0) {
+            LOGGER.warning("Empty audio data for roomId: " + roomId);
+            return;
+        }
         WebSocket openAiWebSocket = openAiSessions.computeIfAbsent(roomId, k -> createOpenAIWebSocket(roomId, sessionId));
         if (openAiWebSocket != null) {
-            openAiWebSocket.send(ByteString.of(audioData));
-            LOGGER.info("Sent audio data to OpenAI WebSocket for roomId: " + roomId);
+            try {
+                // Формируем сообщение input_audio_buffer.append
+                ObjectNode audioMessage = mapper.createObjectNode();
+                audioMessage.put("type", "input_audio_buffer.append");
+                audioMessage.put("audio", Base64.getEncoder().encodeToString(audioData));
+                String messageJson = mapper.writeValueAsString(audioMessage);
+                openAiWebSocket.send(messageJson);
+                LOGGER.info("Sent input_audio_buffer.append to OpenAI WebSocket for roomId: " + roomId + ", audio length: " + audioData.length);
+            } catch (Exception e) {
+                LOGGER.severe("Error sending audio to OpenAI WebSocket for roomId " + roomId + ": " + e.getMessage());
+            }
         } else {
             LOGGER.severe("Failed to create OpenAI WebSocket for roomId: " + roomId);
         }
@@ -88,6 +102,7 @@ public class OpenAIService {
                 config.put("type", "session.update");
                 ObjectNode sessionConfig = mapper.createObjectNode();
                 sessionConfig.putArray("modalities").add("text").add("audio");
+                sessionConfig.put("instructions", "You are a friendly assistant.");
                 sessionConfig.put("input_audio_format", "pcm16");
                 sessionConfig.put("output_audio_format", "pcm16");
                 ObjectNode transcriptionConfig = mapper.createObjectNode();
@@ -96,12 +111,7 @@ public class OpenAIService {
                 config.set("session", sessionConfig);
                 try {
                     webSocket.send(mapper.writeValueAsString(config));
-                    LOGGER.info("Sent config to OpenAI for roomId: " + roomId);
-                    // Отправляем команду для начала обработки аудио
-                    ObjectNode inputAudio = mapper.createObjectNode();
-                    inputAudio.put("type", "input_audio_buffer.append");
-                    webSocket.send(mapper.writeValueAsString(inputAudio));
-                    LOGGER.info("Sent input_audio_buffer.append to OpenAI for roomId: " + roomId);
+                    LOGGER.info("Sent session.update config to OpenAI for roomId: " + roomId);
                 } catch (Exception e) {
                     LOGGER.severe("Error sending OpenAI config for roomId " + roomId + ": " + e.getMessage());
                 }
@@ -125,6 +135,8 @@ public class OpenAIService {
                         LOGGER.severe("OpenAI error for roomId " + roomId + ": " + json.get("error").toString());
                     } else if ("session.created".equals(messageType)) {
                         LOGGER.info("Session created for roomId " + roomId + ": " + json.get("session").get("id").asText());
+                    } else if ("session.updated".equals(messageType)) {
+                        LOGGER.info("Session updated for roomId " + roomId);
                     }
                 } catch (Exception e) {
                     LOGGER.severe("Error parsing OpenAI message for roomId " + roomId + ": " + e.getMessage());
@@ -156,6 +168,8 @@ public class OpenAIService {
             }
         };
 
-        return client.newWebSocket(request, listener);
+        WebSocket webSocket = client.newWebSocket(request, listener);
+        LOGGER.info("Initiated OpenAI WebSocket creation for roomId: " + roomId);
+        return webSocket;
     }
 }
