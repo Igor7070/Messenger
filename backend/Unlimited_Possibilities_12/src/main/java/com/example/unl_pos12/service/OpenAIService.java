@@ -1,5 +1,6 @@
 package com.example.unl_pos12.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
@@ -98,22 +99,15 @@ public class OpenAIService {
                 sessionConfig.put("instructions", "Transcribe the audio in real-time and return the text in Russian. Do not generate any responses, replies, or additional text beyond the transcription.");
                 ObjectNode transcriptionConfig = mapper.createObjectNode();
                 transcriptionConfig.put("model", "whisper-1");
+                transcriptionConfig.put("language", "ru"); // Явно указываем русский
                 sessionConfig.set("input_audio_transcription", transcriptionConfig);
-                sessionConfig.putNull("turn_detection"); // Убираем turn_detection
+                sessionConfig.putNull("turn_detection"); // Без VAD
                 config.set("session", sessionConfig);
                 try {
                     webSocket.send(mapper.writeValueAsString(config));
                     LOGGER.info("Sent session.update config to OpenAI for roomId: " + roomId + ": " + config.toString());
-                    // Отправляем response.create для активации транскрипций
-                    ObjectNode responseCreate = mapper.createObjectNode();
-                    responseCreate.put("type", "response.create");
-                    ObjectNode responseConfig = mapper.createObjectNode();
-                    responseConfig.putArray("modalities").add("text");
-                    responseCreate.set("response", responseConfig);
-                    webSocket.send(mapper.writeValueAsString(responseCreate));
-                    LOGGER.info("Sent response.create to OpenAI for roomId: " + roomId + ": " + responseCreate.toString());
                 } catch (Exception e) {
-                    LOGGER.severe("Error sending OpenAI config or response.create for roomId " + roomId + ": " + e.getMessage());
+                    LOGGER.severe("Error sending OpenAI config for roomId " + roomId + ": " + e.getMessage());
                 }
             }
 
@@ -128,8 +122,13 @@ public class OpenAIService {
                         String transcription = json.get("delta").asText();
                         sendTranscription(roomId, sessionId, transcription);
                     } else if ("response.content_part.done".equals(messageType)) {
-                        String transcription = json.get("part").get("transcript").asText();
-                        sendTranscription(roomId, sessionId, transcription);
+                        JsonNode part = json.get("part");
+                        if (part.has("text")) {
+                            String transcription = part.get("text").asText();
+                            sendTranscription(roomId, sessionId, transcription);
+                        } else {
+                            LOGGER.warning("No text field in response.content_part.done for roomId " + roomId);
+                        }
                     } else if ("response.text.delta".equals(messageType)) {
                         String transcription = json.get("delta").asText();
                         sendTranscription(roomId, sessionId, transcription);
@@ -183,7 +182,7 @@ public class OpenAIService {
             @Override
             public void onFailure(WebSocket webSocket, Throwable t, Response response) {
                 openAiSessions.remove(roomId);
-                LOGGER.severe("OpenAI WebSocket failure for roomId: " + roomId + ": " + t.getMessage() + ", response: " + response);
+                LOGGER.severe("OpenAI WebSocket failure for roomId " + roomId + ": " + t.getMessage() + ", response: " + response);
                 sendError(roomId, sessionId, "Transcription service failed: " + t.getMessage());
             }
         };
