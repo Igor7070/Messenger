@@ -30,7 +30,7 @@ public class OpenAIService {
     private final ObjectMapper mapper = new ObjectMapper();
     private static final Logger LOGGER = Logger.getLogger(OpenAIService.class.getName());
 
-    public OpenAIService(SimpMessagingTemplate messagingTemplate) { // ADDED: Конструктор
+    public OpenAIService(SimpMessagingTemplate messagingTemplate) { // ADDED: Конструктор...
         this.messagingTemplate = messagingTemplate;
     }
 
