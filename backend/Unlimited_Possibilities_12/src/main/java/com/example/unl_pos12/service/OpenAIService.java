@@ -32,6 +32,7 @@ public class OpenAIService {
     private final ObjectMapper mapper = new ObjectMapper();
     private static final Logger LOGGER = Logger.getLogger(OpenAIService.class.getName());
     private final ConcurrentHashMap<String, ByteArrayOutputStream> audioBuffers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Long> lastCommitTimestamps = new ConcurrentHashMap<>();
 
     public OpenAIService(SimpMessagingTemplate messagingTemplate) { // ADDED: Конструктор
         this.messagingTemplate = messagingTemplate;
@@ -71,13 +72,16 @@ public class OpenAIService {
                 String messageJson = mapper.writeValueAsString(audioMessage);
                 openAiWebSocket.send(messageJson);
                 LOGGER.info("Sent input_audio_buffer.append to OpenAI WebSocket for roomId: " + roomId + ", audio length: " + audioData.length);
-                // Отправляем commit, если накоплено ≥ 3200 байт (≈200 мс)
-                if (audioBuffer.size() >= 3200) {
+                // Отправляем commit, если прошло ≥ 200 мс с последнего commit
+                long currentTime = System.currentTimeMillis();
+                long lastCommitTime = lastCommitTimestamps.getOrDefault(roomId, 0L);
+                if (currentTime - lastCommitTime >= 200 && audioBuffer.size() >= 3200) {
                     ObjectNode commitMessage = mapper.createObjectNode();
                     commitMessage.put("type", "input_audio_buffer.commit");
                     openAiWebSocket.send(mapper.writeValueAsString(commitMessage));
                     LOGGER.info("Sent input_audio_buffer.commit to OpenAI WebSocket for roomId: " + roomId);
-                    audioBuffer.reset(); // Очищаем буфер
+                    audioBuffer.reset();
+                    lastCommitTimestamps.put(roomId, currentTime);
                 }
             } catch (Exception e) {
                 LOGGER.severe("Error sending audio or commit to OpenAI WebSocket for roomId " + roomId + ": " + e.getMessage());
@@ -110,9 +114,8 @@ public class OpenAIService {
                 sessionConfig.putArray("modalities").add("audio").add("text");
                 sessionConfig.put("input_audio_format", "pcm16");
                 sessionConfig.put("output_audio_format", "pcm16");
-                sessionConfig.put("instructions", "Provide real-time transcription of the audio in Russian using Whisper. Do not generate any responses or additional text beyond the transcription.");
+                sessionConfig.put("instructions", "Transcribe the audio in real-time using Whisper and return the text in Russian. Do not generate responses, replies, or additional text beyond the transcription.");
                 ObjectNode transcriptionConfig = mapper.createObjectNode();
-                transcriptionConfig.put("enabled", true); // Явно включаем транскрипцию
                 transcriptionConfig.put("model", "whisper-1");
                 transcriptionConfig.put("language", "ru");
                 sessionConfig.set("input_audio_transcription", transcriptionConfig);
@@ -198,14 +201,14 @@ public class OpenAIService {
             @Override
             public void onClosing(WebSocket webSocket, int code, String reason) {
                 openAiSessions.remove(roomId);
-                audioBuffers.remove(roomId); // Очищаем буфер
+                audioBuffers.remove(roomId);
                 LOGGER.info("OpenAI WebSocket closing for roomId: " + roomId + ", code: " + code + ", reason: " + reason);
             }
 
             @Override
             public void onFailure(WebSocket webSocket, Throwable t, Response response) {
                 openAiSessions.remove(roomId);
-                audioBuffers.remove(roomId); // Очищаем буфер
+                audioBuffers.remove(roomId);
                 LOGGER.severe("OpenAI WebSocket failure for roomId: " + roomId + ": " + t.getMessage() + ", response: " + response);
                 sendError(roomId, sessionId, "Transcription service failed: " + t.getMessage());
             }
