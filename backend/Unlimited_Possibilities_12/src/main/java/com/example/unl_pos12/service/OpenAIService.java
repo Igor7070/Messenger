@@ -30,7 +30,7 @@ public class OpenAIService {
     private final ObjectMapper mapper = new ObjectMapper();
     private static final Logger LOGGER = Logger.getLogger(OpenAIService.class.getName());
 
-    public OpenAIService(SimpMessagingTemplate messagingTemplate) { // ADDED: Конструктор...
+    public OpenAIService(SimpMessagingTemplate messagingTemplate) { // ADDED: Конструктор
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -133,8 +133,8 @@ public class OpenAIService {
                     } else if ("error".equals(messageType)) {
                         LOGGER.severe("OpenAI error for roomId " + roomId + ": " + json.get("error").toString());
                         sendError(roomId, sessionId, json.get("error").toString());
-                    } else {
-                        LOGGER.info("Ignoring message type for roomId " + roomId + ": " + messageType);
+                    } else if ("session.created".equals(messageType)) {
+                        LOGGER.info("Session created for roomId " + roomId + ": " + json.get("session").get("id").asText());
                     }
                 } catch (Exception e) {
                     LOGGER.severe("Error parsing OpenAI message for roomId " + roomId + ": " + e.getMessage());
