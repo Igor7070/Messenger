@@ -19,7 +19,7 @@ public class WebSocketCloseController {
     public void handleCloseWebSocket(@Payload Map<String, String> payload) {
         String roomId = payload.get("roomId");
         if (roomId != null) {
-            openAIService.closeWebSocket(roomId);
+            //openAIService.closeWebSocket(roomId);
             LOGGER.info("Received closeWebSocket signal for roomId: " + roomId);
         } else {
             LOGGER.warning("Received closeWebSocket signal with null roomId");
