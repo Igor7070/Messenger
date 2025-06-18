@@ -35,6 +35,8 @@ public class OpenAIService {
             .build();
     private final ConcurrentHashMap<String, ByteArrayOutputStream> audioBuffers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> lastSentTimestamps = new ConcurrentHashMap<>();
+    // NEW: Храним recipientId для каждой сессии
+    private final ConcurrentHashMap<String, String> sessionToRecipientMap = new ConcurrentHashMap<>();
 
     @Value("${openai.api.key}")
     private String apiKey;
@@ -43,7 +45,7 @@ public class OpenAIService {
         this.messagingTemplate = messagingTemplate;
     }
 
-    // Оставляем метод generateCompletion без изменений
+    // Оставляем generateCompletion без изменений
     public String generateCompletion(String prompt) {
         OpenAiService service = new OpenAiService(apiKey, DEFAULT_TIMEOUT);
         ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
@@ -60,32 +62,29 @@ public class OpenAIService {
     }
 
     public void handleAudioMessage(String roomId, String sessionId, byte[] audioData) {
-        LOGGER.info("Handling audio message for roomId: " + roomId + ", data length: " + audioData.length);
+        LOGGER.info("Handling audio message for roomId: " + roomId + ", sessionId: " + sessionId + ", data length: " + audioData.length);
         if (audioData == null || audioData.length == 0) {
             LOGGER.warning("Empty audio data for roomId: " + roomId);
             return;
         }
         try {
-            // Накопление аудио
-            ByteArrayOutputStream audioBuffer = audioBuffers.computeIfAbsent(roomId, k -> new ByteArrayOutputStream());
+            // NEW: Извлекаем recipientId из JSON или используем sessionId как ключ
+            String bufferKey = roomId + "_" + sessionId;
+            ByteArrayOutputStream audioBuffer = audioBuffers.computeIfAbsent(bufferKey, k -> new ByteArrayOutputStream());
             audioBuffer.write(audioData);
-            // Сохраняем аудио для отладки
-            File debugFile = new File("debug_audio_" + roomId + ".raw");
+            File debugFile = new File("debug_audio_" + bufferKey + ".raw");
             try (FileOutputStream fos = new FileOutputStream(debugFile, true)) {
                 fos.write(audioData);
             } catch (IOException e) {
                 LOGGER.severe("Error writing debug audio for roomId " + roomId + ": " + e.getMessage());
             }
-            // Отправляем, если прошло ≥ 5 секунд и накоплено ≥ 80000 байт (≈5 сек при 16 кГц PCM16)
             long currentTime = System.currentTimeMillis();
-            long lastSentTime = lastSentTimestamps.getOrDefault(roomId, 0L);
+            long lastSentTime = lastSentTimestamps.getOrDefault(bufferKey, 0L);
             if (currentTime - lastSentTime >= 5000 && audioBuffer.size() >= 80000) {
                 byte[] audioBytes = audioBuffer.toByteArray();
                 audioBuffer.reset();
-                lastSentTimestamps.put(roomId, currentTime);
-                // Конвертируем в WAV
+                lastSentTimestamps.put(bufferKey, currentTime);
                 byte[] wavBytes = convertToWav(audioBytes);
-                // Отправляем в Whisper API
                 String transcription = transcribeAudio(wavBytes);
                 if (transcription != null && !transcription.trim().isEmpty()) {
                     sendTranscription(roomId, sessionId, transcription);
@@ -101,7 +100,6 @@ public class OpenAIService {
     }
 
     private byte[] convertToWav(byte[] rawAudio) throws IOException {
-        // Формат: PCM16, 16 кГц, моно
         AudioFormat format = new AudioFormat(16000, 16, 1, true, false);
         ByteArrayInputStream bais = new ByteArrayInputStream(rawAudio);
         AudioInputStream ais = new AudioInputStream(bais, format, rawAudio.length / format.getFrameSize());
@@ -123,7 +121,6 @@ public class OpenAIService {
                 .addFormDataPart("file", "audio.wav",
                         RequestBody.create(wavAudio, MediaType.parse("audio/wav")))
                 .addFormDataPart("model", "whisper-1")
-                // Убираем language, чтобы Whisper автоматически определял язык
                 .build();
 
         Request request = new Request.Builder()
@@ -150,8 +147,17 @@ public class OpenAIService {
         transcriptionMessage.put("sessionId", sessionId);
         try {
             String messageJson = mapper.writeValueAsString(transcriptionMessage);
+            // Отправляем себе
             messagingTemplate.convertAndSend("/topic/transcription/" + roomId, messageJson);
-            LOGGER.info("Sent transcription to /topic/transcription/" + roomId + ": " + transcription);
+            LOGGER.info("Sent transcription to /topic/transcription/" + roomId + ": " + transcription + ", sessionId: " + sessionId);
+            // NEW: Отправляем собеседнику
+            String recipientId = sessionToRecipientMap.getOrDefault(roomId + "_" + sessionId, null);
+            if (recipientId != null) {
+                messagingTemplate.convertAndSend("/topic/friend-transcription/" + roomId + "/" + recipientId, messageJson);
+                LOGGER.info("Sent transcription to /topic/friend-transcription/" + roomId + "/" + recipientId + ": " + transcription);
+            } else {
+                LOGGER.warning("No recipientId found for roomId: " + roomId + ", sessionId: " + sessionId);
+            }
         } catch (Exception e) {
             LOGGER.severe("Error sending transcription for roomId " + roomId + ": " + e.getMessage());
         }
@@ -167,5 +173,11 @@ public class OpenAIService {
         } catch (Exception e) {
             LOGGER.severe("Error sending error message for roomId " + roomId + ": " + e.getMessage());
         }
+    }
+
+    // NEW: Метод для регистрации recipientId
+    public void registerRecipient(String roomId, String sessionId, String recipientId) {
+        sessionToRecipientMap.put(roomId + "_" + sessionId, recipientId);
+        LOGGER.info("Registered recipientId: " + recipientId + " for roomId: " + roomId + ", sessionId: " + sessionId);
     }
 }
