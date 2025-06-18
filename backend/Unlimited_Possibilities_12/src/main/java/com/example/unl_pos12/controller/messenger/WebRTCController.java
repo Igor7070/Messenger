@@ -41,7 +41,7 @@ public class WebRTCController {
         System.out.println("callRequest.getRecipientId(): " + callRequest.getRecipientId());
 
         // Проверяем, что type установлен клиентом
-        if (callRequest.getType() == null || (!callRequest.getType().equals("voice") && !callRequest.getType().equals("video"))) {
+        if (callRequest.getType() == null || (!callRequest.getType().equals("voice") && !callRequest.getType().equals("video") && !callRequest.getType().equals("translate"))) {
             System.out.println("Invalid or missing call type, defaulting to 'voice'");
             callRequest.setType("voice"); // Устанавливаем по умолчанию voice, если type некорректен
         }
