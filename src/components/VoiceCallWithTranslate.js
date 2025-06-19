@@ -97,6 +97,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         });
 
         // Подписка на собственную транскрипцию
+        // МЕТКА: Обновить подписку на /topic/transcription
         stompClient.current.subscribe(`/topic/transcription/${roomId}`, (message) => {
           console.log('Received transcription message:', message.body);
           try {
@@ -104,7 +105,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
             if (json.error) {
               setTranscription(`Error: ${json.error}`);
               scrollToBottom(transcriptionRef);
-            } else if (json.transcription && json.sessionId === currentUserId) {
+            } else if (json.transcription) {
               setTranscription((prev) =>
                 prev === 'Transcription: Waiting...' || prev.startsWith('Error')
                   ? json.transcription
@@ -143,7 +144,12 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         });
 
         // Регистрация recipientId
-        registerRecipient();
+        // МЕТКА: Обновить вызов registerRecipient
+        if (incomingCall && (incomingCall.recipientId || incomingCall.callerId)) {
+          registerRecipient();
+        } else {
+          console.warn('Cannot register recipient: incomingCall is missing required fields', incomingCall);
+        }
 
         if (!isCaller && incomingCall) {
           console.log('Processing incoming call:', incomingCall);
@@ -237,14 +243,14 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const registerRecipient = () => {
     if (stompClient.current && stompClient.current.connected) {
       const registerMessage = {
-        sessionId: currentUserId,
-        recipientId: recipientId,
+        sessionId: `${currentUserId}_${Date.now()}`, // Уникальный sessionId
+        recipientId: isCaller ? incomingCall?.recipientId || recipientName : incomingCall?.callerId || callerName, // ID собеседника
       };
       stompClient.current.publish({
         destination: `/app/register-recipient/${roomId}`,
         body: JSON.stringify(registerMessage),
       });
-      console.log('Sent register recipient: sessionId=', currentUserId, ', recipientId=', recipientId);
+      console.log('Sent register recipient: sessionId=', registerMessage.sessionId, ', recipientId=', registerMessage.recipientId); // МЕТКА: Лог для отладки
     } else {
       console.error('STOMP client not connected, cannot send register-recipient');
     }
