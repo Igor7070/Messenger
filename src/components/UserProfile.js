@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/UserProfile.css';
-import { FaEdit, FaEllipsisV, FaPhone, FaVideo } from 'react-icons/fa';
+import { FaEdit, FaEllipsisV, FaPhone, FaVideo, FaLanguage } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Modal from 'react-modal';
 import IncomingCallNotification from './IncomingCallNotification';
@@ -175,6 +175,53 @@ const UserProfile = () => {
         } catch (error) {
             console.error('Error initiating video call:', error);
             toast.error('Error initiating video call');
+        }
+    };
+
+    const handleTranslateCall = async () => {
+        const roomId = `room-${currentUserId}-${userId}`;
+        console.log("Room ID:", roomId);
+
+        console.log("Translate Call Request:");
+        console.log("callerId - currentUserId:", currentUserId);
+        console.log("recipientId - userId:", userId);
+        const callRequest = {
+            callerId: currentUserId,
+            recipientId: parseInt(userId),
+            roomId: roomId,
+            callerName: localStorage.getItem('username') || 'Unknown',
+            type: 'translate'
+        };
+
+        try {
+            const response = await fetch('https://unlimitedpossibilities12.org/api/webrtc/call', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(callRequest),
+            });
+
+            if (response.ok) {
+                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}`);
+                const callerData = await callerResponse.json();
+
+                toast.success(`Calling ${user.username} with translation...`);
+                navigate(`/voice-call-translate/${roomId}`, {
+                    state: {
+                    incomingCall: callRequest,
+                    isCaller: true,
+                    currentUserId: currentUserId,
+                    callerName: callerData.username,
+                    recipientName: user.username
+                    }
+                });
+            } else {
+                toast.error('Failed to initiate translate call');
+            }
+        } catch (error) {
+            console.error('Error initiating translate call:', error);
+            toast.error('Error initiating translate call');
         }
     };
 
@@ -419,6 +466,9 @@ const UserProfile = () => {
                     </button>
                     <button onClick={handleVideoCall} className="video-call-button">
                         <FaVideo /> Video Call
+                    </button>
+                    <button onClick={handleTranslateCall} className="translate-call-button">
+                        <FaLanguage /> Translate Call
                     </button>
                 </div>
             )}

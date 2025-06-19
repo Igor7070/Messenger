@@ -1,12 +1,16 @@
 import React from 'react';
-import { FaPhone, FaVideo } from 'react-icons/fa';
+import { FaPhone, FaVideo, FaLanguage } from 'react-icons/fa';
 import '../styles/IncomingCallNotification.css';
 
 const IncomingCallNotification = ({ callerId, callerName, avatar, callType, onAccept, onReject }) => {
     const avatarSrc = avatar ? `https://unlimitedpossibilities12.org${avatar}` : null;
     const initials = callerName ? callerName.charAt(0).toUpperCase() : '';
-    const notificationTitle = callType === 'video' ? 'Incoming Video Call' : 'Incoming Voice Call';
-    const NotificationIcon = callType === 'video' ? FaVideo : FaPhone;
+    const notificationTitle = callType === 'video' ? 'Incoming Video Call' : 
+                         callType === 'translate' ? 'Incoming Translate Call' : 
+                         'Incoming Voice Call';
+    const NotificationIcon = callType === 'video' ? FaVideo : 
+                            callType === 'translate' ? FaLanguage : 
+                            FaPhone;
 
     return (
         <div className="incoming-call-notification">

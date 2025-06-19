@@ -280,7 +280,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
 
       peerConnectionRef.current.oniceconnectionstatechange = () => {
         console.log('ICE Connection State:', peerConnectionRef.current.iceConnectionState);
-        if ( ascend: ['connected', 'completed'].includes(peerConnectionRef.current.iceConnectionState)) {
+        if (['connected', 'completed'].includes(peerConnectionRef.current.iceConnectionState)) {
           console.log('WebRTC connection established');
           startAudioCapture();
         } else if (peerConnectionRef.current.iceConnectionState === 'failed') {

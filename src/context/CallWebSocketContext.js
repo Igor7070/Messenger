@@ -84,9 +84,9 @@ export const CallWebSocketProvider = ({ children }) => {
                             console.log('Закрываем уведомление о звонке для roomId:', callRequest.roomId);
                             // Используем тип звонка из incomingCall или callRequestRef
                             const callType = incomingCall?.type || callRequestRef.current?.type || 'voice'; // Запасной вариант — 'voice'
-                            const cancelMessage = callType === 'video'
-                                ? 'The video call was cancelled.'
-                                : 'The voice call was cancelled.';
+                            const cancelMessage = callType === 'video' ? 'The video call was cancelled.' :
+                                callType === 'translate' ? 'The translate call was cancelled.' :
+                                'The voice call was cancelled.';
                             setIncomingCallWithLog(null);
                             callRequestRef.current = null;
                             audioRef.current.pause();
@@ -101,7 +101,7 @@ export const CallWebSocketProvider = ({ children }) => {
                                 audioSrc: audioRef.current?.src,
                             });
                         }
-                    } else if (callRequest.type === 'voice' || callRequest.type === 'video') {
+                    } else if (callRequest.type === 'voice' || callRequest.type === 'video' || callRequest.type === 'translate') {
                         console.log('Получен запрос на звонок:', callRequest);
                         handleIncomingCall(callRequest);
                     } else {
@@ -209,9 +209,9 @@ export const CallWebSocketProvider = ({ children }) => {
                     setIncomingCallWithLog(null);
                     callRequestRef.current = null;
 
-                    const route = incomingCall.type === 'video'
-                        ? `/video-call/${incomingCall.roomId}`
-                        : `/voice-call/${incomingCall.roomId}`;
+                    const route = incomingCall.type === 'video' ? `/video-call/${incomingCall.roomId}` :
+                        incomingCall.type === 'translate' ? `/voice-call-translate/${incomingCall.roomId}` :
+                        `/voice-call/${incomingCall.roomId}`;
                     navigate(route, {
                         state: {
                             incomingCall,
@@ -221,7 +221,11 @@ export const CallWebSocketProvider = ({ children }) => {
                             recipientName: recipientData.username,
                         },
                     });
-                    toast.success(incomingCall.type === 'video' ? 'Video call accepted' : 'Voice call accepted');
+                    toast.success(
+                        incomingCall.type === 'video' ? 'Video call accepted' :
+                        incomingCall.type === 'translate' ? 'Translate call accepted' :
+                        'Voice call accepted'
+                    );
                 } else {
                     console.error('Ошибка при получении имен пользователей');
                     toast.error('Failed to fetch user data');
@@ -247,7 +251,11 @@ export const CallWebSocketProvider = ({ children }) => {
             { from: currentUserId, signal: { type: 'rejectCall' } },
             incomingCall.roomId
         );
-        toast.info(incomingCall.type === 'video' ? 'Video call rejected' : 'Voice call rejected');
+        toast.info(
+            incomingCall.type === 'video' ? 'Video call rejected' :
+            incomingCall.type === 'translate' ? 'Translate call rejected' :
+            'Voice call rejected'
+        );
     };
 
     return (

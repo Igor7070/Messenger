@@ -8,6 +8,7 @@ import UserProfile from './UserProfile';
 import PrivateChat from './PrivateChat';
 import VoiceCall from './VoiceCall';
 import VideoCall from './VideoCall';
+import VoiceCallWithTranslate from './VoiceCallWithTranslate';
 import PersonalChats from './PersonalChats';
 import { NotificationProvider } from '../context/NotificationContext';
 import { UserInteractionProvider } from '../context/UserInteractionContext';
@@ -89,6 +90,7 @@ const AppContent = () => {
             <Route path="/voice-call/:roomId" element={<VoiceCall />} />
             <Route path="/video-call/:roomId" element={<VideoCall />} />
             <Route path="/user/:userId/personal-chats" element={<PersonalChats />} />
+            <Route path="/voice-call-translate/:roomId" element={<VoiceCallWithTranslate />} />
           </Routes>
         </PrivateMessageNotificationProvider>
       </ErrorBoundary>
