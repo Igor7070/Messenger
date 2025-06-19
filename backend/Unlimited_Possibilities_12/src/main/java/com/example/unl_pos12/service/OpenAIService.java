@@ -45,7 +45,7 @@ public class OpenAIService {
         this.messagingTemplate = messagingTemplate;
     }
 
-    // Оставляем generateCompletion без изменений
+    // Оставляем generateCompletion без изменений...
     public String generateCompletion(String prompt) {
         OpenAiService service = new OpenAiService(apiKey, DEFAULT_TIMEOUT);
         ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
