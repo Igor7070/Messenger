@@ -105,7 +105,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
             if (json.error) {
               setTranscription(`Error: ${json.error}`);
               scrollToBottom(transcriptionRef);
-            } else if (json.transcription && json.sessionId === currentUserId) { // Добавлена проверка sessionId
+            } else if (json.transcription) {
               setTranscription((prev) =>
                 prev === 'Transcription: Waiting...' || prev.startsWith('Error')
                   ? json.transcription
