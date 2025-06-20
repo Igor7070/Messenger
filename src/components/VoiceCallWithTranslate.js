@@ -106,7 +106,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
                 if (json.error) {
                     setTranscription(`Error: ${json.error}`);
                     scrollToBottom(transcriptionRef);
-                } else if (json.transcription) { // Фильтр по sessionId
+                } else if (json.transcription && json.sessionId === sessionId) { // Фильтр по sessionId
                     setTranscription((prev) =>
                         prev === 'Transcription: Waiting...' || prev.startsWith('Error')
                             ? json.transcription
