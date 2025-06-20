@@ -35,6 +35,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const hasNotifiedAcceptCall = useRef(false);
   const transcriptionRef = useRef(null);
   const friendTranscriptionRef = useRef(null);
+  const [sessionId, setSessionId] = useState(`${currentUserId}_${Date.now()}`);
 
   let userName = recipientName;
   let terminationInitiator = false;
@@ -99,25 +100,25 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         // Подписка на собственную транскрипцию
         // МЕТКА: Обновить подписку на /topic/transcription
         stompClient.current.subscribe(`/topic/transcription/${roomId}`, (message) => {
-          console.log('Received transcription message:', message.body);
-          try {
-            const json = JSON.parse(message.body);
-            if (json.error) {
-              setTranscription(`Error: ${json.error}`);
-              scrollToBottom(transcriptionRef);
-            } else if (json.transcription) {
-              setTranscription((prev) =>
-                prev === 'Transcription: Waiting...' || prev.startsWith('Error')
-                  ? json.transcription
-                  : `${prev}\n${json.transcription}`
-              );
-              scrollToBottom(transcriptionRef);
+            console.log('Received transcription message:', message.body);
+            try {
+                const json = JSON.parse(message.body);
+                if (json.error) {
+                    setTranscription(`Error: ${json.error}`);
+                    scrollToBottom(transcriptionRef);
+                } else if (json.transcription && json.sessionId === sessionId) { // Фильтр по sessionId
+                    setTranscription((prev) =>
+                        prev === 'Transcription: Waiting...' || prev.startsWith('Error')
+                            ? json.transcription
+                            : `${prev}\n${json.transcription}`
+                    );
+                    scrollToBottom(transcriptionRef);
+                }
+            } catch (error) {
+                console.error('Error parsing transcription JSON:', error);
+                setTranscription(`Error: ${error.message}`);
+                scrollToBottom(transcriptionRef);
             }
-          } catch (error) {
-            console.error('Error parsing transcription JSON:', error);
-            setTranscription(`Error: ${error.message}`);
-            scrollToBottom(transcriptionRef);
-          }
         });
 
         // Подписка на транскрипцию собеседника
@@ -197,39 +198,39 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   };
 
   const startAudioCapture = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: 'audio/webm',
-        audioBitsPerSecond: 128000,
-      });
+      try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorderRef.current = new MediaRecorder(stream, {
+              mimeType: 'audio/webm',
+              audioBitsPerSecond: 128000,
+          });
 
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0 && stompClient.current && stompClient.current.connected) {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const base64Audio = reader.result.split(',')[1]; // Удаляем префикс data:audio/webm;base64,
-            console.log('Encoded Base64 audio length:', base64Audio.length);
-            const audioMessage = {
-              audio: base64Audio,
-              sessionId: currentUserId,
-            };
-            stompClient.current.publish({
-              destination: `/app/audio-transcription/${roomId}`,
-              body: JSON.stringify(audioMessage),
-            });
-            console.log('Sent audio buffer, sessionId:', currentUserId);
+          mediaRecorderRef.current.ondataavailable = (event) => {
+              if (event.data.size > 0 && stompClient.current && stompClient.current.connected) {
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                      const base64Audio = reader.result.split(',')[1];
+                      console.log('Encoded Base64 audio length:', base64Audio.length);
+                      const audioMessage = {
+                          audio: base64Audio,
+                          sessionId: sessionId, // Используем сохранённый sessionId
+                      };
+                      stompClient.current.publish({
+                          destination: `/app/audio-transcription/${roomId}`,
+                          body: JSON.stringify(audioMessage),
+                      });
+                      console.log('Sent audio buffer, sessionId:', sessionId);
+                  };
+                  reader.readAsDataURL(event.data);
+              }
           };
-          reader.readAsDataURL(event.data);
-        }
-      };
 
-      mediaRecorderRef.current.start(100); // Захват каждые 100 мс
-      console.log('Audio capture started');
-    } catch (error) {
-      console.error('Error starting audio capture:', error);
-      notify('Failed to access microphone for transcription.', { toastId: 'audio-capture-failed' });
-    }
+          mediaRecorderRef.current.start(100);
+          console.log('Audio capture started');
+      } catch (error) {
+          console.error('Error starting audio capture:', error);
+          notify('Failed to access microphone for transcription.', { toastId: 'audio-capture-failed' });
+      }
   };
 
   const stopAudioCapture = () => {
@@ -241,19 +242,19 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   };
 
   const registerRecipient = () => {
-    if (stompClient.current && stompClient.current.connected) {
-      const registerMessage = {
-        sessionId: `${currentUserId}_${Date.now()}`, // Уникальный sessionId
-        recipientId: isCaller ? incomingCall?.recipientId || recipientName : incomingCall?.callerId || callerName, // ID собеседника
-      };
-      stompClient.current.publish({
-        destination: `/app/register-recipient/${roomId}`,
-        body: JSON.stringify(registerMessage),
-      });
-      console.log('Sent register recipient: sessionId=', registerMessage.sessionId, ', recipientId=', registerMessage.recipientId); // МЕТКА: Лог для отладки
-    } else {
-      console.error('STOMP client not connected, cannot send register-recipient');
-    }
+      if (stompClient.current && stompClient.current.connected) {
+          const registerMessage = {
+              sessionId: sessionId, // Используем сохранённый sessionId
+              recipientId: isCaller ? incomingCall?.recipientId || recipientName : incomingCall?.callerId || callerName,
+          };
+          stompClient.current.publish({
+              destination: `/app/register-recipient/${roomId}`,
+              body: JSON.stringify(registerMessage),
+          });
+          console.log('Sent register recipient: sessionId=', registerMessage.sessionId, ', recipientId=', registerMessage.recipientId);
+      } else {
+          console.error('STOMP client not connected, cannot send register-recipient');
+      }
   };
 
   const handleIncomingCall = async (callRequest) => {
