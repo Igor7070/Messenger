@@ -170,14 +170,14 @@ public class RabotaUaStrategy implements Strategy {
                     Vacancy vacancy = new Vacancy();
                     vacancy.setTitle(elementVacancy.findElement(By.tagName("h2")).getText().trim());
 
-                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c99]"));
+                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c100]"));
                     int spansSize = spans.size();
 
                     if (spansSize == 3) {
                         vacancy.setCompanyName(spans.get(0).getText().trim());
                         vacancy.setSalary("");
                         vacancy.setCity(spans.get(1).getText().trim());
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c100]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     } else if (spansSize == 4) {
                         String salaryOrCompanyName = spans.get(0).getText().trim();
@@ -198,7 +198,7 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(1).getText().trim());
                             }
                         }
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c100]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     } else if (spansSize == 5) {
                         String salaryOrCompanyName = spans.get(0).getText().trim();
@@ -218,13 +218,13 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(3).getText().trim());
                             }
                         }
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c100]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     } else if (spansSize == 6) {
                         vacancy.setCompanyName(spans.get(2).getText().trim());
                         vacancy.setSalary(spans.get(0).getText().trim());
                         vacancy.setCity(spans.get(3).getText().trim());
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c100]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     }
 
@@ -395,14 +395,14 @@ public class RabotaUaStrategy implements Strategy {
                     Vacancy vacancy = new Vacancy();
                     vacancy.setTitle(elementVacancy.findElement(By.tagName("h2")).getText().trim());
 
-                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c99]"));
+                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c100]"));
                     int spansSize = spans.size();
 
                     if (spansSize == 3) {
                         vacancy.setCompanyName(spans.get(0).getText().trim());
                         vacancy.setSalary("");
                         vacancy.setCity(spans.get(1).getText().trim());
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c100]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     } else if (spansSize == 4) {
                         String salaryOrCompanyName = spans.get(0).getText().trim();
@@ -423,7 +423,7 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(1).getText().trim());
                             }
                         }
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c100]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     } else if (spansSize == 5) {
                         String salaryOrCompanyName = spans.get(0).getText().trim();
@@ -443,13 +443,13 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(3).getText().trim());
                             }
                         }
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c100]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     } else if (spansSize == 6) {
                         vacancy.setCompanyName(spans.get(2).getText().trim());
                         vacancy.setSalary(spans.get(0).getText().trim());
                         vacancy.setCity(spans.get(3).getText().trim());
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c100]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     }
 
