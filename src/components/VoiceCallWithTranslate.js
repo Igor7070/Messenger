@@ -200,53 +200,79 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const startAudioCapture = async () => {
       try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          mediaRecorderRef.current = new MediaRecorder(stream, {
-              mimeType: 'audio/webm',
-              audioBitsPerSecond: 128000,
-          });
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+          const source = audioContext.createMediaStreamSource(stream);
+          const processor = audioContext.createScriptProcessor(1024, 1, 1); // 1024 samples, mono
 
-          mediaRecorderRef.current.ondataavailable = (event) => {
-              if (event.data.size > 0 && stompClient.current && stompClient.current.connected) {
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                      const base64Audio = reader.result.split(',')[1];
-                      console.log('Encoded Base64 audio length:', base64Audio.length);
-                      const audioMessage = {
-                          audio: base64Audio,
-                          sessionId: sessionId, // Используем сохранённый sessionId
-                      };
-                      stompClient.current.publish({
-                          destination: `/app/audio-transcription/${roomId}`,
-                          body: JSON.stringify(audioMessage),
-                      });
-                      console.log('Sent audio buffer, sessionId:', sessionId);
-                  };
-                  reader.readAsDataURL(event.data);
+          // NEW: Обработка аудиоданных в PCM формате
+          processor.onaudioprocess = (event) => {
+              if (!stompClient.current || !stompClient.current.connected) {
+                  console.warn('STOMP client not connected, skipping audio send');
+                  return;
               }
+
+              const inputBuffer = event.inputBuffer.getChannelData(0); // Mono channel
+              // Convert float32 [-1, 1] to int16 [-32768, 32767]
+              const pcmData = new Int16Array(inputBuffer.length);
+              for (let i = 0; i < inputBuffer.length; i++) {
+                  pcmData[i] = Math.max(-32768, Math.min(32767, inputBuffer[i] * 32767));
+              }
+              // Convert Int16Array to Buffer and encode to Base64
+              const buffer = new Uint8Array(pcmData.buffer);
+              const base64Audio = btoa(String.fromCharCode.apply(null, buffer));
+              const audioMessage = {
+                  audio: base64Audio,
+                  sessionId: sessionId,
+              };
+              stompClient.current.publish({
+                  destination: `/app/audio-transcription/${roomId}`,
+                  body: JSON.stringify(audioMessage),
+              });
+              console.log('Sent PCM audio buffer, length:', buffer.length, 'sessionId:', sessionId);
           };
 
-          mediaRecorderRef.current.start(100);
-          console.log('Audio capture started');
+          // NEW: Подключение аудиоузлов
+          source.connect(processor);
+          processor.connect(audioContext.destination); // Required to keep processor active
+          mediaRecorderRef.current = { stream, audioContext, processor }; // Store for stopping
+          console.log('PCM audio capture started, sampleRate: 16000 Hz, mono');
       } catch (error) {
-          console.error('Error starting audio capture:', error);
+          console.error('Error starting PCM audio capture:', error);
           notify('Failed to access microphone for transcription.', { toastId: 'audio-capture-failed' });
       }
   };
 
   const stopAudioCapture = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
-      console.log('Audio capture stopped');
-    }
+      if (mediaRecorderRef.current) {
+          // NEW: Остановка AudioContext и ScriptProcessor
+          if (mediaRecorderRef.current.processor) {
+              mediaRecorderRef.current.processor.disconnect();
+          }
+          if (mediaRecorderRef.current.audioContext) {
+              mediaRecorderRef.current.audioContext.close().catch((error) => {
+                  console.error('Error closing AudioContext:', error);
+              });
+          }
+          if (mediaRecorderRef.current.stream) {
+              mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+          }
+          mediaRecorderRef.current = null;
+          console.log('PCM audio capture stopped');
+      }
   };
 
   const registerRecipient = () => {
       if (stompClient.current && stompClient.current.connected) {
           const registerMessage = {
-              sessionId: sessionId, // Используем сохранённый sessionId
-              recipientId: isCaller ? incomingCall?.recipientId || recipientName : incomingCall?.callerId || callerName,
+              sessionId: sessionId,
+              recipientId: isCaller ? incomingCall?.recipientId : incomingCall?.callerId,
           };
+          // NEW: Проверка наличия recipientId
+          if (!registerMessage.recipientId) {
+              console.error('recipientId is missing, cannot register recipient', { incomingCall });
+              notify('Failed to register recipient: missing ID', { toastId: 'recipient-id-missing' });
+              return;
+          }
           stompClient.current.publish({
               destination: `/app/register-recipient/${roomId}`,
               body: JSON.stringify(registerMessage),
@@ -254,6 +280,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           console.log('Sent register recipient: sessionId=', registerMessage.sessionId, ', recipientId=', registerMessage.recipientId);
       } else {
           console.error('STOMP client not connected, cannot send register-recipient');
+          notify('STOMP client not connected for recipient registration', { toastId: 'stomp-not-connected' });
       }
   };
 
