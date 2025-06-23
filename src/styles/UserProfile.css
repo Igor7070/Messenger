@@ -327,21 +327,21 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #7B1FA2, #AB47BC); /* Фиолетовый градиент */
+  background: linear-gradient(135deg, #3F51B5, #26C6DA); /* Мягкий сине-бирюзовый градиент */
   color: #FFFFFF;
   border: none;
   border-radius: 5px;
-  padding: 12px 24px; /* Чуть больше для заметности */
+  padding: 12px 24px;
   font-size: 16px;
-  font-weight: 600; /* Более жирный шрифт */
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s, transform 0.2s; /* Анимация фона и масштаба */
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2); /* Тень для глубины */
+  transition: background 0.3s, transform 0.2s;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
 }
 
 .translate-call-button:hover {
-  background: linear-gradient(135deg, #8E24AA, #BA68C8); /* Светлее при наведении */
-  transform: scale(1.05); /* Лёгкое увеличение */
+  background: linear-gradient(135deg, #5C6BC0, #4DD0E1); /* Светлее при наведении */
+  transform: scale(1.05);
 }
 
 .Toastify__toast-container {
