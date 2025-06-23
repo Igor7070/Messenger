@@ -100,25 +100,30 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         // Подписка на собственную транскрипцию
         // МЕТКА: Обновить подписку на /topic/transcription
         stompClient.current.subscribe(`/topic/transcription/${roomId}`, (message) => {
-            console.log('Received transcription message:', message.body);
-            try {
-                const json = JSON.parse(message.body);
-                if (json.error) {
-                    setTranscription(`Error: ${json.error}`);
-                    scrollToBottom(transcriptionRef);
-                } else if (json.transcription && json.sessionId === sessionId) { // Фильтр по sessionId
-                    setTranscription((prev) =>
-                        prev === 'Transcription: Waiting...' || prev.startsWith('Error')
-                            ? json.transcription
-                            : `${prev}\n${json.transcription}`
-                    );
-                    scrollToBottom(transcriptionRef);
+          console.log('Received transcription message:', message.body);
+          try {
+            const json = JSON.parse(message.body);
+            if (json.error) {
+              setTranscription(`Error: ${json.error}`);
+              scrollToBottom(transcriptionRef);
+            } else if (json.transcription && json.sessionId === sessionId) {
+              setTranscription((prev) => {
+                if (prev === 'Transcription: Waiting...' || prev.startsWith('Error')) {
+                  return json.transcription;
                 }
-            } catch (error) {
-                console.error('Error parsing transcription JSON:', error);
-                setTranscription(`Error: ${error.message}`);
-                scrollToBottom(transcriptionRef);
+                const lines = prev.split('\n');
+                if (lines.length >= 50) {
+                  return [...lines.slice(-49), json.transcription].join('\n');
+                }
+                return `${prev}\n${json.transcription}`;
+              });
+              scrollToBottom(transcriptionRef);
             }
+          } catch (error) {
+            console.error('Error parsing transcription JSON:', error);
+            setTranscription(`Error: ${error.message}`);
+            scrollToBottom(transcriptionRef);
+          }
         });
 
         // Подписка на транскрипцию собеседника
@@ -130,11 +135,16 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
               setFriendTranscription(`Error: ${json.error}`);
               scrollToBottom(friendTranscriptionRef);
             } else if (json.transcription) {
-              setFriendTranscription((prev) =>
-                prev === "Friend's Transcription: Waiting..." || prev.startsWith('Error')
-                  ? json.transcription
-                  : `${prev}\n${json.transcription}`
-              );
+              setFriendTranscription((prev) => {
+                if (prev === "Friend's Transcription: Waiting..." || prev.startsWith('Error')) {
+                  return json.transcription;
+                }
+                const lines = prev.split('\n');
+                if (lines.length >= 50) {
+                  return [...lines.slice(-49), json.transcription].join('\n');
+                }
+                return `${prev}\n${json.transcription}`;
+              });
               scrollToBottom(friendTranscriptionRef);
             }
           } catch (error) {
@@ -193,7 +203,11 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
 
   const scrollToBottom = (ref) => {
     if (ref.current) {
-      ref.current.scrollTop = ref.current.scrollHeight;
+      const { scrollTop, scrollHeight, clientHeight } = ref.current;
+      if (scrollTop >= scrollHeight - clientHeight - 50) {
+        ref.current.scrollTop = ref.current.scrollHeight;
+        console.log('Scrolled to bottom for ref:', ref.current.id || ref.current.className);
+      }
     }
   };
 
