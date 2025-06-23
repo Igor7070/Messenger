@@ -587,7 +587,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         <p className="start-time">Start: --:--</p>
         <p className="current-time">Current: --:--</p>
       </div>
-      <div className="chart-container">
+      <div className="chart-container-voice-translate">
         <Line
           data={chartData}
           options={{
