@@ -51,8 +51,8 @@
   background-color: rgba(0, 0, 0, 0.5);
   padding: 8px;
   border-radius: 10px;
-  max-height: 120px; /* ~5 строк текста (16px * 1.5 line-height + padding) */
-  min-height: 120px;
+  max-height: 130px; /* Увеличено для 5 строк (16px * 1.5 line-height + padding) */
+  min-height: 130px;
   overflow-y: auto;
   margin-bottom: 8px;
 }
@@ -60,7 +60,7 @@
 .transcription-text {
   color: #e0e0e0;
   font-size: 16px;
-  line-height: 1.5; /* Явно задаём для точного расчёта высоты */
+  line-height: 1.5;
   margin: 0;
   white-space: pre-wrap;
 }

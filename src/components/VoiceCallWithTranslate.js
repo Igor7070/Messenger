@@ -204,9 +204,14 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const scrollToBottom = (ref) => {
     if (ref.current) {
       const { scrollTop, scrollHeight, clientHeight } = ref.current;
-      if (scrollTop >= scrollHeight - clientHeight - 50) {
+      // Прокручиваем, если пользователь внизу или близко (допуск 50px)
+      if (scrollHeight <= clientHeight || scrollTop + clientHeight >= scrollHeight - 50) {
         ref.current.scrollTop = ref.current.scrollHeight;
-        console.log('Scrolled to bottom for ref:', ref.current.id || ref.current.className);
+        console.log('Scrolled to bottom for ref:', ref.current.id || ref.current.className, 
+                    { scrollTop, scrollHeight, clientHeight });
+      } else {
+        console.log('Not scrolling: user is viewing older messages', 
+                    { scrollTop, scrollHeight, clientHeight });
       }
     }
   };
