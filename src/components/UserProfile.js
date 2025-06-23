@@ -461,15 +461,19 @@ const UserProfile = () => {
 
             {currentUserId && userId !== String(currentUserId) && (
                 <div className="call-buttons-container">
-                    <button onClick={handleCall} className="voice-call-button">
-                        <FaPhone /> Voice Call
-                    </button>
-                    <button onClick={handleVideoCall} className="video-call-button">
-                        <FaVideo /> Video Call
-                    </button>
-                    <button onClick={handleTranslateCall} className="translate-call-button">
-                        <FaLanguage /> Translate Call
-                    </button>
+                    <div className="standard-call-buttons">
+                        <button onClick={handleCall} className="voice-call-button">
+                            <FaPhone /> Voice Call
+                        </button>
+                        <button onClick={handleVideoCall} className="video-call-button">
+                            <FaVideo /> Video Call
+                        </button>
+                    </div>
+                    <div className="translate-call-container">
+                        <button onClick={handleTranslateCall} className="translate-call-button">
+                            <FaLanguage /> Translate Call
+                        </button>
+                    </div>
                 </div>
             )}
 
