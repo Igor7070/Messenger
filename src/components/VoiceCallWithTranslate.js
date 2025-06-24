@@ -583,10 +583,6 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         <audio ref={localAudioRef} autoPlay muted />
         <audio ref={remoteAudioRef} autoPlay />
       </div>
-      <div className="time-container">
-        <p className="start-time">Start: --:--</p>
-        <p className="current-time">Current: --:--</p>
-      </div>
       <div className="chart-container-voice-translate">
         <Line
           data={chartData}
