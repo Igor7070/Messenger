@@ -84,7 +84,7 @@ public class OpenAIService {
             }
             long currentTime = System.currentTimeMillis();
             long lastSentTime = lastSentTimestamps.getOrDefault(bufferKey, 0L);
-            if (currentTime - lastSentTime >= 5000 && audioBuffer.size() >= 40000) { // Уменьшено с 80000
+            if (currentTime - lastSentTime >= 5000 && audioBuffer.size() >= 80000) { // Восстановлен порог 80 КБ
                 byte[] audioBytes = audioBuffer.toByteArray();
                 audioBuffer.reset();
                 lastSentTimestamps.put(bufferKey, currentTime);
