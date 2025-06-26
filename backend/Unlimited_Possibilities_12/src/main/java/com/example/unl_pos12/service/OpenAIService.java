@@ -68,9 +68,13 @@ public class OpenAIService {
             return;
         }
         try {
-            // NEW: Извлекаем recipientId из JSON или используем sessionId как ключ
             String bufferKey = roomId + "_" + sessionId;
             ByteArrayOutputStream audioBuffer = audioBuffers.computeIfAbsent(bufferKey, k -> new ByteArrayOutputStream());
+            // Ограничение размера буфера (1 МБ)
+            if (audioBuffer.size() + audioData.length > 1_000_000) {
+                LOGGER.warning("Audio buffer exceeded 1MB for roomId: " + roomId + ", resetting");
+                audioBuffer.reset();
+            }
             audioBuffer.write(audioData);
             File debugFile = new File("debug_audio_" + bufferKey + ".raw");
             try (FileOutputStream fos = new FileOutputStream(debugFile, true)) {
@@ -80,7 +84,7 @@ public class OpenAIService {
             }
             long currentTime = System.currentTimeMillis();
             long lastSentTime = lastSentTimestamps.getOrDefault(bufferKey, 0L);
-            if (currentTime - lastSentTime >= 5000 && audioBuffer.size() >= 80000) {
+            if (currentTime - lastSentTime >= 5000 && audioBuffer.size() >= 40000) { // Уменьшено с 80000
                 byte[] audioBytes = audioBuffer.toByteArray();
                 audioBuffer.reset();
                 lastSentTimestamps.put(bufferKey, currentTime);
