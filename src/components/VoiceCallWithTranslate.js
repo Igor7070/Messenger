@@ -35,6 +35,123 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const hasNotifiedAcceptCall = useRef(false);
   const transcriptionRef = useRef(null);
   const friendTranscriptionRef = useRef(null);
+  // [ДОБАВЛЕНО] Состояния для переключателя перевода, выбранного языка и рефа для выпадающего списка
+  const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const languageDropdownRef = useRef(null);
+  const languages = [
+    { name: 'Auto', code: 'auto', emoji: '🌐' },
+    { name: 'Afrikaans', code: 'af', emoji: '🇿🇦' },
+    { name: 'Albanian', code: 'sq', emoji: '🇦🇱' },
+    { name: 'Amharic', code: 'am', emoji: '🇪🇹' },
+    { name: 'Arabic', code: 'ar', emoji: '🇸🇦' },
+    { name: 'Armenian', code: 'hy', emoji: '🇦🇲' },
+    { name: 'Azerbaijani', code: 'az', emoji: '🇦🇿' },
+    { name: 'Basque', code: 'eu', emoji: '🇪🇸' },
+    { name: 'Belarusian', code: 'be', emoji: '🇧🇾' },
+    { name: 'Bengali', code: 'bn', emoji: '🇧🇩' },
+    { name: 'Bosnian', code: 'bs', emoji: '🇧🇦' },
+    { name: 'Bulgarian', code: 'bg', emoji: '🇧🇬' },
+    { name: 'Catalan', code: 'ca', emoji: '🇪🇸' },
+    { name: 'Cebuano', code: 'ceb', emoji: '🇵🇭' },
+    { name: 'Chichewa', code: 'ny', emoji: '🇲🇼' },
+    { name: 'Chinese (Simplified)', code: 'zh', emoji: '🇨🇳' },
+    { name: 'Chinese (Traditional)', code: 'zh-TW', emoji: '🇹🇼' },
+    { name: 'Corsican', code: 'co', emoji: '🇫🇷' },
+    { name: 'Croatian', code: 'hr', emoji: '🇭🇷' },
+    { name: 'Czech', code: 'cs', emoji: '🇨🇿' },
+    { name: 'Danish', code: 'da', emoji: '🇩🇰' },
+    { name: 'Dutch', code: 'nl', emoji: '🇳🇱' },
+    { name: 'English', code: 'en', emoji: '🇬🇧' },
+    { name: 'Esperanto', code: 'eo', emoji: '🏳️' },
+    { name: 'Estonian', code: 'et', emoji: '🇪🇪' },
+    { name: 'Filipino', code: 'tl', emoji: '🇵🇭' },
+    { name: 'Finnish', code: 'fi', emoji: '🇫🇮' },
+    { name: 'French', code: 'fr', emoji: '🇫🇷' },
+    { name: 'Frisian', code: 'fy', emoji: '🇳🇱' },
+    { name: 'Galician', code: 'gl', emoji: '🇪🇸' },
+    { name: 'Georgian', code: 'ka', emoji: '🇬🇪' },
+    { name: 'German', code: 'de', emoji: '🇩🇪' },
+    { name: 'Greek', code: 'el', emoji: '🇬🇷' },
+    { name: 'Gujarati', code: 'gu', emoji: '🇮🇳' },
+    { name: 'Haitian Creole', code: 'ht', emoji: '🇭🇹' },
+    { name: 'Hausa', code: 'ha', emoji: '🇳🇬' },
+    { name: 'Hawaiian', code: 'haw', emoji: '🇺🇸' },
+    { name: 'Hebrew', code: 'he', emoji: '🇮🇱' },
+    { name: 'Hindi', code: 'hi', emoji: '🇮🇳' },
+    { name: 'Hmong', code: 'hmn', emoji: '🇨🇳' },
+    { name: 'Hungarian', code: 'hu', emoji: '🇭🇺' },
+    { name: 'Icelandic', code: 'is', emoji: '🇮🇸' },
+    { name: 'Igbo', code: 'ig', emoji: '🇳🇬' },
+    { name: 'Indonesian', code: 'id', emoji: '🇮🇩' },
+    { name: 'Irish', code: 'ga', emoji: '🇮🇪' },
+    { name: 'Italian', code: 'it', emoji: '🇮🇹' },
+    { name: 'Japanese', code: 'ja', emoji: '🇯🇵' },
+    { name: 'Javanese', code: 'jv', emoji: '🇮🇩' },
+    { name: 'Kannada', code: 'kn', emoji: '🇮🇳' },
+    { name: 'Kazakh', code: 'kk', emoji: '🇰🇿' },
+    { name: 'Khmer', code: 'km', emoji: '🇰🇭' },
+    { name: 'Kinyarwanda', code: 'rw', emoji: '🇷🇼' },
+    { name: 'Korean', code: 'ko', emoji: '🇰🇷' },
+    { name: 'Kurdish', code: 'ku', emoji: '🇮🇶' },
+    { name: 'Kyrgyz', code: 'ky', emoji: '🇰🇬' },
+    { name: 'Lao', code: 'lo', emoji: '🇱🇦' },
+    { name: 'Latin', code: 'la', emoji: '🏳️' },
+    { name: 'Latvian', code: 'lv', emoji: '🇱🇻' },
+    { name: 'Lithuanian', code: 'lt', emoji: '🇱🇹' },
+    { name: 'Luxembourgish', code: 'lb', emoji: '🇱🇺' },
+    { name: 'Macedonian', code: 'mk', emoji: '🇲🇰' },
+    { name: 'Malagasy', code: 'mg', emoji: '🇲🇬' },
+    { name: 'Malay', code: 'ms', emoji: '🇲🇾' },
+    { name: 'Malayalam', code: 'ml', emoji: '🇮🇳' },
+    { name: 'Maltese', code: 'mt', emoji: '🇲🇹' },
+    { name: 'Maori', code: 'mi', emoji: '🇳🇿' },
+    { name: 'Marathi', code: 'mr', emoji: '🇮🇳' },
+    { name: 'Mongolian', code: 'mn', emoji: '🇲🇳' },
+    { name: 'Myanmar (Burmese)', code: 'my', emoji: '🇲🇲' },
+    { name: 'Nepali', code: 'ne', emoji: '🇳🇵' },
+    { name: 'Norwegian', code: 'no', emoji: '🇳🇴' },
+    { name: 'Odia', code: 'or', emoji: '🇮🇳' },
+    { name: 'Pashto', code: 'ps', emoji: '🇦🇫' },
+    { name: 'Persian', code: 'fa', emoji: '🇮🇷' },
+    { name: 'Polish', code: 'pl', emoji: '🇵🇱' },
+    { name: 'Portuguese', code: 'pt', emoji: '🇵🇹' },
+    { name: 'Punjabi', code: 'pa', emoji: '🇮🇳' },
+    { name: 'Romanian', code: 'ro', emoji: '🇷🇴' },
+    { name: 'Russian', code: 'ru', emoji: '🇷🇺' },
+    { name: 'Samoan', code: 'sm', emoji: '🇼🇸' },
+    { name: 'Scots Gaelic', code: 'gd', emoji: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+    { name: 'Serbian', code: 'sr', emoji: '🇷🇸' },
+    { name: 'Sesotho', code: 'st', emoji: '🇱🇸' },
+    { name: 'Shona', code: 'sn', emoji: '🇿🇼' },
+    { name: 'Sindhi', code: 'sd', emoji: '🇵🇰' },
+    { name: 'Sinhala', code: 'si', emoji: '🇱🇰' },
+    { name: 'Slovak', code: 'sk', emoji: '🇸🇰' },
+    { name: 'Slovenian', code: 'sl', emoji: '🇸🇮' },
+    { name: 'Somali', code: 'so', emoji: '🇸🇴' },
+    { name: 'Spanish', code: 'es', emoji: '🇪🇸' },
+    { name: 'Sundanese', code: 'su', emoji: '🇮🇩' },
+    { name: 'Swahili', code: 'sw', emoji: '🇹🇿' },
+    { name: 'Swedish', code: 'sv', emoji: '🇸🇪' },
+    { name: 'Tajik', code: 'tg', emoji: '🇹🇯' },
+    { name: 'Tamil', code: 'ta', emoji: '🇮🇳' },
+    { name: 'Tatar', code: 'tt', emoji: '🇷🇺' },
+    { name: 'Telugu', code: 'te', emoji: '🇮🇳' },
+    { name: 'Thai', code: 'th', emoji: '🇹🇭' },
+    { name: 'Turkish', code: 'tr', emoji: '🇹🇷' },
+    { name: 'Turkmen', code: 'tk', emoji: '🇹🇲' },
+    { name: 'Ukrainian', code: 'uk', emoji: '🇺🇦' },
+    { name: 'Urdu', code: 'ur', emoji: '🇵🇰' },
+    { name: 'Uyghur', code: 'ug', emoji: '🇨🇳' },
+    { name: 'Uzbek', code: 'uz', emoji: '🇺🇿' },
+    { name: 'Vietnamese', code: 'vi', emoji: '🇻🇳' },
+    { name: 'Welsh', code: 'cy', emoji: '🏴󠁧󠁢󠁷󠁬󠁳󠁿' },
+    { name: 'Xhosa', code: 'xh', emoji: '🇿🇦' },
+    { name: 'Yiddish', code: 'yi', emoji: '🇮🇱' },
+    { name: 'Yoruba', code: 'yo', emoji: '🇳🇬' },
+    { name: 'Zulu', code: 'zu', emoji: '🇿🇦' },
+  ].sort((a, b) => (a.name === 'Auto' ? -1 : b.name === 'Auto' ? 1 : a.name.localeCompare(b.name)));
+
   const [sessionId, setSessionId] = useState(`${currentUserId}_${Date.now()}`);
 
   let userName = recipientName;
@@ -98,7 +215,6 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         });
 
         // Подписка на собственную транскрипцию
-        // МЕТКА: Обновить подписку на /topic/transcription
         stompClient.current.subscribe(`/topic/transcription/${roomId}`, (message) => {
           console.log('Received transcription message:', message.body);
           try {
@@ -126,7 +242,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           }
         });
 
-        // Подписка на транскрипцию собеседника
+        // [ИЗМЕНЕНО] Подписка на транскрипцию собеседника с переводом
         stompClient.current.subscribe(`/topic/friend-transcription/${roomId}/${currentUserId}`, (message) => {
           console.log('Received friend transcription:', message.body);
           try {
@@ -135,17 +251,37 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
               setFriendTranscription(`Error: ${json.error}`);
               scrollToBottom(friendTranscriptionRef);
             } else if (json.transcription) {
-              setFriendTranscription((prev) => {
-                if (prev === "Friend's Transcription: Waiting..." || prev.startsWith('Error')) {
-                  return json.transcription;
-                }
-                const lines = prev.split('\n');
-                if (lines.length >= 50) {
-                  return [...lines.slice(-49), json.transcription].join('\n');
-                }
-                return `${prev}\n${json.transcription}`;
-              });
-              scrollToBottom(friendTranscriptionRef);
+              // [ДОБАВЛЕНО] Проверяем, включён ли перевод и выбран ли язык
+              if (isTranslationEnabled && selectedLanguage && selectedLanguage !== 'auto') {
+                // Выполняем перевод асинхронно
+                translateTranscription(json.transcription, selectedLanguage, (translatedText) => {
+                  const displayText = translatedText || json.transcription;
+                  setFriendTranscription((prev) => {
+                    if (prev === "Friend's Transcription: Waiting..." || prev.startsWith('Error')) {
+                      return displayText;
+                    }
+                    const lines = prev.split('\n');
+                    if (lines.length >= 50) {
+                      return [...lines.slice(-49), displayText].join('\n');
+                    }
+                    return `${prev}\n${displayText}`;
+                  });
+                  scrollToBottom(friendTranscriptionRef);
+                });
+              } else {
+                // Отображаем оригинальный текст
+                setFriendTranscription((prev) => {
+                  if (prev === "Friend's Transcription: Waiting..." || prev.startsWith('Error')) {
+                    return json.transcription;
+                  }
+                  const lines = prev.split('\n');
+                  if (lines.length >= 50) {
+                    return [...lines.slice(-49), json.transcription].join('\n');
+                  }
+                  return `${prev}\n${json.transcription}`;
+                });
+                scrollToBottom(friendTranscriptionRef);
+              }
             }
           } catch (error) {
             console.error('Error parsing friend transcription JSON:', error);
@@ -155,7 +291,6 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         });
 
         // Регистрация recipientId
-        // МЕТКА: Обновить вызов registerRecipient
         if (incomingCall && (incomingCall.recipientId || incomingCall.callerId)) {
           registerRecipient();
         } else {
@@ -165,6 +300,15 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         if (!isCaller && incomingCall) {
           console.log('Processing incoming call:', incomingCall);
           handleIncomingCall(incomingCall);
+        }
+
+        // [ДОБАВЛЕНО] Загрузка сохранённых настроек перевода из localStorage
+        const savedTranslationEnabled = localStorage.getItem(`translation_enabled_${roomId}`) === 'true';
+        const savedLanguage = localStorage.getItem(`translation_language_${roomId}`) || 'en';
+        setIsTranslationEnabled(savedTranslationEnabled);
+        setSelectedLanguage(savedLanguage);
+        if (languageDropdownRef.current) {
+          languageDropdownRef.current.value = savedLanguage;
         }
       },
       onStompError: (frame) => {
@@ -198,6 +342,11 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       }
       clearInterval(interval);
       stopAudioCapture();
+      // [ДОБАВЛЕНО] Очистка настроек перевода
+      setIsTranslationEnabled(false);
+      setSelectedLanguage('en');
+      localStorage.removeItem(`translation_enabled_${roomId}`);
+      localStorage.removeItem(`translation_language_${roomId}`);
     };
   }, [currentUserId, roomId, incomingCall]);
 
@@ -281,6 +430,54 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           mediaRecorderRef.current = null;
           console.log('PCM audio capture stopped');
       }
+  };
+
+  // [ДОБАВЛЕНО] Метод для перевода транскрипции через /api/translate
+  const translateTranscription = (text, targetLanguage, callback) => {
+    const requestBody = {
+      prompt: text,
+      targetLanguage: targetLanguage,
+    };
+
+    fetch('https://unlimitedpossibilities12.org/api/translate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+      })
+      .then((translatedText) => {
+        // [ДОБАВЛЕНО] Фильтрация нежелательных переводов
+        const normalized = translatedText.toLowerCase().replace(/\s+/g, ' ').trim();
+        if (translatedText.includes('"') && (normalized.includes('translat') || normalized.includes('phrase') || normalized.includes('word'))) {
+          console.error('Filtered out invalid translation:', translatedText);
+          callback(null); // Возвращаем null, чтобы использовать оригинальный текст
+          return;
+        }
+        // [ДОБАВЛЕНО] Дополнительная проверка на нежелательные фразы
+        if (normalized.includes('the translation') || normalized.includes('translated') || normalized.includes('phrase is')) {
+          console.error('Filtered out invalid translation with translation/phrase:', translatedText);
+          callback(null); // Возвращаем null для строк вроде "The translation phrase is ..."
+          return;
+        }
+        // [ДОБАВЛЕНО] Удаляем кавычки, если они есть
+        let cleanedText = translatedText;
+        if (translatedText.startsWith('"') && translatedText.endsWith('"')) {
+          cleanedText = translatedText.slice(1, -1);
+        }
+        console.log(`Translated transcription to ${targetLanguage}: ${cleanedText}`);
+        callback(cleanedText);
+      })
+      .catch((error) => {
+        console.error('Error during translation request:', error.message);
+        callback(null); // Возвращаем null в случае ошибки
+      });
   };
 
   const registerRecipient = () => {
@@ -612,6 +809,45 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           <p className="transcription-text">{friendTranscription}</p>
         </div>
       </div>
+      
+      // [ДОБАВЛЕНО] Контейнер для переключателя и выпадающего списка
+      <div className="translation-container">
+        <label className="translation-switch">
+          <input
+            type="checkbox"
+            checked={isTranslationEnabled}
+            onChange={(e) => {
+              setIsTranslationEnabled(e.target.checked);
+              localStorage.setItem(`translation_enabled_${roomId}`, e.target.checked);
+              if (e.target.checked && languageDropdownRef.current) {
+                setSelectedLanguage(languageDropdownRef.current.value);
+                localStorage.setItem(`translation_language_${roomId}`, languageDropdownRef.current.value);
+              } else {
+                setSelectedLanguage('en');
+                localStorage.removeItem(`translation_language_${roomId}`);
+              }
+            }}
+          />
+          <span>Translate Friend's Voice</span>
+        </label>
+        <select
+          ref={languageDropdownRef}
+          className="language-dropdown"
+          style={{ display: isTranslationEnabled ? 'block' : 'none' }}
+          value={selectedLanguage}
+          onChange={(e) => {
+            setSelectedLanguage(e.target.value);
+            localStorage.setItem(`translation_language_${roomId}`, e.target.value);
+          }}
+        >
+          {languages.map((lang) => (
+            <option key={lang.code} value={lang.code}>
+              {lang.emoji} {lang.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <button className="end-call-button-voice" onClick={endCall}>
         End Call
       </button>

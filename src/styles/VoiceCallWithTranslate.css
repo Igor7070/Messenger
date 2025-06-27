@@ -78,3 +78,45 @@
   top: 10px !important;
   right: 10px !important;
 }
+
+/* [ДОБАВЛЕНО] Стили для контейнера перевода, переключателя и выпадающего списка */
+.translation-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 8px 16px;
+}
+
+.translation-switch {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.translation-switch input[type="checkbox"] {
+  margin-right: 8px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.translation-switch span {
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.language-dropdown {
+  width: 100%;
+  padding: 8px;
+  font-size: 14px;
+  border-radius: 5px;
+  background-color: #ffffff;
+  color: #333333;
+  border: 1px solid #cccccc;
+  cursor: pointer;
+}
+
+.language-dropdown:focus {
+  outline: none;
+  border-color: #4a90e2;
+}
