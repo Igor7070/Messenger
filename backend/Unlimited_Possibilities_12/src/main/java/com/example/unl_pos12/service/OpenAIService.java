@@ -106,18 +106,17 @@ public class OpenAIService {
             LOGGER.info("Filtered out null or empty transcription: " + transcription);
             return false; // Пустой текст
         }
-        // [ДОБАВЛЕНО] Нормализация текста: убираем лишние пробелы и приводим к нижнему регистру
-        String normalized = transcription.toLowerCase().replaceAll("\\s+", " ").trim();
-        // [ДОБАВЛЕНО] Регулярное выражение для фильтрации строк с "translat", "phrase", или "word" и кавычками
-        if (transcription.matches("(?i).*\\b(translat|phrase|word)\\b.*\".*\".*")) {
-            LOGGER.info("Filtered out transcription with pattern (translat|phrase|word and quotes): " + transcription);
-            return false; // Отсекаем строки с "translat", "phrase", или "word" и кавычками
-        }
-        // [ДОБАВЛЕНО] Проверка на минимальную длину (например, < 3 символов)
+        // Проверка на минимальную длину (например, < 3 символов)
         if (transcription.trim().length() < 3) {
             LOGGER.info("Filtered out short transcription: " + transcription);
             return false;
         }
+        // [ДОБАВЛЕНО] Простая фильтрация для Whisper, если строки всё же появляются
+        /*String normalized = transcription.toLowerCase().replaceAll("\\s+", " ").trim();
+        if (transcription.contains("\"") && (normalized.contains("translat") || normalized.contains("phrase") || normalized.contains("word"))) {
+            LOGGER.info("Filtered out transcription with translat/phrase/word and quotes: " + transcription);
+            return false;
+        }*/
         return true; // Транскрипция считается разговорной речью
     }
 
