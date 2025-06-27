@@ -91,27 +91,46 @@ public class OpenAIService {
                     sendTranscription(roomId, sessionId, transcription);
                 } else {
                     LOGGER.warning("Filtered out invalid transcription for roomId: " + roomId + ": " + transcription);
-                    sendError(roomId, sessionId, "Invalid transcription filtered: " + transcription);
+                    //sendError(roomId, sessionId, "Invalid transcription filtered: " + transcription);
                 }
             }
         } catch (Exception e) {
             LOGGER.severe("Error processing audio for roomId " + roomId + ": " + e.getMessage());
-            sendError(roomId, sessionId, "Error processing audio: " + e.getMessage());
+            //sendError(roomId, sessionId, "Error processing audio: " + e.getMessage());
         }
     }
 
     // [ДОБАВЛЕНО] Метод для фильтрации транскрипции
     private boolean isValidTranscription(String transcription) {
         if (transcription == null || transcription.trim().isEmpty()) {
+            LOGGER.info("Filtered out null or empty transcription: " + transcription);
             return false; // Пустой текст
         }
-        String lowerCase = transcription.toLowerCase();
+        String lowerCase = transcription.toLowerCase().trim();
         // Проверяем наличие слов "phrase" или "translat" в сочетании с кавычками
         boolean hasQuotes = transcription.contains("\"");
         boolean hasPhrase = lowerCase.contains("phrase");
         boolean hasTranslat = lowerCase.contains("translat"); // Ловит "translate", "translated", "translation"
         if (hasQuotes && (hasPhrase || hasTranslat)) {
+            LOGGER.info("Filtered out transcription with quotes and phrase/translat: " + transcription);
             return false; // Отсекаем строки с "phrase" или "translat" и кавычками
+        }
+        // [ДОБАВЛЕНО] Дополнительная проверка на точные шаблоны без учёта кавычек
+        String[] invalidPatterns = {
+                "the translated phrase is",
+                "the phrase",
+                "the translation of"
+        };
+        for (String pattern : invalidPatterns) {
+            if (lowerCase.contains(pattern)) {
+                LOGGER.info("Filtered out transcription with pattern '" + pattern + "': " + transcription);
+                return false;
+            }
+        }
+        // [ДОБАВЛЕНО] Проверка на минимальную длину (например, < 3 символов)
+        if (transcription.trim().length() < 3) {
+            LOGGER.info("Filtered out short transcription: " + transcription);
+            return false;
         }
         return true; // Транскрипция считается разговорной речью
     }
