@@ -111,12 +111,6 @@ public class OpenAIService {
             LOGGER.info("Filtered out short transcription: " + transcription);
             return false;
         }
-        // [ДОБАВЛЕНО] Простая фильтрация для Whisper, если строки всё же появляются
-        /*String normalized = transcription.toLowerCase().replaceAll("\\s+", " ").trim();
-        if (transcription.contains("\"") && (normalized.contains("translat") || normalized.contains("phrase") || normalized.contains("word"))) {
-            LOGGER.info("Filtered out transcription with translat/phrase/word and quotes: " + transcription);
-            return false;
-        }*/
         return true; // Транскрипция считается разговорной речью
     }
 
