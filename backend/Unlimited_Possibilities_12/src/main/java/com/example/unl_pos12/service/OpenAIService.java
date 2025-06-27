@@ -86,17 +86,34 @@ public class OpenAIService {
                 lastSentTimestamps.put(bufferKey, currentTime);
                 byte[] wavBytes = convertToWav(audioBytes);
                 String transcription = transcribeAudio(wavBytes);
-                if (transcription != null && !transcription.trim().isEmpty()) {
+                // [ДОБАВЛЕНО] Фильтрация транскрипции
+                if (isValidTranscription(transcription)) {
                     sendTranscription(roomId, sessionId, transcription);
                 } else {
-                    LOGGER.warning("Empty transcription for roomId: " + roomId);
-                    sendError(roomId, sessionId, "Empty transcription received from Whisper API");
+                    LOGGER.warning("Filtered out invalid transcription for roomId: " + roomId + ": " + transcription);
+                    sendError(roomId, sessionId, "Invalid transcription filtered: " + transcription);
                 }
             }
         } catch (Exception e) {
             LOGGER.severe("Error processing audio for roomId " + roomId + ": " + e.getMessage());
             sendError(roomId, sessionId, "Error processing audio: " + e.getMessage());
         }
+    }
+
+    // [ДОБАВЛЕНО] Метод для фильтрации транскрипции
+    private boolean isValidTranscription(String transcription) {
+        if (transcription == null || transcription.trim().isEmpty()) {
+            return false; // Пустой текст
+        }
+        String lowerCase = transcription.toLowerCase();
+        // Проверяем наличие слов "phrase" или "translat" в сочетании с кавычками
+        boolean hasQuotes = transcription.contains("\"");
+        boolean hasPhrase = lowerCase.contains("phrase");
+        boolean hasTranslat = lowerCase.contains("translat"); // Ловит "translate", "translated", "translation"
+        if (hasQuotes && (hasPhrase || hasTranslat)) {
+            return false; // Отсекаем строки с "phrase" или "translat" и кавычками
+        }
+        return true; // Транскрипция считается разговорной речью
     }
 
     private byte[] convertToWav(byte[] rawAudio) throws IOException {
