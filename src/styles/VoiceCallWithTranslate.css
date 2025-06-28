@@ -136,6 +136,22 @@
   font-family: 'Noto Color Emoji', sans-serif; /* [ДОБАВЛЕНО] Для отображения эмодзи */
 }
 
+/* [ДОБАВЛЕНО] Стили для чекбокса TTS */
+.voice-call-tts-controls {
+  display: inline-flex;
+  align-items: center;
+}
+
+.voice-call-tts-controls input[type="checkbox"] {
+  margin-right: 5px;
+  cursor: pointer;
+}
+
+.voice-call-tts-controls label {
+  font-size: 14px;
+  color: #333;
+}
+
 /* Адаптивность для маленьких экранов */
 @media (max-width: 750px) {
   .transcription-container,

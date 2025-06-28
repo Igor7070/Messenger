@@ -35,12 +35,16 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const hasNotifiedAcceptCall = useRef(false);
   const transcriptionRef = useRef(null);
   const friendTranscriptionRef = useRef(null);
+  const ttsAudioRef = useRef(null); // [ДОБАВЛЕНО] Реф для TTS-аудио
   // [ДОБАВЛЕНО] Состояния для переключателя перевода, выбранного языка и рефа для выпадающего списка
   const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('auto'); // ИЗМЕНЕНО: 'en' → 'auto'
   const languageDropdownRef = useRef(null);
   const isTranslationEnabledRef = useRef(isTranslationEnabled);
   const selectedLanguageRef = useRef(selectedLanguage);
+  // [ДОБАВЛЕНО] Состояние и реф для переключателя TTS
+  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const ttsEnabledRef = useRef(ttsEnabled);
   const languages = [
     { name: 'Auto', code: 'auto', emoji: '🌐' },
     { name: 'Afrikaans', code: 'af', emoji: '🇿🇦' },
@@ -298,6 +302,37 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           }
         });
 
+        // [ДОБАВЛЕНО] Подписка на TTS-аудио
+        stompClient.current.subscribe(`/topic/tts/${roomId}/${currentUserId}`, (message) => {
+          console.log('Received TTS audio:', message.body);
+          try {
+            const json = JSON.parse(message.body);
+            if (json.audio && json.sessionId) {
+              const audioData = atob(json.audio);
+              const arrayBuffer = new ArrayBuffer(audioData.length);
+              const view = new Uint8Array(arrayBuffer);
+              for (let i = 0; i < audioData.length; i++) {
+                view[i] = audioData.charCodeAt(i);
+              }
+              const blob = new Blob([arrayBuffer], { type: 'audio/mp3' });
+              const url = URL.createObjectURL(blob);
+              ttsAudioRef.current.src = url;
+              ttsAudioRef.current.play().catch((error) => {
+                console.error('Error playing TTS audio:', error);
+              });
+              // [ДОБАВЛЕНО] Приглушаем оригинальный поток
+              remoteAudioRef.current.muted = true;
+              ttsAudioRef.current.onended = () => {
+                console.log('TTS audio playback ended');
+                remoteAudioRef.current.muted = false;
+                URL.revokeObjectURL(url);
+              };
+            }
+          } catch (error) {
+            console.error('Error parsing TTS audio JSON:', error);
+          }
+        });
+
         // Регистрация recipientId
         if (incomingCall && (incomingCall.recipientId || incomingCall.callerId)) {
           registerRecipient();
@@ -343,6 +378,8 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       stopAudioCapture();
       localStorage.removeItem(`translation_enabled_${roomId}`);
       localStorage.removeItem(`translation_language_${roomId}`);
+      // [ДОБАВЛЕНО] Удаление tts_enabled из localStorage
+      localStorage.removeItem(`tts_enabled_${roomId}`);
     };
   }, [currentUserId, roomId, incomingCall]);
 
@@ -350,13 +387,17 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
     // [ИЗМЕНЕНО] Загрузка сохранённых настроек только при первом монтировании
     const savedTranslationEnabled = JSON.parse(localStorage.getItem(`translation_enabled_${roomId}`) || 'false');
     const savedLanguage = localStorage.getItem(`translation_language_${roomId}`) || 'auto';
-    console.log('Loaded settings on mount:', { savedTranslationEnabled, savedLanguage }); // [ИЗМЕНЕНО] Лог загрузки настроек
+    // [ДОБАВЛЕНО] Загрузка ttsEnabled
+    const savedTtsEnabled = JSON.parse(localStorage.getItem(`tts_enabled_${roomId}`) || 'false');
+    console.log('Loaded settings on mount:', { savedTranslationEnabled, savedLanguage, savedTtsEnabled }); // [ИЗМЕНЕНО] Добавлен savedTtsEnabled в лог
     // Устанавливаем начальные состояния только если они ещё не были изменены
-    setIsTranslationEnabled((prev) => prev || savedTranslationEnabled); // [ИЗМЕНЕНО] Сохраняем текущее значение, если уже изменено
-    setSelectedLanguage((prev) => prev || savedLanguage); // [ИЗМЕНЕНО] Сохраняем текущее значение, если уже изменено
+    setIsTranslationEnabled((prev) => prev || savedTranslationEnabled); // [ОСТАВЛЕНО]
+    setSelectedLanguage((prev) => prev || savedLanguage); // [ОСТАВЛЕНО]
+    // [ДОБАВЛЕНО] Устанавливаем ttsEnabled
+    setTtsEnabled((prev) => prev || savedTtsEnabled);
     if (languageDropdownRef.current) {
       languageDropdownRef.current.value = savedLanguage;
-      console.log('Set dropdown value on mount:', savedLanguage); // [ДОБАВЛЕНО] Лог установки dropdown
+      console.log('Set dropdown value on mount:', savedLanguage); // [ОСТАВЛЕНО]
     }
   }, []);
 
@@ -369,6 +410,41 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
     selectedLanguageRef.current = selectedLanguage;
     console.log('Updated selectedLanguageRef:', selectedLanguageRef.current); // [ДОБАВЛЕНО] Лог для отладки
   }, [selectedLanguage]);
+
+  // [ДОБАВЛЕНО] Синхронизация ttsEnabledRef
+  useEffect(() => {
+    ttsEnabledRef.current = ttsEnabled;
+    console.log('Updated ttsEnabledRef:', ttsEnabledRef.current);
+  }, [ttsEnabled]);
+
+  // [ДОБАВЛЕНО] Отправка настроек на сервер
+  useEffect(() => {
+    console.log('Sending settings to server:', { roomId, currentUserId, isTranslationEnabled, selectedLanguage, ttsEnabled });
+    fetch('https://unlimitedpossibilities12.org/api/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        roomId,
+        userId: currentUserId,
+        translationEnabled: isTranslationEnabled,
+        translationLanguage: selectedLanguage,
+        ttsEnabled,
+      }),
+    })
+      .then((response) => {
+        console.log('Settings response:', { status: response.status, ok: response.ok });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        localStorage.setItem(`tts_enabled_${roomId}`, JSON.stringify(ttsEnabled));
+      })
+      .catch((error) => {
+        console.error('Error sending settings:', error);
+        notify('Failed to save settings.', { toastId: 'settings-save-failed' });
+      });
+  }, [roomId, currentUserId, isTranslationEnabled, selectedLanguage, ttsEnabled]);
 
   const scrollToBottom = (ref) => {
     if (ref.current) {
@@ -804,6 +880,8 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       <div className="audio-container">
         <audio ref={localAudioRef} autoPlay muted />
         <audio ref={remoteAudioRef} autoPlay />
+        // [ДОБАВЛЕНО] Аудиоэлемент для TTS
+        <audio ref={ttsAudioRef} />
       </div>
       <div className="chart-container-voice-translate">
         <Line
@@ -887,6 +965,20 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
               </option>
             ))}
           </select>
+          // [ДОБАВЛЕНО] Чекбокс для TTS
+          <div className="voice-call-tts-controls" style={{ display: isTranslationEnabled ? 'inline-block' : 'none', marginLeft: '10px' }}>
+            <input
+              type="checkbox"
+              id="tts-enabled"
+              checked={ttsEnabled}
+              onChange={(e) => {
+                const newValue = e.target.checked;
+                console.log('Toggling TTS:', newValue);
+                setTtsEnabled(newValue);
+              }}
+            />
+            <label htmlFor="tts-enabled">Enable TTS</label>
+          </div>
         </div>
       </div>
 
