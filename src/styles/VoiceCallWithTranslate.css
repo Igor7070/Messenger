@@ -79,34 +79,35 @@
   right: 10px !important;
 }
 
-/* [ДОБАВЛЕНО] Стили для контейнера перевода, переключателя и выпадающего списка */
-.translation-container {
+/* Стили для контейнера перевода и кнопки переключения */
+.translation-controls {
+  margin: 20px 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  width: 100%;
-  margin: 8px 16px;
+  gap: 12px;
 }
 
-.translation-switch {
-  display: flex;
-  align-items: center;
-  margin-right: 8px;
-}
-
-.translation-switch input[type="checkbox"] {
-  margin-right: 8px;
-  width: 20px;
-  height: 20px;
+.translation-toggle-button {
+  padding: 10px;
+  font-size: 20px; /* Размер иконки */
+  border: none;
+  background: transparent;
   cursor: pointer;
+  color: #B0BEC5; /* Серый для выключенного состояния */
+  transition: color 0.3s ease, transform 0.2s ease;
 }
 
-.translation-switch span {
-  color: #ffffff;
-  font-size: 14px;
+.translation-toggle-button:hover {
+  transform: scale(1.1); /* Лёгкое увеличение при наведении */
+}
+
+.translation-toggle-button.active {
+  color: #42a5f5; /* Синий для включённого состояния */
 }
 
 .language-dropdown {
-  width: 100%;
+  width: 200px;
   padding: 8px;
   font-size: 14px;
   border-radius: 5px;
