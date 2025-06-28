@@ -37,7 +37,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const friendTranscriptionRef = useRef(null);
   // [ДОБАВЛЕНО] Состояния для переключателя перевода, выбранного языка и рефа для выпадающего списка
   const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [selectedLanguage, setSelectedLanguage] = useState('auto'); // ИЗМЕНЕНО: 'en' → 'auto'
   const languageDropdownRef = useRef(null);
   const languages = [
     { name: 'Auto', code: 'auto', emoji: '🌐' },
@@ -187,16 +187,6 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   }, [isCaller]);
 
   useEffect(() => {
-    // [ДОБАВЛЕНО] Загрузка сохранённых настроек перевода из localStorage
-    const savedTranslationEnabled = JSON.parse(localStorage.getItem(`translation_enabled_${roomId}`) || 'false');
-    const savedLanguage = localStorage.getItem(`translation_language_${roomId}`) || 'auto'; // [ИЗМЕНЕНО] Начальный язык 'auto' как в Android
-    console.log('Loaded settings:', { savedTranslationEnabled, savedLanguage }); // [ДОБАВЛЕНО] Лог загрузки настроек
-    setIsTranslationEnabled(savedTranslationEnabled);
-    setSelectedLanguage(savedLanguage);
-    if (languageDropdownRef.current) {
-      languageDropdownRef.current.value = savedLanguage;
-    }
-
     if (!currentUserId) {
       console.error('currentUserId is undefined.');
       notify('User ID is missing.', { toastId: 'user-id-missing' });
@@ -319,11 +309,11 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         }
       },
       onStompError: (frame) => {
-        console.error('STOMP error:', frame);
+        console.error('STOMP error:', frame); // [ОСТАВЛЕНО] Лог ошибки
         notify('STOMP protocol error.', { toastId: 'stomp-error' });
       },
       onWebSocketError: (error) => {
-        console.warn('WebSocket error:', error);
+        console.error('WebSocket error:', error); // [ИЗМЕНЕНО] Более подробный лог
       },
       onDisconnect: () => {
         console.log('WebSocket disconnected');
@@ -349,11 +339,22 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       }
       clearInterval(interval);
       stopAudioCapture();
-      // [ИЗМЕНЕНО] Оставляем очистку настроек перевода
       localStorage.removeItem(`translation_enabled_${roomId}`);
       localStorage.removeItem(`translation_language_${roomId}`);
     };
-  }, [currentUserId, roomId, isTranslationEnabled, selectedLanguage]);
+  }, [currentUserId, roomId, incomingCall]);
+
+  useEffect(() => {
+    // [ДОБАВЛЕНО] Загрузка сохранённых настроек перевода из localStorage
+    const savedTranslationEnabled = JSON.parse(localStorage.getItem(`translation_enabled_${roomId}`) || 'false');
+    const savedLanguage = localStorage.getItem(`translation_language_${roomId}`) || 'auto';
+    console.log('Loaded settings:', { savedTranslationEnabled, savedLanguage }); // [ДОБАВЛЕНО] Лог загрузки настроек
+    setIsTranslationEnabled(savedTranslationEnabled);
+    setSelectedLanguage(savedLanguage);
+    if (languageDropdownRef.current) {
+      languageDropdownRef.current.value = savedLanguage;
+    }
+  }, [roomId]);
 
   const scrollToBottom = (ref) => {
     if (ref.current) {
@@ -462,7 +463,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return response.text();
+        return response.text(); // [ОСТАВЛЕНО] Ожидаем строку, как в Android
       })
       .then((translatedText) => {
         console.log('Raw translated text:', translatedText); // [ДОБАВЛЕНО] Лог сырого ответа
@@ -481,7 +482,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         if (translatedText.startsWith('"') && translatedText.endsWith('"')) {
           cleanedText = translatedText.slice(1, -1);
         }
-        console.log(`Translated transcription to ${targetLanguage}: ${cleanedText}`); // [ДОБАВЛЕНО] Лог результата
+        console.log(`Translated transcription to ${targetLanguage}: ${cleanedText}`); // [ОСТАВЛЕНО] Лог результата
         callback(cleanedText);
       })
       .catch((error) => {
