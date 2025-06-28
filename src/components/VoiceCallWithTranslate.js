@@ -245,6 +245,12 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         // [ИЗМЕНЕНО] Подписка на транскрипцию собеседника с переводом
         stompClient.current.subscribe(`/topic/friend-transcription/${roomId}/${currentUserId}`, (message) => {
           console.log('Received friend transcription:', message.body);
+          // [ДОБАВЛЕНО] Отладка состояний перевода
+          console.log('Translation states:', {
+            isTranslationEnabled,
+            selectedLanguage,
+            isTranslationConditionMet: isTranslationEnabled && selectedLanguage && selectedLanguage !== 'auto',
+          });
           try {
             const json = JSON.parse(message.body);
             if (json.error) {
@@ -305,6 +311,11 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         // [ДОБАВЛЕНО] Загрузка сохранённых настроек перевода из localStorage
         const savedTranslationEnabled = localStorage.getItem(`translation_enabled_${roomId}`) === 'true';
         const savedLanguage = localStorage.getItem(`translation_language_${roomId}`) || 'en';
+        console.log('Loaded translation settings:', {
+          savedTranslationEnabled,
+          savedLanguage,
+          roomId,
+        });
         setIsTranslationEnabled(savedTranslationEnabled);
         setSelectedLanguage(savedLanguage);
         if (languageDropdownRef.current) {
