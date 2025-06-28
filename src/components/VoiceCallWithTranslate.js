@@ -242,22 +242,15 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           }
         });
 
-        // [ИЗМЕНЕНО] Подписка на транскрипцию собеседника с переводом
+        // Подписка на транскрипцию собеседника с переводом
         stompClient.current.subscribe(`/topic/friend-transcription/${roomId}/${currentUserId}`, (message) => {
           console.log('Received friend transcription:', message.body);
-          // [ДОБАВЛЕНО] Отладка состояний перевода
-          console.log('Translation states:', {
-            isTranslationEnabled,
-            selectedLanguage,
-            isTranslationConditionMet: isTranslationEnabled && selectedLanguage && selectedLanguage !== 'auto',
-          });
           try {
             const json = JSON.parse(message.body);
             if (json.error) {
               setFriendTranscription(`Error: ${json.error}`);
               scrollToBottom(friendTranscriptionRef);
             } else if (json.transcription) {
-              // [ДОБАВЛЕНО] Проверяем, включён ли перевод и выбран ли язык
               if (isTranslationEnabled && selectedLanguage && selectedLanguage !== 'auto') {
                 // Выполняем перевод асинхронно
                 translateTranscription(json.transcription, selectedLanguage, (translatedText) => {
@@ -308,14 +301,9 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           handleIncomingCall(incomingCall);
         }
 
-        // [ДОБАВЛЕНО] Загрузка сохранённых настроек перевода из localStorage
-        const savedTranslationEnabled = localStorage.getItem(`translation_enabled_${roomId}`) === 'true';
+        // [ИЗМЕНЕНО] Загрузка сохранённых настроек перевода из localStorage
+        const savedTranslationEnabled = JSON.parse(localStorage.getItem(`translation_enabled_${roomId}`) || 'false');
         const savedLanguage = localStorage.getItem(`translation_language_${roomId}`) || 'en';
-        console.log('Loaded translation settings:', {
-          savedTranslationEnabled,
-          savedLanguage,
-          roomId,
-        });
         setIsTranslationEnabled(savedTranslationEnabled);
         setSelectedLanguage(savedLanguage);
         if (languageDropdownRef.current) {
@@ -353,9 +341,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       }
       clearInterval(interval);
       stopAudioCapture();
-      // [ДОБАВЛЕНО] Очистка настроек перевода
-      setIsTranslationEnabled(false);
-      setSelectedLanguage('en');
+      // [ИЗМЕНЕНО] Очистка настроек перевода
       localStorage.removeItem(`translation_enabled_${roomId}`);
       localStorage.removeItem(`translation_language_${roomId}`);
     };
@@ -828,14 +814,16 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
             type="checkbox"
             checked={isTranslationEnabled}
             onChange={(e) => {
-              setIsTranslationEnabled(e.target.checked);
-              localStorage.setItem(`translation_enabled_${roomId}`, e.target.checked);
-              if (e.target.checked && languageDropdownRef.current) {
-                setSelectedLanguage(languageDropdownRef.current.value);
-                localStorage.setItem(`translation_language_${roomId}`, languageDropdownRef.current.value);
+              const newValue = e.target.checked;
+              setIsTranslationEnabled(newValue); // Обновляем состояние
+              localStorage.setItem(`translation_enabled_${roomId}`, JSON.stringify(newValue)); // Сохраняем в localStorage
+              if (newValue && languageDropdownRef.current) {
+                const newLang = languageDropdownRef.current.value || 'en'; // Убедимся, что есть значение
+                setSelectedLanguage(newLang); // Обновляем язык
+                localStorage.setItem(`translation_language_${roomId}`, newLang); // Сохраняем язык
               } else {
-                setSelectedLanguage('en');
-                localStorage.removeItem(`translation_language_${roomId}`);
+                setSelectedLanguage('en'); // Сбрасываем на en
+                localStorage.removeItem(`translation_language_${roomId}`); // Удаляем язык
               }
             }}
           />
@@ -847,8 +835,9 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           style={{ display: isTranslationEnabled ? 'block' : 'none' }}
           value={selectedLanguage}
           onChange={(e) => {
-            setSelectedLanguage(e.target.value);
-            localStorage.setItem(`translation_language_${roomId}`, e.target.value);
+            const newLang = e.target.value;
+            setSelectedLanguage(newLang); // Обновляем язык
+            localStorage.setItem(`translation_language_${roomId}`, newLang); // Сохраняем язык
           }}
         >
           {languages.map((lang) => (
