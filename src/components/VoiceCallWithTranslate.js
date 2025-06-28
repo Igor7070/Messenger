@@ -841,26 +841,26 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
             className="translation-button"
             onClick={() => {
               const newValue = !isTranslationEnabled;
-              console.log('Toggling translation:', { newValue, currentLanguage: selectedLanguage }); // [ОСТАВЛЕНО] Лог переключения
+              console.log('Toggling translation:', { newValue, currentLanguage: selectedLanguage });
               setIsTranslationEnabled(newValue);
               localStorage.setItem(`translation_enabled_${roomId}`, JSON.stringify(newValue));
               if (newValue) {
-                const newLang = languageDropdownRef.current?.value || 'auto'; // [ОСТАВЛЕНО] Начальный язык 'auto'
-                console.log('Setting language:', newLang); // [ОСТАВЛЕНО] Лог выбора языка
+                const newLang = languageDropdownRef.current?.value || 'auto';
+                console.log('Setting language:', newLang);
                 setSelectedLanguage(newLang);
                 localStorage.setItem(`translation_language_${roomId}`, newLang);
                 if (languageDropdownRef.current) {
-                  languageDropdownRef.current.value = newLang; // [ДОБАВЛЕНО] Синхронизация dropdown
-                  console.log('Synced dropdown value:', newLang); // [ДОБАВЛЕНО] Лог синхронизации
+                  languageDropdownRef.current.value = newLang;
+                  console.log('Synced dropdown value:', newLang);
                 }
               } else {
-                console.log('Disabling translation, resetting to auto'); // [ОСТАВЛЕНО] Лог отключения
-                setSelectedLanguage('auto'); // [ОСТАВЛЕНО] Сброс на 'auto'
-                localStorage.setItem(`translation_language_${roomId}`, 'auto'); // [ОСТАВЛЕНО] Сохранение 'auto'
-                setFriendTranscription("Friend's Transcription: Waiting..."); // [ОСТАВЛЕНО] Сброс транскрипции
+                console.log('Disabling translation, resetting to auto');
+                setSelectedLanguage('auto');
+                localStorage.setItem(`translation_language_${roomId}`, 'auto');
+                setFriendTranscription("Friend's Transcription: Waiting...");
                 if (languageDropdownRef.current) {
-                  languageDropdownRef.current.value = 'auto'; // [ДОБАВЛЕНО] Синхронизация dropdown
-                  console.log('Synced dropdown value to auto'); // [ДОБАВЛЕНО] Лог синхронизации
+                  languageDropdownRef.current.value = 'auto';
+                  console.log('Synced dropdown value to auto');
                 }
               }
             }}
@@ -871,14 +871,14 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           <select
             ref={languageDropdownRef}
             className="language-dropdown"
-            style={{ display: isTranslationEnabled ? 'block' : 'none' }}
+            style={{ display: isTranslationEnabled ? 'inline-block' : 'none', marginLeft: '10px' }} // [ИЗМЕНЕНО] inline-block и margin-left
             value={selectedLanguage}
             onChange={(e) => {
               const newLang = e.target.value;
-              console.log('Language changed:', { newLang, isTranslationEnabled }); // [ИЗМЕНЕНО] Более подробный лог
+              console.log('Language changed:', { newLang, isTranslationEnabled });
               setSelectedLanguage(newLang);
               localStorage.setItem(`translation_language_${roomId}`, newLang);
-              console.log('Updated selectedLanguage:', newLang); // [ДОБАВЛЕНО] Лог обновления состояния
+              console.log('Updated selectedLanguage:', newLang);
             }}
           >
             {languages.map((lang) => (
