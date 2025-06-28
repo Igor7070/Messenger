@@ -835,7 +835,6 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         </div>
       </div>
       
-      // [ДОБАВЛЕНО] Контейнер для переключателя и выпадающего списка
       <div className="translation-container">
         <div className="translation-controls">
           <button
