@@ -35,8 +35,8 @@ public class OpenAIService {
             .build();
     private final ConcurrentHashMap<String, ByteArrayOutputStream> audioBuffers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> lastSentTimestamps = new ConcurrentHashMap<>();
-    // NEW: Храним recipientId для каждой сессии
-    private final ConcurrentHashMap<String, String> sessionToRecipientMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> sessionToRecipientMap = new ConcurrentHashMap<>(); // NEW: Храним recipientId для каждой сессии
+    private final ConcurrentHashMap<String, String> userSettings = new ConcurrentHashMap<>(); // [ДОБАВЛЕНО] Хранилище настроек
 
     @Value("${openai.api.key}")
     private String apiKey;
@@ -170,6 +170,8 @@ public class OpenAIService {
             if (recipientId != null) {
                 messagingTemplate.convertAndSend("/topic/friend-transcription/" + roomId + "/" + recipientId, messageJson);
                 LOGGER.info("Sent transcription to /topic/friend-transcription/" + roomId + "/" + recipientId + ": " + transcription);
+                // [ДОБАВЛЕНО] Вызываем TTS, если включён
+                sendTTS(roomId, sessionId, recipientId, transcription);
             } else {
                 LOGGER.warning("No recipientId found for roomId: " + roomId + ", sessionId: " + sessionId);
             }
@@ -194,5 +196,94 @@ public class OpenAIService {
     public void registerRecipient(String roomId, String sessionId, String recipientId) {
         sessionToRecipientMap.put(roomId + "_" + sessionId, recipientId);
         LOGGER.info("Registered recipientId: " + recipientId + " for roomId: " + roomId + ", sessionId: " + sessionId);
+    }
+
+    // [ДОБАВЛЕНО] Метод для синтеза речи
+    private byte[] synthesizeSpeech(String text) throws IOException {
+        LOGGER.info("Synthesizing speech for text: " + text);
+        if (text == null || text.trim().isEmpty()) {
+            LOGGER.warning("Invalid input for TTS: text=" + text);
+            throw new IOException("Invalid text for TTS");
+        }
+
+        ObjectNode ttsRequest = mapper.createObjectNode();
+        ttsRequest.put("model", "gpt-4o-mini-tts"); // Модель, указанная тобой
+        ttsRequest.put("input", text);
+        ttsRequest.put("voice", "nova"); // Пример голоса (можно заменить: echo, fable, onyx, nova, shimmer)
+
+        RequestBody body = RequestBody.create(
+                mapper.writeValueAsString(ttsRequest),
+                MediaType.parse("application/json")
+        );
+
+        Request request = new Request.Builder()
+                .url("https://api.openai.com/v1/audio/speech")
+                .header("Authorization", "Bearer " + apiKey)
+                .post(body)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                String errorBody = response.body() != null ? response.body().string() : "No response body";
+                LOGGER.severe("TTS API error: " + response.code() + ", " + errorBody);
+                throw new IOException("TTS API error: " + response.code() + ", " + errorBody);
+            }
+            byte[] audioBytes = response.body().bytes();
+            LOGGER.info("Synthesized audio length: " + audioBytes.length + " bytes");
+            return audioBytes;
+        }
+    }
+
+    // [ДОБАВЛЕНО] Метод для отправки синтезированного аудио
+    private void sendTTS(String roomId, String sessionId, String recipientId, String transcription) {
+        System.out.println("Method sendTTS is working...");
+        try {
+            String translationEnabledKey = "translation_enabled_" + roomId + "_" + recipientId;
+            String targetLanguageKey = "translation_language_" + roomId + "_" + recipientId;
+            String ttsEnabledKey = "tts_enabled_" + roomId + "_" + recipientId;
+            boolean isTranslationEnabled = Boolean.parseBoolean(userSettings.getOrDefault(translationEnabledKey, "false"));
+            String targetLanguage = userSettings.getOrDefault(targetLanguageKey, "auto");
+            boolean isTtsEnabled = Boolean.parseBoolean(userSettings.getOrDefault(ttsEnabledKey, "false"));
+
+            if (isTranslationEnabled && !targetLanguage.equals("auto") && isTtsEnabled) {
+                // Переводим транскрипцию
+                String translatePrompt = String.format(
+                        "Translate the following text to %s and return only the translated phrase in double quotes: \"%s\"",
+                        targetLanguage, transcription
+                );
+                String translatedText = generateCompletion(translatePrompt);
+                if (translatedText != null && translatedText.startsWith("\"") && translatedText.endsWith("\"")) {
+                    translatedText = translatedText.substring(1, translatedText.length() - 1).trim();
+                    if (!translatedText.isEmpty()) {
+                        // Синтезируем аудио
+                        byte[] ttsAudio = synthesizeSpeech(translatedText);
+                        String ttsAudioBase64 = java.util.Base64.getEncoder().encodeToString(ttsAudio);
+                        ObjectNode ttsMessage = mapper.createObjectNode();
+                        ttsMessage.put("audio", ttsAudioBase64);
+                        ttsMessage.put("sessionId", sessionId);
+                        messagingTemplate.convertAndSend(
+                                "/topic/tts/" + roomId + "/" + recipientId,
+                                mapper.writeValueAsString(ttsMessage)
+                        );
+                        LOGGER.info("Sent TTS audio to /topic/tts/" + roomId + "/" + recipientId + ", length: " + ttsAudio.length + " bytes");
+                    } else {
+                        LOGGER.warning("Empty translated text for TTS: " + translatedText);
+                    }
+                } else {
+                    LOGGER.warning("Invalid translation response for TTS: " + translatedText);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.severe("Error sending TTS for roomId " + roomId + ": " + e.getMessage());
+        }
+    }
+
+    // [ДОБАВЛЕНО] Метод для сохранения настроек в userSettings
+    public void saveUserSettings(String key, boolean translationEnabled, String translationLanguage, boolean ttsEnabled) {
+        userSettings.put("translation_enabled_" + key, String.valueOf(translationEnabled));
+        userSettings.put("translation_language_" + key, translationLanguage);
+        userSettings.put("tts_enabled_" + key, String.valueOf(ttsEnabled));
+        LOGGER.info("Saved settings for key: " + key + ", translationEnabled: " + translationEnabled +
+                ", translationLanguage: " + translationLanguage + ", ttsEnabled: " + ttsEnabled);
     }
 }

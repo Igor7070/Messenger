@@ -1,6 +1,7 @@
 package com.example.unl_pos12.controller.communication_with_ai;
 
 import com.example.unl_pos12.model.chat_ai.MessageRequest;
+import com.example.unl_pos12.model.chat_ai.SettingsRequest;
 import com.example.unl_pos12.model.messenger.Message;
 import com.example.unl_pos12.model.messenger.TranslationUpdateRequest;
 import com.example.unl_pos12.repo.MessageRepository;
@@ -99,5 +100,27 @@ public class ChatGPTController {
         String result = openAIService.generateCompletion(prompt);
         System.out.println("Spell checked result: " + result);
         return ResponseEntity.ok(result);
+    }
+
+    // [ДОБАВЛЕНО] Endpoint для сохранения настроек
+    @PostMapping("/api/settings")
+    @ResponseBody
+    public ResponseEntity<Void> saveSettings(@RequestBody SettingsRequest request) {
+        String roomId = request.getRoomId();
+        String userId = request.getUserId();
+        if (roomId == null || userId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        openAIService.saveUserSettings(
+                roomId + "_" + userId,
+                request.isTranslationEnabled(),
+                request.getTranslationLanguage() != null ? request.getTranslationLanguage() : "auto",
+                request.isTtsEnabled()
+        );
+        System.out.println("Saved settings for roomId: " + roomId + ", userId: " + userId +
+                ", translationEnabled: " + request.isTranslationEnabled() +
+                ", translationLanguage: " + request.getTranslationLanguage() +
+                ", ttsEnabled: " + request.isTtsEnabled());
+        return ResponseEntity.ok().build();
     }
 }
