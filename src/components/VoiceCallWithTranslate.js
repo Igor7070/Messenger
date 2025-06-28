@@ -817,12 +817,12 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
               const newValue = e.target.checked;
               setIsTranslationEnabled(newValue); // Обновляем состояние
               localStorage.setItem(`translation_enabled_${roomId}`, JSON.stringify(newValue)); // Сохраняем в localStorage
-              if (newValue && languageDropdownRef.current) {
-                const newLang = languageDropdownRef.current.value || 'en'; // Убедимся, что есть значение
-                setSelectedLanguage(newLang); // Обновляем язык
+              if (newValue) {
+                const newLang = languageDropdownRef.current?.value || 'en'; // Используем en, если реф недоступен
+                setSelectedLanguage(newLang); // Устанавливаем язык
                 localStorage.setItem(`translation_language_${roomId}`, newLang); // Сохраняем язык
               } else {
-                setSelectedLanguage('en'); // Сбрасываем на en
+                setSelectedLanguage('en'); // Сбрасываем язык
                 localStorage.removeItem(`translation_language_${roomId}`); // Удаляем язык
               }
             }}
@@ -833,7 +833,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           ref={languageDropdownRef}
           className="language-dropdown"
           style={{ display: isTranslationEnabled ? 'block' : 'none' }}
-          value={selectedLanguage}
+          defaultValue={selectedLanguage}
           onChange={(e) => {
             const newLang = e.target.value;
             setSelectedLanguage(newLang); // Обновляем язык
