@@ -808,31 +808,31 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       </div>
       
       // [ДОБАВЛЕНО] Контейнер для переключателя и выпадающего списка
-      <div className="translation-controls">
-        <button
-          className="translation-toggle-button"
-          onClick={() => {
-            const newValue = !isTranslationEnabled;
-            setIsTranslationEnabled(newValue);
-            localStorage.setItem(`translation_enabled_${roomId}`, JSON.stringify(newValue));
-            if (newValue) {
-              const newLang = languageDropdownRef.current?.value || 'en';
-              setSelectedLanguage(newLang);
-              localStorage.setItem(`translation_language_${roomId}`, newLang);
-            } else {
-              setSelectedLanguage('en');
-              localStorage.removeItem(`translation_language_${roomId}`);
-            }
-          }}
-          title={isTranslationEnabled ? 'Disable translation' : 'Enable translation'}
-          style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
-        >
-          🌐
-        </button>
-        {isTranslationEnabled && (
+      <div className="translation-container">
+        <div className="translation-controls">
+          <button
+            className="translation-button"
+            onClick={() => {
+              const newValue = !isTranslationEnabled;
+              setIsTranslationEnabled(newValue);
+              localStorage.setItem(`translation_enabled_${roomId}`, JSON.stringify(newValue));
+              if (newValue) {
+                const newLang = languageDropdownRef.current?.value || 'en';
+                setSelectedLanguage(newLang);
+                localStorage.setItem(`translation_language_${roomId}`, newLang);
+              } else {
+                setSelectedLanguage('en');
+                localStorage.removeItem(`translation_language_${roomId}`);
+              }
+            }}
+            style={{ backgroundColor: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
+          >
+            {isTranslationEnabled ? 'Translation ON' : 'Translation OFF'}
+          </button>
           <select
             ref={languageDropdownRef}
             className="language-dropdown"
+            style={{ display: isTranslationEnabled ? 'block' : 'none' }}
             value={selectedLanguage}
             onChange={(e) => {
               const newLang = e.target.value;
@@ -846,7 +846,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
               </option>
             ))}
           </select>
-        )}
+        </div>
       </div>
 
       <button className="end-call-button-voice" onClick={endCall}>

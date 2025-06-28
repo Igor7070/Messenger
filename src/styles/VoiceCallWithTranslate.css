@@ -80,44 +80,41 @@
 }
 
 /* Стили для контейнера перевода и кнопки переключения */
-.translation-controls {
+.translation-container {
   margin: 20px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
-.translation-toggle-button {
-  padding: 10px;
-  font-size: 20px; /* Размер иконки */
+.translation-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.translation-button {
+  padding: 8px 16px;
+  font-size: 16px;
   border: none;
-  background: transparent;
+  border-radius: 5px;
   cursor: pointer;
-  color: #B0BEC5; /* Серый для выключенного состояния */
-  transition: color 0.3s ease, transform 0.2s ease;
+  color: #fff;
+  transition: background-color 0.3s;
 }
 
-.translation-toggle-button:hover {
-  transform: scale(1.1); /* Лёгкое увеличение при наведении */
-}
-
-.translation-toggle-button.active {
-  color: #42a5f5; /* Синий для включённого состояния */
+.translation-button:hover {
+  opacity: 0.9;
 }
 
 .language-dropdown {
-  width: 200px;
   padding: 8px;
-  font-size: 14px;
+  font-size: 16px;
   border-radius: 5px;
-  background-color: #ffffff;
-  color: #333333;
-  border: 1px solid #cccccc;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  width: 200px;
   cursor: pointer;
-}
-
-.language-dropdown:focus {
-  outline: none;
-  border-color: #4a90e2;
 }
