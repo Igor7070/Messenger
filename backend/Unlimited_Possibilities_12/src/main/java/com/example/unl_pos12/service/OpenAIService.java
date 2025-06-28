@@ -190,7 +190,7 @@ public class OpenAIService {
         }
     }
 
-    // NEW: Метод для регистрации recipientId
+    // NEW: Метод для регистрации recipientId...
     public void registerRecipient(String roomId, String sessionId, String recipientId) {
         sessionToRecipientMap.put(roomId + "_" + sessionId, recipientId);
         LOGGER.info("Registered recipientId: " + recipientId + " for roomId: " + roomId + ", sessionId: " + sessionId);
