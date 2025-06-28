@@ -92,7 +92,7 @@
   width: 100%;
   max-width: 600px;
   margin: 10px 20px;
-  padding: 0;
+  padding: 10px; /* [ИЗМЕНЕНО] Добавлен padding, как в transcription-container */
   display: flex;
   justify-content: flex-start;
 }
