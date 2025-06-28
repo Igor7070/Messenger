@@ -39,6 +39,8 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('auto'); // ИЗМЕНЕНО: 'en' → 'auto'
   const languageDropdownRef = useRef(null);
+  const isTranslationEnabledRef = useRef(isTranslationEnabled);
+  const selectedLanguageRef = useRef(selectedLanguage);
   const languages = [
     { name: 'Auto', code: 'auto', emoji: '🌐' },
     { name: 'Afrikaans', code: 'af', emoji: '🇿🇦' },
@@ -248,19 +250,19 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           try {
             const json = JSON.parse(message.body);
             if (json.error) {
-              console.log('Transcription error:', json.error); // [ДОБАВЛЕНО] Лог ошибки
+              console.log('Transcription error:', json.error); // [ОСТАВЛЕНО] Лог ошибки
               setFriendTranscription(`Error: ${json.error}`);
               scrollToBottom(friendTranscriptionRef);
             } else if (json.transcription) {
-              console.log('Processing transcription:', { // [ДОБАВЛЕНО] Лог состояния
+              console.log('Processing transcription:', { // [ИЗМЕНЕНО] Используем рефы
                 transcription: json.transcription,
-                isTranslationEnabled,
-                selectedLanguage,
+                isTranslationEnabled: isTranslationEnabledRef.current,
+                selectedLanguage: selectedLanguageRef.current,
               });
-              if (isTranslationEnabled && selectedLanguage && selectedLanguage !== 'auto') {
-                console.log('Translating transcription to:', selectedLanguage); // [ДОБАВЛЕНО] Лог вызова перевода
-                translateTranscription(json.transcription, selectedLanguage, (translatedText) => {
-                  console.log('Translation result:', translatedText); // [ДОБАВЛЕНО] Лог результата
+              if (isTranslationEnabledRef.current && selectedLanguageRef.current && selectedLanguageRef.current !== 'auto') {
+                console.log('Translating transcription to:', selectedLanguageRef.current); // [ИЗМЕНЕНО] Используем реф
+                translateTranscription(json.transcription, selectedLanguageRef.current, (translatedText) => {
+                  console.log('Translation result:', translatedText); // [ОСТАВЛЕНО] Лог результата
                   const displayText = translatedText || json.transcription;
                   setFriendTranscription((prev) => {
                     if (prev === "Friend's Transcription: Waiting..." || prev.startsWith('Error')) {
@@ -275,7 +277,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
                   scrollToBottom(friendTranscriptionRef);
                 });
               } else {
-                console.log('Translation skipped, using original:', json.transcription); // [ДОБАВЛЕНО] Лог пропуска перевода
+                console.log('Translation skipped, using original:', json.transcription); // [ОСТАВЛЕНО] Лог пропуска перевода
                 setFriendTranscription((prev) => {
                   if (prev === "Friend's Transcription: Waiting..." || prev.startsWith('Error')) {
                     return json.transcription;
@@ -357,6 +359,16 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       console.log('Set dropdown value on mount:', savedLanguage); // [ДОБАВЛЕНО] Лог установки dropdown
     }
   }, []);
+
+  useEffect(() => {
+    isTranslationEnabledRef.current = isTranslationEnabled;
+    console.log('Updated isTranslationEnabledRef:', isTranslationEnabledRef.current); // [ДОБАВЛЕНО] Лог для отладки
+  }, [isTranslationEnabled]);
+
+  useEffect(() => {
+    selectedLanguageRef.current = selectedLanguage;
+    console.log('Updated selectedLanguageRef:', selectedLanguageRef.current); // [ДОБАВЛЕНО] Лог для отладки
+  }, [selectedLanguage]);
 
   const scrollToBottom = (ref) => {
     if (ref.current) {
