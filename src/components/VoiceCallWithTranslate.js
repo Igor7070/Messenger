@@ -835,10 +835,10 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         </div>
       </div>
       
-      <div className="translation-container">
-        <div className="translation-controls">
+      <div className="voice-call-translation-container">
+        <div className="voice-call-translation-controls">
           <button
-            className="translation-button"
+            className="voice-call-translation-button"
             onClick={() => {
               const newValue = !isTranslationEnabled;
               console.log('Toggling translation:', { newValue, currentLanguage: selectedLanguage });
@@ -870,8 +870,8 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           </button>
           <select
             ref={languageDropdownRef}
-            className="language-dropdown"
-            style={{ display: isTranslationEnabled ? 'inline-block' : 'none', marginLeft: '10px' }} // [ИЗМЕНЕНО] inline-block и margin-left
+            className="voice-call-language-dropdown"
+            style={{ display: isTranslationEnabled ? 'inline-block' : 'none', marginLeft: '10px' }}
             value={selectedLanguage}
             onChange={(e) => {
               const newLang = e.target.value;

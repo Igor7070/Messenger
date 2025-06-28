@@ -82,31 +82,31 @@
 /* Стили для контейнера перевода и кнопки переключения */
 .transcription-container {
   width: 100%;
-  max-width: 600px; /* Подстройте под ваш дизайн */
-  margin: 10px 20px; /* Левый отступ, как в вашем дизайне */
+  max-width: 600px;
+  margin: 10px 20px;
   padding: 10px;
 }
 
 /* Контейнер для переключателя и выпадающего списка */
-.translation-container {
+.voice-call-translation-container {
   width: 100%;
-  max-width: 600px; /* Соответствует transcription-container */
-  margin: 10px 20px; /* Тот же отступ, что у transcription-container */
-  padding: 0; /* Убираем лишние отступы */
+  max-width: 600px;
+  margin: 10px 20px;
+  padding: 0;
   display: flex;
-  justify-content: flex-start; /* Выравнивание по левому краю, как transcription-container */
+  justify-content: flex-start;
 }
 
 /* Контейнер для кнопки и выпадающего списка */
-.translation-controls {
+.voice-call-translation-controls {
   display: flex;
-  flex-direction: row; /* Горизонтальное расположение */
-  align-items: center; /* Вертикальное выравнивание по центру */
-  gap: 10px; /* Отступ между кнопкой и select */
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
 }
 
 /* Стили для кнопки */
-.translation-button {
+.voice-call-translation-button {
   padding: 8px 16px;
   font-size: 16px;
   border: none;
@@ -117,42 +117,42 @@
 }
 
 /* Hover-эффект для кнопки */
-.translation-button:hover {
+.voice-call-translation-button:hover {
   opacity: 0.9;
 }
 
 /* Стили для выпадающего списка */
-.language-dropdown {
+.voice-call-language-dropdown {
   padding: 8px;
   font-size: 16px;
   border-radius: 5px;
   border: 1px solid #ccc;
   background-color: #fff;
-  width: 200px; /* Оставляем текущую ширину */
+  width: 200px;
   cursor: pointer;
-  transition: opacity 0.3s ease; /* Плавное появление */
+  transition: opacity 0.3s ease;
 }
 
 /* Адаптивность для маленьких экранов */
 @media (max-width: 750px) {
   .transcription-container,
-  .translation-container {
+  .voice-call-translation-container {
     max-width: 100%;
-    margin: 5px 10px; /* Меньшие отступы */
+    margin: 5px 10px;
     padding: 5px;
   }
 
-  .translation-controls {
-    gap: 5px; /* Меньший отступ между элементами */
+  .voice-call-translation-controls {
+    gap: 5px;
   }
 
-  .translation-button,
-  .language-dropdown {
+  .voice-call-translation-button,
+  .voice-call-language-dropdown {
     font-size: 14px;
     padding: 6px;
   }
 
-  .language-dropdown {
-    width: 150px; /* Уменьшенная ширина для маленьких экранов */
+  .voice-call-language-dropdown {
+    width: 150px;
   }
 }
