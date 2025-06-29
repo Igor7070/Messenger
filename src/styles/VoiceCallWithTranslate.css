@@ -50,6 +50,11 @@
   margin-bottom: 5px; /* Уменьшено с 8px до 5px для компактности */
 }
 
+/* Специфический стиль для поля Your Voice */
+.transcription-container:first-of-type .transcription-scroll {
+  margin-bottom: 2px; /* Уменьшено до 2px только для Your Voice */
+}
+
 .transcription-text {
   color: #e0e0e0;
   font-size: 16px;
