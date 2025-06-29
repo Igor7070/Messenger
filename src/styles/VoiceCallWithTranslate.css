@@ -17,7 +17,7 @@
 .chart-container-voice-translate {
   width: 100%;
   height: 150px;
-  margin: 20px 0;
+  margin: 10px 0; /* Уменьшено с 20px до 10px для сокращения расстояния до Your Voice */
   background-color: #ffffff;
   border-radius: 10px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -26,26 +26,28 @@
 
 .transcription-container {
   width: 100%;
-  margin: 8px 16px;
+  max-width: 600px;
+  margin: 5px 20px; /* Уменьшено с 10px 20px до 5px 20px для компактности */
+  padding: 5px; /* Уменьшено с 10px до 5px для сжатия */
 }
 
 .transcription-label {
-  color: #333333; /* Тёмно-серый для контраста */
-  font-size: 18px; /* Увеличено с 16px до 18px для большей заметности */
-  font-weight: 600; /* Средне-жирный для современного вида (вместо bold) */
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; /* Современный шрифт */
-  margin-bottom: 8px; /* Увеличен отступ снизу с 4px до 8px для визуального разделения */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Лёгкая тень для стиля */
+  color: #333333;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin-bottom: 5px; /* Уменьшено с 8px до 5px (~37.5% уменьшение) */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .transcription-scroll {
   background-color: rgba(0, 0, 0, 0.5);
   padding: 8px;
   border-radius: 10px;
-  max-height: 130px; /* Увеличено для 5 строк (16px * 1.5 line-height + padding) */
+  max-height: 130px;
   min-height: 130px;
   overflow-y: auto;
-  margin-bottom: 8px;
+  margin-bottom: 5px; /* Уменьшено с 8px до 5px для компактности */
 }
 
 .transcription-text {
@@ -66,7 +68,7 @@
   cursor: pointer;
   transition: background-color 0.3s ease;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  margin: 20px 0;
+  margin: 10px 0; /* Уменьшено с 20px до 10px для компактности */
 }
 
 .end-call-button-voice:hover {
@@ -84,25 +86,15 @@
   right: 10px !important;
 }
 
-/* Стили для контейнера перевода и кнопки переключения */
-.transcription-container {
-  width: 100%;
-  max-width: 600px;
-  margin: 10px 20px;
-  padding: 10px;
-}
-
-/* Контейнер для переключателя и выпадающего списка */
 .voice-call-translation-container {
   width: 100%;
   max-width: 600px;
-  margin: 10px 20px;
-  padding: 10px; /* [ИЗМЕНЕНО] Добавлен padding, как в transcription-container */
+  margin: 5px 20px; /* Уменьшено с 10px 20px до 5px 20px */
+  padding: 5px; /* Уменьшено с 10px до 5px */
   display: flex;
   justify-content: flex-start;
 }
 
-/* Контейнер для кнопки и выпадающего списка */
 .voice-call-translation-controls {
   display: flex;
   flex-direction: row;
@@ -110,7 +102,6 @@
   gap: 10px;
 }
 
-/* Стили для кнопки */
 .voice-call-translation-button {
   padding: 8px 16px;
   font-size: 16px;
@@ -121,12 +112,10 @@
   transition: background-color 0.3s, opacity 0.3s;
 }
 
-/* Hover-эффект для кнопки */
 .voice-call-translation-button:hover {
   opacity: 0.9;
 }
 
-/* Стили для выпадающего списка */
 .voice-call-language-dropdown {
   padding: 8px;
   font-size: 16px;
@@ -136,10 +125,9 @@
   width: 200px;
   cursor: pointer;
   transition: opacity 0.3s ease;
-  font-family: 'Noto Color Emoji', sans-serif; /* [ДОБАВЛЕНО] Для отображения эмодзи */
+  font-family: 'Noto Color Emoji', sans-serif;
 }
 
-/* [ДОБАВЛЕНО] Стили для чекбокса TTS */
 .voice-call-tts-controls {
   display: inline-flex;
   align-items: center;
@@ -155,7 +143,6 @@
   color: #333;
 }
 
-/* Адаптивность для маленьких экранов */
 @media (max-width: 750px) {
   .transcription-container,
   .voice-call-translation-container {
@@ -176,5 +163,9 @@
 
   .voice-call-language-dropdown {
     width: 150px;
+  }
+
+  .transcription-label {
+    font-size: 16px; /* Уменьшено с 18px для маленьких экранов */
   }
 }
