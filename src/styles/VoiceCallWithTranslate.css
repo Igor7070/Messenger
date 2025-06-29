@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap');
 
 .voice-call-container {
   display: flex;
@@ -29,10 +30,12 @@
 }
 
 .transcription-label {
-  color: #333333; /* Изменено с #ffffff на тёмно-серый для контраста */
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 4px;
+  color: #333333; /* Тёмно-серый для контраста */
+  font-size: 18px; /* Увеличено с 16px до 18px для большей заметности */
+  font-weight: 600; /* Средне-жирный для современного вида (вместо bold) */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; /* Современный шрифт */
+  margin-bottom: 8px; /* Увеличен отступ снизу с 4px до 8px для визуального разделения */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Лёгкая тень для стиля */
 }
 
 .transcription-scroll {
