@@ -278,7 +278,7 @@ public class OpenAIService {
         }
     }
 
-    // [ДОБАВЛЕНО] Метод для сохранения настроек в userSettings
+    // [ДОБАВЛЕНО] Метод для сохранения настроек в userSettings...
     public void saveUserSettings(String key, boolean translationEnabled, String translationLanguage, boolean ttsEnabled) {
         userSettings.put("translation_enabled_" + key, String.valueOf(translationEnabled));
         userSettings.put("translation_language_" + key, translationLanguage);
