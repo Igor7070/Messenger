@@ -880,7 +880,6 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       <div className="audio-container">
         <audio ref={localAudioRef} autoPlay muted />
         <audio ref={remoteAudioRef} autoPlay />
-        // [ДОБАВЛЕНО] Аудиоэлемент для TTS
         <audio ref={ttsAudioRef} />
       </div>
       <div className="chart-container-voice-translate">
@@ -965,7 +964,6 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
               </option>
             ))}
           </select>
-          // [ДОБАВЛЕНО] Чекбокс для TTS
           <div className="voice-call-tts-controls" style={{ display: isTranslationEnabled ? 'inline-block' : 'none', marginLeft: '10px' }}>
             <input
               type="checkbox"
