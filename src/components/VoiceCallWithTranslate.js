@@ -616,7 +616,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       const iceServers = [
         { urls: 'stun:stun.l.google.com:19302' },
         {
-          urls: 'turn:16.170.203.109:3478?transport=tcp',
+          urls: 'turn:13.49.238.121:3478?transport=tcp',
           username: 'username2',
           credential: 'key2',
         },
@@ -683,7 +683,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       const iceServers = [
         { urls: 'stun:stun.l.google.com:19302' },
         {
-          urls: 'turn:16.170.203.109:3478?transport=tcp',
+          urls: 'turn:13.49.238.121:3478?transport=tcp',
           username: 'username1',
           credential: 'key1',
         },
