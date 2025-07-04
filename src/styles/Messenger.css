@@ -516,8 +516,9 @@
 }
 
 .audio-message {
-    padding: 8px; /* Уменьшенный отступ для аудиосообщений */
-    border-radius: 12px; /* Скругленные углы, как в Telegram/Viber */
+    padding: 8px;
+    border-radius: 12px;
+    background-color: #f0f0f0; /* Лёгкий фон для отличия аудиосообщений */
 }
 
 .audio-message-container {
@@ -528,8 +529,8 @@
 
 .audio-player {
     width: 100%;
-    max-width: 250px; /* Компактный размер плеера */
-    height: 32px; /* Высота для минималистичного вида */
+    max-width: 250px;
+    height: 32px;
     border-radius: 5px;
 }
 
@@ -610,11 +611,11 @@
         height: 32px;
     }
 
-    .audio-player {
-        max-width: 200px;
-    }
-
     .audio-message {
         padding: 6px;
+    }
+
+    .audio-player {
+        max-width: 200px;
     }
 }

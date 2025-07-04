@@ -255,6 +255,11 @@ const Messenger = () => {
     }, [translationQueue, isTranslating]);
 
     const updateMessages = (newMessage) => {
+        // *** ИЗМЕНЕНО: Проверка на валидность сообщения и messageType ***
+        if (!newMessage || newMessage.content === 'Message deleted') {
+            return;
+        }
+
         setMessages((prevMessages) => {
             const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
@@ -274,16 +279,16 @@ const Messenger = () => {
                     setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
                 }
                 return updatedMessages;
-            } else if (newMessage.content !== 'Message deleted') {
-                const updatedMessages = [...prevMessages, newMessage];
+            } else {
+                const updatedMessages = [...prevMessages, { ...newMessage, showOriginal: true }];
                 localStorage.setItem(`last_visit_chat_${chatId}`, newMessage.timestamp);
                 if (isTranslationEnabled && isMessageNew(newMessage)) {
                     setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
                 }
                 return updatedMessages;
             }
-            return prevMessages;
         });
+        // *** КОНЕЦ ИЗМЕНЕНИЯ ***
     };
 
     const uploadFile = async (file) => {
@@ -306,7 +311,8 @@ const Messenger = () => {
     };
 
     const sendMessage = async () => {
-        if ((content || selectedFile || audioBlob) && userId) { // *** ИЗМЕНЕНО: Добавлено audioBlob в условие ***
+        // *** ИЗМЕНЕНО: Условие для отправки и установка messageType ***
+        if ((content.trim() || selectedFile || audioBlob) && userId) { // Проверяем, что есть контент, файл или аудио
             const currentUsername = username;
             const chatName = await getChatName(chatId);
 
@@ -321,12 +327,12 @@ const Messenger = () => {
 
             const message = {
                 id: editingMessageId || Date.now(),
-                content: finalContent,
+                content: finalContent || '', // Пустой контент для аудио/файлов
                 sender: { id: userId, username: currentUsername },
                 chat: { id: chatId, name: chatName },
-                fileUrl: selectedFile ? await uploadFile(selectedFile) : (audioBlob ? await uploadFile(audioBlob) : null), // *** ИЗМЕНЕНО: Добавлена загрузка audioBlob ***
+                fileUrl: selectedFile ? await uploadFile(selectedFile) : (audioBlob ? await uploadFile(audioBlob) : null),
                 timestamp: new Date().toISOString(),
-                messageType: audioBlob ? 'audio' : (selectedFile ? 'file' : 'text'), // *** ДОБАВЛЕНО: Установка messageType ***
+                messageType: audioBlob ? 'audio' : (selectedFile ? 'file' : 'text'), // Устанавливаем тип сообщения
             };
 
             console.log('Sending message:', message);
@@ -338,7 +344,7 @@ const Messenger = () => {
                         client.publish({ destination: `/app/editMessage/${chatId}`, body: JSON.stringify(message) });
                         setMessages(prevMessages =>
                             prevMessages.map(msg =>
-                                msg.id === editingMessageId ? { ...msg, content, timestamp: message.timestamp } : msg
+                                msg.id === editingMessageId ? { ...msg, content: finalContent, timestamp: message.timestamp } : msg
                             )
                         );
                     } else {
@@ -354,7 +360,7 @@ const Messenger = () => {
                 setEditingMessageId(null);
                 setContextMenu({ visible: false });
                 setSelectedFile(null);
-                setAudioBlob(null); // *** ДОБАВЛЕНО: Сброс audioBlob после отправки ***
+                setAudioBlob(null); // Сбрасываем аудио
 
                 if (fileInputRef.current) {
                     fileInputRef.current.value = null;
@@ -365,8 +371,10 @@ const Messenger = () => {
                 console.error('STOMP client is not connected');
             }
         } else {
-            console.warn('Content, file, or audio is missing');
+            console.warn('Content, file, or audio is missing or user not logged in');
+            toast.error('Please provide a message, file, or audio');
         }
+        // *** КОНЕЦ ИЗМЕНЕНИЯ ***
     };
 
     const handleKeyDown = (e) => {
@@ -671,8 +679,8 @@ const Messenger = () => {
                                         {msg.sender.id !== userId && (
                                             <span className="sender-name">{msg.sender.username}</span>
                                         )}
-                                        {/* *** ИЗМЕНЕНО: Условный рендеринг в зависимости от messageType *** */}
-                                        {msg.messageType !== 'audio' && (
+                                        {/* *** ИЗМЕНЕНО: Условный рендеринг по messageType *** */}
+                                        {msg.messageType !== 'audio' && msg.content && (
                                             <div
                                                 className="message-content"
                                                 onClick={(e) => {
@@ -695,7 +703,6 @@ const Messenger = () => {
                                                 )}
                                             </div>
                                         )}
-                                        {/* *** ИЗМЕНЕНО: Добавлен рендеринг аудиоплеера для messageType="audio" *** */}
                                         {msg.messageType === 'audio' && msg.fileUrl ? (
                                             <div className="audio-message-container">
                                                 <audio controls className="audio-player">
