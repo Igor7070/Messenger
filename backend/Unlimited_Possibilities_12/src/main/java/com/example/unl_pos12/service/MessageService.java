@@ -92,14 +92,7 @@ public class MessageService {
             throw new RuntimeException("File size exceeds 100 MB");
         }
 
-        // *** ДОБАВЛЕНО: Проверка типа файла ***
-        String contentType = file.getContentType();
-        if (!isValidFileType(contentType)) {
-            System.out.println("Invalid file type: " + contentType);
-            throw new RuntimeException("Invalid file type: " + contentType);
-        }
-
-        String uploadDir = "uploads/";
+        String uploadDir = "Uploads/";
         File directory = new File(uploadDir);
         if (!directory.exists()) {
             directory.mkdirs();
@@ -124,20 +117,6 @@ public class MessageService {
 
         String serverUrl = "https://unlimitedpossibilities12.org";
         return serverUrl + "/api/files/download/" + filename;
-    }
-
-    private boolean isValidFileType(String contentType) {
-        // *** ИЗМЕНЕНО: Добавлены типы audio/mpeg, audio/wav, audio/webm ***
-        return contentType != null && (
-                contentType.equals("text/plain") ||
-                        contentType.equals("image/jpeg") ||
-                        contentType.equals("image/png") ||
-                        contentType.equals("application/msword") ||
-                        contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||   // для .docx
-                        contentType.equals("audio/mpeg") || // MP3
-                        contentType.equals("audio/wav") ||  // WAV
-                        contentType.equals("audio/webm")   // WebM
-        );
     }
 
     private String transliterate(String input) {
