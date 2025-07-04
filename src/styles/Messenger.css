@@ -515,10 +515,22 @@
     cursor: not-allowed;
 }
 
-.audio-player {
+.audio-message {
+    padding: 8px; /* Уменьшенный отступ для аудиосообщений */
+    border-radius: 12px; /* Скругленные углы, как в Telegram/Viber */
+}
+
+.audio-message-container {
     margin-top: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.audio-player {
     width: 100%;
-    max-width: 300px;
+    max-width: 250px; /* Компактный размер плеера */
+    height: 32px; /* Высота для минималистичного вида */
+    border-radius: 5px;
 }
 
 @media (max-width: 800px) {
@@ -600,5 +612,9 @@
 
     .audio-player {
         max-width: 200px;
+    }
+
+    .audio-message {
+        padding: 6px;
     }
 }

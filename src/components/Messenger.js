@@ -629,7 +629,9 @@ const Messenger = () => {
                     msg.sender ? (
                         <div
                             key={msg.id}
-                            className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
+                            className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'} ${
+                                msg.messageType === 'audio' ? 'audio-message' : ''
+                            }`} // *** ИЗМЕНЕНО: Добавлен класс audio-message для аудиосообщений ***
                             onContextMenu={(e) => handleRightClick(e, msg)}
                         >
                             <div className="message-wrapper">
@@ -669,34 +671,39 @@ const Messenger = () => {
                                         {msg.sender.id !== userId && (
                                             <span className="sender-name">{msg.sender.username}</span>
                                         )}
-                                        <div
-                                            className="message-content"
-                                            onClick={(e) => {
-                                                if (e.target.tagName === 'A') return; // Пропускаем клики по ссылкам
-                                                if (msg.translatedContent) {
-                                                    setMessages((prevMessages) =>
-                                                        prevMessages.map((m) =>
-                                                        m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
-                                                        )
-                                                    );
-                                                }
-                                            }}
-                                        s   tyle={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
-                                        >
-                                            <span className="original-content">
-                                                {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
-                                            </span>
-                                            {msg.translatedContent && (
-                                                <span className="translated-content">{msg.translatedContent}</span>
-                                            )}
-                                        </div>
+                                        {/* *** ИЗМЕНЕНО: Условный рендеринг в зависимости от messageType *** */}
+                                        {msg.messageType !== 'audio' && (
+                                            <div
+                                                className="message-content"
+                                                onClick={(e) => {
+                                                    if (e.target.tagName === 'A') return;
+                                                    if (msg.translatedContent) {
+                                                        setMessages((prevMessages) =>
+                                                            prevMessages.map((m) =>
+                                                                m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                                            )
+                                                        );
+                                                    }
+                                                }}
+                                                style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                                            >
+                                                <span className="original-content">
+                                                    {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                                                </span>
+                                                {msg.translatedContent && (
+                                                    <span className="translated-content">{msg.translatedContent}</span>
+                                                )}
+                                            </div>
+                                        )}
                                         {/* *** ИЗМЕНЕНО: Добавлен рендеринг аудиоплеера для messageType="audio" *** */}
                                         {msg.messageType === 'audio' && msg.fileUrl ? (
-                                            <audio controls className="audio-player">
-                                                <source src={msg.fileUrl} type="audio/webm" />
-                                                Your browser does not support the audio element.
-                                            </audio>
-                                        ) : msg.fileUrl ? (
+                                            <div className="audio-message-container">
+                                                <audio controls className="audio-player">
+                                                    <source src={msg.fileUrl} type="audio/webm" />
+                                                    Your browser does not support the audio element.
+                                                </audio>
+                                            </div>
+                                        ) : msg.messageType === 'file' && msg.fileUrl ? (
                                             <a href={msg.fileUrl} download className="file-link">
                                                 📥 Download file
                                             </a>
