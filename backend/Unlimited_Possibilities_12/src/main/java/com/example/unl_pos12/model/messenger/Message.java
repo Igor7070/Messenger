@@ -31,6 +31,7 @@ public class Message {
     private Chat chat;
     private Boolean delivered_status; // Статус доставки
     private Boolean read_status;      // Статус прочтения
+    private String messageType; // Новое поле: "text", "file", "audio"
 
     public Long getId() {
         return id;
@@ -118,5 +119,13 @@ public class Message {
 
     public void setRead_status(Boolean read_status) {
         this.read_status = read_status;
+    }
+
+    public String getMessageType() {
+        return messageType;
+    }
+
+    public void setMessageType(String messageType) {
+        this.messageType = messageType;
     }
 }

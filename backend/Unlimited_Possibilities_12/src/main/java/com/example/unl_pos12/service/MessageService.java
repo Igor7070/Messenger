@@ -46,13 +46,29 @@ public class MessageService {
         messageRepository.deleteById(id);
     }
 
+    // Изменённый метод
     public Message saveMessage(Message message, MultipartFile file) {
+        // *** ДОБАВЛЕНО: Установка messageType в зависимости от наличия файла и его типа ***
         if (file != null && !file.isEmpty()) {
             String fileUrl = uploadFile(file);
             message.setFileUrl(fileUrl);
+            String contentType = file.getContentType();
+            // Устанавливаем тип сообщения
+            if (contentType != null && (contentType.equals("audio/mpeg") ||
+                    contentType.equals("audio/wav") ||
+                    contentType.equals("audio/webm"))) {
+                message.setMessageType("audio");
+            } else {
+                message.setMessageType("file");
+            }
+        } else {
+            message.setMessageType("text");
         }
-        //message.setTimestamp(LocalDateTime.now());
+        // *** КОНЕЦ ДОБАВЛЕНИЯ ***
+
         message.setTimestamp(ZonedDateTime.now());
+        // *** ИЗМЕНЕНО: Добавлено логирование messageType ***
+        System.out.println("Saving message: type=" + message.getMessageType() + ", content=" + message.getContent() + ", chatId=" + message.getChat().getId());
         return messageRepository.save(message);
     }
 
@@ -77,6 +93,13 @@ public class MessageService {
         if (file.getSize() > maxFileSize) {
             System.out.println("File size exceeds 100 MB: size=" + file.getSize());
             throw new RuntimeException("File size exceeds 100 MB");
+        }
+
+        // *** ДОБАВЛЕНО: Проверка типа файла ***
+        String contentType = file.getContentType();
+        if (!isValidFileType(contentType)) {
+            System.out.println("Invalid file type: " + contentType);
+            throw new RuntimeException("Invalid file type: " + contentType);
         }
 
         String uploadDir = "uploads/";
@@ -107,11 +130,17 @@ public class MessageService {
     }
 
     private boolean isValidFileType(String contentType) {
-        return contentType.equals("text/plain") ||
-                contentType.equals("image/jpeg") ||
-                contentType.equals("image/png") ||
-                contentType.equals("application/msword") ||
-                contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document"); // для .docx
+        // *** ИЗМЕНЕНО: Добавлены типы audio/mpeg, audio/wav, audio/webm ***
+        return contentType != null && (
+                contentType.equals("text/plain") ||
+                        contentType.equals("image/jpeg") ||
+                        contentType.equals("image/png") ||
+                        contentType.equals("application/msword") ||
+                        contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||   // для .docx
+                        contentType.equals("audio/mpeg") || // MP3
+                        contentType.equals("audio/wav") ||  // WAV
+                        contentType.equals("audio/webm")   // WebM
+        );
     }
 
     private String transliterate(String input) {

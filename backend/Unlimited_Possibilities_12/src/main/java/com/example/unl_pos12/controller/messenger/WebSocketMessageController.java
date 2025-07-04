@@ -52,6 +52,7 @@ public class WebSocketMessageController {
         System.out.println("Message from chatName: " + message.getChat().getName());
         System.out.println("Message from chat id: " + (message.getChat() != null
                 ? message.getChat().getId() : "null"));
+        System.out.println("Message type: " + message.getMessageType());
 
         // Убедитесь, что chatId установлен
         if (message.getChat() != null && message.getChat().getId() != null) {
@@ -63,6 +64,12 @@ public class WebSocketMessageController {
         }
 
         message.setDelivered_status(true); // Устанавливаем статус доставки
+
+        // *** ДОБАВЛЕНО: Установка messageType, если не указан ***
+        if (message.getMessageType() == null) {
+            message.setMessageType(message.getFileUrl() != null ? "file" : "text");
+        }
+
         return messageService.saveMessage(message, null); // Замените null на файл, если он есть
     }
 
