@@ -482,6 +482,45 @@
   line-height: 1.4;
 }
 
+/* *** ДОБАВЛЕНО: Стили для кнопки записи и аудиоплеера *** */
+.audio-record-button {
+    flex: 1;
+    padding: 8px;
+    height: 36px;
+    background-color: #ef5350;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    top: 0;
+}
+
+.audio-record-button.recording {
+    background-color: #d32f2f;
+}
+
+.audio-record-button:hover {
+    background-color: #c62828;
+}
+
+.audio-record-button:disabled {
+    background-color: #B0BEC5;
+    cursor: not-allowed;
+}
+
+.audio-player {
+    margin-top: 5px;
+    width: 100%;
+    max-width: 300px;
+}
+
 @media (max-width: 800px) {
     .messenger {
         margin: 10px;
@@ -551,5 +590,15 @@
     .spellcheck-indicator {
         font-size: 12px;
         padding: 2px 5px;
+    }
+
+    .audio-record-button {
+        font-size: 12px;
+        padding: 6px;
+        height: 32px;
+    }
+
+    .audio-player {
+        max-width: 200px;
     }
 }
