@@ -46,26 +46,13 @@ public class MessageService {
         messageRepository.deleteById(id);
     }
 
-    // Изменённый метод
     public Message saveMessage(Message message, MultipartFile file) {
         if (file != null && !file.isEmpty()) {
             String fileUrl = uploadFile(file);
             message.setFileUrl(fileUrl);
-            // Если file передан, устанавливаем messageType только если он не указан
-            if (message.getMessageType() == null) {
-                String contentType = file.getContentType();
-                if (contentType != null && (contentType.equals("audio/mpeg") ||
-                        contentType.equals("audio/wav") ||
-                        contentType.equals("audio/webm"))) {
-                    message.setMessageType("audio");
-                } else {
-                    message.setMessageType("file");
-                }
-            }
         }
-
+        //message.setTimestamp(LocalDateTime.now());
         message.setTimestamp(ZonedDateTime.now());
-        System.out.println("Saving message: type=" + message.getMessageType() + ", content=" + message.getContent() + ", chatId=" + message.getChat().getId());
         return messageRepository.save(message);
     }
 
@@ -92,7 +79,7 @@ public class MessageService {
             throw new RuntimeException("File size exceeds 100 MB");
         }
 
-        String uploadDir = "Uploads/";
+        String uploadDir = "uploads/";
         File directory = new File(uploadDir);
         if (!directory.exists()) {
             directory.mkdirs();
@@ -117,6 +104,14 @@ public class MessageService {
 
         String serverUrl = "https://unlimitedpossibilities12.org";
         return serverUrl + "/api/files/download/" + filename;
+    }
+
+    private boolean isValidFileType(String contentType) {
+        return contentType.equals("text/plain") ||
+                contentType.equals("image/jpeg") ||
+                contentType.equals("image/png") ||
+                contentType.equals("application/msword") ||
+                contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document"); // для .docx
     }
 
     private String transliterate(String input) {
