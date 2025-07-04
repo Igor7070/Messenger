@@ -255,11 +255,6 @@ const Messenger = () => {
     }, [translationQueue, isTranslating]);
 
     const updateMessages = (newMessage) => {
-        if (!newMessage || (!newMessage.content && !newMessage.fileUrl) || newMessage.content === 'Message deleted') {
-            console.warn('Invalid or deleted message received:', newMessage);
-            return;
-        }
-
         setMessages((prevMessages) => {
             const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
@@ -268,7 +263,7 @@ const Messenger = () => {
                     ...newMessage,
                     translatedContent: updatedMessages[existingMessageIndex].translatedContent,
                     translationLanguage: updatedMessages[existingMessageIndex].translationLanguage,
-                    showOriginal: updatedMessages[existingMessageIndex].showOriginal || true,
+                    showOriginal: updatedMessages[existingMessageIndex].showOriginal,
                 };
                 if (
                     isTranslationEnabled &&
@@ -279,14 +274,15 @@ const Messenger = () => {
                     setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
                 }
                 return updatedMessages;
-            } else {
-                const updatedMessages = [...prevMessages, { ...newMessage, showOriginal: true }];
+            } else if (newMessage.content !== 'Message deleted') {
+                const updatedMessages = [...prevMessages, newMessage];
                 localStorage.setItem(`last_visit_chat_${chatId}`, newMessage.timestamp);
                 if (isTranslationEnabled && isMessageNew(newMessage)) {
                     setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
                 }
                 return updatedMessages;
             }
+            return prevMessages;
         });
     };
 
