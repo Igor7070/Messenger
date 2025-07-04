@@ -46,6 +46,7 @@ const Messenger = () => {
     const messagesEndRef = useRef(null);
     const messageListRef = useRef(null);
     const fileInputRef = useRef(null);
+    const mediaRecorderRef = useRef(null); // *** ДОБАВЛЕНО: Референция для MediaRecorder ***
     const { chatId } = useParams();
     const navigate = useNavigate();
     const { userInteracted, handleInteraction } = useUserInteraction();
@@ -61,6 +62,9 @@ const Messenger = () => {
     const [showTranslationModal, setShowTranslationModal] = useState(false);
 
     const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
+    // *** ДОБАВЛЕНО: Состояния для аудиозаписи ***
+    const [isRecording, setIsRecording] = useState(false);
+    const [audioBlob, setAudioBlob] = useState(null);
 
     // ДОБАВЛЕНО: использование хука
     const {
@@ -251,6 +255,11 @@ const Messenger = () => {
     }, [translationQueue, isTranslating]);
 
     const updateMessages = (newMessage) => {
+        if (!newMessage || (!newMessage.content && !newMessage.fileUrl) || newMessage.content === 'Message deleted') {
+            console.warn('Invalid or deleted message received:', newMessage);
+            return;
+        }
+
         setMessages((prevMessages) => {
             const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
@@ -259,7 +268,7 @@ const Messenger = () => {
                     ...newMessage,
                     translatedContent: updatedMessages[existingMessageIndex].translatedContent,
                     translationLanguage: updatedMessages[existingMessageIndex].translationLanguage,
-                    showOriginal: updatedMessages[existingMessageIndex].showOriginal,
+                    showOriginal: updatedMessages[existingMessageIndex].showOriginal || true,
                 };
                 if (
                     isTranslationEnabled &&
@@ -270,15 +279,14 @@ const Messenger = () => {
                     setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
                 }
                 return updatedMessages;
-            } else if (newMessage.content !== 'Message deleted') {
-                const updatedMessages = [...prevMessages, newMessage];
+            } else {
+                const updatedMessages = [...prevMessages, { ...newMessage, showOriginal: true }];
                 localStorage.setItem(`last_visit_chat_${chatId}`, newMessage.timestamp);
                 if (isTranslationEnabled && isMessageNew(newMessage)) {
                     setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
                 }
                 return updatedMessages;
             }
-            return prevMessages;
         });
     };
 
@@ -302,7 +310,7 @@ const Messenger = () => {
     };
 
     const sendMessage = async () => {
-        if ((content || selectedFile) && userId) {
+        if ((content.trim() || selectedFile) && userId) { // Проверяем наличие текста или файла
             const currentUsername = username;
             const chatName = await getChatName(chatId);
 
@@ -317,11 +325,12 @@ const Messenger = () => {
 
             const message = {
                 id: editingMessageId || Date.now(),
-                content: finalContent, // Используем исправленный текст
+                content: finalContent,
                 sender: { id: userId, username: currentUsername },
                 chat: { id: chatId, name: chatName },
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
                 timestamp: new Date().toISOString(),
+                messageType: selectedFile ? 'file' : 'text', // Устанавливаем тип сообщения
             };
 
             console.log('Sending message:', message);
@@ -333,7 +342,7 @@ const Messenger = () => {
                         client.publish({ destination: `/app/editMessage/${chatId}`, body: JSON.stringify(message) });
                         setMessages(prevMessages =>
                             prevMessages.map(msg =>
-                                msg.id === editingMessageId ? { ...msg, content, timestamp: message.timestamp } : msg
+                                msg.id === editingMessageId ? { ...msg, content: finalContent, timestamp: message.timestamp } : msg
                             )
                         );
                     } else {
@@ -357,9 +366,11 @@ const Messenger = () => {
                 console.log('Message sent');
             } else {
                 console.error('STOMP client is not connected');
+                toast.error('WebSocket not connected');
             }
         } else {
-            console.warn('Content or userId is missing');
+            console.warn('Content or file is missing');
+            toast.error('Please provide a message or file');
         }
     };
 
@@ -519,6 +530,79 @@ const Messenger = () => {
         return msg.sender.id !== userId;
     };
 
+    // *** ДОБАВЛЕНО: Метод для начала записи аудио ***
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            mediaRecorderRef.current = mediaRecorder;
+            const chunks = [];
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                    chunks.push(e.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'audio/webm' });
+                setAudioBlob(blob);
+                stream.getTracks().forEach(track => track.stop());
+                // Автоматическая отправка аудиосообщения
+                sendAudioMessage(blob);
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+            toast.info('Recording started');
+        } catch (error) {
+            console.error('Error starting recording:', error);
+            toast.error('Failed to start recording');
+        }
+    };
+
+    // *** ДОБАВЛЕНО: Метод для остановки записи аудио ***
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+            toast.info('Recording stopped');
+        }
+    };
+
+    // *** ДОБАВЛЕНО: Метод для отправки аудиосообщения ***
+    const sendAudioMessage = async (audioBlob) => {
+        if (!audioBlob || !userId) {
+            console.warn('Audio or userId is missing');
+            toast.error('Failed to send audio message');
+            return;
+        }
+
+        const currentUsername = username;
+        const chatName = await getChatName(chatId);
+
+        const message = {
+            id: Date.now(),
+            content: '', // Пустой контент для аудиосообщений
+            sender: { id: userId, username: currentUsername },
+            chat: { id: chatId, name: chatName },
+            fileUrl: await uploadFile(audioBlob),
+            timestamp: new Date().toISOString(),
+            messageType: 'audio', // Устанавливаем тип аудио
+        };
+
+        console.log('Sending audio message:', message);
+
+        if (client && client.connected) {
+            client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
+            setAudioBlob(null); // Сбрасываем аудио
+            console.log('Audio message sent');
+        } else {
+            console.error('STOMP client is not connected');
+            toast.error('WebSocket not connected');
+        }
+    };
+
     return (
         <div className="messenger">
             <div className="chat-header-group">
@@ -585,7 +669,9 @@ const Messenger = () => {
                     msg.sender ? (
                         <div
                             key={msg.id}
-                            className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}
+                            className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'} ${
+                                msg.messageType === 'audio' ? 'audio-message' : ''
+                            }`} // *** ИЗМЕНЕНО: Добавлен класс audio-message ***
                             onContextMenu={(e) => handleRightClick(e, msg)}
                         >
                             <div className="message-wrapper">
@@ -625,32 +711,43 @@ const Messenger = () => {
                                         {msg.sender.id !== userId && (
                                             <span className="sender-name">{msg.sender.username}</span>
                                         )}
-                                        <div
-                                            className="message-content"
-                                            onClick={(e) => {
-                                                if (e.target.tagName === 'A') return; // Пропускаем клики по ссылкам
-                                                if (msg.translatedContent) {
-                                                setMessages((prevMessages) =>
-                                                    prevMessages.map((m) =>
-                                                    m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
-                                                    )
-                                                );
-                                                }
-                                            }}
-                                        s   tyle={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
-                                        >
-                                            <span className="original-content">
-                                                {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
-                                            </span>
-                                            {msg.translatedContent && (
-                                                <span className="translated-content">{msg.translatedContent}</span>
-                                            )}
-                                        </div>
-                                        {msg.fileUrl && (
+                                        {/* *** ИЗМЕНЕНО: Условный рендеринг по messageType *** */}
+                                        {msg.content && msg.messageType !== 'audio' && (
+                                            <div
+                                                className="message-content"
+                                                onClick={(e) => {
+                                                    if (e.target.tagName === 'A') return;
+                                                    if (msg.translatedContent) {
+                                                        setMessages((prevMessages) =>
+                                                            prevMessages.map((m) =>
+                                                                m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                                            )
+                                                        );
+                                                    }
+                                                }}
+                                                style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                                            >
+                                                <span className="original-content">
+                                                    {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                                                </span>
+                                                {msg.translatedContent && (
+                                                    <span className="translated-content">{msg.translatedContent}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                        {msg.messageType === 'audio' && msg.fileUrl ? (
+                                            <div className="audio-message-container">
+                                                <audio controls className="audio-player">
+                                                    <source src={msg.fileUrl} type="audio/webm" />
+                                                    Your browser does not support the audio element.
+                                                </audio>
+                                            </div>
+                                        ) : msg.fileUrl ? (
                                             <a href={msg.fileUrl} download className="file-link">
                                                 📥 Download file
                                             </a>
-                                        )}
+                                        ) : null}
+                                        {/* *** КОНЕЦ ИЗМЕНЕНИЯ *** */}
                                         <div className="message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                                     </div>
                                 </div>
@@ -679,6 +776,14 @@ const Messenger = () => {
                         id="file-input"
                     />
                     <label htmlFor="file-input" className="file-input-label">Choose File</label>
+                    {/* *** ДОБАВЛЕНО: Кнопка для записи/остановки аудио *** */}
+                    <button
+                        onClick={isRecording ? stopRecording : startRecording}
+                        className={`audio-record-button ${isRecording ? 'recording' : ''}`}
+                        disabled={!isLoggedIn}
+                    >
+                        {isRecording ? 'Stop Recording' : 'Record Audio'}
+                    </button>
                     <button onClick={sendMessage} className="send-button">Send</button>
                 </div>
             </div>

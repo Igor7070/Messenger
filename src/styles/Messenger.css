@@ -498,8 +498,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
-    top: 0;
 }
 
 .audio-record-button.recording {
@@ -518,7 +516,7 @@
 .audio-message {
     padding: 8px;
     border-radius: 12px;
-    background-color: #f0f0f0; /* Лёгкий фон для отличия аудиосообщений */
+    background-color: #f0f0f0; /* Лёгкий фон для аудиосообщений */
 }
 
 .audio-message-container {
