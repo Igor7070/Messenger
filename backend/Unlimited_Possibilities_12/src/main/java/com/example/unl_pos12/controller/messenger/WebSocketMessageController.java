@@ -64,13 +64,7 @@ public class WebSocketMessageController {
         }
 
         message.setDelivered_status(true); // Устанавливаем статус доставки
-
-        // *** ДОБАВЛЕНО: Установка messageType, если не указан ***
-        if (message.getMessageType() == null) {
-            message.setMessageType(message.getFileUrl() != null ? "file" : "text");
-        }
-
-        return messageService.saveMessage(message, null); // Замените null на файл, если он есть
+        return messageService.saveMessage(message, null); // file = null, так как клиент отправляет fileUrl
     }
 
     @MessageMapping("/editMessage/{chatId}")

@@ -48,26 +48,23 @@ public class MessageService {
 
     // Изменённый метод
     public Message saveMessage(Message message, MultipartFile file) {
-        // *** ДОБАВЛЕНО: Установка messageType в зависимости от наличия файла и его типа ***
         if (file != null && !file.isEmpty()) {
             String fileUrl = uploadFile(file);
             message.setFileUrl(fileUrl);
-            String contentType = file.getContentType();
-            // Устанавливаем тип сообщения
-            if (contentType != null && (contentType.equals("audio/mpeg") ||
-                    contentType.equals("audio/wav") ||
-                    contentType.equals("audio/webm"))) {
-                message.setMessageType("audio");
-            } else {
-                message.setMessageType("file");
+            // Если file передан, устанавливаем messageType только если он не указан
+            if (message.getMessageType() == null) {
+                String contentType = file.getContentType();
+                if (contentType != null && (contentType.equals("audio/mpeg") ||
+                        contentType.equals("audio/wav") ||
+                        contentType.equals("audio/webm"))) {
+                    message.setMessageType("audio");
+                } else {
+                    message.setMessageType("file");
+                }
             }
-        } else {
-            message.setMessageType("text");
         }
-        // *** КОНЕЦ ДОБАВЛЕНИЯ ***
 
         message.setTimestamp(ZonedDateTime.now());
-        // *** ИЗМЕНЕНО: Добавлено логирование messageType ***
         System.out.println("Saving message: type=" + message.getMessageType() + ", content=" + message.getContent() + ", chatId=" + message.getChat().getId());
         return messageRepository.save(message);
     }

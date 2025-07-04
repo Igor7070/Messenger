@@ -31,6 +31,7 @@ public class Message {
     private Chat chat;
     private Boolean delivered_status; // Статус доставки
     private Boolean read_status;      // Статус прочтения
+    @Column(name = "message_type")
     private String messageType; // Новое поле: "text", "file", "audio"
 
     public Long getId() {
