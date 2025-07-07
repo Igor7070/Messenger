@@ -532,7 +532,7 @@
 }
 
 .audio-message {
-    padding: 8px;
+    /*padding: 8px;*/
     border-radius: 12px;
     background-color: #f0f0f0; /* Лёгкий фон для аудиосообщений */
 }
