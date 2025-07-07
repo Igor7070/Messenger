@@ -517,7 +517,7 @@ const Messenger = () => {
     const handleInputChange = (e) => {
         const newValue = e.target.value;
         setContent(newValue);
-        const newRows = calculateRows(newValue);
+        const newRows = Math.min(5, calculateRows(newValue)); // Ограничиваем до 5 строк
         setRows(newRows);
         const lineHeight = window.innerWidth <= 800 ? 20 : 24; // 20px для мобильных, 24px для десктопа
         textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
