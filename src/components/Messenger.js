@@ -502,19 +502,18 @@ const Messenger = () => {
         setContent(newValue);
         const newRows = calculateRows(newValue);
         setRows(newRows);
-        // ДОБАВЛЕНО: Установка минимальной высоты, чтобы избежать сжатия
-        const minHeight = 24; // Минимальная высота для одной строки (из CSS min-height: 24px)
-        const calculatedHeight = newRows * 24;
-        textAreaRef.current.style.height = `${Math.max(minHeight, calculatedHeight)}px`;
+        const lineHeight = 24; // Высота одной строки для десктопа
+        textAreaRef.current.style.height = `${newRows * lineHeight}px`;
     };
 
     const calculateRows = (text) => {
-        if (textAreaRef.current) {
-            const textHeight = textAreaRef.current.scrollHeight;
-            const linesCount = Math.max(1, Math.ceil(textHeight / 24));
-            return linesCount;
-        }
-        return 1;
+        const lines = text.split('\n'); // Разбиваем текст на строки по переносам
+        let maxLines = 1; // Минимальное количество строк
+        lines.forEach((line) => {
+            const lineCount = Math.max(1, Math.ceil(line.length / charPerLine)); // Строки на основе длины
+            maxLines = Math.max(maxLines, lineCount); // Максимум строк в одной из линий
+        });
+        return Math.max(1, lines.length * maxLines); // Учитываем количество строк и их длину
     };
 
     // Определяем, показывать ли аватар
