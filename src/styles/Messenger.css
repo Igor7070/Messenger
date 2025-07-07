@@ -490,7 +490,7 @@
 .mic-icon-container {
     position: absolute;
     right: 10px;
-    top: 21px; /* Половина высоты первой строки (24px / 2) для центрирования */
+    top: 12px; /* Половина высоты первой строки (24px / 2) для центрирования */
     transform: translateY(-50%); /* Смещаем вверх на половину высоты иконки */
     display: flex;
     align-items: center;
