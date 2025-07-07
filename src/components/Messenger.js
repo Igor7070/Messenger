@@ -520,25 +520,28 @@ const Messenger = () => {
         const newRows = Math.min(5, calculateRows(newValue)); // Ограничиваем до 5 строк
         setRows(newRows);
         const lineHeight = window.innerWidth <= 800 ? 20 : 24; // 20px для мобильных, 24px для десктопа
-        textAreaRef.current.style.height = `${newRows * lineHeight + 10}px`; // Учитываем padding (10px + 10px)
+        textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px сверху + 10px снизу)
+        textAreaRef.current.style.boxSizing = 'border-box'; // Гарантируем включение padding в высоту
     };
 
     const calculateRows = (text) => {
         if (!text) return 1; // Если текст пустой, возвращаем 1 строку
         const lines = text.split('\n'); // Разбиваем текст на строки по переносам
         let totalRows = lines.length; // Количество строк по переносам
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        context.font = window.innerWidth <= 800 ? '14px Roboto' : '16px Roboto';
-        lines.forEach((line) => {
-            if (line.length > 0) {
-                const textWidth = context.measureText(line).width;
-                const textareaWidth = textAreaRef.current.clientWidth - (window.innerWidth <= 800 ? 36 : 40); // Учитываем padding
-                if (textWidth > textareaWidth) {
-                    totalRows += Math.floor(textWidth / textareaWidth); // Дополнительные строки при превышении ширины
+        if (textAreaRef.current) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            context.font = window.innerWidth <= 800 ? '14px Roboto' : '16px Roboto';
+            const textareaWidth = textAreaRef.current.clientWidth - (window.innerWidth <= 800 ? 36 : 40); // Учитываем padding
+            lines.forEach((line) => {
+                if (line.length > 0) {
+                    const textWidth = context.measureText(line).width;
+                    if (textWidth > textareaWidth) {
+                        totalRows += Math.floor((textWidth - textareaWidth) / textareaWidth); // Только дополнительные строки
+                    }
                 }
-            }
-        });
+            });
+        }
         return Math.max(1, totalRows); // Минимально 1 строка
     };
 
