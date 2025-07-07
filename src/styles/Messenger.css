@@ -262,6 +262,7 @@
     max-height: 120px; /* 5 строк (5 * 24px) + padding (10px + 10px) */
     overflow-y: auto; /* Включаем прокрутку по вертикали */
     display: block;
+    overflow-y: hidden; /* Прокрутка включается только через JS */
 }
 
 .input-message:focus {
@@ -591,6 +592,7 @@
         font-size: 14px;
         padding: 10px 36px 10px 10px; /* Уточнён padding-right для иконки */
         min-height: 40px; /* Высота одной строки (20px) + padding (10px + 10px) */
+        overflow-y: hidden; /* Прокрутка включается только через JS */
     }
 
     .file-input-label,
@@ -634,10 +636,6 @@
         transform: translateY(-50%);
         height: 20px;
         width: 20px;
-    }
-
-    .input-message {
-        padding-right: 36px; /* Меньший отступ для мобильных */
     }
 
     .mic-icon {
