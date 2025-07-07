@@ -484,14 +484,18 @@
 
 /* *** ДОБАВЛЕНО: Стили для иконки записи и аудиоплеера *** */
 .input-container {
-    position: relative; /* Для абсолютного позиционирования иконки */
+    position: relative;
+    display: flex;
+    align-items: flex-start; /* Выравнивание по верхнему краю, чтобы ориентироваться на первую строку */
+    padding-top: 10px; /* Сохраняем отступ сверху, как в исходном .input-message */
+    padding-bottom: 10px; /* Сохраняем отступ снизу */
 }
 
 .mic-icon-container {
     position: absolute;
     right: 10px;
-    top: 21px; /* Половина высоты первой строки (24px / 2) для центрирования */
-    transform: translateY(-50%); /* Смещаем вверх на половину высоты иконки */
+    top: 50%; /* Центр первой строки относительно padding-top */
+    transform: translateY(-50%); /* Смещаем на половину высоты иконки */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -523,7 +527,18 @@
 
 /* Стили для textarea, чтобы избежать перекрытия текста иконкой */
 .input-message {
-    padding-right: 40px; /* Отступ для иконки */
+    padding: 10px 40px 10px 10px; /* Отступ справа для иконки, остальные как в исходном стиле */
+    width: 100%; /* Занимает всю ширину контейнера */
+    box-sizing: border-box;
+    min-height: 48px;
+    font-size: 16px;
+    line-height: 1.4;
+    border: 1px solid #0288d1;
+    border-radius: 5px;
+    resize: none;
+    background-color: #FFFFFF;
+    font-family: 'Roboto', sans-serif;
+    transition: border-color 0.3s;
 }
 
 .audio-message {
