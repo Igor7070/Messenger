@@ -36,7 +36,7 @@ const Messenger = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [rows, setRows] = useState(1);
-    const [charPerLine, setCharPerLine] = useState(30);
+    const [charPerLine, setCharPerLine] = useState(50);
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
     const [chatName, setChatName] = useState('');
@@ -254,6 +254,23 @@ const Messenger = () => {
     useEffect(() => {
         translateNextMessage();
     }, [translationQueue, isTranslating]);
+
+    useEffect(() => {
+        const calculateCharPerLine = () => {
+            if (textAreaRef.current) {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                context.font = window.innerWidth <= 800 ? '14px Roboto' : '16px Roboto';
+                const avgCharWidth = context.measureText('m').width; // Средняя ширина символа
+                const textareaWidth = textAreaRef.current.clientWidth - 50; // Учитываем padding (40px десктоп, 36px мобильный)
+                const chars = Math.floor(textareaWidth / avgCharWidth);
+                setCharPerLine(chars);
+            }
+        };
+        calculateCharPerLine();
+        window.addEventListener('resize', calculateCharPerLine);
+        return () => window.removeEventListener('resize', calculateCharPerLine);
+    }, []);
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
@@ -503,18 +520,23 @@ const Messenger = () => {
         const newRows = calculateRows(newValue);
         setRows(newRows);
         const lineHeight = window.innerWidth <= 800 ? 20 : 24; // 20px для мобильных, 24px для десктопа
-        textAreaRef.current.style.height = `${newRows * lineHeight}px`;
-        // ДОБАВЛЕНО: Гарантируем минимальную высоту при вводе первого символа
-        textAreaRef.current.style.minHeight = `${lineHeight + 20}px`; // 20px = padding (10px сверху + 10px снизу)
+        textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
     };
 
     const calculateRows = (text) => {
         if (!text) return 1; // Если текст пустой, возвращаем 1 строку
         const lines = text.split('\n'); // Разбиваем текст на строки по переносам
         let totalRows = lines.length; // Количество строк по переносам
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        context.font = window.innerWidth <= 800 ? '14px Roboto' : '16px Roboto';
         lines.forEach((line) => {
-            if (line.length > charPerLine) {
-                totalRows += Math.floor(line.length / charPerLine); // Дополнительные строки при превышении ширины
+            if (line.length > 0) {
+                const textWidth = context.measureText(line).width;
+                const textareaWidth = textAreaRef.current.clientWidth - (window.innerWidth <= 800 ? 36 : 40); // Учитываем padding
+                if (textWidth > textareaWidth) {
+                    totalRows += Math.floor(textWidth / textareaWidth); // Дополнительные строки при превышении ширины
+                }
             }
         });
         return Math.max(1, totalRows); // Минимально 1 строка

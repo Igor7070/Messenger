@@ -254,7 +254,7 @@
     border-radius: 5px;
     resize: none;
     box-sizing: border-box;
-    min-height: 44px;
+    min-height: 44px; /* Высота одной строки (24px) + padding (10px + 10px) */
     font-size: 16px;
     background-color: #FFFFFF;
     font-family: 'Roboto', sans-serif;
@@ -587,6 +587,7 @@
     .input-message {
         font-size: 14px;
         padding: 10px 36px 10px 10px; /* Уточнён padding-right для иконки */
+        min-height: 40px; /* Высота одной строки (20px) + padding (10px + 10px) */
     }
 
     .file-input-label,
