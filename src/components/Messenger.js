@@ -502,18 +502,22 @@ const Messenger = () => {
         setContent(newValue);
         const newRows = calculateRows(newValue);
         setRows(newRows);
-        const lineHeight = 24; // Высота одной строки для десктопа
+        const lineHeight = window.innerWidth <= 800 ? 20 : 24; // 20px для мобильных, 24px для десктопа
         textAreaRef.current.style.height = `${newRows * lineHeight}px`;
+        // ДОБАВЛЕНО: Гарантируем минимальную высоту при вводе первого символа
+        textAreaRef.current.style.minHeight = `${lineHeight + 20}px`; // 20px = padding (10px сверху + 10px снизу)
     };
 
     const calculateRows = (text) => {
+        if (!text) return 1; // Если текст пустой, возвращаем 1 строку
         const lines = text.split('\n'); // Разбиваем текст на строки по переносам
-        let maxLines = 1; // Минимальное количество строк
+        let totalRows = lines.length; // Количество строк по переносам
         lines.forEach((line) => {
-            const lineCount = Math.max(1, Math.ceil(line.length / charPerLine)); // Строки на основе длины
-            maxLines = Math.max(maxLines, lineCount); // Максимум строк в одной из линий
+            if (line.length > charPerLine) {
+                totalRows += Math.floor(line.length / charPerLine); // Дополнительные строки при превышении ширины
+            }
         });
-        return Math.max(1, lines.length * maxLines); // Учитываем количество строк и их длину
+        return Math.max(1, totalRows); // Минимально 1 строка
     };
 
     // Определяем, показывать ли аватар
