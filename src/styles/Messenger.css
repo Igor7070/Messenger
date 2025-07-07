@@ -525,7 +525,7 @@
 
 /* Стили для textarea, чтобы избежать перекрытия текста иконкой */
 .input-message {
-    padding-right: 40px; /* Отступ для иконки */
+    padding-right: 10px; /* Отступ для иконки */
 }
 
 .audio-message {
