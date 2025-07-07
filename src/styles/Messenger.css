@@ -249,7 +249,7 @@
 
 .input-message {
     width: 100%;
-    padding: 10px;
+    padding: 10px 40px 10px 10px; /* Уточнён padding-right для иконки */
     border: 1px solid #0288d1;
     border-radius: 5px;
     margin-bottom: 10px;
@@ -484,14 +484,17 @@
 
 /* *** ДОБАВЛЕНО: Стили для иконки записи и аудиоплеера *** */
 .input-container {
-    position: relative; /* Для абсолютного позиционирования иконки */
+    background-color: #F0F4F8;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
 }
 
 .mic-icon-container {
     position: absolute;
     right: 10px;
-    top: 50%; /* Половина высоты первой строки (24px / 2) для центрирования */
-    transform: translateY(-50%); /* Смещаем вверх на половину высоты иконки */
+    top: 50%; /* Центрирование по вертикали относительно textarea-wrapper */
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -545,6 +548,11 @@
     border-radius: 5px;
 }
 
+.textarea-wrapper {
+    position: relative; /* Для позиционирования иконки относительно textarea */
+    width: 100%;
+}
+
 @media (max-width: 800px) {
     .messenger {
         margin: 10px;
@@ -579,6 +587,7 @@
 
     .input-message {
         font-size: 14px;
+        padding: 10px 36px 10px 10px; /* Уточнён padding-right для иконки */
     }
 
     .file-input-label,
@@ -618,7 +627,7 @@
 
     .mic-icon-container {
         right: 8px;
-        top: 10px; /* Половина высоты первой строки (~20px / 2) для мобильных */
+        top: 50%; /* Центрирование по вертикали относительно textarea-wrapper */
         transform: translateY(-50%);
         height: 20px;
         width: 20px;
