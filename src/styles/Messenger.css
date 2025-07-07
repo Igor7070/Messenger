@@ -482,35 +482,46 @@
   line-height: 1.4;
 }
 
-/* *** ДОБАВЛЕНО: Стили для кнопки записи и аудиоплеера *** */
-.audio-record-button {
-    flex: 1;
-    padding: 8px;
-    height: 36px;
-    background-color: #ef5350;
-    color: #FFFFFF;
-    border: none;
-    border-radius: 5px;
+/* *** ДОБАВЛЕНО: Стили для иконки записи и аудиоплеера *** */
+.input-container {
+    position: relative; /* Для абсолютного позиционирования иконки */
+}
+
+.mic-icon-container {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    height: 24px;
+}
+
+.mic-icon {
     cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s;
-    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 24px;
+    height: 24px;
 }
 
-.audio-record-button.recording {
-    background-color: #d32f2f;
-}
-
-.audio-record-button:hover {
-    background-color: #c62828;
-}
-
-.audio-record-button:disabled {
-    background-color: #B0BEC5;
+.mic-icon.disabled {
     cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.mic-icon.recording {
+    cursor: pointer;
+}
+
+.mic-icon.sending {
+    cursor: default; /* Отключаем курсор во время отправки */
+}
+
+/* Стили для textarea, чтобы избежать перекрытия текста иконкой */
+.input-message {
+    padding-right: 40px; /* Отступ для иконки */
 }
 
 .audio-message {
@@ -603,10 +614,17 @@
         padding: 2px 5px;
     }
 
-    .audio-record-button {
-        font-size: 12px;
-        padding: 6px;
-        height: 32px;
+     .mic-icon-container {
+        right: 8px;
+    }
+
+    .input-message {
+        padding-right: 36px; /* Меньший отступ для мобильных */
+    }
+
+    .mic-icon {
+        width: 20px;
+        height: 20px;
     }
 
     .audio-message {

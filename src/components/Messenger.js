@@ -65,6 +65,7 @@ const Messenger = () => {
     // *** ДОБАВЛЕНО: Состояния для аудиозаписи ***
     const [isRecording, setIsRecording] = useState(false);
     const [audioBlob, setAudioBlob] = useState(null);
+    const [micIconState, setMicIconState] = useState('mic'); // 'mic', 'recording', 'sending'
 
     // ДОБАВЛЕНО: использование хука
     const {
@@ -544,10 +545,11 @@ const Messenger = () => {
                 const blob = new Blob(chunks, { type: 'audio/webm' });
                 setAudioBlob(blob);
                 stream.getTracks().forEach(track => track.stop());
-                // Автоматическая отправка аудиосообщения
-                sendAudioMessage(blob);
+                setMicIconState('sending'); // ДОБАВЛЕНО: Установка иконки отправки
+                sendAudioMessage(blob); // Автоматическая отправка аудиосообщения
             };
 
+            setMicIconState('recording'); // ДОБАВЛЕНО: Установка иконки красного кружка
             mediaRecorder.start();
             setIsRecording(true);
             toast.info('Recording started');
@@ -560,6 +562,7 @@ const Messenger = () => {
     // *** ДОБАВЛЕНО: Метод для остановки записи аудио ***
     const stopRecording = () => {
         if (mediaRecorderRef.current && isRecording) {
+            setMicIconState('sending'); // ДОБАВЛЕНО: Сброс иконки на микрофон (временно, до отправки)
             mediaRecorderRef.current.stop();
             setIsRecording(false);
             toast.info('Recording stopped');
@@ -571,6 +574,7 @@ const Messenger = () => {
         if (!audioBlob || !userId) {
             console.warn('Audio or userId is missing');
             toast.error('Failed to send audio message');
+            setMicIconState('mic'); // ДОБАВЛЕНО: Сброс иконки на микрофон при ошибке
             return;
         }
 
@@ -593,9 +597,11 @@ const Messenger = () => {
             client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
             setAudioBlob(null); // Сбрасываем аудио
             console.log('Audio message sent');
+            setMicIconState('mic'); // ДОБАВЛЕНО: Сброс иконки на микрофон после отправки
         } else {
             console.error('STOMP client is not connected');
             toast.error('WebSocket not connected');
+            setMicIconState('mic'); // ДОБАВЛЕНО: Сброс иконки на микрофон при ошибке
         }
     };
 
@@ -763,6 +769,25 @@ const Messenger = () => {
                     className="input-message"
                     rows={rows}
                 />
+                <div className="mic-icon-container">
+                    <span
+                        onClick={isRecording ? stopRecording : startRecording}
+                        className={`mic-icon ${micIconState} ${!isLoggedIn ? 'disabled' : ''}`}
+                        role="button"
+                        aria-label={micIconState === 'mic' ? 'Start Recording' : micIconState === 'recording' ? 'Stop Recording' : 'Sending Audio'}
+                    >
+                        {micIconState === 'mic' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#757575"/>
+                            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#757575"/>
+                        </svg>}
+                        {micIconState === 'recording' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="8" fill="#FF0000"/>
+                        </svg>}
+                        {micIconState === 'sending' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
+                        </svg>}
+                    </span>
+                </div>
                 <div className="button-container">
                     <input
                         type="file"
@@ -772,14 +797,6 @@ const Messenger = () => {
                         id="file-input"
                     />
                     <label htmlFor="file-input" className="file-input-label">Choose File</label>
-                    {/* *** ДОБАВЛЕНО: Кнопка для записи/остановки аудио *** */}
-                    <button
-                        onClick={isRecording ? stopRecording : startRecording}
-                        className={`audio-record-button ${isRecording ? 'recording' : ''}`}
-                        disabled={!isLoggedIn}
-                    >
-                        {isRecording ? 'Stop Recording' : 'Record Audio'}
-                    </button>
                     <button onClick={sendMessage} className="send-button">Send</button>
                 </div>
             </div>
