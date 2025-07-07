@@ -242,7 +242,7 @@
 
 .input-container {
     background-color: #F0F4F8;
-    padding: 10px;
+    padding: 0px;
     border-radius: 5px;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
 }
