@@ -11,7 +11,9 @@ public class Message {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(columnDefinition = "MEDIUMTEXT")
     private String content;
+    @Column(columnDefinition = "MEDIUMTEXT")
     private String translatedContent;
     private String translationLanguage;
     private String fileUrl; // URL файла...
