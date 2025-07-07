@@ -790,7 +790,7 @@ const Messenger = () => {
                         className="input-message"
                         rows={rows}
                     />
-                    {content.length === 0 && !isRecording && micIconState !== 'sending' && (
+                    {content.length === 0 && micIconState !== 'sending' && (
                         <div className="mic-icon-container">
                             <span
                                 onClick={isRecording ? stopRecording : startRecording}
