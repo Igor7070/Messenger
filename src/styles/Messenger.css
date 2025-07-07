@@ -490,11 +490,13 @@
 .mic-icon-container {
     position: absolute;
     right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 24px; /* Фиксированное значение для центрирования по первой строке (половина высоты строки 48px / 2) */
+    transform: translateY(-50%); /* Смещаем вверх на половину высоты иконки */
     display: flex;
     align-items: center;
+    justify-content: center;
     height: 24px;
+    width: 24px;
 }
 
 .mic-icon {
@@ -614,8 +616,12 @@
         padding: 2px 5px;
     }
 
-     .mic-icon-container {
+    .mic-icon-container {
         right: 8px;
+        top: 20px; /* Фиксированное значение для мобильных, учитывая меньшую высоту строки */
+        transform: translateY(-50%);
+        height: 20px;
+        width: 20px;
     }
 
     .input-message {
