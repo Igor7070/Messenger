@@ -532,7 +532,6 @@
 }
 
 .audio-message {
-    /*padding: 8px;*/
     border-radius: 12px;
     background-color: #f0f0f0; /* Лёгкий фон для аудиосообщений */
 }
@@ -639,10 +638,6 @@
     .mic-icon {
         width: 20px;
         height: 20px;
-    }
-
-    .audio-message {
-        padding: 6px;
     }
 
     .audio-player {
