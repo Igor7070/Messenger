@@ -500,24 +500,19 @@ const Messenger = () => {
     const handleInputChange = (e) => {
         const newValue = e.target.value;
         setContent(newValue);
-        textAreaRef.current.style.height = 'auto';
         const newRows = calculateRows(newValue);
         setRows(newRows);
-        textAreaRef.current.style.height = `${newRows * 24}px`;
+        // ДОБАВЛЕНО: Установка минимальной высоты, чтобы избежать сжатия
+        const minHeight = 24; // Минимальная высота для одной строки (из CSS min-height: 24px)
+        const calculatedHeight = newRows * 24;
+        textAreaRef.current.style.height = `${Math.max(minHeight, calculatedHeight)}px`;
     };
 
     const calculateRows = (text) => {
         if (textAreaRef.current) {
             const textHeight = textAreaRef.current.scrollHeight;
-            const currentScrollHeight = textHeight > 0 ? textHeight : 1;
-            const linesCount = Math.floor(currentScrollHeight / 24);
-
-            if (text.length > 0) {
-                return linesCount;
-            } else {
-                const charCount = text.length;
-                return Math.max(1, Math.ceil(charCount / charPerLine));
-            }
+            const linesCount = Math.max(1, Math.ceil(textHeight / 24));
+            return linesCount;
         }
         return 1;
     };
