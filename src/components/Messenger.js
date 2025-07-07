@@ -521,6 +521,10 @@ const Messenger = () => {
         setRows(newRows);
         const lineHeight = window.innerWidth <= 800 ? 20 : 24; // 20px для мобильных, 24px для десктопа
         textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
+        textAreaRef.current.style.padding = '10px 40px 10px 10px'; // Явно задаём padding для десктопа
+        if (window.innerWidth <= 800) {
+            textAreaRef.current.style.padding = '10px 36px 10px 10px'; // Для мобильных
+        }
     };
 
     const calculateRows = (text) => {
