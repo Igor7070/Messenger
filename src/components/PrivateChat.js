@@ -872,8 +872,8 @@ const PrivateChat = () => {
                                 }
                                 setAudioProgress((prev) => ({
                                   ...prev,
-                                  [msgId]: {
-                                    ...prev[msgId],
+                                  [msg.id]: { // ИЗМЕНЕНО: msgId → msg.id
+                                    ...prev[msg.id],
                                     isPlaying: audio.paused ? false : true,
                                   },
                                 }));
