@@ -454,14 +454,14 @@
 /* ДОБАВЛЕНО: Стили для иконки микрофона и аудиосообщений */
 .private-mic-icon-container {
     position: absolute;
-    bottom: 60px; /* Произвольное место: над кнопками */
-    left: 10px; /* Произвольное место: слева от input-container */
+    right: 10px; /* ИЗМЕНЕНО: Позиция в правом краю текстового поля */
+    top: 50%; /* ИЗМЕНЕНО: Центрирование по вертикали */
+    transform: translateY(-50%); /* ИЗМЕНЕНО: Центрирование по вертикали */
     display: flex;
     align-items: center;
     justify-content: center;
     height: 24px;
     width: 24px;
-    z-index: 10; /* Чтобы иконка была над другими элементами */
 }
 
 .private-mic-icon {
@@ -593,8 +593,9 @@
     }
 
     .private-mic-icon-container {
-        bottom: 56px; /* Произвольное место для мобильных */
-        left: 8px;
+        right: 8px; /* ИЗМЕНЕНО: Позиция в правом краю для мобильных */
+        top: 50%; /* ИЗМЕНЕНО: Центрирование по вертикали */
+        transform: translateY(-50%); /* ИЗМЕНЕНО: Центрирование по вертикали */
         height: 20px;
         width: 20px;
     }

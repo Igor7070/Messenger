@@ -811,14 +811,35 @@ const PrivateChat = () => {
       <div className="private-input-container">
         <div className="private-textarea-wrapper">
           <textarea
-            ref={textAreaRef} // ИЗМЕНЕНО: Добавлена референция
+            ref={textAreaRef}
             value={content}
-            onChange={handleInputChange} // ИЗМЕНЕНО: Новый обработчик
+            onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Enter your message..."
             className="private-input-message"
-            rows={rows} // ДОБАВЛЕНО: Динамическое количество строк
+            rows={rows}
           />
+          {content.length === 0 && micIconState !== 'sending' && (
+            <div className="private-mic-icon-container">
+              <span
+                onClick={isRecording ? stopRecording : startRecording}
+                className={`private-mic-icon ${micIconState} ${!userId ? 'disabled' : ''}`}
+                role="button"
+                aria-label={micIconState === 'mic' ? 'Start Recording' : micIconState === 'recording' ? 'Stop Recording' : 'Sending Audio'}
+              >
+                {micIconState === 'mic' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#757575"/>
+                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#757575"/>
+                </svg>}
+                {micIconState === 'recording' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="8" fill="#FF0000"/>
+                </svg>}
+                {micIconState === 'sending' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
+                </svg>}
+              </span>
+            </div>
+          )}
         </div>
         <div className="private-button-container">
           <input
@@ -835,27 +856,6 @@ const PrivateChat = () => {
             Send
           </button>
         </div>
-        {content.length === 0 && micIconState !== 'sending' && (
-          <div className="private-mic-icon-container">
-            <span
-              onClick={isRecording ? stopRecording : startRecording}
-              className={`private-mic-icon ${micIconState} ${!userId ? 'disabled' : ''}`}
-              role="button"
-              aria-label={micIconState === 'mic' ? 'Start Recording' : micIconState === 'recording' ? 'Stop Recording' : 'Sending Audio'}
-            >
-              {micIconState === 'mic' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#757575"/>
-                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#757575"/>
-              </svg>}
-              {micIconState === 'recording' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="8" fill="#FF0000"/>
-              </svg>}
-              {micIconState === 'sending' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
-              </svg>}
-            </span>
-          </div>
-        )}
       </div>
       {contextMenu.visible && (
         <div
