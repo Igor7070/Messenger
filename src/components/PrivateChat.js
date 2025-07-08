@@ -31,6 +31,7 @@ const PrivateChat = () => {
   const messagesEndRef = useRef(null);
   const messageListRef = useRef(null);
   const fileInputRef = useRef(null);
+  const mediaRecorderRef = useRef(null); // ДОБАВЛЕНО: Референция для MediaRecorder
   const { chatId: chatIdParam } = useParams();
   const navigate = useNavigate();
   const { userInteracted, handleInteraction } = useUserInteraction();
@@ -47,6 +48,10 @@ const PrivateChat = () => {
   const [showTranslationModal, setShowTranslationModal] = useState(false);
 
   const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
+  // ДОБАВЛЕНО: Состояния для аудиозаписи
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [micIconState, setMicIconState] = useState('mic'); // 'mic', 'recording', 'sending'
   
   // ДОБАВЛЕНО: использование хука
   const {
@@ -310,6 +315,7 @@ const PrivateChat = () => {
           translatedContent: updatedMessages[existingMessageIndex].translatedContent,
           translationLanguage: updatedMessages[existingMessageIndex].translationLanguage,
           showOriginal: updatedMessages[existingMessageIndex].showOriginal,
+          messageType: newMessage.messageType, // ДОБАВЛЕНО: Сохранение messageType
         };
         console.log('Updated existing message:', updatedMessages[existingMessageIndex]); // Отладка
         if (
@@ -327,6 +333,7 @@ const PrivateChat = () => {
           delivered: newMessage.delivered_status,
           read: newMessage.read_status,
           showOriginal: true,
+          messageType: newMessage.messageType, // ДОБАВЛЕНО: Сохранение messageType
         };
         console.log('New message added:', newMsg); // Отладка
         return [...prevMessages, newMsg];
@@ -352,7 +359,7 @@ const PrivateChat = () => {
   };
 
   const sendMessage = async () => {
-    if ((content || selectedFile) && userId) {
+    if ((content || selectedFile || audioBlob) && userId) {
        // Проверяем орфографию, если включена
       let finalContent = content;
       if (isSpellCheckEnabled) {
@@ -529,6 +536,83 @@ const PrivateChat = () => {
     return prevMessage.sender.id !== msg.sender.id;
   };
 
+  // ДОБАВЛЕНО: Метод для начала записи аудио
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+      const chunks = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        stream.getTracks().forEach(track => track.stop());
+        setMicIconState('sending');
+        sendAudioMessage(blob);
+      };
+
+      setMicIconState('recording');
+      mediaRecorder.start();
+      setIsRecording(true);
+      toast.info('Recording started');
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast.error('Failed to start recording');
+    }
+  };
+
+  // ДОБАВЛЕНО: Метод для остановки записи аудио
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      setMicIconState('sending');
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      toast.info('Recording stopped');
+    }
+  };
+
+  // ДОБАВЛЕНО: Метод для отправки аудиосообщения
+  const sendAudioMessage = async (audioBlob) => {
+    if (!audioBlob || !userId) {
+      console.warn('Audio or userId is missing');
+      toast.error('Failed to send audio message');
+      setMicIconState('mic');
+      return;
+    }
+
+    const message = {
+      id: Date.now(),
+      content: '',
+      sender: { id: userId, username },
+      chat: { id: chatId, name: chatName },
+      fileUrl: await uploadFile(audioBlob),
+      delivered: false,
+      read: false,
+      timestamp: new Date().toISOString(),
+      messageType: 'audio',
+    };
+
+    console.log('Sending audio message:', message);
+
+    if (client && client.connected) {
+      client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
+      setAudioBlob(null);
+      console.log('Audio message sent');
+      setMicIconState('mic');
+    } else {
+      console.error('STOMP client is not connected');
+      toast.error('WebSocket not connected');
+      setMicIconState('mic');
+    }
+  };
+
   return (
     <div className="private-chat">
       <div className="private-chat-name">
@@ -612,40 +696,51 @@ const PrivateChat = () => {
                 }`}
               >
                 <div className="private-message-body">
-                  <span
-                    className="private-message-content"
-                    onClick={(e) => {
-                      if (e.target.tagName === 'A') return;
-                      if (msg.translatedContent) {
-                        setMessages((prevMessages) =>
-                          prevMessages.map((m) =>
-                            m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
-                          )
-                        );
-                      }
-                    }}
-                    style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
-                  >
-                    <span className="private-original-content"> 
-                      {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
-                    </span>
-                    {msg.translatedContent && (
-                      <span className="private-translated-content">{msg.translatedContent}</span>
-                    )}
-                  </span>
-                  {msg.fileUrl && (
-                    <a href={msg.fileUrl} download className="private-file-link">
-                      📥 Download file
-                    </a>
-                  )}
-                  <div className="private-message-status">
-                    {msg.sender.id === userId && (
+                    {msg.messageType === 'audio' && msg.fileUrl ? (
+                      <div className="private-audio-message-container">
+                        <audio controls className="private-audio-player">
+                          <source src={msg.fileUrl} type="audio/webm" />
+                          Your browser does not support the audio element.
+                        </audio>
+                      </div>
+                    ) : (
                       <>
-                        {msg.delivered && <span className="private-delivery-indicator">✔️</span>}
-                        {msg.read && <span className="private-read-indicator">✔️</span>}
+                        <span
+                          className="private-message-content"
+                          onClick={(e) => {
+                            if (e.target.tagName === 'A') return;
+                            if (msg.translatedContent) {
+                              setMessages((prevMessages) =>
+                                prevMessages.map((m) =>
+                                  m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                )
+                              );
+                            }
+                          }}
+                          style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                        >
+                          <span className="private-original-content">
+                            {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                          </span>
+                          {msg.translatedContent && (
+                            <span className="private-translated-content">{msg.translatedContent}</span>
+                          )}
+                        </span>
+                        {msg.fileUrl && (
+                          <a href={msg.fileUrl} download className="private-file-link">
+                            📥 Download file
+                          </a>
+                        )}
                       </>
                     )}
-                  </div>
+                    <div className="private-message-status">
+                      {msg.sender.id === userId && (
+                        <>
+                          {msg.delivered && <span className="private-delivery-indicator">✔️</span>}
+                          {msg.read && <span className="private-read-indicator">✔️</span>}
+                        </>
+                      )}
+                    </div>
                   <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                 </div>
               </div>
@@ -662,6 +757,27 @@ const PrivateChat = () => {
           placeholder="Enter your message..."
           className="private-input-message"
         />
+        {content.length === 0 && micIconState !== 'sending' && (
+          <div className="private-mic-icon-container">
+            <span
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`private-mic-icon ${micIconState} ${!userId ? 'disabled' : ''}`}
+              role="button"
+              aria-label={micIconState === 'mic' ? 'Start Recording' : micIconState === 'recording' ? 'Stop Recording' : 'Sending Audio'}
+            >
+              {micIconState === 'mic' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#757575"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#757575"/>
+              </svg>}
+              {micIconState === 'recording' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="8" fill="#FF0000"/>
+              </svg>}
+              {micIconState === 'sending' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
+              </svg>}
+            </span>
+          </div>
+        )}
         <div className="private-button-container">
           <input
             type="file"

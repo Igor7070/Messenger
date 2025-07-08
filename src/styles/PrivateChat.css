@@ -438,6 +438,44 @@
   line-height: 1.4;
 }
 
+/* ДОБАВЛЕНО: Стили для иконки микрофона и аудиосообщений */
+.private-mic-icon-container {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+}
+
+.private-mic-icon {
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.private-mic-icon.recording {
+  background-color: red;
+  border-radius: 50%;
+}
+
+.private-mic-icon.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.private-audio-message-container {
+  margin: 5px 0;
+}
+
+.private-audio-player {
+  width: 200px;
+  height: 30px;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         margin: 10px;
