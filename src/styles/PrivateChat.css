@@ -203,16 +203,20 @@
 
 .private-input-container {
     background-color: #F0F4F8;
-    padding: 10px;
+    padding: 10px; /* ИЗМЕНЕНО: Убедимся, что padding 10px со всех сторон */
     border-radius: 5px;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
-    position: relative; /* ДОБАВЛЕНО: Для позиционирования иконки микрофона */
+    position: relative;
+    display: flex; /* ДОБАВЛЕНО: Flex для управления расположением */
+    flex-direction: column; /* ДОБАВЛЕНО: Вертикальное расположение элементов */
+    gap: 8px; /* ДОБАВЛЕНО: Зазор между textarea и button-container */
 }
 
 /* ДОБАВЛЕНО: Стили для обертки textarea */
 .private-textarea-wrapper {
     position: relative;
     width: 100%;
+    margin-bottom: 0; /* ДОБАВЛЕНО: Убедимся, что нет лишнего отступа снизу */
 }
 
 .private-input-message {
