@@ -676,7 +676,7 @@ const PrivateChat = () => {
     textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
   };
 
-  // ДОБАВЛЕНО: Форматирование времени в формате MM:SS
+  // Форматирование времени в формате MM:SS
   const formatAudioTime = (seconds) => {
     if (isNaN(seconds) || seconds === 0) return '0:00';
     const minutes = Math.floor(seconds / 60);
@@ -684,7 +684,7 @@ const PrivateChat = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // ДОБАВЛЕНО: Обработчик изменения времени воспроизведения
+  // Обработчик изменения времени воспроизведения
   const handleTimeUpdate = (msgId, audioElement) => {
     setAudioProgress((prev) => ({
       ...prev,
@@ -698,38 +698,41 @@ const PrivateChat = () => {
     }));
   };
 
-  // ДОБАВЛЕНО: Обработчик загрузки метаданных
+  // Обработчик загрузки метаданных
   const handleLoadedMetadata = (msgId, audioElement) => {
-    console.log(`Metadata loaded for msg ${msgId}: duration=${audioElement.duration}`);
+    console.log(`Metadata loaded for msg ${msgId}: duration=${audioElement.duration}, readyState=${audioElement.readyState}`);
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
         currentTime: prev[msgId]?.currentTime || 0,
         duration: audioElement.duration || 0,
         isPlaying: prev[msgId]?.isPlaying || false,
-        isReady: true,
+        isReady: true, // Устанавливаем isReady: true
         error: null,
       },
     }));
   };
 
-  // ДОБАВЛЕНО: Обработчик события canplay
+  // Обработчик события canplay
   const handleCanPlay = (msgId) => {
     console.log(`Audio can play for msg ${msgId}`);
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
         ...prev[msgId],
-        isReady: true,
+        isReady: true, // Подтверждаем готовность
         error: null,
       },
     }));
   };
 
-  // ДОБАВЛЕНО: Обработчик клика по дорожке
+  // Обработчик клика по дорожке
   const handleSeek = (msgId, e) => {
     const audio = audioRefs.current[msgId];
-    if (!audio || !audioProgress[msgId]?.isReady) return;
+    if (!audio || !audioProgress[msgId]?.isReady) {
+      console.log(`Seek blocked for msg ${msgId}: audio not ready`);
+      return;
+    }
     const progressBar = e.currentTarget;
     const rect = progressBar.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
@@ -745,9 +748,9 @@ const PrivateChat = () => {
     }));
   };
 
-  // ДОБАВЛЕНО: Обработчик ошибок аудио
+  // Обработчик ошибок аудио
   const handleAudioError = (msgId, error) => {
-    console.error(`Audio error for msg ${msgId}:`, error, 'URL:', audioRefs.current[msgId]?.src);
+    console.error(`Audio error for msg ${msgId}:`, error, 'URL:', audioRefs.current[msgId]?.src, 'readyState:', audioRefs.current[msgId]?.readyState);
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
@@ -759,8 +762,9 @@ const PrivateChat = () => {
     }));
   };
 
-  // ДОБАВЛЕНО: Обработчик окончания воспроизведения
+  // Обработчик окончания воспроизведения
   const handleAudioEnded = (msgId) => {
+    console.log(`Audio ended for msg ${msgId}`);
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
@@ -775,7 +779,7 @@ const PrivateChat = () => {
     }
   };
 
-  // ДОБАВЛЕНО: Предзагрузка аудио
+  // Предзагрузка аудио
   const preloadAudio = (msgId, url) => {
     const audio = audioRefs.current[msgId];
     if (audio && !audioProgress[msgId]?.isReady) {
@@ -898,7 +902,7 @@ const PrivateChat = () => {
                                 onClick={() => {
                                   const audio = audioRefs.current[msg.id];
                                   if (!audio || !audioProgress[msg.id]?.isReady) {
-                                    console.log(`Audio not ready for msg ${msg.id}:`, audioProgress[msg.id]);
+                                    console.log(`Play blocked for msg ${msg.id}:`, audioProgress[msg.id], 'readyState:', audio?.readyState);
                                     return;
                                   }
                                   if (audio.paused) {
