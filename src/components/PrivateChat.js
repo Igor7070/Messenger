@@ -297,7 +297,20 @@ const PrivateChat = () => {
   // ДОБАВЛЕНО: Предзагрузка аудио для всех сообщений
   useEffect(() => {
     messages.forEach((msg) => {
-      if (msg.messageType === 'audio' && msg.fileUrl && audioRefs.current[msg.id] && !audioProgress[msg.id]?.isReady) {
+      if (
+        msg.messageType === 'audio' &&
+        msg.fileUrl &&
+        audioRefs.current[msg.id] &&
+        !audioProgress[msg.id]?.isReady &&
+        !audioProgress[msg.id]?.isPreloading // Добавляем флаг isPreloading
+      ) {
+        setAudioProgress((prev) => ({
+          ...prev,
+          [msg.id]: {
+            ...prev[msg.id] || {},
+            isPreloading: true, // Устанавливаем флаг
+          },
+        }));
         preloadAudio(msg.id, msg.fileUrl);
       }
     });
@@ -687,7 +700,7 @@ const PrivateChat = () => {
 
   // Форматирование времени в формате MM:SS
   const formatAudioTime = (seconds) => {
-    if (isNaN(seconds) || seconds === 0) return '0:00';
+    if (isNaN(seconds) || seconds === 0 || seconds === Infinity) return '0:00';
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -711,15 +724,17 @@ const PrivateChat = () => {
   // Обработчик загрузки метаданных
   const handleLoadedMetadata = (msgId, audioElement) => {
     console.log(`Metadata loaded for msg ${msgId}: duration=${audioElement.duration}, readyState=${audioElement.readyState}`);
+    const duration = audioElement.duration === Infinity ? 0 : audioElement.duration; // Заглушка для Infinity
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
         ...prev[msgId] || {},
         currentTime: prev[msgId]?.currentTime || 0,
-        duration: audioElement.duration || 0,
+        duration: duration || 0,
         isPlaying: prev[msgId]?.isPlaying || false,
-        isReady: audioElement.readyState >= 2, // HAVE_CURRENT_DATA или выше
+        isReady: audioElement.readyState >= 2,
         error: null,
+        isPreloading: false, // Сбрасываем isPreloading
       },
     }));
   };
@@ -796,6 +811,16 @@ const PrivateChat = () => {
     if (audio && !audioProgress[msgId]?.isReady) {
       audio.load();
       console.log(`Preloading audio for msg ${msgId}: ${url}`);
+      // Сбрасываем isPreloading после загрузки
+      audio.addEventListener('loadedmetadata', () => {
+        setAudioProgress((prev) => ({
+          ...prev,
+          [msgId]: {
+            ...prev[msgId],
+            isPreloading: false,
+          },
+        }));
+      }, { once: true });
     }
   };
 
@@ -890,6 +915,9 @@ const PrivateChat = () => {
                           <audio
                             ref={(el) => {
                               audioRefs.current[msg.id] = el;
+                              if (el && !audioProgress[msg.id]?.isPreloading) {
+                                console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
+                              }
                             }}
                             onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
                             onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
@@ -937,12 +965,13 @@ const PrivateChat = () => {
                               <div
                                 className="private-audio-progress-bar"
                                 onClick={(e) => handleSeek(msg.id, e)}
+                                style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
                               >
                                 <div
                                   className="private-audio-progress"
                                   style={{
                                     width: `${
-                                      audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady
+                                      audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
                                         ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
                                         : 0
                                     }%`
