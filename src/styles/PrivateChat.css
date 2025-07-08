@@ -491,75 +491,19 @@
     margin-top: 5px;
     display: flex;
     align-items: center;
-    width: 100%;
 }
 
 .private-audio-player {
-    display: none; /* Скрываем нативный плеер */
+    width: 100%;
+    max-width: 250px;
+    height: 32px;
+    border-radius: 5px;
 }
 
-/* ИЗМЕНЕНО: Стили для аудиосообщений */
-.private-message.private-audio-message {
+/* ДОБАВЛЕНО: Стили для аудиосообщений */
+.private-message.audio-message {
     border-radius: 12px;
     background-color: #f0f0f0; /* Лёгкий фон для аудиосообщений */
-}
-
-/* ДОБАВЛЕНО: Стили для обертки аудиоплеера */
-.private-audio-player-wrapper {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 300px; /* Увеличена длина плеера */
-}
-
-/* ДОБАВЛЕНО: Стили для кастомных элементов управления */
-.private-audio-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    padding: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* ДОБАВЛЕНО: Стили для кнопки воспроизведения/паузы */
-.private-audio-play-pause {
-    background: none;
-    border: none;
-    font-size: 16px;
-    cursor: pointer;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* ДОБАВЛЕНО: Стили для прогресс-бара */
-.private-audio-progress-bar {
-    flex: 1;
-    height: 6px;
-    background-color: #e0e0e0;
-    border-radius: 3px;
-    position: relative;
-    cursor: pointer;
-}
-
-/* ДОБАВЛЕНО: Стили для заполненной части прогресс-бара */
-.private-audio-progress {
-    height: 100%;
-    background-color: #42a5f5;
-    border-radius: 3px;
-    transition: width 0.1s ease;
-}
-
-/* ДОБАВЛЕНО: Стили для отображения времени */
-.private-audio-time {
-    font-size: 12px;
-    color: #666666;
-    font-family: 'Roboto', sans-serif;
-    min-width: 60px; /* Для стабильного отображения времени (например, 0:05 / 0:30) */
 }
 
 @media (max-width: 800px) {
@@ -663,24 +607,5 @@
 
     .private-audio-player {
         max-width: 200px;
-    }
-
-    .private-audio-player-wrapper {
-        max-width: 240px; /* Увеличена длина для мобильных */
-    }
-
-    .private-audio-controls {
-        padding: 6px;
-    }
-
-    .private-audio-play-pause {
-        font-size: 14px;
-        width: 20px;
-        height: 20px;
-    }
-
-    .private-audio-time {
-        font-size: 11px;
-        min-width: 50px;
     }
 }
