@@ -294,6 +294,15 @@ const PrivateChat = () => {
     return () => window.removeEventListener('resize', calculateCharPerLine);
   }, []);
 
+  // ДОБАВЛЕНО: Предзагрузка аудио для всех сообщений
+  useEffect(() => {
+    messages.forEach((msg) => {
+      if (msg.messageType === 'audio' && msg.fileUrl && audioRefs.current[msg.id] && !audioProgress[msg.id]?.isReady) {
+        preloadAudio(msg.id, msg.fileUrl);
+      }
+    });
+  }, [messages]);
+
   const markAllMessagesAsRead = (updatedMessages) => {
     console.log('markAllMessagesAsRead is working...');
     if (Array.isArray(updatedMessages)) {
@@ -689,6 +698,7 @@ const PrivateChat = () => {
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
+        ...prev[msgId] || {},
         currentTime: audioElement.currentTime,
         duration: audioElement.duration || prev[msgId]?.duration || 0,
         isPlaying: !audioElement.paused,
@@ -704,10 +714,11 @@ const PrivateChat = () => {
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
+        ...prev[msgId] || {},
         currentTime: prev[msgId]?.currentTime || 0,
         duration: audioElement.duration || 0,
         isPlaying: prev[msgId]?.isPlaying || false,
-        isReady: true, // Устанавливаем isReady: true
+        isReady: audioElement.readyState >= 2, // HAVE_CURRENT_DATA или выше
         error: null,
       },
     }));
@@ -715,12 +726,12 @@ const PrivateChat = () => {
 
   // Обработчик события canplay
   const handleCanPlay = (msgId) => {
-    console.log(`Audio can play for msg ${msgId}`);
+    console.log(`Audio can play for msg ${msgId}, readyState=${audioRefs.current[msgId]?.readyState}`);
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
-        ...prev[msgId],
-        isReady: true, // Подтверждаем готовность
+        ...prev[msgId] || {},
+        isReady: true,
         error: null,
       },
     }));
@@ -754,7 +765,7 @@ const PrivateChat = () => {
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
-        ...prev[msgId],
+        ...prev[msgId] || {},
         isReady: false,
         isPlaying: false,
         error: error.message || 'Failed to load audio',
@@ -779,7 +790,7 @@ const PrivateChat = () => {
     }
   };
 
-  // Предзагрузка аудио
+  // Предзагрузка аудио (вызывается один раз через useEffect)
   const preloadAudio = (msgId, url) => {
     const audio = audioRefs.current[msgId];
     if (audio && !audioProgress[msgId]?.isReady) {
@@ -879,7 +890,6 @@ const PrivateChat = () => {
                           <audio
                             ref={(el) => {
                               audioRefs.current[msg.id] = el;
-                              if (el) preloadAudio(msg.id, msg.fileUrl);
                             }}
                             onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
                             onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
@@ -890,7 +900,6 @@ const PrivateChat = () => {
                             preload="auto"
                           >
                             <source src={msg.fileUrl} type="audio/webm" />
-                            <source src={msg.fileUrl.replace('.webm', '.mp3')} type="audio/mpeg" />
                             Your browser does not support the audio element.
                           </audio>
                           {audioProgress[msg.id]?.error ? (
