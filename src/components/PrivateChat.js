@@ -54,8 +54,8 @@ const PrivateChat = () => {
   const [micIconState, setMicIconState] = useState('mic'); // 'mic', 'recording', 'sending'
 
   // ДОБАВЛЕНО: Состояния для аудиоплеера
-  const [audioProgress, setAudioProgress] = useState({}); // Хранит прогресс для каждого сообщения { [msgId]: { currentTime: 0, duration: 0 } }
-  const audioRefs = useRef({}); // Референции для аудиоэлементов по msg.id
+  const [audioProgress, setAudioProgress] = useState({}); // { [msgId]: { currentTime: 0, duration: 0, isPlaying: false, isReady: false } }
+  const audioRefs = useRef({}); // Референции для аудиоэлементов
 
   // ДОБАВЛЕНО: Состояния для динамического размера текстового поля
   const [rows, setRows] = useState(1);
@@ -676,40 +676,44 @@ const PrivateChat = () => {
     textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
   };
 
-   // ДОБАВЛЕНО: Форматирование времени в формате MM:SS
+   // ИЗМЕНЕНО: Форматирование времени в формате MM:SS
   const formatAudioTime = (seconds) => {
-    if (isNaN(seconds)) return '0:00';
+    if (isNaN(seconds) || seconds === 0) return '0:00';
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // ДОБАВЛЕНО: Обработчик изменения времени воспроизведения
+  // ИЗМЕНЕНО: Обработчик изменения времени воспроизведения
   const handleTimeUpdate = (msgId, audioElement) => {
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
+        ...prev[msgId],
         currentTime: audioElement.currentTime,
         duration: audioElement.duration || prev[msgId]?.duration || 0,
+        isPlaying: !audioElement.paused,
       },
     }));
   };
 
-  // ДОБАВЛЕНО: Обработчик загрузки метаданных аудио
+  // ИЗМЕНЕНО: Обработчик загрузки метаданных аудио
   const handleLoadedMetadata = (msgId, audioElement) => {
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
         currentTime: prev[msgId]?.currentTime || 0,
         duration: audioElement.duration || 0,
+        isPlaying: prev[msgId]?.isPlaying || false,
+        isReady: true, // Аудио готово к воспроизведению
       },
     }));
   };
 
-  // ДОБАВЛЕНО: Обработчик клика по дорожке
+  // ИЗМЕНЕНО: Обработчик клика по дорожке
   const handleSeek = (msgId, e) => {
     const audio = audioRefs.current[msgId];
-    if (!audio) return;
+    if (!audio || !audioProgress[msgId]?.isReady) return;
     const progressBar = e.currentTarget;
     const rect = progressBar.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
@@ -723,6 +727,34 @@ const PrivateChat = () => {
         currentTime: seekTime,
       },
     }));
+  };
+
+  // ДОБАВЛЕНО: Обработчик ошибок аудио
+  const handleAudioError = (msgId, error) => {
+    console.error(`Audio error for msg ${msgId}:`, error);
+    setAudioProgress((prev) => ({
+      ...prev,
+      [msgId]: {
+        ...prev[msgId],
+        isReady: false,
+      },
+    }));
+  };
+
+  // ДОБАВЛЕНО: Обработчик окончания воспроизведения
+  const handleAudioEnded = (msgId) => {
+    setAudioProgress((prev) => ({
+      ...prev,
+      [msgId]: {
+        ...prev[msgId],
+        currentTime: 0,
+        isPlaying: false,
+      },
+    }));
+    const audio = audioRefs.current[msgId];
+    if (audio) {
+      audio.currentTime = 0; // Сбросить в начало
+    }
   };
 
   return (
@@ -817,6 +849,8 @@ const PrivateChat = () => {
                             ref={(el) => (audioRefs.current[msg.id] = el)}
                             onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
                             onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
+                            onError={(e) => handleAudioError(msg.id, e)}
+                            onEnded={() => handleAudioEnded(msg.id)}
                             className="private-audio-player"
                           >
                             <source src={msg.fileUrl} type="audio/webm" />
@@ -827,14 +861,26 @@ const PrivateChat = () => {
                               className="private-audio-play-pause"
                               onClick={() => {
                                 const audio = audioRefs.current[msg.id];
+                                if (!audio || !audioProgress[msg.id]?.isReady) return;
                                 if (audio.paused) {
-                                  audio.play();
+                                  audio.play().catch((e) => {
+                                    console.error('Play error:', e);
+                                    handleAudioError(msg.id, e);
+                                  });
                                 } else {
                                   audio.pause();
                                 }
+                                setAudioProgress((prev) => ({
+                                  ...prev,
+                                  [msgId]: {
+                                    ...prev[msgId],
+                                    isPlaying: audio.paused ? false : true,
+                                  },
+                                }));
                               }}
+                              disabled={!audioProgress[msg.id]?.isReady}
                             >
-                              {audioRefs.current[msg.id]?.paused !== false ? '▶' : '⏸'}
+                              {audioProgress[msg.id]?.isPlaying ? '⏸' : '▶'}
                             </button>
                             <div
                               className="private-audio-progress-bar"
@@ -844,7 +890,7 @@ const PrivateChat = () => {
                                 className="private-audio-progress"
                                 style={{
                                   width: `${
-                                    audioProgress[msg.id]?.duration
+                                    audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady
                                       ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
                                       : 0
                                   }%`
