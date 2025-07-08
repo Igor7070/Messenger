@@ -52,6 +52,11 @@ const PrivateChat = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [micIconState, setMicIconState] = useState('mic'); // 'mic', 'recording', 'sending'
+
+  // ДОБАВЛЕНО: Состояния для динамического размера текстового поля
+  const [rows, setRows] = useState(1);
+  const [charPerLine, setCharPerLine] = useState(50);
+  const textAreaRef = useRef(null);
   
   // ДОБАВЛЕНО: использование хука
   const {
@@ -278,6 +283,13 @@ const PrivateChat = () => {
     translateNextMessage();
   }, [translationQueue, isTranslating]);
 
+  // ДОБАВЛЕНО: Пересчет символов на строку при изменении размера окна
+  useEffect(() => {
+    calculateCharPerLine();
+    window.addEventListener('resize', calculateCharPerLine);
+    return () => window.removeEventListener('resize', calculateCharPerLine);
+  }, []);
+
   const markAllMessagesAsRead = (updatedMessages) => {
     console.log('markAllMessagesAsRead is working...');
     if (Array.isArray(updatedMessages)) {
@@ -464,8 +476,12 @@ const PrivateChat = () => {
     setContent('');
     setSelectedFile(null);
     setEditingMessageId(null);
+    setRows(1); // ДОБАВЛЕНО: Сброс количества строк
     if (fileInputRef.current) {
       fileInputRef.current.value = null;
+    }
+    if (textAreaRef.current) {
+      textAreaRef.current.style.height = '44px'; // ДОБАВЛЕНО: Сброс высоты textarea
     }
   };
 
@@ -613,6 +629,49 @@ const PrivateChat = () => {
     }
   };
 
+  // ДОБАВЛЕНО: Вычисление количества символов на строку
+  const calculateCharPerLine = () => {
+    if (textAreaRef.current) {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      context.font = window.innerWidth <= 800 ? '14px Roboto' : '16px Roboto';
+      const avgCharWidth = context.measureText('m').width; // Средняя ширина символа
+      const textareaWidth = textAreaRef.current.clientWidth - (window.innerWidth <= 800 ? 36 : 40); // Учитываем padding
+      const chars = Math.floor(textareaWidth / avgCharWidth);
+      setCharPerLine(chars);
+    }
+  };
+
+  // ДОБАВЛЕНО: Вычисление количества строк
+  const calculateRows = (text) => {
+    if (!text) return 1; // Если текст пустой, возвращаем 1 строку
+    const lines = text.split('\n'); // Разбиваем текст на строки по переносам
+    let totalRows = lines.length; // Количество строк по переносам
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    context.font = window.innerWidth <= 800 ? '14px Roboto' : '16px Roboto';
+    lines.forEach((line) => {
+      if (line.length > 0) {
+        const textWidth = context.measureText(line).width;
+        const textareaWidth = textAreaRef.current.clientWidth - (window.innerWidth <= 800 ? 36 : 40); // Учитываем padding
+        if (textWidth > textareaWidth) {
+          totalRows += Math.floor(textWidth / textareaWidth); // Дополнительные строки при превышении ширины
+        }
+      }
+    });
+    return Math.max(1, totalRows); // Минимально 1 строка
+  };
+
+  // ДОБАВЛЕНО: Обработчик изменения текста
+  const handleInputChange = (e) => {
+    const newValue = e.target.value;
+    setContent(newValue);
+    const newRows = Math.min(5, calculateRows(newValue)); // Ограничиваем до 5 строк
+    setRows(newRows);
+    const lineHeight = window.innerWidth <= 800 ? 20 : 24; // 20px для мобильных, 24px для десктопа
+    textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
+  };
+
   return (
     <div className="private-chat">
       <div className="private-chat-name">
@@ -750,13 +809,32 @@ const PrivateChat = () => {
         <div ref={messagesEndRef} />
       </div>
       <div className="private-input-container">
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Enter your message..."
-          className="private-input-message"
-        />
+        <div className="private-textarea-wrapper">
+          <textarea
+            ref={textAreaRef} // ИЗМЕНЕНО: Добавлена референция
+            value={content}
+            onChange={handleInputChange} // ИЗМЕНЕНО: Новый обработчик
+            onKeyDown={handleKeyDown}
+            placeholder="Enter your message..."
+            className="private-input-message"
+            rows={rows} // ДОБАВЛЕНО: Динамическое количество строк
+          />
+        </div>
+        <div className="private-button-container">
+          <input
+            type="file"
+            onChange={(e) => setSelectedFile(e.target.files[0])}
+            className="private-file-input"
+            ref={fileInputRef}
+            id="private-file-input"
+          />
+          <label htmlFor="private-file-input" className="private-file-input-label">
+            Choose File
+          </label>
+          <button onClick={sendMessage} className="private-send-button">
+            Send
+          </button>
+        </div>
         {content.length === 0 && micIconState !== 'sending' && (
           <div className="private-mic-icon-container">
             <span
@@ -778,21 +856,6 @@ const PrivateChat = () => {
             </span>
           </div>
         )}
-        <div className="private-button-container">
-          <input
-            type="file"
-            onChange={(e) => setSelectedFile(e.target.files[0])}
-            className="private-file-input"
-            ref={fileInputRef}
-            id="private-file-input"
-          />
-          <label htmlFor="private-file-input" className="private-file-input-label">
-            Choose File
-          </label>
-          <button onClick={sendMessage} className="private-send-button">
-            Send
-          </button>
-        </div>
       </div>
       {contextMenu.visible && (
         <div

@@ -206,21 +206,30 @@
     padding: 10px;
     border-radius: 5px;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+    position: relative; /* ДОБАВЛЕНО: Для позиционирования иконки микрофона */
+}
+
+/* ДОБАВЛЕНО: Стили для обертки textarea */
+.private-textarea-wrapper {
+    position: relative;
+    width: 100%;
 }
 
 .private-input-message {
     width: 100%;
-    padding: 10px;
+    padding: 10px 10px 10px 10px; /* ИЗМЕНЕНО: Убран правый отступ для иконки */
     border: 1px solid #0288d1;
     border-radius: 5px;
-    margin-bottom: 10px;
     resize: none;
     box-sizing: border-box;
-    min-height: 48px;
+    min-height: 44px; /* Высота одной строки (24px) + padding (10px + 10px) */
     font-size: 16px;
     background-color: #FFFFFF;
     font-family: 'Roboto', sans-serif;
     transition: border-color 0.3s;
+    max-height: 120px; /* 5 строк (5 * 24px) + padding (10px + 10px) */
+    overflow-y: auto; /* Включаем прокрутку по вертикали */
+    display: block;
 }
 
 .private-input-message:focus {
@@ -440,40 +449,57 @@
 
 /* ДОБАВЛЕНО: Стили для иконки микрофона и аудиосообщений */
 .private-mic-icon-container {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
+    position: absolute;
+    bottom: 60px; /* Произвольное место: над кнопками */
+    left: 10px; /* Произвольное место: слева от input-container */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    width: 24px;
+    z-index: 10; /* Чтобы иконка была над другими элементами */
 }
 
 .private-mic-icon {
-  cursor: pointer;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
 }
 
 .private-mic-icon.recording {
-  background-color: red;
-  border-radius: 50%;
+    cursor: pointer;
 }
 
 .private-mic-icon.disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
+.private-mic-icon.sending {
+    cursor: default; /* Отключаем курсор во время отправки */
+}
+
+/* ИЗМЕНЕНО: Стили для аудиосообщений */
 .private-audio-message-container {
-  margin: 5px 0;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
 }
 
 .private-audio-player {
-  width: 200px;
-  height: 30px;
+    width: 100%;
+    max-width: 250px;
+    height: 32px;
+    border-radius: 5px;
+}
+
+/* ДОБАВЛЕНО: Стили для аудиосообщений */
+.private-message.audio-message {
+    border-radius: 12px;
+    background-color: #f0f0f0; /* Лёгкий фон для аудиосообщений */
 }
 
 @media (max-width: 800px) {
@@ -522,6 +548,8 @@
 
     .private-input-message {
         font-size: 14px;
+        padding: 10px 10px 10px 10px; /* ИЗМЕНЕНО: Убран правый отступ */
+        min-height: 40px; /* Высота одной строки (20px) + padding (10px + 10px) */
     }
 
     .private-file-input-label,
@@ -558,5 +586,21 @@
     .private-spellcheck-indicator {
         font-size: 12px;
         padding: 2px 5px;
+    }
+
+    .private-mic-icon-container {
+        bottom: 56px; /* Произвольное место для мобильных */
+        left: 8px;
+        height: 20px;
+        width: 20px;
+    }
+
+    .private-mic-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .private-audio-player {
+        max-width: 200px;
     }
 }
