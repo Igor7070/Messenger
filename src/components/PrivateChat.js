@@ -700,7 +700,7 @@ const PrivateChat = () => {
   // Обработчик воспроизведения/паузы
   const handlePlayPause = (messageId) => {
     const audio = audioRefs.current[messageId];
-    console.log(`handlePlayPause for message ${messageId}: audio exists = ${!!audio}, src = ${audio?.src}`);
+    console.log(`handlePlayPause for message ${messageId}: audio exists = ${!!audio}, src = ${audio?.src}, readyState = ${audio?.readyState}`);
     if (!audio) {
       console.error(`No audio element for message ${messageId}`);
       toast.error('Failed to play audio');
@@ -715,7 +715,7 @@ const PrivateChat = () => {
       }
     });
 
-    if (audio.paused && !audioErrors[messageId]) {
+    if (audio.paused && !audioErrors[messageId] && audio.readyState >= 2) {
       console.log(`Attempting to play audio for message ${messageId}`);
       audio.play().then(() => {
         console.log(`Audio playing for message ${messageId}`);
@@ -729,13 +729,17 @@ const PrivateChat = () => {
       console.log(`Pausing audio for message ${messageId}`);
       audio.pause();
       setIsPlaying((prev) => ({ ...prev, [messageId]: false }));
+    } else {
+      console.warn(`Audio not ready for message ${messageId}: readyState = ${audio.readyState}`);
+      setAudioErrors((prev) => ({ ...prev, [messageId]: 'Audio not ready' }));
+      toast.error('Audio not ready');
     }
   };
 
   // Обработчик обновления прогресса
   const handleTimeUpdate = (messageId, audioElement) => {
-    console.log(`Time update for message ${messageId}: currentTime = ${audioElement.currentTime}, duration = ${audioElement.duration}`);
-    if (audioElement.duration && !isNaN(audioElement.duration)) {
+    console.log(`Time update for message ${messageId}: currentTime = ${audioElement.currentTime}, duration = ${audioElement.duration}, readyState = ${audioElement.readyState}, networkState = ${audioElement.networkState}`);
+    if (audioElement.duration && !isNaN(audioElement.duration) && audioElement.duration !== Infinity) {
       const progress = (audioElement.currentTime / audioElement.duration) * 100;
       setAudioProgress((prev) => ({ ...prev, [messageId]: progress }));
     }
@@ -743,7 +747,7 @@ const PrivateChat = () => {
 
   // Обработчик загрузки метаданных
   const handleLoadedMetadata = (messageId, audioElement) => {
-    console.log(`Loaded metadata for message ${messageId}: duration = ${audioElement.duration}`);
+    console.log(`Loaded metadata for message ${messageId}: duration = ${audioElement.duration}, readyState = ${audioElement.readyState}`);
     if (audioElement.duration && !isNaN(audioElement.duration) && audioElement.duration !== Infinity) {
       setAudioDuration((prev) => ({ ...prev, [messageId]: audioElement.duration }));
     } else {
@@ -767,6 +771,7 @@ const PrivateChat = () => {
     const clickX = e.clientX - rect.left;
     const percentage = (clickX / rect.width) * 100;
     const audio = audioRefs.current[messageId];
+    console.log(`Progress click for message ${messageId}: percentage = ${percentage}`);
     if (audio && audio.duration && !isNaN(audio.duration)) {
       audio.currentTime = (percentage / 100) * audio.duration;
       setAudioProgress((prev) => ({ ...prev, [messageId]: percentage }));
@@ -893,7 +898,7 @@ const PrivateChat = () => {
                         <audio
                           key={msg.id}
                           ref={(el) => {
-                            if (el && !audioRefs.current[msg.id]) {
+                            if (el) {
                               audioRefs.current[msg.id] = el;
                               console.log(`Audio ref set for message ${msg.id}: element exists = ${!!el}, src = ${el.src}`);
                             }
