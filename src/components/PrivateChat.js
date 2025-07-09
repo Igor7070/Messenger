@@ -53,6 +53,12 @@ const PrivateChat = () => {
   const [audioBlob, setAudioBlob] = useState(null);
   const [micIconState, setMicIconState] = useState('mic'); // 'mic', 'recording', 'sending'
 
+  // ДОБАВЛЕНО: Состояния для аудиоплеера
+  const [audioProgress, setAudioProgress] = useState({});
+  const [audioDuration, setAudioDuration] = useState({});
+  const [audioError, setAudioError] = useState({});
+  const audioRefs = useRef({});
+
   // ДОБАВЛЕНО: Состояния для динамического размера текстового поля
   const [rows, setRows] = useState(1);
   const [charPerLine, setCharPerLine] = useState(50);
@@ -672,6 +678,58 @@ const PrivateChat = () => {
     textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
   };
 
+  // ДОБАВЛЕНО: Форматирование времени для аудио
+  const formatTime = (seconds) => {
+    if (isNaN(seconds) || seconds <= 0) return '0:00';
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  // ДОБАВЛЕНО: Обработчик загрузки метаданных аудио
+  const handleLoadedMetadata = (messageId, audioElement) => {
+    console.log(`Loaded metadata for message ${messageId}: duration=${audioElement.duration}, readyState=${audioElement.readyState}, networkState=${audioElement.networkState}, src=${audioElement.src}`);
+    if (audioElement.duration && !isNaN(audioElement.duration) && audioElement.duration !== Infinity) {
+      setAudioDuration((prev) => ({ ...prev, [messageId]: audioElement.duration }));
+      setAudioError((prev) => ({ ...prev, [messageId]: null }));
+    } else {
+      setAudioDuration((prev) => ({ ...prev, [messageId]: 0 }));
+      setAudioError((prev) => ({ ...prev, [messageId]: 'Invalid audio duration' }));
+    }
+  };
+
+  // ДОБАВЛЕНО: Обработчик обновления времени аудио
+  const handleTimeUpdate = (messageId, audioElement) => {
+    if (audioElement.duration && !isNaN(audioElement.duration) && audioElement.duration !== Infinity) {
+      const progress = (audioElement.currentTime / audioElement.duration) * 100;
+      setAudioProgress((prev) => ({ ...prev, [messageId]: progress }));
+    } else {
+      setAudioProgress((prev) => ({ ...prev, [messageId]: 0 }));
+    }
+  };
+
+  // ДОБАВЛЕНО: Обработчик клика по прогресс-бару
+  const handleProgressClick = (messageId, event) => {
+    const audio = audioRefs.current[messageId];
+    if (!audio || !audioDuration[messageId]) return;
+
+    const progressBar = event.currentTarget;
+    const clickPosition = event.clientX - progressBar.getBoundingClientRect().left;
+    const progressBarWidth = progressBar.offsetWidth;
+    const seekTime = (clickPosition / progressBarWidth) * audioDuration[messageId];
+
+    audio.currentTime = seekTime;
+    console.log(`Seek to ${seekTime} seconds for message ${messageId}`);
+  };
+
+  // ДОБАВЛЕНО: Обработчик ошибок аудио
+  const handleAudioError = (messageId, event) => {
+    const error = event.target.error;
+    const errorMessage = error ? `Error ${error.code}: ${error.message}` : 'Failed to load audio';
+    console.error(`Audio error for message ${messageId}:`, errorMessage);
+    setAudioError((prev) => ({ ...prev, [messageId]: errorMessage }));
+  };
+
   return (
     <div className="private-chat">
       <div className="private-chat-name">
@@ -757,10 +815,47 @@ const PrivateChat = () => {
                 <div className="private-message-body">
                     {msg.messageType === 'audio' && msg.fileUrl ? (
                       <div className="private-audio-message-container">
-                        <audio controls className="private-audio-player">
-                          <source src={msg.fileUrl} type="audio/webm" />
-                          Your browser does not support the audio element.
-                        </audio>
+                        <div className="private-audio-wrapper">
+                          {audioError[msg.id] && (
+                            <div className="private-audio-error">
+                              {audioError[msg.id]}
+                            </div>
+                          )}
+                          <div className="private-audio-progress-container">
+                            <div
+                              className="private-progress-bar"
+                              onClick={(e) => handleProgressClick(msg.id, e)}
+                            >
+                              <div
+                                className="private-progress"
+                                style={{ width: `${Math.min(audioProgress[msg.id] || 0, 100)}%` }}
+                              ></div>
+                            </div>
+                            <span className="private-audio-time">
+                              {formatTime(audioRefs.current[msg.id]?.currentTime || 0)} /{' '}
+                              {formatTime(audioDuration[msg.id] || 0)}
+                            </span>
+                          </div>
+                          <audio
+                            controls
+                            className="private-audio-player"
+                            ref={(el) => {
+                              if (el) {
+                                audioRefs.current[msg.id] = el;
+                                console.log(`Loading audio for message ${msg.id}: src=${encodeURIComponent(msg.fileUrl)}`);
+                              } else {
+                                delete audioRefs.current[msg.id];
+                              }
+                            }}
+                            onTimeUpdate={(e) => handleTimeUpdate(msg.id, e.target)}
+                            onLoadedMetadata={(e) => handleLoadedMetadata(msg.id, e.target)}
+                            onError={(e) => handleAudioError(msg.id, e)}
+                            preload="auto"
+                          >
+                            <source src={msg.fileUrl} type="audio/webm;codecs=opus" />
+                            Your browser does not support the audio element.
+                          </audio>
+                        </div>
                       </div>
                     ) : (
                       <>
