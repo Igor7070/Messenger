@@ -48,10 +48,17 @@ const PrivateChat = () => {
   const [showTranslationModal, setShowTranslationModal] = useState(false);
 
   const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
+
   // ДОБАВЛЕНО: Состояния для аудиозаписи
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [micIconState, setMicIconState] = useState('mic'); // 'mic', 'recording', 'sending'
+
+  // ДОБАВЛЕНО: Состояния для управления аудиоплеером
+  const [audioProgress, setAudioProgress] = useState({}); // Прогресс воспроизведения (по msg.id)
+  const [audioDuration, setAudioDuration] = useState({}); // Длительность аудио (по msg.id)
+  const [isPlaying, setIsPlaying] = useState({}); // Состояние воспроизведения (по msg.id)
+  const audioRefs = useRef({}); // Референции для элементов <audio>
 
   // ДОБАВЛЕНО: Состояния для динамического размера текстового поля
   const [rows, setRows] = useState(1);
@@ -288,6 +295,18 @@ const PrivateChat = () => {
     calculateCharPerLine();
     window.addEventListener('resize', calculateCharPerLine);
     return () => window.removeEventListener('resize', calculateCharPerLine);
+  }, []);
+
+  // ДОБАВЛЕНО: Остановка аудио при размонтировании
+  useEffect(() => {
+    return () => {
+      Object.values(audioRefs.current).forEach((audio) => {
+        if (audio && !audio.paused) {
+          audio.pause();
+          audio.currentTime = 0;
+        }
+      });
+    };
   }, []);
 
   const markAllMessagesAsRead = (updatedMessages) => {
@@ -672,6 +691,64 @@ const PrivateChat = () => {
     textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
   };
 
+  // ДОБАВЛЕНО: Форматирование времени (мм:сс)
+  const formatTime = (seconds) => {
+    if (!seconds || isNaN(seconds)) return "0:00";
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  // ДОБАВЛЕНО: Обработчик обновления прогресса
+  const handleTimeUpdate = (messageId, audioElement) => {
+    const progress = (audioElement.currentTime / audioElement.duration) * 100;
+    setAudioProgress((prev) => ({ ...prev, [messageId]: progress }));
+    setIsPlaying((prev) => ({ ...prev, [messageId]: !audioElement.paused }));
+  };
+
+  // ДОБАВЛЕНО: Обработчик загрузки метаданных
+  const handleLoadedMetadata = (messageId, audioElement) => {
+    setAudioDuration((prev) => ({ ...prev, [messageId]: audioElement.duration }));
+  };
+
+  // ДОБАВЛЕНО: Обработчик клика по прогресс-бару
+  const handleProgressClick = (messageId, e) => {
+    const progressBar = e.currentTarget;
+    const rect = progressBar.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = (clickX / rect.width) * 100;
+    const audio = audioRefs.current[messageId];
+    if (audio && audio.duration) {
+      audio.currentTime = (percentage / 100) * audio.duration;
+      setAudioProgress((prev) => ({ ...prev, [messageId]: percentage }));
+    }
+  };
+
+  // ДОБАВЛЕНО: Обработчик воспроизведения/паузы
+  const handlePlayPause = (messageId) => {
+    const audio = audioRefs.current[messageId];
+    if (!audio) return;
+
+    // Останавливаем все другие аудио
+    Object.keys(audioRefs.current).forEach((id) => {
+      if (id !== messageId.toString() && audioRefs.current[id] && !audioRefs.current[id].paused) {
+        audioRefs.current[id].pause();
+        setIsPlaying((prev) => ({ ...prev, [id]: false }));
+      }
+    });
+
+    if (audio.paused) {
+      audio.play().catch((error) => {
+        console.error(`Playback failed for message ${messageId}:`, error);
+        toast.error('Failed to play audio');
+      });
+      setIsPlaying((prev) => ({ ...prev, [messageId]: true }));
+    } else {
+      audio.pause();
+      setIsPlaying((prev) => ({ ...prev, [messageId]: false }));
+    }
+  };
+
   return (
     <div className="private-chat">
       <div className="private-chat-name">
@@ -757,9 +834,33 @@ const PrivateChat = () => {
                 <div className="private-message-body">
                     {msg.messageType === 'audio' && msg.fileUrl ? (
                       <div className="private-audio-message-container">
-                        <audio controls className="private-audio-player">
+                        <div className="private-custom-audio-player">
+                          <button
+                            className="private-audio-control"
+                            onClick={() => handlePlayPause(msg.id)}
+                          >
+                            {isPlaying[msg.id] ? '⏸️' : '▶️'}
+                          </button>
+                          <div
+                            className="private-progress-bar"
+                            onClick={(e) => handleProgressClick(msg.id, e)}
+                          >
+                            <div
+                              className="private-progress"
+                              style={{ width: `${audioProgress[msg.id] || 0}%` }}
+                            ></div>
+                          </div>
+                          <span className="private-audio-time">
+                            {formatTime(audioRefs.current[msg.id]?.currentTime || 0)} /{' '}
+                            {formatTime(audioDuration[msg.id] || 0)}
+                          </span>
+                        </div>
+                        <audio
+                          ref={(el) => (audioRefs.current[msg.id] = el)}
+                          onTimeUpdate={(e) => handleTimeUpdate(msg.id, e.target)}
+                          onLoadedMetadata={(e) => handleLoadedMetadata(msg.id, e.target)}
+                        >
                           <source src={msg.fileUrl} type="audio/webm" />
-                          Your browser does not support the audio element.
                         </audio>
                       </div>
                     ) : (
