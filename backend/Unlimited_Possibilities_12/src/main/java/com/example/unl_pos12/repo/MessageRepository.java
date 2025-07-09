@@ -22,4 +22,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     // Добавлено: Метод для поиска сообщений по chatId
     List<Message> findByChatId(Long chatId);
+
+    @Query("SELECT m FROM Message m WHERE m.fileUrl = :fileUrl")
+    Message findByFileUrl(String fileUrl);
 }

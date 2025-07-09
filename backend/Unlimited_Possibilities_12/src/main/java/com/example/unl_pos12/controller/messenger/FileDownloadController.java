@@ -1,5 +1,8 @@
 package com.example.unl_pos12.controller.messenger;
 
+import com.example.unl_pos12.model.messenger.Message;
+import com.example.unl_pos12.service.MessageService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -20,20 +23,36 @@ import java.nio.file.Paths;
 @RequestMapping({"/uploads", "/api/files"}) // Поддержка обоих путей
 public class FileDownloadController {
 
+    @Autowired // ДОБАВЛЕНО
+    private MessageService messageService; // Для доступа к messageType
+
     @GetMapping({"/{filename:.+}", "/download/{filename:.+}"}) // Поддержка /uploads/photo.jpg и /api/files/download/photo.jpg
     public ResponseEntity<Resource> downloadFile(@PathVariable String filename) {
         try {
             // Декодируем имя файла
             String decodedFilename = URLDecoder.decode(filename, StandardCharsets.UTF_8.toString());
-            Path filePath = Paths.get("uploads").resolve(decodedFilename).normalize();
+            Path filePath = Paths.get("Uploads").resolve(decodedFilename).normalize();
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
-                // Определяем MIME-тип
+                // --- НАЧАЛО ДОБАВЛЕНИЯ ---
+                // Проверяем messageType для файла
                 String mimeType = Files.probeContentType(filePath);
-                if (mimeType == null) {
+                if (decodedFilename.endsWith(".webm")) {
+                    // Ищем сообщение по fileUrl
+                    String fileUrl = "https://unlimitedpossibilities12.org/api/files/download/" + decodedFilename;
+                    Message message = messageService.findByFileUrl(fileUrl); // Предполагаем метод в MessageService
+                    if (message != null && "audio".equals(message.getMessageType())) {
+                        mimeType = "audio/webm";
+                        System.out.println("Serving file: " + decodedFilename + " with Content-Type: audio/webm (messageType=audio)");
+                    } else {
+                        mimeType = "video/webm";
+                        System.out.println("Serving file: " + decodedFilename + " with Content-Type: video/webm (messageType=" + (message != null ? message.getMessageType() : "not found") + ")");
+                    }
+                } else if (mimeType == null) {
                     mimeType = determineMimeType(decodedFilename);
                 }
+                // --- КОНЕЦ ДОБАВЛЕНИЯ ---
 
                 // Устанавливаем заголовки
                 return ResponseEntity.ok()

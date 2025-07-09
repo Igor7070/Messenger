@@ -99,6 +99,16 @@ public class MessageService {
         }
 
         String originalFilename = file.getOriginalFilename();
+
+        // --- НАЧАЛО ДОБАВЛЕНИЯ ---
+        String contentType = file.getContentType();
+        System.out.println("Uploading file: original name=" + originalFilename + ", contentType=" + contentType);
+        if (originalFilename.endsWith(".webm")) {
+            contentType = "audio/webm"; // Явно устанавливаем Content-Type для .webm
+            System.out.println("Forcing Content-Type to audio/webm for file: " + originalFilename);
+        }
+        // --- КОНЕЦ ДОБАВЛЕНИЯ ---
+
         // Преобразуем имя файла на латиницу
         String transliteratedFilename = transliterate(originalFilename);
         // Заменяем небезопасные символы
@@ -147,5 +157,9 @@ public class MessageService {
 
     public List<Message> findByChatId(Long chatId) {
         return messageRepository.findByChatId(chatId);
+    }
+
+    public Message findByFileUrl(String fileUrl) {
+        return messageRepository.findByFileUrl(fileUrl);
     }
 }
