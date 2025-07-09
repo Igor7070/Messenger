@@ -575,18 +575,20 @@ const PrivateChat = () => {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' }); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
       mediaRecorderRef.current = mediaRecorder;
       const chunks = [];
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           chunks.push(e.data);
+          console.log(`Recording data received: size=${e.data.size}, type=${e.data.type}`); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
         }
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const blob = new Blob(chunks, { type: 'audio/webm;codecs=opus' }); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
+        console.log(`Recording stopped: blob size=${blob.size}, type=${blob.type}`); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
         setAudioBlob(blob);
         stream.getTracks().forEach(track => track.stop());
         setMicIconState('sending');
@@ -701,20 +703,25 @@ const PrivateChat = () => {
 
   // ИЗМЕНЕНО: Обработчик обновления прогресса
   const handleTimeUpdate = (messageId, audioElement) => {
-    if (audioElement.duration && !isNaN(audioElement.duration)) {
+    console.log(`Time update for message ${messageId}: currentTime=${audioElement.currentTime}, duration=${audioElement.duration}, readyState=${audioElement.readyState}, networkState=${audioElement.networkState}`); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
+    if (audioElement.duration && !isNaN(audioElement.duration) && audioElement.duration !== Infinity) {
       const progress = (audioElement.currentTime / audioElement.duration) * 100;
       setAudioProgress((prev) => ({ ...prev, [messageId]: progress }));
       setIsPlaying((prev) => ({ ...prev, [messageId]: !audioElement.paused }));
+    } else {
+      console.warn(`Invalid duration in time update for message ${messageId}: duration=${audioElement.duration}`); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
     }
   };
 
   // ИЗМЕНЕНО: Обработчик загрузки метаданных
   const handleLoadedMetadata = (messageId, audioElement) => {
-    if (audioElement.duration && !isNaN(audioElement.duration)) {
+    console.log(`Loaded metadata for message ${messageId}: duration=${audioElement.duration}, readyState=${audioElement.readyState}, networkState=${audioElement.networkState}`); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
+    if (audioElement.duration && !isNaN(audioElement.duration) && audioElement.duration !== Infinity) {
       setAudioDuration((prev) => ({ ...prev, [messageId]: audioElement.duration }));
       setAudioError((prev) => ({ ...prev, [messageId]: null }));
     } else {
-      setAudioError((prev) => ({ ...prev, [messageId]: "Failed to load audio metadata" }));
+      setAudioError((prev) => ({ ...prev, [messageId]: "Invalid audio duration" }));
+      console.warn(`Invalid duration for message ${messageId}: duration=${audioElement.duration}`); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
     }
   };
 
@@ -737,8 +744,11 @@ const PrivateChat = () => {
     const audio = audioRefs.current[messageId];
     if (!audio) {
       setAudioError((prev) => ({ ...prev, [messageId]: "Audio element not found" }));
+      console.error(`No audio element for message ${messageId}`); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
       return;
     }
+
+    console.log(`Play/Pause for message ${messageId}: paused=${audio.paused}, readyState=${audio.readyState}, networkState=${audio.networkState}`); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
 
     // Останавливаем все другие аудио
     Object.keys(audioRefs.current).forEach((id) => {
@@ -755,23 +765,29 @@ const PrivateChat = () => {
           .then(() => {
             setIsPlaying((prev) => ({ ...prev, [messageId]: true }));
             setAudioError((prev) => ({ ...prev, [messageId]: null }));
+            console.log(`Playing audio for message ${messageId}`); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
           })
           .catch((error) => {
-            console.error("Playback failed:", error);
-            setAudioError((prev) => ({ ...prev, [messageId]: "Playback failed. Try again." }));
+            console.error(`Playback failed for message ${messageId}:`, error); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
+            setAudioError((prev) => ({ ...prev, [messageId]: `Playback failed: ${error.message}` }));
             setIsPlaying((prev) => ({ ...prev, [messageId]: false }));
           });
       }
     } else {
       audio.pause();
       setIsPlaying((prev) => ({ ...prev, [messageId]: false }));
+      console.log(`Paused audio for message ${messageId}`); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
     }
   };
 
   // ДОБАВЛЕНО: Обработчик ошибок аудио
-  const handleAudioError = (messageId, error) => {
-    console.error(`Audio error for message ${messageId}:`, error);
-    setAudioError((prev) => ({ ...prev, [messageId]: "Failed to load audio" }));
+  const handleAudioError = (messageId, event) => {
+    const error = event.target.error;
+    const errorMessage = error
+      ? `Audio error for message ${messageId}: code=${error.code}, message=${error.message}`
+      : `Audio error for message ${messageId}: Unknown error`;
+    console.error(errorMessage, event); // --- НАЧАЛО ДОБАВЛЕНИЯ ---
+    setAudioError((prev) => ({ ...prev, [messageId]: error ? `Error ${error.code}: ${error.message}` : "Failed to load audio" }));
     setIsPlaying((prev) => ({ ...prev, [messageId]: false }));
   };
 
@@ -860,9 +876,13 @@ const PrivateChat = () => {
                 <div className="private-message-body">
                     {msg.messageType === 'audio' && msg.fileUrl ? (
                       <div className="private-audio-message-container">
-                        {audioError[msg.id] ? (
+                        {audioError[msg.id] || !audioDuration[msg.id] || audioDuration[msg.id] === Infinity ? ( // --- НАЧАЛО ДОБАВЛЕНИЯ ---
                           <div className="private-audio-error">
-                            {audioError[msg.id]}
+                            {audioError[msg.id] || "Audio unavailable"}
+                            <audio controls preload="metadata">
+                              <source src={msg.fileUrl} type="audio/webm;codecs=opus" /> // --- НАЧАЛО ДОБАВЛЕНИЯ ---
+                              Your browser does not support the audio element.
+                            </audio>
                           </div>
                         ) : (
                           <div className={`private-custom-audio-player ${audioDuration[msg.id] ? '' : 'loading'}`}>
@@ -898,7 +918,7 @@ const PrivateChat = () => {
                           onError={(e) => handleAudioError(msg.id, e)}
                           preload="metadata"
                         >
-                          <source src={msg.fileUrl} type="audio/webm" />
+                          <source src={msg.fileUrl} type="audio/webm;codecs=opus" /> // --- НАЧАЛО ДОБАВЛЕНИЯ ---
                           Your browser does not support the audio element.
                         </audio>
                       </div>
