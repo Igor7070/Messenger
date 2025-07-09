@@ -708,6 +708,7 @@ const PrivateChat = () => {
 
   // ДОБАВЛЕНО: Обработчик загрузки метаданных
   const handleLoadedMetadata = (messageId, audioElement) => {
+    console.log(`Loaded metadata for message ${messageId}: duration = ${audioElement.duration}`);
     setAudioDuration((prev) => ({ ...prev, [messageId]: audioElement.duration }));
   };
 
@@ -727,6 +728,7 @@ const PrivateChat = () => {
   // ДОБАВЛЕНО: Обработчик воспроизведения/паузы
   const handlePlayPause = (messageId) => {
     const audio = audioRefs.current[messageId];
+    console.log(`handlePlayPause for message ${messageId}: audio exists = ${!!audio}, src = ${audio?.src}`);
     if (!audio) return;
 
     // Останавливаем все другие аудио
@@ -738,12 +740,16 @@ const PrivateChat = () => {
     });
 
     if (audio.paused) {
-      audio.play().catch((error) => {
+      console.log(`Attempting to play audio for message ${messageId}`);
+      audio.play().then(() => {
+        console.log(`Audio playing for message ${messageId}`);
+        setIsPlaying((prev) => ({ ...prev, [messageId]: true }));
+      }).catch((error) => {
         console.error(`Playback failed for message ${messageId}:`, error);
         toast.error('Failed to play audio');
       });
-      setIsPlaying((prev) => ({ ...prev, [messageId]: true }));
     } else {
+      console.log(`Pausing audio for message ${messageId}`);
       audio.pause();
       setIsPlaying((prev) => ({ ...prev, [messageId]: false }));
     }
@@ -856,7 +862,10 @@ const PrivateChat = () => {
                           </span>
                         </div>
                         <audio
-                          ref={(el) => (audioRefs.current[msg.id] = el)}
+                          ref={(el) => {
+                            audioRefs.current[msg.id] = el;
+                            console.log(`Audio ref set for message ${msg.id}: element exists = ${!!el}, src = ${el?.src}`);
+                          }}
                           onTimeUpdate={(e) => handleTimeUpdate(msg.id, e.target)}
                           onLoadedMetadata={(e) => handleLoadedMetadata(msg.id, e.target)}
                         >
