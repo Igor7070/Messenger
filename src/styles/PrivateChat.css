@@ -560,29 +560,6 @@
     white-space: nowrap;
 }
 
-/* ДОБАВЛЕНО: Стили для состояния загрузки */
-.private-custom-audio-player.loading .private-progress-bar {
-    background-color: #e0e0e0;
-    position: relative;
-    overflow: hidden;
-}
-
-.private-custom-audio-player.loading .private-progress-bar::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(66, 165, 245, 0.2), transparent);
-    animation: loading 1.5s infinite;
-}
-
-@keyframes loading {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-}
-
 /* ДОБАВЛЕНО: Стили для ошибки аудио */
 .private-audio-error {
     color: #d32f2f;
@@ -603,6 +580,34 @@
 /* ДОБАВЛЕНО: Скрытие стандартного audio элемента */
 .private-audio-message-container audio {
     display: none;
+}
+
+.private-audio-error {
+    color: #d32f2f;
+    font-size: 12px;
+    font-family: 'Roboto', sans-serif;
+    padding: 8px;
+    background-color: #ffebee;
+    border-radius: 5px;
+    max-width: 250px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.private-retry-button {
+    padding: 4px 8px;
+    background-color: #42a5f5;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+}
+
+.private-retry-button:hover {
+    background-color: #1976d2;
 }
 
 @media (max-width: 800px) {
@@ -711,10 +716,6 @@
         gap: 8px;
     }
 
-    .private-custom-audio-player.loading .private-progress-bar::after {
-        height: 5px;
-    }
-
     .private-audio-control {
         font-size: 18px;
         width: 20px;
@@ -737,5 +738,10 @@
         font-size: 11px;
         padding: 6px;
         max-width: 200px;
+    }
+
+    .private-retry-button {
+        font-size: 11px;
+        padding: 3px 6px;
     }
 }
