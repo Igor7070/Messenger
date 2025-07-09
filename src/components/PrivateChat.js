@@ -53,6 +53,11 @@ const PrivateChat = () => {
   const [audioBlob, setAudioBlob] = useState(null);
   const [micIconState, setMicIconState] = useState('mic'); // 'mic', 'recording', 'sending'
 
+  // ДОБАВЛЕНО: Состояния для управления прогрессом аудио
+  const [audioProgress, setAudioProgress] = useState({}); // Прогресс для каждого аудиосообщения
+  const [audioDuration, setAudioDuration] = useState({}); // Длительность для каждого аудиосообщения
+  const audioRefs = useRef({}); // Референции для аудиоэлементов
+
   // ДОБАВЛЕНО: Состояния для динамического размера текстового поля
   const [rows, setRows] = useState(1);
   const [charPerLine, setCharPerLine] = useState(50);
@@ -672,6 +677,38 @@ const PrivateChat = () => {
     textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
   };
 
+  // ДОБАВЛЕНО: Форматирование времени (мм:сс)
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  // ДОБАВЛЕНО: Обработчик обновления прогресса
+  const handleTimeUpdate = (messageId, audioElement) => {
+    const progress = (audioElement.currentTime / audioElement.duration) * 100;
+    setAudioProgress((prev) => ({ ...prev, [messageId]: progress }));
+  };
+
+  // ДОБАВЛЕНО: Обработчик загрузки метаданных
+  const handleLoadedMetadata = (messageId, audioElement) => {
+    setAudioDuration((prev) => ({ ...prev, [messageId]: audioElement.duration }));
+  };
+
+  // ДОБАВЛЕНО: Обработчик клика по прогресс-бару
+  const handleProgressClick = (messageId, e) => {
+    const progressBar = e.target;
+    const rect = progressBar.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = (clickX / rect.width) * 100;
+    const audio = audioRefs.current[messageId];
+    if (audio) {
+      const newTime = (percentage / 100) * audio.duration;
+      audio.currentTime = newTime;
+      setAudioProgress((prev) => ({ ...prev, [messageId]: percentage }));
+    }
+  };
+
   return (
     <div className="private-chat">
       <div className="private-chat-name">
@@ -757,9 +794,42 @@ const PrivateChat = () => {
                 <div className="private-message-body">
                     {msg.messageType === 'audio' && msg.fileUrl ? (
                       <div className="private-audio-message-container">
-                        <audio controls className="private-audio-player">
+                        <div className="private-custom-audio-player">
+                          <button
+                            className="private-audio-control"
+                            onClick={() => {
+                              const audio = audioRefs.current[msg.id];
+                              if (audio) {
+                                if (audio.paused) {
+                                  audio.play();
+                                } else {
+                                  audio.pause();
+                                }
+                              }
+                            }}
+                          >
+                            {audioRefs.current[msg.id]?.paused !== false ? '▶️' : '⏸️'}
+                          </button>
+                          <div
+                            className="private-progress-bar"
+                            onClick={(e) => handleProgressClick(msg.id, e)}
+                          >
+                            <div
+                              className="private-progress"
+                              style={{ width: `${audioProgress[msg.id] || 0}%` }}
+                            ></div>
+                          </div>
+                          <span className="private-audio-time">
+                            {formatTime(audioRefs.current[msg.id]?.currentTime || 0)} /{' '}
+                            {formatTime(audioDuration[msg.id] || 0)}
+                          </span>
+                        </div>
+                        <audio
+                          ref={(el) => (audioRefs.current[msg.id] = el)}
+                          onTimeUpdate={(e) => handleTimeUpdate(msg.id, e.target)}
+                          onLoadedMetadata={(e) => handleLoadedMetadata(msg.id, e.target)}
+                        >
                           <source src={msg.fileUrl} type="audio/webm" />
-                          Your browser does not support the audio element.
                         </audio>
                       </div>
                     ) : (
