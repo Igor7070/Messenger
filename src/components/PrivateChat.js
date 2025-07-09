@@ -691,45 +691,56 @@ const PrivateChat = () => {
     textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
   };
 
-  // ДОБАВЛЕНО: Форматирование времени (мм:сс)
+  // Форматирование времени (мм:сс)
   const formatTime = (seconds) => {
-    if (!seconds || isNaN(seconds)) return "0:00";
+    if (!seconds || isNaN(seconds) || seconds === Infinity) return "0:00";
     const minutes = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  // ДОБАВЛЕНО: Обработчик обновления прогресса
+  // Обработчик обновления прогресса
   const handleTimeUpdate = (messageId, audioElement) => {
-    const progress = (audioElement.currentTime / audioElement.duration) * 100;
-    setAudioProgress((prev) => ({ ...prev, [messageId]: progress }));
-    setIsPlaying((prev) => ({ ...prev, [messageId]: !audioElement.paused }));
+    console.log(`Time update for message ${messageId}: currentTime = ${audioElement.currentTime}, duration = ${audioElement.duration}`);
+    if (audioElement.duration && !isNaN(audioElement.duration)) {
+      const progress = (audioElement.currentTime / audioElement.duration) * 100;
+      setAudioProgress((prev) => ({ ...prev, [messageId]: progress }));
+      setIsPlaying((prev) => ({ ...prev, [messageId]: !audioElement.paused }));
+    }
   };
 
-  // ДОБАВЛЕНО: Обработчик загрузки метаданных
+  // Обработчик загрузки метаданных
   const handleLoadedMetadata = (messageId, audioElement) => {
     console.log(`Loaded metadata for message ${messageId}: duration = ${audioElement.duration}`);
-    setAudioDuration((prev) => ({ ...prev, [messageId]: audioElement.duration }));
+    if (audioElement.duration && !isNaN(audioElement.duration)) {
+      setAudioDuration((prev) => ({ ...prev, [messageId]: audioElement.duration }));
+    } else {
+      console.warn(`Invalid duration for message ${messageId}: ${audioElement.duration}`);
+    }
   };
 
-  // ДОБАВЛЕНО: Обработчик клика по прогресс-бару
+  // Обработчик клика по прогресс-бару
   const handleProgressClick = (messageId, e) => {
     const progressBar = e.currentTarget;
     const rect = progressBar.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const percentage = (clickX / rect.width) * 100;
     const audio = audioRefs.current[messageId];
-    if (audio && audio.duration) {
+    if (audio && audio.duration && !isNaN(audio.duration)) {
       audio.currentTime = (percentage / 100) * audio.duration;
       setAudioProgress((prev) => ({ ...prev, [messageId]: percentage }));
     }
   };
 
-  // ДОБАВЛЕНО: Обработчик воспроизведения/паузы
+  // Обработчик воспроизведения/паузы
   const handlePlayPause = (messageId) => {
     const audio = audioRefs.current[messageId];
     console.log(`handlePlayPause for message ${messageId}: audio exists = ${!!audio}, src = ${audio?.src}`);
-    if (!audio) return;
+    if (!audio) {
+      console.error(`No audio element for message ${messageId}`);
+      toast.error('Failed to play audio');
+      return;
+    }
 
     // Останавливаем все другие аудио
     Object.keys(audioRefs.current).forEach((id) => {
@@ -753,6 +764,13 @@ const PrivateChat = () => {
       audio.pause();
       setIsPlaying((prev) => ({ ...prev, [messageId]: false }));
     }
+  };
+
+  // Обработчик ошибок аудио
+  const handleAudioError = (messageId, event) => {
+    console.error(`Audio error for message ${messageId}:`, event.target.error);
+    toast.error('Failed to load audio');
+    setIsPlaying((prev) => ({ ...prev, [messageId]: false }));
   };
 
   return (
@@ -844,12 +862,13 @@ const PrivateChat = () => {
                           <button
                             className="private-audio-control"
                             onClick={() => handlePlayPause(msg.id)}
+                            disabled={!audioDuration[msg.id] || isNaN(audioDuration[msg.id])}
                           >
                             {isPlaying[msg.id] ? '⏸️' : '▶️'}
                           </button>
                           <div
                             className="private-progress-bar"
-                            onClick={(e) => handleProgressClick(msg.id, e)}
+                            onClick={(e) => audioDuration[msg.id] && !isNaN(audioDuration[msg.id]) && handleProgressClick(msg.id, e)}
                           >
                             <div
                               className="private-progress"
@@ -862,15 +881,19 @@ const PrivateChat = () => {
                           </span>
                         </div>
                         <audio
+                          key={msg.id} // Добавляем key для стабильности
                           ref={(el) => {
-                            audioRefs.current[msg.id] = el;
-                            console.log(`Audio ref set for message ${msg.id}: element exists = ${!!el}, src = ${el?.src}`);
+                            if (el) {
+                              audioRefs.current[msg.id] = el;
+                              console.log(`Audio ref set for message ${msg.id}: element exists = ${!!el}, src = ${el.src}`);
+                            }
                           }}
+                          src={msg.fileUrl} // Задаем src напрямую
                           onTimeUpdate={(e) => handleTimeUpdate(msg.id, e.target)}
                           onLoadedMetadata={(e) => handleLoadedMetadata(msg.id, e.target)}
-                        >
-                          <source src={msg.fileUrl} type="audio/webm" />
-                        </audio>
+                          onError={(e) => handleAudioError(msg.id, e)}
+                          preload="metadata"
+                        />
                       </div>
                     ) : (
                       <>
