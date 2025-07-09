@@ -31,7 +31,7 @@ public class FileDownloadController {
         try {
             // Декодируем имя файла
             String decodedFilename = URLDecoder.decode(filename, StandardCharsets.UTF_8.toString());
-            Path filePath = Paths.get("Uploads").resolve(decodedFilename).normalize();
+            Path filePath = Paths.get("uploads").resolve(decodedFilename).normalize();
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
