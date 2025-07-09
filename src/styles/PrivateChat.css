@@ -589,6 +589,22 @@
     font-family: 'Roboto', sans-serif;
 }
 
+/* ДОБАВЛЕНО: Улучшение стилей для аудиоплеера с ошибками */
+.private-audio-progress-container.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.private-progress-bar.disabled {
+    cursor: not-allowed;
+}
+
+.private-audio-error {
+    background: rgba(211, 47, 47, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         margin: 10px;
