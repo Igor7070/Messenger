@@ -109,7 +109,7 @@
 .private-message-content-container {
     display: block;
     max-width: 80%;
-    min-width: 0;
+    min-width: 100px; /* Изменено с 0 на 100px, как в Messenger */
     padding: 8px;
     border-radius: 12px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -117,6 +117,14 @@
     overflow-wrap: break-word;
     white-space: pre-wrap;
     box-sizing: border-box;
+}
+
+.private-message-content-container.no-avatar {
+    margin-left: 10px !important; /* Уменьшено с 45px до 10px, чтобы избежать сжатия */
+}
+
+.private-message.audio-message .private-message-content-container.no-avatar {
+    margin-left: 0 !important; /* Убираем margin-left для аудиосообщений */
 }
 
 .private-message.private-current-user .private-message-content-container {
@@ -146,9 +154,9 @@
     border-radius: 12px;
 }
 
-.private-message-content-container.no-avatar {
+/*.private-message-content-container.no-avatar {
     margin-left: 45px !important;
-}
+}*/
 
 .private-message-body {
     background: transparent !important;
@@ -604,7 +612,11 @@
     }
 
     .private-message-content-container.no-avatar {
-        margin-left: 40px !important;
+        margin-left: 10px !important; /* Уменьшено с 40px до 10px */
+    }
+
+    .private-message.audio-message .private-message-content-container.no-avatar {
+        margin-left: 0 !important; /* Убираем margin-left для аудиосообщений на мобильных */
     }
 
     .private-message.private-other-user .private-message-content-container {
