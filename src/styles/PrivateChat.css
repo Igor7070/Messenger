@@ -486,26 +486,25 @@
     cursor: default; /* Отключаем курсор во время отправки */
 }
 
-/* ИЗМЕНЕНО: Стили для аудиосообщений */
 .private-audio-message-container {
     margin-top: 5px;
     display: flex;
-    flex-direction: column; /* ИЗМЕНЕНО: Вертикальное расположение для временной шкалы */
+    flex-direction: column;
     align-items: flex-start;
-    gap: 4px; /* ДОБАВЛЕНО: Зазор между плеером и временем */
+    gap: 4px;
+    width: 100%; /* ДОБАВЛЕНО: Полная ширина внутри родителя */
+    max-width: 250px; /* ДОБАВЛЕНО: Фиксированная максимальная ширина */
+    box-sizing: border-box; /* ДОБАВЛЕНО: Явное указание */
 }
 
-/* ИЗМЕНЕНО: Стили для аудиоплеера */
 .private-audio-player {
-    width: 100%;
-    max-width: 250px;
-    height: 36px; /* ИЗМЕНЕНО: Увеличена высота для лучшей видимости */
-    border-radius: 8px; /* ИЗМЕНЕНО: Большее закругление */
-    background-color: #FFFFFF; /* ДОБАВЛЕНО: Белый фон */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* ДОБАВЛЕНО: Легкая тень */
+    width: 250px; /* ИЗМЕНЕНО: Фиксированная ширина вместо max-width */
+    height: 36px;
+    border-radius: 8px;
+    background-color: #FFFFFF;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* ДОБАВЛЕНО: Кастомизация дорожки прогресса и элементов управления */
 .private-audio-player::-webkit-media-controls-panel {
     background-color: #FFFFFF;
     border-radius: 8px;
@@ -516,7 +515,7 @@
 .private-audio-player::-webkit-media-controls-timeline {
     background-color: #B0BEC5;
     border-radius: 4px;
-    height: 6px; /* ДОБАВЛЕНО: Более толстая дорожка */
+    height: 6px;
 }
 
 .private-audio-player::-webkit-media-controls-current-time-display,
@@ -528,7 +527,7 @@
 
 .private-audio-player::-webkit-media-controls-play-button,
 .private-audio-player::-webkit-media-controls-mute-button {
-    background-color: #42a5f5; /* ДОБАВЛЕНО: Цвет кнопок */
+    background-color: #42a5f5;
     border-radius: 4px;
 }
 
@@ -552,7 +551,6 @@
     height: 12px;
 }
 
-/* ДОБАВЛЕНО: Стили для временной шкалы */
 .private-audio-time {
     font-family: 'Inter', sans-serif;
     font-size: 12px;
@@ -560,11 +558,11 @@
     margin-top: 2px;
 }
 
-/* ДОБАВЛЕНО: Стили для контейнера аудиосообщений в зависимости от отправителя */
 .private-message.private-current-user .private-audio-message-container {
-    background-color: #DCF8C6; /* Соответствует сообщениям текущего пользователя */
+    background-color: #DCF8C6;
     border-radius: 12px;
     padding: 8px;
+    align-self: flex-end; /* ДОБАВЛЕНО: Выравнивание вправо */
 }
 
 .private-message.private-current-user.first-message .private-audio-message-container {
@@ -572,13 +570,15 @@
 }
 
 .private-message.private-other-user .private-audio-message-container {
-    background-color: #ECE0F8; /* Соответствует сообщениям других пользователей */
+    background-color: #ECE0F8;
     border-radius: 0 12px 12px 12px;
     padding: 8px;
+    align-self: flex-start; /* ДОБАВЛЕНО: Выравнивание влево */
 }
 
 .private-message.private-other-user .private-audio-message-container.no-avatar {
     border-radius: 12px;
+    margin-left: 0; /* ДОБАВЛЕНО: Убираем лишний отступ для последовательных сообщений */
 }
 
 @media (max-width: 800px) {
@@ -681,8 +681,8 @@
     }
 
     .private-audio-player {
-        max-width: 200px;
-        height: 32px; /* ИЗМЕНЕНО: Подтверждена высота */
+        width: 200px; /* ИЗМЕНЕНО: Фиксированная ширина */
+        height: 32px;
     }
 
     /* ДОБАВЛЕНО: Стили для временной шкалы на мобильных */
