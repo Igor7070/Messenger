@@ -493,6 +493,7 @@
     flex-direction: column;
     align-items: flex-start;
     width: 100%;
+    max-width: 280px; /* ДОБАВЛЕНО: Ограничение ширины контейнера */
     gap: 4px;
 }
 
@@ -501,19 +502,20 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 6px; /* ИЗМЕНЕНО: Уменьшен зазор */
+    gap: 6px;
     width: 100%;
-    max-width: 260px; /* ИЗМЕНЕНО: Увеличена ширина */
+    max-width: 270px; /* ИЗМЕНЕНО: Увеличена ширина */
     flex-wrap: nowrap;
-    overflow: hidden; /* ДОБАВЛЕНО: Скрывает переполнение */
+    overflow: hidden;
+    padding: 0 4px; /* ДОБАВЛЕНО: Внутренний отступ */
 }
 
 /* ИЗМЕНЕНО: Стили для аудиоплеера */
 .private-audio-player {
     width: 100%;
-    max-width: 200px; /* ИЗМЕНЕНО: Уменьшена ширина для текста */
-    min-width: 180px; /* ИЗМЕНЕНО: Уменьшена минимальная ширина */
-    height: 40px; /* ИЗМЕНЕНО: Увеличена высота для дорожки */
+    max-width: 220px; /* ИЗМЕНЕНО: Увеличена ширина */
+    min-width: 200px; /* ИЗМЕНЕНО: Увеличена минимальная ширина */
+    height: 48px; /* ИЗМЕНЕНО: Увеличена высота для дорожки */
     border-radius: 8px;
     background-color: #FFFFFF;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -524,36 +526,39 @@
     background-color: #FFFFFF;
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-    padding: 6px;
+    padding: 8px; /* ИЗМЕНЕНО: Увеличен отступ */
     display: flex;
-    flex-direction: row; /* ИЗМЕНЕНО: Вернули горизонтальное расположение */
-    align-items: center;
+    flex-direction: column; /* ИЗМЕНЕНО: Вертикальное расположение для дорожки */
+    align-items: stretch;
+    min-height: 44px; /* ДОБАВЛЕНО: Минимальная высота панели */
 }
 
 /* ИЗМЕНЕНО: Стили для дорожки прогресса */
 .private-audio-player::-webkit-media-controls-timeline {
     background-color: #B0BEC5;
     border-radius: 4px;
-    height: 8px; /* ИЗМЕНЕНО: Увеличена высота */
-    margin-top: 8px; /* ИЗМЕНЕНО: Увеличен отступ для разделения */
-    width: 100%; /* ДОБАВЛЕНО: Полная ширина */
+    height: 8px;
+    margin-top: 10px; /* ИЗМЕНЕНО: Увеличен отступ */
+    width: 100%;
+    display: block; /* ДОБАВЛЕНО: Явное отображение */
 }
 
 /* ИЗМЕНЕНО: Стили для кнопки воспроизведения */
 .private-audio-player::-webkit-media-controls-play-button {
     background-color: #42a5f5;
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    width: 32px; /* ИЗМЕНЕНО: Увеличена ширина */
+    height: 32px; /* ИЗМЕНЕНО: Увеличена высота */
     margin-right: 8px;
+    margin-bottom: 4px; /* ДОБАВЛЕНО: Отступ снизу */
 }
 
 /* ИЗМЕНЕНО: Стили для кнопки громкости */
 .private-audio-player::-webkit-media-controls-mute-button {
     background-color: #42a5f5;
     border-radius: 4px;
-    width: 24px;
-    height: 24px;
+    width: 28px; /* ИЗМЕНЕНО: Увеличена ширина */
+    height: 28px; /* ИЗМЕНЕНО: Увеличена высота */
 }
 
 /* ИЗМЕНЕНО: Скрываем встроенное время */
@@ -566,42 +571,44 @@
 .private-audio-player::-webkit-slider-thumb {
     background-color: #0288d1;
     border-radius: 50%;
-    width: 12px;
-    height: 12px;
+    width: 14px; /* ИЗМЕНЕНО: Увеличен размер */
+    height: 14px; /* ИЗМЕНЕНО: Увеличен размер */
 }
 
 /* ИЗМЕНЕНО: Стили для Firefox */
 .private-audio-player::-moz-range-track {
     background-color: #B0BEC5;
     border-radius: 4px;
-    height: 8px; /* ИЗМЕНЕНО: Увеличена высота */
+    height: 8px;
 }
 
 .private-audio-player::-moz-range-thumb {
     background-color: #0288d1;
     border-radius: 50%;
-    width: 12px;
-    height: 12px;
+    width: 14px; /* ИЗМЕНЕНО: Увеличен размер */
+    height: 14px; /* ИЗМЕНЕНО: Увеличен размер */
 }
 
 /* ИЗМЕНЕНО: Стили для временной шкалы */
 .private-audio-time {
     font-family: 'Inter', sans-serif;
-    font-size: 11px; /* ИЗМЕНЕНО: Уменьшен шрифт */
+    font-size: 10px; /* ИЗМЕНЕНО: Уменьшен шрифт */
     color: #666666;
-    line-height: 40px; /* ИЗМЕНЕНО: Выравнивание по высоте плеера */
+    line-height: 48px; /* ИЗМЕНЕНО: Выравнивание по высоте плеера */
     white-space: nowrap;
-    max-width: 60px; /* ДОБАВЛЕНО: Ограничение ширины текста */
-    overflow: hidden; /* ДОБАВЛЕНО: Скрывает переполнение */
-    text-overflow: ellipsis; /* ДОБАВЛЕНО: Эллипсис при переполнении */
+    max-width: 50px; /* ИЗМЕНЕНО: Уменьшена ширина */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
 }
 
 /* ИЗМЕНЕНО: Стили для контейнера аудиосообщений в зависимости от отправителя */
 .private-message.private-current-user .private-audio-message-container {
     background-color: #DCF8C6;
     border-radius: 12px;
-    padding: 6px; /* ИЗМЕНЕНО: Уменьшен отступ */
+    padding: 8px; /* ИЗМЕНЕНО: Возвращён стандартный отступ */
     align-self: flex-end;
+    max-width: 280px; /* ДОБАВЛЕНО: Ограничение ширины */
 }
 
 .private-message.private-current-user.first-message .private-audio-message-container {
@@ -611,8 +618,9 @@
 .private-message.private-other-user .private-audio-message-container {
     background-color: #ECE0F8;
     border-radius: 0 12px 12px 12px;
-    padding: 6px; /* ИЗМЕНЕНО: Уменьшен отступ */
+    padding: 8px; /* ИЗМЕНЕНО: Возвращён стандартный отступ */
     align-self: flex-start;
+    max-width: 280px; /* ДОБАВЛЕНО: Ограничение ширины */
 }
 
 .private-message.private-other-user .private-audio-message-container.no-avatar {
@@ -718,37 +726,44 @@
         height: 20px;
     }
 
-     .private-audio-player {
-        max-width: 180px; /* ИЗМЕНЕНО: Уменьшена ширина */
-        min-width: 160px; /* ИЗМЕНЕНО: Уменьшена минимальная ширина */
-        height: 36px; /* ИЗМЕНЕНО: Увеличена высота */
+    .private-audio-player {
+        max-width: 200px; /* ИЗМЕНЕНО: Увеличена ширина */
+        min-width: 180px; /* ИЗМЕНЕНО: Увеличена минимальная ширина */
+        height: 40px; /* ИЗМЕНЕНО: Увеличена высота */
     }
 
     .private-audio-time {
-        font-size: 10px; /* ИЗМЕНЕНО: Уменьшен шрифт */
-        line-height: 36px; /* ИЗМЕНЕНО: Выравнивание по высоте */
-        max-width: 50px; /* ДОБАВЛЕНО: Ограничение ширины */
-        overflow: hidden; /* ДОБАВЛЕНО: Скрывает переполнение */
-        text-overflow: ellipsis; /* ДОБАВЛЕНО: Эллипсис */
+        font-size: 9px; /* ИЗМЕНЕНО: Уменьшен шрифт */
+        line-height: 40px; /* ИЗМЕНЕНО: Выравнивание */
+        max-width: 45px; /* ИЗМЕНЕНО: Уменьшена ширина */
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .private-audio-controls-container {
-        max-width: 240px; /* ИЗМЕНЕНО: Увеличена ширина */
+        max-width: 250px; /* ИЗМЕНЕНО: Увеличена ширина */
+        padding: 0 4px; /* ДОБАВЛЕНО: Внутренний отступ */
+    }
+
+    .private-audio-player::-webkit-media-controls-panel {
+        min-height: 36px; /* ДОБАВЛЕНО: Минимальная высота */
     }
 
     .private-audio-player::-webkit-media-controls-play-button {
-        width: 24px;
-        height: 24px;
+        width: 28px; /* ИЗМЕНЕНО: Увеличена ширина */
+        height: 28px; /* ИЗМЕНЕНО: Увеличена высота */
         margin-right: 6px;
+        margin-bottom: 4px; /* ДОБАВЛЕНО: Отступ снизу */
     }
 
     .private-audio-player::-webkit-media-controls-mute-button {
-        width: 20px;
-        height: 20px;
+        width: 24px; /* ИЗМЕНЕНО: Увеличена ширина */
+        height: 24px; /* ИЗМЕНЕНО: Увеличена высота */
     }
 
     .private-audio-player::-webkit-media-controls-timeline {
-        height: 6px; /* ИЗМЕНЕНО: Меньшая высота */
-        margin-top: 6px; /* ИЗМЕНЕНО: Уменьшен отступ */
+        height: 6px;
+        margin-top: 8px; /* ИЗМЕНЕНО: Увеличен отступ */
+        display: block; /* ДОБАВЛЕНО: Явное отображение */
     }
 }
