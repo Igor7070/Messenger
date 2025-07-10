@@ -109,7 +109,7 @@
 .private-message-content-container {
     display: block;
     max-width: 80%;
-    min-width: 100px; /* Изменено с 0 на 100px, как в Messenger */
+    min-width: 0;
     padding: 8px;
     border-radius: 12px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -117,14 +117,6 @@
     overflow-wrap: break-word;
     white-space: pre-wrap;
     box-sizing: border-box;
-}
-
-.private-message-content-container.no-avatar {
-    margin-left: 10px !important; /* Уменьшено с 45px до 10px, чтобы избежать сжатия */
-}
-
-.private-message.audio-message .private-message-content-container.no-avatar {
-    margin-left: 0 !important; /* Убираем margin-left для аудиосообщений */
 }
 
 .private-message.private-current-user .private-message-content-container {
@@ -154,9 +146,9 @@
     border-radius: 12px;
 }
 
-/*.private-message-content-container.no-avatar {
+.private-message-content-container.no-avatar {
     margin-left: 45px !important;
-}*/
+}
 
 .private-message-body {
     background: transparent !important;
@@ -497,41 +489,30 @@
 .private-audio-message-container {
     margin-top: 5px;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
+    align-items: center;
     width: 100%;
     max-width: 250px;
     box-sizing: border-box;
-    overflow: hidden;
 }
 
 .private-audio-player {
-    width: 218px; /* Уменьшено с 234px, чтобы учесть padding и предотвратить переполнение */
-    height: 36px;
-    border-radius: 8px;
+    width: 100%;
+    max-width: 250px;
+    height: 32px;
+    border-radius: 5px;
     background-color: #FFFFFF;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .private-audio-player::-webkit-media-controls-panel {
     background-color: #FFFFFF;
-    border-radius: 8px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-    padding: 2px; /* Уменьшено с 4px для компактности */
-    display: flex;
-    align-items: center;
-    width: 100%;
-    box-sizing: border-box;
-    overflow: hidden; /* Добавлено для предотвращения выхода элементов */
+    border-radius: 5px;
 }
 
 .private-audio-player::-webkit-media-controls-timeline {
     background-color: #B0BEC5;
     border-radius: 4px;
     height: 6px;
-    flex-grow: 1;
-    margin: 0 3px; /* Уменьшено с 5px для компактности */
 }
 
 .private-audio-player::-webkit-media-controls-current-time-display,
@@ -565,11 +546,9 @@
 
 .private-audio-time {
     font-family: 'Inter', sans-serif;
-    font-size: 11px; /* Уменьшено с 12px для единообразия */
+    font-size: 11px;
     color: #666666;
-    margin-top: 2px;
-    width: 218px; /* Согласована с шириной плеера */
-    text-align: left;
+    margin-left: 8px; /* Помещаем время рядом с плеером */
 }
 
 .private-message.private-current-user .private-audio-message-container {
@@ -612,11 +591,7 @@
     }
 
     .private-message-content-container.no-avatar {
-        margin-left: 10px !important; /* Уменьшено с 40px до 10px */
-    }
-
-    .private-message.audio-message .private-message-content-container.no-avatar {
-        margin-left: 0 !important; /* Убираем margin-left для аудиосообщений на мобильных */
+        margin-left: 40px !important;
     }
 
     .private-message.private-other-user .private-message-content-container {
@@ -685,12 +660,8 @@
         padding: 2px 5px;
     }
 
-    .private-mic-icon-container {
-        right: 8px; /* ИЗМЕНЕНО: Позиция в правом краю для мобильных */
-        top: 50%; /* ИЗМЕНЕНО: Центрирование по вертикали */
-        transform: translateY(-50%); /* ИЗМЕНЕНО: Центрирование по вертикали */
-        height: 20px;
-        width: 20px;
+    .private-audio-message-container {
+        max-width: 200px;
     }
 
     .private-mic-icon {
@@ -699,22 +670,25 @@
     }
 
     .private-audio-player {
-        width: 168px; /* Уменьшено с 184px: 200px - 16px padding */
-        height: 32px;
+        max-width: 200px;
+        height: 30px;
     }
+
     .private-audio-player::-webkit-media-controls-panel {
         padding: 1px; /* Уменьшено с 2px для мобильных */
     }
+
     .private-audio-player::-webkit-media-controls-timeline {
         margin: 0 2px; /* Уменьшено с 3px для мобильных */
     }
+
     .private-audio-player::-webkit-media-controls-current-time-display,
     .private-audio-player::-webkit-media-controls-time-remaining-display {
         font-size: 10px; /* Уменьшено с 11px для мобильных */
         min-width: 30px; /* Уменьшено с 35px для мобильных */
     }
+    
     .private-audio-time {
-        font-size: 10px; /* Уменьшено с 11px для мобильных */
-        width: 168px; /* Согласована с шириной плеера на мобильных */
+        font-size: 10px;
     }
 }
