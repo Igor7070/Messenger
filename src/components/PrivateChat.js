@@ -783,7 +783,7 @@ const PrivateChat = () => {
                 <div className="private-message-body">
                     {msg.messageType === 'audio' && msg.fileUrl ? (
                       <div className="private-audio-message-container">
-                        <div className="private-audio-controls-container"> {/* ДОБАВЛЕНО: Новый контейнер для кнопки и времени */}
+                        <div className="private-audio-controls-container">
                           <audio
                             controls
                             className="private-audio-player"
@@ -799,8 +799,7 @@ const PrivateChat = () => {
                             {audioTimes[msg.id]?.duration ? formatAudioTime(audioTimes[msg.id].duration) : '0:00'}
                           </div>
                         </div>
-                        {/* ДОБАВЛЕНО: Пустой контейнер для дорожки прогресса, стилизован через CSS */}
-                        <div className="private-audio-timeline-container"></div>
+                        {/* УДАЛЕНО: .private-audio-timeline-container, так как используем дорожку <audio> */}
                       </div>
                     ) : (
                       <>

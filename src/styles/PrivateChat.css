@@ -493,23 +493,26 @@
     flex-direction: column;
     align-items: flex-start;
     width: 100%;
-    gap: 4px; /* ИЗМЕНЕНО: Добавлен зазор между элементами */
+    gap: 4px;
 }
 
-/* ДОБАВЛЕНО: Стили для контейнера кнопки и времени */
+/* ИЗМЕНЕНО: Стили для контейнера кнопки и времени */
 .private-audio-controls-container {
     display: flex;
-    flex-direction: row; /* ДОБАВЛЕНО: Горизонтальное расположение */
+    flex-direction: row;
     align-items: center;
-    gap: 8px; /* ДОБАВЛЕНО: Отступ между плеером и временем */
+    gap: 8px;
+    width: 100%; /* ДОБАВЛЕНО: Ограничивает ширину */
+    max-width: 250px; /* ДОБАВЛЕНО: Соответствует максимальной ширине плеера */
+    flex-wrap: nowrap; /* ДОБАВЛЕНО: Предотвращает перенос элементов */
 }
 
 /* ИЗМЕНЕНО: Стили для аудиоплеера */
 .private-audio-player {
     width: 100%;
-    max-width: 200px; /* ИЗМЕНЕНО: Уменьшена ширина, чтобы время поместилось рядом */
-    min-width: 180px; /* ИЗМЕНЕНО: Уменьшена минимальная ширина */
-    height: 28px; /* ИЗМЕНЕНО: Уменьшена высота для компактности */
+    max-width: 210px; /* ИЗМЕНЕНО: Увеличена ширина для кнопки */
+    min-width: 190px; /* ИЗМЕНЕНО: Увеличена минимальная ширина */
+    height: 36px; /* ИЗМЕНЕНО: Увеличена высота для кнопки */
     border-radius: 8px;
     background-color: #FFFFFF;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -520,9 +523,9 @@
     background-color: #FFFFFF;
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-    padding: 4px;
+    padding: 6px; /* ИЗМЕНЕНО: Увеличен отступ */
     display: flex;
-    flex-direction: column; /* ИЗМЕНЕНО: Вертикальное расположение внутри панели */
+    flex-direction: column; /* ИЗМЕНЕНО: Вертикальное расположение */
     align-items: stretch;
 }
 
@@ -531,15 +534,15 @@
     background-color: #B0BEC5;
     border-radius: 4px;
     height: 6px;
-    margin-top: 4px; /* ДОБАВЛЕНО: Отступ сверху для визуального разделения */
+    margin-top: 6px; /* ИЗМЕНЕНО: Увеличен отступ для разделения */
 }
 
 /* ИЗМЕНЕНО: Стили для кнопки воспроизведения */
 .private-audio-player::-webkit-media-controls-play-button {
     background-color: #42a5f5;
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    width: 28px; /* ИЗМЕНЕНО: Увеличена ширина */
+    height: 28px; /* ИЗМЕНЕНО: Увеличена высота */
     margin-right: 8px;
 }
 
@@ -547,12 +550,14 @@
 .private-audio-player::-webkit-media-controls-mute-button {
     background-color: #42a5f5;
     border-radius: 4px;
+    width: 24px; /* ДОБАВЛЕНО: Фиксированная ширина */
+    height: 24px; /* ДОБАВЛЕНО: Фиксированная высота */
 }
 
-/* ИЗМЕНЕНО: Скрываем встроенное время, так как используем своё */
+/* ИЗМЕНЕНО: Скрываем встроенное время */
 .private-audio-player::-webkit-media-controls-current-time-display,
 .private-audio-player::-webkit-media-controls-time-remaining-display {
-    display: none; /* ИЗМЕНЕНО: Скрываем стандартное время */
+    display: none;
 }
 
 /* ИЗМЕНЕНО: Стили для ползунка */
@@ -582,18 +587,12 @@
     font-family: 'Inter', sans-serif;
     font-size: 12px;
     color: #666666;
-    line-height: 28px; /* ИЗМЕНЕНО: Выравнивание по высоте плеера */
+    line-height: 36px; /* ИЗМЕНЕНО: Выравнивание по высоте плеера */
+    white-space: nowrap; /* ДОБАВЛЕНО: Предотвращает перенос текста */
+    flex-shrink: 0; /* ДОБАВЛЕНО: Запрещает сжатие */
 }
 
-/* ДОБАВЛЕНО: Пустой контейнер для визуального разделения дорожки */
-.private-audio-timeline-container {
-    width: 100%;
-    max-width: 200px; /* ИЗМЕНЕНО: Соответствует ширине плеера */
-    height: 6px; /* ИЗМЕНЕНО: Высота дорожки */
-    background-color: #B0BEC5; /* ИЗМЕНЕНО: Цвет фона дорожки */
-    border-radius: 4px;
-    margin-top: 4px; /* ДОБАВЛЕНО: Отступ для визуального разделения */
-}
+/* УДАЛЕНО: .private-audio-timeline-container (больше не нужен) */
 
 /* ИЗМЕНЕНО: Стили для контейнера аудиосообщений в зависимости от отправителя */
 .private-message.private-current-user .private-audio-message-container {
@@ -718,28 +717,28 @@
     }
 
     .private-audio-player {
-        max-width: 180px; /* ИЗМЕНЕНО: Уменьшена ширина для компактности */
-        min-width: 160px; /* ИЗМЕНЕНО: Уменьшена минимальная ширина */
-        height: 26px; /* ИЗМЕНЕНО: Уменьшена высота */
+        max-width: 190px; /* ИЗМЕНЕНО: Увеличена ширина */
+        min-width: 170px; /* ИЗМЕНЕНО: Увеличена минимальная ширина */
+        height: 32px; /* ИЗМЕНЕНО: Увеличена высота */
     }
 
     .private-audio-time {
         font-size: 11px;
-        line-height: 26px; /* ИЗМЕНЕНО: Выравнивание по высоте плеера */
+        line-height: 32px; /* ИЗМЕНЕНО: Выравнивание по высоте плеера */
+    }
+
+    .private-audio-controls-container {
+        max-width: 230px; /* ДОБАВЛЕНО: Ограничивает ширину контейнера */
     }
 
     .private-audio-player::-webkit-media-controls-play-button {
-        width: 20px;
-        height: 20px;
+        width: 24px; /* ИЗМЕНЕНО: Увеличена ширина */
+        height: 24px; /* ИЗМЕНЕНО: Увеличена высота */
         margin-right: 6px;
     }
 
-    /* ДОБАВЛЕНО: Стили для контейнера дорожки на мобильных */
-    .private-audio-timeline-container {
-        max-width: 180px; /* ИЗМЕНЕНО: Соответствует ширине плеера */
-        height: 5px; /* ИЗМЕНЕНО: Меньшая высота дорожки */
-        background-color: #B0BEC5;
-        border-radius: 4px;
-        margin-top: 4px;
+    .private-audio-player::-webkit-media-controls-mute-button {
+        width: 20px; /* ДОБАВЛЕНО: Фиксированная ширина */
+        height: 20px; /* ДОБАВЛЕНО: Фиксированная высота */
     }
 }
