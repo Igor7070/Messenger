@@ -783,21 +783,20 @@ const PrivateChat = () => {
                 <div className="private-message-body">
                     {msg.messageType === 'audio' && msg.fileUrl ? (
                       <div className="private-audio-message-container">
-                        <div className="private-audio-controls-container">
-                          <audio
-                            controls
-                            className="private-audio-player"
-                            onTimeUpdate={(e) => handleTimeUpdate(msg.id, e)}
-                            onLoadedMetadata={(e) => handleTimeUpdate(msg.id, e)}
-                            onDurationChange={(e) => handleTimeUpdate(msg.id, e)}
-                          >
-                            <source src={msg.fileUrl} type="audio/webm" />
-                            Your browser does not support the audio element.
-                          </audio>
-                          <span className="private-audio-time"> {/* ИЗМЕНЕНО: <div> на <span> для инлайн-блока */}
-                            {formatAudioTime(audioTimes[msg.id]?.currentTime || 0)} /{' '}
-                            {audioTimes[msg.id]?.duration ? formatAudioTime(audioTimes[msg.id].duration) : '0:00'}
-                          </span>
+                        <audio
+                          controls
+                          className="private-audio-player"
+                          onTimeUpdate={(e) => handleTimeUpdate(msg.id, e)}
+                          onLoadedMetadata={(e) => handleTimeUpdate(msg.id, e)}
+                          onDurationChange={(e) => handleTimeUpdate(msg.id, e)} // ДОБАВЛЕНО: Обработка изменения длительности
+                        >
+                          <source src={msg.fileUrl} type="audio/webm" />
+                          Your browser does not support the audio element.
+                        </audio>
+                        {/* ИЗМЕНЕНО: Временная шкала с запасным текстом */}
+                        <div className="private-audio-time">
+                          {formatAudioTime(audioTimes[msg.id]?.currentTime || 0)} /{' '}
+                          {audioTimes[msg.id]?.duration ? formatAudioTime(audioTimes[msg.id].duration) : '0:00'}
                         </div>
                       </div>
                     ) : (
