@@ -48,15 +48,10 @@ const PrivateChat = () => {
   const [showTranslationModal, setShowTranslationModal] = useState(false);
 
   const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
-
   // ДОБАВЛЕНО: Состояния для аудиозаписи
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [micIconState, setMicIconState] = useState('mic'); // 'mic', 'recording', 'sending'
-
-  // ДОБАВЛЕНО: Состояние для времени воспроизведения и длительности для каждого сообщения
-  const audioRefs = useRef({}); // Изменено с useState на useRef
-  const [audioProgress, setAudioProgress] = useState({});
 
   // ДОБАВЛЕНО: Состояния для динамического размера текстового поля
   const [rows, setRows] = useState(1);
@@ -677,84 +672,6 @@ const PrivateChat = () => {
     textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
   };
 
-  const handleTimeUpdate = (messageId, audio) => {
-    if (!audio) {
-      console.warn(`No audio element for msg ${messageId}`);
-      return;
-    }
-    const duration = isFinite(audio.duration) && !isNaN(audio.duration) ? audio.duration : 0;
-    console.log(`Message ${messageId}: duration=${audio.duration}, currentTime=${audio.currentTime}`);
-    setAudioProgress((prev) => ({
-      ...prev,
-      [messageId]: {
-        ...prev[messageId],
-        currentTime: audio.currentTime,
-        duration: duration,
-      },
-    }));
-  };
-
-  const handleLoadedMetadata = (messageId, audio) => {
-    if (!audio) {
-      console.warn(`No audio element for msg ${messageId}`);
-      return;
-    }
-    const duration = isFinite(audio.duration) && !isNaN(audio.duration) ? audio.duration : 0;
-    console.log(`Metadata loaded for msg ${messageId}: duration=${audio.duration}`);
-    setAudioProgress((prev) => ({
-      ...prev,
-      [messageId]: {
-        ...prev[messageId],
-        duration: duration,
-        isPreloading: false,
-      },
-    }));
-  };
-
-  const handleCanPlay = (messageId) => {
-    console.log(`Can play audio for msg ${messageId}`);
-    setAudioProgress((prev) => ({
-      ...prev,
-      [messageId]: {
-        ...prev[messageId],
-        isPreloading: false,
-      },
-    }));
-  };
-
-  const handleAudioError = (messageId, event) => {
-    console.error(`Audio error for msg ${messageId}:`, event);
-    setAudioProgress((prev) => ({
-      ...prev,
-      [messageId]: {
-        ...prev[messageId],
-        error: 'Failed to load audio',
-        isPreloading: false,
-      },
-    }));
-  };
-
-  const handleAudioEnded = (messageId) => {
-    console.log(`Audio ended for msg ${messageId}`);
-    setAudioProgress((prev) => ({
-      ...prev,
-      [messageId]: {
-        ...prev[messageId],
-        currentTime: 0,
-      },
-    }));
-  };
-
-  const formatAudioTime = (seconds) => {
-    if (!isFinite(seconds) || isNaN(seconds) || seconds < 0) {
-      console.log(`Invalid seconds: ${seconds}`);
-      return '0:00';
-    }
-    const minutes = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
-  };
-
   return (
     <div className="private-chat">
       <div className="private-chat-name">
@@ -839,34 +756,11 @@ const PrivateChat = () => {
               >
                 <div className="private-message-body">
                     {msg.messageType === 'audio' && msg.fileUrl ? (
-                      <div className={`private-audio-message-container ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}>
-                        <audio
-                          ref={(el) => {
-                            audioRefs.current[msg.id] = el; // Используем useRef
-                            if (el && !audioProgress[msg.id]?.isPreloading) {
-                              console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
-                            }
-                          }}
-                          onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
-                          onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
-                          onCanPlay={() => handleCanPlay(msg.id)}
-                          onError={(e) => handleAudioError(msg.id, e)}
-                          onEnded={() => handleAudioEnded(msg.id)}
-                          className="private-audio-player"
-                          preload="auto"
-                          controls
-                        >
+                      <div className="private-audio-message-container">
+                        <audio controls className="private-audio-player">
                           <source src={msg.fileUrl} type="audio/webm" />
                           Your browser does not support the audio element.
                         </audio>
-                        {audioProgress[msg.id]?.error ? (
-                          <span className="private-audio-error">{audioProgress[msg.id].error}</span>
-                        ) : (
-                          <div className="private-audio-time">
-                            {formatAudioTime(audioProgress[msg.id]?.currentTime || 0)} /{' '}
-                            {formatAudioTime(audioProgress[msg.id]?.duration || 0)}
-                          </div>
-                        )}
                       </div>
                     ) : (
                       <>
