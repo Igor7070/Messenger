@@ -55,7 +55,7 @@ const PrivateChat = () => {
   const [micIconState, setMicIconState] = useState('mic'); // 'mic', 'recording', 'sending'
 
   // ДОБАВЛЕНО: Состояние для времени воспроизведения и длительности для каждого сообщения
-  const [audioRefs, setAudioRefs] = useState({});
+  const audioRefs = useRef({}); // Изменено с useState на useRef
   const [audioProgress, setAudioProgress] = useState({});
 
   // ДОБАВЛЕНО: Состояния для динамического размера текстового поля
@@ -678,9 +678,12 @@ const PrivateChat = () => {
   };
 
   const handleTimeUpdate = (messageId, audio) => {
-    if (!audio) return;
+    if (!audio) {
+      console.warn(`No audio element for msg ${messageId}`);
+      return;
+    }
     const duration = isFinite(audio.duration) && !isNaN(audio.duration) ? audio.duration : 0;
-    console.log(`Message ${messageId}: duration=${audio.duration}, currentTime=${audio.currentTime}`); // Отладка
+    console.log(`Message ${messageId}: duration=${audio.duration}, currentTime=${audio.currentTime}`);
     setAudioProgress((prev) => ({
       ...prev,
       [messageId]: {
@@ -692,9 +695,12 @@ const PrivateChat = () => {
   };
 
   const handleLoadedMetadata = (messageId, audio) => {
-    if (!audio) return;
+    if (!audio) {
+      console.warn(`No audio element for msg ${messageId}`);
+      return;
+    }
     const duration = isFinite(audio.duration) && !isNaN(audio.duration) ? audio.duration : 0;
-    console.log(`Metadata loaded for msg ${messageId}: duration=${audio.duration}`); // Отладка
+    console.log(`Metadata loaded for msg ${messageId}: duration=${audio.duration}`);
     setAudioProgress((prev) => ({
       ...prev,
       [messageId]: {
@@ -706,7 +712,7 @@ const PrivateChat = () => {
   };
 
   const handleCanPlay = (messageId) => {
-    console.log(`Can play audio for msg ${messageId}`); // Отладка
+    console.log(`Can play audio for msg ${messageId}`);
     setAudioProgress((prev) => ({
       ...prev,
       [messageId]: {
@@ -717,7 +723,7 @@ const PrivateChat = () => {
   };
 
   const handleAudioError = (messageId, event) => {
-    console.error(`Audio error for msg ${messageId}:`, event); // Отладка
+    console.error(`Audio error for msg ${messageId}:`, event);
     setAudioProgress((prev) => ({
       ...prev,
       [messageId]: {
@@ -729,7 +735,7 @@ const PrivateChat = () => {
   };
 
   const handleAudioEnded = (messageId) => {
-    console.log(`Audio ended for msg ${messageId}`); // Отладка
+    console.log(`Audio ended for msg ${messageId}`);
     setAudioProgress((prev) => ({
       ...prev,
       [messageId]: {
@@ -741,7 +747,7 @@ const PrivateChat = () => {
 
   const formatAudioTime = (seconds) => {
     if (!isFinite(seconds) || isNaN(seconds) || seconds < 0) {
-      console.log(`Invalid seconds: ${seconds}`); // Отладка
+      console.log(`Invalid seconds: ${seconds}`);
       return '0:00';
     }
     const minutes = Math.floor(seconds / 60);
@@ -836,7 +842,7 @@ const PrivateChat = () => {
                       <div className={`private-audio-message-container ${msg.sender.id === userId ? 'current-user' : 'other-user'}`}>
                         <audio
                           ref={(el) => {
-                            audioRefs.current[msg.id] = el;
+                            audioRefs.current[msg.id] = el; // Используем useRef
                             if (el && !audioProgress[msg.id]?.isPreloading) {
                               console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
                             }
