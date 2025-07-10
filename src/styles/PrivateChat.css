@@ -490,17 +490,18 @@
 .private-audio-message-container {
     margin-top: 5px;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    width: 100%; /* ДОБАВЛЕНО: Гарантирует, что контейнер использует доступную ширину */
+    flex-direction: row; /* ИЗМЕНЕНО: Горизонтальная компоновка для всех элементов */
+    align-items: center; /* ИЗМЕНЕНО: Выравнивание по центру для кнопки и времени */
+    gap: 8px; /* ИЗМЕНЕНО: Увеличен зазор */
+    width: 100%;
+    max-width: 350px; /* ИЗМЕНЕНО: Существенно увеличена ширина контейнера */
 }
 
 /* ИЗМЕНЕНО: Стили для аудиоплеера */
 .private-audio-player {
     width: 100%;
-    max-width: 250px;
-    min-width: 200px; /* ДОБАВЛЕНО: Минимальная ширина для кнопок */
+    max-width: 280px; /* ИЗМЕНЕНО: Существенно увеличена ширина */
+    min-width: 240px; /* ИЗМЕНЕНО: Увеличена минимальная ширина */
     height: 36px;
     border-radius: 8px;
     background-color: #FFFFFF;
@@ -566,9 +567,13 @@
 /* ИЗМЕНЕНО: Стили для временной шкалы */
 .private-audio-time {
     font-family: 'Inter', sans-serif;
-    font-size: 12px;
+    font-size: 11px; /* ИЗМЕНЕНО: Уменьшен шрифт для компактности */
     color: #666666;
-    margin-top: 2px;
+    white-space: nowrap;
+    max-width: 60px; /* ИЗМЕНЕНО: Ограничение ширины для предотвращения вылезания */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0; /* ДОБАВЛЕНО: Запрещаем сжатие */
 }
 
 /* ИЗМЕНЕНО: Стили для контейнера аудиосообщений в зависимости от отправителя */
