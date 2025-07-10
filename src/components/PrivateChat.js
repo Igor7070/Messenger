@@ -676,21 +676,23 @@ const PrivateChat = () => {
     textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
   };
 
-  // ДОБАВЛЕНО: Обработчик события времени воспроизведения
+  // ИЗМЕНЕНО: Обработчик события времени воспроизведения
   const handleTimeUpdate = (messageId, event) => {
     const audio = event.target;
+    const duration = isFinite(audio.duration) && !isNaN(audio.duration) ? audio.duration : 0;
+    const currentTime = isFinite(audio.currentTime) && !isNaN(audio.currentTime) ? audio.currentTime : 0;
     setAudioTimes((prev) => ({
       ...prev,
       [messageId]: {
-        currentTime: audio.currentTime,
-        duration: audio.duration || prev[messageId]?.duration || 0,
+        currentTime,
+        duration,
       },
     }));
   };
 
-  // ДОБАВЛЕНО: Форматирование времени (секунды в mm:ss)
+  // ИЗМЕНЕНО: Форматирование времени (секунды в mm:ss)
   const formatAudioTime = (seconds) => {
-    if (isNaN(seconds)) return '0:00';
+    if (!isFinite(seconds) || isNaN(seconds) || seconds <= 0) return '0:00';
     const minutes = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
@@ -784,16 +786,17 @@ const PrivateChat = () => {
                         <audio
                           controls
                           className="private-audio-player"
-                          onTimeUpdate={(e) => handleTimeUpdate(msg.id, e)} // ДОБАВЛЕНО: Обработчик времени
-                          onLoadedMetadata={(e) => handleTimeUpdate(msg.id, e)} // ДОБАВЛЕНО: Обработчик загрузки метаданных
+                          onTimeUpdate={(e) => handleTimeUpdate(msg.id, e)}
+                          onLoadedMetadata={(e) => handleTimeUpdate(msg.id, e)}
+                          onDurationChange={(e) => handleTimeUpdate(msg.id, e)} // ДОБАВЛЕНО: Обработка изменения длительности
                         >
                           <source src={msg.fileUrl} type="audio/webm" />
                           Your browser does not support the audio element.
                         </audio>
-                        {/* ДОБАВЛЕНО: Временная шкала */}
+                        {/* ИЗМЕНЕНО: Временная шкала с запасным текстом */}
                         <div className="private-audio-time">
                           {formatAudioTime(audioTimes[msg.id]?.currentTime || 0)} /{' '}
-                          {formatAudioTime(audioTimes[msg.id]?.duration || 0)}
+                          {audioTimes[msg.id]?.duration ? formatAudioTime(audioTimes[msg.id].duration) : '0:00'}
                         </div>
                       </div>
                     ) : (
