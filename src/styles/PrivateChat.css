@@ -487,31 +487,51 @@
 }
 
 .private-audio-message-container {
-    margin-top: 5px;
+    margin: 8px 0;
     display: flex;
     flex-direction: column; /* Временная шкала под плеером */
     align-items: flex-start;
     width: 100%;
-    max-width: 300px; /* Увеличиваем max-width для большей ширины плеера */
+    max-width: 320px; /* Достаточно места для плеера */
+    padding: 10px;
+    border-radius: 12px;
     box-sizing: border-box;
-    padding: 8px; /* Добавляем отступы для единообразия */
+    background-color: #F5F5F5; /* Нейтральный фон */
+}
+
+/* Стили для текущего пользователя */
+.private-message.private-current-user .private-audio-message-container {
+    background-color: #DCF8C6; /* Светло-зеленый для текущего пользователя */
+    align-self: flex-end;
+    border-radius: 12px 0 12px 12px;
+}
+
+/* Стили для других пользователей */
+.private-message.private-other-user .private-audio-message-container {
+    background-color: #ECE0F8; /* Светло-фиолетовый для других */
+    align-self: flex-start;
+    border-radius: 0 12px 12px 12px;
+}
+
+.private-message.private-other-user .private-audio-message-container.no-avatar {
     border-radius: 12px;
 }
 
 .private-audio-player {
     width: 100%;
-    max-width: 280px; /* Увеличиваем ширину для отображения всех элементов управления */
-    height: 36px; /* Увеличиваем высоту для лучшей видимости */
+    max-width: 300px; /* Ширина для всех элементов управления */
+    height: 40px; /* Достаточная высота */
     border-radius: 8px;
     background-color: #FFFFFF;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: block; /* Убираем возможные flex-артефакты */
 }
 
 /* Кастомизация элементов управления */
 .private-audio-player::-webkit-media-controls-panel {
     background-color: #FFFFFF;
     border-radius: 8px;
-    padding: 4px;
+    padding: 4px 8px;
     display: flex;
     align-items: center;
     width: 100%;
@@ -519,19 +539,28 @@
 }
 
 .private-audio-player::-webkit-media-controls-play-button {
-    background-color: #42a5f5; /* Цвет кнопки воспроизведения */
+    background-color: #42A5F5; /* Синий цвет кнопки */
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    margin-right: 8px;
+    width: 32px;
+    height: 32px;
+    margin-right: 10px;
+    border: none;
+    cursor: pointer;
 }
 
 .private-audio-player::-webkit-media-controls-timeline {
-    background-color: #B0BEC5;
+    background-color: #E0E0E0; /* Серый фон дорожки */
     border-radius: 4px;
     height: 6px;
     flex-grow: 1;
-    margin: 0 8px;
+    margin: 0 10px;
+}
+
+.private-audio-player::-webkit-media-controls-timeline::-webkit-slider-thumb {
+    background-color: #42A5F5; /* Синий ползунок */
+    border-radius: 50%;
+    width: 12px;
+    height: 12px;
 }
 
 .private-audio-player::-webkit-media-controls-current-time-display,
@@ -539,36 +568,19 @@
     font-family: 'Inter', sans-serif;
     font-size: 12px;
     color: #333333;
-    min-width: 40px;
-    max-width: 40px;
+    min-width: 45px;
+    max-width: 45px;
     text-align: center;
+    padding: 0 5px;
 }
 
 .private-audio-time {
     font-family: 'Inter', sans-serif;
     font-size: 12px;
     color: #666666;
-    margin-top: 4px; /* Отступ сверху для размещения под плеером */
+    margin-top: 6px; /* Отступ для размещения под плеером */
     width: 100%;
     text-align: left;
-}
-
-/* Стили для текущего пользователя */
-.private-message.private-current-user .private-audio-message-container {
-    background-color: #DCF8C6;
-    align-self: flex-end;
-    border-radius: 12px 0 12px 12px;
-}
-
-/* Стили для других пользователей */
-.private-message.private-other-user .private-audio-message-container {
-    background-color: #ECE0F8;
-    align-self: flex-start;
-    border-radius: 0 12px 12px 12px;
-}
-
-.private-message.private-other-user .private-audio-message-container.no-avatar {
-    border-radius: 12px;
 }
 
 @media (max-width: 800px) {
@@ -658,28 +670,29 @@
     }
 
     .private-audio-message-container {
-        max-width: 240px; /* Уменьшаем для мобильных */
+        max-width: 260px;
+        padding: 8px;
     }
     .private-audio-player {
-        max-width: 220px; /* Уменьшаем ширину плеера */
-        height: 32px;
+        max-width: 240px;
+        height: 36px;
     }
     .private-audio-player::-webkit-media-controls-play-button {
-        width: 24px;
-        height: 24px;
-        margin-right: 6px;
+        width: 28px;
+        height: 28px;
+        margin-right: 8px;
     }
     .private-audio-player::-webkit-media-controls-timeline {
-        margin: 0 6px;
+        margin: 0 8px;
     }
     .private-audio-player::-webkit-media-controls-current-time-display,
     .private-audio-player::-webkit-media-controls-time-remaining-display {
         font-size: 11px;
-        min-width: 35px;
-        max-width: 35px;
+        min-width: 40px;
+        max-width: 40px;
     }
     .private-audio-time {
         font-size: 11px;
-        margin-top: 3px;
+        margin-top: 4px;
     }
 }

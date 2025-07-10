@@ -677,19 +677,20 @@ const PrivateChat = () => {
   };
 
   const handleTimeUpdate = (messageId, event) => {
-   const audio = event.target;
-   const duration = isFinite(audio.duration) && !isNaN(audio.duration) ? audio.duration : 0;
-   setAudioTimes((prev) => ({
-     ...prev,
-     [messageId]: {
-       currentTime: audio.currentTime,
-       duration: duration || prev[messageId]?.duration || 0,
-     },
-   }));
+    const audio = event.target;
+    const duration = isFinite(audio.duration) && !isNaN(audio.duration) ? audio.duration : 0;
+    console.log(`Message ${messageId}: duration=${audio.duration}, currentTime=${audio.currentTime}`); // Для отладки
+    setAudioTimes((prev) => ({
+      ...prev,
+      [messageId]: {
+        currentTime: audio.currentTime,
+        duration: duration,
+      },
+    }));
   };
 
   const formatAudioTime = (seconds) => {
-    if (!isFinite(seconds) || isNaN(seconds)) return '0:00';
+    if (!isFinite(seconds) || isNaN(seconds) || seconds < 0) return '0:00';
     const minutes = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
@@ -785,6 +786,7 @@ const PrivateChat = () => {
                           className="private-audio-player"
                           onTimeUpdate={(e) => handleTimeUpdate(msg.id, e)}
                           onLoadedMetadata={(e) => handleTimeUpdate(msg.id, e)}
+                          onError={(e) => console.error(`Audio error for message ${msg.id}:`, e)}
                         >
                           <source src={msg.fileUrl} type="audio/webm" />
                           Your browser does not support the audio element.
