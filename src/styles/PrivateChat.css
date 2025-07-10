@@ -489,16 +489,17 @@
 .private-audio-message-container {
     margin-top: 5px;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    width: 100%; /* ДОБАВЛЕНО: Полная ширина внутри родителя */
-    max-width: 250px; /* ДОБАВЛЕНО: Фиксированная максимальная ширина */
-    box-sizing: border-box; /* ДОБАВЛЕНО: Явное указание */
+    flex-direction: column; /* Сохранено: Вертикальное расположение */
+    align-items: flex-start; /* Сохранено */
+    gap: 4px; /* Сохранено */
+    width: 100%; /* Сохранено */
+    max-width: 250px; /* Сохранено: Ограничивает контейнер */
+    box-sizing: border-box; /* Сохранено */
+    overflow: hidden; /* ДОБАВЛЕНО: Предотвращает выход элементов за границы */
 }
 
 .private-audio-player {
-    width: 250px; /* ИЗМЕНЕНО: Фиксированная ширина вместо max-width */
+    width: 234px; /* ИЗМЕНЕНО: 250px - 8px padding с каждой стороны */
     height: 36px;
     border-radius: 8px;
     background-color: #FFFFFF;
@@ -510,12 +511,18 @@
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
     padding: 4px;
+    display: flex; /* ДОБАВЛЕНО: Явное управление компоновкой */
+    align-items: center; /* ДОБАВЛЕНО: Центрирование элементов */
+    width: 100%; /* ДОБАВЛЕНО: Панель занимает всю ширину */
+    box-sizing: border-box; /* ДОБАВЛЕНО */
 }
 
 .private-audio-player::-webkit-media-controls-timeline {
     background-color: #B0BEC5;
     border-radius: 4px;
     height: 6px;
+    flex-grow: 1; /* ДОБАВЛЕНО: Дорожка занимает доступное пространство */
+    margin: 0 5px; /* ДОБАВЛЕНО: Отступы для предотвращения переполнения */
 }
 
 .private-audio-player::-webkit-media-controls-current-time-display,
@@ -523,12 +530,15 @@
     font-family: 'Inter', sans-serif;
     font-size: 12px;
     color: #333333;
+    min-width: 40px; /* ДОБАВЛЕНО: Фиксированная ширина для времени */
 }
 
 .private-audio-player::-webkit-media-controls-play-button,
 .private-audio-player::-webkit-media-controls-mute-button {
     background-color: #42a5f5;
     border-radius: 4px;
+    width: 24px; /* ДОБАВЛЕНО: Фиксированная ширина кнопки */
+    height: 24px; /* ДОБАВЛЕНО: Фиксированная высота кнопки */
 }
 
 .private-audio-player::-webkit-slider-thumb {
@@ -556,13 +566,15 @@
     font-size: 12px;
     color: #666666;
     margin-top: 2px;
+    width: 100%; /* ДОБАВЛЕНО: Временная шкала не выходит за контейнер */
+    text-align: left; /* ДОБАВЛЕНО: Выравнивание слева */
 }
 
 .private-message.private-current-user .private-audio-message-container {
     background-color: #DCF8C6;
     border-radius: 12px;
     padding: 8px;
-    align-self: flex-end; /* ДОБАВЛЕНО: Выравнивание вправо */
+    align-self: flex-end;
 }
 
 .private-message.private-current-user.first-message .private-audio-message-container {
@@ -573,12 +585,12 @@
     background-color: #ECE0F8;
     border-radius: 0 12px 12px 12px;
     padding: 8px;
-    align-self: flex-start; /* ДОБАВЛЕНО: Выравнивание влево */
+    align-self: flex-start;
 }
 
 .private-message.private-other-user .private-audio-message-container.no-avatar {
     border-radius: 12px;
-    margin-left: 0; /* ДОБАВЛЕНО: Убираем лишний отступ для последовательных сообщений */
+    margin-left: 0;
 }
 
 @media (max-width: 800px) {
@@ -681,12 +693,25 @@
     }
 
     .private-audio-player {
-        width: 200px; /* ИЗМЕНЕНО: Фиксированная ширина */
+        width: 184px; /* ИЗМЕНЕНО: 200px - 8px padding с каждой стороны */
         height: 32px;
     }
 
-    /* ДОБАВЛЕНО: Стили для временной шкалы на мобильных */
+    .private-audio-player::-webkit-media-controls-panel {
+        padding: 2px; /* ДОБАВЛЕНО: Меньший padding для мобильных */
+    }
+
+    .private-audio-player::-webkit-media-controls-timeline {
+        margin: 0 3px; /* ДОБАВЛЕНО: Меньшие отступы для мобильных */
+    }
+
+    .private-audio-player::-webkit-media-controls-current-time-display,
+    .private-audio-player::-webkit-media-controls-time-remaining-display {
+        font-size: 11px; /* ДОБАВЛЕНО: Меньший шрифт для времени */
+        min-width: 35px; /* ДОБАВЛЕНО: Меньшая ширина для времени */
+    }
+
     .private-audio-time {
-        font-size: 11px;
+        font-size: 11px; /* ДОБАВЛЕНО: Меньший шрифт для мобильных */
     }
 }
