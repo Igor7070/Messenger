@@ -794,12 +794,11 @@ const PrivateChat = () => {
                             <source src={msg.fileUrl} type="audio/webm" />
                             Your browser does not support the audio element.
                           </audio>
-                          <div className="private-audio-time">
+                          <span className="private-audio-time"> {/* ИЗМЕНЕНО: <div> на <span> для инлайн-блока */}
                             {formatAudioTime(audioTimes[msg.id]?.currentTime || 0)} /{' '}
                             {audioTimes[msg.id]?.duration ? formatAudioTime(audioTimes[msg.id].duration) : '0:00'}
-                          </div>
+                          </span>
                         </div>
-                        {/* УДАЛЕНО: .private-audio-timeline-container, так как используем дорожку <audio> */}
                       </div>
                     ) : (
                       <>
