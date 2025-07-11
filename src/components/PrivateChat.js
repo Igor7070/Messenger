@@ -741,18 +741,25 @@ const PrivateChat = () => {
   const handleLoadedMetadata = (msgId, audioElement) => {
     console.log(`Metadata loaded for msg ${msgId}: duration=${audioElement.duration}, readyState=${audioElement.readyState}`);
     const duration = isFinite(audioElement.duration) && audioElement.duration > 0 ? audioElement.duration : 0;
-    setAudioProgress((prev) => ({
-      ...prev,
-      [msgId]: {
-        ...prev[msgId] || {},
-        currentTime: prev[msgId]?.currentTime || 0,
-        duration,
-        isPlaying: prev[msgId]?.isPlaying || false,
-        isReady: audioElement.readyState >= 2,
-        error: duration === 0 ? 'Duration unavailable' : null,
-        isPreloading: false,
-      },
-    }));
+    setAudioProgress((prev) => {
+      const prevData = prev[msgId] || {};
+      // Пропускаем, если метаданные уже обработаны и длительность не изменилась
+      if (prevData.isReady && prevData.duration === duration) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [msgId]: {
+          ...prevData,
+          currentTime: prevData.currentTime || 0,
+          duration,
+          isPlaying: prevData.isPlaying || false,
+          isReady: audioElement.readyState >= 2,
+          error: duration === 0 ? 'Duration unavailable' : null,
+          isPreloading: false,
+        },
+      };
+    });
   };
 
   // Обработчик события canplay
