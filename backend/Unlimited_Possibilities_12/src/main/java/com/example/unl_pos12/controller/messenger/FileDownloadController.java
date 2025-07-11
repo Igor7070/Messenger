@@ -35,7 +35,6 @@ public class FileDownloadController {
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
-                // --- НАЧАЛО ДОБАВЛЕНИЯ ---
                 // Проверяем messageType для файла
                 String mimeType = Files.probeContentType(filePath);
                 if (decodedFilename.endsWith(".webm")) {
@@ -52,7 +51,13 @@ public class FileDownloadController {
                 } else if (mimeType == null) {
                     mimeType = determineMimeType(decodedFilename);
                 }
-                // --- КОНЕЦ ДОБАВЛЕНИЯ ---
+
+                // Проверка Content-Length
+                long contentLength = resource.contentLength();
+                System.out.println("Serving file: " + decodedFilename + ", Content-Length: " + contentLength);
+                if (contentLength <= 0) {
+                    System.err.println("Warning: Content-Length is 0 or negative for file: " + decodedFilename);
+                }
 
                 // Устанавливаем заголовки
                 return ResponseEntity.ok()
