@@ -740,38 +740,13 @@ const PrivateChat = () => {
   // Обработчик загрузки метаданных
   const handleLoadedMetadata = (msgId, audioElement) => {
     console.log(`Metadata loaded for msg ${msgId}: duration=${audioElement.duration}, readyState=${audioElement.readyState}`);
-    let duration = isFinite(audioElement.duration) && audioElement.duration > 0 ? audioElement.duration : 0;
+    const duration = isFinite(audioElement.duration) && audioElement.duration > 0 ? audioElement.duration : 0;
 
-    // Проверяем, нужно ли обновлять состояние
     setAudioProgress((prev) => {
       const prevData = prev[msgId] || {};
       if (prevData.isReady && prevData.duration === duration) {
-        return prev; // Пропускаем обновление, если данные не изменились
+        return prev;
       }
-
-      // Если duration=Infinity, пытаемся получить длительность
-      if (audioElement.duration === Infinity && audioElement.readyState >= 2) {
-        audioElement.currentTime = 1e10; // Перематываем в "будущее"
-        audioElement.addEventListener(
-          'timeupdate',
-          () => {
-            const newDuration = audioElement.currentTime;
-            audioElement.currentTime = 0; // Возвращаем в начало
-            setAudioProgress((prev) => ({
-              ...prev,
-              [msgId]: {
-                ...prev[msgId] || {},
-                duration: newDuration,
-                error: newDuration > 0 ? null : 'Duration unavailable',
-                isReady: true,
-                isPreloading: false,
-              },
-            }));
-          },
-          { once: true }
-        );
-      }
-
       return {
         ...prev,
         [msgId]: {
@@ -780,7 +755,7 @@ const PrivateChat = () => {
           duration,
           isPlaying: prevData.isPlaying || false,
           isReady: audioElement.readyState >= 2,
-          error: duration === 0 ? 'Duration unavailable' : null,
+          error: duration === 0 ? 'Duration unavailable: server issue' : null,
           isPreloading: false,
         },
       };
@@ -824,32 +799,45 @@ const PrivateChat = () => {
 
   // Обработчик ошибок аудио
   const handleAudioError = (msgId, error) => {
-    console.error(`Audio error for msg ${msgId}:`, error, 'URL:', audioRefs.current[msgId]?.src, 'readyState:', audioRefs.current[msgId]?.readyState);
-    setAudioProgress((prev) => ({
-      ...prev,
-      [msgId]: {
-        ...prev[msgId] || {},
-        isReady: false,
-        isPlaying: false,
-        error: error.message || 'Failed to load audio',
-      },
-    }));
+    const audio = audioRefs.current[msgId];
+    console.error(`Audio error for msg ${msgId}:`, error, 'URL:', audio?.src, 'readyState:', audio?.readyState);
+    setAudioProgress((prev) => {
+      const prevData = prev[msgId] || {};
+      // Игнорируем ошибку, если аудио уже проигралось или readyState >= 2
+      if (prevData.isReady && audio?.readyState >= 2) {
+        console.log(`Ignoring error for msg ${msgId}: audio already playable, readyState: ${audio.readyState}`);
+        return prev;
+      }
+      return {
+        ...prev,
+        [msgId]: {
+          ...prevData,
+          isReady: false,
+          isPlaying: false,
+          error: error.message || 'Failed to load audio',
+        },
+      };
+    });
   };
 
   // Обработчик окончания воспроизведения
   const handleAudioEnded = (msgId) => {
     console.log(`Audio ended for msg ${msgId}`);
+    const audio = audioRefs.current[msgId];
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
         ...prev[msgId],
         currentTime: 0,
         isPlaying: false,
+        isReady: audio?.readyState >= 2, // Сохраняем isReady
+        error: null, // Очищаем ошибку
       },
     }));
-    const audio = audioRefs.current[msgId];
     if (audio) {
       audio.currentTime = 0;
+      audio.load(); // Перезагружаем данные
+      console.log(`Audio reloaded for msg ${msgId} to maintain playability`);
     }
   };
 
@@ -857,15 +845,17 @@ const PrivateChat = () => {
   const preloadAudio = (msgId, url) => {
     const audio = audioRefs.current[msgId];
     if (audio && !audioProgress[msgId]?.isReady) {
+      audio.src = url;
       audio.load();
       console.log(`Preloading audio for msg ${msgId}: ${url}`);
-      // Сбрасываем isPreloading после загрузки
       audio.addEventListener('loadedmetadata', () => {
+        console.log(`Preload completed for msg ${msgId}, duration: ${audio.duration}`);
         setAudioProgress((prev) => ({
           ...prev,
           [msgId]: {
             ...prev[msgId],
             isPreloading: false,
+            error: audio.duration === Infinity ? 'Duration unavailable: server issue' : null,
           },
         }));
       }, { once: true });
