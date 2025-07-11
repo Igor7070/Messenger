@@ -845,17 +845,48 @@ const PrivateChat = () => {
   const preloadAudio = (msgId, url) => {
     const audio = audioRefs.current[msgId];
     if (audio && !audioProgress[msgId]?.isReady) {
-      audio.src = url;
-      audio.load();
-      console.log(`Preloading audio for msg ${msgId}: ${url}`);
-      audio.addEventListener('loadedmetadata', () => {
-        console.log(`Preload completed for msg ${msgId}, duration: ${audio.duration}`);
+      // Проверяем, есть ли кэшированные данные
+      if (audio.src === url && audio.readyState >= 2) {
+        console.log(`Skipping preload for msg ${msgId}: already cached, readyState: ${audio.readyState}`);
         setAudioProgress((prev) => ({
           ...prev,
           [msgId]: {
             ...prev[msgId],
             isPreloading: false,
-            error: audio.duration === Infinity ? 'Duration unavailable: server issue' : null,
+            isReady: audio.readyState >= 2,
+            error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
+          },
+        }));
+        return;
+      }
+      audio.src = url;
+      audio.load();
+      console.log(`Preloading audio for msg ${msgId}: ${url}`);
+      audio.addEventListener('loadedmetadata', () => {
+        console.log(`Preload completed for msg ${msgId}, duration: ${audio.duration}, readyState: ${audio.readyState}`);
+        setAudioProgress((prev) => ({
+          ...prev,
+          [msgId]: {
+            ...prev[msgId],
+            isPreloading: false,
+            isReady: audio.readyState >= 2,
+            error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
+          },
+        }));
+      }, { once: true });
+      audio.addEventListener('error', (e) => {
+        console.error(`Preload error for msg ${msgId}:`, e, 'URL:', url, 'readyState:', audio.readyState);
+        if (audio.readyState >= 2) {
+          console.log(`Ignoring preload error for msg ${msgId}: audio still playable, readyState: ${audio.readyState}`);
+          return;
+        }
+        setAudioProgress((prev) => ({
+          ...prev,
+          [msgId]: {
+            ...prev[msgId],
+            isPreloading: false,
+            isReady: false,
+            error: 'Failed to preload audio: connection issue',
           },
         }));
       }, { once: true });
