@@ -801,13 +801,25 @@ const PrivateChat = () => {
   const handleAudioError = (msgId, error) => {
     const audio = audioRefs.current[msgId];
     console.error(`Audio error for msg ${msgId}:`, error, 'URL:', audio?.src, 'readyState:', audio?.readyState);
+    if (!audio || !audio.src) {
+      console.log(`Audio element missing or src invalid for msg ${msgId}`);
+      setAudioProgress((prev) => ({
+        ...prev,
+        [msgId]: {
+          ...prev[msgId] || {},
+          isReady: false,
+          isPlaying: false,
+          error: 'Audio element unavailable',
+        },
+      }));
+      return;
+    }
+    if (prevData.isReady && audio.readyState >= 2) {
+      console.log(`Ignoring error for msg ${msgId}: audio already playable, readyState: ${audio.readyState}`);
+      return prev;
+    }
     setAudioProgress((prev) => {
       const prevData = prev[msgId] || {};
-      // Игнорируем ошибку, если аудио уже проигралось или readyState >= 2
-      if (prevData.isReady && audio?.readyState >= 2) {
-        console.log(`Ignoring error for msg ${msgId}: audio already playable, readyState: ${audio.readyState}`);
-        return prev;
-      }
       return {
         ...prev,
         [msgId]: {
@@ -824,21 +836,60 @@ const PrivateChat = () => {
   const handleAudioEnded = (msgId) => {
     console.log(`Audio ended for msg ${msgId}`);
     const audio = audioRefs.current[msgId];
+    if (!audio || !audio.src) {
+      console.log(`Audio element missing or src invalid for msg ${msgId}`);
+      setAudioProgress((prev) => ({
+        ...prev,
+        [msgId]: {
+          ...prev[msgId] || {},
+          currentTime: 0,
+          isPlaying: false,
+          isReady: false,
+          error: 'Audio element unavailable after end',
+        },
+      }));
+      return;
+    }
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
         ...prev[msgId],
         currentTime: 0,
         isPlaying: false,
-        isReady: audio?.readyState >= 2, // Сохраняем isReady
-        error: null, // Очищаем ошибку
+        isReady: audio.readyState >= 2,
+        error: null,
       },
     }));
-    if (audio) {
-      audio.currentTime = 0;
-      audio.load(); // Перезагружаем данные
-      console.log(`Audio reloaded for msg ${msgId} to maintain playability`);
-    }
+    audio.currentTime = 0;
+    // Проверяем доступность файла перед перезагрузкой
+    fetch(audio.src, { method: 'HEAD' })
+      .then((response) => {
+        if (response.ok) {
+          audio.load();
+          console.log(`Audio reloaded for msg ${msgId} to maintain playability`);
+        } else {
+          console.error(`Server error for msg ${msgId}: ${response.status}`);
+          setAudioProgress((prev) => ({
+            ...prev,
+            [msgId]: {
+              ...prev[msgId],
+              isReady: false,
+              error: `Server error: ${response.status}`,
+            },
+          }));
+        }
+      })
+      .catch((error) => {
+        console.error(`Fetch error for msg ${msgId}:`, error);
+        setAudioProgress((prev) => ({
+          ...prev,
+          [msgId]: {
+            ...prev[msgId],
+            isReady: false,
+            error: 'Failed to verify audio file',
+          },
+        }));
+      });
   };
 
   // Предзагрузка аудио (вызывается один раз через useEffect)
@@ -978,27 +1029,92 @@ const PrivateChat = () => {
                                 className="private-audio-play-pause"
                                 onClick={() => {
                                   const audio = audioRefs.current[msg.id];
-                                  if (!audio || !audioProgress[msg.id]?.isReady) {
-                                    console.log(`Play blocked for msg ${msg.id}:`, audioProgress[msg.id], 'readyState:', audio?.readyState);
+                                  if (!audio || !audio.src) {
+                                    console.log(`Play blocked for msg ${msg.id}: no audio element or src`);
+                                    setAudioProgress((prev) => ({
+                                      ...prev,
+                                      [msg.id]: {
+                                        ...prev[msg.id] || {},
+                                        error: 'Audio element unavailable',
+                                      },
+                                    }));
+                                    return;
+                                  }
+                                  if (!audioProgress[msg.id]?.isReady || audio.readyState < 2) {
+                                    console.log(`Play blocked for msg ${msg.id}: not ready, readyState: ${audio.readyState}`);
+                                    // Попытка перезагрузить аудио
+                                    audio.src = audio.src;
+                                    audio.load();
+                                    audio.addEventListener(
+                                      'loadedmetadata',
+                                      () => {
+                                        console.log(`Retry load successful for msg ${msg.id}, readyState: ${audio.readyState}`);
+                                        setAudioProgress((prev) => ({
+                                          ...prev,
+                                          [msg.id]: {
+                                            ...prev[msg.id],
+                                            isReady: audio.readyState >= 2,
+                                            error: null,
+                                          },
+                                        }));
+                                      },
+                                      { once: true }
+                                    );
+                                    audio.addEventListener(
+                                      'error',
+                                      (e) => {
+                                        console.error(`Retry load failed for msg ${msg.id}:`, e);
+                                        setAudioProgress((prev) => ({
+                                          ...prev,
+                                          [msg.id]: {
+                                            ...prev[msg.id],
+                                            isReady: false,
+                                            error: 'Failed to reload audio',
+                                          },
+                                        }));
+                                      },
+                                      { once: true }
+                                    );
                                     return;
                                   }
                                   if (audio.paused) {
-                                    audio.play().catch((e) => {
-                                      console.error('Play error:', e);
-                                      handleAudioError(msg.id, e);
+                                    console.log(`Attempting to play audio for msg ${msg.id}, readyState: ${audio.readyState}`);
+                                    audio.play().then(() => {
+                                      console.log(`Audio playing for msg ${msg.id}`);
+                                      setAudioProgress((prev) => ({
+                                        ...prev,
+                                        [msg.id]: {
+                                          ...prev[msg.id],
+                                          isPlaying: true,
+                                          isReady: true,
+                                          error: null,
+                                        },
+                                      }));
+                                    }).catch((e) => {
+                                      console.error(`Play error for msg ${msg.id}:`, e);
+                                      setAudioProgress((prev) => ({
+                                        ...prev,
+                                        [msg.id]: {
+                                          ...prev[msg.id],
+                                          isReady: audio.readyState >= 2,
+                                          error: e.message || 'Failed to play audio',
+                                        },
+                                      }));
                                     });
                                   } else {
                                     audio.pause();
+                                    console.log(`Audio paused for msg ${msg.id}`);
+                                    setAudioProgress((prev) => ({
+                                      ...prev,
+                                      [msg.id]: {
+                                        ...prev[msg.id],
+                                        isPlaying: false,
+                                        isReady: audio.readyState >= 2,
+                                      },
+                                    }));
                                   }
-                                  setAudioProgress((prev) => ({
-                                    ...prev,
-                                    [msg.id]: {
-                                      ...prev[msg.id],
-                                      isPlaying: audio.paused ? false : true,
-                                    },
-                                  }));
                                 }}
-                                disabled={!audioProgress[msg.id]?.isReady}
+                                disabled={!audioProgress[msg.id]?.isReady || audioRefs.current[msg.id]?.readyState < 2}
                               >
                                 {audioProgress[msg.id]?.isPlaying ? '⏸' : '▶'}
                               </button>
