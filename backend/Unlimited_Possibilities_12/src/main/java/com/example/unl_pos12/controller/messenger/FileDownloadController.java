@@ -58,6 +58,9 @@ public class FileDownloadController {
                 return ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(mimeType))
                         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(resource.contentLength())) // Добавляем Content-Length
+                        .header(HttpHeaders.ACCEPT_RANGES, "bytes") // Добавляем поддержку Range
+                        .header(HttpHeaders.CONNECTION, "keep-alive") // Добавляем Keep-Alive
                         .body(resource);
             } else {
                 System.out.println("File not found: " + decodedFilename);
