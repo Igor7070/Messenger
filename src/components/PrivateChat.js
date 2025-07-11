@@ -978,77 +978,27 @@ const PrivateChat = () => {
                                 className="private-audio-play-pause"
                                 onClick={() => {
                                   const audio = audioRefs.current[msg.id];
-                                  if (!audio) {
-                                    console.log(`Play blocked for msg ${msg.id}: no audio element`);
-                                    setAudioProgress((prev) => ({
-                                      ...prev,
-                                      [msg.id]: {
-                                        ...prev[msg.id],
-                                        error: 'No audio element found',
-                                      },
-                                    }));
-                                    return;
-                                  }
-                                  if (!audioProgress[msg.id]?.isReady || audio.readyState < 2) {
-                                    console.log(`Play blocked for msg ${msg.id}: not ready, readyState: ${audio.readyState}`);
-                                    setAudioProgress((prev) => ({
-                                      ...prev,
-                                      [msg.id]: {
-                                        ...prev[msg.id],
-                                        error: 'Audio not ready',
-                                      },
-                                    }));
-                                    return;
-                                  }
-                                  if (audio.duration === Infinity) {
-                                    console.log(`Play blocked for msg ${msg.id}: duration is Infinity`);
-                                    setAudioProgress((prev) => ({
-                                      ...prev,
-                                      [msg.id]: {
-                                        ...prev[msg.id],
-                                        error: 'Cannot play: duration unavailable',
-                                      },
-                                    }));
+                                  if (!audio || !audioProgress[msg.id]?.isReady) {
+                                    console.log(`Play blocked for msg ${msg.id}:`, audioProgress[msg.id], 'readyState:', audio?.readyState);
                                     return;
                                   }
                                   if (audio.paused) {
-                                    console.log(`Attempting to play audio for msg ${msg.id}, readyState: ${audio.readyState}`);
-                                    audio.play().then(() => {
-                                      console.log(`Audio playing for msg ${msg.id}`);
-                                      setAudioProgress((prev) => ({
-                                        ...prev,
-                                        [msg.id]: {
-                                          ...prev[msg.id],
-                                          isPlaying: true,
-                                          isReady: true,
-                                          error: null,
-                                        },
-                                      }));
-                                    }).catch((e) => {
-                                      console.error(`Play error for msg ${msg.id}:`, e);
-                                      setAudioProgress((prev) => ({
-                                        ...prev,
-                                        [msg.id]: {
-                                          ...prev[msg.id],
-                                          isReady: audio.readyState >= 2,
-                                          error: e.message || 'Failed to play audio',
-                                        },
-                                      }));
+                                    audio.play().catch((e) => {
+                                      console.error('Play error:', e);
+                                      handleAudioError(msg.id, e);
                                     });
                                   } else {
                                     audio.pause();
-                                    console.log(`Audio paused for msg ${msg.id}`);
-                                    setAudioProgress((prev) => ({
-                                      ...prev,
-                                      [msg.id]: {
-                                        ...prev[msg.id],
-                                        isPlaying: false,
-                                        isReady: audio.readyState >= 2,
-                                      },
-                                    }));
                                   }
+                                  setAudioProgress((prev) => ({
+                                    ...prev,
+                                    [msg.id]: {
+                                      ...prev[msg.id],
+                                      isPlaying: audio.paused ? false : true,
+                                    },
+                                  }));
                                 }}
-                                disabled={!audioProgress[msg.id]?.isReady || audioProgress[msg.id]?.duration === 0 || audioRefs.current[msg.id]?.readyState < 2}
+                                disabled={!audioProgress[msg.id]?.isReady}
                               >
                                 {audioProgress[msg.id]?.isPlaying ? '⏸' : '▶'}
                               </button>
