@@ -801,25 +801,24 @@ const PrivateChat = () => {
   const handleAudioError = (msgId, error) => {
     const audio = audioRefs.current[msgId];
     console.error(`Audio error for msg ${msgId}:`, error, 'URL:', audio?.src, 'readyState:', audio?.readyState);
-    if (!audio || !audio.src) {
-      console.log(`Audio element missing or src invalid for msg ${msgId}`);
-      setAudioProgress((prev) => ({
-        ...prev,
-        [msgId]: {
-          ...prev[msgId] || {},
-          isReady: false,
-          isPlaying: false,
-          error: 'Audio element unavailable',
-        },
-      }));
-      return;
-    }
-    if (prevData.isReady && audio.readyState >= 2) {
-      console.log(`Ignoring error for msg ${msgId}: audio already playable, readyState: ${audio.readyState}`);
-      return prev;
-    }
     setAudioProgress((prev) => {
       const prevData = prev[msgId] || {};
+      if (!audio || !audio.src) {
+        console.log(`Audio element missing or src invalid for msg ${msgId}`);
+        return {
+          ...prev,
+          [msgId]: {
+            ...prevData,
+            isReady: false,
+            isPlaying: false,
+            error: 'Audio element unavailable',
+          },
+        };
+      }
+      if (prevData.isReady && audio.readyState >= 2) {
+        console.log(`Ignoring error for msg ${msgId}: audio already playable, readyState: ${audio.readyState}`);
+        return prev;
+      }
       return {
         ...prev,
         [msgId]: {
