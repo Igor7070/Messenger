@@ -740,13 +740,38 @@ const PrivateChat = () => {
   // Обработчик загрузки метаданных
   const handleLoadedMetadata = (msgId, audioElement) => {
     console.log(`Metadata loaded for msg ${msgId}: duration=${audioElement.duration}, readyState=${audioElement.readyState}`);
-    const duration = isFinite(audioElement.duration) && audioElement.duration > 0 ? audioElement.duration : 0;
+    let duration = isFinite(audioElement.duration) && audioElement.duration > 0 ? audioElement.duration : 0;
+
+    // Проверяем, нужно ли обновлять состояние
     setAudioProgress((prev) => {
       const prevData = prev[msgId] || {};
-      // Пропускаем, если метаданные уже обработаны и длительность не изменилась
       if (prevData.isReady && prevData.duration === duration) {
-        return prev;
+        return prev; // Пропускаем обновление, если данные не изменились
       }
+
+      // Если duration=Infinity, пытаемся получить длительность
+      if (audioElement.duration === Infinity && audioElement.readyState >= 2) {
+        audioElement.currentTime = 1e10; // Перематываем в "будущее"
+        audioElement.addEventListener(
+          'timeupdate',
+          () => {
+            const newDuration = audioElement.currentTime;
+            audioElement.currentTime = 0; // Возвращаем в начало
+            setAudioProgress((prev) => ({
+              ...prev,
+              [msgId]: {
+                ...prev[msgId] || {},
+                duration: newDuration,
+                error: newDuration > 0 ? null : 'Duration unavailable',
+                isReady: true,
+                isPreloading: false,
+              },
+            }));
+          },
+          { once: true }
+        );
+      }
+
       return {
         ...prev,
         [msgId]: {
@@ -946,7 +971,6 @@ const PrivateChat = () => {
                             }}
                             onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
                             onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
-                            onLoadedData={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])} // ДОБАВЛЕНО
                             onCanPlay={() => handleCanPlay(msg.id)}
                             onError={(e) => handleAudioError(msg.id, e)}
                             onEnded={() => handleAudioEnded(msg.id)}
