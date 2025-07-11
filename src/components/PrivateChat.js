@@ -48,6 +48,7 @@ const PrivateChat = () => {
   const [showTranslationModal, setShowTranslationModal] = useState(false);
 
   const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
+  
   // ДОБАВЛЕНО: Состояния для аудиозаписи
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
@@ -61,6 +62,11 @@ const PrivateChat = () => {
   const [rows, setRows] = useState(1);
   const [charPerLine, setCharPerLine] = useState(50);
   const textAreaRef = useRef(null);
+
+  // ДОБАВЛЕНО: Мемоизация аудиосообщений
+  const memoizedAudioMessages = useMemo(() => {
+    return messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
+  }, [messages]);
   
   // ДОБАВЛЕНО: использование хука
   const {
@@ -296,25 +302,24 @@ const PrivateChat = () => {
 
   // ДОБАВЛЕНО: Предзагрузка аудио для всех сообщений
   useEffect(() => {
-    messages.forEach((msg) => {
+    const visibleAudioMessages = memoizedAudioMessages.slice(-10); // Ограничиваем последними 10 аудиосообщениями
+    visibleAudioMessages.forEach((msg) => {
       if (
-        msg.messageType === 'audio' &&
-        msg.fileUrl &&
         audioRefs.current[msg.id] &&
         !audioProgress[msg.id]?.isReady &&
-        !audioProgress[msg.id]?.isPreloading // Добавляем флаг isPreloading
+        !audioProgress[msg.id]?.isPreloading
       ) {
         setAudioProgress((prev) => ({
           ...prev,
           [msg.id]: {
             ...prev[msg.id] || {},
-            isPreloading: true, // Устанавливаем флаг
+            isPreloading: true,
           },
         }));
         preloadAudio(msg.id, msg.fileUrl);
       }
     });
-  }, [messages]);
+  }, [memoizedAudioMessages]);
 
   const markAllMessagesAsRead = (updatedMessages) => {
     console.log('markAllMessagesAsRead is working...');
@@ -708,33 +713,44 @@ const PrivateChat = () => {
 
   // Обработчик изменения времени воспроизведения
   const handleTimeUpdate = (msgId, audioElement) => {
-    setAudioProgress((prev) => ({
-      ...prev,
-      [msgId]: {
-        ...prev[msgId] || {},
-        currentTime: audioElement.currentTime,
-        duration: audioElement.duration || prev[msgId]?.duration || 0,
-        isPlaying: !audioElement.paused,
-        isReady: prev[msgId]?.isReady || false,
-        error: prev[msgId]?.error || null,
-      },
-    }));
+    setAudioProgress((prev) => {
+      const prevData = prev[msgId] || {};
+      // Проверяем, изменились ли ключевые поля
+      if (
+        prevData.currentTime === audioElement.currentTime &&
+        prevData.isPlaying === !audioElement.paused &&
+        prevData.duration === audioElement.duration
+      ) {
+        return prev; // Ничего не изменилось, возвращаем старое состояние
+      }
+      return {
+        ...prev,
+        [msgId]: {
+          ...prevData,
+          currentTime: audioElement.currentTime,
+          duration: audioElement.duration || prevData.duration || 0,
+          isPlaying: !audioElement.paused,
+          isReady: prevData.isReady || false,
+          error: prevData.error || null,
+        },
+      };
+    });
   };
 
   // Обработчик загрузки метаданных
   const handleLoadedMetadata = (msgId, audioElement) => {
     console.log(`Metadata loaded for msg ${msgId}: duration=${audioElement.duration}, readyState=${audioElement.readyState}`);
-    const duration = audioElement.duration === Infinity ? 0 : audioElement.duration; // Заглушка для Infinity
+    const duration = isFinite(audioElement.duration) && audioElement.duration > 0 ? audioElement.duration : 0;
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
         ...prev[msgId] || {},
         currentTime: prev[msgId]?.currentTime || 0,
-        duration: duration || 0,
+        duration,
         isPlaying: prev[msgId]?.isPlaying || false,
         isReady: audioElement.readyState >= 2,
-        error: null,
-        isPreloading: false, // Сбрасываем isPreloading
+        error: duration === 0 ? 'Duration unavailable' : null,
+        isPreloading: false,
       },
     }));
   };
@@ -914,13 +930,16 @@ const PrivateChat = () => {
                         <div className="private-audio-player-wrapper">
                           <audio
                             ref={(el) => {
-                              audioRefs.current[msg.id] = el;
-                              if (el && !audioProgress[msg.id]?.isPreloading) {
-                                console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
+                              if (el && audioRefs.current[msg.id] !== el) {
+                                audioRefs.current[msg.id] = el;
+                                if (!audioProgress[msg.id]?.isPreloading) {
+                                  console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
+                                }
                               }
                             }}
                             onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
                             onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
+                            onLoadedData={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])} // ДОБАВЛЕНО
                             onCanPlay={() => handleCanPlay(msg.id)}
                             onError={(e) => handleAudioError(msg.id, e)}
                             onEnded={() => handleAudioEnded(msg.id)}
