@@ -803,9 +803,9 @@ const PrivateChat = () => {
     console.error(`Audio error for msg ${msgId}:`, error, 'URL:', audio?.src, 'readyState:', audio?.readyState);
     setAudioProgress((prev) => {
       const prevData = prev[msgId] || {};
-      // Игнорируем ошибку, если аудио уже проигралось или readyState >= 2
-      if (prevData.isReady && audio?.readyState >= 2) {
-        console.log(`Ignoring error for msg ${msgId}: audio already playable, readyState: ${audio.readyState}`);
+      // Игнорируем ошибку, если аудио уже воспроизводилось или readyState >= 2
+      if (prevData.isReady && (prevData.currentTime > 0 || audio?.readyState >= 2)) {
+        console.log(`Ignoring error for msg ${msgId}: audio playable, readyState: ${audio?.readyState}`);
         return prev;
       }
       return {
@@ -814,7 +814,7 @@ const PrivateChat = () => {
           ...prevData,
           isReady: false,
           isPlaying: false,
-          error: error.message || 'Failed to load audio',
+          error: 'Failed to load audio: connection issue',
         },
       };
     });
