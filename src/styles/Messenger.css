@@ -541,6 +541,7 @@
     display: flex;
     align-items: center;
     width: 100%;
+    max-width: 100%; /* Устанавливаем максимальную ширину на 100% от родителя */
 }
 
 .audio-player {
@@ -550,8 +551,8 @@
 .audio-player-wrapper {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    max-width: 300px;
+    width: 300px; /* Фиксированная ширина для единообразия */
+    max-width: 300px; /* Одинаковая максимальная ширина для всех устройств */
 }
 
 .audio-controls {
@@ -562,6 +563,7 @@
     border-radius: 8px;
     padding: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    width: 100%; /* Полная ширина внутри audio-player-wrapper */
 }
 
 .audio-play-pause {
@@ -582,7 +584,7 @@
 }
 
 .audio-progress-bar {
-    flex: 1;
+    flex: 1; /* Занимает оставшееся пространство */
     height: 6px;
     background-color: #e0e0e0;
     border-radius: 3px;
@@ -601,7 +603,8 @@
     font-size: 12px;
     color: #666666;
     font-family: 'Roboto', sans-serif;
-    min-width: 60px;
+    min-width: 60px; /* Минимальная ширина для шкалы времени */
+    text-align: right; /* Выравнивание для лучшего размещения */
 }
 
 .audio-error {
@@ -614,6 +617,17 @@
 .textarea-wrapper {
     position: relative; /* Для позиционирования иконки относительно textarea */
     width: 100%;
+}
+
+.message.current-user .audio-message-container,
+.message.other-user .audio-message-container {
+    width: 100%; /* Убедимся, что контейнер аудио занимает всю ширину */
+}
+
+.message.current-user .audio-player-wrapper,
+.message.other-user .audio-player-wrapper {
+    width: 300px; /* Фиксированная ширина для единообразия */
+    max-width: 300px;
 }
 
 @media (max-width: 800px) {
@@ -707,11 +721,13 @@
     }
 
     .audio-player-wrapper {
+        width: 240px; /* Фиксированная ширина для мобильных */
         max-width: 240px;
     }
 
     .audio-controls {
         padding: 6px;
+        width: 100%;
     }
 
     .audio-play-pause {
@@ -722,11 +738,17 @@
 
     .audio-time {
         font-size: 11px;
-        min-width: 50px;
+        min-width: 50px; /* Меньшая минимальная ширина для мобильных */
     }
 
     .audio-error {
         font-size: 11px;
         padding: 6px;
+    }
+
+    .message.current-user .audio-player-wrapper,
+    .message.other-user .audio-player-wrapper {
+        width: 240px; /* Одинаковая ширина для current-user и other-user */
+        max-width: 240px;
     }
 }
