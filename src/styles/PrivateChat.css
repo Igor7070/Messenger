@@ -492,6 +492,7 @@
     display: flex;
     align-items: center;
     width: 100%;
+    max-width: 100%; /* ДОБАВЛЕНО: Устанавливаем максимальную ширину на 100% от родителя */
 }
 
 .private-audio-player {
@@ -508,8 +509,8 @@
 .private-audio-player-wrapper {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    max-width: 300px;
+    width: 300px; /* ИЗМЕНЕНО: Фиксированная ширина для единообразия */
+    max-width: 300px; /* ИЗМЕНЕНО: Одинаковая максимальная ширина */
 }
 
 /* Стили для кастомных элементов управления */
@@ -521,6 +522,7 @@
     border-radius: 8px;
     padding: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    width: 100%; /* ДОБАВЛЕНО: Полная ширина внутри audio-player-wrapper */
 }
 
 /* Стили для кнопки воспроизведения/паузы */
@@ -565,6 +567,7 @@
     color: #666666;
     font-family: 'Roboto', sans-serif;
     min-width: 60px;
+    text-align: right; /* ДОБАВЛЕНО: Выравнивание для лучшего размещения */
 }
 
 /* Стили для ошибок аудио */
@@ -573,6 +576,18 @@
     color: #d32f2f;
     font-family: 'Roboto', sans-serif;
     padding: 8px;
+}
+
+/* ДОБАВЛЕНО: Стили для отправленных и полученных аудиосообщений */
+.private-message.private-current-user .private-audio-message-container,
+.private-message.private-other-user .private-audio-message-container {
+    width: 100%; /* Убедимся, что контейнер аудио занимает всю ширину */
+}
+
+.private-message.private-current-user .private-audio-player-wrapper,
+.private-message.private-other-user .private-audio-player-wrapper {
+    width: 300px; /* Фиксированная ширина для единообразия */
+    max-width: 300px;
 }
 
 @media (max-width: 800px) {
@@ -679,11 +694,13 @@
     }
 
     .private-audio-player-wrapper {
+        width: 240px; /* Фиксированная ширина для мобильных */
         max-width: 240px;
     }
 
     .private-audio-controls {
         padding: 6px;
+        width: 100%; /* Полная ширина */
     }
 
     .private-audio-play-pause {
@@ -700,5 +717,12 @@
     .private-audio-error {
         font-size: 11px;
         padding: 6px;
+    }
+
+    /* ДОБАВЛЕНО: Одинаковая ширина для current-user и other-user на мобильных */
+    .private-message.private-current-user .private-audio-player-wrapper,
+    .private-message.private-other-user .private-audio-player-wrapper {
+        width: 240px;
+        max-width: 240px;
     }
 }
