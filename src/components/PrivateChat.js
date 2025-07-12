@@ -309,6 +309,19 @@ const PrivateChat = () => {
         !audioProgress[msg.id]?.isReady &&
         !audioProgress[msg.id]?.isPreloading
       ) {
+        const audio = audioRefs.current[msg.id];
+        if (audio.src === msg.fileUrl && audio.readyState >= 2) {
+          setAudioProgress((prev) => ({
+            ...prev,
+            [msg.id]: {
+              ...prev[msg.id] || {},
+              isPreloading: false,
+              isReady: true,
+              error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
+            },
+          }));
+          return;
+        }
         setAudioProgress((prev) => ({
           ...prev,
           [msg.id]: {
@@ -764,15 +777,17 @@ const PrivateChat = () => {
 
   // Обработчик события canplay
   const handleCanPlay = (msgId) => {
-    console.log(`Audio can play for msg ${msgId}, readyState=${audioRefs.current[msgId]?.readyState}`);
-    setAudioProgress((prev) => ({
-      ...prev,
-      [msgId]: {
-        ...prev[msgId] || {},
-        isReady: true,
-        error: null,
-      },
-    }));
+    const audio = audioRefs.current[msgId];
+    if (audio && !audioProgress[msgId]?.isReady) {
+      setAudioProgress((prev) => ({
+        ...prev,
+        [msgId]: {
+          ...prev[msgId] || {},
+          isReady: true,
+          error: null,
+        },
+      }));
+    }
   };
 
   // Обработчик клика по дорожке
@@ -800,12 +815,11 @@ const PrivateChat = () => {
   // Обработчик ошибок аудио
   const handleAudioError = (msgId, error) => {
     const audio = audioRefs.current[msgId];
-    console.error(`Audio error for msg ${msgId}:`, error, 'URL:', audio?.src, 'readyState:', audio?.readyState);
+    const errorMsg = error.target.error ? `Error code: ${error.target.error.code}, message: ${error.target.error.message}` : 'Unknown error';
+    console.error(`Audio error for msg ${msgId}: ${errorMsg}, URL: ${audio?.src}, readyState: ${audio?.readyState}`);
     setAudioProgress((prev) => {
       const prevData = prev[msgId] || {};
-      // Игнорируем ошибку, если аудио уже воспроизводилось или readyState >= 2
       if (prevData.isReady && (prevData.currentTime > 0 || audio?.readyState >= 2)) {
-        console.log(`Ignoring error for msg ${msgId}: audio playable, readyState: ${audio?.readyState}`);
         return prev;
       }
       return {
@@ -814,7 +828,7 @@ const PrivateChat = () => {
           ...prevData,
           isReady: false,
           isPlaying: false,
-          error: 'Failed to load audio: connection issue',
+          error: `Failed to load audio: ${errorMsg}`,
         },
       };
     });
@@ -844,10 +858,8 @@ const PrivateChat = () => {
   // Предзагрузка аудио (вызывается один раз через useEffect)
   const preloadAudio = (msgId, url) => {
     const audio = audioRefs.current[msgId];
-    if (audio && !audioProgress[msgId]?.isReady) {
-      // Проверяем, есть ли кэшированные данные
+    if (audio && !audioProgress[msgId]?.isReady && !audioProgress[msgId]?.isPreloading) {
       if (audio.src === url && audio.readyState >= 2) {
-        console.log(`Skipping preload for msg ${msgId}: already cached, readyState: ${audio.readyState}`);
         setAudioProgress((prev) => ({
           ...prev,
           [msgId]: {
@@ -861,9 +873,7 @@ const PrivateChat = () => {
       }
       audio.src = url;
       audio.load();
-      console.log(`Preloading audio for msg ${msgId}: ${url}`);
       audio.addEventListener('loadedmetadata', () => {
-        console.log(`Preload completed for msg ${msgId}, duration: ${audio.duration}, readyState: ${audio.readyState}`);
         setAudioProgress((prev) => ({
           ...prev,
           [msgId]: {
@@ -874,19 +884,20 @@ const PrivateChat = () => {
           },
         }));
       }, { once: true });
+      audio.addEventListener('canplay', () => handleCanPlay(msgId), { once: true });
       audio.addEventListener('error', (e) => {
-        console.error(`Preload error for msg ${msgId}:`, e, 'URL:', url, 'readyState:', audio.readyState);
         if (audio.readyState >= 2) {
-          console.log(`Ignoring preload error for msg ${msgId}: audio still playable, readyState: ${audio.readyState}`);
           return;
         }
+        const errorMsg = e.target.error ? `Error code: ${e.target.error.code}, message: ${e.target.error.message}` : 'Unknown error';
+        console.error(`Preload error for msg ${msgId}: ${errorMsg}, URL: ${url}, readyState: ${audio.readyState}`);
         setAudioProgress((prev) => ({
           ...prev,
           [msgId]: {
             ...prev[msgId],
             isPreloading: false,
             isReady: false,
-            error: 'Failed to preload audio: connection issue',
+            error: `Failed to preload audio: ${errorMsg}`,
           },
         }));
       }, { once: true });
