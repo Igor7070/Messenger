@@ -219,9 +219,22 @@
     margin-bottom: 0; /* ДОБАВЛЕНО: Убедимся, что нет лишнего отступа снизу */
 }
 
+.private-attach-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
 .private-input-message {
     width: 100%;
-    padding: 10px 10px 10px 10px; /* ИЗМЕНЕНО: Убран правый отступ для иконки */
+    padding: 10px 36px 10px 44px; /* ИЗМЕНЕНО: padding-left 44px (24px иконка + 10px отступ слева + 10px отступ от иконки) */
     border: 1px solid #0288d1;
     border-radius: 5px;
     resize: none;
@@ -243,37 +256,11 @@
 
 .private-button-container {
     display: flex;
-    gap: 8px;
-    align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end; /* ИЗМЕНЕНО: Выравнивание только кнопки отправки вправо */
 }
 
 .private-file-input {
     display: none;
-}
-
-.private-file-input-label {
-    all: unset;
-    flex: 1;
-    padding: 8px;
-    height: 36px;
-    background-color: #B0BEC5;
-    color: #FFFFFF;
-    border-radius: 5px;
-    text-align: center;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    top: 0;
-}
-
-.private-file-input-label:hover {
-    background-color: #90A4AE;
 }
 
 .private-send-button {
@@ -636,8 +623,14 @@
 
     .private-input-message {
         font-size: 14px;
-        padding: 10px 10px 10px 10px; /* ИЗМЕНЕНО: Убран правый отступ */
+        padding: 10px 36px 10px 40px; /* ИЗМЕНЕНО: padding-left 40px (20px иконка + 10px отступ слева + 10px отступ от иконки) */
         min-height: 40px; /* Высота одной строки (20px) + padding (10px + 10px) */
+    }
+
+    .private-attach-icon {
+        left: 8px; /* ИЗМЕНЕНО: Меньший отступ для мобильных */
+        width: 20px;
+        height: 20px;
     }
 
     .private-file-input-label,
