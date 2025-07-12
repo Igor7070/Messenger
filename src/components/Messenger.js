@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getMessages, sendMessage as apiSendMessage, loginUser } from '../api/messages';
@@ -62,10 +62,15 @@ const Messenger = () => {
     const [showTranslationModal, setShowTranslationModal] = useState(false);
 
     const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
+
     // *** ДОБАВЛЕНО: Состояния для аудиозаписи ***
     const [isRecording, setIsRecording] = useState(false);
     const [audioBlob, setAudioBlob] = useState(null);
     const [micIconState, setMicIconState] = useState('mic'); // 'mic', 'recording', 'sending'
+
+    // Состояния для аудиоплеера
+    const [audioProgress, setAudioProgress] = useState({}); // { [msgId]: { currentTime: 0, duration: 0, isPlaying: false, isReady: false, error: null } }
+    const audioRefs = useRef({}); // Референции для аудиоэлементов
 
     // ДОБАВЛЕНО: использование хука
     const {
@@ -93,6 +98,11 @@ const Messenger = () => {
         setIsTranslating,
         setIsSpellCheckEnabled,
     });
+
+    // Мемоизация аудиосообщений
+    const memoizedAudioMessages = useMemo(() => {
+        return messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
+    }, [messages]);
 
     // Форматирование временной метки
     const formatTimestamp = (timestamp) => {
@@ -272,6 +282,26 @@ const Messenger = () => {
         return () => window.removeEventListener('resize', calculateCharPerLine);
     }, []);
 
+    useEffect(() => {
+        const visibleAudioMessages = memoizedAudioMessages.slice(-10); // Ограничиваем последними 10 аудиосообщениями
+        visibleAudioMessages.forEach((msg) => {
+            if (
+                audioRefs.current[msg.id] &&
+                !audioProgress[msg.id]?.isReady &&
+                !audioProgress[msg.id]?.isPreloading
+            ) {
+                setAudioProgress((prev) => ({
+                    ...prev,
+                    [msg.id]: {
+                        ...prev[msg.id] || {},
+                        isPreloading: true,
+                    },
+                }));
+                preloadAudio(msg.id, msg.fileUrl);
+            }
+        });
+    }, [memoizedAudioMessages]);
+
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
             const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
@@ -324,7 +354,7 @@ const Messenger = () => {
     };
 
     const sendMessage = async () => {
-        if ((content.trim() || selectedFile) && userId) { // Проверяем наличие текста или файла
+        if ((content.trim() || selectedFile || audioBlob) && userId) { // ИЗМЕНЕНО: Добавлен audioBlob в условие
             const currentUsername = username;
             const chatName = await getChatName(chatId);
 
@@ -342,9 +372,9 @@ const Messenger = () => {
                 content: finalContent,
                 sender: { id: userId, username: currentUsername },
                 chat: { id: chatId, name: chatName },
-                fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
+                fileUrl: selectedFile ? await uploadFile(selectedFile) : audioBlob ? await uploadFile(audioBlob) : null, // ИЗМЕНЕНО: Добавлена обработка audioBlob
                 timestamp: new Date().toISOString(),
-                messageType: selectedFile ? 'file' : 'text', // Устанавливаем тип сообщения
+                messageType: audioBlob ? 'audio' : selectedFile ? 'file' : 'text', // ИЗМЕНЕНО: Установка messageType для аудио
             };
 
             console.log('Sending message:', message);
@@ -367,24 +397,14 @@ const Messenger = () => {
                     client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
                 }
 
-                setContent('');
-                setRows(1);
-                setEditingMessageId(null);
-                setContextMenu({ visible: false });
-                setSelectedFile(null);
-
-                if (fileInputRef.current) {
-                    fileInputRef.current.value = null;
-                }
-
-                console.log('Message sent');
+                resetForm(); // ДОБАВЛЕНО: Использование resetForm вместо отдельных set
             } else {
                 console.error('STOMP client is not connected');
                 toast.error('WebSocket not connected');
             }
         } else {
-            console.warn('Content or file is missing');
-            toast.error('Please provide a message or file');
+            console.warn('Content, file, or audio is missing');
+            toast.error('Please provide a message, file, or audio');
         }
     };
 
@@ -589,6 +609,21 @@ const Messenger = () => {
         }
     };
 
+    const resetForm = () => { // ДОБАВЛЕНО: Новая функция для сброса формы
+        setContent('');
+        setSelectedFile(null);
+        setAudioBlob(null); // ДОБАВЛЕНО: Сброс аудио
+        setEditingMessageId(null);
+        setRows(1);
+        setMicIconState('mic'); // ДОБАВЛЕНО: Сброс иконки микрофона
+        if (fileInputRef.current) {
+            fileInputRef.current.value = null;
+        }
+        if (textAreaRef.current) {
+            textAreaRef.current.style.height = '44px';
+        }
+    };
+
     // *** ДОБАВЛЕНО: Метод для отправки аудиосообщения ***
     const sendAudioMessage = async (audioBlob) => {
         if (!audioBlob || !userId) {
@@ -622,6 +657,193 @@ const Messenger = () => {
             console.error('STOMP client is not connected');
             toast.error('WebSocket not connected');
             setMicIconState('mic'); // ДОБАВЛЕНО: Сброс иконки на микрофон при ошибке
+        }
+    };
+
+    // Форматирование времени в формате MM:SS
+    const formatAudioTime = (seconds) => {
+        if (isNaN(seconds) || seconds === 0 || seconds === Infinity) return '0:00';
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = Math.floor(seconds % 60);
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    };
+
+    // Обработчик изменения времени воспроизведения
+    const handleTimeUpdate = (msgId, audioElement) => {
+        setAudioProgress((prev) => {
+            const prevData = prev[msgId] || {};
+            if (
+                prevData.currentTime === audioElement.currentTime &&
+                prevData.isPlaying === !audioElement.paused &&
+                prevData.duration === audioElement.duration
+            ) {
+                return prev;
+            }
+            return {
+                ...prev,
+                [msgId]: {
+                    ...prevData,
+                    currentTime: audioElement.currentTime,
+                    duration: audioElement.duration || prevData.duration || 0,
+                    isPlaying: !audioElement.paused,
+                    isReady: prevData.isReady || false,
+                    error: prevData.error || null,
+                },
+            };
+        });
+    };
+
+    // Обработчик загрузки метаданных
+    const handleLoadedMetadata = (msgId, audioElement) => {
+        console.log(`Metadata loaded for msg ${msgId}: duration=${audioElement.duration}, readyState=${audioElement.readyState}`);
+        const duration = isFinite(audioElement.duration) && audioElement.duration > 0 ? audioElement.duration : 0;
+
+        setAudioProgress((prev) => {
+            const prevData = prev[msgId] || {};
+            if (prevData.isReady && prevData.duration === duration) {
+                return prev;
+            }
+            return {
+                ...prev,
+                [msgId]: {
+                    ...prevData,
+                    currentTime: prevData.currentTime || 0,
+                    duration,
+                    isPlaying: prevData.isPlaying || false,
+                    isReady: audioElement.readyState >= 2,
+                    error: duration === 0 ? 'Duration unavailable: server issue' : null,
+                    isPreloading: false,
+                },
+            };
+        });
+    };
+
+    // Обработчик события canplay
+    const handleCanPlay = (msgId) => {
+        console.log(`Audio can play for msg ${msgId}, readyState=${audioRefs.current[msgId]?.readyState}`);
+        setAudioProgress((prev) => ({
+            ...prev,
+            [msgId]: {
+                ...prev[msgId] || {},
+                isReady: true,
+                error: null,
+            },
+        }));
+    };
+
+    // Обработчик клика по дорожке
+    const handleSeek = (msgId, e) => {
+        const audio = audioRefs.current[msgId];
+        if (!audio || !audioProgress[msgId]?.isReady) {
+            console.log(`Seek blocked for msg ${msgId}: audio not ready`);
+            return;
+        }
+        const progressBar = e.currentTarget;
+        const rect = progressBar.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+        const seekTime = (clickX / width) * audio.duration;
+        audio.currentTime = seekTime;
+        setAudioProgress((prev) => ({
+            ...prev,
+            [msgId]: {
+                ...prev[msgId],
+                currentTime: seekTime,
+            },
+        }));
+    };
+
+    // Обработчик ошибок аудио
+    const handleAudioError = (msgId, error) => {
+        const audio = audioRefs.current[msgId];
+        console.error(`Audio error for msg ${msgId}:`, error, 'URL:', audio?.src, 'readyState:', audio?.readyState);
+        setAudioProgress((prev) => {
+            const prevData = prev[msgId] || {};
+            if (prevData.isReady && (prevData.currentTime > 0 || audio?.readyState >= 2)) {
+                console.log(`Ignoring error for msg ${msgId}: audio playable, readyState: ${audio?.readyState}`);
+                return prev;
+            }
+            return {
+                ...prev,
+                [msgId]: {
+                    ...prevData,
+                    isReady: false,
+                    isPlaying: false,
+                    error: 'Failed to load audio: connection issue',
+                },
+            };
+        });
+    };
+
+    // Обработчик окончания воспроизведения
+    const handleAudioEnded = (msgId) => {
+        console.log(`Audio ended for msg ${msgId}`);
+        const audio = audioRefs.current[msgId];
+        setAudioProgress((prev) => ({
+            ...prev,
+            [msgId]: {
+                ...prev[msgId],
+                currentTime: 0,
+                isPlaying: false,
+                isReady: audio?.readyState >= 2,
+                error: null,
+            },
+        }));
+        if (audio) {
+            audio.currentTime = 0;
+            audio.load();
+            console.log(`Audio reloaded for msg ${msgId} to maintain playability`);
+        }
+    };
+
+    // Предзагрузка аудио
+    const preloadAudio = (msgId, url) => {
+        const audio = audioRefs.current[msgId];
+        if (audio && !audioProgress[msgId]?.isReady) {
+            if (audio.src === url && audio.readyState >= 2) {
+                console.log(`Skipping preload for msg ${msgId}: already cached, readyState: ${audio.readyState}`);
+                setAudioProgress((prev) => ({
+                    ...prev,
+                    [msgId]: {
+                        ...prev[msgId],
+                        isPreloading: false,
+                        isReady: audio.readyState >= 2,
+                        error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
+                    },
+                }));
+                return;
+            }
+            audio.src = url;
+            audio.load();
+            console.log(`Preloading audio for msg ${msgId}: ${url}`);
+            audio.addEventListener('loadedmetadata', () => {
+                console.log(`Preload completed for msg ${msgId}, duration: ${audio.duration}, readyState: ${audio.readyState}`);
+                setAudioProgress((prev) => ({
+                    ...prev,
+                    [msgId]: {
+                        ...prev[msgId],
+                        isPreloading: false,
+                        isReady: audio.readyState >= 2,
+                        error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
+                    },
+                }));
+            }, { once: true });
+            audio.addEventListener('error', (e) => {
+                console.error(`Preload error for msg ${msgId}:`, e, 'URL:', url, 'readyState:', audio.readyState);
+                if (audio.readyState >= 2) {
+                    console.log(`Ignoring preload error for msg ${msgId}: audio still playable, readyState: ${audio.readyState}`);
+                    return;
+                }
+                setAudioProgress((prev) => ({
+                    ...prev,
+                    [msgId]: {
+                        ...prev[msgId],
+                        isPreloading: false,
+                        isReady: false,
+                        error: 'Failed to preload audio: connection issue',
+                    },
+                }));
+            }, { once: true });
         }
     };
 
@@ -734,35 +956,84 @@ const Messenger = () => {
                                             <span className="sender-name">{msg.sender.username}</span>
                                         )}
                                         {/* *** ИЗМЕНЕНО: Условный рендеринг по messageType *** */}
-                                        {msg.content && msg.messageType !== 'audio' && (
-                                            <div
-                                                className="message-content"
-                                                onClick={(e) => {
-                                                    if (e.target.tagName === 'A') return;
-                                                    if (msg.translatedContent) {
-                                                        setMessages((prevMessages) =>
-                                                            prevMessages.map((m) =>
-                                                                m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
-                                                            )
-                                                        );
-                                                    }
-                                                }}
-                                                style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
-                                            >
-                                                <span className="original-content">
-                                                    {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
-                                                </span>
-                                                {msg.translatedContent && (
-                                                    <span className="translated-content">{msg.translatedContent}</span>
-                                                )}
-                                            </div>
-                                        )}
                                         {msg.messageType === 'audio' && msg.fileUrl ? (
                                             <div className="audio-message-container">
-                                                <audio controls className="audio-player">
-                                                    <source src={msg.fileUrl} type="audio/webm" />
-                                                    Your browser does not support the audio element.
-                                                </audio>
+                                                <div className="audio-player-wrapper">
+                                                    <audio
+                                                        ref={(el) => {
+                                                            if (el && audioRefs.current[msg.id] !== el) {
+                                                                audioRefs.current[msg.id] = el;
+                                                                if (!audioProgress[msg.id]?.isPreloading) {
+                                                                    console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
+                                                                }
+                                                            }
+                                                        }}
+                                                        onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
+                                                        onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
+                                                        onCanPlay={() => handleCanPlay(msg.id)}
+                                                        onError={(e) => handleAudioError(msg.id, e)}
+                                                        onEnded={() => handleAudioEnded(msg.id)}
+                                                        className="audio-player"
+                                                        preload="auto"
+                                                    >
+                                                        <source src={msg.fileUrl} type="audio/webm" />
+                                                        Your browser does not support the audio element.
+                                                    </audio>
+                                                    {audioProgress[msg.id]?.error ? (
+                                                        <span className="audio-error">{audioProgress[msg.id].error}</span>
+                                                    ) : (
+                                                        <div className="audio-controls">
+                                                            <button
+                                                                className="audio-play-pause"
+                                                                onClick={() => {
+                                                                    const audio = audioRefs.current[msg.id];
+                                                                    if (!audio || !audioProgress[msg.id]?.isReady) {
+                                                                        console.log(`Play blocked for msg ${msg.id}:`, audioProgress[msg.id], 'readyState:', audio?.readyState);
+                                                                        return;
+                                                                    }
+                                                                    if (audio.paused) {
+                                                                        audio.play().catch((e) => {
+                                                                            console.error('Play error:', e);
+                                                                            handleAudioError(msg.id, e);
+                                                                        });
+                                                                    } else {
+                                                                        audio.pause();
+                                                                    }
+                                                                    setAudioProgress((prev) => ({
+                                                                        ...prev,
+                                                                        [msg.id]: {
+                                                                            ...prev[msg.id],
+                                                                            isPlaying: audio.paused ? false : true,
+                                                                        },
+                                                                    }));
+                                                                }}
+                                                                disabled={!audioProgress[msg.id]?.isReady}
+                                                            >
+                                                                {audioProgress[msg.id]?.isPlaying ? '⏸' : '▶'}
+                                                            </button>
+                                                            <div
+                                                                className="audio-progress-bar"
+                                                                onClick={(e) => handleSeek(msg.id, e)}
+                                                                style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
+                                                            >
+                                                                <div
+                                                                    className="audio-progress"
+                                                                    style={{
+                                                                        width: `${
+                                                                            audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
+                                                                                ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
+                                                                                : 0
+                                                                        }%`
+                                                                    }}
+                                                                ></div>
+                                                            </div>
+                                                            <span className="audio-time">
+                                                                {formatAudioTime(audioProgress[msg.id]?.currentTime || 0)} /{' '}
+                                                                {formatAudioTime(audioProgress[msg.id]?.duration || 0)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         ) : msg.fileUrl ? (
                                             <a href={msg.fileUrl} download className="file-link">
