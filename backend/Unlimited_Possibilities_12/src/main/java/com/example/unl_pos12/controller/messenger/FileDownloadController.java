@@ -20,7 +20,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @RestController
-@RequestMapping({"/uploads", "/api/files"}) // Поддержка обоих путей
+@RequestMapping({"/uploads", "/api/files"}) // Поддержка обоих путей...
 public class FileDownloadController {
 
     @Autowired // ДОБАВЛЕНО
