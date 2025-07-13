@@ -51,12 +51,17 @@ public class MessageService {
         if (file != null && !file.isEmpty()) {
             String fileUrl = uploadFile(file);
             message.setFileUrl(fileUrl);
-            // Если file передан, устанавливаем messageType только если он не указан
+            // Если file передан, устанавливаем messageType и contentType
             if (message.getMessageType() == null) {
                 String contentType = file.getContentType();
+                if (file.getOriginalFilename().endsWith(".webm")) {
+                    contentType = "audio/webm;codecs=opus"; // Переопределяем для .webm
+                }
+                message.setContentType(contentType); // Сохраняем contentType
                 if (contentType != null && (contentType.equals("audio/mpeg") ||
                         contentType.equals("audio/wav") ||
-                        contentType.equals("audio/webm"))) {
+                        contentType.equals("audio/webm") ||
+                        contentType.equals("audio/webm;codecs=opus"))) {
                     message.setMessageType("audio");
                 } else {
                     message.setMessageType("file");
@@ -65,7 +70,7 @@ public class MessageService {
         }
 
         message.setTimestamp(ZonedDateTime.now());
-        System.out.println("Saving message: type=" + message.getMessageType() + ", content=" + message.getContent() + ", chatId=" + message.getChat().getId());
+        System.out.println("Saving message: type=" + message.getMessageType() + ", content=" + message.getContent() + ", chatId=" + message.getChat().getId() + ", contentType=" + message.getContentType());
         return messageRepository.save(message);
     }
 
@@ -80,7 +85,6 @@ public class MessageService {
         if (file.isEmpty()) {
             throw new RuntimeException("Uploaded file is empty");
         }
-
         if (file.getOriginalFilename() == null) {
             throw new RuntimeException("Filename is null");
         }
@@ -99,25 +103,18 @@ public class MessageService {
         }
 
         String originalFilename = file.getOriginalFilename();
-
-        // --- НАЧАЛО ДОБАВЛЕНИЯ ---
         String contentType = file.getContentType();
         System.out.println("Uploading file: original name=" + originalFilename + ", contentType=" + contentType);
-        if (originalFilename.endsWith(".webm")) {
-            contentType = "audio/webm"; // Явно устанавливаем Content-Type для .webm
-            System.out.println("Forcing Content-Type to audio/webm for file: " + originalFilename);
-        }
-        // --- КОНЕЦ ДОБАВЛЕНИЯ ---
 
         // Преобразуем имя файла на латиницу
         String transliteratedFilename = transliterate(originalFilename);
         // Заменяем небезопасные символы
         String safeFilename = transliteratedFilename.replaceAll("[^\\w.-]", "_");
         String filename = System.currentTimeMillis() + "_" + safeFilename;
-        Path filePath = Paths.get(uploadDir + filename);
+        Path filePath = Paths.get(uploadDir, filename);
 
         try {
-            System.out.println("Uploading file: name=" + originalFilename + ", size=" + file.getSize() + ", type=" + file.getContentType());
+            System.out.println("Uploading file: name=" + originalFilename + ", size=" + file.getSize() + ", type=" + contentType);
             Files.copy(file.getInputStream(), filePath);
             System.out.println("File uploaded successfully: path=" + filePath);
         } catch (IOException e) {

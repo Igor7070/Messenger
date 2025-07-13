@@ -35,19 +35,16 @@ public class FileDownloadController {
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
-                // Проверяем messageType для файла
+                // Проверяем messageType и contentType для файла
                 String mimeType = Files.probeContentType(filePath);
-                if (decodedFilename.endsWith(".webm")) {
-                    // Ищем сообщение по fileUrl
-                    String fileUrl = "https://unlimitedpossibilities12.org/api/files/download/" + decodedFilename;
-                    Message message = messageService.findByFileUrl(fileUrl); // Предполагаем метод в MessageService
-                    if (message != null && "audio".equals(message.getMessageType())) {
-                        mimeType = "audio/webm";
-                        System.out.println("Serving file: " + decodedFilename + " with Content-Type: audio/webm (messageType=audio)");
-                    } else {
-                        mimeType = "video/webm";
-                        System.out.println("Serving file: " + decodedFilename + " with Content-Type: video/webm (messageType=" + (message != null ? message.getMessageType() : "not found") + ")");
-                    }
+                String fileUrl = "https://unlimitedpossibilities12.org/api/files/download/" + decodedFilename;
+                Message message = messageService.findByFileUrl(fileUrl);
+                if (message != null && message.getContentType() != null) {
+                    mimeType = message.getContentType();
+                    System.out.println("Serving file: " + decodedFilename + " with Content-Type: " + mimeType + " (messageType=" + message.getMessageType() + ")");
+                } else if (decodedFilename.endsWith(".webm")) {
+                    mimeType = "audio/webm;codecs=opus"; // Fallback для .webm
+                    System.err.println("Warning: Serving .webm file: " + decodedFilename + " as audio/webm;codecs=opus (messageType=" + (message != null ? message.getMessageType() : "not found") + ")");
                 } else if (mimeType == null) {
                     mimeType = determineMimeType(decodedFilename);
                 }
@@ -63,9 +60,9 @@ public class FileDownloadController {
                 return ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(mimeType))
                         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
-                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(resource.contentLength())) // Добавляем Content-Length
-                        .header(HttpHeaders.ACCEPT_RANGES, "bytes") // Добавляем поддержку Range
-                        .header(HttpHeaders.CONNECTION, "keep-alive") // Добавляем Keep-Alive
+                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(contentLength))
+                        .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                        .header(HttpHeaders.CONNECTION, "keep-alive")
                         .body(resource);
             } else {
                 System.out.println("File not found: " + decodedFilename);
