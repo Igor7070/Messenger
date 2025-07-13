@@ -543,11 +543,6 @@
     cursor: default; /* Отключаем курсор во время отправки */
 }
 
-/* Стили для textarea, чтобы избежать перекрытия текста иконкой */
-.input-message {
-    padding-right: 10px; /* Отступ для иконки */
-}
-
 .audio-message {
     border-radius: 12px;
     background-color: #f0f0f0; /* Лёгкий фон для аудиосообщений */
