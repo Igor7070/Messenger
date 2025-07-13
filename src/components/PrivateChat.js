@@ -599,32 +599,46 @@ const PrivateChat = () => {
   // ДОБАВЛЕНО: Метод для начала записи аудио
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      mediaRecorderRef.current = mediaRecorder;
-      const chunks = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        let mimeType = 'audio/webm;codecs=opus';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            console.warn('audio/webm;codecs=opus not supported, falling back to audio/webm');
+            mimeType = 'audio/webm';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                console.error('audio/webm not supported');
+                toast.error('Audio recording not supported in this browser');
+                return;
+            }
         }
-      };
+        const mediaRecorder = new MediaRecorder(stream, { 
+            mimeType,
+            audioBitsPerSecond: 128000 // Устанавливаем битрейт для лучшего качества
+        });
+        mediaRecorderRef.current = mediaRecorder;
+        const chunks = [];
 
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        setAudioBlob(blob);
-        stream.getTracks().forEach(track => track.stop());
-        setMicIconState('sending');
-        sendAudioMessage(blob);
-      };
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+                chunks.push(e.data);
+            }
+        };
 
-      setMicIconState('recording');
-      mediaRecorder.start();
-      setIsRecording(true);
-      toast.info('Recording started');
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: mimeType });
+            console.log(`Recorded audio: size=${blob.size}, type=${blob.type}`);
+            setAudioBlob(blob);
+            stream.getTracks().forEach(track => track.stop());
+            setMicIconState('sending');
+            sendAudioMessage(blob);
+        };
+
+        setMicIconState('recording');
+        mediaRecorder.start(1000); // Разбиваем на 1-секундные чанки
+        setIsRecording(true);
+        toast.info('Recording started');
     } catch (error) {
-      console.error('Error starting recording:', error);
-      toast.error('Failed to start recording');
+        console.error('Error starting recording:', error);
+        toast.error('Failed to start recording');
     }
   };
 
@@ -818,19 +832,37 @@ const PrivateChat = () => {
     const errorMsg = error.target.error ? `Error code: ${error.target.error.code}, message: ${error.target.error.message}` : 'Unknown error';
     console.error(`Audio error for msg ${msgId}: ${errorMsg}, URL: ${audio?.src}, readyState: ${audio?.readyState}`);
     setAudioProgress((prev) => {
-      const prevData = prev[msgId] || {};
-      if (prevData.isReady && (prevData.currentTime > 0 || audio?.readyState >= 2)) {
-        return prev;
-      }
-      return {
-        ...prev,
-        [msgId]: {
-          ...prevData,
-          isReady: false,
-          isPlaying: false,
-          error: `Failed to load audio: ${errorMsg}`,
-        },
-      };
+        const prevData = prev[msgId] || {};
+        if (prevData.isReady && (prevData.currentTime > 0 || audio?.readyState >= 2)) {
+            return prev;
+        }
+        if (!prevData.retryCount || prevData.retryCount < 2) {
+            setTimeout(() => {
+                console.log(`Retrying audio load for msg ${msgId}`);
+                audio.src = audio.src.split('?')[0] + `?t=${Date.now()}`; // Обход кэша
+                audio.load();
+            }, 2000);
+            return {
+                ...prev,
+                [msgId]: {
+                    ...prevData,
+                    isReady: false,
+                    isPlaying: false,
+                    error: 'Retrying to load audio...',
+                    retryCount: (prevData.retryCount || 0) + 1,
+                },
+            };
+        }
+        toast.error('Failed to play audio message');
+        return {
+            ...prev,
+            [msgId]: {
+                ...prevData,
+                isReady: false,
+                isPlaying: false,
+                error: `Failed to load audio: ${errorMsg}`,
+            },
+        };
     });
   };
 
@@ -859,48 +891,79 @@ const PrivateChat = () => {
   const preloadAudio = (msgId, url) => {
     const audio = audioRefs.current[msgId];
     if (audio && !audioProgress[msgId]?.isReady && !audioProgress[msgId]?.isPreloading) {
-      if (audio.src === url && audio.readyState >= 2) {
         setAudioProgress((prev) => ({
-          ...prev,
-          [msgId]: {
-            ...prev[msgId],
-            isPreloading: false,
-            isReady: audio.readyState >= 2,
-            error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
-          },
+            ...prev,
+            [msgId]: { ...prev[msgId], isPreloading: true },
         }));
-        return;
-      }
-      audio.src = url;
-      audio.load();
-      audio.addEventListener('loadedmetadata', () => {
-        setAudioProgress((prev) => ({
-          ...prev,
-          [msgId]: {
-            ...prev[msgId],
-            isPreloading: false,
-            isReady: audio.readyState >= 2,
-            error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
-          },
-        }));
-      }, { once: true });
-      audio.addEventListener('canplay', () => handleCanPlay(msgId), { once: true });
-      audio.addEventListener('error', (e) => {
-        if (audio.readyState >= 2) {
-          return;
+        if (audio.src === url && audio.readyState >= 2) {
+            setAudioProgress((prev) => ({
+                ...prev,
+                [msgId]: {
+                    ...prev[msgId],
+                    isPreloading: false,
+                    isReady: audio.readyState >= 2,
+                    error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
+                },
+            }));
+            return;
         }
-        const errorMsg = e.target.error ? `Error code: ${e.target.error.code}, message: ${e.target.error.message}` : 'Unknown error';
-        console.error(`Preload error for msg ${msgId}: ${errorMsg}, URL: ${url}, readyState: ${audio.readyState}`);
-        setAudioProgress((prev) => ({
-          ...prev,
-          [msgId]: {
-            ...prev[msgId],
-            isPreloading: false,
-            isReady: false,
-            error: `Failed to preload audio: ${errorMsg}`,
-          },
-        }));
-      }, { once: true });
+        audio.src = url + `?t=${Date.now()}`; // Обход кэша
+        audio.load();
+        audio.addEventListener('loadedmetadata', () => {
+            setAudioProgress((prev) => ({
+                ...prev,
+                [msgId]: {
+                    ...prev[msgId],
+                    isPreloading: false,
+                    isReady: audio.readyState >= 2,
+                    error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
+                },
+            }));
+        }, { once: true });
+        audio.addEventListener('canplay', () => {
+            setAudioProgress((prev) => ({
+                ...prev,
+                [msgId]: {
+                    ...prev[msgId],
+                    isPreloading: false,
+                    isReady: true,
+                },
+            }));
+        }, { once: true });
+        audio.addEventListener('error', (e) => {
+            const errorMsg = e.target.error ? `Error code: ${e.target.error.code}, message: ${e.target.error.message}` : 'Unknown error';
+            console.error(`Preload error for msg ${msgId}: ${errorMsg}, URL: ${url}, readyState: ${audio.readyState}`);
+            setAudioProgress((prev) => {
+                const prevData = prev[msgId] || {};
+                if (!prevData.retryCount || prevData.retryCount < 2) {
+                    setTimeout(() => {
+                        console.log(`Retrying preload for msg ${msgId}`);
+                        audio.src = url + `?t=${Date.now()}`; // Обход кэша
+                        audio.load();
+                    }, 2000);
+                    return {
+                        ...prev,
+                        [msgId]: {
+                            ...prevData,
+                            isPreloading: false,
+                            isReady: false,
+                            error: 'Retrying to preload audio...',
+                            retryCount: (prevData.retryCount || 0) + 1,
+                        },
+                    };
+                }
+                toast.error('Failed to preload audio message');
+                return {
+                    ...prev,
+                    [msgId]: {
+                        ...prevData,
+                        isPreloading: false,
+                        isReady: false,
+                        error: `Failed to preload audio: ${errorMsg}`,
+                    },
+                };
+            });
+        }, { once: true });
     }
   };
 
