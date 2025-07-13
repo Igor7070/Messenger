@@ -525,12 +525,14 @@ const PrivateChat = () => {
     setContent('');
     setSelectedFile(null);
     setEditingMessageId(null);
-    setRows(1); // ДОБАВЛЕНО: Сброс количества строк
+    setRows(1);
     if (fileInputRef.current) {
-      fileInputRef.current.value = null;
+        fileInputRef.current.value = null;
     }
     if (textAreaRef.current) {
-      textAreaRef.current.style.height = '44px'; // ДОБАВЛЕНО: Сброс высоты textarea
+        textAreaRef.current.style.height = '44px';
+        // ДОБАВЛЕНО: Удаляем класс scroll-enabled при сбросе
+        textAreaRef.current.classList.remove('scroll-enabled');
     }
   };
 
@@ -770,10 +772,16 @@ const PrivateChat = () => {
   const handleInputChange = (e) => {
     const newValue = e.target.value;
     setContent(newValue);
-    const newRows = Math.min(5, calculateRows(newValue)); // Ограничиваем до 5 строк
+    const newRows = Math.min(5, calculateRows(newValue));
     setRows(newRows);
-    const lineHeight = window.innerWidth <= 800 ? 20 : 24; // 20px для мобильных, 24px для десктопа
-    textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
+    const lineHeight = window.innerWidth <= 800 ? 20 : 24;
+    textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`;
+    // ДОБАВЛЕНО: Управление классом scroll-enabled для скроллбара
+    if (newRows >= 5) {
+        textAreaRef.current.classList.add('scroll-enabled');
+    } else {
+        textAreaRef.current.classList.remove('scroll-enabled');
+    }
   };
 
   // Форматирование времени в формате MM:SS
