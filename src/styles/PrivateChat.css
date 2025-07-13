@@ -455,6 +455,30 @@
     width: 24px;
 }
 
+.private-send-icon-container {
+    position: absolute;
+    right: 10px;
+    bottom: 10px; /* Привязываем к нижней части текстового поля */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    width: 24px;
+}
+
+.private-send-icon {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+}
+
+.private-send-icon:hover {
+    opacity: 0.8; /* Эффект при наведении */
+}
+
 .private-mic-icon {
     cursor: pointer;
     display: flex;
@@ -685,6 +709,18 @@
         transform: translateY(-50%); /* ИЗМЕНЕНО: Центрирование по вертикали */
         height: 20px;
         width: 20px;
+    }
+
+    .private-send-icon-container {
+        right: 8px;
+        bottom: 8px; /* Привязываем к нижней части для мобильных */
+        height: 20px;
+        width: 20px;
+    }
+
+    .private-send-icon {
+        width: 20px;
+        height: 20px;
     }
 
     .private-mic-icon {

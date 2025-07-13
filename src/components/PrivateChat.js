@@ -1286,11 +1286,21 @@ const PrivateChat = () => {
               </span>
             </div>
           )}
-        </div>
-        <div className="private-button-container">
-          <button onClick={sendMessage} className="private-send-button">
-            Send
-          </button>
+          {/* ДОБАВЛЕНО: Иконка отправки */}
+          {content.length > 0 && (
+            <div className="private-send-icon-container">
+              <span
+                onClick={sendMessage}
+                className="private-send-icon"
+                role="button"
+                aria-label="Send Message"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
+                </svg>
+              </span>
+            </div>
+          )}
         </div>
       </div>
       {contextMenu.visible && (
