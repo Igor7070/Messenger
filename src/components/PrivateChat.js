@@ -15,7 +15,7 @@ import { usePrivateMessageNotification } from '../context/PrivateMessageNotifica
 import TranslationSettingsModal from './TranslationSettingsModal';
 import { translateMessage, saveTranslation } from '../api/messages';
 import usePrivateChatTranslationAndSpellCheck from '../hooks/usePrivateChatTranslationAndSpellCheck';
-import { FFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
 
 const PrivateChat = () => {
   const [messages, setMessages] = useState([]);
@@ -639,7 +639,9 @@ const PrivateChat = () => {
             try {
                 const inputName = 'input.webm';
                 const outputName = 'output.mp3';
-                await ffmpeg.current.writeFile(inputName, await fetchFile(webmBlob));
+                // ИЗМЕНЕНО: Преобразуем Blob в ArrayBuffer
+                const arrayBuffer = await webmBlob.arrayBuffer();
+                await ffmpeg.current.writeFile(inputName, new Uint8Array(arrayBuffer));
                 await ffmpeg.current.exec(['-i', inputName, '-c:a', 'libmp3lame', '-b:a', '128k', outputName]);
                 const mp3Data = await ffmpeg.current.readFile(outputName);
                 const mp3Blob = new Blob([mp3Data.buffer], { type: 'audio/mpeg' });
@@ -1120,11 +1122,11 @@ const PrivateChat = () => {
                             onEnded={() => handleAudioEnded(msg.id)}
                             className="private-audio-player"
                             preload="auto"
-                          >
+                        >
                             {/* ИЗМЕНЕНО: Динамический тип источника */}
                             <source src={msg.fileUrl} type={msg.fileUrl.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'} />
                             Your browser does not support the audio element.
-                          </audio>
+                        </audio>
                           {audioProgress[msg.id]?.error ? (
                             <span className="private-audio-error">{audioProgress[msg.id].error}</span>
                           ) : (
