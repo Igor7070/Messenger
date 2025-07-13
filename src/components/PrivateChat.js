@@ -15,8 +15,7 @@ import { usePrivateMessageNotification } from '../context/PrivateMessageNotifica
 import TranslationSettingsModal from './TranslationSettingsModal';
 import { translateMessage, saveTranslation } from '../api/messages';
 import usePrivateChatTranslationAndSpellCheck from '../hooks/usePrivateChatTranslationAndSpellCheck';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile } from '@ffmpeg/util';
+import { FFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 
 const PrivateChat = () => {
   const [messages, setMessages] = useState([]);
@@ -604,68 +603,68 @@ const PrivateChat = () => {
 
   // ИЗМЕНЕНО: Метод для начала записи аудио с конвертацией в .mp3
   const startRecording = async () => {
-      try {
-          // ДОБАВЛЕНО: Загружаем FFmpeg перед началом записи
-          await loadFFmpeg();
+    try {
+        // ДОБАВЛЕНО: Загружаем FFmpeg перед началом записи
+        await loadFFmpeg();
 
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          let mimeType = 'audio/webm;codecs=opus';
-          if (!MediaRecorder.isTypeSupported(mimeType)) {
-              console.warn('audio/webm;codecs=opus not supported, falling back to audio/webm');
-              mimeType = 'audio/webm';
-              if (!MediaRecorder.isTypeSupported(mimeType)) {
-                  console.error('audio/webm not supported');
-                  toast.error('Audio recording not supported in this browser');
-                  return;
-              }
-          }
-          const mediaRecorder = new MediaRecorder(stream, { 
-              mimeType,
-              audioBitsPerSecond: 128000 // Устанавливаем битрейт
-          });
-          mediaRecorderRef.current = mediaRecorder;
-          const chunks = [];
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        let mimeType = 'audio/webm;codecs=opus';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            console.warn('audio/webm;codecs=opus not supported, falling back to audio/webm');
+            mimeType = 'audio/webm';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                console.error('audio/webm not supported');
+                toast.error('Audio recording not supported in this browser');
+                return;
+            }
+        }
+        const mediaRecorder = new MediaRecorder(stream, { 
+            mimeType,
+            audioBitsPerSecond: 128000 // Устанавливаем битрейт
+        });
+        mediaRecorderRef.current = mediaRecorder;
+        const chunks = [];
 
-          mediaRecorder.ondataavailable = (e) => {
-              if (e.data.size > 0) {
-                  chunks.push(e.data);
-              }
-          };
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+                chunks.push(e.data);
+            }
+        };
 
-          mediaRecorder.onstop = async () => {
-              const webmBlob = new Blob(chunks, { type: mimeType });
-              console.log(`Recorded audio: size=${webmBlob.size}, type=${webmBlob.type}`);
+        mediaRecorder.onstop = async () => {
+            const webmBlob = new Blob(chunks, { type: mimeType });
+            console.log(`Recorded audio: size=${webmBlob.size}, type=${webmBlob.type}`);
 
-              // ДОБАВЛЕНО: Конвертация в .mp3
-              try {
-                  const inputName = 'input.webm';
-                  const outputName = 'output.mp3';
-                  await ffmpeg.current.writeFile(inputName, await fetchFile(webmBlob));
-                  await ffmpeg.current.exec(['-i', inputName, '-c:a', 'mp3', '-b:a', '128k', outputName]);
-                  const mp3Data = await ffmpeg.current.readFile(outputName);
-                  const mp3Blob = new Blob([mp3Data.buffer], { type: 'audio/mpeg' });
-                  console.log(`Converted audio: size=${mp3Blob.size}, type=${mp3Blob.type}`);
-                  setAudioBlob(mp3Blob);
-                  stream.getTracks().forEach(track => track.stop());
-                  setMicIconState('sending');
-                  sendAudioMessage(mp3Blob);
-              } catch (error) {
-                  console.error('Error converting to mp3:', error);
-                  toast.error('Failed to convert audio');
-                  stream.getTracks().forEach(track => track.stop());
-                  setMicIconState('mic');
-              }
-          };
+            // ДОБАВЛЕНО: Конвертация в .mp3
+            try {
+                const inputName = 'input.webm';
+                const outputName = 'output.mp3';
+                await ffmpeg.current.writeFile(inputName, await fetchFile(webmBlob));
+                await ffmpeg.current.exec(['-i', inputName, '-c:a', 'libmp3lame', '-b:a', '128k', outputName]);
+                const mp3Data = await ffmpeg.current.readFile(outputName);
+                const mp3Blob = new Blob([mp3Data.buffer], { type: 'audio/mpeg' });
+                console.log(`Converted audio: size=${mp3Blob.size}, type=${mp3Blob.type}`);
+                setAudioBlob(mp3Blob);
+                stream.getTracks().forEach(track => track.stop());
+                setMicIconState('sending');
+                sendAudioMessage(mp3Blob);
+            } catch (error) {
+                console.error('Error converting to mp3:', error);
+                toast.error('Failed to convert audio');
+                stream.getTracks().forEach(track => track.stop());
+                setMicIconState('mic');
+            }
+        };
 
-          setMicIconState('recording');
-          mediaRecorder.start(1000); // Разбиваем на 1-секундные чанки
-          setIsRecording(true);
-          toast.info('Recording started');
-      } catch (error) {
-          console.error('Error starting recording:', error);
-          toast.error('Failed to start recording');
-          setMicIconState('mic');
-      }
+        setMicIconState('recording');
+        mediaRecorder.start(1000); // Разбиваем на 1-секундные чанки
+        setIsRecording(true);
+        toast.info('Recording started');
+    } catch (error) {
+        console.error('Error starting recording:', error);
+        toast.error('Failed to start recording');
+        setMicIconState('mic');
+    }
   };
 
   // ДОБАВЛЕНО: Метод для остановки записи аудио
@@ -680,56 +679,56 @@ const PrivateChat = () => {
 
   // ДОБАВЛЕНО: Загрузка FFmpeg
   const loadFFmpeg = async () => {
-      if (!ffmpegLoaded) {
-          try {
-              await ffmpeg.current.load();
-              setFfmpegLoaded(true);
-              console.log('FFmpeg loaded successfully');
-          } catch (error) {
-              console.error('Failed to load FFmpeg:', error);
-              toast.error('Failed to initialize audio conversion');
-              throw error;
-          }
-      }
+    if (!ffmpegLoaded) {
+        try {
+            await ffmpeg.current.load();
+            setFfmpegLoaded(true);
+            console.log('FFmpeg loaded successfully');
+        } catch (error) {
+            console.error('Failed to load FFmpeg:', error);
+            toast.error('Failed to initialize audio conversion');
+            throw error;
+        }
+    }
   };
 
   // ИЗМЕНЕНО: Метод для отправки аудиосообщения
   const sendAudioMessage = async (audioBlob) => {
-      if (!audioBlob || !userId) {
-          console.warn('Audio or userId is missing');
-          toast.error('Failed to send audio message');
-          setMicIconState('mic');
-          return;
-      }
+    if (!audioBlob || !userId) {
+        console.warn('Audio or userId is missing');
+        toast.error('Failed to send audio message');
+        setMicIconState('mic');
+        return;
+    }
 
-      // ДОБАВЛЕНО: Создаём файл с расширением .mp3
-      const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
+    // ДОБАВЛЕНО: Создаём файл с расширением .mp3
+    const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
 
-      const message = {
-          id: Date.now(),
-          content: '',
-          sender: { id: userId, username },
-          chat: { id: chatId, name: chatName },
-          fileUrl: await uploadFile(audioFile),
-          delivered: false,
-          read: false,
-          timestamp: new Date().toISOString(),
-          messageType: 'audio',
-          contentType: 'audio/mpeg' // ДОБАВЛЕНО: Указываем contentType для .mp3
-      };
+    const message = {
+        id: Date.now(),
+        content: '',
+        sender: { id: userId, username },
+        chat: { id: chatId, name: chatName },
+        fileUrl: await uploadFile(audioFile),
+        delivered: false,
+        read: false,
+        timestamp: new Date().toISOString(),
+        messageType: 'audio',
+        contentType: 'audio/mpeg' // ДОБАВЛЕНО: Указываем contentType для .mp3
+    };
 
-      console.log('Sending audio message:', message);
+    console.log('Sending audio message:', message);
 
-      if (client && client.connected) {
-          client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
-          setAudioBlob(null);
-          console.log('Audio message sent');
-          setMicIconState('mic');
-      } else {
-          console.error('STOMP client is not connected');
-          toast.error('WebSocket not connected');
-          setMicIconState('mic');
-      }
+    if (client && client.connected) {
+        client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
+        setAudioBlob(null);
+        console.log('Audio message sent');
+        setMicIconState('mic');
+    } else {
+        console.error('STOMP client is not connected');
+        toast.error('WebSocket not connected');
+        setMicIconState('mic');
+    }
   };
 
   // ДОБАВЛЕНО: Вычисление количества символов на строку
@@ -934,87 +933,87 @@ const PrivateChat = () => {
 
   // ИЗМЕНЕНО: Предзагрузка аудио
   const preloadAudio = (msgId, url) => {
-      const audio = audioRefs.current[msgId];
-      if (audio && !audioProgress[msgId]?.isReady && !audioProgress[msgId]?.isPreloading) {
-          setAudioProgress((prev) => ({
-              ...prev,
-              [msgId]: { ...prev[msgId], isPreloading: true },
-          }));
-          if (audio.src === url && audio.readyState >= 2) {
-              setAudioProgress((prev) => ({
-                  ...prev,
-                  [msgId]: {
-                      ...prev[msgId],
-                      isPreloading: false,
-                      isReady: audio.readyState >= 2,
-                      error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
-                  },
-              }));
-              return;
-          }
-          const cacheBusterUrl = `${url}?t=${Date.now()}`; // Обход кэша
-          audio.src = cacheBusterUrl;
-          // ДОБАВЛЕНО: Устанавливаем тип в зависимости от расширения файла
-          audio.type = url.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm';
-          audio.load();
-          audio.addEventListener('loadedmetadata', () => {
-              console.log(`Loaded metadata for msg ${msgId}: duration=${audio.duration}, readyState=${audio.readyState}`);
-              setAudioProgress((prev) => ({
-                  ...prev,
-                  [msgId]: {
-                      ...prev[msgId],
-                      isPreloading: false,
-                      isReady: audio.readyState >= 2,
-                      error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
-                  },
-              }));
-          }, { once: true });
-          audio.addEventListener('canplay', () => {
-              console.log(`Can play msg ${msgId}: readyState=${audio.readyState}`);
-              setAudioProgress((prev) => ({
-                  ...prev,
-                  [msgId]: {
-                      ...prev[msgId],
-                      isPreloading: false,
-                      isReady: true,
-                  },
-              }));
-          }, { once: true });
-          audio.addEventListener('error', (e) => {
-              const errorMsg = e.target.error ? `Error code: ${e.target.error.code}, message: ${e.target.error.message}` : 'Unknown error';
-              console.error(`Preload error for msg ${msgId}: ${errorMsg}, URL: ${url}, readyState: ${audio.readyState}`);
-              setAudioProgress((prev) => {
-                  const prevData = prev[msgId] || {};
-                  if (!prevData.retryCount || prevData.retryCount < 2) {
-                      setTimeout(() => {
-                          console.log(`Retrying preload for msg ${msgId}, attempt ${prevData.retryCount + 1}`);
-                          audio.src = `${url}?t=${Date.now()}`;
-                          audio.load();
-                      }, 2000);
-                      return {
-                          ...prev,
-                          [msgId]: {
-                              ...prevData,
-                              isPreloading: false,
-                              isReady: false,
-                              error: 'Retrying to preload audio...',
-                              retryCount: (prevData.retryCount || 0) + 1,
-                          },
-                      };
-                  }
-                  toast.error('Failed to preload audio message');
-                  return {
-                      ...prev,
-                      [msgId]: {
-                          ...prevData,
-                          isPreloading: false,
-                          isReady: false,
-                          error: `Failed to preload audio: ${errorMsg}`,
-                      },
-                  };
-              });
-          }, { once: true });
-      }
+    const audio = audioRefs.current[msgId];
+    if (audio && !audioProgress[msgId]?.isReady && !audioProgress[msgId]?.isPreloading) {
+        setAudioProgress((prev) => ({
+            ...prev,
+            [msgId]: { ...prev[msgId], isPreloading: true },
+        }));
+        if (audio.src === url && audio.readyState >= 2) {
+            setAudioProgress((prev) => ({
+                ...prev,
+                [msgId]: {
+                    ...prev[msgId],
+                    isPreloading: false,
+                    isReady: audio.readyState >= 2,
+                    error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
+                },
+            }));
+            return;
+        }
+        const cacheBusterUrl = `${url}?t=${Date.now()}`; // Обход кэша
+        audio.src = cacheBusterUrl;
+        // ДОБАВЛЕНО: Устанавливаем тип в зависимости от расширения файла
+        audio.type = url.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm';
+        audio.load();
+        audio.addEventListener('loadedmetadata', () => {
+            console.log(`Loaded metadata for msg ${msgId}: duration=${audio.duration}, readyState=${audio.readyState}`);
+            setAudioProgress((prev) => ({
+                ...prev,
+                [msgId]: {
+                    ...prev[msgId],
+                    isPreloading: false,
+                    isReady: audio.readyState >= 2,
+                    error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
+                },
+            }));
+        }, { once: true });
+        audio.addEventListener('canplay', () => {
+            console.log(`Can play msg ${msgId}: readyState=${audio.readyState}`);
+            setAudioProgress((prev) => ({
+                ...prev,
+                [msgId]: {
+                    ...prev[msgId],
+                    isPreloading: false,
+                    isReady: true,
+                },
+            }));
+        }, { once: true });
+        audio.addEventListener('error', (e) => {
+            const errorMsg = e.target.error ? `Error code: ${e.target.error.code}, message: ${e.target.error.message}` : 'Unknown error';
+            console.error(`Preload error for msg ${msgId}: ${errorMsg}, URL: ${url}, readyState: ${audio.readyState}`);
+            setAudioProgress((prev) => {
+                const prevData = prev[msgId] || {};
+                if (!prevData.retryCount || prevData.retryCount < 2) {
+                    setTimeout(() => {
+                        console.log(`Retrying preload for msg ${msgId}, attempt ${prevData.retryCount + 1}`);
+                        audio.src = `${url}?t=${Date.now()}`;
+                        audio.load();
+                    }, 2000);
+                    return {
+                        ...prev,
+                        [msgId]: {
+                            ...prevData,
+                            isPreloading: false,
+                            isReady: false,
+                            error: 'Retrying to preload audio...',
+                            retryCount: (prevData.retryCount || 0) + 1,
+                        },
+                    };
+                }
+                toast.error('Failed to preload audio message');
+                return {
+                    ...prev,
+                    [msgId]: {
+                        ...prevData,
+                        isPreloading: false,
+                        isReady: false,
+                        error: `Failed to preload audio: ${errorMsg}`,
+                    },
+                };
+            });
+        }, { once: true });
+    }
   };
 
   return (
@@ -1121,11 +1120,11 @@ const PrivateChat = () => {
                             onEnded={() => handleAudioEnded(msg.id)}
                             className="private-audio-player"
                             preload="auto"
-                        >
+                          >
                             {/* ИЗМЕНЕНО: Динамический тип источника */}
                             <source src={msg.fileUrl} type={msg.fileUrl.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'} />
                             Your browser does not support the audio element.
-                        </audio>
+                          </audio>
                           {audioProgress[msg.id]?.error ? (
                             <span className="private-audio-error">{audioProgress[msg.id].error}</span>
                           ) : (
