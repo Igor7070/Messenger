@@ -547,6 +547,12 @@ const Messenger = () => {
         setRows(newRows);
         const lineHeight = window.innerWidth <= 800 ? 20 : 24; // 20px для мобильных, 24px для десктопа
         textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
+        // ДОБАВЛЕНО: Управление классом scroll-enabled для скроллбара
+        if (newRows >= 5) {
+            textAreaRef.current.classList.add('scroll-enabled');
+        } else {
+            textAreaRef.current.classList.remove('scroll-enabled');
+        }
     };
 
     const calculateRows = (text) => {
@@ -665,18 +671,20 @@ const Messenger = () => {
         }
     };
 
-    const resetForm = () => { // ДОБАВЛЕНО: Новая функция для сброса формы
+    const resetForm = () => {
         setContent('');
         setSelectedFile(null);
-        setAudioBlob(null); // ДОБАВЛЕНО: Сброс аудио
+        setAudioBlob(null); // Сброс аудио
         setEditingMessageId(null);
         setRows(1);
-        setMicIconState('mic'); // ДОБАВЛЕНО: Сброс иконки микрофона
+        setMicIconState('mic'); // Сброс иконки микрофона
         if (fileInputRef.current) {
             fileInputRef.current.value = null;
         }
         if (textAreaRef.current) {
             textAreaRef.current.style.height = '44px';
+            // ДОБАВЛЕНО: Удаляем класс scroll-enabled при сбросе
+            textAreaRef.current.classList.remove('scroll-enabled');
         }
     };
 
@@ -1156,6 +1164,11 @@ const Messenger = () => {
                         className="input-message"
                         rows={rows}
                     />
+                    <label htmlFor="file-input" className="attach-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.66 1.34-3 3-3s3 1.34 3 3v11c0 .55-.45 1-1 1s-1-.45-1-1V6h-2v10c0 1.1.9 2 2 2s2-.9 2-2V5c0-2.76-2.24-5-5-5S6 2.24 6 5v12.5c0 3.31 2.69 6 6 6s6-2.69 6-6V6h-2z" fill="#757575"/>
+                        </svg>
+                    </label>
                     {content.length === 0 && micIconState !== 'sending' && (
                         <div className="mic-icon-container">
                             <span
