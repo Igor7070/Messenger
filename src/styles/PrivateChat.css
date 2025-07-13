@@ -233,7 +233,7 @@
 
 .private-input-message {
     width: 100%;
-    padding: 10px 36px 10px 44px;
+    padding: 10px 44px 10px 44px; /* Изменено: padding-right увеличен для учета иконки отправки */
     border: 1px solid #0288d1;
     border-radius: 5px;
     resize: none;
@@ -244,7 +244,7 @@
     font-family: 'Roboto', sans-serif;
     transition: border-color 0.3s;
     max-height: 120px;
-    overflow-y: hidden; /* ИЗМЕНЕНО: Скрываем скроллбар по умолчанию */
+    overflow-y: hidden;
     display: block;
 }
 
@@ -651,9 +651,9 @@
 
     .private-input-message {
         font-size: 14px;
-        padding: 10px 36px 10px 40px;
+        padding: 10px 40px 10px 40px; /* Изменено: padding-right увеличен для учета иконки отправки */
         min-height: 40px;
-        overflow-y: hidden; /* ИЗМЕНЕНО: Скрываем скроллбар по умолчанию */
+        overflow-y: hidden;
     }
 
     .private-input-message.scroll-enabled {
