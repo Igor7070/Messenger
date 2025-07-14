@@ -191,7 +191,7 @@ const Messenger = () => {
         };
 
         fetchMessages();
-    }, [chatId, isTranslationEnabled, translateExistingMessages]);
+    }, [chatId]);
 
     useEffect(() => {
         if (!isTranslationEnabled && messages.some((msg) => msg.translatedContent || msg.translationLanguage)) {
