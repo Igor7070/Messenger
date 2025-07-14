@@ -1155,6 +1155,16 @@ const Messenger = () => {
             </div>
             <div className="input-container">
                 <div className="textarea-wrapper">
+                    <span
+                        onClick={() => fileInputRef.current.click()}
+                        className="attach-icon"
+                        role="button"
+                        aria-label="Attach File"
+                    >
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 015 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 005 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z" fill="#757575"/>
+                        </svg>
+                    </span>
                     <textarea
                         ref={textAreaRef}
                         value={content}
@@ -1164,11 +1174,13 @@ const Messenger = () => {
                         className="input-message"
                         rows={rows}
                     />
-                    <label htmlFor="file-input" className="attach-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 015 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 005 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z" fill="#757575"/>
-                        </svg>
-                    </label>
+                    <input
+                        type="file"
+                        onChange={handleFileChange}
+                        className="file-input"
+                        ref={fileInputRef}
+                        id="file-input"
+                    />
                     {content.length === 0 && micIconState !== 'sending' && (
                         <div className="mic-icon-container">
                             <span
@@ -1190,17 +1202,21 @@ const Messenger = () => {
                             </span>
                         </div>
                     )}
-                </div>
-                <div className="button-container">
-                    <input
-                        type="file"
-                        onChange={handleFileChange}
-                        className="file-input"
-                        ref={fileInputRef}
-                        id="file-input"
-                    />
-                    <label htmlFor="file-input" className="file-input-label">Choose File</label>
-                    <button onClick={sendMessage} className="send-button">Send</button>
+                    {/* ДОБАВЛЕНО: Иконка отправки */}
+                    {content.length > 0 && (
+                        <div className="send-icon-container">
+                            <span
+                                onClick={sendMessage}
+                                className="send-icon"
+                                role="button"
+                                aria-label="Send Message"
+                            >
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
+                                </svg>
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
             {contextMenu.visible && (
