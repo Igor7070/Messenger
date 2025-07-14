@@ -1057,7 +1057,16 @@ const Messenger = () => {
                                         {msg.sender.id !== userId && (
                                             <span className="sender-name">{msg.sender.username}</span>
                                         )}
-                                        {/* *** ИЗМЕНЕНО: Условный рендеринг по messageType *** */}
+                                        {/* Рендеринг текстового сообщения */}
+                                        {msg.content && (
+                                            <div className="message-content">
+                                                <span className="original-content">{msg.content}</span>
+                                                {isTranslationEnabled && msg.translatedContent && (
+                                                    <span className="translated-content">{msg.translatedContent}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                        {/* Рендеринг аудио или файла */}
                                         {msg.messageType === 'audio' && msg.fileUrl ? (
                                             <div className="audio-message-container">
                                                 <div className="audio-player-wrapper">
@@ -1078,7 +1087,6 @@ const Messenger = () => {
                                                         className="audio-player"
                                                         preload="auto"
                                                     >
-                                                        {/* ИЗМЕНЕНО: Динамический тип источника */}
                                                         <source src={msg.fileUrl} type={msg.fileUrl.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'} />
                                                         Your browser does not support the audio element.
                                                     </audio>
@@ -1143,7 +1151,6 @@ const Messenger = () => {
                                                 📥 Download file
                                             </a>
                                         ) : null}
-                                        {/* *** КОНЕЦ ИЗМЕНЕНИЯ *** */}
                                         <div className="message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                                     </div>
                                 </div>
