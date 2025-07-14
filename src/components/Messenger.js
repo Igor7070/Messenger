@@ -177,10 +177,14 @@ const Messenger = () => {
                 if (messages.length > 0) {
                     localStorage.setItem(`last_visit_chat_${chatId}`, messages[messages.length - 1].timestamp);
                 }
-                // Добавлено: прокрутка вниз после загрузки сообщений
+                // Прокрутка вниз после загрузки сообщений
                 setTimeout(() => {
                     scrollToBottom();
-                }, 0); // setTimeout для выполнения после рендера
+                }, 0);
+                // Добавлено: запуск перевода существующих сообщений, если перевод включен
+                if (isTranslationEnabled) {
+                    translateExistingMessages();
+                }
             } catch (error) {
                 console.error('Ошибка при загрузке сообщений:', error);
                 toast.error('Failed to load messages');
