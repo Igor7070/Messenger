@@ -1059,8 +1059,25 @@ const Messenger = () => {
                                         )}
                                         {/* Рендеринг текстового сообщения */}
                                         {msg.content && (
-                                            <div className="message-content">
-                                                <span className="original-content">{msg.content}</span>
+                                            <div
+                                                className="message-content"
+                                                onClick={(e) => {
+                                                    if (e.target.tagName === 'A') return; // Игнорируем клики по ссылкам
+                                                    if (msg.translatedContent && isTranslationEnabled) {
+                                                        setMessages((prevMessages) =>
+                                                            prevMessages.map((m) =>
+                                                                m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                                            )
+                                                        );
+                                                    }
+                                                }}
+                                                style={{ cursor: msg.translatedContent && isTranslationEnabled ? 'pointer' : 'default' }}
+                                            >
+                                                <span className="original-content">
+                                                    {msg.showOriginal || !msg.translatedContent || !isTranslationEnabled
+                                                        ? msg.content
+                                                        : msg.translatedContent}
+                                                </span>
                                                 {isTranslationEnabled && msg.translatedContent && (
                                                     <span className="translated-content">{msg.translatedContent}</span>
                                                 )}
