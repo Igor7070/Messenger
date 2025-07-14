@@ -177,11 +177,10 @@ const Messenger = () => {
                 if (messages.length > 0) {
                     localStorage.setItem(`last_visit_chat_${chatId}`, messages[messages.length - 1].timestamp);
                 }
-                // Прокрутка вниз после загрузки сообщений
                 setTimeout(() => {
                     scrollToBottom();
                 }, 0);
-                // Добавлено: запуск перевода существующих сообщений, если перевод включен
+                // Добавлено: запуск перевода существующих сообщений
                 if (isTranslationEnabled) {
                     translateExistingMessages();
                 }
@@ -192,7 +191,7 @@ const Messenger = () => {
         };
 
         fetchMessages();
-    }, [chatId]);
+    }, [chatId, isTranslationEnabled, translateExistingMessages]);
 
     useEffect(() => {
         if (!isTranslationEnabled && messages.some((msg) => msg.translatedContent || msg.translationLanguage)) {
