@@ -138,29 +138,30 @@ const Messenger = () => {
     };
 
     useEffect(() => {
-        const storedUserId = localStorage.getItem('userId');
-        const storedUsername = localStorage.getItem('username');
-
-        if (storedUserId && storedUsername) {
-            const userIdNum = Number(storedUserId);
-            setUserId(userIdNum);
-            setCurrentUserId(userIdNum);
-            setContextUserId(userIdNum);
-            setNotificationUserId(userIdNum);
-            setUsername(storedUsername);
-            setIsLoggedIn(true);
-            // Добавлено: загрузка настроек перевода
-            setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatId}`) === 'true');
-            setTranslationLanguage(localStorage.getItem(`translation_language_${chatId}`) || 'auto');
-            setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatId}`) === 'true');
-            // Загрузка настройки орфографии
-            setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatId}`) === 'true');
-        }
-    }, [setContextUserId, setNotificationUserId, chatId]);
-
-    useEffect(() => {
-        const fetchMessages = async () => {
+        const initializeChat = async () => {
             try {
+            // Загружаем настройки пользователя и перевода
+            const storedUserId = localStorage.getItem('userId');
+            const storedUsername = localStorage.getItem('username');
+            if (storedUserId && storedUsername) {
+                const userIdNum = Number(storedUserId);
+                setUserId(userIdNum);
+                setCurrentUserId(userIdNum);
+                setContextUserId(userIdNum);
+                setNotificationUserId(userIdNum);
+                setUsername(storedUsername);
+                setIsLoggedIn(true);
+                setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatId}`) === 'true');
+                setTranslationLanguage(localStorage.getItem(`translation_language_${chatId}`) || 'auto');
+                setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatId}`) === 'true');
+                setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatId}`) === 'true');
+            } else {
+                toast.error('User is not authorized');
+                navigate('/');
+                return;
+            }
+
+            // Загружаем сообщения
             const messages = await getMessages(chatId);
             const updatedMessages = messages.map((msg) => {
                 const translationKey = `translation_${chatId}_${msg.id}`;
@@ -181,13 +182,24 @@ const Messenger = () => {
                 scrollToBottom();
             }, 0);
             } catch (error) {
-            console.error('Ошибка при загрузке сообщений:', error);
-            toast.error('Failed to load messages');
+            console.error('Ошибка при загрузке данных чата:', error);
+            toast.error('Failed to load chat data');
+            navigate('/');
             }
         };
 
-        fetchMessages();
-    }, [chatId]);
+        initializeChat();
+    }, [chatId, setContextUserId, setNotificationUserId, navigate]);
+
+    useEffect(() => {
+        if (isTranslationEnabled && messages.length > 0) {
+            console.log('Translating existing messages with language:', translationLanguage);
+            translateExistingMessages();
+        } else if (!isTranslationEnabled) {
+            console.log('Clearing translations');
+            clearTranslations();
+        }
+    }, [isTranslationEnabled, translationLanguage, translateNewOnly, messages]);
 
     useEffect(() => {
         if (isTranslationEnabled) {
@@ -263,15 +275,6 @@ const Messenger = () => {
         }
     }, [messages.length]);
 
-    // Добавлено: запуск перевода при изменении настроек
-    useEffect(() => {
-        if (isTranslationEnabled) {
-            translateExistingMessages();
-        } else {
-            clearTranslations();
-        }
-    }, [isTranslationEnabled, translationLanguage, translateNewOnly]);
-
     // Добавлено: обработка очереди переводов
     useEffect(() => {
         translateNextMessage();
@@ -316,33 +319,36 @@ const Messenger = () => {
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
+            if (newMessage.content === 'Message deleted') {
+            return prevMessages.filter((msg) => msg.id !== newMessage.id);
+            }
+
             const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
             if (existingMessageIndex !== -1) {
-                const updatedMessages = [...prevMessages];
-                updatedMessages[existingMessageIndex] = {
-                    ...newMessage,
-                    translatedContent: updatedMessages[existingMessageIndex].translatedContent,
-                    translationLanguage: updatedMessages[existingMessageIndex].translationLanguage,
-                    showOriginal: updatedMessages[existingMessageIndex].showOriginal,
-                };
-                if (
-                    isTranslationEnabled &&
-                    isMessageNew(newMessage) &&
-                    (!updatedMessages[existingMessageIndex].translatedContent ||
-                    updatedMessages[existingMessageIndex].translationLanguage !== translationLanguage)
-                ) {
-                    setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
-                }
-                return updatedMessages;
-            } else if (newMessage.content !== 'Message deleted') {
-                const updatedMessages = [...prevMessages, newMessage];
-                localStorage.setItem(`last_visit_chat_${chatId}`, newMessage.timestamp);
-                if (isTranslationEnabled && isMessageNew(newMessage)) {
-                    setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
-                }
-                return updatedMessages;
+            const updatedMessages = [...prevMessages];
+            updatedMessages[existingMessageIndex] = {
+                ...newMessage,
+                translatedContent: updatedMessages[existingMessageIndex].translatedContent,
+                translationLanguage: updatedMessages[existingMessageIndex].translationLanguage,
+                showOriginal: updatedMessages[existingMessageIndex].showOriginal,
+            };
+            if (
+                isTranslationEnabled &&
+                isMessageNew(newMessage) &&
+                (!updatedMessages[existingMessageIndex].translatedContent ||
+                updatedMessages[existingMessageIndex].translationLanguage !== translationLanguage)
+            ) {
+                setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
             }
-            return prevMessages;
+            return updatedMessages;
+            } else {
+            const updatedMessages = [...prevMessages, { ...newMessage, showOriginal: true }];
+            localStorage.setItem(`last_visit_chat_${chatId}`, newMessage.timestamp);
+            if (isTranslationEnabled && isMessageNew(newMessage)) {
+                setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+            }
+            return updatedMessages;
+            }
         });
     };
 
