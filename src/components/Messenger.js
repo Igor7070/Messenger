@@ -161,37 +161,41 @@ const Messenger = () => {
     useEffect(() => {
         const fetchMessages = async () => {
             try {
-                const messages = await getMessages(chatId);
-                const updatedMessages = messages.map((msg) => {
-                    const translationKey = `translation_${chatId}_${msg.id}`;
-                    const savedTranslation = localStorage.getItem(translationKey);
-                    if (savedTranslation) {
-                        const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
-                        return { ...msg, translatedContent, translationLanguage, showOriginal: true };
-                    }
-                    return { ...msg, showOriginal: true };
-                });
-                setMessages(updatedMessages);
-                const name = await getChatName(chatId);
-                setChatName(name);
-                if (messages.length > 0) {
-                    localStorage.setItem(`last_visit_chat_${chatId}`, messages[messages.length - 1].timestamp);
+            const messages = await getMessages(chatId);
+            const updatedMessages = messages.map((msg) => {
+                const translationKey = `translation_${chatId}_${msg.id}`;
+                const savedTranslation = localStorage.getItem(translationKey);
+                if (savedTranslation) {
+                const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
+                return { ...msg, translatedContent, translationLanguage, showOriginal: true };
                 }
-                setTimeout(() => {
-                    scrollToBottom();
-                }, 0);
-                // Добавлено: запуск перевода существующих сообщений
-                if (isTranslationEnabled) {
-                    translateExistingMessages();
-                }
+                return { ...msg, showOriginal: true };
+            });
+            setMessages(updatedMessages);
+            const name = await getChatName(chatId);
+            setChatName(name);
+            if (messages.length > 0) {
+                localStorage.setItem(`last_visit_chat_${chatId}`, messages[messages.length - 1].timestamp);
+            }
+            setTimeout(() => {
+                scrollToBottom();
+            }, 0);
             } catch (error) {
-                console.error('Ошибка при загрузке сообщений:', error);
-                toast.error('Failed to load messages');
+            console.error('Ошибка при загрузке сообщений:', error);
+            toast.error('Failed to load messages');
             }
         };
 
         fetchMessages();
     }, [chatId]);
+
+    useEffect(() => {
+        if (isTranslationEnabled) {
+            translateExistingMessages();
+        } else {
+            clearTranslations();
+        }
+    }, [isTranslationEnabled, translationLanguage, translateNewOnly, messages]);
 
     useEffect(() => {
         if (!isTranslationEnabled && messages.some((msg) => msg.translatedContent || msg.translationLanguage)) {
