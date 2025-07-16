@@ -458,21 +458,13 @@ const PrivateChat = () => {
   // Новая функция для отправки уведомлений
   const sendNotification = async (message, contentForNotification) => {
     setTimeout(async () => {
-        const encodedContent = encodeURIComponent(contentForNotification);
-        console.log('Sending search request:', {
-            url: `https://unlimitedpossibilities12.org/api/messages/search?content=${encodedContent}&senderId=${userId}&chatId=${chatId}`,
-            content: contentForNotification,
-            senderId: userId,
-            chatId: chatId
-        });
-
         const response = await fetch(
-            `https://unlimitedpossibilities12.org/api/messages/search?content=${encodedContent}&senderId=${userId}&chatId=${chatId}`
+            `https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(contentForNotification)}&senderId=${userId}&chatId=${chatId}`
         );
 
         if (response.ok) {
             const updatedMessage = await response.json();
-            console.log('Updated message from search:', updatedMessage);
+            console.log('updatedMessage:', updatedMessage);
 
             const messageId = updatedMessage.id;
             const statusResponse = await fetch(
@@ -481,10 +473,8 @@ const PrivateChat = () => {
 
             if (statusResponse.ok) {
                 const messageStatus = await statusResponse.json();
-                console.log('Message status:', messageStatus);
-
                 const recipientName = chatName.split('_').find((name) => name !== username);
-                console.log('Recipient name:', recipientName);
+                console.log('recipientName:', recipientName);
 
                 const userResponse = await fetch(
                     `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
@@ -493,11 +483,13 @@ const PrivateChat = () => {
                 if (userResponse.ok) {
                     const recipient = await userResponse.json();
                     const recipientId = recipient.id;
-                    console.log('Recipient ID:', recipientId);
+
+                    console.log('recipientId:', recipientId);
+                    console.log('messageStatus.read_status:', messageStatus.read_status);
 
                     if (messageStatus.read_status === false || messageStatus.read_status === null) {
-                        console.log('Sending notification for message ID:', messageId);
-                        const notifyResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
+                        console.log('Notification must be sent...');
+                        await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -507,22 +499,15 @@ const PrivateChat = () => {
                                 chatId,
                             }),
                         });
-                        console.log('Notify response:', notifyResponse.status, notifyResponse.statusText);
-                    } else {
-                        console.log('No notification needed, message already read:', messageStatus.read_status);
                     }
                 } else {
-                    console.error('Error getting recipient ID:', userResponse.status, userResponse.statusText);
+                    console.error('Error getting recipient ID');
                 }
             } else {
-                console.error('Error getting message status:', statusResponse.status, statusResponse.statusText);
+                console.error('Error getting message status');
             }
         } else {
-            console.error('Error while searching for message:', response.status, response.statusText, {
-                content: contentForNotification,
-                senderId: userId,
-                chatId: chatId
-            });
+            console.error('Error while searching for message:', response.status, response.statusText);
         }
     }, 3000);
   };
