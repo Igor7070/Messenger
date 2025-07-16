@@ -457,59 +457,123 @@ const PrivateChat = () => {
 
   // Новая функция для отправки уведомлений
   const sendNotification = async (message, contentForNotification) => {
-    setTimeout(async () => {
-        const response = await fetch(
-            `https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(contentForNotification)}&senderId=${userId}&chatId=${chatId}`
-        );
+    const maxAttempts = 3;
+    let attempt = 0;
 
-        if (response.ok) {
-            const updatedMessage = await response.json();
-            console.log('updatedMessage:', updatedMessage);
+    const trySendNotification = async () => {
+        attempt++;
+        try {
+            console.log(`Attempt ${attempt}/${maxAttempts} to send notification for message:`, {
+                content: contentForNotification,
+                senderId: userId,
+                chatId: chatId,
+                messageType: message.messageType,
+                timestamp: message.timestamp,
+            });
 
-            const messageId = updatedMessage.id;
-            const statusResponse = await fetch(
-                `https://unlimitedpossibilities12.org/api/messages/${messageId}`
+            // Формируем запрос, аналогичный Android
+            const searchParams = new URLSearchParams({
+                content: encodeURIComponent(contentForNotification),
+                senderId: userId,
+                chatId: chatId,
+            });
+
+            const response = await fetch(
+                `https://unlimitedpossibilities12.org/api/messages/search?${searchParams.toString()}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`, // Добавляем токен, если он есть
+                        'Content-Type': 'application/json',
+                    },
+                }
             );
 
-            if (statusResponse.ok) {
-                const messageStatus = await statusResponse.json();
-                const recipientName = chatName.split('_').find((name) => name !== username);
-                console.log('recipientName:', recipientName);
+            if (response.ok) {
+                const updatedMessage = await response.json();
+                console.log('Updated message from search:', updatedMessage);
 
-                const userResponse = await fetch(
-                    `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
+                const messageId = updatedMessage.id;
+                const statusResponse = await fetch(
+                    `https://unlimitedpossibilities12.org/api/messages/${messageId}`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            'Content-Type': 'application/json',
+                        },
+                    }
                 );
 
-                if (userResponse.ok) {
-                    const recipient = await userResponse.json();
-                    const recipientId = recipient.id;
+                if (statusResponse.ok) {
+                    const messageStatus = await statusResponse.json();
+                    console.log('Message status:', messageStatus);
 
-                    console.log('recipientId:', recipientId);
-                    console.log('messageStatus.read_status:', messageStatus.read_status);
+                    const recipientName = chatName.split('_').find((name) => name !== username);
+                    console.log('Recipient name:', recipientName);
 
-                    if (messageStatus.read_status === false || messageStatus.read_status === null) {
-                        console.log('Notification must be sent...');
-                        await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                userId,
-                                recipientId,
-                                content: contentForNotification,
-                                chatId,
-                            }),
-                        });
+                    const userResponse = await fetch(
+                        `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`,
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                'Content-Type': 'application/json',
+                            },
+                        }
+                    );
+
+                    if (userResponse.ok) {
+                        const recipient = await userResponse.json();
+                        const recipientId = recipient.id;
+                        console.log('Recipient ID:', recipientId);
+
+                        if (messageStatus.read_status === false || messageStatus.read_status === null) {
+                            console.log('Sending notification for message ID:', messageId);
+                            const notifyResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    userId,
+                                    recipientId,
+                                    content: contentForNotification,
+                                    chatId,
+                                }),
+                            });
+                            console.log('Notify response:', notifyResponse.status, notifyResponse.statusText);
+                        } else {
+                            console.log('No notification needed, message already read:', messageStatus.read_status);
+                        }
+                    } else {
+                        console.error('Error getting recipient ID:', userResponse.status, userResponse.statusText);
                     }
                 } else {
-                    console.error('Error getting recipient ID');
+                    console.error('Error getting message status:', statusResponse.status, statusResponse.statusText);
                 }
             } else {
-                console.error('Error getting message status');
+                console.error(`Search attempt ${attempt} failed:`, response.status, response.statusText);
+                if (attempt < maxAttempts) {
+                    console.log(`Retrying after ${attempt * 2000}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+                    return trySendNotification();
+                } else {
+                    console.error('Max attempts reached for message search');
+                }
             }
-        } else {
-            console.error('Error while searching for message:', response.status, response.statusText);
+        } catch (error) {
+            console.error(`Error in attempt ${attempt}:`, error.message);
+            if (attempt < maxAttempts) {
+                console.log(`Retrying after ${attempt * 2000}ms...`);
+                await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+                return trySendNotification();
+            } else {
+                console.error('Max attempts reached, giving up:', error.message);
+            }
         }
-    }, 3000);
+    };
+
+    // Начинаем с задержки 3 секунды, как в Android
+    setTimeout(trySendNotification, 3000);
   };
 
   const handleKeyDown = (e) => {
