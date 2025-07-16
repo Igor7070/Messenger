@@ -421,97 +421,95 @@ const PrivateChat = () => {
 
   const sendMessage = async () => {
     if ((content || selectedFile || audioBlob) && userId) {
-       // Проверяем орфографию, если включена
-      let finalContent = content;
-      if (isSpellCheckEnabled) {
-        const spellCheckTimestamp = localStorage.getItem(`spellcheck_enabled_timestamp_${chatIdParam}`); // Используем chatIdParam
-        if (spellCheckTimestamp) {
-          finalContent = await spellCheckMessage(content);
+        let finalContent = content;
+        if (isSpellCheckEnabled) {
+            const spellCheckTimestamp = localStorage.getItem(`spellcheck_enabled_timestamp_${chatIdParam}`);
+            if (spellCheckTimestamp) {
+                finalContent = await spellCheckMessage(content);
+            }
         }
-      }
 
-      const message = {
-        id: editingMessageId || Date.now(),
-        content: finalContent, // Используем исправленный текст
-        sender: { id: userId, username },
-        chat: { id: chatId, name: chatName },
-        fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
-        delivered: false,
-        read: false,
-        timestamp: new Date().toISOString(),
-      };
+        const message = {
+            id: editingMessageId || Date.now(),
+            content: finalContent,
+            sender: { id: userId, username },
+            chat: { id: chatId, name: chatName },
+            fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
+            delivered: false,
+            read: false,
+            timestamp: new Date().toISOString(),
+            messageType: selectedFile ? 'file' : 'text',
+            contentType: selectedFile ? selectedFile.type : null
+        };
 
-      if (client && client.connected) {
-        client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
+        if (client && client.connected) {
+            client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
+            sendNotification(message, finalContent);
+            resetForm();
+        } else {
+            console.error('STOMP client is not connected');
+            toast.error('Failed to send message: no connection');
+        }
+    } else {
+        toast.warn('Enter a message or select a file');
+    }
+  };
 
-        setTimeout(async () => {
-          const response = await fetch(
-            `https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(
-              finalContent // Используем исправленный текст
-            )}&senderId=${userId}&chatId=${chatId}`
-          );
+  // Новая функция для отправки уведомлений
+  const sendNotification = async (message, contentForNotification) => {
+    setTimeout(async () => {
+        const response = await fetch(
+            `https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(contentForNotification)}&senderId=${userId}&chatId=${chatId}`
+        );
 
-          if (response.ok) {
+        if (response.ok) {
             const updatedMessage = await response.json();
             console.log('updatedMessage:', updatedMessage);
 
             const messageId = updatedMessage.id;
             const statusResponse = await fetch(
-              `https://unlimitedpossibilities12.org/api/messages/${messageId}`
+                `https://unlimitedpossibilities12.org/api/messages/${messageId}`
             );
 
             if (statusResponse.ok) {
-              const messageStatus = await statusResponse.json();
-              const recipientName = chatName.split('_').find((name) => name !== username);
-              console.log('recipientName:', recipientName);
+                const messageStatus = await statusResponse.json();
+                const recipientName = chatName.split('_').find((name) => name !== username);
+                console.log('recipientName:', recipientName);
 
-              const userResponse = await fetch(
-                `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
-              );
+                const userResponse = await fetch(
+                    `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
+                );
 
-              if (userResponse.ok) {
-                const recipient = await userResponse.json();
-                const recipientId = recipient.id;
+                if (userResponse.ok) {
+                    const recipient = await userResponse.json();
+                    const recipientId = recipient.id;
 
-                console.log('recipientId:', recipientId);
-                console.log('updatedMessage.read:', updatedMessage.read);
-                console.log('updatedMessage.read_status:', updatedMessage.read_status);
-                console.log('messageStatus.read:', messageStatus.read);
-                console.log('messageStatus.read_status:', messageStatus.read_status);
-                console.log('userId:', userId);
+                    console.log('recipientId:', recipientId);
+                    console.log('messageStatus.read_status:', messageStatus.read_status);
 
-                if (messageStatus.read_status === false || messageStatus.read_status === null) {
-                  console.log('Notification must be sent...');
-                  await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      userId,
-                      recipientId,
-                      content: finalContent, // Используем исправленный текст
-                      chatId,
-                    }),
-                  });
+                    if (messageStatus.read_status === false || messageStatus.read_status === null) {
+                        console.log('Notification must be sent...');
+                        await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                userId,
+                                recipientId,
+                                content: contentForNotification,
+                                chatId,
+                            }),
+                        });
+                    }
+                } else {
+                    console.error('Error getting recipient ID');
                 }
-              } else {
-                console.error('Error getting recipient ID');
-              }
             } else {
-              console.error('Error getting message status');
+                console.error('Error getting message status');
             }
-          } else {
-            console.error('Error while searching for message');
-          }
-        }, 3000);
-
-        resetForm();
-      } else {
-        console.error('STOMP client is not connected');
-        toast.error('Failed to send message: no connection');
-      }
-    } else {
-      toast.warn('Enter a message or select a file');
-    }
+        } else {
+            console.error('Error while searching for message:', response.status, response.statusText);
+        }
+    }, 3000);
   };
 
   const handleKeyDown = (e) => {
@@ -705,7 +703,6 @@ const PrivateChat = () => {
         return;
     }
 
-    // ДОБАВЛЕНО: Создаём файл с расширением .mp3
     const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
 
     const message = {
@@ -718,13 +715,14 @@ const PrivateChat = () => {
         read: false,
         timestamp: new Date().toISOString(),
         messageType: 'audio',
-        contentType: 'audio/mpeg' // ДОБАВЛЕНО: Указываем contentType для .mp3
+        contentType: 'audio/mpeg'
     };
 
     console.log('Sending audio message:', message);
 
     if (client && client.connected) {
         client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
+        sendNotification(message, ''); // Пустой content для аудиосообщений
         setAudioBlob(null);
         console.log('Audio message sent');
         setMicIconState('mic');
