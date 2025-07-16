@@ -20,12 +20,13 @@ public class WebSocketService {
         try {
             User user = userService.getUserById(userId);
             String userName = user.getUsername();
-
             String destination = "/topic/notifications/" + recipientId;
+            // Используем заглушку только если content null или пустой
+            String notificationContent = (content == null || content.isEmpty()) ? "New audio message" : content;
             String notificationMessage = String.format("New message: %s from:" +
-                    " %s (chatId: %d)", content, userName, chatId);
+                    " %s (chatId: %d)", notificationContent, userName, chatId);
             messagingTemplate.convertAndSend(destination, notificationMessage);
-            System.out.println("Notification sent to user ID: " + recipientId);
+            System.out.println("Notification sent to user ID: " + recipientId + ", message: " + notificationMessage);
         } catch (Exception e) {
             System.out.println("Error in method sendNotification: " + e.getMessage());
             e.printStackTrace();
