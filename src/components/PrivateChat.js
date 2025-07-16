@@ -419,104 +419,98 @@ const PrivateChat = () => {
     return data.fileUrl;
   };
 
-  const sendMessage = async (isAudio = false) => {
-    if (isAudio) {
-        console.warn('sendMessage should not be called for audio messages');
-        return; // Аудиосообщения обрабатываются в sendAudioMessage
-    }
-
-    if ((content || selectedFile) && userId) {
-        let finalContent = content;
-        if (isSpellCheckEnabled) {
-            const spellCheckTimestamp = localStorage.getItem(`spellcheck_enabled_timestamp_${chatIdParam}`);
-            if (spellCheckTimestamp) {
-                finalContent = await spellCheckMessage(content);
-            }
+  const sendMessage = async () => {
+    if ((content || selectedFile || audioBlob) && userId) {
+       // Проверяем орфографию, если включена
+      let finalContent = content;
+      if (isSpellCheckEnabled) {
+        const spellCheckTimestamp = localStorage.getItem(`spellcheck_enabled_timestamp_${chatIdParam}`); // Используем chatIdParam
+        if (spellCheckTimestamp) {
+          finalContent = await spellCheckMessage(content);
         }
+      }
 
-        const message = {
-            id: editingMessageId || Date.now(),
-            content: finalContent,
-            sender: { id: userId, username },
-            chat: { id: chatId, name: chatName },
-            fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
-            delivered: false,
-            read: false,
-            timestamp: new Date().toISOString(),
-            messageType: 'text',
-            contentType: null
-        };
+      const message = {
+        id: editingMessageId || Date.now(),
+        content: finalContent, // Используем исправленный текст
+        sender: { id: userId, username },
+        chat: { id: chatId, name: chatName },
+        fileUrl: selectedFile ? await uploadFile(selectedFile) : null,
+        delivered: false,
+        read: false,
+        timestamp: new Date().toISOString(),
+      };
 
-        if (client && client.connected) {
-            client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
+      if (client && client.connected) {
+        client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
 
-            setTimeout(async () => {
-                const searchParams = `content=${encodeURIComponent(finalContent)}&senderId=${userId}&chatId=${chatId}`;
-                console.log('Search params:', searchParams);
-                const response = await fetch(
-                    `https://unlimitedpossibilities12.org/api/messages/search?${searchParams}`
-                );
+        setTimeout(async () => {
+          const response = await fetch(
+            `https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(
+              finalContent // Используем исправленный текст
+            )}&senderId=${userId}&chatId=${chatId}`
+          );
 
-                if (response.ok) {
-                    const updatedMessage = await response.json();
-                    console.log('updatedMessage:', updatedMessage);
+          if (response.ok) {
+            const updatedMessage = await response.json();
+            console.log('updatedMessage:', updatedMessage);
 
-                    const messageId = updatedMessage.id;
-                    const statusResponse = await fetch(
-                        `https://unlimitedpossibilities12.org/api/messages/${messageId}`
-                    );
+            const messageId = updatedMessage.id;
+            const statusResponse = await fetch(
+              `https://unlimitedpossibilities12.org/api/messages/${messageId}`
+            );
 
-                    if (statusResponse.ok) {
-                        const messageStatus = await statusResponse.json();
-                        const recipientName = chatName.split('_').find((name) => name !== username);
-                        console.log('recipientName:', recipientName);
+            if (statusResponse.ok) {
+              const messageStatus = await statusResponse.json();
+              const recipientName = chatName.split('_').find((name) => name !== username);
+              console.log('recipientName:', recipientName);
 
-                        const userResponse = await fetch(
-                            `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
-                        );
+              const userResponse = await fetch(
+                `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
+              );
 
-                        if (userResponse.ok) {
-                            const recipient = await userResponse.json();
-                            const recipientId = recipient.id;
+              if (userResponse.ok) {
+                const recipient = await userResponse.json();
+                const recipientId = recipient.id;
 
-                            console.log('recipientId:', recipientId);
-                            console.log('updatedMessage.read:', updatedMessage.read);
-                            console.log('updatedMessage.read_status:', updatedMessage.read_status);
-                            console.log('messageStatus.read:', messageStatus.read);
-                            console.log('messageStatus.read_status:', messageStatus.read_status);
-                            console.log('userId:', userId);
+                console.log('recipientId:', recipientId);
+                console.log('updatedMessage.read:', updatedMessage.read);
+                console.log('updatedMessage.read_status:', updatedMessage.read_status);
+                console.log('messageStatus.read:', messageStatus.read);
+                console.log('messageStatus.read_status:', messageStatus.read_status);
+                console.log('userId:', userId);
 
-                            if (messageStatus.read_status === false || messageStatus.read_status === null) {
-                                console.log('Notification must be sent...');
-                                await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        userId,
-                                        recipientId,
-                                        content: finalContent,
-                                        chatId
-                                    }),
-                                });
-                            }
-                        } else {
-                            console.error('Error getting recipient ID:', userResponse.status);
-                        }
-                    } else {
-                        console.error('Error getting message status:', statusResponse.status);
-                    }
-                } else {
-                    console.error('Error while searching for message:', response.status, await response.text());
+                if (messageStatus.read_status === false || messageStatus.read_status === null) {
+                  console.log('Notification must be sent...');
+                  await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      userId,
+                      recipientId,
+                      content: finalContent, // Используем исправленный текст
+                      chatId,
+                    }),
+                  });
                 }
-            }, 1000);
+              } else {
+                console.error('Error getting recipient ID');
+              }
+            } else {
+              console.error('Error getting message status');
+            }
+          } else {
+            console.error('Error while searching for message');
+          }
+        }, 3000);
 
-            resetForm();
-        } else {
-            console.error('STOMP client is not connected');
-            toast.error('Failed to send message: no connection');
-        }
+        resetForm();
+      } else {
+        console.error('STOMP client is not connected');
+        toast.error('Failed to send message: no connection');
+      }
     } else {
-        toast.warn('Enter a message or select a file');
+      toast.warn('Enter a message or select a file');
     }
   };
 
@@ -711,6 +705,7 @@ const PrivateChat = () => {
         return;
     }
 
+    // ДОБАВЛЕНО: Создаём файл с расширением .mp3
     const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
 
     const message = {
@@ -723,79 +718,16 @@ const PrivateChat = () => {
         read: false,
         timestamp: new Date().toISOString(),
         messageType: 'audio',
-        contentType: 'audio/mpeg'
+        contentType: 'audio/mpeg' // ДОБАВЛЕНО: Указываем contentType для .mp3
     };
 
     console.log('Sending audio message:', message);
 
     if (client && client.connected) {
         client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
-
-        // Выполняем поиск и отправку уведомления
-        setTimeout(async () => {
-            const searchParams = `messageType=audio&senderId=${userId}&chatId=${chatId}&timestamp=${encodeURIComponent(message.timestamp)}`;
-            console.log('Search params:', searchParams);
-            const response = await fetch(
-                `https://unlimitedpossibilities12.org/api/messages/search?${searchParams}`
-            );
-
-            if (response.ok) {
-                const updatedMessage = await response.json();
-                console.log('updatedMessage:', updatedMessage);
-
-                const messageId = updatedMessage.id;
-                const statusResponse = await fetch(
-                    `https://unlimitedpossibilities12.org/api/messages/${messageId}`
-                );
-
-                if (statusResponse.ok) {
-                    const messageStatus = await statusResponse.json();
-                    const recipientName = chatName.split('_').find((name) => name !== username);
-                    console.log('recipientName:', recipientName);
-
-                    const userResponse = await fetch(
-                        `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
-                    );
-
-                    if (userResponse.ok) {
-                        const recipient = await userResponse.json();
-                        const recipientId = recipient.id;
-
-                        console.log('recipientId:', recipientId);
-                        console.log('updatedMessage.read:', updatedMessage.read);
-                        console.log('updatedMessage.read_status:', updatedMessage.read_status);
-                        console.log('messageStatus.read:', messageStatus.read);
-                        console.log('messageStatus.read_status:', messageStatus.read_status);
-                        console.log('userId:', userId);
-
-                        if (messageStatus.read_status === false || messageStatus.read_status === null) {
-                            console.log('Notification must be sent...');
-                            await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    userId,
-                                    recipientId,
-                                    content: '', // Пустой content для аудио
-                                    chatId
-                                }),
-                            });
-                        }
-                    } else {
-                        console.error('Error getting recipient ID:', userResponse.status);
-                    }
-                } else {
-                    console.error('Error getting message status:', statusResponse.status);
-                }
-            } else {
-                console.error('Error while searching for message:', response.status, await response.text());
-            }
-        }, 1000);
-
         setAudioBlob(null);
         console.log('Audio message sent');
         setMicIconState('mic');
-        resetForm();
     } else {
         console.error('STOMP client is not connected');
         toast.error('WebSocket not connected');
