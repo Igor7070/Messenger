@@ -1273,69 +1273,87 @@ const PrivateChat = () => {
       </div>
       <div className="private-input-container">
         <div className="private-textarea-wrapper">
-          <span
-            onClick={() => fileInputRef.current.click()}
-            className="private-attach-icon"
-            role="button"
-            aria-label="Attach File"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 015 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 005 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z" fill="#757575"/>
-            </svg>
-          </span>
-          <textarea
-            ref={textAreaRef}
-            value={content}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Enter your message..."
-            className="private-input-message"
-            rows={rows}
-          />
-          <input
-            type="file"
-            onChange={(e) => setSelectedFile(e.target.files[0])}
-            className="private-file-input"
-            ref={fileInputRef}
-            id="private-file-input"
-          />
-          {content.length === 0 && micIconState !== 'sending' && (
-            <div className="private-mic-icon-container">
+          <div className="private-textarea-inner"> {/* ДОБАВЛЕНО: Контейнер для изоляции иконок */}
               <span
-                onClick={isRecording ? stopRecording : startRecording}
-                className={`private-mic-icon ${micIconState} ${!userId ? 'disabled' : ''}`}
-                role="button"
-                aria-label={micIconState === 'mic' ? 'Start Recording' : micIconState === 'recording' ? 'Stop Recording' : 'Sending Audio'}
+                  onClick={() => fileInputRef.current.click()}
+                  className="private-attach-icon"
+                  role="button"
+                  aria-label="Attach File"
               >
-                {micIconState === 'mic' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#757575"/>
-                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#757575"/>
-                </svg>}
-                {micIconState === 'recording' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="8" fill="#FF0000"/>
-                </svg>}
-                {micIconState === 'sending' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
-                </svg>}
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 015 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 005 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z" fill="#757575"/>
+                  </svg>
               </span>
-            </div>
-          )}
-          {/* ДОБАВЛЕНО: Иконка отправки */}
-          {content.length > 0 && (
-            <div className="private-send-icon-container">
-              <span
-                onClick={sendMessage}
-                className="private-send-icon"
-                role="button"
-                aria-label="Send Message"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
-                </svg>
-              </span>
-            </div>
-          )}
-        </div>
+              <textarea
+                  ref={textAreaRef}
+                  value={content}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Enter your message..."
+                  className="private-input-message"
+                  rows={rows}
+              />
+              <input
+                  type="file"
+                  onChange={(e) => setSelectedFile(e.target.files[0])}
+                  className="private-file-input"
+                  ref={fileInputRef}
+                  id="private-file-input"
+              />
+              {content.length === 0 && micIconState !== 'sending' && !selectedFile && ( {/* ИЗМЕНЕНО: Добавлено !selectedFile */}
+                  <div className="private-mic-icon-container">
+                      <span
+                          onClick={isRecording ? stopRecording : startRecording}
+                          className={`private-mic-icon ${micIconState} ${!userId ? 'disabled' : ''}`}
+                          role="button"
+                          aria-label={micIconState === 'mic' ? 'Start Recording' : micIconState === 'recording' ? 'Stop Recording' : 'Sending Audio'}
+                      >
+                          {micIconState === 'mic' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#757575"/>
+                              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#757575"/>
+                          </svg>}
+                          {micIconState === 'recording' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <circle cx="12" cy="12" r="8" fill="#FF0000"/>
+                          </svg>}
+                          {micIconState === 'sending' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
+                          </svg>}
+                      </span>
+                  </div>
+              ))}
+              {(content.length > 0 || selectedFile) && ( {/* ИЗМЕНЕНО: Добавлено || selectedFile */}
+                  <div className="private-send-icon-container">
+                      <span
+                          onClick={sendMessage}
+                          className="private-send-icon"
+                          role="button"
+                          aria-label="Send Message"
+                      >
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
+                          </svg>
+                      </span>
+                  </div>
+              )}
+          </div>
+          {selectedFile && ( {/* ДОБАВЛЕНО: Отображение имени прикреплённого файла */}
+              <div className="private-attached-file">
+                  <span className="private-attached-file-name">{selectedFile.name}</span>
+                  <button
+                      className="private-remove-file-button"
+                      onClick={() => {
+                          setSelectedFile(null);
+                          if (fileInputRef.current) {
+                              fileInputRef.current.value = null;
+                          }
+                      }}
+                      aria-label="Remove attached file"
+                  >
+                      ✕
+                  </button>
+              </div>
+          ))}
+      </div>
       </div>
       {contextMenu.visible && (
         <div
