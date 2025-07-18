@@ -248,50 +248,37 @@
 }
 
 .input-message {
-    flex: 1;
-    padding: 10px 44px 10px 44px; /* Учитываем иконки слева и справа */
-    font-size: 16px;
-    font-family: 'Roboto', sans-serif;
+    width: 100%;
+    padding: 10px 44px 10px 44px; /* ИЗМЕНЕНО: padding-right увеличен с 36px до 44px для учета иконки отправки */
     border: 1px solid #0288d1;
     border-radius: 5px;
     resize: none;
-    outline: none;
-    min-height: 44px; /* Высота одной строки (24px) + padding */
-    line-height: 24px;
-    margin: 5px 0;
-    transition: height 0.2s ease, border-color 0.3s;
-    background-color: #FFFFFF;
     box-sizing: border-box;
-    max-height: 120px; /* 5 строк (5 * 24px) + padding */
+    min-height: 44px; /* Высота одной строки (24px) + padding (10px + 10px) */
+    font-size: 16px;
+    background-color: #FFFFFF;
+    font-family: 'Roboto', sans-serif;
+    transition: border-color 0.3s;
+    max-height: 120px; /* 5 строк (5 * 24px) + padding (10px + 10px) */
+    overflow-y: hidden; /* Скрываем скроллбар по умолчанию */
+    display: block;
 }
 
 .attach-icon {
-    cursor: pointer;
-    margin-left: 10px;
-    flex-shrink: 0;
-    align-self: center; /* Центрируем иконку */
+    position: absolute;
+    left: 10px;
+    bottom: 10px; /* Привязываем к нижней части текстового поля */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 24px;
     height: 24px;
+    cursor: pointer;
 }
 
 /* ДОБАВЛЕНО: Стиль для включения скроллбара при 5+ строках */
 .input-message.scroll-enabled {
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #42a5f5 transparent;
-}
-
-.input-message::-webkit-scrollbar {
-    width: 6px;
-}
-
-.input-message::-webkit-scrollbar-thumb {
-    background-color: #42a5f5;
-    border-radius: 3px;
-}
-
-.input-message::-webkit-scrollbar-track {
-    background: transparent;
 }
 
 .input-message:focus {
@@ -468,45 +455,27 @@
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
 }
 
-.textarea-wrapper {
-    display: flex;
-    flex-direction: column; /* Вертикальное расположение для attached-file */
-    align-items: stretch; /* Растягиваем по ширине */
-    position: relative;
-    width: 100%;
-}
-
-.textarea-inner {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-}
-
 .mic-icon-container {
     position: absolute;
     right: 10px;
-    top: 50%;
+    top: 50%; /* Центрирование по вертикали относительно textarea-wrapper */
     transform: translateY(-50%);
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
     height: 24px;
+    width: 24px;
 }
 
 .send-icon-container {
     position: absolute;
     right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    flex-shrink: 0;
+    bottom: 10px; /* Привязываем к нижней части текстового поля */
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
     height: 24px;
+    width: 24px;
 }
 
 .send-icon {
@@ -628,6 +597,11 @@
     padding: 8px;
 }
 
+.textarea-wrapper {
+    position: relative; /* Для позиционирования иконки относительно textarea */
+    width: 100%;
+}
+
 .message.current-user .audio-message-container,
 .message.other-user .audio-message-container {
     width: 100%; /* Убедимся, что контейнер аудио занимает всю ширину */
@@ -657,49 +631,6 @@
 .audio-progress-thumb:hover,
 .audio-progress-bar:hover .audio-progress-thumb {
     background-color: #1976d2;
-}
-
-/* ДОБАВЛЕНО: Стили для отображения прикреплённого файла */
-.attached-file {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    padding: 5px 10px;
-    background-color: #e8ecef;
-    border-radius: 5px;
-    max-width: calc(100% - 80px); /* Учитываем отступы для иконок */
-    margin-left: 44px; /* Учитываем attach-icon */
-    margin-right: 44px; /* Учитываем mic-icon или send-icon */
-    overflow: hidden;
-}
-
-.attached-file-name {
-    font-size: 14px;
-    color: #333333;
-    font-family: 'Roboto', sans-serif;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: calc(100% - 30px); /* Учитываем ширину кнопки удаления */
-}
-
-.remove-file-button {
-    background: none;
-    border: none;
-    font-size: 14px;
-    color: #d32f2f;
-    cursor: pointer;
-    padding: 0;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.remove-file-button:hover {
-    color: #b71c1c;
 }
 
 @media (max-width: 800px) {
@@ -736,21 +667,21 @@
 
     .input-message {
         font-size: 14px;
-        line-height: 20px;
-        min-height: 40px; /* Высота одной строки (20px) + padding */
-        border-radius: 5px;
-        padding: 10px 40px 10px 40px; /* Учитываем иконки */
-        margin: 4px 0;
-    }
-
-    .input-message.scroll-enabled {
-        overflow-y: auto;
+        padding: 10px 40px 10px 40px; /* ИЗМЕНЕНО: padding-right увеличен с 36px до 40px для учета иконки отправки */
+        min-height: 40px; /* Высота одной строки (20px) + padding (10px + 10px) */
+        overflow-y: hidden; /* Скрываем скроллбар по умолчанию */
     }
 
     .attach-icon {
-        margin-left: 8px;
+        left: 8px;
+        bottom: 8px; /* Привязываем к нижней части для мобильных */
         width: 20px;
         height: 20px;
+    }
+
+    /* ДОБАВЛЕНО: Стиль для включения скроллбара на мобильных при 5+ строках */
+    .input-message.scroll-enabled {
+        overflow-y: auto;
     }
 
     .translation-controls {
@@ -783,14 +714,17 @@
 
     .mic-icon-container {
         right: 8px;
-        width: 20px;
+        top: 50%; /* Центрирование по вертикали относительно textarea-wrapper */
+        transform: translateY(-50%);
         height: 20px;
+        width: 20px;
     }
 
     .send-icon-container {
         right: 8px;
-        width: 20px;
+        bottom: 8px; /* Привязываем к нижней части для мобильных */
         height: 20px;
+        width: 20px;
     }
 
     .send-icon {
@@ -843,23 +777,5 @@
         width: 10px;
         height: 10px;
         right: -5px;
-    }
-
-    .attached-file {
-        padding: 4px 8px;
-        margin-top: 6px;
-        margin-left: 36px; /* Учитываем меньший отступ для attach-icon */
-        margin-right: 36px; /* Учитываем меньший отступ для иконок */
-    }
-
-    .attached-file-name {
-        font-size: 12px;
-        max-width: calc(100% - 24px);
-    }
-
-    .remove-file-button {
-        font-size: 12px;
-        width: 18px;
-        height: 18px;
     }
 }
