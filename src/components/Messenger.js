@@ -1279,7 +1279,7 @@ const Messenger = () => {
                             </button>
                         </div>
                     )}
-                    {content.length === 0 && micIconState !== 'sending' && (
+                    {content.length === 0 && micIconState !== 'sending' && !selectedFile && (
                         <div className="mic-icon-container">
                             <span
                                 onClick={isRecording ? stopRecording : startRecording}
