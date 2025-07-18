@@ -1073,7 +1073,7 @@ const PrivateChat = () => {
           <button
             className="private-translation-button" 
             onClick={() => setShowTranslationModal(true)}
-            data-tooltip="Toggle translation for messages" // Подсказка
+            data-tooltip="Toggle translation for messages" // Подсказка...
             style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
           >
             🌐
