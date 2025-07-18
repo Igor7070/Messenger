@@ -443,7 +443,7 @@ const Messenger = () => {
     };
 
     const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey && (content.trim() || selectedFile)) {
+        if (e.key === 'Enter' && !e.shiftKey && (content.trim().length > 0 || selectedFile)) {
             e.preventDefault();
             sendMessage();
         }
