@@ -633,6 +633,47 @@
     background-color: #1976d2;
 }
 
+/* ДОБАВЛЕНО: Стили для отображения прикреплённого файла */
+.attached-file {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 5px 10px;
+    background-color: #e8ecef;
+    border-radius: 5px;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.attached-file-name {
+    font-size: 14px;
+    color: #333333;
+    font-family: 'Roboto', sans-serif;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100% - 30px); /* Учитываем ширину кнопки удаления */
+}
+
+.remove-file-button {
+    background: none;
+    border: none;
+    font-size: 14px;
+    color: #d32f2f;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-file-button:hover {
+    color: #b71c1c;
+}
+
 @media (max-width: 800px) {
     .messenger {
         margin: 10px;
@@ -777,5 +818,21 @@
         width: 10px;
         height: 10px;
         right: -5px;
+    }
+
+    .attached-file {
+        padding: 4px 8px;
+        margin-top: 6px;
+    }
+
+    .attached-file-name {
+        font-size: 12px;
+        max-width: calc(100% - 24px);
+    }
+
+    .remove-file-button {
+        font-size: 12px;
+        width: 18px;
+        height: 18px;
     }
 }

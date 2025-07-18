@@ -443,7 +443,7 @@ const Messenger = () => {
     };
 
     const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === 'Enter' && !e.shiftKey && (content.trim() || selectedFile)) {
             e.preventDefault();
             sendMessage();
         }
@@ -1261,6 +1261,24 @@ const Messenger = () => {
                         ref={fileInputRef}
                         id="file-input"
                     />
+                    {/* ДОБАВЛЕНО: Отображение имени прикреплённого файла */}
+                    {selectedFile && (
+                        <div className="attached-file">
+                            <span className="attached-file-name">{selectedFile.name}</span>
+                            <button
+                                className="remove-file-button"
+                                onClick={() => {
+                                    setSelectedFile(null);
+                                    if (fileInputRef.current) {
+                                        fileInputRef.current.value = null;
+                                    }
+                                }}
+                                aria-label="Remove attached file"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    )}
                     {content.length === 0 && micIconState !== 'sending' && (
                         <div className="mic-icon-container">
                             <span
@@ -1283,7 +1301,7 @@ const Messenger = () => {
                         </div>
                     )}
                     {/* ДОБАВЛЕНО: Иконка отправки */}
-                    {content.length > 0 && (
+                    {(content.length > 0 || selectedFile) && (
                         <div className="send-icon-container">
                             <span
                                 onClick={sendMessage}
