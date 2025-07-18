@@ -579,6 +579,7 @@
     background-color: #42a5f5;
     border-radius: 3px;
     transition: width 0.1s ease;
+    position: relative; /* Для позиционирования ползунка */
 }
 
 .audio-time {
@@ -610,6 +611,26 @@
 .message.other-user .audio-player-wrapper {
     width: 300px; /* Фиксированная ширина для единообразия */
     max-width: 300px;
+}
+
+/* ДОБАВЛЕНО: Стили для ползунка прогресс-бара */
+.audio-progress-thumb {
+    position: absolute;
+    right: -6px; /* Ползунок выравнивается по правому краю прогресс-бара */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    background-color: #42a5f5;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.audio-progress-thumb:hover,
+.audio-progress-bar:hover .audio-progress-thumb {
+    background-color: #1976d2;
 }
 
 @media (max-width: 800px) {
@@ -750,5 +771,11 @@
     .message.other-user .audio-player-wrapper {
         width: 240px; /* Одинаковая ширина для current-user и other-user */
         max-width: 240px;
+    }
+
+    .audio-progress-thumb {
+        width: 10px;
+        height: 10px;
+        right: -5px;
     }
 }

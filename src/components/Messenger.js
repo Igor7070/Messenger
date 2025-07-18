@@ -77,6 +77,9 @@ const Messenger = () => {
     const ffmpeg = useRef(new FFmpeg());
     const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
 
+    // ДОБАВЛЕНО: Состояние для отслеживания перетаскивания
+    const [isDragging, setIsDragging] = useState(null); // msgId, если перетаскивание активно
+
     // ДОБАВЛЕНО: использование хука
     const {
         isMessageNew,
@@ -296,6 +299,18 @@ const Messenger = () => {
         window.addEventListener('resize', calculateCharPerLine);
         return () => window.removeEventListener('resize', calculateCharPerLine);
     }, []);
+
+    // ДОБАВЛЕНО: useEffect для добавления/удаления слушателей событий перетаскивания
+    useEffect(() => {
+        if (isDragging) {
+            window.addEventListener('mousemove', handleDragMove);
+            window.addEventListener('mouseup', handleDragEnd);
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleDragMove);
+            window.removeEventListener('mouseup', handleDragEnd);
+        };
+    }, [isDragging]);
 
     useEffect(() => {
         const visibleAudioMessages = memoizedAudioMessages.slice(-10); // Ограничиваем последними 10 аудиосообщениями
@@ -962,6 +977,30 @@ const Messenger = () => {
         }
     };
 
+    // ДОБАВЛЕНО: Обработчик начала перетаскивания
+    const handleDragStart = (msgId, e) => {
+        e.preventDefault();
+        const audio = audioRefs.current[msgId];
+        if (!audio || !audioProgress[msgId]?.isReady) {
+            console.log(`Drag blocked for msg ${msgId}: audio not ready`);
+            return;
+        }
+        setIsDragging(msgId);
+        handleSeek(msgId, e); // Выполняем начальную перемотку
+    };
+
+    // ДОБАВЛЕНО: Обработчик движения мыши при перетаскивании
+    const handleDragMove = (e) => {
+        if (isDragging) {
+            handleSeek(isDragging, e);
+        }
+    };
+
+    // ДОБАВЛЕНО: Обработчик окончания перетаскивания
+    const handleDragEnd = () => {
+        setIsDragging(null);
+    };
+
     return (
         <div className="messenger">
             <div className="chat-header-group">
@@ -1155,6 +1194,7 @@ const Messenger = () => {
                                                             <div
                                                                 className="audio-progress-bar"
                                                                 onClick={(e) => handleSeek(msg.id, e)}
+                                                                onMouseDown={(e) => handleDragStart(msg.id, e)}
                                                                 style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
                                                             >
                                                                 <div
@@ -1166,7 +1206,10 @@ const Messenger = () => {
                                                                                 : 0
                                                                         }%`
                                                                     }}
-                                                                ></div>
+                                                                >
+                                                                    {/* ДОБАВЛЕНО: Ползунок */}
+                                                                    <div className="audio-progress-thumb"></div>
+                                                                </div>
                                                             </div>
                                                             <span className="audio-time">
                                                                 {formatAudioTime(audioProgress[msg.id]?.currentTime || 0)} /{' '}
