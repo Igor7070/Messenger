@@ -600,11 +600,19 @@
 }
 
 .textarea-wrapper {
-    position: relative; /* Для позиционирования иконок */
+    position: relative; /* Для дочерних элементов */
     width: 100%;
     display: flex;
     flex-direction: column; /* Вертикальное расположение для attached-file */
     align-items: stretch; /* Растягиваем по ширине */
+}
+
+/* ДОБАВЛЕНО: Контейнер для текстового поля и иконок */
+.textarea-inner {
+    position: relative; /* Для абсолютного позиционирования иконок */
+    display: flex;
+    align-items: center; /* Выравнивание иконок и текстового поля по центру */
+    width: 100%;
 }
 
 .message.current-user .audio-message-container,
