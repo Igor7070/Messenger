@@ -1273,7 +1273,7 @@ const PrivateChat = () => {
       </div>
       <div className="private-input-container">
         <div className="private-textarea-wrapper">
-          <div className="private-textarea-inner"> {/* ДОБАВЛЕНО: Контейнер для изоляции иконок */}
+          <div className="private-textarea-inner">
               <span
                   onClick={() => fileInputRef.current.click()}
                   className="private-attach-icon"
@@ -1300,7 +1300,7 @@ const PrivateChat = () => {
                   ref={fileInputRef}
                   id="private-file-input"
               />
-              {content.length === 0 && micIconState !== 'sending' && !selectedFile && ( {/* ИЗМЕНЕНО: Добавлено !selectedFile */}
+              {content.length === 0 && micIconState !== 'sending' && !selectedFile && (
                   <div className="private-mic-icon-container">
                       <span
                           onClick={isRecording ? stopRecording : startRecording}
@@ -1308,20 +1308,26 @@ const PrivateChat = () => {
                           role="button"
                           aria-label={micIconState === 'mic' ? 'Start Recording' : micIconState === 'recording' ? 'Stop Recording' : 'Sending Audio'}
                       >
-                          {micIconState === 'mic' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#757575"/>
-                              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#757575"/>
-                          </svg>}
-                          {micIconState === 'recording' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="12" cy="12" r="8" fill="#FF0000"/>
-                          </svg>}
-                          {micIconState === 'sending' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
-                          </svg>}
+                          {micIconState === 'mic' && (
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#757575"/>
+                                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#757575"/>
+                              </svg>
+                          )}
+                          {micIconState === 'recording' && (
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <circle cx="12" cy="12" r="8" fill="#FF0000"/>
+                              </svg>
+                          )}
+                          {micIconState === 'sending' && (
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
+                              </svg>
+                          )}
                       </span>
                   </div>
-              ))}
-              {(content.length > 0 || selectedFile) && ( {/* ИЗМЕНЕНО: Добавлено || selectedFile */}
+              )}
+              {(content.length > 0 || selectedFile) && (
                   <div className="private-send-icon-container">
                       <span
                           onClick={sendMessage}
@@ -1336,7 +1342,7 @@ const PrivateChat = () => {
                   </div>
               )}
           </div>
-          {selectedFile && ( {/* ДОБАВЛЕНО: Отображение имени прикреплённого файла */}
+          {selectedFile && (
               <div className="private-attached-file">
                   <span className="private-attached-file-name">{selectedFile.name}</span>
                   <button
@@ -1352,7 +1358,7 @@ const PrivateChat = () => {
                       ✕
                   </button>
               </div>
-          ))}
+          )}
         </div>
       </div>
       {contextMenu.visible && (
