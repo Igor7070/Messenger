@@ -50,25 +50,28 @@ const PrivateChat = () => {
 
   const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
   
-  // ДОБАВЛЕНО: Состояния для аудиозаписи
+  // Состояния для аудиозаписи
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [micIconState, setMicIconState] = useState('mic'); // 'mic', 'recording', 'sending'
 
-  // ДОБАВЛЕНО: Состояния для аудиоплеера
+  // Состояния для аудиоплеера
   const [audioProgress, setAudioProgress] = useState({}); // { [msgId]: { currentTime: 0, duration: 0, isPlaying: false, isReady: false, error: null } }
   const audioRefs = useRef({}); // Референции для аудиоэлементов
 
-  // ДОБАВЛЕНО: Состояния для динамического размера текстового поля
+  // Состояния для динамического размера текстового поля
   const [rows, setRows] = useState(1);
   const [charPerLine, setCharPerLine] = useState(50);
   const textAreaRef = useRef(null);
 
-  // ДОБАВЛЕНО: Состояние для FFmpeg
+  // Состояние для FFmpeg
   const ffmpeg = useRef(new FFmpeg());
   const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
 
-  // ДОБАВЛЕНО: Мемоизация аудиосообщений
+  // ДОБАВЛЕНО: Состояние для отслеживания перетаскивания
+  const [isDragging, setIsDragging] = useState(null); // msgId, если перетаскивание активно
+
+  // Мемоизация аудиосообщений
   const memoizedAudioMessages = useMemo(() => {
     return messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
   }, [messages]);
@@ -110,13 +113,6 @@ const PrivateChat = () => {
   const handleAvatarClick = (senderId) => {
     navigate(`/user/${senderId}`);
   };
-
-  //useEffect(() => {
-    // Сброс всех тостов и тестовый тост
-    //toast.dismiss(); // Очищаем очередь тостов
-    //console.log('Testing toast rendering in PrivateChat');
-    //toast.info('Test toast in PrivateChat', { toastId: 'test-privatechat', autoClose: 3000 });
-  //}, []);
 
   useEffect(() => {
     const fetchChatData = async () => {
@@ -304,6 +300,18 @@ const PrivateChat = () => {
     window.addEventListener('resize', calculateCharPerLine);
     return () => window.removeEventListener('resize', calculateCharPerLine);
   }, []);
+
+  // ДОБАВЛЕНО: useEffect для добавления/удаления слушателей событий перетаскивания
+  useEffect(() => {
+    if (isDragging) {
+        window.addEventListener('mousemove', handleDragMove);
+        window.addEventListener('mouseup', handleDragEnd);
+    }
+    return () => {
+        window.removeEventListener('mousemove', handleDragMove);
+        window.removeEventListener('mouseup', handleDragEnd);
+    };
+  }, [isDragging]);
 
   // ДОБАВЛЕНО: Предзагрузка аудио для всех сообщений
   useEffect(() => {
@@ -1024,6 +1032,30 @@ const PrivateChat = () => {
     }
   };
 
+  // ДОБАВЛЕНО: Обработчик начала перетаскивания
+  const handleDragStart = (msgId, e) => {
+      e.preventDefault();
+      const audio = audioRefs.current[msgId];
+      if (!audio || !audioProgress[msgId]?.isReady) {
+          console.log(`Drag blocked for msg ${msgId}: audio not ready`);
+          return;
+      }
+      setIsDragging(msgId);
+      handleSeek(msgId, e); // Выполняем начальную перемотку
+  };
+
+  // ДОБАВЛЕНО: Обработчик движения мыши при перетаскивании
+  const handleDragMove = (e) => {
+      if (isDragging) {
+          handleSeek(isDragging, e);
+      }
+  };
+
+  // ДОБАВЛЕНО: Обработчик окончания перетаскивания
+  const handleDragEnd = () => {
+      setIsDragging(null);
+  };
+
   return (
     <div className="private-chat">
       <div className="private-chat-name">
@@ -1166,20 +1198,24 @@ const PrivateChat = () => {
                                 {audioProgress[msg.id]?.isPlaying ? '⏸' : '▶'}
                               </button>
                               <div
-                                className="private-audio-progress-bar"
-                                onClick={(e) => handleSeek(msg.id, e)}
-                                style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
+                                  className="private-audio-progress-bar"
+                                  onClick={(e) => handleSeek(msg.id, e)}
+                                  onMouseDown={(e) => handleDragStart(msg.id, e)}
+                                  style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
                               >
-                                <div
-                                  className="private-audio-progress"
-                                  style={{
-                                    width: `${
-                                      audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
-                                        ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
-                                        : 0
-                                    }%`
-                                  }}
-                                ></div>
+                                  <div
+                                      className="private-audio-progress"
+                                      style={{
+                                          width: `${
+                                              audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
+                                                  ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
+                                                  : 0
+                                          }%`
+                                      }}
+                                  >
+                                      {/* ДОБАВЛЕНО: Ползунок */}
+                                      <div className="private-audio-progress-thumb"></div>
+                                  </div>
                               </div>
                               <span className="private-audio-time">
                                 {formatAudioTime(audioProgress[msg.id]?.currentTime || 0)} /{' '}
