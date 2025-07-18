@@ -267,7 +267,8 @@
 .attach-icon {
     position: absolute;
     left: 10px;
-    bottom: 10px; /* Привязываем к нижней части текстового поля */
+    top: 50%; /* ИЗМЕНЕНО: Центрируем по вертикали */
+    transform: translateY(-50%); /* ИЗМЕНЕНО: Для центрирования */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -458,7 +459,7 @@
 .mic-icon-container {
     position: absolute;
     right: 10px;
-    top: 50%; /* Центрирование по вертикали относительно textarea-wrapper */
+    top: 50%; /* Центрирование по вертикали относительно textarea-inner */
     transform: translateY(-50%);
     display: flex;
     align-items: center;
@@ -470,7 +471,8 @@
 .send-icon-container {
     position: absolute;
     right: 10px;
-    bottom: 10px; /* Привязываем к нижней части текстового поля */
+    top: 50%; /* ИЗМЕНЕНО: Центрируем по вертикали */
+    transform: translateY(-50%); /* ИЗМЕНЕНО: Для центрирования */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -718,9 +720,17 @@
         overflow-y: hidden; /* Скрываем скроллбар по умолчанию */
     }
 
+    .textarea-inner {
+        position: relative; /* Для абсолютного позиционирования иконок */
+        display: flex;
+        align-items: center; /* Выравнивание иконок и текстового поля по центру */
+        width: 100%;
+    }
+
     .attach-icon {
         left: 8px;
-        bottom: 8px; /* Привязываем к нижней части для мобильных */
+        top: 50%; /* ИЗМЕНЕНО: Центрируем по вертикали */
+        transform: translateY(-50%); /* ИЗМЕНЕНО: Для центрирования */
         width: 20px;
         height: 20px;
     }
@@ -760,7 +770,7 @@
 
     .mic-icon-container {
         right: 8px;
-        top: 50%; /* Центрирование по вертикали относительно textarea-wrapper */
+        top: 50%; /* Центрирование по вертикали относительно textarea-inner */
         transform: translateY(-50%);
         height: 20px;
         width: 20px;
@@ -768,7 +778,8 @@
 
     .send-icon-container {
         right: 8px;
-        bottom: 8px; /* Привязываем к нижней части для мобильных */
+        top: 50%; /* ИЗМЕНЕНО: Центрируем по вертикали */
+        transform: translateY(-50%); /* ИЗМЕНЕНО: Для центрирования */
         height: 20px;
         width: 20px;
     }
