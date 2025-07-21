@@ -686,16 +686,17 @@
 .private-message-translate-button {
   background: none;
   border: none;
-  font-size: 14px; /* Сохраняем подходящий размер */
+  font-size: 12px; /* ДОБАВЛЕНО: Уменьшенный размер для ненавязчивости */
   cursor: pointer;
-  padding: 2px;
+  padding: 0; /* ИЗМЕНЕНО: Убраны отступы, чтобы не влиять на контейнер */
   position: absolute;
-  bottom: 2px; /* Ещё ближе к нижнему краю */
-  left: 2px; /* Ещё ближе к левому краю */
+  bottom: 0; /* ИЗМЕНЕНО: Прижато к нижнему краю */
+  left: 2px; /* ИЗМЕНЕНО: Прижато к левому краю с минимальным отступом */
   color: #42a5f5;
   transition: color 0.3s ease, transform 0.2s ease;
-  opacity: 0.7;
-  z-index: 10; /* Гарантируем, что иконка выше других элементов */
+  opacity: 0.6; /* ИЗМЕНЕНО: Ещё менее заметна, но видна */
+  z-index: 10;
+  line-height: 1; /* ДОБАВЛЕНО: Убираем влияние высоты строки */
 }
 
 .private-message-translate-button:hover {
@@ -712,21 +713,21 @@
 .private-message-translate-button[data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: 100%;
+  bottom: calc(100% + 2px); /* ИЗМЕНЕНО: Подсказка ближе к иконке */
   left: 50%;
   transform: translateX(-50%);
   background-color: #333333;
   color: #FFFFFF;
   font-family: 'Inter', sans-serif;
-  font-size: 11px;
+  font-size: 10px; /* ИЗМЕНЕНО: Меньший шрифт для компактности */
   font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 3px 6px; /* ИЗМЕНЕНО: Меньшие отступы */
+  border-radius: 4px; /* ИЗМЕНЕНО: Меньший радиус для гармонии */
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   z-index: 11;
 }
 
@@ -739,10 +740,10 @@
 .private-message-translate-button[data-tooltip]::before {
   content: '';
   position: absolute;
-  bottom: -4px;
+  bottom: -3px; /* ИЗМЕНЕНО: Уменьшен отступ */
   left: 50%;
   transform: translateX(-50%);
-  border: 4px solid transparent;
+  border: 3px solid transparent; /* ИЗМЕНЕНО: Меньшая стрелка */
   border-top-color: #333333;
   opacity: 0;
   visibility: hidden;
@@ -754,22 +755,23 @@
   visibility: visible;
 }
 
-/* Убедимся, что private-message-body имеет правильные стили для позиционирования */
+/* ИЗМЕНЕНО: Убираем padding-left, чтобы иконка не сдвигала контент */
 .private-message-body {
   background: transparent !important;
   display: flex;
   flex-direction: column;
-  padding: 8px 10px 8px 20px; /* Увеличиваем padding-left для избежания перекрытия иконкой */
+  padding: 8px 10px; /* ИЗМЕНЕНО: Убрано padding-left: 20px */
   position: relative;
-  box-sizing: border-box; /* Гарантируем, что padding учитывается в размерах */
+  box-sizing: border-box;
 }
 
-/* Убедимся, что private-message-content не мешает позиционированию */
+/* ИЗМЕНЕНО: Убедимся, что private-message-content не добавляет лишних отступов */
 .private-message-content {
   display: inline-block;
   word-break: break-word;
   margin: 0;
   padding: 0;
+  line-height: 1.4; /* ДОБАВЛЕНО: Фиксируем высоту строки для предсказуемости */
 }
 
 @media (max-width: 800px) {
