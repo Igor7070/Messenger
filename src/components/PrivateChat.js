@@ -44,6 +44,7 @@ const PrivateChat = () => {
   const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
   const [translationLanguage, setTranslationLanguage] = useState('auto');
   const [translateNewOnly, setTranslateNewOnly] = useState(false);
+  const [translateAll, setTranslateAll] = useState(false); // ДОБАВЛЕНО
   const [translationQueue, setTranslationQueue] = useState([]);
   const [isTranslating, setIsTranslating] = useState(false);
   const [showTranslationModal, setShowTranslationModal] = useState(false);
@@ -82,6 +83,7 @@ const PrivateChat = () => {
     translateExistingMessages,
     translateNextMessage,
     translateMessageFunc,
+    translateSingleMessage, // ДОБАВЛЕНО
     clearTranslations,
     handleTranslationSettingsSave,
     handleSpellCheckToggle,
@@ -102,6 +104,7 @@ const PrivateChat = () => {
     isTranslating,
     setIsTranslating,
     setIsSpellCheckEnabled,
+    translateAll, // ДОБАВЛЕНО
   });
 
   const scrollToBottom = () => {
@@ -180,6 +183,7 @@ const PrivateChat = () => {
       setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatIdParam}`) === 'true');
       setTranslationLanguage(localStorage.getItem(`translation_language_${chatIdParam}`) || 'auto');
       setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatIdParam}`) === 'true');
+      setTranslateAll(localStorage.getItem(`translate_all_${chatIdParam}`) === 'true'); // ДОБАВЛЕНО
       // Загрузка настройки орфографии
       //setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatIdParam}`) === 'true');
     }
@@ -192,20 +196,9 @@ const PrivateChat = () => {
   useEffect(() => {
     if (!isTranslationEnabled && messages.some((msg) => msg.translatedContent || msg.translationLanguage)) {
       console.log('Cleaning translations in messages due to disabled translation');
-      setMessages((prevMessages) =>
-        prevMessages.map((msg) =>
-          msg.translatedContent || msg.translationLanguage
-            ? {
-                ...msg,
-                translatedContent: null,
-                translationLanguage: null,
-                showOriginal: true,
-              }
-            : msg
-        )
-      );
+      clearTranslations(); // ИЗМЕНЕНО: Вызываем clearTranslations
     }
-  }, [isTranslationEnabled, messages]);
+  }, [isTranslationEnabled, messages, clearTranslations]);
 
   useEffect(() => {
     if (!chatId) return;
@@ -245,7 +238,7 @@ const PrivateChat = () => {
       console.log('Deactivating WebSocket in PrivateChat');
       stompClientInstance.deactivate();
     };
-  }, [chatId, isTranslationEnabled, translationLanguage]); // Добавлено: isTranslationEnabled, translationLanguage
+  }, [chatId, isTranslationEnabled, translationLanguage, translateNewOnly, translateAll, isMessageNew]); // ИЗМЕНЕНО: Добавлен translateAll
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -280,14 +273,14 @@ const PrivateChat = () => {
     }
   }, [messages.length]);
 
-  // Добавлено: запуск перевода при изменении настроек
+  // ИЗМЕНЕНО: Обновляем запуск перевода
   useEffect(() => {
-    if (isTranslationEnabled) {
+    if (isTranslationEnabled && translateAll) { // ИЗМЕНЕНО: Проверяем translateAll
       translateExistingMessages();
     } else {
       clearTranslations();
     }
-  }, [isTranslationEnabled, translationLanguage, translateNewOnly]);
+  }, [isTranslationEnabled, translationLanguage, translateNewOnly, translateAll, translateExistingMessages, clearTranslations]);
 
   // Добавлено: обработка очереди переводов
   useEffect(() => {
@@ -1252,6 +1245,16 @@ const PrivateChat = () => {
                           <a href={msg.fileUrl} download className="private-file-link">
                             📥 Download file
                           </a>
+                        )}
+                        {/* ДОБАВЛЕНО: Иконка перевода */}
+                        {isTranslationEnabled && msg.messageType !== 'audio' && (
+                          <button
+                            className="private-message-translate-button"
+                            onClick={() => translateSingleMessage(msg)}
+                            data-tooltip="Translate message"
+                          >
+                            🌐
+                          </button>
                         )}
                       </>
                     )}

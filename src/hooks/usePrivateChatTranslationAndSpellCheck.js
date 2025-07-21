@@ -19,6 +19,10 @@ const usePrivateChatTranslationAndSpellCheck = ({
   setIsTranslating,
   setIsSpellCheckEnabled,
 }) => {
+
+  // ДОБАВЛЕНО: Состояние для новой опции
+  const translateAll = localStorage.getItem(`translate_all_${chatId}`) === 'true';
+
   // Проверка, является ли сообщение новым
   const isMessageNew = useCallback(
     (message) => {
@@ -37,9 +41,48 @@ const usePrivateChatTranslationAndSpellCheck = ({
     [chatId, translateNewOnly]
   );
 
+  // Перевод существующего сообщения (для ручного перевода)
+  const translateSingleMessage = useCallback(
+    async (message) => {
+      if (!isTranslationEnabled) {
+        toast.error('Translation is not enabled');
+        return;
+      }
+      try {
+        setIsTranslating(true);
+        const translatedContent = await translateMessage(message.content, translationLanguage);
+        const updatedMessage = {
+          ...message,
+          translatedContent,
+          translationLanguage,
+          showOriginal: true,
+          delivered: message.delivered ?? message.delivered_status,
+          read: message.read ?? message.read_status,
+        };
+
+        localStorage.setItem(
+          `translation_${chatId}_${message.id}`,
+          JSON.stringify({ translatedContent, translationLanguage })
+        );
+
+        await saveTranslation(message.id, translatedContent, translationLanguage);
+
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) => (msg.id === message.id ? updatedMessage : msg))
+        );
+      } catch (error) {
+        console.error('Translation error:', error);
+        toast.error('Failed to translate message');
+      } finally {
+        setIsTranslating(false);
+      }
+    },
+    [chatId, isTranslationEnabled, translationLanguage, setMessages, setIsTranslating]
+  );
+
   // Перевод существующих сообщений
   const translateExistingMessages = useCallback(() => {
-    if (!isTranslationEnabled) return;
+    if (!isTranslationEnabled || !translateAll) return; // ИЗМЕНЕНО: Проверяем translateAll
     const queue = messages
       .filter(
         (msg) =>
@@ -53,7 +96,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
       }));
     console.log('Translation queue:', queue); // Отладка
     setTranslationQueue(queue);
-  }, [isTranslationEnabled, messages, translationLanguage, isMessageNew, setTranslationQueue]);
+  }, [isTranslationEnabled, translateAll, messages, translationLanguage, isMessageNew, setTranslationQueue]); // ИЗМЕНЕНО: Добавлен translateAll
 
   // Обработка следующего сообщения в очереди
   const translateNextMessage = useCallback(() => {
@@ -131,12 +174,21 @@ const usePrivateChatTranslationAndSpellCheck = ({
 
   // Обработка сохранения настроек перевода
   const handleTranslationSettingsSave = useCallback(
-    (enabled, language, newOnly) => {
+    (enabled, language, newOnly, allMessages) => {
       setIsTranslationEnabled(enabled);
       setTranslationLanguage(language);
       setTranslateNewOnly(newOnly);
+      localStorage.setItem(`translation_enabled_${chatIdParam}`, enabled); // ДОБАВЛЕНО
+      localStorage.setItem(`translation_language_${chatIdParam}`, language); // ДОБАВЛЕНО
+      localStorage.setItem(`translate_new_only_${chatIdParam}`, newOnly); // ДОБАВЛЕНО
+      localStorage.setItem(`translate_all_${chatIdParam}`, allMessages); // ДОБАВЛЕНО
+      if (enabled) {
+        localStorage.setItem(`translation_enabled_timestamp_${chatIdParam}`, new Date().toISOString()); // ДОБАВЛЕНО
+      } else {
+        localStorage.removeItem(`translation_enabled_timestamp_${chatIdParam}`); // ДОБАВЛЕНО
+      }
     },
-    [setIsTranslationEnabled, setTranslationLanguage, setTranslateNewOnly]
+    [chatIdParam, setIsTranslationEnabled, setTranslationLanguage, setTranslateNewOnly]
   );
 
   // Переключение орфографии
@@ -179,6 +231,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
     translateExistingMessages,
     translateNextMessage,
     translateMessageFunc,
+    translateSingleMessage, // ДОБАВЛЕНО: Экспорт новой функции
     clearTranslations,
     handleTranslationSettingsSave,
     handleSpellCheckToggle,
