@@ -686,19 +686,21 @@
 .private-message-translate-button {
   background: none;
   border: none;
-  font-size: 16px;
+  font-size: 14px; /* Уменьшенный размер иконки */
   cursor: pointer;
-  padding: 4px;
+  padding: 2px; /* Уменьшенные отступы */
   position: absolute;
-  bottom: 8px;
-  left: 8px;
+  bottom: 4px; /* Ближе к нижнему краю */
+  left: 4px; /* Ближе к левому краю */
   color: #42a5f5;
   transition: color 0.3s ease, transform 0.2s ease;
+  opacity: 0.7; /* Слегка прозрачная для меньшей навязчивости */
 }
 
 .private-message-translate-button:hover {
   color: #1976d2;
   transform: scale(1.1);
+  opacity: 1; /* Полная видимость при наведении */
 }
 
 /* Стили для всплывающей подсказки */
@@ -715,9 +717,9 @@
   background-color: #333333;
   color: #FFFFFF;
   font-family: 'Inter', sans-serif;
-  font-size: 12px;
+  font-size: 11px; /* Уменьшенный шрифт для подсказки */
   font-weight: 500;
-  padding: 6px 12px;
+  padding: 4px 8px; /* Уменьшенные отступы */
   border-radius: 6px;
   white-space: nowrap;
   opacity: 0;
@@ -749,6 +751,15 @@
 .private-message-translate-button[data-tooltip]:hover::before {
   opacity: 1;
   visibility: visible;
+}
+
+/* Убедимся, что private-message-body имеет position: relative для правильного позиционирования иконки */
+.private-message-body {
+  background: transparent !important;
+  display: flex;
+  flex-direction: column;
+  padding-left: 10px;
+  position: relative; /* Уже присутствует */
 }
 
 @media (max-width: 800px) {
