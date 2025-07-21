@@ -686,21 +686,22 @@
 .private-message-translate-button {
   background: none;
   border: none;
-  font-size: 14px; /* Уменьшенный размер иконки */
+  font-size: 14px; /* Сохраняем подходящий размер */
   cursor: pointer;
-  padding: 2px; /* Уменьшенные отступы */
+  padding: 2px;
   position: absolute;
-  bottom: 4px; /* Ближе к нижнему краю */
-  left: 4px; /* Ближе к левому краю */
+  bottom: 2px; /* Ещё ближе к нижнему краю */
+  left: 2px; /* Ещё ближе к левому краю */
   color: #42a5f5;
   transition: color 0.3s ease, transform 0.2s ease;
-  opacity: 0.7; /* Слегка прозрачная для меньшей навязчивости */
+  opacity: 0.7;
+  z-index: 10; /* Гарантируем, что иконка выше других элементов */
 }
 
 .private-message-translate-button:hover {
   color: #1976d2;
   transform: scale(1.1);
-  opacity: 1; /* Полная видимость при наведении */
+  opacity: 1;
 }
 
 /* Стили для всплывающей подсказки */
@@ -717,16 +718,16 @@
   background-color: #333333;
   color: #FFFFFF;
   font-family: 'Inter', sans-serif;
-  font-size: 11px; /* Уменьшенный шрифт для подсказки */
+  font-size: 11px;
   font-weight: 500;
-  padding: 4px 8px; /* Уменьшенные отступы */
+  padding: 4px 8px;
   border-radius: 6px;
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 10;
+  z-index: 11;
 }
 
 .private-message-translate-button[data-tooltip]:hover::after {
@@ -753,13 +754,22 @@
   visibility: visible;
 }
 
-/* Убедимся, что private-message-body имеет position: relative для правильного позиционирования иконки */
+/* Убедимся, что private-message-body имеет правильные стили для позиционирования */
 .private-message-body {
   background: transparent !important;
   display: flex;
   flex-direction: column;
-  padding-left: 10px;
-  position: relative; /* Уже присутствует */
+  padding: 8px 10px 8px 20px; /* Увеличиваем padding-left для избежания перекрытия иконкой */
+  position: relative;
+  box-sizing: border-box; /* Гарантируем, что padding учитывается в размерах */
+}
+
+/* Убедимся, что private-message-content не мешает позиционированию */
+.private-message-content {
+  display: inline-block;
+  word-break: break-word;
+  margin: 0;
+  padding: 0;
 }
 
 @media (max-width: 800px) {
