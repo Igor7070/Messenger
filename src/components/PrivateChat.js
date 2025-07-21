@@ -1134,17 +1134,18 @@ const PrivateChat = () => {
                 }`}
               >
                 <div className="private-message-body">
+                  <div className="private-message-content-wrapper"> {/* ДОБАВЛЕНО: Новый контейнер для контента */}
                     {msg.messageType === 'audio' && msg.fileUrl ? (
                       <div className="private-audio-message-container">
                         <div className="private-audio-player-wrapper">
                           <audio
                             ref={(el) => {
-                                if (el && audioRefs.current[msg.id] !== el) {
-                                    audioRefs.current[msg.id] = el;
-                                    if (!audioProgress[msg.id]?.isPreloading) {
-                                        console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
-                                    }
+                              if (el && audioRefs.current[msg.id] !== el) {
+                                audioRefs.current[msg.id] = el;
+                                if (!audioProgress[msg.id]?.isPreloading) {
+                                  console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
                                 }
+                              }
                             }}
                             onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
                             onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
@@ -1153,11 +1154,10 @@ const PrivateChat = () => {
                             onEnded={() => handleAudioEnded(msg.id)}
                             className="private-audio-player"
                             preload="auto"
-                        >
-                            {/* ИЗМЕНЕНО: Динамический тип источника */}
+                          >
                             <source src={msg.fileUrl} type={msg.fileUrl.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'} />
                             Your browser does not support the audio element.
-                        </audio>
+                          </audio>
                           {audioProgress[msg.id]?.error ? (
                             <span className="private-audio-error">{audioProgress[msg.id].error}</span>
                           ) : (
@@ -1191,24 +1191,23 @@ const PrivateChat = () => {
                                 {audioProgress[msg.id]?.isPlaying ? '⏸' : '▶'}
                               </button>
                               <div
-                                  className="private-audio-progress-bar"
-                                  onClick={(e) => handleSeek(msg.id, e)}
-                                  onMouseDown={(e) => handleDragStart(msg.id, e)}
-                                  style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
+                                className="private-audio-progress-bar"
+                                onClick={(e) => handleSeek(msg.id, e)}
+                                onMouseDown={(e) => handleDragStart(msg.id, e)}
+                                style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
                               >
-                                  <div
-                                      className="private-audio-progress"
-                                      style={{
-                                          width: `${
-                                              audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
-                                                  ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
-                                                  : 0
-                                          }%`
-                                      }}
-                                  >
-                                      {/* ДОБАВЛЕНО: Ползунок */}
-                                      <div className="private-audio-progress-thumb"></div>
-                                  </div>
+                                <div
+                                  className="private-audio-progress"
+                                  style={{
+                                    width: `${
+                                      audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
+                                        ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
+                                        : 0
+                                    }%`,
+                                  }}
+                                >
+                                  <div className="private-audio-progress-thumb"></div>
+                                </div>
                               </div>
                               <span className="private-audio-time">
                                 {formatAudioTime(audioProgress[msg.id]?.currentTime || 0)} /{' '}
@@ -1246,16 +1245,6 @@ const PrivateChat = () => {
                             📥 Download file
                           </a>
                         )}
-                        {/* ДОБАВЛЕНО: Иконка перевода */}
-                        {isTranslationEnabled && msg.messageType !== 'audio' && (
-                          <button
-                            className="private-message-translate-button"
-                            onClick={() => translateSingleMessage(msg)}
-                            data-tooltip="Translate message"
-                          >
-                            🌐
-                          </button>
-                        )}
                       </>
                     )}
                     <div className="private-message-status">
@@ -1266,7 +1255,20 @@ const PrivateChat = () => {
                         </>
                       )}
                     </div>
-                  <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
+                    <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
+                  </div>
+                  {/* ДОБАВЛЕНО: Отдельный контейнер для иконки перевода */}
+                  {isTranslationEnabled && msg.messageType !== 'audio' && (
+                    <div className="private-message-translate-container">
+                      <button
+                        className="private-message-translate-button"
+                        onClick={() => translateSingleMessage(msg)}
+                        data-tooltip="Translate message"
+                      >
+                        🌐
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

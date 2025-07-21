@@ -774,6 +774,157 @@
   line-height: 1.4; /* ДОБАВЛЕНО: Фиксируем высоту строки для предсказуемости */
 }
 
+/* Стили для нового контейнера private-message-content-wrapper */
+.private-message-content-wrapper {
+  display: block;
+  width: 100%;
+}
+
+/* Стили для private-message-translate-container */
+.private-message-translate-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  z-index: 100;
+}
+
+/* Стили для кнопки перевода */
+.private-message-translate-container .private-message-translate-button {
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px;
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  color: #42a5f5;
+  transition: color 0.3s ease, transform 0.2s ease;
+  opacity: 0.6;
+  line-height: 1;
+  z-index: 101;
+}
+
+/* Ховер-эффект */
+.private-message-translate-container .private-message-translate-button:hover {
+  color: #1976d2;
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+/* Стили для всплывающей подсказки */
+.private-message-translate-container .private-message-translate-button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333333;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  z-index: 102;
+}
+
+.private-message-translate-container .private-message-translate-button[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Стрелка для tooltip */
+.private-message-translate-container .private-message-translate-button[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 3px solid transparent;
+  border-top-color: #333333;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.private-message-translate-container .private-message-translate-button[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Обновление стилей для private-message-body */
+.private-message-body {
+  background: transparent !important;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 8px; /* Уменьшено для минимизации смещения */
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Обновление стилей для private-message-content-container */
+.private-message-content-container {
+  display: block;
+  max-width: 80%;
+  min-width: 0;
+  padding: 4px; /* Уменьшено с 8px */
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  box-sizing: border-box;
+  position: relative; /* Для привязки translate-container */
+}
+
+/* Обновление стилей для сообщений */
+.private-message.private-current-user .private-message-content-container {
+  background-color: #DCF8C6 !important;
+  border-radius: 12px;
+  margin-right: 10px;
+  max-width: calc(80% - 10px);
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px;
+}
+
+.private-message.private-current-user.first-message .private-message-content-container {
+  border-radius: 12px 0 12px 12px;
+  margin-right: 10px;
+  max-width: calc(80% - 10px);
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px;
+}
+
+.private-message.private-other-user .private-message-content-container {
+  background-color: #ECE0F8 !important;
+  border-radius: 0 12px 12px 12px;
+  margin-left: 0;
+  padding: 4px;
+}
+
+.private-message-content-container.no-avatar {
+  margin-left: 35px !important;
+}
+
+/* Защита текста от перекрытия */
+.private-message-content {
+  display: inline-block;
+  word-break: break-word;
+  margin: 0;
+  padding: 0 0 0 14px; /* Отступ слева для иконки */
+  line-height: 1.4;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         margin: 10px;
