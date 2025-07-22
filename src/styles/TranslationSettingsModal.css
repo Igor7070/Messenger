@@ -286,7 +286,7 @@
 .translation-mode-selection {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
   margin: 10px 0;
 }
 
@@ -295,6 +295,7 @@
   align-items: center;
   font-size: 14px;
   color: #c0c7d6; /* Светлый цвет для читаемости */
+  margin: 2px 0; /* Переопределяем margin, чтобы уменьшить вертикальное расстояние */
 }
 
 .translation-mode-selection input[type="radio"] {
