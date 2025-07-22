@@ -151,11 +151,12 @@
 }
 
 .private-message-body {
-    background: transparent !important;
-    display: flex;
-    flex-direction: column;
-    padding-left: 10px;
-    position: relative; /* ДОБАВЛЕНО */
+  background: transparent !important;
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px; /* Убираем padding-left, оставляем правый для симметрии */
+  position: relative;
+  box-sizing: border-box;
 }
 
 .private-message-content {
@@ -765,25 +766,6 @@
   visibility: visible;
 }
 
-/* ИЗМЕНЕНО: Убираем padding-left, чтобы иконка не сдвигала контент */
-.private-message-body {
-  background: transparent !important;
-  display: flex;
-  flex-direction: column;
-  padding: 0 8px; /* Убираем padding-left, оставляем только правый для симметрии */
-  position: relative;
-  box-sizing: border-box;
-}
-
-/* ИЗМЕНЕНО: Убедимся, что private-message-content не добавляет лишних отступов */
-.private-message-content {
-  display: inline-block;
-  word-break: break-word;
-  margin: 0;
-  padding: 0;
-  line-height: 1.4; /* ДОБАВЛЕНО: Фиксируем высоту строки для предсказуемости */
-}
-
 /* Стили для нового контейнера private-message-content-wrapper */
 .private-message-content-wrapper {
   display: block;
@@ -876,7 +858,7 @@
   background: transparent !important;
   display: flex;
   flex-direction: column;
-  padding: 4px 8px; /* Уменьшено для минимизации смещения */
+  padding: 0 8px; /* Убираем padding-left, оставляем правый для симметрии */
   position: relative;
   box-sizing: border-box;
 }
@@ -932,7 +914,7 @@
   display: inline-block;
   word-break: break-word;
   margin: 0;
-  padding: 0 0 0 14px; /* Отступ слева для иконки */
+  padding: 0; /* Базовый отступ 0 */
   line-height: 1.4;
 }
 
