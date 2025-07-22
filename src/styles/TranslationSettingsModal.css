@@ -286,7 +286,7 @@
 .translation-mode-selection {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   margin: 10px 0;
 }
 
