@@ -159,23 +159,29 @@
 }
 
 .private-message-content {
-    display: inline-block;
-    word-break: break-word;
-    margin: 0;
-    padding: 0 0 0 14px; /* Сохраняем отступ слева для иконки перевода */
-    line-height: 1.4;
-    font-size: 16px;
-    font-family: 'Roboto', sans-serif;
+  display: inline-block;
+  word-break: break-word;
+  margin: 0;
+  padding: 0; /* Убираем фиксированный отступ */
+  line-height: 1.4;
+}
+
+.private-message-content.translate-enabled {
+  padding-left: 14px; /* Отступ только при наличии иконки перевода */
 }
 
 .private-file-link {
-    display: block;
-    margin-top: 5px;
-    padding-left: 14px; /* ДОБАВЛЕНО: Синхронизируем с private-message-content */
-    color: #0288d1;
-    text-decoration: none;
-    font-size: 14px;
-    background: transparent !important;
+  display: block;
+  margin-top: 5px;
+  padding-left: 0; /* Убираем фиксированный отступ */
+  color: #0288d1;
+  text-decoration: none;
+  font-size: 14px;
+  background: transparent !important;
+}
+
+.private-file-link.translate-enabled {
+  padding-left: 14px; /* Отступ только при наличии иконки перевода */
 }
 
 .private-file-link:hover {
@@ -788,7 +794,7 @@
 /* Стили для private-message-translate-container */
 .private-message-translate-container {
   position: absolute;
-  bottom: 0;
+  top: 0; /* Перемещаем в верхний левый угол */
   left: 0;
   width: auto;
   height: auto;
@@ -803,7 +809,7 @@
   cursor: pointer;
   padding: 2px;
   position: absolute;
-  bottom: 2px;
+  top: 2px; /* Минимальный отступ сверху */
   left: 2px;
   color: #42a5f5;
   transition: color 0.3s ease, transform 0.2s ease;
@@ -823,7 +829,7 @@
 .private-message-translate-container .private-message-translate-button[data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: calc(100% + 2px);
+  top: calc(100% + 2px); /* Подсказка теперь снизу иконки */
   left: 50%;
   transform: translateX(-50%);
   background-color: #333333;
@@ -850,11 +856,11 @@
 .private-message-translate-container .private-message-translate-button[data-tooltip]::before {
   content: '';
   position: absolute;
-  bottom: -3px;
+  top: -3px; /* Стрелка сверху для подсказки снизу */
   left: 50%;
   transform: translateX(-50%);
   border: 3px solid transparent;
-  border-top-color: #333333;
+  border-bottom-color: #333333; /* Стрелка направлена вверх */
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
@@ -1166,5 +1172,13 @@
 
     .private-file-link {
         padding-left: 12px; /* Синхронизируем с private-message-content */
+    }
+
+    .private-message-content.translate-enabled {
+        padding-left: 12px; /* Синхронизируем с мобильной версией */
+    }
+
+    .private-file-link.translate-enabled {
+        padding-left: 12px; /* Синхронизируем с мобильной версией */
     }
 }

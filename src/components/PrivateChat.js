@@ -1136,7 +1136,7 @@ const PrivateChat = () => {
                 }`}
               >
                 <div className="private-message-body">
-                  <div className="private-message-content-wrapper"> {/* ДОБАВЛЕНО: Новый контейнер для контента */}
+                  <div className="private-message-content-wrapper">
                     {msg.messageType === 'audio' && msg.fileUrl ? (
                       <div className="private-audio-message-container">
                         <div className="private-audio-player-wrapper">
@@ -1222,7 +1222,7 @@ const PrivateChat = () => {
                     ) : (
                       <>
                         <span
-                          className="private-message-content"
+                          className={`private-message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}
                           onClick={(e) => {
                             if (e.target.tagName === 'A') return;
                             if (msg.translatedContent) {
@@ -1243,7 +1243,11 @@ const PrivateChat = () => {
                           )}
                         </span>
                         {msg.fileUrl && (
-                          <a href={msg.fileUrl} download className="private-file-link">
+                          <a
+                            href={msg.fileUrl}
+                            download
+                            className={`private-file-link ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}
+                          >
                             📥 Download file
                           </a>
                         )}
