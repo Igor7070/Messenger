@@ -159,15 +159,19 @@
 }
 
 .private-message-content {
-    font-size: 16px;
+    display: inline-block;
+    word-break: break-word;
+    margin: 0;
+    padding: 0 0 0 14px; /* Сохраняем отступ слева для иконки перевода */
     line-height: 1.4;
+    font-size: 16px;
     font-family: 'Roboto', sans-serif;
-    background: transparent !important;
 }
 
 .private-file-link {
     display: block;
     margin-top: 5px;
+    padding-left: 14px; /* ДОБАВЛЕНО: Синхронизируем с private-message-content */
     color: #0288d1;
     text-decoration: none;
     font-size: 14px;
@@ -778,6 +782,7 @@
 .private-message-content-wrapper {
   display: block;
   width: 100%;
+  padding: 0; /* ДОБАВЛЕНО: Убираем возможные отступы */
 }
 
 /* Стили для private-message-translate-container */
@@ -1118,5 +1123,48 @@
         font-size: 12px;
         width: 18px;
         height: 18px;
+    }
+
+    .private-message-translate-container {
+        bottom: 0;
+        left: 0;
+    }
+
+    .private-message-translate-container .private-message-translate-button {
+        font-size: 10px;
+        bottom: 2px;
+        left: 2px;
+        padding: 1px;
+    }
+
+    .private-message-translate-container .private-message-translate-button[data-tooltip]::after {
+        font-size: 9px;
+        padding: 2px 5px;
+    }
+
+    .private-message-translate-container .private-message-translate-button[data-tooltip]::before {
+        border: 2px solid transparent;
+        border-top-color: #333333;
+        bottom: -2px;
+    }
+
+    .private-message-body {
+        padding: 3px 6px;
+    }
+
+    .private-message-content-container {
+        padding: 3px;
+    }
+
+    .private-message-content-container.no-avatar {
+        margin-left: 30px !important;
+    }
+
+    .private-message-content {
+        padding-left: 12px; /* Сохраняем синхронизацию для мобильных */
+    }
+
+    .private-file-link {
+        padding-left: 12px; /* Синхронизируем с private-message-content */
     }
 }
