@@ -41,8 +41,8 @@ const usePrivateChatTranslationAndSpellCheck = ({
   // Перевод существующего сообщения (для ручного перевода)
   const translateSingleMessage = useCallback(
     async (message) => {
-      if (!isTranslationEnabled || translationMode !== 'selective') {
-        toast.error('Translation is not enabled or not in selective mode');
+      if (!isTranslationEnabled) {
+        toast.error('Translation is not enabled');
         return;
       }
       try {
@@ -67,6 +67,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
         setMessages((prevMessages) =>
           prevMessages.map((msg) => (msg.id === message.id ? updatedMessage : msg))
         );
+        toast.success('Message translated successfully');
       } catch (error) {
         console.error('Translation error:', error);
         toast.error('Failed to translate message');
@@ -74,7 +75,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
         setIsTranslating(false);
       }
     },
-    [chatId, isTranslationEnabled, translationMode, translationLanguage, setMessages, setIsTranslating]
+    [chatId, isTranslationEnabled, translationLanguage, setMessages, setIsTranslating]
   );
 
   // Перевод существующих сообщений
