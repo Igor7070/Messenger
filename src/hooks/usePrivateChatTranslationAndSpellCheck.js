@@ -23,7 +23,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
   // Проверка, является ли сообщение новым
   const isMessageNew = useCallback(
     (message) => {
-      if (!translateNewOnly) return true;
+      if (translationMode !== 'new') return true;
       const enabledTimestamp = localStorage.getItem(`translation_enabled_timestamp_${chatId}`);
       if (!enabledTimestamp) return false;
       try {
@@ -35,7 +35,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
         return false;
       }
     },
-    [chatId, translateNewOnly]
+    [chatId, translationMode]
   );
 
   // Перевод существующего сообщения (для ручного перевода)
