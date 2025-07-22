@@ -95,19 +95,6 @@ const usePrivateChatTranslationAndSpellCheck = ({
     setTranslationQueue(queue);
   }, [isTranslationEnabled, translationMode, messages, translationLanguage, isMessageNew, setTranslationQueue]);
 
-  // Обработка следующего сообщения в очереди
-  const translateNextMessage = useCallback(() => {
-    if (translationQueue.length === 0 || isTranslating) return;
-    setIsTranslating(true);
-    const message = translationQueue[0];
-    if (isTranslationEnabled && (translationMode === 'all' || translationMode === 'new')) {
-      translateMessageFunc(message);
-    } else {
-      setTranslationQueue((prevQueue) => prevQueue.slice(1));
-      setIsTranslating(false);
-    }
-  }, [translationQueue, isTranslating, isTranslationEnabled, translationMode, translateMessageFunc, setTranslationQueue, setIsTranslating]);
-
   // Перевод одного сообщения
   const translateMessageFunc = useCallback(
     async (message) => {
@@ -148,6 +135,19 @@ const usePrivateChatTranslationAndSpellCheck = ({
     },
     [chatId, translationLanguage, setMessages, setTranslationQueue, setIsTranslating]
   );
+
+  // Обработка следующего сообщения в очереди
+  const translateNextMessage = useCallback(() => {
+    if (translationQueue.length === 0 || isTranslating) return;
+    setIsTranslating(true);
+    const message = translationQueue[0];
+    if (isTranslationEnabled && (translationMode === 'all' || translationMode === 'new')) {
+      translateMessageFunc(message);
+    } else {
+      setTranslationQueue((prevQueue) => prevQueue.slice(1));
+      setIsTranslating(false);
+    }
+  }, [translationQueue, isTranslating, isTranslationEnabled, translationMode, translateMessageFunc, setTranslationQueue, setIsTranslating]);
 
   // Очистка переводов
   const clearTranslations = useCallback(() => {
@@ -234,13 +234,13 @@ const usePrivateChatTranslationAndSpellCheck = ({
     translateExistingMessages,
     translateNextMessage,
     translateMessageFunc,
-    translateSingleMessage, // ДОБАВЛЕНО: Экспорт новой функции
+    translateSingleMessage,
     clearTranslations,
     handleTranslationSettingsSave,
     handleSpellCheckToggle,
     spellCheckMessage,
-    translationMode, // ДОБАВЛЕНО
-    setTranslationMode, // ДОБАВЛЕНО
+    translationMode,
+    setTranslationMode,
   };
 };
 
