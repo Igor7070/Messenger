@@ -43,8 +43,7 @@ const PrivateChat = () => {
 
   const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
   const [translationLanguage, setTranslationLanguage] = useState('auto');
-  const [translateNewOnly, setTranslateNewOnly] = useState(false);
-  const [translateAll, setTranslateAll] = useState(false); // ДОБАВЛЕНО
+  const [translationMode, setTranslationMode] = useState('selective'); // Добавляем режим перевода
   const [translationQueue, setTranslationQueue] = useState([]);
   const [isTranslating, setIsTranslating] = useState(false);
   const [showTranslationModal, setShowTranslationModal] = useState(false);
@@ -83,7 +82,7 @@ const PrivateChat = () => {
     translateExistingMessages,
     translateNextMessage,
     translateMessageFunc,
-    translateSingleMessage, // ДОБАВЛЕНО
+    translateSingleMessage,
     clearTranslations,
     handleTranslationSettingsSave,
     handleSpellCheckToggle,
@@ -97,14 +96,13 @@ const PrivateChat = () => {
     setIsTranslationEnabled,
     translationLanguage,
     setTranslationLanguage,
-    translateNewOnly,
-    setTranslateNewOnly,
+    translationMode,
+    setTranslationMode,
     translationQueue,
     setTranslationQueue,
     isTranslating,
     setIsTranslating,
     setIsSpellCheckEnabled,
-    translateAll, // ДОБАВЛЕНО
   });
 
   const scrollToBottom = () => {
@@ -159,6 +157,10 @@ const PrivateChat = () => {
         });
 
         setMessages(updatedMessages);
+        if (isTranslationEnabled && translationMode === 'all') {
+          translateExistingMessages();
+        }
+
         // Загрузка настройки орфографии
         setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatIdParam}`) === 'true');
         setTimeout(() => {
@@ -182,8 +184,7 @@ const PrivateChat = () => {
       // Добавлено: загрузка настроек перевода
       setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatIdParam}`) === 'true');
       setTranslationLanguage(localStorage.getItem(`translation_language_${chatIdParam}`) || 'auto');
-      setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatIdParam}`) === 'true');
-      setTranslateAll(localStorage.getItem(`translate_all_${chatIdParam}`) === 'true'); // ДОБАВЛЕНО
+      setTranslationMode(localStorage.getItem(`translation_mode_${chatIdParam}`) || 'selective');
       // Загрузка настройки орфографии
       //setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatIdParam}`) === 'true');
     }
@@ -214,7 +215,7 @@ const PrivateChat = () => {
           console.log('NewMessage:', newMessage);
           updateMessages(newMessage);
           // Добавлено: перевод нового сообщения
-          if (isTranslationEnabled && isMessageNew(newMessage)) {
+          if (isTranslationEnabled && translationMode === 'new' && isMessageNew(newMessage)) {
             setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
           }
         });
@@ -238,7 +239,7 @@ const PrivateChat = () => {
       console.log('Deactivating WebSocket in PrivateChat');
       stompClientInstance.deactivate();
     };
-  }, [chatId, isTranslationEnabled, translationLanguage, translateNewOnly, translateAll, isMessageNew]); // ИЗМЕНЕНО: Добавлен translateAll
+  }, [chatId, isTranslationEnabled, translationLanguage, translationMode, isMessageNew]); 
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -275,12 +276,12 @@ const PrivateChat = () => {
 
   // ИЗМЕНЕНО: Обновляем запуск перевода
   useEffect(() => {
-    if (isTranslationEnabled && translateAll) { // ИЗМЕНЕНО: Проверяем translateAll
-      translateExistingMessages();
-    } else {
-      clearTranslations();
-    }
-  }, [isTranslationEnabled, translationLanguage, translateNewOnly, translateAll, translateExistingMessages, clearTranslations]);
+  if (isTranslationEnabled && translationMode === 'all') {
+    translateExistingMessages();
+  } else if (!isTranslationEnabled) {
+    clearTranslations();
+  }
+}, [isTranslationEnabled, translationLanguage, translationMode, translateExistingMessages, clearTranslations]);
 
   // Добавлено: обработка очереди переводов
   useEffect(() => {
@@ -382,6 +383,7 @@ const PrivateChat = () => {
         console.log('Updated existing message:', updatedMessages[existingMessageIndex]); // Отладка
         if (
           isTranslationEnabled &&
+          translationMode === 'new' &&
           isMessageNew(newMessage) &&
           (!updatedMessages[existingMessageIndex].translatedContent ||
             updatedMessages[existingMessageIndex].translationLanguage !== translationLanguage)

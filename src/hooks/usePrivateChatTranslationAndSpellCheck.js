@@ -20,9 +20,6 @@ const usePrivateChatTranslationAndSpellCheck = ({
   setIsSpellCheckEnabled,
 }) => {
 
-  // ДОБАВЛЕНО: Состояние для новой опции
-  const translateAll = localStorage.getItem(`translate_all_${chatId}`) === 'true';
-
   // Проверка, является ли сообщение новым
   const isMessageNew = useCallback(
     (message) => {
@@ -44,8 +41,8 @@ const usePrivateChatTranslationAndSpellCheck = ({
   // Перевод существующего сообщения (для ручного перевода)
   const translateSingleMessage = useCallback(
     async (message) => {
-      if (!isTranslationEnabled) {
-        toast.error('Translation is not enabled');
+      if (!isTranslationEnabled || translationMode !== 'selective') {
+        toast.error('Translation is not enabled or not in selective mode');
         return;
       }
       try {
@@ -77,12 +74,12 @@ const usePrivateChatTranslationAndSpellCheck = ({
         setIsTranslating(false);
       }
     },
-    [chatId, isTranslationEnabled, translationLanguage, setMessages, setIsTranslating]
+    [chatId, isTranslationEnabled, translationMode, translationLanguage, setMessages, setIsTranslating]
   );
 
   // Перевод существующих сообщений
   const translateExistingMessages = useCallback(() => {
-    if (!isTranslationEnabled || !translateAll) return; // ИЗМЕНЕНО: Проверяем translateAll
+    if (!isTranslationEnabled || translationMode !== 'all') return;
     const queue = messages
       .filter(
         (msg) =>
@@ -91,20 +88,25 @@ const usePrivateChatTranslationAndSpellCheck = ({
       )
       .map((msg) => ({
         ...msg,
-        delivered: msg.delivered ?? msg.delivered_status, // Явно сохраняем
-        read: msg.read ?? msg.read_status, // Явно сохраняем
+        delivered: msg.delivered ?? msg.delivered_status,
+        read: msg.read ?? msg.read_status,
       }));
-    console.log('Translation queue:', queue); // Отладка
+    console.log('Translation queue:', queue);
     setTranslationQueue(queue);
-  }, [isTranslationEnabled, translateAll, messages, translationLanguage, isMessageNew, setTranslationQueue]); // ИЗМЕНЕНО: Добавлен translateAll
+  }, [isTranslationEnabled, translationMode, messages, translationLanguage, isMessageNew, setTranslationQueue]);
 
   // Обработка следующего сообщения в очереди
   const translateNextMessage = useCallback(() => {
     if (translationQueue.length === 0 || isTranslating) return;
     setIsTranslating(true);
     const message = translationQueue[0];
-    translateMessageFunc(message);
-  }, [translationQueue, isTranslating, setIsTranslating]);
+    if (isTranslationEnabled && (translationMode === 'all' || translationMode === 'new')) {
+      translateMessageFunc(message);
+    } else {
+      setTranslationQueue((prevQueue) => prevQueue.slice(1));
+      setIsTranslating(false);
+    }
+  }, [translationQueue, isTranslating, isTranslationEnabled, translationMode, translateMessageFunc, setTranslationQueue, setIsTranslating]);
 
   // Перевод одного сообщения
   const translateMessageFunc = useCallback(
@@ -173,23 +175,24 @@ const usePrivateChatTranslationAndSpellCheck = ({
   }, [chatId, setMessages, setTranslationQueue]);
 
   // Обработка сохранения настроек перевода
-  const handleTranslationSettingsSave = useCallback(
-    (enabled, language, newOnly, allMessages) => {
-      setIsTranslationEnabled(enabled);
-      setTranslationLanguage(language);
-      setTranslateNewOnly(newOnly);
-      localStorage.setItem(`translation_enabled_${chatIdParam}`, enabled); // ДОБАВЛЕНО
-      localStorage.setItem(`translation_language_${chatIdParam}`, language); // ДОБАВЛЕНО
-      localStorage.setItem(`translate_new_only_${chatIdParam}`, newOnly); // ДОБАВЛЕНО
-      localStorage.setItem(`translate_all_${chatIdParam}`, allMessages); // ДОБАВЛЕНО
-      if (enabled) {
-        localStorage.setItem(`translation_enabled_timestamp_${chatIdParam}`, new Date().toISOString()); // ДОБАВЛЕНО
-      } else {
-        localStorage.removeItem(`translation_enabled_timestamp_${chatIdParam}`); // ДОБАВЛЕНО
-      }
-    },
-    [chatIdParam, setIsTranslationEnabled, setTranslationLanguage, setTranslateNewOnly]
-  );
+  const handleTranslationSettingsSave = (settings) => {
+    setIsTranslationEnabled(settings.isTranslationEnabled);
+    setTranslationLanguage(settings.translationLanguage);
+    setTranslationMode(settings.translationMode);
+    localStorage.setItem(`translation_enabled_${chatId}`, settings.isTranslationEnabled);
+    localStorage.setItem(`translation_language_${chatId}`, settings.translationLanguage);
+    localStorage.setItem(`translation_mode_${chatId}`, settings.translationMode);
+    if (settings.isTranslationEnabled) {
+      localStorage.setItem(`translation_enabled_timestamp_${chatId}`, new Date().toISOString());
+    } else {
+      localStorage.removeItem(`translation_enabled_timestamp_${chatId}`);
+    }
+    if (settings.isTranslationEnabled && settings.translationMode === 'all') {
+      translateExistingMessages();
+    } else if (!settings.isTranslationEnabled) {
+      clearTranslations();
+    }
+  };
 
   // Переключение орфографии
   const handleSpellCheckToggle = useCallback(() => {
@@ -236,6 +239,8 @@ const usePrivateChatTranslationAndSpellCheck = ({
     handleTranslationSettingsSave,
     handleSpellCheckToggle,
     spellCheckMessage,
+    translationMode, // ДОБАВЛЕНО
+    setTranslationMode, // ДОБАВЛЕНО
   };
 };
 

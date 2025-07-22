@@ -3,8 +3,7 @@ import '../styles/TranslationSettingsModal.css';
 
 const TranslationSettingsModal = ({ chatId, onSave, onClose }) => {
   const [enableTranslation, setEnableTranslation] = useState(false);
-  const [translateAll, setTranslateAll] = useState(false); // ДОБАВЛЕНО: Состояние для новой галочки
-  const [translateNewOnly, setTranslateNewOnly] = useState(false);
+  const [translationMode, setTranslationMode] = useState('selective');
   const [selectedLanguage, setSelectedLanguage] = useState('auto');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -124,13 +123,11 @@ const TranslationSettingsModal = ({ chatId, onSave, onClose }) => {
 
   useEffect(() => {
     const translationEnabled = localStorage.getItem(`translation_enabled_${chatId}`) === 'true';
-    const translateAll = localStorage.getItem(`translate_all_${chatId}`) === 'true'; // ДОБАВЛЕНО
     const translationLanguage = localStorage.getItem(`translation_language_${chatId}`) || 'auto';
-    const translateNewOnly = localStorage.getItem(`translate_new_only_${chatId}`) === 'true';
+    const translationMode = localStorage.getItem(`translation_mode_${chatId}`) || 'selective';
     setEnableTranslation(translationEnabled);
-    setTranslateAll(translateAll); // ДОБАВЛЕНО
     setSelectedLanguage(translationLanguage);
-    setTranslateNewOnly(translateNewOnly);
+    setTranslationMode(translationMode);
   }, [chatId]);
 
   useEffect(() => {
@@ -145,33 +142,19 @@ const TranslationSettingsModal = ({ chatId, onSave, onClose }) => {
 
   const handleSave = () => {
     localStorage.setItem(`translation_enabled_${chatId}`, enableTranslation);
-    localStorage.setItem(`translate_all_${chatId}`, translateAll); // ДОБАВЛЕНО
     localStorage.setItem(`translation_language_${chatId}`, selectedLanguage);
-    localStorage.setItem(`translate_new_only_${chatId}`, translateNewOnly);
+    localStorage.setItem(`translation_mode_${chatId}`, translationMode);
     if (enableTranslation) {
       localStorage.setItem(`translation_enabled_timestamp_${chatId}`, new Date().toISOString());
     } else {
       localStorage.removeItem(`translation_enabled_timestamp_${chatId}`);
     }
-    onSave(enableTranslation, selectedLanguage, translateNewOnly, translateAll); // ИЗМЕНЕНО: Добавлен translateAll
+    onSave({
+      isTranslationEnabled: enableTranslation,
+      translationLanguage: selectedLanguage,
+      translationMode,
+    });
     onClose();
-  };
-
-  // ДОБАВЛЕНО: Обработчики для взаимоисключения галочек
-  const handleTranslateAllChange = (e) => {
-    const isChecked = e.target.checked;
-    setTranslateAll(isChecked);
-    if (isChecked) {
-      setTranslateNewOnly(false); // Отключаем "Translate only new messages"
-    }
-  };
-
-  const handleTranslateNewOnlyChange = (e) => {
-    const isChecked = e.target.checked;
-    setTranslateNewOnly(isChecked);
-    if (isChecked) {
-      setTranslateAll(false); // Отключаем "Translate all messages in chat"
-    }
   };
 
   const currentLanguage = languages.find(lang => lang.code === selectedLanguage) || languages[0];
@@ -188,24 +171,41 @@ const TranslationSettingsModal = ({ chatId, onSave, onClose }) => {
           />
           Enable Translation
         </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={translateAll}
-            onChange={handleTranslateAllChange} // ИЗМЕНЕНО: Новый обработчик
-            disabled={!enableTranslation} // ДОБАВЛЕНО: Отключаем, если перевод не включен
-          />
-          Translate all messages in chat
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={translateNewOnly}
-            onChange={handleTranslateNewOnlyChange} // ИЗМЕНЕНО: Новый обработчик
-            disabled={!enableTranslation || translateAll} // ИЗМЕНЕНО: Отключаем, если включен translateAll
-          />
-          Translate only new messages
-        </label>
+        <div className="translation-mode-selection">
+          <label>
+            <input
+              type="radio"
+              name="translationMode"
+              value="all"
+              checked={translationMode === 'all'}
+              onChange={() => setTranslationMode('all')}
+              disabled={!enableTranslation}
+            />
+            Translate all messages in chat
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="translationMode"
+              value="new"
+              checked={translationMode === 'new'}
+              onChange={() => setTranslationMode('new')}
+              disabled={!enableTranslation}
+            />
+            Translate only new messages
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="translationMode"
+              value="selective"
+              checked={translationMode === 'selective'}
+              onChange={() => setTranslationMode('selective')}
+              disabled={!enableTranslation}
+            />
+            Translate selectively
+          </label>
+        </div>
         <label className="select-label">
           Language:
           <div className="custom-select" ref={dropdownRef} role="combobox" aria-expanded={isDropdownOpen}>
