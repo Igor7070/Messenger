@@ -293,7 +293,7 @@
 .translation-mode-selection label {
   display: flex;
   align-items: center;
-  font-size: 14px;
+  font-size: 18px;
   color: #c0c7d6; /* Светлый цвет для читаемости */
   margin: 2px 0; /* Переопределяем margin, чтобы уменьшить вертикальное расстояние */
 }
