@@ -811,22 +811,24 @@
 .private-message-translate-container .private-message-translate-button[data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
-  top: calc(100% + 2px); /* Подсказка теперь снизу иконки */
+  top: -30px; /* Подсказка отображается над иконкой */
   left: 50%;
   transform: translateX(-50%);
-  background-color: #333333;
-  color: #FFFFFF;
+  background-color: #333333; /* Темный фон */
+  color: #FFFFFF; /* Белый текст для читаемости */
   font-family: 'Inter', sans-serif;
   font-size: 10px;
   font-weight: 500;
-  padding: 3px 6px;
+  padding: 4px 8px; /* Увеличиваем отступы для читаемости */
   border-radius: 4px;
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  z-index: 102;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1000; /* Высокий z-index, чтобы быть выше всех элементов */
+  min-width: 80px; /* Минимальная ширина для предотвращения сжатия */
+  text-align: center; /* Центрируем текст */
 }
 
 .private-message-translate-container .private-message-translate-button[data-tooltip]:hover::after {
@@ -838,14 +840,15 @@
 .private-message-translate-container .private-message-translate-button[data-tooltip]::before {
   content: '';
   position: absolute;
-  top: -3px; /* Стрелка сверху для подсказки снизу */
+  top: -8px; /* Стрелка под подсказкой */
   left: 50%;
   transform: translateX(-50%);
-  border: 3px solid transparent;
-  border-bottom-color: #333333; /* Стрелка направлена вверх */
+  border: 4px solid transparent;
+  border-bottom-color: #333333; /* Стрелка направлена вниз */
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 1000; /* Соответствует z-index подсказки */
 }
 
 .private-message-translate-container .private-message-translate-button[data-tooltip]:hover::before {
