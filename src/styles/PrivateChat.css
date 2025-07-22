@@ -162,18 +162,18 @@
   display: inline-block;
   word-break: break-word;
   margin: 0;
-  padding: 0; /* Убираем фиксированный отступ */
+  padding: 0; /* Базовый отступ 0 */
   line-height: 1.4;
 }
 
 .private-message-content.translate-enabled {
-  padding-left: 14px; /* Отступ только при наличии иконки перевода */
+  padding-left: 14px; /* Отступ при наличии иконки перевода */
 }
 
 .private-file-link {
   display: block;
   margin-top: 5px;
-  padding-left: 0; /* Убираем фиксированный отступ */
+  padding-left: 0; /* Базовый отступ 0 */
   color: #0288d1;
   text-decoration: none;
   font-size: 14px;
@@ -181,7 +181,7 @@
 }
 
 .private-file-link.translate-enabled {
-  padding-left: 14px; /* Отступ только при наличии иконки перевода */
+  padding-left: 14px; /* Отступ при наличии иконки перевода */
 }
 
 .private-file-link:hover {
@@ -770,7 +770,7 @@
   background: transparent !important;
   display: flex;
   flex-direction: column;
-  padding: 8px 10px; /* ИЗМЕНЕНО: Убрано padding-left: 20px */
+  padding: 0 8px; /* Убираем padding-left, оставляем только правый для симметрии */
   position: relative;
   box-sizing: border-box;
 }
