@@ -475,6 +475,10 @@
   line-height: 1.4;
 }
 
+.translated-content.translate-enabled {
+    padding-left: 14px; /* Синхронизировано с .message-content.translate-enabled */
+}
+
 /* *** ДОБАВЛЕНО: Стили для иконки записи и аудиоплеера *** */
 .input-container {
     background-color: #F0F4F8;
@@ -802,11 +806,11 @@
 }
 
 .message-content-wrapper {
-    position: relative; /* Для позиционирования message-translate-container */
-    display: flex;
-    flex-direction: column;
+    position: relative;
+    display: block; /* Изменено с flex на block, как в PrivateChat */
     width: 100%;
     box-sizing: border-box;
+    padding: 0; /* Убедимся, что нет лишних отступов */
 }
 
 @media (max-width: 800px) {
@@ -993,7 +997,7 @@
     }
 
     .message-content.translate-enabled {
-        padding-left: 12px; /* Синхронизировано с PrivateChat */
+        padding-left: 12px; /* Уже есть */
     }
 
     .file-link.translate-enabled {
@@ -1024,5 +1028,13 @@
 
     .message-body {
         padding: 3px 6px; /* Синхронизировано с PrivateChat для мобильных */
+    }
+
+    .translated-content.translate-enabled {
+        padding-left: 12px; /* Добавлено для синхронизации с .message-content.translate-enabled */
+    }
+
+    .sender-name.translate-enabled {
+        padding-left: 12px; /* Синхронизировано с .message-content.translate-enabled */
     }
 }
