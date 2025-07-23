@@ -216,12 +216,12 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     letter-spacing: 0.1px;
-    padding: 0; /* Базовый отступ 0 */
+    padding: 0 !important; /* Базовый отступ 0 */
 }
 
 /* Отступ при наличии иконки перевода */
 .sender-name.translate-enabled {
-    padding-left: 14px; /* Синхронизировано с .message-content.translate-enabled */
+    padding-left: 14px !important; /* Синхронизировано с .message-content.translate-enabled */
 }
 
 .message-content {
