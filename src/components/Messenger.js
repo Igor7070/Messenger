@@ -1107,26 +1107,28 @@ const Messenger = () => {
                                         )}
                                         {/* Рендеринг текстового сообщения */}
                                         {msg.content && (
-                                            <div
-                                                className={`message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}
-                                                onClick={(e) => {
-                                                    if (e.target.tagName === 'A') return;
-                                                    if (msg.translatedContent) {
-                                                        setMessages((prevMessages) =>
-                                                            prevMessages.map((m) =>
-                                                                m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
-                                                            )
-                                                        );
-                                                    }
-                                                }}
-                                                style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
-                                            >
-                                                <span className="original-content">
-                                                    {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
-                                                </span>
-                                                {msg.translatedContent && (
-                                                    <span className="translated-content">{msg.translatedContent}</span>
-                                                )}
+                                            <div className="message-content-wrapper">
+                                                <div
+                                                    className={`message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}
+                                                    onClick={(e) => {
+                                                        if (e.target.tagName === 'A') return;
+                                                        if (msg.translatedContent) {
+                                                            setMessages((prevMessages) =>
+                                                                prevMessages.map((m) =>
+                                                                    m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                                                )
+                                                            );
+                                                        }
+                                                    }}
+                                                    style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                                                >
+                                                    <span className="original-content">
+                                                        {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                                                    </span>
+                                                    {msg.translatedContent && (
+                                                        <span className="translated-content">{msg.translatedContent}</span>
+                                                    )}
+                                                </div>
                                                 {isTranslationEnabled && msg.messageType !== 'audio' && (
                                                     <div className="message-translate-container">
                                                         <button

@@ -801,6 +801,13 @@
   visibility: visible;
 }
 
+.message-content-wrapper {
+    position: relative; /* Для позиционирования message-translate-container */
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
 @media (max-width: 800px) {
     .messenger {
         margin: 10px;
