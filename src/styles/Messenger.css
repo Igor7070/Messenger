@@ -165,14 +165,14 @@
 .message-content-container {
     display: block;
     max-width: 80%;
-    min-width: 100px; /* Добавлено для предотвращения слишком узких контейнеров */
-    padding: 8px;
+    min-width: 100px;
+    padding: 4px; /* Уменьшено с 8px для соответствия PrivateChat */
     border-radius: 12px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    overflow-wrap: anywhere; /* Заменил word-wrap/overflow-wrap для мягкого переноса */
+    overflow-wrap: break-word; /* Синхронизировано с PrivateChat */
     white-space: pre-wrap;
     box-sizing: border-box;
-    hyphens: manual; /* Отключаем автоматические дефисы */
+    position: relative; /* Для привязки message-translate-container */
 }
 
 .message.current-user .message-content-container {
@@ -182,19 +182,27 @@
     max-width: calc(80% - 10px);
     width: 100%;
     box-sizing: border-box;
+    padding: 4px; /* Уменьшено с 8px для соответствия PrivateChat */
 }
 
 .message.other-user .message-content-container {
     background-color: #ECE0F8 !important;
     border-radius: 0 12px 12px 12px;
     margin-left: 0;
+    padding: 4px; /* Уменьшено с 8px для соответствия PrivateChat */
+}
+
+.message-content-container.no-avatar {
+    margin-left: 35px !important; /* Синхронизировано с PrivateChat */
 }
 
 .message-body {
     background: transparent !important;
     display: flex;
     flex-direction: column;
-    padding-left: 10px;
+    padding: 0 8px; /* Синхронизировано с PrivateChat */
+    position: relative; /* Для привязки message-translate-container */
+    box-sizing: border-box;
 }
 
 .sender-name {
@@ -215,7 +223,14 @@
     line-height: 1.4;
     font-family: 'Roboto', sans-serif;
     background: transparent !important;
-    word-break: keep-all; /* Запрещаем разрыв слов в середине */
+    word-break: break-word; /* Изменено для соответствия PrivateChat */
+    margin: 0;
+    padding: 0; /* Базовый отступ 0 */
+}
+
+/* Отступ при наличии иконки перевода */
+.message-content.translate-enabled {
+    padding-left: 14px; /* Синхронизировано с PrivateChat */
 }
 
 .file-link {
@@ -225,6 +240,12 @@
     text-decoration: none;
     font-size: 14px;
     background: transparent !important;
+    padding-left: 0; /* Базовый отступ 0 */
+}
+
+/* Отступ при наличии иконки перевода */
+.file-link.translate-enabled {
+    padding-left: 14px; /* Синхронизировано с PrivateChat */
 }
 
 .file-link:hover {
@@ -689,6 +710,91 @@
     color: #b71c1c;
 }
 
+/* Стили для контейнера иконки перевода */
+.message-translate-container {
+  position: absolute;
+  top: 2px; /* Минимальный отступ сверху */
+  left: 2px; /* Минимальный отступ слева */
+  width: auto;
+  height: auto;
+  z-index: 100;
+}
+
+/* Стили для кнопки перевода */
+.message-translate-container .message-translate-button {
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #42a5f5;
+  transition: color 0.3s ease, transform 0.2s ease;
+  opacity: 0.6;
+  line-height: 1;
+  z-index: 101;
+}
+
+/* Ховер-эффект */
+.message-translate-container .message-translate-button:hover {
+  color: #1976d2;
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+/* Стили для всплывающей подсказки */
+.message-translate-container .message-translate-button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -30px; /* Подсказка над иконкой */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333333;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* Отображение подсказки при наведении */
+.message-translate-container .message-translate-button[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Стрелка для tooltip */
+.message-translate-container .message-translate-button[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  top: -8px; /* Стрелка под подсказкой */
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-bottom-color: #333333;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 1000;
+}
+
+/* Отображение стрелки при наведении */
+.message-translate-container .message-translate-button[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
 @media (max-width: 800px) {
     .messenger {
         margin: 10px;
@@ -862,5 +968,47 @@
         font-size: 12px;
         width: 18px;
         height: 18px;
+    }
+
+    .message-content-container {
+        padding: 3px; /* Уменьшено для мобильных, синхронизировано с PrivateChat */
+    }
+
+    .message-content-container.no-avatar {
+        margin-left: 30px !important; /* Синхронизировано с PrivateChat */
+    }
+
+    .message-content.translate-enabled {
+        padding-left: 12px; /* Синхронизировано с PrivateChat */
+    }
+
+    .file-link.translate-enabled {
+        padding-left: 12px; /* Синхронизировано с PrivateChat */
+    }
+
+    .message-translate-container {
+        top: 2px;
+        left: 2px;
+    }
+
+    .message-translate-container .message-translate-button {
+        font-size: 10px;
+        padding: 1px;
+    }
+
+    .message-translate-container .message-translate-button[data-tooltip]::after {
+        font-size: 9px;
+        padding: 2px 5px;
+        top: -28px; /* Уменьшено для мобильных */
+    }
+
+    .message-translate-container .message-translate-button[data-tooltip]::before {
+        border: 2px solid transparent;
+        border-bottom-color: #333333;
+        top: -6px; /* Уменьшено для мобильных */
+    }
+
+    .message-body {
+        padding: 3px 6px; /* Синхронизировано с PrivateChat для мобильных */
     }
 }

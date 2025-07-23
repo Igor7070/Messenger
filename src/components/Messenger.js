@@ -57,7 +57,7 @@ const Messenger = () => {
 
     const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
     const [translationLanguage, setTranslationLanguage] = useState('auto');
-    const [translateNewOnly, setTranslateNewOnly] = useState(false);
+    const [translationMode, setTranslationMode] = useState('selective');
     const [translationQueue, setTranslationQueue] = useState([]);
     const [isTranslating, setIsTranslating] = useState(false);
     const [showTranslationModal, setShowTranslationModal] = useState(false);
@@ -82,29 +82,32 @@ const Messenger = () => {
 
     // ДОБАВЛЕНО: использование хука
     const {
-        isMessageNew,
-        translateExistingMessages,
-        translateNextMessage,
-        translateMessageFunc,
-        clearTranslations,
-        handleTranslationSettingsSave,
-        handleSpellCheckToggle,
-        spellCheckMessage,
+      isMessageNew,
+      translateExistingMessages,
+      translateNextMessage,
+      translateMessageFunc,
+      translateSingleMessage,
+      clearTranslations,
+      handleTranslationSettingsSave,
+      handleSpellCheckToggle,
+      spellCheckMessage,
+      translationMode,
+      setTranslationMode,
     } = useGroupChatTranslationAndSpellCheck({
-        chatId,
-        messages,
-        setMessages,
-        isTranslationEnabled,
-        setIsTranslationEnabled,
-        translationLanguage,
-        setTranslationLanguage,
-        translateNewOnly,
-        setTranslateNewOnly,
-        translationQueue,
-        setTranslationQueue,
-        isTranslating,
-        setIsTranslating,
-        setIsSpellCheckEnabled,
+      chatId,
+      messages,
+      setMessages,
+      isTranslationEnabled,
+      setIsTranslationEnabled,
+      translationLanguage,
+      setTranslationLanguage,
+      translationMode,
+      setTranslationMode,
+      translationQueue,
+      setTranslationQueue,
+      isTranslating,
+      setIsTranslating,
+      setIsSpellCheckEnabled,
     });
 
     // Мемоизация аудиосообщений
@@ -156,7 +159,7 @@ const Messenger = () => {
                 setIsLoggedIn(true);
                 setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatId}`) === 'true');
                 setTranslationLanguage(localStorage.getItem(`translation_language_${chatId}`) || 'auto');
-                setTranslateNewOnly(localStorage.getItem(`translate_new_only_${chatId}`) === 'true');
+                setTranslationMode(localStorage.getItem(`translation_mode_${chatId}`) || 'selective');
                 setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatId}`) === 'true');
             } else {
                 toast.error('User is not authorized');
@@ -195,22 +198,14 @@ const Messenger = () => {
     }, [chatId, setContextUserId, setNotificationUserId, navigate]);
 
     useEffect(() => {
-        if (isTranslationEnabled && messages.length > 0) {
+        if (isTranslationEnabled && translationMode === 'all' && messages.length > 0) {
             console.log('Translating existing messages with language:', translationLanguage);
             translateExistingMessages();
         } else if (!isTranslationEnabled) {
             console.log('Clearing translations');
             clearTranslations();
         }
-    }, [isTranslationEnabled, translationLanguage, translateNewOnly, messages]);
-
-    useEffect(() => {
-        if (isTranslationEnabled) {
-            translateExistingMessages();
-        } else {
-            clearTranslations();
-        }
-    }, [isTranslationEnabled, translationLanguage, translateNewOnly, messages]);
+    }, [isTranslationEnabled, translationLanguage, translationMode, messages, translateExistingMessages, clearTranslations]);
 
     useEffect(() => {
         if (!isTranslationEnabled && messages.some((msg) => msg.translatedContent || msg.translationLanguage)) {
@@ -240,8 +235,8 @@ const Messenger = () => {
                 const newMessage = JSON.parse(message.body);
                 updateMessages(newMessage);
                 // Добавлено: перевод нового сообщения
-                if (isTranslationEnabled && isMessageNew(newMessage)) {
-                setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+                if (isTranslationEnabled && (translationMode === 'new' || translationMode === 'all') && isMessageNew(newMessage)) {
+                    setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
                 }
             });
             },
@@ -256,7 +251,7 @@ const Messenger = () => {
         return () => {
             stompClientInstance.deactivate();
         };
-    }, [chatId, isTranslationEnabled, translationLanguage]); // Изменено: добавлены зависимости
+    }, [chatId, isTranslationEnabled, translationLanguage, translationMode, isMessageNew]); // Изменено: добавлены зависимости
 
     useEffect(() => {
         const handleClick = () => {
@@ -348,12 +343,13 @@ const Messenger = () => {
                 showOriginal: updatedMessages[existingMessageIndex].showOriginal,
             };
             if (
-                isTranslationEnabled &&
-                isMessageNew(newMessage) &&
-                (!updatedMessages[existingMessageIndex].translatedContent ||
-                updatedMessages[existingMessageIndex].translationLanguage !== translationLanguage)
+              isTranslationEnabled &&
+              (translationMode === 'new' || translationMode === 'all') &&
+              isMessageNew(newMessage) &&
+              (!updatedMessages[existingMessageIndex].translatedContent ||
+                    updatedMessages[existingMessageIndex].translationLanguage !== translationLanguage)
             ) {
-                setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+              setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
             }
             return updatedMessages;
             } else {
@@ -1112,10 +1108,10 @@ const Messenger = () => {
                                         {/* Рендеринг текстового сообщения */}
                                         {msg.content && (
                                             <div
-                                                className="message-content"
+                                                className={`message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}
                                                 onClick={(e) => {
-                                                    if (e.target.tagName === 'A') return; // Игнорируем клики по ссылкам
-                                                    if (msg.translatedContent && isTranslationEnabled) {
+                                                    if (e.target.tagName === 'A') return;
+                                                    if (msg.translatedContent) {
                                                         setMessages((prevMessages) =>
                                                             prevMessages.map((m) =>
                                                                 m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
@@ -1123,15 +1119,24 @@ const Messenger = () => {
                                                         );
                                                     }
                                                 }}
-                                                style={{ cursor: msg.translatedContent && isTranslationEnabled ? 'pointer' : 'default' }}
+                                                style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
                                             >
                                                 <span className="original-content">
-                                                    {msg.showOriginal || !msg.translatedContent || !isTranslationEnabled
-                                                        ? msg.content
-                                                        : msg.translatedContent}
+                                                    {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
                                                 </span>
-                                                {isTranslationEnabled && msg.translatedContent && (
+                                                {msg.translatedContent && (
                                                     <span className="translated-content">{msg.translatedContent}</span>
+                                                )}
+                                                {isTranslationEnabled && msg.messageType !== 'audio' && (
+                                                    <div className="message-translate-container">
+                                                        <button
+                                                            className="message-translate-button"
+                                                            onClick={() => translateSingleMessage(msg)}
+                                                            data-tooltip="Translate message"
+                                                        >
+                                                            🌐
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
                                         )}

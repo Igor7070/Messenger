@@ -10,8 +10,8 @@ const useGroupChatTranslationAndSpellCheck = ({
   setIsTranslationEnabled,
   translationLanguage,
   setTranslationLanguage,
-  translateNewOnly,
-  setTranslateNewOnly,
+  translationMode,
+  setTranslationMode,
   translationQueue,
   setTranslationQueue,
   isTranslating,
@@ -21,7 +21,7 @@ const useGroupChatTranslationAndSpellCheck = ({
   // Проверка, является ли сообщение новым
   const isMessageNew = useCallback(
     (message) => {
-      if (!translateNewOnly) return true;
+      if (translationMode !== 'new') return true;
       const enabledTimestamp = localStorage.getItem(`translation_enabled_timestamp_${chatId}`);
       if (!enabledTimestamp) return false;
       try {
@@ -33,49 +33,88 @@ const useGroupChatTranslationAndSpellCheck = ({
         return false;
       }
     },
-    [chatId, translateNewOnly]
+    [chatId, translationMode]
   );
 
-  // Перевод существующих сообщений
-  const translateExistingMessages = useCallback(() => {
-    if (!isTranslationEnabled) return;
-    const queue = messages
-      .filter(
-        (msg) =>
-          isMessageNew(msg) &&
-          (!msg.translatedContent || msg.translationLanguage !== translationLanguage)
-      )
-      .map((msg) => ({ ...msg }));
-    setTranslationQueue(queue);
-  }, [isTranslationEnabled, messages, translationLanguage, isMessageNew, setTranslationQueue]);
-
-  // Обработка следующего сообщения в очереди
-  const translateNextMessage = useCallback(() => {
-    if (translationQueue.length === 0 || isTranslating) return;
-    setIsTranslating(true);
-    const message = translationQueue[0];
-    translateMessageFunc(message);
-  }, [translationQueue, isTranslating, setIsTranslating]);
-
-  // Перевод одного сообщения
-  const translateMessageFunc = useCallback(
+  const translateSingleMessage = useCallback(
     async (message) => {
+      if (!isTranslationEnabled) {
+        toast.error('Translation is not enabled');
+        return;
+      }
       try {
+        setIsTranslating(true);
         const translatedContent = await translateMessage(message.content, translationLanguage);
         const updatedMessage = {
           ...message,
           translatedContent,
           translationLanguage,
           showOriginal: true,
+          delivered: message.delivered ?? message.delivered_status,
+          read: message.read ?? message.read_status,
         };
 
-        // Сохранение перевода локально
         localStorage.setItem(
           `translation_${chatId}_${message.id}`,
           JSON.stringify({ translatedContent, translationLanguage })
         );
 
-        // Сохранение перевода на сервере
+        await saveTranslation(message.id, translatedContent, translationLanguage);
+
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) => (msg.id === message.id ? updatedMessage : msg))
+        );
+        toast.success('Message translated successfully');
+      } catch (error) {
+        console.error('Translation error:', error);
+        toast.error('Failed to translate message');
+      } finally {
+        setIsTranslating(false);
+      }
+    },
+    [chatId, isTranslationEnabled, translationLanguage, setMessages, setIsTranslating]
+  );
+
+  // Перевод существующих сообщений
+  const translateExistingMessages = useCallback(() => {
+    if (!isTranslationEnabled || translationMode !== 'all') return;
+    const queue = messages
+      .filter(
+        (msg) =>
+          isMessageNew(msg) &&
+          (!msg.translatedContent || msg.translationLanguage !== translationLanguage)
+      )
+      .map((msg) => ({
+        ...msg,
+        delivered: msg.delivered ?? msg.delivered_status,
+        read: msg.read ?? msg.read_status,
+      }));
+    console.log('Translation queue:', queue);
+    setTranslationQueue(queue);
+  }, [isTranslationEnabled, translationMode, messages, translationLanguage, isMessageNew, setTranslationQueue]);
+
+  // Перевод одного сообщения
+  const translateMessageFunc = useCallback(
+    async (message) => {
+      try {
+        console.log('Translating message:', message);
+        const translatedContent = await translateMessage(message.content, translationLanguage);
+        const updatedMessage = {
+          ...message,
+          translatedContent,
+          translationLanguage,
+          showOriginal: true,
+          delivered: message.delivered ?? message.delivered_status,
+          read: message.read ?? message.read_status,
+        };
+
+        console.log('Updated message after translation:', updatedMessage);
+
+        localStorage.setItem(
+          `translation_${chatId}_${message.id}`,
+          JSON.stringify({ translatedContent, translationLanguage })
+        );
+
         await saveTranslation(message.id, translatedContent, translationLanguage);
 
         setMessages((prevMessages) =>
@@ -92,6 +131,19 @@ const useGroupChatTranslationAndSpellCheck = ({
     },
     [chatId, translationLanguage, setMessages, setTranslationQueue, setIsTranslating]
   );
+
+  // Обработка следующего сообщения в очереди
+  const translateNextMessage = useCallback(() => {
+    if (translationQueue.length === 0 || isTranslating) return;
+    setIsTranslating(true);
+    const message = translationQueue[0];
+    if (isTranslationEnabled && (translationMode === 'all' || translationMode === 'new')) {
+      translateMessageFunc(message);
+    } else {
+      setTranslationQueue((prevQueue) => prevQueue.slice(1));
+      setIsTranslating(false);
+    }
+  }, [translationQueue, isTranslating, isTranslationEnabled, translationMode, translateMessageFunc, setTranslationQueue, setIsTranslating]);
 
   // Очистка переводов
   const clearTranslations = useCallback(() => {
@@ -120,12 +172,25 @@ const useGroupChatTranslationAndSpellCheck = ({
 
   // Обработка сохранения настроек перевода
   const handleTranslationSettingsSave = useCallback(
-    (enabled, language, newOnly) => {
-      setIsTranslationEnabled(enabled);
-      setTranslationLanguage(language);
-      setTranslateNewOnly(newOnly);
+    (settings) => {
+      setIsTranslationEnabled(settings.isTranslationEnabled);
+      setTranslationLanguage(settings.translationLanguage);
+      setTranslationMode(settings.translationMode);
+      localStorage.setItem(`translation_enabled_${chatId}`, settings.isTranslationEnabled);
+      localStorage.setItem(`translation_language_${chatId}`, settings.translationLanguage);
+      localStorage.setItem(`translation_mode_${chatId}`, settings.translationMode);
+      if (settings.isTranslationEnabled) {
+        localStorage.setItem(`translation_enabled_timestamp_${chatId}`, new Date().toISOString());
+      } else {
+        localStorage.removeItem(`translation_enabled_timestamp_${chatId}`);
+      }
+      if (settings.isTranslationEnabled && settings.translationMode === 'all') {
+        translateExistingMessages();
+      } else if (!settings.isTranslationEnabled) {
+        clearTranslations();
+      }
     },
-    [setIsTranslationEnabled, setTranslationLanguage, setTranslateNewOnly]
+    [chatId, setIsTranslationEnabled, setTranslationLanguage, setTranslationMode, translateExistingMessages, clearTranslations]
   );
 
   // Переключение орфографии
@@ -168,10 +233,13 @@ const useGroupChatTranslationAndSpellCheck = ({
     translateExistingMessages,
     translateNextMessage,
     translateMessageFunc,
+    translateSingleMessage,
     clearTranslations,
     handleTranslationSettingsSave,
     handleSpellCheckToggle,
     spellCheckMessage,
+    translationMode,
+    setTranslationMode,
   };
 };
 
