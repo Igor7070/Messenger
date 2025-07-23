@@ -1101,7 +1101,9 @@ const Messenger = () => {
                                 <div className="message-content-container">
                                     <div className="message-body">
                                         {msg.sender.id !== userId && (
-                                            <span className="sender-name">{msg.sender.username}</span>
+                                            <span className={`sender-name ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}>
+                                                {msg.sender.username}
+                                            </span>
                                         )}
                                         {/* Рендеринг текстового сообщения */}
                                         {msg.content && (
@@ -1223,7 +1225,7 @@ const Messenger = () => {
                                                 </div>
                                             </div>
                                         ) : msg.fileUrl ? (
-                                            <a href={msg.fileUrl} download className="file-link">
+                                            <a href={msg.fileUrl} download className={`file-link ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}>
                                                 📥 Download file
                                             </a>
                                         ) : null}
