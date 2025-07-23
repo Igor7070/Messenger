@@ -200,9 +200,9 @@
     background: transparent !important;
     display: flex;
     flex-direction: column;
-    padding: 0 8px; /* Синхронизировано с PrivateChat */
-    position: relative; /* Для привязки message-translate-container */
+    padding: 0 8px;
     box-sizing: border-box;
+    /* Убрано position: relative */
 }
 
 .sender-name {
@@ -229,9 +229,10 @@
     line-height: 1.4;
     font-family: 'Roboto', sans-serif;
     background: transparent !important;
-    word-break: break-word; /* Изменено для соответствия PrivateChat */
+    word-break: break-word;
     margin: 0;
-    padding: 0; /* Базовый отступ 0 */
+    padding: 0;
+    display: block; /* Уточняем, чтобы контент вёл себя как блок */
 }
 
 /* Отступ при наличии иконки перевода */
@@ -811,6 +812,10 @@
     width: 100%;
     box-sizing: border-box;
     padding: 0; /* Убедимся, что нет лишних отступов */
+}
+
+.original-content.translate-enabled {
+    padding-left: 14px; /* Синхронизировано с .message-content.translate-enabled */
 }
 
 @media (max-width: 800px) {
