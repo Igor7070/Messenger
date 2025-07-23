@@ -1122,13 +1122,20 @@ const Messenger = () => {
                                                     }}
                                                     style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
                                                 >
-                                                    <span className="original-content">
+                                                    <span className={`original-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}>
                                                         {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
                                                     </span>
                                                     {msg.translatedContent && (
-                                                        <span className="translated-content">{msg.translatedContent}</span>
+                                                        <span className={`translated-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}>
+                                                            {msg.translatedContent}
+                                                        </span>
                                                     )}
                                                 </div>
+                                                {msg.fileUrl && msg.messageType !== 'audio' && (
+                                                    <a href={msg.fileUrl} download className={`file-link ${isTranslationEnabled ? 'translate-enabled' : ''}`}>
+                                                        📥 Download file
+                                                    </a>
+                                                )}
                                                 {isTranslationEnabled && msg.messageType !== 'audio' && (
                                                     <div className="message-translate-container">
                                                         <button
