@@ -909,7 +909,7 @@
 }
 
 .private-message-content-container.no-avatar {
-  margin-left: 35px !important;
+    margin-left: 45px !important; /* Синхронизировано с шириной аватара (35px) + margin-right (10px) */
 }
 
 /* Защита текста от перекрытия */
@@ -938,7 +938,7 @@
     }
 
     .private-message-content-container.no-avatar {
-        margin-left: 40px !important;
+        margin-left: 40px !important; /* Синхронизировано с шириной аватара (30px) + margin-right (10px) */
     }
 
     .private-message.private-other-user .private-message-content-container {
