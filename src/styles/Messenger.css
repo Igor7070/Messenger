@@ -221,7 +221,7 @@
 
 /* Отступ при наличии иконки перевода */
 .sender-name.translate-enabled {
-    padding-left: 14px;
+    padding: 0; 
 }
 
 .message-content {
@@ -237,7 +237,7 @@
 
 /* Отступ при наличии иконки перевода */
 .message-content.translate-enabled {
-    padding-left: 14px;
+    padding: 0; 
 }
 
 .file-link {
@@ -252,7 +252,7 @@
 
 /* Отступ при наличии иконки перевода */
 .file-link.translate-enabled {
-    padding-left: 14px;
+    padding: 0; 
 }
 
 .file-link:hover {

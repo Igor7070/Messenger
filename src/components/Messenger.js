@@ -1108,6 +1108,17 @@ const Messenger = () => {
                                         {/* Рендеринг текстового сообщения */}
                                         {msg.content && (
                                             <div className="message-content-wrapper">
+                                                {isTranslationEnabled && msg.messageType !== 'audio' && (
+                                                    <div className="message-translate-container">
+                                                        <button
+                                                            className="message-translate-button"
+                                                            onClick={() => translateSingleMessage(msg)}
+                                                            data-tooltip="Translate message"
+                                                        >
+                                                            🌐
+                                                        </button>
+                                                    </div>
+                                                )}
                                                 <div
                                                     className={`message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}
                                                     onClick={(e) => {
@@ -1122,30 +1133,17 @@ const Messenger = () => {
                                                     }}
                                                     style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
                                                 >
-                                                    <span className={`original-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}>
+                                                    <span className="original-content">
                                                         {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
                                                     </span>
                                                     {msg.translatedContent && (
-                                                        <span className={`translated-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}>
-                                                            {msg.translatedContent}
-                                                        </span>
+                                                        <span className="translated-content">{msg.translatedContent}</span>
                                                     )}
                                                 </div>
                                                 {msg.fileUrl && msg.messageType !== 'audio' && (
-                                                    <a href={msg.fileUrl} download className={`file-link ${isTranslationEnabled ? 'translate-enabled' : ''}`}>
+                                                    <a href={msg.fileUrl} download className="file-link">
                                                         📥 Download file
                                                     </a>
-                                                )}
-                                                {isTranslationEnabled && msg.messageType !== 'audio' && (
-                                                    <div className="message-translate-container">
-                                                        <button
-                                                            className="message-translate-button"
-                                                            onClick={() => translateSingleMessage(msg)}
-                                                            data-tooltip="Translate message"
-                                                        >
-                                                            🌐
-                                                        </button>
-                                                    </div>
                                                 )}
                                             </div>
                                         )}
