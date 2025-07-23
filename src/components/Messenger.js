@@ -1108,17 +1108,6 @@ const Messenger = () => {
                                         {/* Рендеринг текстового сообщения */}
                                         {msg.content && (
                                             <div className="message-content-wrapper">
-                                                {isTranslationEnabled && msg.messageType !== 'audio' && (
-                                                    <div className="message-translate-container">
-                                                        <button
-                                                            className="message-translate-button"
-                                                            onClick={() => translateSingleMessage(msg)}
-                                                            data-tooltip="Translate message"
-                                                        >
-                                                            🌐
-                                                        </button>
-                                                    </div>
-                                                )}
                                                 <div
                                                     className={`message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}
                                                     onClick={(e) => {
@@ -1140,10 +1129,16 @@ const Messenger = () => {
                                                         <span className="translated-content">{msg.translatedContent}</span>
                                                     )}
                                                 </div>
-                                                {msg.fileUrl && msg.messageType !== 'audio' && (
-                                                    <a href={msg.fileUrl} download className="file-link">
-                                                        📥 Download file
-                                                    </a>
+                                                {isTranslationEnabled && msg.messageType !== 'audio' && (
+                                                    <div className="message-translate-container">
+                                                        <button
+                                                            className="message-translate-button"
+                                                            onClick={() => translateSingleMessage(msg)}
+                                                            data-tooltip="Translate message"
+                                                        >
+                                                            🌐
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
                                         )}
