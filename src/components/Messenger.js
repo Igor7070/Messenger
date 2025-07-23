@@ -91,8 +91,6 @@ const Messenger = () => {
       handleTranslationSettingsSave,
       handleSpellCheckToggle,
       spellCheckMessage,
-      translationMode,
-      setTranslationMode,
     } = useGroupChatTranslationAndSpellCheck({
       chatId,
       messages,
@@ -101,8 +99,8 @@ const Messenger = () => {
       setIsTranslationEnabled,
       translationLanguage,
       setTranslationLanguage,
-      translationMode,
-      setTranslationMode,
+      translationMode, // Передаём существующее состояние
+      setTranslationMode, // Передаём существующее состояние
       translationQueue,
       setTranslationQueue,
       isTranslating,
