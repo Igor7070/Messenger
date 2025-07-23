@@ -1129,17 +1129,17 @@ const Messenger = () => {
                                                         <span className="translated-content">{msg.translatedContent}</span>
                                                     )}
                                                 </div>
-                                                {isTranslationEnabled && msg.messageType !== 'audio' && (
-                                                    <div className="message-translate-container">
-                                                        <button
-                                                            className="message-translate-button"
-                                                            onClick={() => translateSingleMessage(msg)}
-                                                            data-tooltip="Translate message"
-                                                        >
-                                                            🌐
-                                                        </button>
-                                                    </div>
-                                                )}
+                                            </div>
+                                        )}
+                                        {isTranslationEnabled && msg.messageType !== 'audio' && (
+                                            <div className="message-translate-container">
+                                                <button
+                                                    className="message-translate-button"
+                                                    onClick={() => translateSingleMessage(msg)}
+                                                    data-tooltip="Translate message"
+                                                >
+                                                    🌐
+                                                </button>
                                             </div>
                                         )}
                                         {/* Рендеринг аудио или файла */}

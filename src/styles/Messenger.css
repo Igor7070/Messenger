@@ -221,7 +221,7 @@
 
 /* Отступ при наличии иконки перевода */
 .sender-name.translate-enabled {
-    padding-left: 14px; /* Синхронизировано с .message-content.translate-enabled */
+    padding-left: 16px; /* Увеличен для соответствия PrivateChat */
 }
 
 .message-content {
@@ -236,7 +236,7 @@
 
 /* Отступ при наличии иконки перевода */
 .message-content.translate-enabled {
-    padding-left: 14px; /* Синхронизировано с PrivateChat */
+    padding-left: 16px; /* Увеличен для соответствия PrivateChat */
 }
 
 .file-link {
@@ -251,7 +251,7 @@
 
 /* Отступ при наличии иконки перевода */
 .file-link.translate-enabled {
-    padding-left: 14px; /* Синхронизировано с PrivateChat */
+    padding-left: 16px; /* Увеличен для соответствия PrivateChat */
 }
 
 .file-link:hover {
@@ -719,8 +719,8 @@
 /* Стили для контейнера иконки перевода */
 .message-translate-container {
   position: absolute;
-  top: 2px; /* Минимальный отступ сверху */
-  left: 2px; /* Минимальный отступ слева */
+  top: 0; /* Прижато к верхнему краю */
+  left: 0; /* Прижато к левому краю */
   width: auto;
   height: auto;
   z-index: 100;
@@ -734,8 +734,8 @@
   cursor: pointer;
   padding: 2px;
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 2px; /* Минимальный отступ сверху */
+  left: 2px; /* Минимальный отступ слева */
   color: #42a5f5;
   transition: color 0.3s ease, transform 0.2s ease;
   opacity: 0.6;
@@ -757,21 +757,21 @@
   top: -30px; /* Подсказка над иконкой */
   left: 50%;
   transform: translateX(-50%);
-  background-color: #333333;
-  color: #FFFFFF;
+  background-color: #333333; /* Темный фон */
+  color: #FFFFFF; /* Белый текст для читаемости */
   font-family: 'Inter', sans-serif;
   font-size: 10px;
   font-weight: 500;
-  padding: 4px 8px;
+  padding: 4px 8px; /* Увеличиваем отступы для читаемости */
   border-radius: 4px;
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  min-width: 80px;
-  text-align: center;
+  z-index: 1000; /* Высокий z-index, чтобы быть выше всех элементов */
+  min-width: 80px; /* Минимальная ширина для предотвращения сжатия */
+  text-align: center; /* Центрируем текст */
 }
 
 /* Отображение подсказки при наведении */
@@ -788,11 +788,11 @@
   left: 50%;
   transform: translateX(-50%);
   border: 4px solid transparent;
-  border-bottom-color: #333333;
+  border-bottom-color: #333333; /* Стрелка направлена вниз */
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
-  z-index: 1000;
+  z-index: 1000; /* Соответствует z-index подсказки */
 }
 
 /* Отображение стрелки при наведении */
@@ -992,27 +992,30 @@
     }
 
     .message-content.translate-enabled {
-        padding-left: 12px; /* Синхронизировано с PrivateChat */
+        padding-left: 14px; /* Увеличен для соответствия PrivateChat */
     }
 
     .file-link.translate-enabled {
-        padding-left: 12px; /* Синхронизировано с PrivateChat */
+        padding-left: 14px; /* Увеличен для соответствия PrivateChat */
     }
 
     .message-translate-container {
-        top: 2px;
-        left: 2px;
+        top: 0; /* Прижато к верхнему краю */
+        left: 0; /* Прижато к левому краю */
     }
 
     .message-translate-container .message-translate-button {
         font-size: 10px;
         padding: 1px;
+        top: 2px; /* Минимальный отступ сверху */
+        left: 2px; /* Минимальный отступ слева */
     }
 
     .message-translate-container .message-translate-button[data-tooltip]::after {
         font-size: 9px;
         padding: 2px 5px;
         top: -28px; /* Уменьшено для мобильных */
+        min-width: 70px; /* Минимальная ширина для мобильных */
     }
 
     .message-translate-container .message-translate-button[data-tooltip]::before {
@@ -1023,5 +1026,9 @@
 
     .message-body {
         padding: 3px 6px; /* Синхронизировано с PrivateChat для мобильных */
+    }
+
+    .sender-name.translate-enabled {
+        padding-left: 14px; /* Увеличен для соответствия PrivateChat */
     }
 }
