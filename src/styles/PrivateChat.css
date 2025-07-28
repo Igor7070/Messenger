@@ -449,6 +449,82 @@
   border-radius: 4px;
 }
 
+/* ДОБАВЛЕНО: Стили для кнопки озвучивания */
+.private-tts-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  position: relative;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+
+.private-tts-button:hover {
+  transform: scale(1.1);
+}
+
+/* ДОБАВЛЕНО: Стили для всплывающей подсказки кнопки озвучивания */
+.private-tts-button[data-tooltip] {
+  position: relative;
+}
+
+.private-tts-button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -36px;
+  right: 50%;
+  transform: translateX(50%);
+  background-color: #333333;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.private-tts-button[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ДОБАВЛЕНО: Стрелка для tooltip кнопки озвучивания */
+.private-tts-button[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: 50%;
+  transform: translateX(50%);
+  border: 4px solid transparent;
+  border-top-color: #333333;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.private-tts-button[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ДОБАВЛЕНО: Стили для индикатора озвучивания */
+.private-tts-indicator {
+  font-size: 14px;
+  color: #42a5f5;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  background: rgba(66, 165, 245, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
 .private-original-content { /* Изменено */
   display: block;
   font-family: 'Roboto', sans-serif;
@@ -1016,6 +1092,27 @@
 
     .private-translation-indicator,
     .private-spellcheck-indicator {
+        font-size: 12px;
+        padding: 2px 5px;
+    }
+
+    /* ДОБАВЛЕНО: Адаптивные стили для кнопки и индикатора озвучивания */
+    .private-tts-button {
+        font-size: 18px;
+        padding: 3px;
+    }
+
+    .private-tts-button[data-tooltip]::after {
+        font-size: 11px;
+        padding: 5px 10px;
+        top: -32px;
+    }
+
+    .private-tts-button[data-tooltip]::before {
+        top: -6px;
+    }
+
+    .private-tts-indicator {
         font-size: 12px;
         padding: 2px 5px;
     }

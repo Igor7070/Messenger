@@ -49,6 +49,8 @@ const PrivateChat = () => {
   const [showTranslationModal, setShowTranslationModal] = useState(false);
 
   const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
+
+  const [isTTSEnabled, setIsTTSEnabled] = useState(false); // Состояние для включения/выключения озвучивания
   
   // Состояния для аудиозаписи
   const [isRecording, setIsRecording] = useState(false);
@@ -163,6 +165,10 @@ const PrivateChat = () => {
 
         // Загрузка настройки орфографии
         setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatIdParam}`) === 'true');
+
+        // ДОБАВЛЕНО: Загрузка настройки озвучивания
+        setIsTTSEnabled(localStorage.getItem(`tts_enabled_${chatIdParam}`) === 'true');
+
         setTimeout(() => {
           scrollToBottom();
         }, 0); // Прокрутка после загрузки
@@ -1051,11 +1057,27 @@ const PrivateChat = () => {
       setIsDragging(null);
   };
 
+  // ДОБАВЛЕНО: Обработчик переключения озвучивания
+  const handleTTSToggle = () => {
+    const newTTSEnabled = !isTTSEnabled;
+    setIsTTSEnabled(newTTSEnabled);
+    localStorage.setItem(`tts_enabled_${chatIdParam}`, newTTSEnabled);
+  };
+
   return (
     <div className="private-chat">
       <div className="private-chat-name">
         {displayChatName}
         <div className="private-translation-controls"> 
+          <button
+            className="private-tts-button"
+            onClick={handleTTSToggle}
+            data-tooltip={isTTSEnabled ? 'Text-to-Speech is ON' : 'Text-to-Speech is OFF'}
+            style={{ color: isTTSEnabled ? '#42a5f5' : '#B0BEC5' }}
+          >
+            🔊
+          </button>
+          {isTTSEnabled && <span className="private-tts-indicator">ON</span>}
           <button
             className="private-spellcheck-button" 
             onClick={handleSpellCheckToggle}
