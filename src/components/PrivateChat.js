@@ -1286,15 +1286,31 @@ const PrivateChat = () => {
                     <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                   </div>
                   {/* ДОБАВЛЕНО: Отдельный контейнер для иконки перевода */}
-                  {isTranslationEnabled && msg.messageType !== 'audio' && (
-                    <div className="private-message-translate-container">
-                      <button
-                        className="private-message-translate-button"
-                        onClick={() => translateSingleMessage(msg)}
-                        data-tooltip="Translate message"
-                      >
-                        🌐
-                      </button>
+                  {msg.messageType !== 'audio' && (isTranslationEnabled || isTTSEnabled) && (
+                    <div className="private-message-actions-container">
+                      {isTranslationEnabled && (
+                        <div className="private-message-translate-container">
+                          <button
+                            className="private-message-translate-button"
+                            onClick={() => translateSingleMessage(msg)}
+                            data-tooltip="Translate message"
+                          >
+                            🌐
+                          </button>
+                        </div>
+                      )}
+                      {/* ДОБАВЛЕНО: Контейнер для иконки TTS */}
+                      {isTTSEnabled && (
+                        <div className="private-message-tts-container">
+                          <button
+                            className="private-message-tts-button"
+                            onClick={() => console.log(`TTS requested for message ${msg.id}`)} // Временный обработчик
+                            data-tooltip="Listen to message"
+                          >
+                            🔊
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
