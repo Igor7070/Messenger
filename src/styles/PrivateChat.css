@@ -1105,15 +1105,14 @@
 .private-message-tts-translated-container .private-message-tts-translated-button {
   background: none;
   border: none;
-  font-size: 12px;
   cursor: pointer;
-  padding: 2px;
+  padding: 4px;
   position: absolute;
-  top: 0;
-  left: 0;
-  color: #4a148c; /* Тёмно-фиолетовый */
+  top: -4px; /* Поднять выше */
+  left: -2px; /* Сместить левее */
+  color: #4a148c;
   transition: color 0.3s ease, transform 0.2s ease;
-  opacity: 0.6;
+  opacity: 0.8;
   line-height: 1;
   z-index: 101;
   width: 22px;
@@ -1129,7 +1128,7 @@
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button:hover {
-  color: #2e0a54; /* Ещё темнее */
+  color: #2e0a54;
   transform: scale(1.2);
   opacity: 1;
 }
@@ -1509,6 +1508,8 @@
     /* ДОБАВЛЕНО: Адаптивные стили для кнопки TTS переведенного текста */
     .private-message-tts-translated-container .private-message-tts-translated-button {
       padding: 3px;
+      top: -3px; /* Меньше смещение вверх для мобильных */
+      left: -2px; /* Сместить левее */
       width: 20px;
       height: 20px;
       color: #4a148c;
