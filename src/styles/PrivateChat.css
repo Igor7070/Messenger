@@ -1106,9 +1106,9 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 2px;
   position: absolute;
-  top: -8px; /* Поднять выше */
+  top: -2px; /* Поднять выше */
   left: -2px; /* Сместить левее */
   color: #4a148c;
   transition: color 0.3s ease, transform 0.2s ease;
