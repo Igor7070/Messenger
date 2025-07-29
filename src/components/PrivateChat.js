@@ -376,15 +376,17 @@ const PrivateChat = () => {
 
       const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
       if (existingMessageIndex !== -1) {
+        const existingMessage = prevMessages[existingMessageIndex];
         const updatedMessages = [...prevMessages];
         updatedMessages[existingMessageIndex] = {
-          ...newMessage,
-          delivered: newMessage.delivered_status,
-          read: newMessage.read_status,
-          translatedContent: updatedMessages[existingMessageIndex].translatedContent,
-          translationLanguage: updatedMessages[existingMessageIndex].translationLanguage,
-          showOriginal: updatedMessages[existingMessageIndex].showOriginal,
-          messageType: newMessage.messageType, // ДОБАВЛЕНО: Сохранение messageType
+          ...existingMessage, // Сохраняем текущие свойства, включая translatedContent, translationLanguage, showOriginal
+          ...newMessage, // Обновляем новые данные из newMessage
+          delivered: newMessage.delivered_status ?? existingMessage.delivered, // Сохраняем существующий delivered, если новый не пришел
+          read: newMessage.read_status ?? existingMessage.read, // Сохраняем существующий read, если новый не пришел
+          messageType: newMessage.messageType ?? existingMessage.messageType, // Сохраняем существующий messageType, если новый не пришел
+          translatedContent: existingMessage.translatedContent, // Сохраняем перевод
+          translationLanguage: existingMessage.translationLanguage, // Сохраняем язык перевода
+          showOriginal: existingMessage.showOriginal, // Сохраняем флаг отображения оригинала
         };
         console.log('Updated existing message:', updatedMessages[existingMessageIndex]); // Отладка
         if (
@@ -403,7 +405,7 @@ const PrivateChat = () => {
           delivered: newMessage.delivered_status,
           read: newMessage.read_status,
           showOriginal: true,
-          messageType: newMessage.messageType, // ДОБАВЛЕНО: Сохранение messageType
+          messageType: newMessage.messageType,
         };
         console.log('New message added:', newMsg); // Отладка
         return [...prevMessages, newMsg];
