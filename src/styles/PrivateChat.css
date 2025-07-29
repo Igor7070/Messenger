@@ -1522,4 +1522,9 @@
         border-bottom-color: #333333;
         top: -6px;
     }
+
+    /* ДОБАВЛЕНО: Минимальная высота для контейнера сообщения при наличии TTS перевода на мобильных */
+    .private-message-content-container:has(.private-message-tts-translated-container) {
+      min-height: 52px; /* Высота для трех иконок: 14px * 3 + gap 2px * 2 + padding 3px * 2 = 52px */
+    }
 }
