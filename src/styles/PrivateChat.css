@@ -1102,16 +1102,16 @@
 }
 
 /* ДОБАВЛЕНО: Стили для кнопки TTS переведенного текста */
-.private-message-actions-container .private-message-tts-translated-container .private-message-tts-translated-button {
-  background: none !important;
-  border: none !important;
+.private-message-tts-translated-container .private-message-tts-translated-button {
+  background: none;
+  border: none;
   font-size: 12px;
   cursor: pointer;
   padding: 2px;
   position: absolute;
   top: 0;
   left: 0;
-  color: #7b1fa2 !important; /* Фиолетовый с приоритетом */
+  color: #7b1fa2;
   transition: color 0.3s ease, transform 0.2s ease;
   opacity: 0.6;
   line-height: 1;
@@ -1128,8 +1128,8 @@
   top: 36px; /* Сдвиг вниз: иконка перевода (16px) + иконка TTS (16px) + gap (2px * 2) */
 }
 
-.private-message-actions-container .private-message-tts-translated-container .private-message-tts-translated-button:hover {
-  color: #4a148c !important; /* Темнее фиолетовый при ховере */
+.private-message-tts-translated-container .private-message-tts-translated-button:hover {
+  color: #4a148c;
   transform: scale(1.1);
   opacity: 1;
 }
@@ -1184,6 +1184,13 @@
 /* ДОБАВЛЕНО: Минимальная высота для контейнера сообщения при наличии TTS перевода */
 .private-message-content-container:has(.private-message-tts-translated-container) {
   min-height: 60px; /* Высота для трех иконок: 16px * 3 + gap 2px * 2 + padding 4px * 2 = 60px */
+}
+
+.private-message-tts-translated-container .private-message-tts-translated-button svg {
+  fill: #7b1fa2 !important;
+}
+.private-message-tts-translated-container .private-message-tts-translated-button:hover svg {
+  fill: #4a148c !important;
 }
 
 @media (max-width: 800px) {
@@ -1526,5 +1533,14 @@
     /* ДОБАВЛЕНО: Минимальная высота для контейнера сообщения при наличии TTS перевода на мобильных */
     .private-message-content-container:has(.private-message-tts-translated-container) {
       min-height: 52px; /* Высота для трех иконок: 14px * 3 + gap 2px * 2 + padding 3px * 2 = 52px */
+    }
+
+    .private-message-tts-translated-container .private-message-tts-translated-button svg {
+      width: 10px !important;
+      height: 10px !important;
+      fill: #7b1fa2 !important;
+    }
+    .private-message-tts-translated-container .private-message-tts-translated-button:hover svg {
+      fill: #4a148c !important;
     }
 }
