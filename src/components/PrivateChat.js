@@ -1311,6 +1311,17 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
+                      {isTTSEnabled && isTranslationEnabled && (
+                        <div className="private-message-tts-translated-container">
+                          <button
+                            className="private-message-tts-translated-button"
+                            onClick={() => console.log(`TTS requested for translated message ${msg.id}`)} // Временный обработчик
+                            data-tooltip="Listen to translated message"
+                          >
+                            🔊
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

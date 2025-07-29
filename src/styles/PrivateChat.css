@@ -1001,12 +1001,13 @@
 /* ДОБАВЛЕНО: Стили для контейнера действий (перевод и TTS) */
 .private-message-actions-container {
   position: absolute;
-  top: 4px; /* ИЗМЕНЕНО: Увеличен отступ сверху для синхронизации с padding контейнера */
-  left: 4px; /* ИЗМЕНЕНО: Увеличен отступ слева для компактности */
+  top: 4px;
+  left: 4px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   z-index: 100;
+  min-height: 54px; /* ДОБАВЛЕНО: Минимальная высота для трех иконок (16px * 3 + 2px * 2) */
 }
 
 /* ДОБАВЛЕНО: Стили для контейнера иконки TTS */
@@ -1091,6 +1092,92 @@
 }
 
 .private-message-tts-container .private-message-tts-button[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ДОБАВЛЕНО: Стили для контейнера иконки TTS переведенного текста */
+.private-message-tts-translated-container {
+  width: 16px;
+  height: 16px;
+}
+
+/* ДОБАВЛЕНО: Стили для кнопки TTS переведенного текста */
+.private-message-tts-translated-container .private-message-tts-translated-button {
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #7b1fa2; /* Фиолетовый цвет */
+  transition: color 0.3s ease, transform 0.2s ease;
+  opacity: 0.6;
+  line-height: 1;
+  z-index: 101;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ДОБАВЛЕНО: Позиционирование TTS переведенного текста под обычным TTS */
+.private-message-actions-container:has(.private-message-tts-container) .private-message-tts-translated-container .private-message-tts-translated-button {
+  top: 36px; /* Сдвиг вниз: иконка перевода (16px) + иконка TTS (16px) + gap (2px * 2) */
+}
+
+.private-message-tts-translated-container .private-message-tts-translated-button:hover {
+  color: #4a148c; /* Темнее фиолетовый при ховере */
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333333;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  min-width: 80px;
+  text-align: center;
+}
+
+.private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-bottom-color: #333333;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 1000;
+}
+
+.private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]:hover::before {
   opacity: 1;
   visibility: visible;
 }
@@ -1397,5 +1484,38 @@
 
     .private-message-actions-container:has(.private-message-translate-container) .private-message-tts-container .private-message-tts-button {
         top: 16px; /* ИЗМЕНЕНО: Сдвиг вниз на высоту иконки перевода (14px) + gap (2px) */
+    }
+
+    /* ДОБАВЛЕНО: Адаптивные стили для контейнера иконки TTS переведенного текста */
+    .private-message-tts-translated-container {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* ДОБАВЛЕНО: Адаптивные стили для кнопки TTS переведенного текста */
+    .private-message-tts-translated-container .private-message-tts-translated-button {
+        font-size: 10px;
+        padding: 1px;
+        top: 0;
+        left: 0;
+        width: 14px;
+        height: 14px;
+    }
+
+    /* ДОБАВЛЕНО: Позиционирование TTS переведенного текста под обычным TTS для мобильных */
+    .private-message-actions-container:has(.private-message-tts-container) .private-message-tts-translated-container .private-message-tts-translated-button {
+        top: 32px; /* Сдвиг вниз: иконка перевода (14px) + иконка TTS (14px) + gap (2px * 2) */
+    }
+
+    .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::after {
+        font-size: 9px;
+        padding: 2px 5px;
+        top: -28px;
+    }
+
+    .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::before {
+        border: 2px solid transparent;
+        border-bottom-color: #333333;
+        top: -6px;
     }
 }
