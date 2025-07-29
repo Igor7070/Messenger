@@ -1182,7 +1182,7 @@
 
 /* ДОБАВЛЕНО: Минимальная высота для контейнера сообщения при наличии TTS перевода */
 .private-message-content-container:has(.private-message-tts-translated-container) {
-  min-height: 60px; /* Высота для трех иконок: 16px * 3 + gap 2px * 2 + padding 4px * 2 = 60px */
+  min-height: 70px; /* Высота для трех иконок: 16px * 3 + gap 2px * 2 + padding 4px * 2 = 60px */
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button svg {
