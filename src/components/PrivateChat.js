@@ -1243,8 +1243,9 @@ const PrivateChat = () => {
                       </div>
                     ) : (
                       <>
+                        {/* ИЗМЕНЕНО: Добавлен класс tts-enabled для корректных отступов */}
                         <span
-                          className={`private-message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}
+                          className={`private-message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''} ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
                           onClick={(e) => {
                             if (e.target.tagName === 'A') return;
                             if (msg.translatedContent) {
@@ -1268,7 +1269,7 @@ const PrivateChat = () => {
                           <a
                             href={msg.fileUrl}
                             download
-                            className={`private-file-link ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}
+                            className={`private-file-link ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''} ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
                           >
                             📥 Download file
                           </a>
@@ -1299,7 +1300,6 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {/* ДОБАВЛЕНО: Контейнер для иконки TTS */}
                       {isTTSEnabled && (
                         <div className="private-message-tts-container">
                           <button
