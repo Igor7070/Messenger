@@ -1007,7 +1007,6 @@
   flex-direction: column;
   gap: 2px;
   z-index: 100;
-  min-height: 54px; /* ДОБАВЛЕНО: Минимальная высота для трех иконок (16px * 3 + 2px * 2) */
 }
 
 /* ДОБАВЛЕНО: Стили для контейнера иконки TTS */
@@ -1180,6 +1179,11 @@
 .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]:hover::before {
   opacity: 1;
   visibility: visible;
+}
+
+/* ДОБАВЛЕНО: Минимальная высота для контейнера сообщения при наличии TTS перевода */
+.private-message-content-container:has(.private-message-tts-translated-container) {
+  min-height: 60px; /* Высота для трех иконок: 16px * 3 + gap 2px * 2 + padding 4px * 2 = 60px */
 }
 
 @media (max-width: 800px) {
