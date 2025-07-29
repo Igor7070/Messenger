@@ -41,32 +41,32 @@ const usePrivateChatTranslationAndSpellCheck = ({
   // Перевод существующего сообщения (для ручного перевода)
   const translateSingleMessage = useCallback(
     async (message) => {
-      if (!isTranslationEnabled) {
-        toast.error('Translation is not enabled');
-        return;
-      }
+      if (!isTranslationEnabled || isTranslating || message.messageType === 'audio') return;
+
+      setIsTranslating(true);
       try {
-        setIsTranslating(true);
         const translatedContent = await translateMessage(message.content, translationLanguage);
-        const updatedMessage = {
-          ...message,
+        const translationKey = `translation_${chatIdParam}_${message.id}`;
+        const translationData = {
           translatedContent,
           translationLanguage,
-          showOriginal: true,
-          delivered: message.delivered ?? message.delivered_status,
-          read: message.read ?? message.read_status,
         };
-
-        localStorage.setItem(
-          `translation_${chatId}_${message.id}`,
-          JSON.stringify({ translatedContent, translationLanguage })
-        );
-
-        await saveTranslation(message.id, translatedContent, translationLanguage);
+        localStorage.setItem(translationKey, JSON.stringify(translationData));
 
         setMessages((prevMessages) =>
-          prevMessages.map((msg) => (msg.id === message.id ? updatedMessage : msg))
+          prevMessages.map((msg) =>
+            msg.id === message.id
+              ? {
+                  ...msg, // Сохраняем все текущие свойства, включая delivered и read
+                  translatedContent,
+                  translationLanguage,
+                  showOriginal: true,
+                }
+              : msg
+          )
         );
+
+        await saveTranslation(chatIdParam, message.id, translatedContent, translationLanguage);
         toast.success('Message translated successfully');
       } catch (error) {
         console.error('Translation error:', error);
@@ -75,7 +75,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
         setIsTranslating(false);
       }
     },
-    [chatId, isTranslationEnabled, translationLanguage, setMessages, setIsTranslating]
+    [chatIdParam, isTranslationEnabled, translationLanguage, setMessages, setIsTranslating, isTranslating]
   );
 
   // Перевод существующих сообщений
@@ -84,13 +84,12 @@ const usePrivateChatTranslationAndSpellCheck = ({
     const queue = messages
       .filter(
         (msg) =>
+          msg.messageType !== 'audio' &&
           isMessageNew(msg) &&
           (!msg.translatedContent || msg.translationLanguage !== translationLanguage)
       )
       .map((msg) => ({
-        ...msg,
-        delivered: msg.delivered ?? msg.delivered_status,
-        read: msg.read ?? msg.read_status,
+        ...msg, // Сохраняем все текущие свойства
       }));
     console.log('Translation queue:', queue);
     setTranslationQueue(queue);
@@ -99,42 +98,41 @@ const usePrivateChatTranslationAndSpellCheck = ({
   // Перевод одного сообщения
   const translateMessageFunc = useCallback(
     async (message) => {
+      if (!isTranslationEnabled || isTranslating || message.messageType === 'audio') return;
       try {
         console.log('Translating message:', message); // Отладка: проверяем структуру сообщения
         const translatedContent = await translateMessage(message.content, translationLanguage);
-        const updatedMessage = {
-          ...message, // Копируем все поля
+        const translationKey = `translation_${chatIdParam}_${message.id}`;
+        const translationData = {
           translatedContent,
           translationLanguage,
-          showOriginal: true,
-          delivered: message.delivered ?? message.delivered_status, // Явно сохраняем
-          read: message.read ?? message.read_status, // Явно сохраняем
         };
-
-        console.log('Updated message after translation:', updatedMessage); // Отладка
-
-        // Сохранение перевода локально
-        localStorage.setItem(
-          `translation_${chatId}_${message.id}`,
-          JSON.stringify({ translatedContent, translationLanguage })
-        );
-
-        // Сохранение перевода на сервере
-        await saveTranslation(message.id, translatedContent, translationLanguage);
+        localStorage.setItem(translationKey, JSON.stringify(translationData));
 
         setMessages((prevMessages) =>
-          prevMessages.map((msg) => (msg.id === message.id ? updatedMessage : msg))
+          prevMessages.map((msg) =>
+            msg.id === message.id
+              ? {
+                  ...msg, // Сохраняем все текущие свойства, включая delivered и read
+                  translatedContent,
+                  translationLanguage,
+                  showOriginal: true,
+                }
+              : msg
+          )
         );
 
+        await saveTranslation(chatIdParam, message.id, translatedContent, translationLanguage);
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
-        setIsTranslating(false);
       } catch (error) {
         console.error('Translation error:', error);
+        toast.error('Failed to translate message');
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
+      } finally {
         setIsTranslating(false);
       }
     },
-    [chatId, translationLanguage, setMessages, setTranslationQueue, setIsTranslating]
+    [chatIdParam, isTranslationEnabled, translationLanguage, setMessages, setTranslationQueue, setIsTranslating, isTranslating]
   );
 
   // Обработка следующего сообщения в очереди
