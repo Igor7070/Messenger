@@ -1102,16 +1102,16 @@
 }
 
 /* ДОБАВЛЕНО: Стили для кнопки TTS переведенного текста */
-.private-message-tts-translated-container .private-message-tts-translated-button {
-  background: none;
-  border: none;
+.private-message-actions-container .private-message-tts-translated-container .private-message-tts-translated-button {
+  background: none !important;
+  border: none !important;
   font-size: 12px;
   cursor: pointer;
   padding: 2px;
   position: absolute;
   top: 0;
   left: 0;
-  color: #7b1fa2; /* Фиолетовый цвет */
+  color: #7b1fa2 !important; /* Фиолетовый с приоритетом */
   transition: color 0.3s ease, transform 0.2s ease;
   opacity: 0.6;
   line-height: 1;
@@ -1128,8 +1128,8 @@
   top: 36px; /* Сдвиг вниз: иконка перевода (16px) + иконка TTS (16px) + gap (2px * 2) */
 }
 
-.private-message-tts-translated-container .private-message-tts-translated-button:hover {
-  color: #4a148c; /* Темнее фиолетовый при ховере */
+.private-message-actions-container .private-message-tts-translated-container .private-message-tts-translated-button:hover {
+  color: #4a148c !important; /* Темнее фиолетовый при ховере */
   transform: scale(1.1);
   opacity: 1;
 }
