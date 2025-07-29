@@ -1097,9 +1097,8 @@
 
 /* ДОБАВЛЕНО: Стили для контейнера иконки TTS переведенного текста */
 .private-message-tts-translated-container {
-  overflow: visible; /* Разрешить выход за границы */
   width: 18px; /* Убрать фиксированную ширину */
-  height: auto; /* Убрать фиксированную высоту */
+  height: 18px; /* Убрать фиксированную высоту */
 }
 
 /* ДОБАВЛЕНО: Стили для кнопки TTS переведенного текста */
@@ -1109,7 +1108,7 @@
   cursor: pointer;
   padding: 2px;
   position: absolute;
-  top: -2px !important; /* Поднять выше */
+  top: 0px !important; /* Поднять выше */
   left: -2px; /* Сместить левее */
   color: #4a148c;
   transition: color 0.3s ease, transform 0.2s ease;
