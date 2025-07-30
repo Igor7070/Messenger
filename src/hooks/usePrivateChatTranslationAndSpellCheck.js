@@ -84,12 +84,13 @@ const usePrivateChatTranslationAndSpellCheck = ({
     const queue = messages
       .filter(
         (msg) =>
-          msg.messageType !== 'audio' &&
           isMessageNew(msg) &&
           (!msg.translatedContent || msg.translationLanguage !== translationLanguage)
       )
       .map((msg) => ({
-        ...msg, // Сохраняем все текущие свойства
+        ...msg,
+        delivered: msg.delivered ?? msg.delivered_status,
+        read: msg.read ?? msg.read_status,
       }));
     console.log('Translation queue:', queue);
     setTranslationQueue(queue);
