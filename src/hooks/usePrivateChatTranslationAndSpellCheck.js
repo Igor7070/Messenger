@@ -59,18 +59,18 @@ const usePrivateChatTranslationAndSpellCheck = ({
           prevMessages.map((msg) =>
             msg.id === message.id
               ? {
-                  ...msg, // Сохраняем все текущие свойства
+                  ...msg,
                   translatedContent,
                   translationLanguage,
                   showOriginal: true,
-                  delivered: msg.delivered ?? msg.delivered_status, // Явно сохраняем delivered
-                  read: msg.read ?? msg.read_status, // Явно сохраняем read
+                  delivered: msg.delivered ?? msg.delivered_status, // Сохраняем delivered
+                  read: msg.read ?? msg.read_status, // Сохраняем read
                 }
               : msg
           )
         );
 
-        await saveTranslation(message.id, translatedContent, translationLanguage);
+        await saveTranslation(message.id, translatedContent, translationLanguage); // Восстанавливаем исходный вызов
         toast.success('Message translated successfully');
       } catch (error) {
         console.error('Translation error:', error);
@@ -104,7 +104,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
   const translateMessageFunc = useCallback(
     async (message) => {
       try {
-        console.log('Translating message:', message); // Отладка: проверяем структуру сообщения
+        console.log('Translating message:', message); // Отладка
         const translatedContent = await translateMessage(message.content, translationLanguage);
         const translationKey = `translation_${chatId}_${message.id}`;
         const translationData = {
@@ -117,18 +117,18 @@ const usePrivateChatTranslationAndSpellCheck = ({
           prevMessages.map((msg) =>
             msg.id === message.id
               ? {
-                  ...msg, // Копируем все поля
+                  ...msg,
                   translatedContent,
                   translationLanguage,
                   showOriginal: true,
-                  delivered: msg.delivered ?? msg.delivered_status, // Явно сохраняем
-                  read: msg.read ?? msg.read_status, // Явно сохраняем
+                  delivered: msg.delivered ?? msg.delivered_status, // Сохраняем delivered
+                  read: msg.read ?? msg.read_status, // Сохраняем read
                 }
               : msg
           )
         );
 
-        await saveTranslation(message.id, translatedContent, translationLanguage);
+        await saveTranslation(message.id, translatedContent, translationLanguage); // Восстанавливаем исходный вызов
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
       } catch (error) {
