@@ -47,6 +47,14 @@ const usePrivateChatTranslationAndSpellCheck = ({
       }
       try {
         setIsTranslating(true);
+        // Пропускаем сообщения с пустым контентом или аудиосообщения
+        if (!message.content || message.fileUrl?.endsWith('.mp3')) {
+          console.warn('Skipping translation: empty content or audio message', { messageId: message.id });
+          toast.error('Cannot translate empty or audio message');
+          setIsTranslating(false);
+          return;
+        }
+
         const response = await translateMessage(message.content, translationLanguage);
         
         // Проверяем формат ответа
@@ -119,6 +127,14 @@ const usePrivateChatTranslationAndSpellCheck = ({
     async (message) => {
       try {
         console.log('Translating message:', message);
+        // Пропускаем сообщения с пустым контентом или аудиосообщения
+        if (!message.content || message.fileUrl?.endsWith('.mp3')) {
+          console.warn('Skipping translation: empty content or audio message', { messageId: message.id });
+          setTranslationQueue((prevQueue) => prevQueue.slice(1));
+          setIsTranslating(false);
+          return;
+        }
+
         const response = await translateMessage(message.content, translationLanguage);
         
         // Проверяем формат ответа
