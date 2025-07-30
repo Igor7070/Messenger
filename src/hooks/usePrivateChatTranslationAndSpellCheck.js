@@ -122,6 +122,24 @@ const usePrivateChatTranslationAndSpellCheck = ({
   // Перевод одного сообщения
   const translateMessageFunc = useCallback(
     async (message) => {
+      // Проверяем, уже переведено ли сообщение
+      if (
+        message.translatedContent &&
+        message.translationLanguage === translationLanguage &&
+        message.content !== 'Message deleted' &&
+        message.messageType !== 'audio'
+      ) {
+        console.log('Skipping translation, message already translated:', {
+          id: message.id,
+          content: message.content,
+          translatedContent: message.translatedContent,
+          translationLanguage: message.translationLanguage,
+        });
+        setTranslationQueue((prevQueue) => prevQueue.slice(1));
+        setIsTranslating(false);
+        return;
+      }
+
       try {
         console.log('Translating message:', message); // Отладка: проверяем структуру сообщения
         const translatedContent = await translateMessage(message.content, translationLanguage);
