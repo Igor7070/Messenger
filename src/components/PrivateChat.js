@@ -286,6 +286,7 @@ const PrivateChat = () => {
       const needsTranslation = messages.some(
         (msg) =>
           msg.messageType !== 'audio' &&
+          msg.content !== 'Message deleted' &&
           (!msg.translatedContent || msg.translationLanguage !== translationLanguage)
       );
       if (needsTranslation) {
@@ -298,7 +299,7 @@ const PrivateChat = () => {
       console.log('Translation disabled, clearing translations');
       clearTranslations();
     }
-  }, [isTranslationEnabled, translationLanguage, translationMode, messages, translateExistingMessages, clearTranslations]);
+  }, [isTranslationEnabled, translationLanguage, translationMode, translateExistingMessages, clearTranslations]);
 
   // Добавлено: обработка очереди переводов
   useEffect(() => {
