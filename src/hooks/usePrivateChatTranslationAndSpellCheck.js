@@ -47,29 +47,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
       }
       try {
         setIsTranslating(true);
-        // Пропускаем сообщения с пустым контентом или аудиосообщения
-        if (!message.content || message.fileUrl?.endsWith('.mp3')) {
-          console.warn('Skipping translation: empty content or audio message', { messageId: message.id });
-          toast.error('Cannot translate empty or audio message');
-          setIsTranslating(false);
-          return;
-        }
-
-        const response = await translateMessage(message.content, translationLanguage);
-        
-        // Проверяем формат ответа
-        let translatedContent;
-        if (typeof response === 'string') {
-          try {
-            translatedContent = JSON.parse(response).translated || response;
-          } catch (e) {
-            console.warn('Response is not valid JSON, using as plain text:', response);
-            translatedContent = response; // Используем строку как есть
-          }
-        } else {
-          translatedContent = response.translated || response;
-        }
-
+        const translatedContent = await translateMessage(message.content, translationLanguage);
         const translationKey = `translation_${chatId}_${message.id}`;
         const translationData = {
           translatedContent,
@@ -95,7 +73,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
         await saveTranslation(message.id, translatedContent, translationLanguage);
         toast.success('Message translated successfully');
       } catch (error) {
-        console.error('Translation error:', error, { messageId: message.id });
+        console.error('Translation error:', error);
         toast.error('Failed to translate message');
       } finally {
         setIsTranslating(false);
@@ -126,58 +104,38 @@ const usePrivateChatTranslationAndSpellCheck = ({
   const translateMessageFunc = useCallback(
     async (message) => {
       try {
-        console.log('Translating message:', message);
-        // Пропускаем сообщения с пустым контентом или аудиосообщения
-        if (!message.content || message.fileUrl?.endsWith('.mp3')) {
-          console.warn('Skipping translation: empty content or audio message', { messageId: message.id });
-          setTranslationQueue((prevQueue) => prevQueue.slice(1));
-          setIsTranslating(false);
-          return;
-        }
-
-        const response = await translateMessage(message.content, translationLanguage);
-        
-        // Проверяем формат ответа
-        let translatedContent;
-        if (typeof response === 'string') {
-          try {
-            translatedContent = JSON.parse(response).translated || response;
-          } catch (e) {
-            console.warn('Response is not valid JSON, using as plain text:', response);
-            translatedContent = response; // Используем строку как есть
-          }
-        } else {
-          translatedContent = response.translated || response;
-        }
-
+        console.log('Translating message:', message); // Отладка: проверяем структуру сообщения
+        const translatedContent = await translateMessage(message.content, translationLanguage);
         const updatedMessage = {
-          ...message,
+          ...message, // Копируем все поля
           translatedContent,
           translationLanguage,
           showOriginal: true,
-          delivered: message.delivered ?? message.delivered_status,
-          read: message.read ?? message.read_status,
+          delivered: message.delivered ?? message.delivered_status, // Явно сохраняем
+          read: message.read ?? message.read_status, // Явно сохраняем
         };
 
-        console.log('Updated message after translation:', updatedMessage);
+        console.log('Updated message after translation:', updatedMessage); // Отладка
 
+        // Сохранение перевода локально
         localStorage.setItem(
           `translation_${chatId}_${message.id}`,
           JSON.stringify({ translatedContent, translationLanguage })
         );
 
+        // Сохранение перевода на сервере
         await saveTranslation(message.id, translatedContent, translationLanguage);
 
         setMessages((prevMessages) =>
           prevMessages.map((msg) =>
             msg.id === message.id
               ? {
-                  ...msg,
+                  ...msg, // Используем msg вместо message для сохранения актуальных статусов
                   translatedContent,
                   translationLanguage,
                   showOriginal: true,
-                  delivered: msg.delivered ?? msg.delivered_status,
-                  read: msg.read ?? msg.read_status,
+                  delivered: msg.delivered ?? msg.delivered_status, // Используем msg
+                  read: msg.read ?? msg.read_status, // Используем msg
                 }
               : msg
           )
@@ -186,7 +144,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
       } catch (error) {
-        console.error('Translation error:', error, { messageId: message.id });
+        console.error('Translation error:', error);
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
       }
