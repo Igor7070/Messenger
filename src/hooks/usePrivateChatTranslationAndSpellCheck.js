@@ -48,29 +48,25 @@ const usePrivateChatTranslationAndSpellCheck = ({
       try {
         setIsTranslating(true);
         const translatedContent = await translateMessage(message.content, translationLanguage);
-        const translationKey = `translation_${chatId}_${message.id}`;
-        const translationData = {
+        const updatedMessage = {
+          ...message,
           translatedContent,
           translationLanguage,
+          showOriginal: true,
+          delivered: message.delivered ?? message.delivered_status,
+          read: message.read ?? message.read_status,
         };
-        localStorage.setItem(translationKey, JSON.stringify(translationData));
 
-        setMessages((prevMessages) =>
-          prevMessages.map((msg) =>
-            msg.id === message.id
-              ? {
-                  ...msg,
-                  translatedContent,
-                  translationLanguage,
-                  showOriginal: true,
-                  delivered: msg.delivered ?? msg.delivered_status, // Сохраняем delivered
-                  read: msg.read ?? msg.read_status, // Сохраняем read
-                }
-              : msg
-          )
+        localStorage.setItem(
+          `translation_${chatId}_${message.id}`,
+          JSON.stringify({ translatedContent, translationLanguage })
         );
 
-        await saveTranslation(message.id, translatedContent, translationLanguage); // Восстанавливаем исходный вызов
+        await saveTranslation(message.id, translatedContent, translationLanguage);
+
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) => (msg.id === message.id ? updatedMessage : msg))
+        );
         toast.success('Message translated successfully');
       } catch (error) {
         console.error('Translation error:', error);
