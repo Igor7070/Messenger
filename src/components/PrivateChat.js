@@ -382,32 +382,36 @@ const PrivateChat = () => {
     console.log('Updating message:', newMessage); // Отладка
     setMessages((prevMessages) => {
       if (newMessage.content === 'Message deleted') {
+        console.log('Deleting message:', { id: newMessage.id, content: newMessage.content }); // Логирование удаления
         return prevMessages.filter((msg) => msg.id !== newMessage.id);
       }
 
+      const isAudio = newMessage.messageType === 'audio';
       const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
       if (existingMessageIndex !== -1) {
         const existingMessage = prevMessages[existingMessageIndex];
         const updatedMessages = [...prevMessages];
         updatedMessages[existingMessageIndex] = {
-          ...existingMessage, // Сохраняем текущие свойства, включая translatedContent, translationLanguage, showOriginal
-          ...newMessage, // Обновляем новые данные из newMessage
-          delivered: newMessage.delivered_status ?? existingMessage.delivered, // Сохраняем существующий delivered, если новый не пришел
-          read: newMessage.read_status ?? existingMessage.read, // Сохраняем существующий read, если новый не пришел
-          messageType: newMessage.messageType ?? existingMessage.messageType, // Сохраняем существующий messageType, если новый не пришел
-          translatedContent: existingMessage.translatedContent, // Сохраняем перевод
-          translationLanguage: existingMessage.translationLanguage, // Сохраняем язык перевода
-          showOriginal: existingMessage.showOriginal, // Сохраняем флаг отображения оригинала
+          ...existingMessage, // Сохраняем текущие свойства
+          ...newMessage, // Обновляем новые данные
+          delivered: newMessage.delivered_status ?? existingMessage.delivered,
+          read: newMessage.read_status ?? existingMessage.read,
+          messageType: newMessage.messageType ?? existingMessage.messageType,
+          translatedContent: isAudio ? null : existingMessage.translatedContent, // Очистка для аудио
+          translationLanguage: isAudio ? null : existingMessage.translationLanguage, // Очистка для аудио
+          showOriginal: existingMessage.showOriginal,
         };
         console.log('Updated existing message:', updatedMessages[existingMessageIndex]); // Отладка
         if (
           isTranslationEnabled &&
-          translationMode === 'new' &&
+          (translationMode === 'new' || translationMode === 'all') &&
+          !isAudio &&
           isMessageNew(newMessage) &&
           (!updatedMessages[existingMessageIndex].translatedContent ||
             updatedMessages[existingMessageIndex].translationLanguage !== translationLanguage)
         ) {
-          setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+          console.log('Adding updated message to translation queue:', { id: newMessage.id, content: newMessage.content });
+          setTranslationQueue((prevQueue) => [...prevQueue, updatedMessages[existingMessageIndex]]);
         }
         return updatedMessages;
       } else {
@@ -417,8 +421,20 @@ const PrivateChat = () => {
           read: newMessage.read_status,
           showOriginal: true,
           messageType: newMessage.messageType,
+          translatedContent: isAudio ? null : newMessage.translatedContent, // Очистка для аудио
+          translationLanguage: isAudio ? null : newMessage.translationLanguage, // Очистка для аудио
         };
         console.log('New message added:', newMsg); // Отладка
+        if (
+          isTranslationEnabled &&
+          (translationMode === 'new' || translationMode === 'all') &&
+          !isAudio &&
+          isMessageNew(newMsg) &&
+          (!newMsg.translatedContent || newMsg.translationLanguage !== translationLanguage)
+        ) {
+          console.log('Adding new message to translation queue:', { id: newMsg.id, content: newMsg.content });
+          setTranslationQueue((prevQueue) => [...prevQueue, newMsg]);
+        }
         return [...prevMessages, newMsg];
       }
     });

@@ -88,13 +88,14 @@ const usePrivateChatTranslationAndSpellCheck = ({
     const queue = messages
       .filter((msg, index) => {
         const isAudio = msg.messageType === 'audio';
+        const isDeleted = msg.content === 'Message deleted';
         const isTranslated = msg.translatedContent && msg.translationLanguage === translationLanguage;
-        const isValid = !isAudio && isMessageNew(msg) && !isTranslated;
+        const isValid = !isAudio && !isDeleted && isMessageNew(msg) && !isTranslated;
         if (!isValid) {
           console.log(`Message at index ${index} skipped from translation queue:`, {
             id: msg.id,
             content: msg.content,
-            reason: isAudio ? 'Audio message' : isTranslated ? 'Already translated' : 'Not new',
+            reason: isAudio ? 'Audio message' : isDeleted ? 'Deleted message' : isTranslated ? 'Already translated' : 'Not new',
             translatedContent: msg.translatedContent,
             translationLanguage: msg.translationLanguage,
           });
