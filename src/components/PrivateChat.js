@@ -391,31 +391,52 @@ const PrivateChat = () => {
       const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
       if (existingMessageIndex !== -1) {
         const existingMessage = prevMessages[existingMessageIndex];
-        const updatedMessages = [...prevMessages];
-        updatedMessages[existingMessageIndex] = {
-          ...existingMessage, // Сохраняем текущие свойства
-          ...newMessage, // Обновляем новые данные
-          delivered: newMessage.delivered_status ?? existingMessage.delivered,
-          read: newMessage.read_status ?? existingMessage.read,
-          messageType: newMessage.messageType ?? existingMessage.messageType,
-          translatedContent: isAudio ? null : existingMessage.translatedContent, // Очистка для аудио
-          translationLanguage: isAudio ? null : existingMessage.translationLanguage, // Очистка для аудио
-          showOriginal: existingMessage.showOriginal,
-        };
-        console.log('Updated existing message:', updatedMessages[existingMessageIndex]); // Отладка
-        if (
+        // Проверяем, нужно ли переводить
+        const needsTranslation =
           isTranslationEnabled &&
           (translationMode === 'new' || translationMode === 'all') &&
           !isAudio &&
           isMessageNew(newMessage) &&
-          (!updatedMessages[existingMessageIndex].translatedContent ||
-            updatedMessages[existingMessageIndex].translationLanguage !== translationLanguage) &&
-          !translationQueue.some((msg) => msg.id === newMessage.id) // Проверяем, нет ли в очереди
-        ) {
+          (!existingMessage.translatedContent || existingMessage.translationLanguage !== translationLanguage) &&
+          !translationQueue.some((msg) => msg.id === newMessage.id);
+        
+        const updatedMessages = [...prevMessages];
+        updatedMessages[existingMessageIndex] = {
+          ...existingMessage,
+          ...newMessage,
+          delivered: newMessage.delivered_status ?? existingMessage.delivered,
+          read: newMessage.read_status ?? existingMessage.read,
+          messageType: newMessage.messageType ?? existingMessage.messageType,
+          translatedContent: isAudio ? null : existingMessage.translatedContent,
+          translationLanguage: isAudio ? null : existingMessage.translationLanguage,
+          showOriginal: existingMessage.showOriginal,
+        };
+        console.log('Updated existing message:', updatedMessages[existingMessageIndex]); // Отладка
+        if (needsTranslation) {
           console.log('Adding updated message to translation queue:', { id: newMessage.id, content: newMessage.content });
-          setTranslationQueue((prevQueue) => [...prevQueue, updatedMessages[existingMessageIndex]]);
-        } else if (translationQueue.some((msg) => msg.id === newMessage.id)) {
-          console.log('Message already in translation queue:', { id: newMessage.id, content: newMessage.content });
+          setTranslationQueue((prevQueue) => {
+            if (prevQueue.some((msg) => msg.id === newMessage.id)) {
+              console.log('Message already in translation queue:', { id: newMessage.id, content: newMessage.content });
+              return prevQueue;
+            }
+            return [...prevQueue, updatedMessages[existingMessageIndex]];
+          });
+        } else {
+          console.log('No translation needed for updated message:', {
+            id: newMessage.id,
+            content: newMessage.content,
+            reason: !isTranslationEnabled
+              ? 'Translation disabled'
+              : isAudio
+              ? 'Audio message'
+              : !isMessageNew(newMessage)
+              ? 'Not new'
+              : existingMessage.translatedContent && existingMessage.translationLanguage === translationLanguage
+              ? 'Already translated'
+              : translationQueue.some((msg) => msg.id === newMessage.id)
+              ? 'In queue'
+              : 'Unknown',
+          });
         }
         return updatedMessages;
       } else {
@@ -425,22 +446,49 @@ const PrivateChat = () => {
           read: newMessage.read_status,
           showOriginal: true,
           messageType: newMessage.messageType,
-          translatedContent: isAudio ? null : newMessage.translatedContent, // Очистка для аудио
-          translationLanguage: isAudio ? null : newMessage.translationLanguage, // Очистка для аудио
+          translatedContent: isAudio ? null : newMessage.translatedContent,
+          translationLanguage: isAudio ? null : newMessage.translationLanguage,
         };
         console.log('New message added:', newMsg); // Отладка
+        // Проверяем, есть ли сообщение в messages с переводом
+        const alreadyTranslated = prevMessages.some(
+          (msg) =>
+            msg.id === newMsg.id &&
+            msg.translatedContent &&
+            msg.translationLanguage === translationLanguage
+        );
         if (
           isTranslationEnabled &&
           (translationMode === 'new' || translationMode === 'all') &&
           !isAudio &&
           isMessageNew(newMsg) &&
-          (!newMsg.translatedContent || newMsg.translationLanguage !== translationLanguage) &&
-          !translationQueue.some((msg) => msg.id === newMsg.id) // Проверяем, нет ли в очереди
+          !alreadyTranslated &&
+          !translationQueue.some((msg) => msg.id === newMsg.id)
         ) {
           console.log('Adding new message to translation queue:', { id: newMsg.id, content: newMsg.content });
-          setTranslationQueue((prevQueue) => [...prevQueue, newMsg]);
-        } else if (translationQueue.some((msg) => msg.id === newMsg.id)) {
-          console.log('Message already in translation queue:', { id: newMsg.id, content: newMsg.content });
+          setTranslationQueue((prevQueue) => {
+            if (prevQueue.some((msg) => msg.id === newMsg.id)) {
+              console.log('Message already in translation queue:', { id: newMsg.id, content: newMsg.content });
+              return prevQueue;
+            }
+            return [...prevQueue, newMsg];
+          });
+        } else {
+          console.log('No translation needed for new message:', {
+            id: newMsg.id,
+            content: newMsg.content,
+            reason: !isTranslationEnabled
+              ? 'Translation disabled'
+              : isAudio
+              ? 'Audio message'
+              : !isMessageNew(newMsg)
+              ? 'Not new'
+              : alreadyTranslated
+              ? 'Already translated'
+              : translationQueue.some((msg) => msg.id === newMsg.id)
+              ? 'In queue'
+              : 'Unknown',
+          });
         }
         return [...prevMessages, newMsg];
       }
