@@ -48,25 +48,29 @@ const usePrivateChatTranslationAndSpellCheck = ({
       try {
         setIsTranslating(true);
         const translatedContent = await translateMessage(message.content, translationLanguage);
-        const updatedMessage = {
-          ...message,
+        const translationKey = `translation_${chatId}_${message.id}`;
+        const translationData = {
           translatedContent,
           translationLanguage,
-          showOriginal: true,
-          delivered: message.delivered ?? message.delivered_status,
-          read: message.read ?? message.read_status,
         };
+        localStorage.setItem(translationKey, JSON.stringify(translationData));
 
-        localStorage.setItem(
-          `translation_${chatId}_${message.id}`,
-          JSON.stringify({ translatedContent, translationLanguage })
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg.id === message.id
+              ? {
+                  ...msg,
+                  translatedContent,
+                  translationLanguage,
+                  showOriginal: true,
+                  delivered: msg.delivered ?? msg.delivered_status,
+                  read: msg.read ?? msg.read_status,
+                }
+              : msg
+          )
         );
 
         await saveTranslation(message.id, translatedContent, translationLanguage);
-
-        setMessages((prevMessages) =>
-          prevMessages.map((msg) => (msg.id === message.id ? updatedMessage : msg))
-        );
         toast.success('Message translated successfully');
       } catch (error) {
         console.error('Translation error:', error);
@@ -100,36 +104,36 @@ const usePrivateChatTranslationAndSpellCheck = ({
   const translateMessageFunc = useCallback(
     async (message) => {
       try {
-        console.log('Translating message:', message); // Отладка
+        console.log('Translating message:', message); // Отладка: проверяем структуру сообщения
         const translatedContent = await translateMessage(message.content, translationLanguage);
-        const translationKey = `translation_${chatId}_${message.id}`;
-        const translationData = {
+        const updatedMessage = {
+          ...message, // Копируем все поля
           translatedContent,
           translationLanguage,
+          showOriginal: true,
+          delivered: message.delivered ?? message.delivered_status, // Явно сохраняем
+          read: message.read ?? message.read_status, // Явно сохраняем
         };
-        localStorage.setItem(translationKey, JSON.stringify(translationData));
 
-        setMessages((prevMessages) =>
-          prevMessages.map((msg) =>
-            msg.id === message.id
-              ? {
-                  ...msg,
-                  translatedContent,
-                  translationLanguage,
-                  showOriginal: true,
-                  delivered: msg.delivered ?? msg.delivered_status, // Сохраняем delivered
-                  read: msg.read ?? msg.read_status, // Сохраняем read
-                }
-              : msg
-          )
+        console.log('Updated message after translation:', updatedMessage); // Отладка
+
+        // Сохранение перевода локально
+        localStorage.setItem(
+          `translation_${chatId}_${message.id}`,
+          JSON.stringify({ translatedContent, translationLanguage })
         );
 
-        await saveTranslation(message.id, translatedContent, translationLanguage); // Восстанавливаем исходный вызов
+        // Сохранение перевода на сервере
+        await saveTranslation(message.id, translatedContent, translationLanguage);
+
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) => (msg.id === message.id ? updatedMessage : msg))
+        );
+
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
       } catch (error) {
         console.error('Translation error:', error);
-        toast.error('Failed to translate message');
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
       }
