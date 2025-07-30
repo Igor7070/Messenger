@@ -169,7 +169,7 @@
 
 .private-message-content.translate-enabled,
 .private-message-content.tts-enabled {
-  padding-left: 24px; /* ИЗМЕНЕНО: Синхронизированный отступ */
+  padding-left: 28px; /* ИЗМЕНЕНО: Синхронизированный отступ */
 }
 
 .private-file-link {
@@ -184,7 +184,7 @@
 
 .private-file-link.translate-enabled,
 .private-file-link.tts-enabled {
-  padding-left: 24px; /* ИЗМЕНЕНО: Синхронизированный отступ */
+  padding-left: 28px; /* ИЗМЕНЕНО: Синхронизированный отступ */
 }
 
 .private-file-link:hover {
