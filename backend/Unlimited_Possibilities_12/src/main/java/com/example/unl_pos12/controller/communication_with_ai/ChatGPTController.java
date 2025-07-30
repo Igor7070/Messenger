@@ -6,6 +6,8 @@ import com.example.unl_pos12.model.messenger.Message;
 import com.example.unl_pos12.model.messenger.TranslationUpdateRequest;
 import com.example.unl_pos12.repo.MessageRepository;
 import com.example.unl_pos12.service.OpenAIService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -122,5 +124,45 @@ public class ChatGPTController {
                 ", translationLanguage: " + request.getTranslationLanguage() +
                 ", ttsEnabled: " + request.isTtsEnabled());
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/api/tts")
+    @ResponseBody
+    public ResponseEntity<ObjectNode> generateTTS(@RequestBody ObjectNode request) {
+        ObjectMapper mapper = new ObjectMapper(); // Создаём локальный ObjectMapper
+        try {
+            String text = request.get("text").asText();
+            String language = request.has("language") ? request.get("language").asText() : "auto";
+            String sessionId = request.has("sessionId") ? request.get("sessionId").asText() : "";
+            String userId = request.has("userId") ? request.get("userId").asText() : "";
+            String chatId = request.has("chatId") ? request.get("chatId").asText() : "";
+
+            System.out.println("Received TTS request: text=" + text + ", language=" + language +
+                    ", sessionId=" + sessionId + ", userId=" + userId + ", chatId=" + chatId);
+
+            if (text == null || text.trim().isEmpty()) {
+                ObjectNode errorResponse = mapper.createObjectNode();
+                errorResponse.put("error", "Text is required for TTS");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+
+            // Синтезируем аудио
+            byte[] audioBytes = openAIService.synthesizeSpeech(text);
+            String audioBase64 = java.util.Base64.getEncoder().encodeToString(audioBytes);
+
+            // Формируем ответ
+            ObjectNode response = mapper.createObjectNode();
+            response.put("audio", audioBase64);
+            response.put("sessionId", sessionId);
+
+            System.out.println("Generated TTS audio: length=" + audioBytes.length + " bytes");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("Error generating TTS: " + e.getMessage());
+            e.printStackTrace();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("error", "Failed to generate TTS: " + e.getMessage());
+            return ResponseEntity.status(500).body(errorResponse);
+        }
     }
 }

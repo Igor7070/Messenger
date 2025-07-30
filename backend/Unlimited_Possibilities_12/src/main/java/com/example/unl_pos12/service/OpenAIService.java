@@ -199,7 +199,7 @@ public class OpenAIService {
     }
 
     // [ДОБАВЛЕНО] Метод для синтеза речи
-    private byte[] synthesizeSpeech(String text) throws IOException {
+    public byte[] synthesizeSpeech(String text) throws IOException {
         LOGGER.info("Synthesizing speech for text: " + text);
         if (text == null || text.trim().isEmpty()) {
             LOGGER.warning("Invalid input for TTS: text=" + text);
@@ -207,7 +207,7 @@ public class OpenAIService {
         }
 
         ObjectNode ttsRequest = mapper.createObjectNode();
-        ttsRequest.put("model", "gpt-4o-mini-tts"); // Модель, указанная тобой
+        ttsRequest.put("model", "gpt-4o-mini-tts");
         ttsRequest.put("input", text);
         ttsRequest.put("voice", "nova"); // Пример голоса (можно заменить: echo, fable, onyx, nova, shimmer)
 
