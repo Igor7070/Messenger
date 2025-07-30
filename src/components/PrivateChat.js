@@ -60,6 +60,7 @@ const PrivateChat = () => {
   // Состояния для аудиоплеера
   const [audioProgress, setAudioProgress] = useState({}); // { [msgId]: { currentTime: 0, duration: 0, isPlaying: false, isReady: false, error: null } }
   const audioRefs = useRef({}); // Референции для аудиоэлементов
+  const ttsAudioRef = useRef(new Audio()); // Референция для TTS-аудио
 
   // Состояния для динамического размера текстового поля
   const [rows, setRows] = useState(1);
@@ -1145,6 +1146,108 @@ const PrivateChat = () => {
     localStorage.setItem(`tts_enabled_${chatIdParam}`, newTTSEnabled);
   };
 
+  const handleTTSOriginal = async (msg) => {
+    if (!msg.content || msg.messageType === 'audio') {
+      console.warn('No valid content for TTS:', { msgId: msg.id, content: msg.content });
+      return;
+    }
+
+    try {
+      const response = await fetch('https://unlimitedpossibilities12.org/api/tts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: msg.content,
+          language: 'auto', // Используем 'auto' для оригинального текста
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const json = await response.json();
+      if (json.audio) {
+        const audioData = atob(json.audio);
+        const arrayBuffer = new ArrayBuffer(audioData.length);
+        const view = new Uint8Array(arrayBuffer);
+        for (let i = 0; i < audioData.length; i++) {
+          view[i] = audioData.charCodeAt(i);
+        }
+        const blob = new Blob([arrayBuffer], { type: 'audio/mp3' });
+        const url = URL.createObjectURL(blob);
+        ttsAudioRef.current.src = url;
+        ttsAudioRef.current.play().catch((error) => {
+          console.error('Error playing TTS audio:', error);
+          toast.error('Failed to play TTS audio');
+        });
+        ttsAudioRef.current.onended = () => {
+          URL.revokeObjectURL(url);
+          console.log('TTS audio playback ended for original content:', { msgId: msg.id });
+        };
+      } else {
+        console.error('No audio data in TTS response:', json);
+        toast.error('Failed to generate TTS audio');
+      }
+    } catch (error) {
+      console.error('TTS request error for original content:', error);
+      toast.error('Failed to generate TTS audio');
+    }
+  };
+
+  const handleTTSTranslated = async (msg) => {
+    if (!msg.translatedContent || msg.messageType === 'audio') {
+      console.warn('No translated content for TTS:', { msgId: msg.id, translatedContent: msg.translatedContent });
+      return;
+    }
+
+    try {
+      const response = await fetch('https://unlimitedpossibilities12.org/api/tts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: msg.translatedContent,
+          language: msg.translationLanguage || 'auto', // Используем язык перевода сообщения
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const json = await response.json();
+      if (json.audio) {
+        const audioData = atob(json.audio);
+        const arrayBuffer = new ArrayBuffer(audioData.length);
+        const view = new Uint8Array(arrayBuffer);
+        for (let i = 0; i < audioData.length; i++) {
+          view[i] = audioData.charCodeAt(i);
+        }
+        const blob = new Blob([arrayBuffer], { type: 'audio/mp3' });
+        const url = URL.createObjectURL(blob);
+        ttsAudioRef.current.src = url;
+        ttsAudioRef.current.play().catch((error) => {
+          console.error('Error playing TTS audio for translated content:', error);
+          toast.error('Failed to play TTS audio');
+        });
+        ttsAudioRef.current.onended = () => {
+          URL.revokeObjectURL(url);
+          console.log('TTS audio playback ended for translated content:', { msgId: msg.id });
+        };
+      } else {
+        console.error('No audio data in TTS response:', json);
+        toast.error('Failed to generate TTS audio');
+      }
+    } catch (error) {
+      console.error('TTS request error for translated content:', error);
+      toast.error('Failed to generate TTS audio');
+    }
+  };
+
   return (
     <div className="private-chat">
       <div className="private-chat-name">
@@ -1385,7 +1488,7 @@ const PrivateChat = () => {
                         <div className="private-message-tts-container">
                           <button
                             className="private-message-tts-button"
-                            onClick={() => console.log(`TTS requested for message ${msg.id}`)} // Временный обработчик
+                            onClick={() => handleTTSOriginal(msg)}
                             data-tooltip="Listen to message"
                           >
                             🔊
@@ -1396,7 +1499,7 @@ const PrivateChat = () => {
                         <div className="private-message-tts-translated-container">
                           <button
                             className="private-message-tts-translated-button"
-                            onClick={() => console.log(`TTS requested for translated message ${msg.id}`)} // Временный обработчик
+                            onClick={() => handleTTSTranslated(msg)}
                             data-tooltip="Listen to translated message"
                           >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
