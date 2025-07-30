@@ -127,7 +127,18 @@ const usePrivateChatTranslationAndSpellCheck = ({
         await saveTranslation(message.id, translatedContent, translationLanguage);
 
         setMessages((prevMessages) =>
-          prevMessages.map((msg) => (msg.id === message.id ? updatedMessage : msg))
+          prevMessages.map((msg) =>
+            msg.id === message.id
+              ? {
+                  ...msg, // Используем msg вместо message для сохранения актуальных статусов
+                  translatedContent,
+                  translationLanguage,
+                  showOriginal: true,
+                  delivered: msg.delivered ?? msg.delivered_status, // Используем msg
+                  read: msg.read ?? msg.read_status, // Используем msg
+                }
+              : msg
+          )
         );
 
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
