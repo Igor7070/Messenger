@@ -86,10 +86,19 @@ const usePrivateChatTranslationAndSpellCheck = ({
   const translateExistingMessages = useCallback(() => {
     if (!isTranslationEnabled || translationMode !== 'all') return;
     const queue = messages
-      .filter(
-        (msg) =>
+      .filter((msg, index) => {
+        const isValid =
+          msg.messageType !== 'audio' &&
           isMessageNew(msg) &&
-          (!msg.translatedContent || msg.translationLanguage !== translationLanguage)
+          (!msg.translatedContent || msg.translationLanguage !== translationLanguage);
+        if (!isValid) {
+          console.log(`Message at index ${index} skipped from translation queue:`, msg);
+        }
+        return isValid;
+      })
+      .sort((a, b) => a.id - b.id) // Сортировка по id по возрастанию
+      .filter((msg, index, self) => 
+        index === self.findIndex((m) => m.id === msg.id) // Удаляем дубликаты по id
       )
       .map((msg) => ({
         ...msg,
