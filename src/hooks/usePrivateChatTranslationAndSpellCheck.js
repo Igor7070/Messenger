@@ -81,23 +81,19 @@ const usePrivateChatTranslationAndSpellCheck = ({
   // Перевод существующих сообщений
   const translateExistingMessages = useCallback(() => {
     if (!isTranslationEnabled || translationMode !== 'all') return;
-
     const queue = messages
-      .filter((msg, index) => {
-        const isValid = msg.messageType !== 'audio' &&
-          (!msg.translatedContent || msg.translationLanguage !== translationLanguage);
-        if (!isValid) {
-          console.log(`Message at index ${index} skipped from translation queue:`, msg);
-        }
-        return isValid;
-      })
+      .filter(
+        (msg) =>
+          msg.messageType !== 'audio' &&
+          isMessageNew(msg) &&
+          (!msg.translatedContent || msg.translationLanguage !== translationLanguage)
+      )
       .map((msg) => ({
         ...msg, // Сохраняем все текущие свойства
       }));
-
     console.log('Translation queue:', queue);
     setTranslationQueue(queue);
-  }, [isTranslationEnabled, translationMode, messages, translationLanguage, setTranslationQueue]);
+  }, [isTranslationEnabled, translationMode, messages, translationLanguage, isMessageNew, setTranslationQueue]);
 
   // Перевод одного сообщения
   const translateMessageFunc = useCallback(
