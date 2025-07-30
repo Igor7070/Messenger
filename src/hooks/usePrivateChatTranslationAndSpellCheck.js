@@ -122,18 +122,20 @@ const usePrivateChatTranslationAndSpellCheck = ({
   // Перевод одного сообщения
   const translateMessageFunc = useCallback(
     async (message) => {
-      // Проверяем, уже переведено ли сообщение
+      // Проверяем актуальное состояние сообщения из messages
+      const currentMessage = messages.find((msg) => msg.id === message.id);
       if (
-        message.translatedContent &&
-        message.translationLanguage === translationLanguage &&
-        message.content !== 'Message deleted' &&
-        message.messageType !== 'audio'
+        currentMessage &&
+        currentMessage.translatedContent &&
+        currentMessage.translationLanguage === translationLanguage &&
+        currentMessage.content !== 'Message deleted' &&
+        currentMessage.messageType !== 'audio'
       ) {
         console.log('Skipping translation, message already translated:', {
-          id: message.id,
-          content: message.content,
-          translatedContent: message.translatedContent,
-          translationLanguage: message.translationLanguage,
+          id: currentMessage.id,
+          content: currentMessage.content,
+          translatedContent: currentMessage.translatedContent,
+          translationLanguage: currentMessage.translationLanguage,
         });
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
@@ -141,15 +143,15 @@ const usePrivateChatTranslationAndSpellCheck = ({
       }
 
       try {
-        console.log('Translating message:', message); // Отладка: проверяем структуру сообщения
+        console.log('Translating message:', message); // Отладка
         const translatedContent = await translateMessage(message.content, translationLanguage);
         const updatedMessage = {
-          ...message, // Копируем все поля
+          ...message,
           translatedContent,
           translationLanguage,
           showOriginal: true,
-          delivered: message.delivered ?? message.delivered_status, // Явно сохраняем
-          read: message.read ?? message.read_status, // Явно сохраняем
+          delivered: message.delivered ?? message.delivered_status,
+          read: message.read ?? message.read_status,
         };
 
         console.log('Updated message after translation:', updatedMessage); // Отладка
@@ -167,12 +169,12 @@ const usePrivateChatTranslationAndSpellCheck = ({
           prevMessages.map((msg) =>
             msg.id === message.id
               ? {
-                  ...msg, // Используем msg вместо message для сохранения актуальных статусов
+                  ...msg,
                   translatedContent,
                   translationLanguage,
                   showOriginal: true,
-                  delivered: msg.delivered ?? msg.delivered_status, // Используем msg
-                  read: msg.read ?? msg.read_status, // Используем msg
+                  delivered: msg.delivered ?? msg.delivered_status,
+                  read: msg.read ?? msg.read_status,
                 }
               : msg
           )
@@ -181,12 +183,12 @@ const usePrivateChatTranslationAndSpellCheck = ({
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
       } catch (error) {
-        console.error('Translation error:', error);
+        console.error('Translation error for message:', { id: message.id, content: message.content, error: error.message });
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
       }
     },
-    [chatId, translationLanguage, setMessages, setTranslationQueue, setIsTranslating]
+    [chatId, translationLanguage, messages, setMessages, setTranslationQueue, setIsTranslating]
   );
 
   // Обработка следующего сообщения в очереди
