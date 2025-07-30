@@ -282,12 +282,23 @@ const PrivateChat = () => {
 
   // ИЗМЕНЕНО: Обновляем запуск перевода
   useEffect(() => {
-  if (isTranslationEnabled && translationMode === 'all') {
-    translateExistingMessages();
-  } else if (!isTranslationEnabled) {
-    clearTranslations();
-  }
-}, [isTranslationEnabled, translationLanguage, translationMode, translateExistingMessages, clearTranslations]);
+    if (isTranslationEnabled && translationMode === 'all') {
+      const needsTranslation = messages.some(
+        (msg) =>
+          msg.messageType !== 'audio' &&
+          (!msg.translatedContent || msg.translationLanguage !== translationLanguage)
+      );
+      if (needsTranslation) {
+        console.log('Calling translateExistingMessages due to messages needing translation');
+        translateExistingMessages();
+      } else {
+        console.log('No translation needed: all messages are translated or translation disabled');
+      }
+    } else if (!isTranslationEnabled) {
+      console.log('Translation disabled, clearing translations');
+      clearTranslations();
+    }
+  }, [isTranslationEnabled, translationLanguage, translationMode, messages, translateExistingMessages, clearTranslations]);
 
   // Добавлено: обработка очереди переводов
   useEffect(() => {

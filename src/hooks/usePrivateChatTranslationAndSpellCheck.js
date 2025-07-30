@@ -87,26 +87,35 @@ const usePrivateChatTranslationAndSpellCheck = ({
     if (!isTranslationEnabled || translationMode !== 'all') return;
     const queue = messages
       .filter((msg, index) => {
-        const isValid =
-          msg.messageType !== 'audio' &&
-          isMessageNew(msg) &&
-          (!msg.translatedContent || msg.translationLanguage !== translationLanguage);
+        const isAudio = msg.messageType === 'audio';
+        const isTranslated = msg.translatedContent && msg.translationLanguage === translationLanguage;
+        const isValid = !isAudio && isMessageNew(msg) && !isTranslated;
         if (!isValid) {
-          console.log(`Message at index ${index} skipped from translation queue:`, msg);
+          console.log(`Message at index ${index} skipped from translation queue:`, {
+            id: msg.id,
+            content: msg.content,
+            reason: isAudio ? 'Audio message' : isTranslated ? 'Already translated' : 'Not new',
+            translatedContent: msg.translatedContent,
+            translationLanguage: msg.translationLanguage,
+          });
         }
         return isValid;
       })
-      .sort((a, b) => a.id - b.id) // Сортировка по id по возрастанию
+      .sort((a, b) => a.id - b.id)
       .filter((msg, index, self) => 
-        index === self.findIndex((m) => m.id === msg.id) // Удаляем дубликаты по id
+        index === self.findIndex((m) => m.id === msg.id)
       )
       .map((msg) => ({
         ...msg,
         delivered: msg.delivered ?? msg.delivered_status,
         read: msg.read ?? msg.read_status,
       }));
-    console.log('Translation queue:', queue);
-    setTranslationQueue(queue);
+    if (queue.length > 0) {
+      console.log('Translation queue:', queue.map(m => ({ id: m.id, content: m.content })));
+      setTranslationQueue(queue);
+    } else {
+      console.log('No messages to translate');
+    }
   }, [isTranslationEnabled, translationMode, messages, translationLanguage, isMessageNew, setTranslationQueue]);
 
   // Перевод одного сообщения
