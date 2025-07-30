@@ -47,7 +47,21 @@ const usePrivateChatTranslationAndSpellCheck = ({
       }
       try {
         setIsTranslating(true);
-        const translatedContent = await translateMessage(message.content, translationLanguage);
+        const response = await translateMessage(message.content, translationLanguage);
+        
+        // Проверяем формат ответа
+        let translatedContent;
+        if (typeof response === 'string') {
+          try {
+            translatedContent = JSON.parse(response).translated || response;
+          } catch (e) {
+            console.warn('Response is not valid JSON, using as plain text:', response);
+            translatedContent = response; // Используем строку как есть
+          }
+        } else {
+          translatedContent = response.translated || response;
+        }
+
         const translationKey = `translation_${chatId}_${message.id}`;
         const translationData = {
           translatedContent,
@@ -73,7 +87,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
         await saveTranslation(message.id, translatedContent, translationLanguage);
         toast.success('Message translated successfully');
       } catch (error) {
-        console.error('Translation error:', error);
+        console.error('Translation error:', error, { messageId: message.id });
         toast.error('Failed to translate message');
       } finally {
         setIsTranslating(false);
@@ -104,38 +118,50 @@ const usePrivateChatTranslationAndSpellCheck = ({
   const translateMessageFunc = useCallback(
     async (message) => {
       try {
-        console.log('Translating message:', message); // Отладка: проверяем структуру сообщения
-        const translatedContent = await translateMessage(message.content, translationLanguage);
+        console.log('Translating message:', message);
+        const response = await translateMessage(message.content, translationLanguage);
+        
+        // Проверяем формат ответа
+        let translatedContent;
+        if (typeof response === 'string') {
+          try {
+            translatedContent = JSON.parse(response).translated || response;
+          } catch (e) {
+            console.warn('Response is not valid JSON, using as plain text:', response);
+            translatedContent = response; // Используем строку как есть
+          }
+        } else {
+          translatedContent = response.translated || response;
+        }
+
         const updatedMessage = {
-          ...message, // Копируем все поля
+          ...message,
           translatedContent,
           translationLanguage,
           showOriginal: true,
-          delivered: message.delivered ?? message.delivered_status, // Явно сохраняем
-          read: message.read ?? message.read_status, // Явно сохраняем
+          delivered: message.delivered ?? message.delivered_status,
+          read: message.read ?? message.read_status,
         };
 
-        console.log('Updated message after translation:', updatedMessage); // Отладка
+        console.log('Updated message after translation:', updatedMessage);
 
-        // Сохранение перевода локально
         localStorage.setItem(
           `translation_${chatId}_${message.id}`,
           JSON.stringify({ translatedContent, translationLanguage })
         );
 
-        // Сохранение перевода на сервере
         await saveTranslation(message.id, translatedContent, translationLanguage);
 
         setMessages((prevMessages) =>
           prevMessages.map((msg) =>
             msg.id === message.id
               ? {
-                  ...msg, // Используем msg вместо message для сохранения актуальных статусов
+                  ...msg,
                   translatedContent,
                   translationLanguage,
                   showOriginal: true,
-                  delivered: msg.delivered ?? msg.delivered_status, // Используем msg
-                  read: msg.read ?? msg.read_status, // Используем msg
+                  delivered: msg.delivered ?? msg.delivered_status,
+                  read: msg.read ?? msg.read_status,
                 }
               : msg
           )
@@ -144,7 +170,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
       } catch (error) {
-        console.error('Translation error:', error);
+        console.error('Translation error:', error, { messageId: message.id });
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
       }
