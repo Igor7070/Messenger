@@ -169,7 +169,7 @@
 
 .private-message-content.translate-enabled,
 .private-message-content.tts-enabled {
-  padding-left: 18px; /* ИЗМЕНЕНО: Синхронизированный отступ */
+  padding-left: 24px; /* ИЗМЕНЕНО: Синхронизированный отступ */
 }
 
 .private-file-link {
@@ -184,7 +184,7 @@
 
 .private-file-link.translate-enabled,
 .private-file-link.tts-enabled {
-  padding-left: 18px; /* ИЗМЕНЕНО: Синхронизированный отступ */
+  padding-left: 24px; /* ИЗМЕНЕНО: Синхронизированный отступ */
 }
 
 .private-file-link:hover {
@@ -1460,12 +1460,12 @@
 
     .private-message-content.translate-enabled,
     .private-message-content.tts-enabled {
-        padding-left: 16px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
+        padding-left: 22px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
     }
 
     .private-file-link.translate-enabled,
     .private-file-link.tts-enabled {
-        padding-left: 16px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
+        padding-left: 22px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
     }
 
     .private-message-tts-container {
