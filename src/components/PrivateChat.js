@@ -450,20 +450,19 @@ const PrivateChat = () => {
           translationLanguage: isAudio ? null : newMessage.translationLanguage,
         };
         console.log('New message added:', newMsg); // Отладка
-        // Проверяем, есть ли сообщение в messages с переводом
-        const alreadyTranslated = prevMessages.some(
+        // Проверяем, есть ли сообщение в messages или в очереди с переводом
+        const alreadyTranslatedOrInProgress = prevMessages.some(
           (msg) =>
             msg.id === newMsg.id &&
             msg.translatedContent &&
             msg.translationLanguage === translationLanguage
-        );
+        ) || translationQueue.some((msg) => msg.id === newMsg.id);
         if (
           isTranslationEnabled &&
           (translationMode === 'new' || translationMode === 'all') &&
           !isAudio &&
           isMessageNew(newMsg) &&
-          !alreadyTranslated &&
-          !translationQueue.some((msg) => msg.id === newMsg.id)
+          !alreadyTranslatedOrInProgress
         ) {
           console.log('Adding new message to translation queue:', { id: newMsg.id, content: newMsg.content });
           setTranslationQueue((prevQueue) => {
@@ -483,10 +482,8 @@ const PrivateChat = () => {
               ? 'Audio message'
               : !isMessageNew(newMsg)
               ? 'Not new'
-              : alreadyTranslated
-              ? 'Already translated'
-              : translationQueue.some((msg) => msg.id === newMsg.id)
-              ? 'In queue'
+              : alreadyTranslatedOrInProgress
+              ? 'Already translated or in queue'
               : 'Unknown',
           });
         }
