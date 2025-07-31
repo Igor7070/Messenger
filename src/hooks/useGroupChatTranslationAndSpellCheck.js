@@ -17,6 +17,8 @@ const useGroupChatTranslationAndSpellCheck = ({
   isTranslating,
   setIsTranslating,
   setIsSpellCheckEnabled,
+  isTTSEnabled,
+  setIsTTSEnabled,
 }) => {
   // Проверка, является ли сообщение новым
   const isMessageNew = useCallback(
@@ -176,9 +178,12 @@ const useGroupChatTranslationAndSpellCheck = ({
       setIsTranslationEnabled(settings.isTranslationEnabled);
       setTranslationLanguage(settings.translationLanguage);
       setTranslationMode(settings.translationMode);
+      // *** ДОБАВЛЕНО: Сохранение настройки TTS ***
+      setIsTTSEnabled(settings.isTTSEnabled);
       localStorage.setItem(`translation_enabled_${chatId}`, settings.isTranslationEnabled);
       localStorage.setItem(`translation_language_${chatId}`, settings.translationLanguage);
       localStorage.setItem(`translation_mode_${chatId}`, settings.translationMode);
+      localStorage.setItem(`tts_enabled_${chatId}`, settings.isTTSEnabled);
       if (settings.isTranslationEnabled) {
         localStorage.setItem(`translation_enabled_timestamp_${chatId}`, new Date().toISOString());
       } else {
@@ -190,7 +195,7 @@ const useGroupChatTranslationAndSpellCheck = ({
         clearTranslations();
       }
     },
-    [chatId, setIsTranslationEnabled, setTranslationLanguage, setTranslationMode, translateExistingMessages, clearTranslations]
+    [chatId, setIsTranslationEnabled, setTranslationLanguage, setTranslationMode, setIsTTSEnabled, translateExistingMessages, clearTranslations]
   );
 
   // Переключение орфографии

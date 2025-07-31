@@ -64,7 +64,7 @@ const Messenger = () => {
 
     const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
 
-    // *** ДОБАВЛЕНО: Состояния для аудиозаписи ***
+    // Состояния для аудиозаписи
     const [isRecording, setIsRecording] = useState(false);
     const [audioBlob, setAudioBlob] = useState(null);
     const [micIconState, setMicIconState] = useState('mic'); // 'mic', 'recording', 'sending'
@@ -73,14 +73,18 @@ const Messenger = () => {
     const [audioProgress, setAudioProgress] = useState({}); // { [msgId]: { currentTime: 0, duration: 0, isPlaying: false, isReady: false, error: null } }
     const audioRefs = useRef({}); // Референции для аудиоэлементов
 
-    // ДОБАВЛЕНО: Состояние для FFmpeg
+    // Состояния для TTS
+    const [isTTSEnabled, setIsTTSEnabled] = useState(false);
+    const ttsAudioRef = useRef(null);
+
+    // Состояние для FFmpeg
     const ffmpeg = useRef(new FFmpeg());
     const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
 
-    // ДОБАВЛЕНО: Состояние для отслеживания перетаскивания
+    // Состояние для отслеживания перетаскивания
     const [isDragging, setIsDragging] = useState(null); // msgId, если перетаскивание активно
 
-    // ДОБАВЛЕНО: использование хука
+    // Использование хука
     const {
       isMessageNew,
       translateExistingMessages,
@@ -106,6 +110,8 @@ const Messenger = () => {
       isTranslating,
       setIsTranslating,
       setIsSpellCheckEnabled,
+      isTTSEnabled,
+      setIsTTSEnabled,
     });
 
     // Мемоизация аудиосообщений
@@ -159,6 +165,7 @@ const Messenger = () => {
                 setTranslationLanguage(localStorage.getItem(`translation_language_${chatId}`) || 'auto');
                 setTranslationMode(localStorage.getItem(`translation_mode_${chatId}`) || 'selective');
                 setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatId}`) === 'true');
+                setIsTTSEnabled(localStorage.getItem(`tts_enabled_${chatId}`) === 'true');
             } else {
                 toast.error('User is not authorized');
                 navigate('/');
@@ -995,11 +1002,104 @@ const Messenger = () => {
         setIsDragging(null);
     };
 
+    // *** ДОБАВЛЕНО: Обработчики для TTS ***
+    const handleTTSOriginal = async (message) => {
+        if (!isTTSEnabled) {
+            toast.error('Text-to-speech is not enabled');
+            return;
+        }
+        try {
+            const response = await fetch('https://unlimitedpossibilities12.org/api/tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: message.content, language: 'auto' }),
+            });
+            if (!response.ok) {
+                throw new Error('TTS request failed');
+            }
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            if (ttsAudioRef.current) {
+                ttsAudioRef.current.pause();
+                URL.revokeObjectURL(ttsAudioRef.current.src);
+            }
+            ttsAudioRef.current = new Audio(audioUrl);
+            ttsAudioRef.current.play().catch((e) => {
+                console.error('TTS playback error:', e);
+                toast.error('Failed to play TTS audio');
+            });
+            ttsAudioRef.current.onended = () => {
+                URL.revokeObjectURL(audioUrl);
+                ttsAudioRef.current = null;
+            };
+        } catch (error) {
+            console.error('TTS error:', error);
+            toast.error('Failed to generate TTS audio');
+        }
+    };
+
+    const handleTTSTranslated = async (message) => {
+        if (!isTTSEnabled || !message.translatedContent) {
+            toast.error('No translated content available or TTS is disabled');
+            return;
+        }
+        try {
+            const response = await fetch('https://unlimitedpossibilities12.org/api/tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: message.translatedContent, language: message.translationLanguage || 'auto' }),
+            });
+            if (!response.ok) {
+                throw new Error('TTS request failed');
+            }
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            if (ttsAudioRef.current) {
+                ttsAudioRef.current.pause();
+                URL.revokeObjectURL(ttsAudioRef.current.src);
+            }
+            ttsAudioRef.current = new Audio(audioUrl);
+            ttsAudioRef.current.play().catch((e) => {
+                console.error('TTS playback error:', e);
+                toast.error('Failed to play TTS audio');
+            });
+            ttsAudioRef.current.onended = () => {
+                URL.revokeObjectURL(audioUrl);
+                ttsAudioRef.current = null;
+            };
+        } catch (error) {
+            console.error('TTS error:', error);
+            toast.error('Failed to generate TTS audio');
+        }
+    };
+
     return (
         <div className="messenger">
             <div className="chat-header-group">
                 <div className="chat-name">Group Chat: {chatName}</div>
                 <div className="translation-controls">
+                    <button
+                        className="tts-button"
+                        onClick={() => {
+                            setIsTTSEnabled((prev) => {
+                                const newState = !prev;
+                                localStorage.setItem(`tts_enabled_${chatId}`, newState);
+                                if (!newState) {
+                                    // Остановка текущего воспроизведения TTS при выключении
+                                    if (ttsAudioRef.current) {
+                                        ttsAudioRef.current.pause();
+                                        ttsAudioRef.current = null;
+                                    }
+                                }
+                                return newState;
+                            });
+                        }}
+                        data-tooltip={isTTSEnabled ? 'Text-to-speech is ON' : 'Text-to-speech is OFF'}
+                        style={{ color: isTTSEnabled ? '#42a5f5' : '#B0BEC5' }}
+                    >
+                        🔊
+                    </button>
+                    {isTTSEnabled && <span className="tts-indicator">TTS</span>}
                     <button
                         className="spellcheck-button" // Новая кнопка
                         onClick={handleSpellCheckToggle}
@@ -1131,15 +1231,40 @@ const Messenger = () => {
                                                 </div>
                                             </div>
                                         )}
-                                        {isTranslationEnabled && msg.messageType !== 'audio' && (
-                                            <div className="message-translate-container">
-                                                <button
-                                                    className="message-translate-button"
-                                                    onClick={() => translateSingleMessage(msg)}
-                                                    data-tooltip="Translate message"
-                                                >
-                                                    🌐
-                                                </button>
+                                        {msg.messageType !== 'audio' && (
+                                            <div className="message-actions-container">
+                                                {isTranslationEnabled && (
+                                                    <button
+                                                        className="message-translate-button"
+                                                        onClick={() => translateSingleMessage(msg)}
+                                                        data-tooltip="Translate message"
+                                                    >
+                                                        🌐
+                                                    </button>
+                                                )}
+                                                {isTTSEnabled && (
+                                                    <>
+                                                        <button
+                                                            className="message-tts-button"
+                                                            onClick={() => handleTTSOriginal(msg)}
+                                                            data-tooltip="Listen to message"
+                                                        >
+                                                            🔊
+                                                        </button>
+                                                        {msg.translatedContent && (
+                                                            <button
+                                                                className="message-tts-translated-button"
+                                                                onClick={() => handleTTSTranslated(msg)}
+                                                                data-tooltip="Listen to translated message"
+                                                            >
+                                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#4a148c"/>
+                                                                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#4a148c"/>
+                                                                </svg>
+                                                            </button>
+                                                        )}
+                                                    </>
+                                                )}
                                             </div>
                                         )}
                                         {/* Рендеринг аудио или файла */}
