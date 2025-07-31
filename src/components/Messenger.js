@@ -1257,7 +1257,11 @@ const Messenger = () => {
                                 <div className="message-content-container">
                                     <div className="message-body">
                                         {msg.sender.id !== userId && (
-                                            <span className={`sender-name ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}>
+                                            <span
+                                                className={`sender-name ${
+                                                    (isTranslationEnabled || isTTSEnabled) && msg.messageType !== 'audio' ? 'translate-enabled' : ''
+                                                }`}
+                                            >
                                                 {msg.sender.username}
                                             </span>
                                         )}
@@ -1265,7 +1269,9 @@ const Messenger = () => {
                                         {msg.content && (
                                             <div className="message-content-wrapper">
                                                 <div
-                                                    className={`message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}
+                                                    className={`message-content ${
+                                                        (isTranslationEnabled || isTTSEnabled) && msg.messageType !== 'audio' ? 'translate-enabled' : ''
+                                                    }`}
                                                     onClick={(e) => {
                                                         if (e.target.tagName === 'A') return;
                                                         if (msg.translatedContent) {
@@ -1411,7 +1417,13 @@ const Messenger = () => {
                                                 </div>
                                             </div>
                                         ) : msg.fileUrl ? (
-                                            <a href={msg.fileUrl} download className={`file-link ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''}`}>
+                                            <a
+                                                href={msg.fileUrl}
+                                                download
+                                                className={`file-link ${
+                                                    (isTranslationEnabled || isTTSEnabled) && msg.messageType !== 'audio' ? 'translate-enabled' : ''
+                                                }`}
+                                            >
                                                 📥 Download file
                                             </a>
                                         ) : null}

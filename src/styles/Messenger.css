@@ -218,7 +218,7 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     letter-spacing: 0.1px;
-    padding: 0 0 0 18px; /* ИЗМЕНЕНО: Добавлен отступ слева для учета иконок */
+    padding: 0 0 0 8px; /* ИЗМЕНЕНО: Добавлен отступ слева для учета иконок */
 }
 
 .sender-name.translate-enabled,
@@ -233,7 +233,7 @@
     background: transparent !important;
     word-break: break-word;
     margin: 0;
-    padding: 0 0 0 18px; /* ИЗМЕНЕНО: Добавлен отступ слева для учета иконок */
+    padding: 0 0 0 8px; /* ИЗМЕНЕНО: Добавлен отступ слева для учета иконок */
 }
 
 .message-content.translate-enabled,
@@ -248,7 +248,7 @@
     text-decoration: none;
     font-size: 14px;
     background: transparent !important;
-    padding-left: 18px; /* ИЗМЕНЕНО: Добавлен отступ слева для учета иконок */
+    padding-left: 8px; /* ИЗМЕНЕНО: Добавлен отступ слева для учета иконок */
 }
 
 .file-link.translate-enabled,
@@ -1373,28 +1373,21 @@
         padding: 3px 6px; /* Синхронизировано с PrivateChat для мобильных */
     }
 
-    .message-content {
-        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
-    }
-
-    .file-link {
-        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
-    }
-
     .sender-name {
-        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
+        padding-left: 8px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
     }
 
     .message-content {
-        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
+        padding-left: 8px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
     }
 
     .file-link {
-        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
+        padding-left: 8px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
     }
 
-    .sender-name {
-        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
+    .sender-name.translate-enabled,
+    .sender-name.tts-enabled {
+        padding-left: 22px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
     }
 
     .message-content.translate-enabled,
@@ -1404,11 +1397,6 @@
 
     .file-link.translate-enabled,
     .file-link.tts-enabled {
-        padding-left: 22px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
-    }
-
-    .sender-name.translate-enabled,
-    .sender-name.tts-enabled {
         padding-left: 22px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
     }
 
