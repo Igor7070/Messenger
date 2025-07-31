@@ -178,12 +178,14 @@ const useGroupChatTranslationAndSpellCheck = ({
       setIsTranslationEnabled(settings.isTranslationEnabled);
       setTranslationLanguage(settings.translationLanguage);
       setTranslationMode(settings.translationMode);
-      // *** ДОБАВЛЕНО: Сохранение настройки TTS ***
-      setIsTTSEnabled(settings.isTTSEnabled);
+      // Сохраняем TTS только если оно передано в настройках
+      if (typeof settings.isTTSEnabled !== 'undefined') {
+        setIsTTSEnabled(settings.isTTSEnabled);
+        localStorage.setItem(`tts_enabled_${chatId}`, settings.isTTSEnabled);
+      }
       localStorage.setItem(`translation_enabled_${chatId}`, settings.isTranslationEnabled);
       localStorage.setItem(`translation_language_${chatId}`, settings.translationLanguage);
       localStorage.setItem(`translation_mode_${chatId}`, settings.translationMode);
-      localStorage.setItem(`tts_enabled_${chatId}`, settings.isTTSEnabled);
       if (settings.isTranslationEnabled) {
         localStorage.setItem(`translation_enabled_timestamp_${chatId}`, new Date().toISOString());
       } else {
