@@ -218,12 +218,12 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     letter-spacing: 0.1px;
-    padding: 0; /* Базовый отступ 0 */
+    padding: 0 0 0 18px; /* ИЗМЕНЕНО: Добавлен отступ слева для учета иконок */
 }
 
-/* Отступ при наличии иконки перевода */
-.sender-name.translate-enabled {
-    padding-left: 16px; /* Увеличен для соответствия PrivateChat */
+.sender-name.translate-enabled,
+.sender-name.tts-enabled {
+    padding-left: 28px; /* ИЗМЕНЕНО: Синхронизированный отступ */
 }
 
 .message-content {
@@ -231,14 +231,14 @@
     line-height: 1.4;
     font-family: 'Roboto', sans-serif;
     background: transparent !important;
-    word-break: break-word; /* Изменено для соответствия PrivateChat */
+    word-break: break-word;
     margin: 0;
-    padding: 0; /* Базовый отступ 0 */
+    padding: 0 0 0 18px; /* ИЗМЕНЕНО: Добавлен отступ слева для учета иконок */
 }
 
-/* Отступ при наличии иконки перевода */
-.message-content.translate-enabled {
-    padding-left: 16px; /* Увеличен для соответствия PrivateChat */
+.message-content.translate-enabled,
+.message-content.tts-enabled {
+    padding-left: 28px; /* ИЗМЕНЕНО: Синхронизированный отступ */
 }
 
 .file-link {
@@ -248,12 +248,12 @@
     text-decoration: none;
     font-size: 14px;
     background: transparent !important;
-    padding-left: 0; /* Базовый отступ 0 */
+    padding-left: 18px; /* ИЗМЕНЕНО: Добавлен отступ слева для учета иконок */
 }
 
-/* Отступ при наличии иконки перевода */
-.file-link.translate-enabled {
-    padding-left: 16px; /* Увеличен для соответствия PrivateChat */
+.file-link.translate-enabled,
+.file-link.tts-enabled {
+    padding-left: 28px; /* ИЗМЕНЕНО: Синхронизированный отступ */
 }
 
 .file-link:hover {
@@ -880,52 +880,54 @@
 }
 
 /* *** ДОБАВЛЕНО: Стили для контейнера действий сообщения *** */
+/* ДОБАВЛЕНО: Стили для контейнера действий (перевод и TTS) */
 .message-actions-container {
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: 4px;
+  left: 4px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   z-index: 100;
 }
 
-/* *** ДОБАВЛЕНО: Стили для кнопок TTS *** */
-.message-actions-container .message-tts-button,
-.message-actions-container .message-tts-translated-button {
+/* ИЗМЕНЕНО: Стили для контейнера иконки перевода */
+.message-translate-container {
+  width: 16px; /* Фиксированная ширина для иконки */
+  height: 16px; /* Фиксированная высота для иконки */
+}
+
+/* ИЗМЕНЕНО: Стили для кнопки перевода */
+.message-translate-container .message-translate-button {
   background: none;
   border: none;
-  font-size: 16px;
+  font-size: 12px;
   cursor: pointer;
   padding: 2px;
-  color: #42a5f5; /* Цвет для оригинального TTS */
-  transition: color 0.3s ease, transform 0.2s ease, opacity 0.3s ease;
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #42a5f5;
+  transition: color 0.3s ease, transform 0.2s ease;
   opacity: 0.6;
   line-height: 1;
-  width: 16px;
-  height: 16px;
+  z-index: 101;
+  width: 16px; /* Фиксированная ширина */
+  height: 16px; /* Фиксированная высота */
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.message-actions-container .message-tts-translated-button {
-  color: #4a148c; /* Цвет для переведенного TTS */
-}
-
-.message-actions-container .message-tts-button:hover,
-.message-actions-container .message-tts-translated-button:hover {
-  color: #1976d2; /* Hover для оригинального TTS */
+/* Ховер-эффект */
+.message-translate-container .message-translate-button:hover {
+  color: #1976d2;
   transform: scale(1.1);
   opacity: 1;
 }
 
-.message-actions-container .message-tts-translated-button:hover {
-  color: #6a1b9a; /* Hover для переведенного TTS */
-}
-
-.message-actions-container .message-tts-button[data-tooltip]::after,
-.message-actions-container .message-tts-translated-button[data-tooltip]::after {
+/* Стили для всплывающей подсказки */
+.message-translate-container .message-translate-button[data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
   top: -30px;
@@ -948,14 +950,13 @@
   text-align: center;
 }
 
-.message-actions-container .message-tts-button[data-tooltip]:hover::after,
-.message-actions-container .message-tts-translated-button[data-tooltip]:hover::after {
+.message-translate-container .message-translate-button[data-tooltip]:hover::after {
   opacity: 1;
   visibility: visible;
 }
 
-.message-actions-container .message-tts-button[data-tooltip]::before,
-.message-actions-container .message-tts-translated-button[data-tooltip]::before {
+/* Стрелка для tooltip */
+.message-translate-container .message-translate-button[data-tooltip]::before {
   content: '';
   position: absolute;
   top: -8px;
@@ -969,10 +970,195 @@
   z-index: 1000;
 }
 
-.message-actions-container .message-tts-button[data-tooltip]:hover::before,
-.message-actions-container .message-tts-translated-button[data-tooltip]:hover::before {
+.message-translate-container .message-translate-button[data-tooltip]:hover::before {
   opacity: 1;
   visibility: visible;
+}
+
+/* ДОБАВЛЕНО: Стили для контейнера иконки TTS */
+.message-tts-container {
+  width: 16px; /* Фиксированная ширина для иконки */
+  height: 16px; /* Фиксированная высота для иконки */
+}
+
+/* ДОБАВЛЕНО: Стили для кнопки TTS в сообщениях */
+.message-tts-container .message-tts-button {
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #42a5f5;
+  transition: color 0.3s ease, transform 0.2s ease;
+  opacity: 0.6;
+  line-height: 1;
+  z-index: 101;
+  width: 16px; /* Фиксированная ширина */
+  height: 16px; /* Фиксированная высота */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ДОБАВЛЕНО: Позиционирование TTS под переводом, если перевод включен */
+.message-actions-container:has(.message-translate-container) .message-tts-container .message-tts-button {
+  top: 18px; /* Сдвиг вниз на высоту иконки перевода (16px) + gap (2px) */
+}
+
+.message-tts-container .message-tts-button:hover {
+  color: #1976d2;
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.message-tts-container .message-tts-button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333333;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  min-width: 80px;
+  text-align: center;
+}
+
+.message-tts-container .message-tts-button[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.message-tts-container .message-tts-button[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-bottom-color: #333333;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 1000;
+}
+
+.message-tts-container .message-tts-button[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ДОБАВЛЕНО: Стили для контейнера иконки TTS переведенного текста */
+.message-tts-translated-container {
+  width: 18px;
+  height: 18px;
+}
+
+/* ДОБАВЛЕНО: Стили для кнопки TTS переvedенного текста */
+.message-tts-translated-container .message-tts-translated-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  position: absolute;
+  top: 36px;
+  left: -2px;
+  color: #4a148c;
+  transition: color 0.3s ease, transform 0.2s ease;
+  opacity: 0.8;
+  line-height: 1;
+  z-index: 101;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ДОБАВЛЕНО: Позиционирование TTS переведенного текста под обычным TTS */
+.message-actions-container:has(.message-tts-container) .message-tts-translated-container .message-tts-translated-button {
+  top: 36px; /* Сдвиг вниз: иконка перевода (16px) + иконка TTS (16px) + gap (2px * 2) */
+}
+
+.message-tts-translated-container .message-tts-translated-button:hover {
+  color: #2e0a54;
+  transform: scale(1.2);
+  opacity: 1;
+}
+
+.message-tts-translated-container .message-tts-translated-button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333333;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  min-width: 80px;
+  text-align: center;
+}
+
+.message-tts-translated-container .message-tts-translated-button[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.message-tts-translated-container .message-tts-translated-button[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-bottom-color: #333333;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 1000;
+}
+
+.message-tts-translated-container .message-tts-translated-button[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.message-tts-translated-container .message-tts-translated-button svg {
+  width: 18px;
+  height: 18px;
+  fill: #4a148c;
+}
+
+.message-tts-translated-container .message-tts-translated-button:hover svg {
+  fill: #2e0a54;
+}
+
+/* ДОБАВЛЕНО: Минимальная высота для контейнера сообщения при наличии TTS перевода */
+.message-content-container:has(.message-tts-translated-container) {
+  min-height: 65px; /* Высота для трех иконок: 16px * 3 + gap 2px * 2 + padding 4px * 2 = 60px */
 }
 
 @media (max-width: 800px) {
@@ -1158,14 +1344,6 @@
         margin-left: 30px !important; /* Синхронизировано с PrivateChat */
     }
 
-    .message-content.translate-enabled {
-        padding-left: 14px; /* Увеличен для соответствия PrivateChat */
-    }
-
-    .file-link.translate-enabled {
-        padding-left: 14px; /* Увеличен для соответствия PrivateChat */
-    }
-
     .message-translate-container {
         top: 0; /* Прижато к верхнему краю */
         left: 0; /* Прижато к левому краю */
@@ -1195,36 +1373,150 @@
         padding: 3px 6px; /* Синхронизировано с PrivateChat для мобильных */
     }
 
-    .sender-name.translate-enabled {
-        padding-left: 14px; /* Увеличен для соответствия PrivateChat */
+    .message-content {
+        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
     }
 
-    /* *** ДОБАВЛЕНО: Адаптивные стили для иконок TTS *** */
-    .message-actions-container .message-tts-button,
-    .message-actions-container .message-tts-translated-button {
-        font-size: 14px;
-        width: 14px;
-        height: 14px;
+    .file-link {
+        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
+    }
+
+    .sender-name {
+        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
+    }
+
+    .message-content {
+        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
+    }
+
+    .file-link {
+        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
+    }
+
+    .sender-name {
+        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
+    }
+
+    .message-content.translate-enabled,
+    .message-content.tts-enabled {
+        padding-left: 22px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
+    }
+
+    .file-link.translate-enabled,
+    .file-link.tts-enabled {
+        padding-left: 22px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
+    }
+
+    .sender-name.translate-enabled,
+    .sender-name.tts-enabled {
+        padding-left: 22px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
+    }
+
+    .message-translate-container {
+        width: 14px; /* ИЗМЕНЕНО: Уменьшенная ширина для мобильных */
+        height: 14px; /* ИЗМЕНЕНО: Уменьшенная высота для мобильных */
+    }
+
+    .message-translate-container .message-translate-button {
+        font-size: 10px;
         padding: 1px;
+        top: 0;
+        left: 0;
+        width: 14px; /* ИЗМЕНЕНО: Уменьшенная ширина */
+        height: 14px; /* ИЗМЕНЕНО: Уменьшенная высота */
     }
 
-    .message-actions-container .message-tts-button[data-tooltip]::after,
-    .message-actions-container .message-tts-translated-button[data-tooltip]::after {
+    .message-translate-container .message-translate-button[data-tooltip]::after {
         font-size: 9px;
         padding: 2px 5px;
         top: -28px;
         min-width: 70px;
     }
 
-    .message-actions-container .message-tts-button[data-tooltip]::before,
-    .message-actions-container .message-tts-translated-button[data-tooltip]::before {
-        top: -6px;
+    .message-translate-container .message-translate-button[data-tooltip]::before {
         border: 2px solid transparent;
         border-bottom-color: #333333;
+        top: -6px;
     }
 
-    /* *** ДОБАВЛЕНО: Адаптивная минимальная высота *** */
-    .message-content-container {
-        min-height: 40px; /* 20px (текст) + 2 * 10px (padding) */
+    .message-tts-container {
+        width: 14px; /* ИЗМЕНЕНО: Уменьшенная ширина для мобильных */
+        height: 14px; /* ИЗМЕНЕНО: Уменьшенная высота для мобильных */
+    }
+
+    .message-tts-container .message-tts-button {
+        font-size: 10px;
+        padding: 1px;
+        top: 0;
+        left: 0;
+        width: 14px; /* ИЗМЕНЕНО: Уменьшенная ширина */
+        height: 14px; /* ИЗМЕНЕНО: Уменьшенная высота */
+    }
+
+    .message-tts-container .message-tts-button[data-tooltip]::after {
+        font-size: 9px;
+        padding: 2px 5px;
+        top: -28px;
+        min-width: 70px;
+    }
+
+    .message-tts-container .message-tts-button[data-tooltip]::before {
+        border: 2px solid transparent;
+        border-bottom-color: #333333;
+        top: -6px;
+    }
+
+    .message-actions-container:has(.message-translate-container) .message-tts-container .message-tts-button {
+        top: 16px; /* ИЗМЕНЕНО: Сдвиг вниз на высоту иконки перевода (14px) + gap (2px) */
+    }
+
+    .message-tts-translated-container {
+        width: 14px;
+        height: 14px;
+    }
+
+    .message-tts-translated-container .message-tts-translated-button {
+        padding: 3px;
+        top: -3px;
+        left: -2px;
+        width: 20px;
+        height: 20px;
+        color: #4a148c;
+        opacity: 0.8;
+    }
+
+    .message-tts-translated-container .message-tts-translated-button:hover {
+        color: #2e0a54;
+    }
+
+    .message-actions-container:has(.message-tts-container) .message-tts-translated-container .message-tts-translated-button {
+        top: 32px; /* Сдвиг вниз: иконка перевода (14px) + иконка TTS (14px) + gap (2px * 2) */
+    }
+
+    .message-tts-translated-container .message-tts-translated-button[data-tooltip]::after {
+        font-size: 9px;
+        padding: 2px 5px;
+        top: -28px;
+        min-width: 70px;
+    }
+
+    .message-tts-translated-container .message-tts-translated-button[data-tooltip]::before {
+        border: 2px solid transparent;
+        border-bottom-color: #333333;
+        top: -6px;
+    }
+
+    .message-content-container:has(.message-tts-translated-container) {
+        min-height: 52px; /* Высота для трех иконок: 14px * 3 + gap 2px * 2 + padding 3px * 2 = 52px */
+    }
+
+    .message-tts-translated-container .message-tts-translated-button svg {
+        width: 16px;
+        height: 16px;
+        fill: #4a148c;
+    }
+
+    .message-tts-translated-container .message-tts-translated-button:hover svg {
+        fill: #2e0a54;
     }
 }

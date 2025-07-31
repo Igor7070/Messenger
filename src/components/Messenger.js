@@ -1231,19 +1231,21 @@ const Messenger = () => {
                                                 </div>
                                             </div>
                                         )}
-                                        {msg.messageType !== 'audio' && (
+                                        {msg.messageType !== 'audio' && (isTranslationEnabled || isTTSEnabled) && (
                                             <div className="message-actions-container">
                                                 {isTranslationEnabled && (
-                                                    <button
-                                                        className="message-translate-button"
-                                                        onClick={() => translateSingleMessage(msg)}
-                                                        data-tooltip="Translate message"
-                                                    >
-                                                        🌐
-                                                    </button>
+                                                    <div className="message-translate-container">
+                                                        <button
+                                                            className="message-translate-button"
+                                                            onClick={() => translateSingleMessage(msg)}
+                                                            data-tooltip="Translate message"
+                                                        >
+                                                            🌐
+                                                        </button>
+                                                    </div>
                                                 )}
                                                 {isTTSEnabled && (
-                                                    <>
+                                                    <div className="message-tts-container">
                                                         <button
                                                             className="message-tts-button"
                                                             onClick={() => handleTTSOriginal(msg)}
@@ -1251,19 +1253,20 @@ const Messenger = () => {
                                                         >
                                                             🔊
                                                         </button>
-                                                        {msg.translatedContent && (
-                                                            <button
-                                                                className="message-tts-translated-button"
-                                                                onClick={() => handleTTSTranslated(msg)}
-                                                                data-tooltip="Listen to translated message"
-                                                            >
-                                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#4a148c"/>
-                                                                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#4a148c"/>
-                                                                </svg>
-                                                            </button>
-                                                        )}
-                                                    </>
+                                                    </div>
+                                                )}
+                                                {isTTSEnabled && isTranslationEnabled && (
+                                                    <div className="message-tts-translated-container">
+                                                        <button
+                                                            className="message-tts-translated-button"
+                                                            onClick={() => handleTTSTranslated(msg)}
+                                                            data-tooltip="Listen to translated message"
+                                                        >
+                                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
+                                                            </svg>
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
                                         )}
