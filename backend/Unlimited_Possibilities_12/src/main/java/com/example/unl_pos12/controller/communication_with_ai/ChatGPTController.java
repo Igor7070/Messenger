@@ -172,7 +172,7 @@ public class ChatGPTController {
     }
 
     // **ДОБАВЛЕНО**: Эндпоинт для транскрипции аудиофайла и сохранения результата
-    @PostMapping("/transcribe/{messageId}")
+    @PostMapping("/api/transcribe/{messageId}")
     public ResponseEntity<String> transcribeAudio(@PathVariable Long messageId, @RequestBody Map<String, String> request) {
         String fileUrl = request.get("fileUrl");
         if (fileUrl == null || fileUrl.isEmpty()) {
