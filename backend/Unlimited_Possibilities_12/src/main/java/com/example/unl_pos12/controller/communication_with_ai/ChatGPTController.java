@@ -174,6 +174,7 @@ public class ChatGPTController {
     // **ДОБАВЛЕНО**: Эндпоинт для транскрипции аудиофайла и сохранения результата
     @PostMapping("/api/transcribe/{messageId}")
     public ResponseEntity<String> transcribeAudio(@PathVariable Long messageId, @RequestBody Map<String, String> request) {
+        System.out.println("Method transcribeAudio is working...");
         String fileUrl = request.get("fileUrl");
         if (fileUrl == null || fileUrl.isEmpty()) {
             return ResponseEntity.badRequest().body("File URL is required");
@@ -193,6 +194,7 @@ public class ChatGPTController {
             // Конвертируем в WAV, если нужно
             byte[] wavBytes = openAIService.convertToWav(audioBytes);
             String transcription = openAIService.transcribeAudio(wavBytes);
+            System.out.println("transcription: " + transcription);
             if (!openAIService.isValidTranscription(transcription)) {
                 return ResponseEntity.ok(""); // Возвращаем пустую строку для невалидных транскрипций
             }
