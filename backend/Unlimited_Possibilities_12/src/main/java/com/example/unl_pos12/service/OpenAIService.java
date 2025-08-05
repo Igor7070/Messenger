@@ -101,7 +101,7 @@ public class OpenAIService {
     }
 
     // [ДОБАВЛЕНО] Метод для фильтрации транскрипции
-    private boolean isValidTranscription(String transcription) {
+    public boolean isValidTranscription(String transcription) {
         if (transcription == null || transcription.trim().isEmpty()) {
             LOGGER.info("Filtered out null or empty transcription: " + transcription);
             return false; // Пустой текст
@@ -114,7 +114,7 @@ public class OpenAIService {
         return true; // Транскрипция считается разговорной речью
     }
 
-    private byte[] convertToWav(byte[] rawAudio) throws IOException {
+    public byte[] convertToWav(byte[] rawAudio) throws IOException {
         AudioFormat format = new AudioFormat(16000, 16, 1, true, false);
         ByteArrayInputStream bais = new ByteArrayInputStream(rawAudio);
         AudioInputStream ais = new AudioInputStream(bais, format, rawAudio.length / format.getFrameSize());
@@ -130,7 +130,7 @@ public class OpenAIService {
         return baos.toByteArray();
     }
 
-    private String transcribeAudio(byte[] wavAudio) throws IOException {
+    public String transcribeAudio(byte[] wavAudio) throws IOException {
         RequestBody body = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", "audio.wav",

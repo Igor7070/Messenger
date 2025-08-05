@@ -34,8 +34,10 @@ public class Message {
     private Boolean delivered_status; // Статус доставки
     private Boolean read_status;      // Статус прочтения
     @Column(name = "message_type")
-    private String messageType; // Новое поле: "text", "file", "audio"
-    private String contentType; // Новое поле для хранения contentType
+    private String messageType; // Поле: "text", "file", "audio"
+    private String contentType; // Поле для хранения contentType
+    @Column(name = "transcribed_content")
+    private String transcribedContent; // Поле для транскрипции
 
     public Long getId() {
         return id;
@@ -139,5 +141,13 @@ public class Message {
 
     public void setContentType(String contentType) {
         this.contentType = contentType;
+    }
+
+    public String getTranscribedContent() {
+        return transcribedContent;
+    }
+
+    public void setTranscribedContent(String transcribedContent) {
+        this.transcribedContent = transcribedContent;
     }
 }
