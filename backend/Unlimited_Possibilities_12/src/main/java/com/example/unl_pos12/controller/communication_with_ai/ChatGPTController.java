@@ -174,37 +174,48 @@ public class ChatGPTController {
     // **ДОБАВЛЕНО**: Эндпоинт для транскрипции аудиофайла и сохранения результата
     @PostMapping("/api/transcribe/{messageId}")
     public ResponseEntity<String> transcribeAudio(@PathVariable Long messageId, @RequestBody Map<String, String> request) {
-        System.out.println("Method transcribeAudio is working...");
+        System.out.println("Method transcribeAudio is working... messageId=" + messageId);
         String fileUrl = request.get("fileUrl");
+        System.out.println("Received fileUrl: " + fileUrl);
         if (fileUrl == null || fileUrl.isEmpty()) {
+            System.out.println("Error: fileUrl is null or empty");
             return ResponseEntity.badRequest().body("File URL is required");
         }
         Optional<Message> optionalMessage = messageRepository.findById(messageId);
         if (!optionalMessage.isPresent()) {
+            System.out.println("Error: Message not found for messageId=" + messageId);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Message not found");
         }
         try {
             // Загружаем файл из fileUrl
-            File audioFile = new File("Uploads/" + fileUrl.substring(fileUrl.lastIndexOf("/") + 1));
+            String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+            File audioFile = new File("Uploads/" + fileName);
+            System.out.println("Constructed file path: " + audioFile.getAbsolutePath());
             if (!audioFile.exists()) {
+                System.out.println("Error: Audio file not found at " + audioFile.getAbsolutePath());
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Audio file not found");
             }
             // Читаем файл в массив байтов
             byte[] audioBytes = Files.readAllBytes(audioFile.toPath());
+            System.out.println("Audio file read: " + audioBytes.length + " bytes");
             // Конвертируем в WAV, если нужно
             byte[] wavBytes = openAIService.convertToWav(audioBytes);
+            System.out.println("Converted to WAV: " + wavBytes.length + " bytes");
             String transcription = openAIService.transcribeAudio(wavBytes);
-            System.out.println("transcription: " + transcription);
+            System.out.println("Transcription result: " + transcription);
             if (!openAIService.isValidTranscription(transcription)) {
+                System.out.println("Transcription is invalid or empty");
                 return ResponseEntity.ok(""); // Возвращаем пустую строку для невалидных транскрипций
             }
             // Сохраняем транскрипцию в базе
             Message message = optionalMessage.get();
             message.setTranscribedContent(transcription);
             messageRepository.save(message);
+            System.out.println("Transcription saved for messageId=" + messageId);
             return ResponseEntity.ok(transcription);
         } catch (Exception e) {
-            System.out.println(String.format("Error transcribing audio for messageId={}: {}", messageId, e.getMessage()));
+            System.out.println(String.format("Error transcribing audio for messageId=%d: %s", messageId, e.getMessage()));
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error transcribing audio: " + e.getMessage());
         }
     }
