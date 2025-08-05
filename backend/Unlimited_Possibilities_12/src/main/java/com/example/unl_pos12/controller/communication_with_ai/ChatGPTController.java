@@ -189,7 +189,7 @@ public class ChatGPTController {
         try {
             // Загружаем файл из fileUrl
             String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-            File audioFile = new File("Uploads/" + fileName);
+            File audioFile = new File("uploads/" + fileName);
             System.out.println("Constructed file path: " + audioFile.getAbsolutePath());
             if (!audioFile.exists()) {
                 System.out.println("Error: Audio file not found at " + audioFile.getAbsolutePath());
