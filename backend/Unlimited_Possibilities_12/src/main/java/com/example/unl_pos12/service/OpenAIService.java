@@ -156,6 +156,36 @@ public class OpenAIService {
         }
     }
 
+    public String transcribeChatAudio(byte[] audioBytes) throws IOException {
+        LOGGER.info("Transcribing chat audio, input length: " + audioBytes.length + " bytes");
+        RequestBody body = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("file", "audio.mp3", // Отправляем как MP3
+                        RequestBody.create(audioBytes, MediaType.parse("audio/mpeg")))
+                .addFormDataPart("model", "whisper-1")
+                .addFormDataPart("language", "ru") // Указываем русский язык
+                .build();
+
+        Request request = new Request.Builder()
+                .url("https://api.openai.com/v1/audio/transcriptions")
+                .header("Authorization", "Bearer " + apiKey)
+                .post(body)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                String errorBody = response.body() != null ? response.body().string() : "No response body";
+                LOGGER.severe("Whisper API error: " + response.code() + ", " + errorBody);
+                throw new IOException("Whisper API error: " + response.code() + ", " + errorBody);
+            }
+            String responseBody = response.body().string();
+            ObjectNode json = (ObjectNode) mapper.readTree(responseBody);
+            String transcription = json.get("text").asText();
+            LOGGER.info("Chat transcription result: " + transcription);
+            return transcription;
+        }
+    }
+
     private void sendTranscription(String roomId, String sessionId, String transcription) {
         ObjectNode transcriptionMessage = mapper.createObjectNode();
         transcriptionMessage.put("transcription", transcription);

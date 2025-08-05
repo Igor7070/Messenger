@@ -15,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import ws.schild.jave.MultimediaInfo;
+import ws.schild.jave.MultimediaObject;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -198,14 +200,22 @@ public class ChatGPTController {
             // Читаем файл в массив байтов
             byte[] audioBytes = Files.readAllBytes(audioFile.toPath());
             System.out.println("Audio file read: " + audioBytes.length + " bytes");
-            // Конвертируем в WAV, если нужно
-            byte[] wavBytes = openAIService.convertToWav(audioBytes);
-            System.out.println("Converted to WAV: " + wavBytes.length + " bytes");
-            String transcription = openAIService.transcribeAudio(wavBytes);
+            // Проверка длительности аудио
+            MultimediaObject multimediaObject = new MultimediaObject(audioFile);
+            MultimediaInfo info = multimediaObject.getInfo();
+            long durationMs = info.getDuration();
+            System.out.println("Audio file duration: " + durationMs + " ms");
+            if (durationMs < 1000) { // Меньше 1 секунды
+                System.out.println("Audio file is too short: " + durationMs + " ms");
+                return ResponseEntity.ok("");
+            }
+            // Транскрибируем MP3 напрямую
+            String transcription = openAIService.transcribeChatAudio(audioBytes);
             System.out.println("Transcription result: " + transcription);
+            // Проверяем валидность транскрипции
             if (!openAIService.isValidTranscription(transcription)) {
-                System.out.println("Transcription is invalid or empty");
-                return ResponseEntity.ok(""); // Возвращаем пустую строку для невалидных транскрипций
+                System.out.println("Transcription is invalid or empty: " + transcription);
+                return ResponseEntity.ok("");
             }
             // Сохраняем транскрипцию в базе
             Message message = optionalMessage.get();
