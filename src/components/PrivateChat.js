@@ -16,6 +16,7 @@ import TranslationSettingsModal from './TranslationSettingsModal';
 import { translateMessage, saveTranslation } from '../api/messages';
 import usePrivateChatTranslationAndSpellCheck from '../hooks/usePrivateChatTranslationAndSpellCheck';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
+import TranscriptionSettingsModal from './TranscriptionSettingsModal';
 
 const PrivateChat = () => {
   const [messages, setMessages] = useState([]);
@@ -73,6 +74,10 @@ const PrivateChat = () => {
 
   // ДОБАВЛЕНО: Состояние для отслеживания перетаскивания
   const [isDragging, setIsDragging] = useState(null); // msgId, если перетаскивание активно
+
+  const [isTranscriptionEnabled, setIsTranscriptionEnabled] = useState(false);
+  const [transcriptionMode, setTranscriptionMode] = useState('selective');
+  const [showTranscriptionModal, setShowTranscriptionModal] = useState(false);
 
   // Мемоизация аудиосообщений
   const memoizedAudioMessages = useMemo(() => {
@@ -169,6 +174,10 @@ const PrivateChat = () => {
 
         // ДОБАВЛЕНО: Загрузка настройки озвучивания
         setIsTTSEnabled(localStorage.getItem(`tts_enabled_${chatIdParam}`) === 'true');
+
+        // ДОБАВЛЕНО: Загрузка настройки транскрипции
+        setIsTranscriptionEnabled(localStorage.getItem(`transcription_enabled_${chatIdParam}`) === 'true');
+        setTranscriptionMode(localStorage.getItem(`transcription_mode_${chatIdParam}`) || 'selective');
 
         setTimeout(() => {
           scrollToBottom();
@@ -1248,9 +1257,25 @@ const PrivateChat = () => {
     }
   };
 
+  const handleTranscriptionSettingsSave = ({ isTranscriptionEnabled, transcriptionMode }) => {
+    setIsTranscriptionEnabled(isTranscriptionEnabled);
+    setTranscriptionMode(transcriptionMode);
+  };
+
   return (
     <div className="private-chat">
       <div className="private-chat-name">
+        <div className="private-transcription-controls">
+          <button
+            className="private-transcription-button"
+            onClick={() => setShowTranscriptionModal(true)}
+            data-tooltip={isTranscriptionEnabled ? 'Transcription is ON' : 'Transcription is OFF'}
+            style={{ color: isTranscriptionEnabled ? '#42a5f5' : '#B0BEC5' }}
+          >
+            🎤
+          </button>
+          {isTranscriptionEnabled && <span className="private-transcription-indicator">ON</span>}
+        </div>
         {displayChatName}
         <div className="private-translation-controls"> 
           <button
@@ -1274,7 +1299,7 @@ const PrivateChat = () => {
           <button
             className="private-translation-button" 
             onClick={() => setShowTranslationModal(true)}
-            data-tooltip="Toggle translation for messages" // Подсказка...
+            data-tooltip="Toggle translation for messages"
             style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
           >
             🌐
@@ -1286,6 +1311,13 @@ const PrivateChat = () => {
           )}
         </div>
       </div>
+      {showTranscriptionModal && (
+        <TranscriptionSettingsModal
+          chatId={chatId}
+          onSave={handleTranscriptionSettingsSave}
+          onClose={() => setShowTranscriptionModal(false)}
+        />
+      )}
       {showTranslationModal && (
         <TranslationSettingsModal
           chatId={chatId}
@@ -1471,9 +1503,9 @@ const PrivateChat = () => {
                     <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                   </div>
                   {/* ДОБАВЛЕНО: Отдельный контейнер для иконки перевода */}
-                  {msg.messageType !== 'audio' && (isTranslationEnabled || isTTSEnabled) && (
+                  {(msg.messageType !== 'audio' && (isTranslationEnabled || isTTSEnabled)) || (msg.messageType === 'audio' && isTranscriptionEnabled) ? (
                     <div className="private-message-actions-container">
-                      {isTranslationEnabled && (
+                      {msg.messageType !== 'audio' && isTranslationEnabled && (
                         <div className="private-message-translate-container">
                           <button
                             className="private-message-translate-button"
@@ -1484,7 +1516,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {isTTSEnabled && (
+                      {msg.messageType !== 'audio' && isTTSEnabled && (
                         <div className="private-message-tts-container">
                           <button
                             className="private-message-tts-button"
@@ -1495,7 +1527,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {isTTSEnabled && isTranslationEnabled && (
+                      {msg.messageType !== 'audio' && isTTSEnabled && isTranslationEnabled && (
                         <div className="private-message-tts-translated-container">
                           <button
                             className="private-message-tts-translated-button"
@@ -1508,8 +1540,19 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
+                      {msg.messageType === 'audio' && isTranscriptionEnabled && (
+                        <div className="private-message-transcription-container">
+                          <button
+                            className="private-message-transcription-button"
+                            onClick={() => {} /* Placeholder for transcription handler */}
+                            data-tooltip="Transcribe audio message"
+                          >
+                            🎤
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

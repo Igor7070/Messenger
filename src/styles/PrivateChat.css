@@ -1195,6 +1195,180 @@
   fill: #2e0a54;
 }
 
+.private-transcription-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  position: absolute;
+  left: 12px;
+  height: 100%;
+}
+
+.private-transcription-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  position: relative;
+  transition: color 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  height: 28px;
+  width: 28px;
+}
+
+.private-transcription-button:hover {
+  transform: scale(1.1);
+}
+
+.private-transcription-button[data-tooltip] {
+  position: relative;
+}
+
+.private-transcription-button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -36px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333333;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.private-transcription-button[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.private-transcription-button[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #333333;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.private-transcription-button[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.private-transcription-indicator {
+  font-size: 14px;
+  color: #42a5f5;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  background: rgba(66, 165, 245, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Стили для контейнера иконки транскрипции */
+.private-message-transcription-container {
+  width: 16px;
+  height: 16px;
+}
+
+/* Стили для кнопки транскрипции в сообщениях */
+.private-message-transcription-container .private-message-transcription-button {
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  color: #42a5f5;
+  transition: color 0.3s ease, transform 0.2s ease;
+  opacity: 0.6;
+  line-height: 1;
+  z-index: 101;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.private-message-transcription-container .private-message-transcription-button:hover {
+  color: #1976d2;
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.private-message-transcription-container .private-message-transcription-button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -30px;
+  right: 0;
+  transform: translateX(50%);
+  background-color: #333333;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  min-width: 80px;
+  text-align: center;
+}
+
+.private-message-transcription-container .private-message-transcription-button[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.private-message-transcription-container .private-message-transcription-button[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: 2px;
+  transform: translateX(50%);
+  border: 4px solid transparent;
+  border-bottom-color: #333333;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 1000;
+}
+
+.private-message-transcription-container .private-message-transcription-button[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Минимальная высота для контейнера сообщения при наличии транскрипции */
+.private-message-content-container:has(.private-message-transcription-container) {
+  min-height: 30px;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         margin: 10px;
@@ -1551,4 +1725,61 @@
     .private-message-tts-translated-container .private-message-tts-translated-button:hover svg {
       fill: #2e0a54;
     }
+
+    .private-transcription-controls {
+    left: 8px;
+    gap: 6px;
+  }
+
+  .private-transcription-button {
+    font-size: 18px;
+    padding: 3px;
+    height: 24px;
+    width: 24px;
+  }
+
+  .private-transcription-button[data-tooltip]::after {
+    font-size: 11px;
+    padding: 5px 10px;
+    top: -32px;
+  }
+
+  .private-transcription-button[data-tooltip]::before {
+    top: -6px;
+  }
+
+  .private-transcription-indicator {
+    font-size: 12px;
+    padding: 2px 5px;
+  }
+
+  .private-message-transcription-container {
+    width: 14px;
+    height: 14px;
+  }
+
+  .private-message-transcription-container .private-message-transcription-button {
+    font-size: 10px;
+    padding: 1px;
+    top: 0;
+    right: 0;
+    width: 14px;
+    height: 14px;
+  }
+
+  .private-message-transcription-container .private-message-transcription-button[data-tooltip]::after {
+    font-size: 9px;
+    padding: 2px 5px;
+    top: -28px;
+  }
+
+  .private-message-transcription-container .private-message-transcription-button[data-tooltip]::before {
+    border: 2px solid transparent;
+    border-bottom-color: #333333;
+    top: -6px;
+  }
+
+  .private-message-content-container:has(.private-message-transcription-container) {
+    min-height: 28px;
+  }
 }
