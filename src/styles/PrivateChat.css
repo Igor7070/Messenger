@@ -1369,6 +1369,11 @@
   min-height: 30px;
 }
 
+/* ДОБАВЛЕНО: Динамический отступ слева для аудиосообщений с иконкой транскрипции */
+.private-message-content-container:has(.private-message-transcription-container) .private-message-audio-player-container {
+  padding-left: 24px; /* Отступ слева для проигрывателя, чтобы избежать наложения */
+}
+
 @media (max-width: 800px) {
     .private-chat {
         margin: 10px;
@@ -1781,5 +1786,9 @@
 
   .private-message-content-container:has(.private-message-transcription-container) {
     min-height: 28px;
+  }
+
+  .private-message-content-container:has(.private-message-transcription-container) .private-message-audio-player-container {
+    padding-left: 20px; /* Меньший отступ для мобильных */
   }
 }
