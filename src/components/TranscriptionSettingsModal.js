@@ -39,8 +39,8 @@ const TranscriptionSettingsModal = ({ chatId, onSave, onClose }) => {
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content" ref={modalRef}>
+    <div className="transcription-modal-overlay">
+      <div className="transcription-modal-content" ref={modalRef}>
         <h2>Transcription Settings</h2>
         <label>
           <input
@@ -85,7 +85,7 @@ const TranscriptionSettingsModal = ({ chatId, onSave, onClose }) => {
             Transcribe selectively
           </label>
         </div>
-        <div className="modal-buttons">
+        <div className="transcription-modal-buttons">
           <button onClick={onClose}>Cancel</button>
           <button onClick={handleSave}>Save</button>
         </div>

@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
 
 /* Основной контейнер для модального окна */
-.modal-overlay {
+.transcription-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -16,7 +16,7 @@
 }
 
 /* Контейнер контента модального окна */
-.modal-content {
+.transcription-modal-content {
   background: linear-gradient(145deg, #1e2a44, #2a3b66);
   padding: 28px;
   border-radius: 16px;
@@ -25,11 +25,11 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(66, 165, 245, 0.1);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e6e9ef;
-  animation: fadeInScale 0.3s ease-out;
+  animation: transcription-fadeInScale 0.3s ease-out;
 }
 
 /* Анимация появления */
-@keyframes fadeInScale {
+@keyframes transcription-fadeInScale {
   from {
     transform: scale(0.9);
     opacity: 0;
@@ -41,7 +41,7 @@
 }
 
 /* Заголовок */
-.modal-content h2 {
+.transcription-modal-content h2 {
   margin: 0 0 24px;
   font-size: 26px;
   font-weight: 700;
@@ -50,7 +50,7 @@
 }
 
 /* Стили для меток */
-.modal-content label {
+.transcription-modal-content label {
   display: flex;
   align-items: center;
   margin: 18px 0;
@@ -60,7 +60,7 @@
 }
 
 /* Стили для чекбоксов */
-.modal-content input[type="checkbox"] {
+.transcription-modal-content input[type="checkbox"] {
   margin-right: 12px;
   width: 20px;
   height: 20px;
@@ -93,7 +93,7 @@
 }
 
 /* Контейнер кнопок */
-.modal-buttons {
+.transcription-modal-buttons {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -101,7 +101,7 @@
 }
 
 /* Стили для кнопок */
-.modal-buttons button {
+.transcription-modal-buttons button {
   padding: 12px 24px;
   border: none;
   border-radius: 10px;
@@ -112,37 +112,37 @@
 }
 
 /* Кнопка отмены */
-.modal-buttons button:first-child {
+.transcription-modal-buttons button:first-child {
   background: #4a5b88;
   color: #e6e9ef;
 }
 
-.modal-buttons button:first-child:hover {
+.transcription-modal-buttons button:first-child:hover {
   background: #5b6ea3;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Кнопка сохранения */
-.modal-buttons button:last-child {
+.transcription-modal-buttons button:last-child {
   background: #42a5f5;
   color: #ffffff;
 }
 
-.modal-buttons button:last-child:hover {
+.transcription-modal-buttons button:last-child:hover {
   background: #3b8cd9;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Активное состояние кнопок */
-.modal-buttons button:active {
+.transcription-modal-buttons button:active {
   transform: translateY(0);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 /* Отключенное состояние для чекбоксов */
-.modal-content input[type="checkbox"]:disabled,
+.transcription-modal-content input[type="checkbox"]:disabled,
 .transcription-mode-selection input[type="radio"]:disabled {
   cursor: not-allowed;
   opacity: 0.5;
@@ -152,20 +152,20 @@
 
 /* Медиа-запрос для мобильных устройств */
 @media (max-width: 480px) {
-  .modal-content {
+  .transcription-modal-content {
     width: 92%;
     padding: 20px;
   }
 
-  .modal-content h2 {
+  .transcription-modal-content h2 {
     font-size: 22px;
   }
 
-  .modal-content label {
+  .transcription-modal-content label {
     font-size: 14px;
   }
 
-  .modal-buttons button {
+  .transcription-modal-buttons button {
     padding: 10px 18px;
     font-size: 14px;
   }
