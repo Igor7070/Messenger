@@ -1404,6 +1404,23 @@
   min-height: 82px; /* Высота для четырех иконок: 16px * 4 + gap 2px * 3 + padding 4px * 2 = 82px */
 }
 
+.private-message-translation-container {
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #333;
+}
+
+.private-message-transcription-container {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.private-message-transcription {
+  display: block;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         margin: 10px;

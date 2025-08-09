@@ -75,7 +75,6 @@ const PrivateChat = () => {
   // ДОБАВЛЕНО: Состояние для отслеживания перетаскивания
   const [isDragging, setIsDragging] = useState(null); // msgId, если перетаскивание активно
 
-  const [isTranscriptionEnabled, setIsTranscriptionEnabled] = useState(false);
   const [transcriptionMode, setTranscriptionMode] = useState('selective');
   const [showTranscriptionModal, setShowTranscriptionModal] = useState(false);
 
@@ -1481,28 +1480,119 @@ const PrivateChat = () => {
                             </div>
                           )}
                           {/* ДОБАВЛЕНО: Отображение транскрипции и перевода */}
-                          {isTranscriptionEnabled && msg.transcribedContent && (
-                            <span
-                              className={`private-message-content ${isTranslationEnabled ? 'translate-enabled' : ''} ${isTTSEnabled ? 'tts-enabled' : ''}`}
-                              onClick={() => {
-                                if (msg.translatedContent) {
-                                  setMessages((prevMessages) =>
-                                    prevMessages.map((m) =>
-                                      m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
-                                    )
-                                  );
-                                }
-                              }}
-                              style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
-                            >
-                              <span className="private-original-content">
-                                {msg.showOriginal || !msg.translatedContent ? msg.transcribedContent : msg.translatedContent}
-                              </span>
-                              {msg.translatedContent && (
-                                <span className="private-translated-content">{msg.translatedContent}</span>
+                          <div className="private-audio-message-container">
+                            {/* Перевод над проигрывателем */}
+                            {isTranscriptionEnabled && msg.transcribedContent && isTranslationEnabled && (
+                              <div className="private-message-translation-container">
+                                <span
+                                  className={`private-message-content ${isTranslationEnabled ? 'translate-enabled' : ''} ${isTTSEnabled ? 'tts-enabled' : ''}`}
+                                  onClick={() => {
+                                    if (msg.translatedContent) {
+                                      setMessages((prevMessages) =>
+                                        prevMessages.map((m) =>
+                                          m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                        )
+                                      );
+                                    }
+                                  }}
+                                  style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                                >
+                                  <span className="private-original-content">
+                                    {msg.showOriginal || !msg.translatedContent ? msg.transcribedContent : msg.translatedContent}
+                                  </span>
+                                  {msg.translatedContent && (
+                                    <span className="private-translated-content">{msg.translatedContent}</span>
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                            {/* Проигрыватель */}
+                            <div className="private-audio-player-wrapper">
+                              <audio
+                                ref={(el) => {
+                                  if (el && audioRefs.current[msg.id] !== el) {
+                                    audioRefs.current[msg.id] = el;
+                                    if (!audioProgress[msg.id]?.isPreloading) {
+                                      console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
+                                    }
+                                  }
+                                }}
+                                onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
+                                onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
+                                onCanPlay={() => handleCanPlay(msg.id)}
+                                onError={(e) => handleAudioError(msg.id, e)}
+                                onEnded={() => handleAudioEnded(msg.id)}
+                                className="private-audio-player"
+                                preload="auto"
+                              >
+                                <source src={msg.fileUrl} type={msg.fileUrl.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'} />
+                                Your browser does not support the audio element.
+                              </audio>
+                              {audioProgress[msg.id]?.error ? (
+                                <span className="private-audio-error">{audioProgress[msg.id].error}</span>
+                              ) : (
+                                <div className="private-audio-controls">
+                                  <button
+                                    className="private-audio-play-pause"
+                                    onClick={() => {
+                                      const audio = audioRefs.current[msg.id];
+                                      if (!audio || !audioProgress[msg.id]?.isReady) {
+                                        console.log(`Play blocked for msg ${msg.id}:`, audioProgress[msg.id], 'readyState:', audio?.readyState);
+                                        return;
+                                      }
+                                      if (audio.paused) {
+                                        audio.play().catch((e) => {
+                                          console.error('Play error:', e);
+                                          handleAudioError(msg.id, e);
+                                        });
+                                      } else {
+                                        audio.pause();
+                                      }
+                                      setAudioProgress((prev) => ({
+                                        ...prev,
+                                        [msg.id]: {
+                                          ...prev[msg.id],
+                                          isPlaying: audio.paused ? false : true,
+                                        },
+                                      }));
+                                    }}
+                                    disabled={!audioProgress[msg.id]?.isReady}
+                                  >
+                                    {audioProgress[msg.id]?.isPlaying ? '⏸' : '▶'}
+                                  </button>
+                                  <div
+                                    className="private-audio-progress-bar"
+                                    onClick={(e) => handleSeek(msg.id, e)}
+                                    onMouseDown={(e) => handleDragStart(msg.id, e)}
+                                    style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
+                                  >
+                                    <div
+                                      className="private-audio-progress"
+                                      style={{
+                                        width: `${
+                                          audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
+                                            ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
+                                            : 0
+                                        }%`,
+                                      }}
+                                    >
+                                      <div className="private-audio-progress-thumb"></div>
+                                    </div>
+                                  </div>
+                                  <span className="private-audio-time">
+                                    {formatAudioTime(audioProgress[msg.id]?.currentTime || 0)} /{' '}
+                                    {formatAudioTime(audioProgress[msg.id]?.duration || 0)}
+                                  </span>
+                                </div>
                               )}
-                            </span>
-                          )}
+                            </div>
+                            {/* Транскрипция под проигрывателем */}
+                            {isTranscriptionEnabled && msg.transcribedContent && (
+                              <div className="private-message-transcription-container">
+                                <span className="private-message-transcription">{msg.transcribedContent}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ) : (
