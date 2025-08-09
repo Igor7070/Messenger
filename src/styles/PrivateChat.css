@@ -1368,7 +1368,7 @@
 }
 
 .private-message-audio-message .private-message-content-container:has(.private-message-transcription-container, .private-message-tts-translated-container) {
-  min-height: 70px; /* Для аудиосообщений с четырьмя иконками: 16px * 4 + 2px * 3 gap + 4px * 2 padding = 78px, с запасом */
+  min-height: 84px; /* Для аудиосообщений с четырьмя иконками: 16px * 4 + 2px * 3 gap + 4px * 2 padding = 78px, с запасом */
 }
 
 @media (max-width: 800px) {
