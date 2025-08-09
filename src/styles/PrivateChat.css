@@ -1408,7 +1408,7 @@
     min-width: 340px; /* Аудиоплеер (300px) + padding (8px * 2) + отступ для иконок (24px) */
     max-width: none; /* Убираем ограничение ширины */
     min-height: auto; /* Подстраивается под содержимое */
-    padding: 8px 8px 8px 32px; /* Левый отступ для иконок */
+    padding: 8px 8px 8px 8px; /* Левый отступ для иконок */
     box-sizing: border-box;
     overflow: visible; /* Позволяем иконкам отображаться */
 }
