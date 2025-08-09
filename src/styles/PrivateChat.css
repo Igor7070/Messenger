@@ -1367,8 +1367,11 @@
   padding-left: 24px; /* Отступ слева для проигрывателя, чтобы избежать наложения */
 }
 
-.private-message-audio-message .private-message-content-container:has(.private-message-tts-translated-container) {
-  min-height: 84px !important; 
+.private-message.private-message-audio-message .private-message-content-container {
+    min-height: 84px !important; /* Сохраняем, с !important для приоритета */
+    padding: 4px;
+    padding-bottom: 12px; /* Добавляем пространство снизу */
+    box-sizing: border-box;
 }
 
 @media (max-width: 800px) {
