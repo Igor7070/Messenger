@@ -13,24 +13,24 @@
 }
 
 .private-chat-name {
-  font-family: 'Inter', 'Open Sans', sans-serif;
-  font-size: 20px;
-  font-weight: 600;
-  color: #333333;
-  padding: 12px;
-  background-color: #FFFFFF;
-  border-radius: 5px;
-  text-align: center;
-  margin-bottom: 15px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  letter-spacing: 0.2px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  display: flex; /* Добавлено */
-  align-items: center; /* Добавлено */
-  justify-content: center; /* Добавлено */
-  position: relative; /* Добавлено */
+    font-family: 'Inter', 'Open Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333333;
+    padding: 12px;
+    background-color: #FFFFFF;
+    border-radius: 5px;
+    text-align: center;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    letter-spacing: 0.2px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
 }
 
 .private-message-list {
@@ -118,9 +118,21 @@
     white-space: pre-wrap;
     box-sizing: border-box;
     position: relative;
-    min-height: 30px; /* Добавлено для текстовых сообщений, чтобы вместить иконки */
 }
 
+/* ДОБАВЛЕНО: Стили для аудиосообщений с flexbox и контролем размеров */
+.private-message-audio-message .private-message-content-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: 140px; /* Для аудиоплеера (~40px), иконок (16px × 3 + 2px × 2 gap), перевода (~20px), транскрипции (~20px) */
+    min-width: 340px; /* Для аудиоплеера (300px) + отступы (28px слева + 8px справа) */
+    max-width: 340px;
+    padding: 8px 8px 8px 28px; /* Увеличен левый отступ для иконок */
+    overflow: hidden; /* Предотвращает выход элементов за пределы */
+}
+
+/* Обновленные стили для сообщений текущего пользователя */
 .private-message.private-current-user .private-message-content-container {
     background-color: #DCF8C6 !important;
     border-radius: 12px;
@@ -128,6 +140,7 @@
     max-width: calc(80% - 10px);
     width: 100%;
     box-sizing: border-box;
+    padding: 4px;
 }
 
 .private-message.private-current-user.first-message .private-message-content-container {
@@ -136,12 +149,14 @@
     max-width: calc(80% - 10px);
     width: 100%;
     box-sizing: border-box;
+    padding: 4px;
 }
 
 .private-message.private-other-user .private-message-content-container {
     background-color: #ECE0F8 !important;
     border-radius: 0 12px 12px 12px;
     margin-left: 0;
+    padding: 4px;
 }
 
 .private-message.private-other-user .private-message-content-container.no-avatar {
@@ -153,40 +168,40 @@
 }
 
 .private-message-body {
-  background: transparent !important;
-  display: flex;
-  flex-direction: column;
-  padding: 0 8px; /* Убираем padding-left, оставляем правый для симметрии */
-  position: relative;
-  box-sizing: border-box;
+    background: transparent !important;
+    display: flex;
+    flex-direction: column;
+    padding: 0 8px;
+    position: relative;
+    box-sizing: border-box;
 }
 
 .private-message-content {
-  display: inline-block;
-  word-break: break-word;
-  margin: 0;
-  padding: 0 0 0 18px; /* ИЗМЕНЕНО: Добавлен отступ слева для учета иконок */
-  line-height: 1.4;
+    display: inline-block;
+    word-break: break-word;
+    margin: 0;
+    padding: 0 0 0 18px;
+    line-height: 1.4;
 }
 
 .private-message-content.translate-enabled,
 .private-message-content.tts-enabled {
-  padding-left: 28px; /* ИЗМЕНЕНО: Синхронизированный отступ */
+    padding-left: 28px;
 }
 
 .private-file-link {
-  display: block;
-  margin-top: 5px;
-  padding-left: 18px; /* ИЗМЕНЕНО: Добавлен отступ слева для учета иконок */
-  color: #0288d1;
-  text-decoration: none;
-  font-size: 14px;
-  background: transparent !important;
+    display: block;
+    margin-top: 5px;
+    padding-left: 18px;
+    color: #0288d1;
+    text-decoration: none;
+    font-size: 14px;
+    background: transparent !important;
 }
 
 .private-file-link.translate-enabled,
 .private-file-link.tts-enabled {
-  padding-left: 28px; /* ИЗМЕНЕНО: Синхронизированный отступ */
+    padding-left: 28px;
 }
 
 .private-file-link:hover {
@@ -219,37 +234,35 @@
 
 .private-input-container {
     background-color: #F0F4F8;
-    padding: 10px; /* ИЗМЕНЕНО: Убедимся, что padding 10px со всех сторон */
+    padding: 10px;
     border-radius: 5px;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
     position: relative;
-    display: flex; /* ДОБАВЛЕНО: Flex для управления расположением */
-    flex-direction: column; /* ДОБАВЛЕНО: Вертикальное расположение элементов */
-    gap: 8px; /* ДОБАВЛЕНО: Зазор между textarea и button-container */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-/* ДОБАВЛЕНО: Стили для обертки textarea */
 .private-textarea-wrapper {
-    position: relative; /* Для позиционирования дочерних элементов */
+    position: relative;
     width: 100%;
     display: flex;
-    flex-direction: column; /* Вертикальное расположение для attached-file */
-    align-items: stretch; /* Растягиваем по ширине */
+    flex-direction: column;
+    align-items: stretch;
 }
 
-/* ДОБАВЛЕНО: Контейнер для текстового поля и иконок */
 .private-textarea-inner {
-    position: relative; /* Для абсолютного позиционирования иконок */
+    position: relative;
     display: flex;
-    align-items: center; /* Выравнивание иконок и текстового поля по центру */
+    align-items: center;
     width: 100%;
 }
 
 .private-attach-icon {
     position: absolute;
     left: 10px;
-    top: 50%; /* ИЗМЕНЕНО: Центрируем по вертикали */
-    transform: translateY(-50%); /* ИЗМЕНЕНО: Для центрирования */
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -260,7 +273,7 @@
 
 .private-input-message {
     width: 100%;
-    padding: 10px 44px 10px 44px; /* Изменено: padding-right увеличен для учета иконки отправки */
+    padding: 10px 44px 10px 44px;
     border: 1px solid #0288d1;
     border-radius: 5px;
     resize: none;
@@ -280,14 +293,13 @@
     outline: none;
 }
 
-/* ДОБАВЛЕНО: Стиль для включения скроллбара при 5+ строках */
 .private-input-message.scroll-enabled {
-    overflow-y: auto; /* Включаем скроллбар при 5+ строках */
+    overflow-y: auto;
 }
 
 .private-button-container {
     display: flex;
-    justify-content: flex-end; /* ИЗМЕНЕНО: Выравнивание только кнопки отправки вправо */
+    justify-content: flex-end;
 }
 
 .private-file-input {
@@ -353,7 +365,7 @@
     height: 10px;
     background-color: #4CAF50;
     border-radius: 50%;
-    border: 2px solid #F0F4F8; /* Цвет фона .private-chat для обводки */
+    border: 2px solid #F0F4F8;
 }
 
 .Toastify__toast-container {
@@ -364,190 +376,202 @@
 }
 
 .private-translation-controls {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end; /* Добавлено для явного выравнивания вправо */
-  gap: 8px;
-  position: absolute;
-  right: 12px;
-  height: 100%; /* Убедимся, что контейнер занимает всю высоту родителя */
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    position: absolute;
+    right: 12px;
+    height: 100%;
 }
 
 .private-tts-button,
 .private-spellcheck-button,
 .private-translation-button {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px;
-  position: relative;
-  transition: color 0.3s ease, transform 0.2s ease;
-  display: flex; /* Добавлено: Flex для центрирования эмодзи */
-  align-items: center; /* Добавлено: Вертикальное центрирование */
-  justify-content: center; /* Добавлено: Горизонтальное центрирование */
-  line-height: 1; /* Добавлено: Нормализация высоты строки для эмодзи */
-  height: 28px; /* Добавлено: Фиксированная высота для единообразия */
-  width: 28px; /* Добавлено: Фиксированная ширина для единообразия */
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+    position: relative;
+    transition: color 0.3s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    height: 28px;
+    width: 28px;
 }
 
 .private-translation-button:hover,
 .private-spellcheck-button:hover {
-  transform: scale(1.1);
+    transform: scale(1.1);
 }
 
-/* Стили для всплывающих подсказок */
 .private-translation-button[data-tooltip],
 .private-spellcheck-button[data-tooltip] {
-  position: relative;
+    position: relative;
 }
 
 .private-translation-button[data-tooltip]::after,
 .private-spellcheck-button[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: -36px;
-  right: 50%;
-  transform: translateX(50%);
-  background-color: #333333;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 6px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 10;
+    content: attr(data-tooltip);
+    position: absolute;
+    top: -36px;
+    right: 50%;
+    transform: translateX(50%);
+    background-color: #333333;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 10;
 }
 
 .private-translation-button[data-tooltip]:hover::after,
 .private-spellcheck-button[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
-/* Стрелка для tooltip */
 .private-translation-button[data-tooltip]::before,
 .private-spellcheck-button[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  right: 50%;
-  transform: translateX(50%);
-  border: 4px solid transparent;
-  border-top-color: #333333;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: 50%;
+    transform: translateX(50%);
+    border: 4px solid transparent;
+    border-top-color: #333333;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
 .private-translation-button[data-tooltip]:hover::before,
 .private-spellcheck-button[data-tooltip]:hover::before {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
 .private-translation-indicator,
-.private-spellcheck-indicator { /* Новые стили */
-  font-size: 14px;
-  color: #42a5f5;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  background: rgba(66, 165, 245, 0.1);
-  padding: 2px 6px;
-  border-radius: 4px;
+.private-spellcheck-indicator {
+    font-size: 14px;
+    color: #42a5f5;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    background: rgba(66, 165, 245, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
 .private-tts-button:hover {
-  transform: scale(1.1);
+    transform: scale(1.1);
 }
 
-/* ДОБАВЛЕНО: Стили для всплывающей подсказки кнопки озвучивания */
 .private-tts-button[data-tooltip] {
-  position: relative;
+    position: relative;
 }
 
 .private-tts-button[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: -36px;
-  right: 50%;
-  transform: translateX(50%);
-  background-color: #333333;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 6px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 10;
+    content: attr(data-tooltip);
+    position: absolute;
+    top: -36px;
+    right: 50%;
+    transform: translateX(50%);
+    background-color: #333333;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 10;
 }
 
 .private-tts-button[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
-/* ДОБАВЛЕНО: Стрелка для tooltip кнопки озвучивания */
 .private-tts-button[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  right: 50%;
-  transform: translateX(50%);
-  border: 4px solid transparent;
-  border-top-color: #333333;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: 50%;
+    transform: translateX(50%);
+    border: 4px solid transparent;
+    border-top-color: #333333;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
 .private-tts-button[data-tooltip]:hover::before {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
-/* ДОБАВЛЕНО: Стили для индикатора озвучивания */
 .private-tts-indicator {
-  font-size: 14px;
-  color: #42a5f5;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  background: rgba(66, 165, 245, 0.1);
-  padding: 2px 6px;
-  border-radius: 4px;
+    font-size: 14px;
+    color: #42a5f5;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    background: rgba(66, 165, 245, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
-.private-original-content { /* Изменено */
-  display: block;
-  font-family: 'Roboto', sans-serif;
-  font-size: 16px;
-  line-height: 1.4;
+.private-original-content {
+    display: block;
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
 }
 
 .private-translated-content {
-  display: block;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 4px; /* Отступ снизу для аудиосообщений, чтобы отделить от аудиоплеера */
-  line-height: 1.4;
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 4px;
+    line-height: 1.4;
 }
 
-/* ДОБАВЛЕНО: Стили для иконки микрофона и аудиосообщений */
+/* ДОБАВЛЕНО: Ограничение ширины перевода и транскрипции в аудиосообщениях */
+.private-message-audio-message .private-translated-content,
+.private-message-audio-message .private-transcribed-content {
+    width: 100%;
+    max-width: 300px; /* Синхронизировано с шириной аудиоплеера */
+    margin: 4px 0; /* Отступы для разделения */
+}
+
+/* ДОБАВЛЕНО: Стили для транскрипции в аудиосообщениях */
+.private-transcribed-content {
+    display: block;
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
+    color: #333333;
+    margin-top: 4px;
+}
+
 .private-mic-icon-container {
     position: absolute;
     right: 10px;
-    top: 50%; /* Центрирование по вертикали относительно textarea-inner */
+    top: 50%;
     transform: translateY(-50%);
     display: flex;
     align-items: center;
@@ -559,8 +583,8 @@
 .private-send-icon-container {
     position: absolute;
     right: 10px;
-    top: 50%; /* ИЗМЕНЕНО: Центрируем по вертикали */
-    transform: translateY(-50%); /* ИЗМЕНЕНО: Для центрирования */
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -578,7 +602,7 @@
 }
 
 .private-send-icon:hover {
-    opacity: 0.8; /* Эффект при наведении */
+    opacity: 0.8;
 }
 
 .private-mic-icon {
@@ -600,13 +624,12 @@
 }
 
 .private-mic-icon.sending {
-    cursor: default; /* Отключаем курсор во время отправки */
+    cursor: default;
 }
 
-/* ИЗМЕНЕНО: Стили для аудиосообщений */
 .private-audio-message-container {
     display: flex;
-    flex-direction: column; /* Вертикальное расположение: перевод -> аудиоплеер -> транскрипция */
+    flex-direction: column;
     align-items: flex-start;
     width: 100%;
     max-width: 100%;
@@ -616,23 +639,19 @@
     display: none;
 }
 
-/* ДОБАВЛЕНО: Стили для аудиосообщений */
 .private-message.private-audio-message {
     border-radius: 12px;
     background-color: #f0f0f0;
 }
 
-/* Стили для обертки аудиоплеера */
 .private-audio-player-wrapper {
     display: flex;
     flex-direction: column;
-    width: 300px;
+    width: 100%; /* ИЗМЕНЕНО: Подстраивается под контейнер */
     max-width: 300px;
-    padding-left: 24px; /* Добавлено для учета иконок слева */
-    margin: 4px 0; /* Добавлено для пространства сверху и снизу */
+    margin: 4px 0; /* ДОБАВЛЕНО: Отступы для разделения */
 }
 
-/* Стили для кастомных элементов управления */
 .private-audio-controls {
     display: flex;
     align-items: center;
@@ -641,10 +660,9 @@
     border-radius: 8px;
     padding: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    width: 100%; /* ДОБАВЛЕНО: Полная ширина внутри audio-player-wrapper */
+    width: 100%;
 }
 
-/* Стили для кнопки воспроизведения/паузы */
 .private-audio-play-pause {
     background: none;
     border: none;
@@ -662,7 +680,6 @@
     opacity: 0.5;
 }
 
-/* Стили для прогресс-бара */
 .private-audio-progress-bar {
     flex: 1;
     height: 6px;
@@ -672,25 +689,22 @@
     cursor: pointer;
 }
 
-/* Стили для заполненной части прогресс-бара */
 .private-audio-progress {
     height: 100%;
     background-color: #42a5f5;
     border-radius: 3px;
     transition: width 0.1s ease;
-    position: relative; /* Для позиционирования ползунка */
+    position: relative;
 }
 
-/* Стили для отображения времени */
 .private-audio-time {
     font-size: 12px;
     color: #666666;
     font-family: 'Roboto', sans-serif;
     min-width: 60px;
-    text-align: right; /* ДОБАВЛЕНО: Выравнивание для лучшего размещения */
+    text-align: right;
 }
 
-/* Стили для ошибок аудио */
 .private-audio-error {
     font-size: 12px;
     color: #d32f2f;
@@ -698,22 +712,20 @@
     padding: 8px;
 }
 
-/* ДОБАВЛЕНО: Стили для отправленных и полученных аудиосообщений */
 .private-message.private-current-user .private-audio-message-container,
 .private-message.private-other-user .private-audio-message-container {
-    width: 100%; /* Убедимся, что контейнер аудио занимает всю ширину */
+    width: 100%;
 }
 
 .private-message.private-current-user .private-audio-player-wrapper,
 .private-message.private-other-user .private-audio-player-wrapper {
-    width: 300px; /* Фиксированная ширина для единообразия */
+    width: 100%;
     max-width: 300px;
 }
 
-/* ДОБАВЛЕНО: Стили для ползунка прогресс-бара */
 .private-audio-progress-thumb {
     position: absolute;
-    right: -6px; /* Ползунок выравнивается по правому краю прогресс-бара */
+    right: -6px;
     top: 50%;
     transform: translateY(-50%);
     width: 12px;
@@ -730,7 +742,6 @@
     background-color: #1976d2;
 }
 
-/* ДОБАВЛЕНО: Стили для отображения прикреплённого файла */
 .private-attached-file {
     display: flex;
     align-items: center;
@@ -739,9 +750,9 @@
     padding: 5px 10px;
     background-color: #e8ecef;
     border-radius: 5px;
-    max-width: calc(100% - 88px); /* Учитываем padding текстового поля и иконки */
-    margin-left: 44px; /* Учитываем attach-icon и padding */
-    margin-right: 44px; /* Учитываем mic-icon или send-icon и padding */
+    max-width: calc(100% - 88px);
+    margin-left: 44px;
+    margin-right: 44px;
     overflow: hidden;
 }
 
@@ -752,7 +763,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: calc(100% - 30px); /* Учитываем ширину кнопки удаления */
+    max-width: calc(100% - 30px);
 }
 
 .private-remove-file-button {
@@ -773,641 +784,535 @@
     color: #b71c1c;
 }
 
-/* Стили для кнопки перевода в сообщении */
 .private-message-translate-button {
-  background: none;
-  border: none;
-  font-size: 12px; /* ДОБАВЛЕНО: Уменьшенный размер для ненавязчивости */
-  cursor: pointer;
-  padding: 0; /* ИЗМЕНЕНО: Убраны отступы, чтобы не влиять на контейнер */
-  position: absolute;
-  bottom: 0; /* ИЗМЕНЕНО: Прижато к нижнему краю */
-  left: 2px; /* ИЗМЕНЕНО: Прижато к левому краю с минимальным отступом */
-  color: #42a5f5;
-  transition: color 0.3s ease, transform 0.2s ease;
-  opacity: 0.6; /* ИЗМЕНЕНО: Ещё менее заметна, но видна */
-  z-index: 10;
-  line-height: 1; /* ДОБАВЛЕНО: Убираем влияние высоты строки */
+    background: none;
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+    position: absolute;
+    bottom: 0;
+    left: 2px;
+    color: #42a5f5;
+    transition: color 0.3s ease, transform 0.2s ease;
+    opacity: 0.6;
+    z-index: 10;
+    line-height: 1;
 }
 
 .private-message-translate-button:hover {
-  color: #1976d2;
-  transform: scale(1.1);
-  opacity: 1;
+    color: #1976d2;
+    transform: scale(1.1);
+    opacity: 1;
 }
 
-/* Стили для всплывающей подсказки */
 .private-message-translate-button[data-tooltip] {
-  position: relative;
+    position: relative;
 }
 
 .private-message-translate-button[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + 2px); /* ИЗМЕНЕНО: Подсказка ближе к иконке */
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #333333;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 10px; /* ИЗМЕНЕНО: Меньший шрифт для компактности */
-  font-weight: 500;
-  padding: 3px 6px; /* ИЗМЕНЕНО: Меньшие отступы */
-  border-radius: 4px; /* ИЗМЕНЕНО: Меньший радиус для гармонии */
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  z-index: 11;
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333333;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 3px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    z-index: 11;
 }
 
 .private-message-translate-button[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
-/* Стрелка для tooltip */
 .private-message-translate-button[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  bottom: -3px; /* ИЗМЕНЕНО: Уменьшен отступ */
-  left: 50%;
-  transform: translateX(-50%);
-  border: 3px solid transparent; /* ИЗМЕНЕНО: Меньшая стрелка */
-  border-top-color: #333333;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 3px solid transparent;
+    border-top-color: #333333;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
 .private-message-translate-button[data-tooltip]:hover::before {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
-/* Стили для нового контейнера private-message-content-wrapper */
 .private-message-content-wrapper {
-  display: block;
-  width: 100%;
-  padding: 0; /* ДОБАВЛЕНО: Убираем возможные отступы */
+    display: block;
+    width: 100%;
+    padding: 0;
 }
 
-/* Стили для private-message-translate-container */
 .private-message-translate-container {
-  width: 16px; /* ИЗМЕНЕНО: Фиксированная ширина для иконки */
-  height: 16px; /* ИЗМЕНЕНО: Фиксированная высота для иконки */
+    width: 16px;
+    height: 16px;
 }
 
-/* Стили для кнопки перевода */
 .private-message-translate-container .private-message-translate-button {
-  background: none;
-  border: none;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 2px;
-  color: #42a5f5;
-  transition: color 0.3s ease, transform 0.2s ease;
-  opacity: 0.6;
-  line-height: 1;
-  z-index: 101;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    background: none;
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px;
+    color: #42a5f5;
+    transition: color 0.3s ease, transform 0.2s ease;
+    opacity: 0.6;
+    line-height: 1;
+    z-index: 101;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Специфичность для аудиосообщений */
+/* ИЗМЕНЕНО: Убираем абсолютное позиционирование для аудиосообщений */
 .private-message-audio-message .private-message-translate-container .private-message-translate-button {
-  position: static; /* Отключаем абсолютное позиционирование только для аудиосообщений */
+    position: static;
 }
 
-/* Ховер-эффект */
 .private-message-translate-container .private-message-translate-button:hover {
-  color: #1976d2;
-  transform: scale(1.1);
-  opacity: 1;
+    color: #1976d2;
+    transform: scale(1.1);
+    opacity: 1;
 }
 
-/* Стили для всплывающей подсказки */
 .private-message-translate-container .private-message-translate-button[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: -30px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #333333;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  min-width: 80px;
-  text-align: center;
+    content: attr(data-tooltip);
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333333;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    min-width: 80px;
+    text-align: center;
 }
 
 .private-message-translate-container .private-message-translate-button[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
-/* Стрелка для tooltip */
 .private-message-translate-container .private-message-translate-button[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-bottom-color: #333333;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  z-index: 1000;
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-bottom-color: #333333;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 1000;
 }
 
 .private-message-translate-container .private-message-translate-button[data-tooltip]:hover::before {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
-/* Обновление стилей для private-message-body */
-.private-message-body {
-  background: transparent !important;
-  display: flex;
-  flex-direction: column;
-  padding: 0 8px; /* Убираем padding-left, оставляем правый для симметрии */
-  position: relative;
-  box-sizing: border-box;
-}
-
-/* Обновление стилей для private-message-content-container */
-.private-message-content-container {
-  display: block;
-  max-width: 80%;
-  min-width: 0;
-  padding: 4px; /* Уменьшено с 8px */
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  white-space: pre-wrap;
-  box-sizing: border-box;
-  position: relative; /* Для привязки translate-container */
-}
-
-/* Обновление стилей для сообщений */
-.private-message.private-current-user .private-message-content-container {
-  background-color: #DCF8C6 !important;
-  border-radius: 12px;
-  margin-right: 10px;
-  max-width: calc(80% - 10px);
-  width: 100%;
-  box-sizing: border-box;
-  padding: 4px;
-}
-
-.private-message.private-current-user.first-message .private-message-content-container {
-  border-radius: 12px 0 12px 12px;
-  margin-right: 10px;
-  max-width: calc(80% - 10px);
-  width: 100%;
-  box-sizing: border-box;
-  padding: 4px;
-}
-
-.private-message.private-other-user .private-message-content-container {
-  background-color: #ECE0F8 !important;
-  border-radius: 0 12px 12px 12px;
-  margin-left: 0;
-  padding: 4px;
-}
-
-.private-message-content-container.no-avatar {
-    margin-left: 45px !important; /* Синхронизировано с шириной аватара (35px) + margin-right (10px) */
-}
-
-/* Защита текста от перекрытия */
-.private-message-content {
-  display: inline-block;
-  word-break: break-word;
-  margin: 0;
-  padding: 0; /* Базовый отступ 0 */
-  line-height: 1.4;
-}
-
-/* ДОБАВЛЕНО: Стили для контейнера действий (перевод и TTS) */
 .private-message-actions-container {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  z-index: 100;
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 100;
 }
 
+/* ДОБАВЛЕНО: Позиционирование иконок для аудиосообщений */
 .private-message-audio-message .private-message-actions-container {
-    top: 8px; /* Сдвинуто выше для аудиосообщений */
+    top: 8px;
+    left: 8px;
+    gap: 4px; /* Увеличенный зазор для читаемости */
 }
 
-/* ДОБАВЛЕНО: Стили для контейнера иконки TTS */
 .private-message-tts-container {
-  width: 16px; /* ИЗМЕНЕНО: Фиксированная ширина для иконки */
-  height: 16px; /* ИЗМЕНЕНО: Фиксированная высота для иконки */
+    width: 16px;
+    height: 16px;
 }
 
-/* ДОБАВЛЕНО: Стили для кнопки TTS в сообщениях */
 .private-message-tts-container .private-message-tts-button {
-  background: none;
-  border: none;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 2px;
-  color: #42a5f5;
-  transition: color 0.3s ease, transform 0.2s ease;
-  opacity: 0.6;
-  line-height: 1;
-  z-index: 101;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    background: none;
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px;
+    color: #42a5f5;
+    transition: color 0.3s ease, transform 0.2s ease;
+    opacity: 0.6;
+    line-height: 1;
+    z-index: 101;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Специфичность для аудиосообщений */
 .private-message-audio-message .private-message-tts-container .private-message-tts-button {
-  position: static; /* Отключаем абсолютное позиционирование только для аудиосообщений */
+    position: static;
 }
 
 .private-message-tts-container .private-message-tts-button:hover {
-  color: #1976d2;
-  transform: scale(1.1);
-  opacity: 1;
+    color: #1976d2;
+    transform: scale(1.1);
+    opacity: 1;
 }
 
 .private-message-tts-container .private-message-tts-button[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: -30px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #333333;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  min-width: 80px;
-  text-align: center;
+    content: attr(data-tooltip);
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333333;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    min-width: 80px;
+    text-align: center;
 }
 
 .private-message-tts-container .private-message-tts-button[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
 .private-message-tts-container .private-message-tts-button[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-bottom-color: #333333;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  z-index: 1000;
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-bottom-color: #333333;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 1000;
 }
 
 .private-message-tts-container .private-message-tts-button[data-tooltip]:hover::before {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
-/* ДОБАВЛЕНО: Стили для контейнера иконки TTS переведенного текста */
 .private-message-tts-translated-container {
-  width: 18px; /* Убрать фиксированную ширину */
-  height: 18px; /* Убрать фиксированную высоту */
+    width: 18px;
+    height: 18px;
 }
 
-/* ДОБАВЛЕНО: Стили для кнопки TTS переведенного текста */
 .private-message-tts-translated-container .private-message-tts-translated-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px;
-  color: #4a148c;
-  transition: color 0.3s ease, transform 0.2s ease;
-  opacity: 0.8;
-  line-height: 1;
-  z-index: 101;
-  width: 18px; /* Уменьшено для согласованности */
-  height: 18px; /* Уменьшено для согласованности */
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    color: #4a148c;
+    transition: color 0.3s ease, transform 0.2s ease;
+    opacity: 0.8;
+    line-height: 1;
+    z-index: 101;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Специфичность для аудиосообщений */
 .private-message-audio-message .private-message-tts-translated-container .private-message-tts-translated-button {
-  position: static; /* Отключаем абсолютное позиционирование только для аудиосообщений */
+    position: static;
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button:hover {
-  color: #2e0a54;
-  transform: scale(1.2);
-  opacity: 1;
+    color: #2e0a54;
+    transform: scale(1.2);
+    opacity: 1;
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: -30px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #333333;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  min-width: 80px;
-  text-align: center;
+    content: attr(data-tooltip);
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333333;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    min-width: 80px;
+    text-align: center;
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-bottom-color: #333333;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  z-index: 1000;
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-bottom-color: #333333;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 1000;
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]:hover::before {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
-/* Минимальная высота для текстовых сообщений с TTS перевода */
-.private-message-content-container:has(.private-message-tts-translated-container) {
-  min-height: 65px; /* 16px * 3 иконки + 2px * 2 gap + 4px * 2 padding + 5px резерв */
-}
-
-/* Минимальная высота для аудиосообщений с TTS перевода */
+/* ИЗМЕНЕНО: Увеличение минимальной высоты для аудиосообщений с TTS */
 .private-message-audio-message .private-message-content-container:has(.private-message-tts-translated-container) {
-    min-height: 140px; /* Увеличено: 16px × 3 иконки + 2px × 2 gap + 4px × 2 padding + 40px (аудиоплеер) + 20px (перевод) + 20px (транскрипция) + резерв */
+    min-height: 160px; /* 18px × 3 иконки + 4px × 2 gap + 8px × 2 padding + 40px (аудиоплеер) + 20px (перевод) + 20px (транскрипция) */
 }
 
-/* Минимальная высота для аудиосообщений с транскрипцией */
+/* ИЗМЕНЕНО: Увеличение минимальной высоты для аудиосообщений с транскрипцией */
 .private-message-audio-message .private-message-content-container:has(.private-message-transcription-container) {
-    min-height: 120px; /* Увеличено: 16px × 2 иконки + 2px gap + 4px × 2 padding + 40px (аудиоплеер) + 20px (транскрипция) + резерв */
+    min-height: 140px; /* 16px × 2 иконки + 4px gap + 8px × 2 padding + 40px (аудиоплеер) + 20px (транскрипция) */
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button svg {
-  width: 18px;
-  height: 18px;
-  fill: #4a148c;
+    width: 18px;
+    height: 18px;
+    fill: #4a148c;
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button:hover svg {
-  fill: #2e0a54;
+    fill: #2e0a54;
 }
 
 .private-transcription-controls {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  position: absolute;
-  left: 12px;
-  height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    position: absolute;
+    left: 12px;
+    height: 100%;
 }
 
 .private-transcription-button {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px;
-  position: relative;
-  transition: color 0.3s ease, transform 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  height: 28px;
-  width: 28px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+    position: relative;
+    transition: color 0.3s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    height: 28px;
+    width: 28px;
 }
 
 .private-transcription-button:hover {
-  transform: scale(1.1);
+    transform: scale(1.1);
 }
 
 .private-transcription-button[data-tooltip] {
-  position: relative;
+    position: relative;
 }
 
 .private-transcription-button[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: -36px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #333333;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 6px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 10;
+    content: attr(data-tooltip);
+    position: absolute;
+    top: -36px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333333;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 10;
 }
 
 .private-transcription-button[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
 .private-transcription-button[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: #333333;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: #333333;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
 .private-transcription-button[data-tooltip]:hover::before {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
 .private-transcription-indicator {
-  font-size: 14px;
-  color: #42a5f5;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  background: rgba(66, 165, 245, 0.1);
-  padding: 2px 6px;
-  border-radius: 4px;
+    font-size: 14px;
+    color: #42a5f5;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    background: rgba(66, 165, 245, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
-/* Стили для контейнера иконки транскрипции */
 .private-message-transcription-container {
-  width: 16px;
-  height: 16px;
+    width: 16px;
+    height: 16px;
 }
 
-/* Стили для кнопки транскрипции в сообщениях */
 .private-message-transcription-container .private-message-transcription-button {
-  background: none;
-  border: none;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 2px;
-  color: #42a5f5;
-  transition: color 0.3s ease, transform 0.2s ease;
-  opacity: 0.6;
-  line-height: 1;
-  z-index: 101;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    background: none;
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px;
+    color: #42a5f5;
+    transition: color 0.3s ease, transform 0.2s ease;
+    opacity: 0.6;
+    line-height: 1;
+    z-index: 101;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ИЗМЕНЕНО: Убираем абсолютное позиционирование для аудиосообщений */
+.private-message-audio-message .private-message-transcription-container .private-message-transcription-button {
+    position: static;
 }
 
 .private-message-transcription-container .private-message-transcription-button:hover {
-  color: #1976d2;
-  transform: scale(1.1);
-  opacity: 1;
+    color: #1976d2;
+    transform: scale(1.1);
+    opacity: 1;
 }
 
 .private-message-transcription-container .private-message-transcription-button[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: -30px;
-  right: 0;
-  transform: translateX(50%);
-  background-color: #333333;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  min-width: 80px;
-  text-align: center;
+    content: attr(data-tooltip);
+    position: absolute;
+    top: -30px;
+    right: 0;
+    transform: translateX(50%);
+    background-color: #333333;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    min-width: 80px;
+    text-align: center;
 }
 
 .private-message-transcription-container .private-message-transcription-button[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
 .private-message-transcription-container .private-message-transcription-button[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  right: 2px;
-  transform: translateX(50%);
-  border: 4px solid transparent;
-  border-bottom-color: #333333;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  z-index: 1000;
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: 2px;
+    transform: translateX(50%);
+    border: 4px solid transparent;
+    border-bottom-color: #333333;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 1000;
 }
 
 .private-message-transcription-container .private-message-transcription-button[data-tooltip]:hover::before {
-  opacity: 1;
-  visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
-/* Минимальная высота для контейнера сообщения при наличии транскрипции */
 .private-message-content-container:has(.private-message-transcription-container) {
-  min-height: 30px;
+    min-height: 30px;
 }
 
-/* ДОБАВЛЕНО: Динамический отступ слева для аудиосообщений с иконкой транскрипции */
-.private-message-audio-message .private-message-content-container:has(.private-message-transcription-container) .private-audio-player-wrapper {
-    padding-left: 24px; /* Сохранено для учета иконок */
-}
-
-/* ДОБАВЛЕНО: Стили для транскрипции в аудиосообщениях */
-.private-transcribed-content {
-  display: block;
-  font-family: 'Roboto', sans-serif;
-  font-size: 16px;
-  line-height: 1.4;
-  color: #333333;
-  margin-top: 4px; /* Отступ сверху от аудиоплеера */
-}
-
-.private-message-audio-message .private-message-content-container {
-    min-height: 120px; /* Увеличено для вмещения аудиоплеера (40px), иконок (16px × 3 + 2px × 2 gap), перевода (20px), транскрипции (20px) и отступов (4px × 2) */
-    max-width: 340px; /* Увеличено для соответствия ширине аудиоплеера (300px) + отступы */
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.private-message-audio-message .private-translated-content,
-.private-message-audio-message .private-transcribed-content {
-    width: 100%; /* Ограничиваем ширину */
-    max-width: calc(300px - 24px); /* Учитываем padding-left аудиоплеера (24px) */
-    margin-top: 8px; /* Отступ сверху от аудиоплеера */
-    margin-bottom: 8px; /* Отступ снизу для отделения от других элементов */
+/* ИЗМЕНЕНО: Убираем фиксированный отступ для аудиоплеера в аудиосообщениях */
+.private-message-content-container:has(.private-message-transcription-container) .private-audio-player-wrapper {
+    padding-left: 0; /* Убрано, так как отступы задаются в контейнере */
 }
 
 @media (max-width: 800px) {
@@ -1427,11 +1332,12 @@
     }
 
     .private-message-content-container.no-avatar {
-        margin-left: 40px !important; /* Синхронизировано с шириной аватара (30px) + margin-right (10px) */
+        margin-left: 40px !important;
     }
 
     .private-message.private-other-user .private-message-content-container {
         border-radius: 0 10px 10px 10px;
+        padding: 3px;
     }
 
     .private-message.private-other-user .private-message-content-container.no-avatar {
@@ -1444,6 +1350,7 @@
         max-width: calc(80% - 10px);
         width: 100%;
         box-sizing: border-box;
+        padding: 3px;
     }
 
     .private-message.private-current-user.first-message .private-message-content-container {
@@ -1452,23 +1359,33 @@
         max-width: calc(80% - 10px);
         width: 100%;
         box-sizing: border-box;
+        padding: 3px;
+    }
+
+    /* ДОБАВЛЕНО: Адаптивные стили для аудиосообщений */
+    .private-message-audio-message .private-message-content-container {
+        min-height: 110px; /* Уменьшено для мобильных */
+        min-width: 280px;
+        max-width: 280px;
+        padding: 6px 6px 6px 24px; /* Уменьшенные отступы */
+        overflow: hidden;
     }
 
     .private-input-message {
         font-size: 14px;
-        padding: 10px 40px 10px 40px; /* Изменено: padding-right увеличен для учета иконки отправки */
+        padding: 10px 40px 10px 40px;
         min-height: 40px;
         overflow-y: hidden;
     }
 
     .private-input-message.scroll-enabled {
-        overflow-y: auto; /* Включаем скроллбар при 5+ строках */
+        overflow-y: auto;
     }
 
     .private-attach-icon {
         left: 8px;
-        top: 50%; /* ИЗМЕНЕНО: Центрируем по вертикали */
-        transform: translateY(-50%); /* ИЗМЕНЕНО: Для центрирования */
+        top: 50%;
+        transform: translateY(-50%);
         width: 20px;
         height: 20px;
     }
@@ -1490,12 +1407,12 @@
     .private-translation-button {
         font-size: 18px;
         padding: 3px;
-        height: 24px; /* Добавлено: Фиксированная высота для мобильных */
-        width: 24px; /* Добавлено: Фиксированная ширина для мобильных */
-        display: flex; /* Добавлено: Flex для центрирования эмодзи */
-        align-items: center; /* Добавлено: Вертикальное центрирование */
-        justify-content: center; /* Добавлено: Горизонтальное центрирование */
-        line-height: 1; /* Добавлено: Нормализация высоты строки */
+        height: 24px;
+        width: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
     }
 
     .private-translation-button[data-tooltip]::after,
@@ -1533,7 +1450,7 @@
 
     .private-mic-icon-container {
         right: 8px;
-        top: 50%; /* Центрирование по вертикали относительно textarea-inner */
+        top: 50%;
         transform: translateY(-50%);
         height: 20px;
         width: 20px;
@@ -1541,8 +1458,8 @@
 
     .private-send-icon-container {
         right: 8px;
-        top: 50%; /* ИЗМЕНЕНО: Центрируем по вертикали */
-        transform: translateY(-50%); /* ИЗМЕНЕНО: Для центрирования */
+        top: 50%;
+        transform: translateY(-50%);
         height: 20px;
         width: 20px;
     }
@@ -1562,13 +1479,14 @@
     }
 
     .private-audio-player-wrapper {
-        width: 240px; /* Фиксированная ширина для мобильных */
+        width: 100%;
         max-width: 240px;
+        margin: 3px 0; /* ДОБАВЛЕНО: Отступы для мобильных */
     }
 
     .private-audio-controls {
         padding: 6px;
-        width: 100%; /* Полная ширина */
+        width: 100%;
     }
 
     .private-audio-play-pause {
@@ -1587,10 +1505,9 @@
         padding: 6px;
     }
 
-    /* ДОБАВЛЕНО: Одинаковая ширина для current-user и other-user на мобильных */
     .private-message.private-current-user .private-audio-player-wrapper,
     .private-message.private-other-user .private-audio-player-wrapper {
-        width: 240px;
+        width: 100%;
         max-width: 240px;
     }
 
@@ -1600,20 +1517,19 @@
         right: -5px;
     }
 
-    .private-textarea-inner { /* ДОБАВЛЕНО */
-        position: relative; /* Для абсолютного позиционирования иконок */
+    .private-textarea-inner {
+        position: relative;
         display: flex;
-        align-items: center; /* Выравнивание иконок и текстового поля по центру */
+        align-items: center;
         width: 100%;
     }
 
-    /* ДОБАВЛЕНО: Адаптивные стили для attached-file */
     .private-attached-file {
         padding: 4px 8px;
         margin-top: 6px;
-        margin-left: 36px; /* Учитываем меньший отступ для attach-icon */
-        margin-right: 36px; /* Учитываем меньший отступ для иконок */
-        max-width: calc(100% - 72px); /* Учитываем уменьшенные отступы */
+        margin-left: 36px;
+        margin-right: 36px;
+        max-width: calc(100% - 72px);
     }
 
     .private-attached-file-name {
@@ -1628,22 +1544,21 @@
     }
 
     .private-message-translate-container {
-      width: 14px;
-      height: 14px;
+        width: 14px;
+        height: 14px;
     }
 
     .private-message-translate-container .private-message-translate-button {
-      font-size: 10px;
-      padding: 1px;
-      width: 14px;
-      height: 14px;
-      color: #42a5f5;
-      opacity: 0.6;
+        font-size: 10px;
+        padding: 1px;
+        width: 14px;
+        height: 14px;
+        color: #42a5f5;
+        opacity: 0.6;
     }
 
-    /* Специфичность для аудиосообщений */
     .private-message-audio-message .private-message-translate-container .private-message-translate-button {
-        position: static; /* Отключаем абсолютное позиционирование для аудиосообщений */
+        position: static;
     }
 
     .private-message-translate-container .private-message-translate-button[data-tooltip]::after {
@@ -1671,41 +1586,39 @@
     }
 
     .private-message-content {
-        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
+        padding-left: 16px;
     }
 
     .private-file-link {
-        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
+        padding-left: 16px;
     }
 
     .private-message-content.translate-enabled,
     .private-message-content.tts-enabled {
-        padding-left: 22px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
+        padding-left: 22px;
     }
 
     .private-file-link.translate-enabled,
     .private-file-link.tts-enabled {
-        padding-left: 22px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
+        padding-left: 22px;
     }
 
     .private-message-tts-container {
-        width: 14px; /* ИЗМЕНЕНО: Уменьшенная ширина для мобильных */
-        height: 14px; /* ИЗМЕНЕНО: Уменьшенная высота для мобильных */
+        width: 14px;
+        height: 14px;
     }
 
-    /* ДОБАВЛЕНО: Адаптивные стили для кнопки TTS */
     .private-message-tts-container .private-message-tts-button {
-      font-size: 10px;
-      padding: 1px;
-      width: 14px;
-      height: 14px;
-      color: #42a5f5;
-      opacity: 0.6;
+        font-size: 10px;
+        padding: 1px;
+        width: 14px;
+        height: 14px;
+        color: #42a5f5;
+        opacity: 0.6;
     }
 
-    /* Специфичность для аудиосообщений */
     .private-message-audio-message .private-message-tts-container .private-message-tts-button {
-        position: static; /* Отключаем абсолютное позиционирование для аудиосообщений */
+        position: static;
     }
 
     .private-message-tts-container .private-message-tts-button[data-tooltip]::after {
@@ -1720,29 +1633,26 @@
         top: -6px;
     }
 
-    /* ДОБАВЛЕНО: Адаптивные стили для контейнера иконки TTS переведенного текста */
     .private-message-tts-translated-container {
         width: 14px;
         height: 14px;
     }
 
-    /* ДОБАВЛЕНО: Адаптивные стили для кнопки TTS переведенного текста */
     .private-message-tts-translated-container .private-message-tts-translated-button {
-      font-size: 10px;
-      padding: 1px;
-      width: 14px;
-      height: 14px;
-      color: #4a148c;
-      opacity: 0.8;
+        font-size: 10px;
+        padding: 1px;
+        width: 14px;
+        height: 14px;
+        color: #4a148c;
+        opacity: 0.8;
     }
 
-    /* Специфичность для аудиосообщений */
     .private-message-audio-message .private-message-tts-translated-container .private-message-tts-translated-button {
-      position: static; /* Отключаем абсолютное позиционирование для аудиосообщений */
+        position: static;
     }
 
     .private-message-tts-translated-container .private-message-tts-translated-button:hover {
-      color: #2e0a54;
+        color: #2e0a54;
     }
 
     .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::after {
@@ -1757,83 +1667,88 @@
         top: -6px;
     }
 
-    /* ДОБАВЛЕНО: Минимальная высота для контейнера сообщения при наличии TTS перевода на мобильных */
-    .private-message-content-container:has(.private-message-tts-translated-container) {
-      min-height: 50px; /* Для текстовых сообщений: 14px * 3 иконки + 3px * 2 gap + 3px * 2 padding */
-    }
-
+    /* ИЗМЕНЕНО: Уменьшение минимальной высоты для аудиосообщений с TTS на мобильных */
     .private-message-audio-message .private-message-content-container:has(.private-message-tts-translated-container) {
-        min-height: 50px; /* Для аудиосообщений: 14px * 3 иконки + 3px * 2 gap + 3px * 2 padding */
+        min-height: 130px; /* 14px × 3 иконки + 4px × 2 gap + 6px × 2 padding + 40px (аудиоплеер) + 20px (перевод) */
     }
 
     .private-message-tts-translated-container .private-message-tts-translated-button svg {
-      width: 16px;
-      height: 16px;
-      fill: #4a148c;
+        width: 16px;
+        height: 16px;
+        fill: #4a148c;
     }
 
     .private-message-tts-translated-container .private-message-tts-translated-button:hover svg {
-      fill: #2e0a54;
+        fill: #2e0a54;
     }
 
     .private-transcription-controls {
-    left: 8px;
-    gap: 6px;
-  }
+        left: 8px;
+        gap: 6px;
+    }
 
-  .private-transcription-button {
-    font-size: 18px;
-    padding: 3px;
-    height: 24px;
-    width: 24px;
-  }
+    .private-transcription-button {
+        font-size: 18px;
+        padding: 3px;
+        height: 24px;
+        width: 24px;
+    }
 
-  .private-transcription-button[data-tooltip]::after {
-    font-size: 11px;
-    padding: 5px 10px;
-    top: -32px;
-  }
+    .private-transcription-button[data-tooltip]::after {
+        font-size: 11px;
+        padding: 5px 10px;
+        top: -32px;
+    }
 
-  .private-transcription-button[data-tooltip]::before {
-    top: -6px;
-  }
+    .private-transcription-button[data-tooltip]::before {
+        top: -6px;
+    }
 
-  .private-transcription-indicator {
-    font-size: 12px;
-    padding: 2px 5px;
-  }
+    .private-transcription-indicator {
+        font-size: 12px;
+        padding: 2px 5px;
+    }
 
-  .private-message-transcription-container {
-    width: 14px;
-    height: 14px;
-  }
+    .private-message-transcription-container {
+        width: 14px;
+        height: 14px;
+    }
 
-  .private-message-transcription-container .private-message-transcription-button {
-    font-size: 10px;
-    padding: 1px;
-    width: 14px;
-    height: 14px;
-    color: #42a5f5;
-    opacity: 0.6;
-  }
+    .private-message-transcription-container .private-message-transcription-button {
+        font-size: 10px;
+        padding: 1px;
+        width: 14px;
+        height: 14px;
+        color: #42a5f5;
+        opacity: 0.6;
+    }
 
-  .private-message-transcription-container .private-message-transcription-button[data-tooltip]::after {
-    font-size: 9px;
-    padding: 2px 5px;
-    top: -28px;
-  }
+    .private-message-transcription-container .private-message-transcription-button[data-tooltip]::after {
+        font-size: 9px;
+        padding: 2px 5px;
+        top: -28px;
+    }
 
-  .private-message-transcription-container .private-message-transcription-button[data-tooltip]::before {
-    border: 2px solid transparent;
-    border-bottom-color: #333333;
-    top: -6px;
-  }
+    .private-message-transcription-container .private-message-transcription-button[data-tooltip]::before {
+        border: 2px solid transparent;
+        border-bottom-color: #333333;
+        top: -6px;
+    }
 
-  .private-message-content-container:has(.private-message-transcription-container) {
-    min-height: 28px;
-  }
+    .private-message-content-container:has(.private-message-transcription-container) {
+        min-height: 28px;
+    }
 
-  .private-message-audio-message .private-audio-player-wrapper {
-    padding-left: 20px; /* Меньший отступ для мобильных */
-  }
+    /* ДОБАВЛЕНО: Убираем отступ для аудиоплеера в аудиосообщениях на мобильных */
+    .private-message-audio-message .private-audio-player-wrapper {
+        padding-left: 0; /* Убрано, так как отступы задаются в контейнере */
+    }
+
+    /* ДОБАВЛЕНО: Ограничение ширины перевода и транскрипции для мобильных */
+    .private-message-audio-message .private-translated-content,
+    .private-message-audio-message .private-transcribed-content {
+        max-width: 240px; /* Синхронизировано с шириной аудиоплеера */
+        margin: 3px 0;
+        font-size: 14px; /* Уменьшено для компактности */
+    }
 }
