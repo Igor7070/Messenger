@@ -1367,6 +1367,10 @@
   padding-left: 24px; /* Отступ слева для проигрывателя, чтобы избежать наложения */
 }
 
+.private-message-audio-message .private-message-content-container:has(.private-message-tts-translated-container) {
+  min-height: 60px; /* Для аудиосообщений: 16px * 3 иконки + 4px * 2 gap + 4px * 2 padding */
+}
+
 @media (max-width: 800px) {
     .private-chat {
         margin: 10px;
