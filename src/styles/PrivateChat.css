@@ -117,7 +117,6 @@
     overflow-wrap: break-word;
     white-space: pre-wrap;
     box-sizing: border-box;
-    position: relative; /* Для привязки translate-container */
 }
 
 .private-message.private-current-user .private-message-content-container {
@@ -1368,13 +1367,6 @@
   padding-left: 24px; /* Отступ слева для проигрывателя, чтобы избежать наложения */
 }
 
-.private-message.private-message-audio-message .private-message-content-container {
-    min-height: 84px !important; /* Сохраняем, с !important для приоритета */
-    padding: 4px;
-    padding-bottom: 12px; /* Добавляем пространство снизу */
-    box-sizing: border-box;
-}
-
 @media (max-width: 800px) {
     .private-chat {
         margin: 10px;
@@ -1728,7 +1720,7 @@
     }
 
     .private-message-audio-message .private-message-content-container:has(.private-message-tts-translated-container) {
-        min-height: 60px; /* Для аудиосообщений: 14px * 3 иконки + 3px * 2 gap + 3px * 2 padding */
+        min-height: 50px; /* Для аудиосообщений: 14px * 3 иконки + 3px * 2 gap + 3px * 2 padding */
     }
 
     .private-message-tts-translated-container .private-message-tts-translated-button svg {
