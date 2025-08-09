@@ -110,13 +110,15 @@
     display: block;
     max-width: 80%;
     min-width: 0;
-    padding: 8px;
+    padding: 4px;
     border-radius: 12px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     word-wrap: break-word;
     overflow-wrap: break-word;
     white-space: pre-wrap;
     box-sizing: border-box;
+    position: relative;
+    min-height: 30px; /* Добавлено для текстовых сообщений, чтобы вместить иконки */
 }
 
 .private-message.private-current-user .private-message-content-container {
@@ -624,8 +626,10 @@
 .private-audio-player-wrapper {
     display: flex;
     flex-direction: column;
-    width: 300px; /* ИЗМЕНЕНО: Фиксированная ширина для единообразия */
-    max-width: 300px; /* ИЗМЕНЕНО: Одинаковая максимальная ширина */
+    width: 300px;
+    max-width: 300px;
+    padding-left: 24px; /* Добавлено для учета иконок слева */
+    margin: 4px 0; /* Добавлено для пространства сверху и снизу */
 }
 
 /* Стили для кастомных элементов управления */
@@ -1011,6 +1015,10 @@
   z-index: 100;
 }
 
+.private-message-audio-message .private-message-actions-container {
+    top: 8px; /* Сдвинуто выше для аудиосообщений */
+}
+
 /* ДОБАВЛЕНО: Стили для контейнера иконки TTS */
 .private-message-tts-container {
   width: 16px; /* ИЗМЕНЕНО: Фиксированная ширина для иконки */
@@ -1183,12 +1191,12 @@
 
 /* Минимальная высота для аудиосообщений с TTS перевода */
 .private-message-audio-message .private-message-content-container:has(.private-message-tts-translated-container) {
-  min-height: 100px; /* 16px * 3 иконки + 2px * 2 gap + 4px * 2 padding + 40px (аудиоплеер) + 20px (перевод) + 20px (транскрипция) */
+    min-height: 140px; /* Увеличено: 16px × 3 иконки + 2px × 2 gap + 4px × 2 padding + 40px (аудиоплеер) + 20px (перевод) + 20px (транскрипция) + резерв */
 }
 
 /* Минимальная высота для аудиосообщений с транскрипцией */
 .private-message-audio-message .private-message-content-container:has(.private-message-transcription-container) {
-  min-height: 80px; /* 16px * 2 иконки + 2px gap + 4px * 2 padding + 40px (аудиоплеер) + 20px (транскрипция) */
+    min-height: 120px; /* Увеличено: 16px × 2 иконки + 2px gap + 4px × 2 padding + 40px (аудиоплеер) + 20px (транскрипция) + резерв */
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button svg {
@@ -1373,8 +1381,8 @@
 }
 
 /* ДОБАВЛЕНО: Динамический отступ слева для аудиосообщений с иконкой транскрипции */
-.private-message-content-container:has(.private-message-transcription-container) .private-audio-player-wrapper {
-  padding-left: 24px; /* Отступ слева для проигрывателя, чтобы избежать наложения */
+.private-message-audio-message .private-message-content-container:has(.private-message-transcription-container) .private-audio-player-wrapper {
+    padding-left: 24px; /* Сохранено для учета иконок */
 }
 
 /* ДОБАВЛЕНО: Стили для транскрипции в аудиосообщениях */
@@ -1385,6 +1393,21 @@
   line-height: 1.4;
   color: #333333;
   margin-top: 4px; /* Отступ сверху от аудиоплеера */
+}
+
+.private-message-audio-message .private-message-content-container {
+    min-height: 120px; /* Увеличено для вмещения аудиоплеера (40px), иконок (16px × 3 + 2px × 2 gap), перевода (20px), транскрипции (20px) и отступов (4px × 2) */
+    max-width: 340px; /* Увеличено для соответствия ширине аудиоплеера (300px) + отступы */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.private-message-audio-message .private-translated-content,
+.private-message-audio-message .private-transcribed-content {
+    width: 100%; /* Ограничиваем ширину */
+    max-width: calc(300px - 24px); /* Учитываем padding-left аудиоплеера (24px) */
+    margin-top: 8px; /* Отступ сверху от аудиоплеера */
+    margin-bottom: 8px; /* Отступ снизу для отделения от других элементов */
 }
 
 @media (max-width: 800px) {
