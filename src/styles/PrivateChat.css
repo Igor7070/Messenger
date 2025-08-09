@@ -1369,56 +1369,9 @@
   min-height: 30px;
 }
 
-/* Позиционирование иконки перевода под транскрипцией, если обе включены */
-.private-message-actions-container:has(.private-message-transcription-container) .private-message-translate-container .private-message-translate-button {
-  top: 18px; /* Сдвиг вниз на высоту иконки транскрипции (16px) + gap (2px) */
-}
-
-/* Позиционирование иконки TTS под транскрипцией или переводом */
-.private-message-actions-container:has(.private-message-transcription-container) .private-message-tts-container .private-message-tts-button {
-  top: 18px; /* Сдвиг вниз, если только транскрипция */
-}
-
-/* Позиционирование иконки TTS, если есть и транскрипция, и перевод */
-.private-message-actions-container:has(.private-message-transcription-container):has(.private-message-translate-container) .private-message-tts-container .private-message-tts-button {
-  top: 36px; /* Сдвиг вниз на высоту транскрипции (16px) + перевода (16px) + gap (2px * 2) */
-}
-
-/* Позиционирование иконки TTS переведенного текста */
-.private-message-actions-container:has(.private-message-transcription-container) .private-message-tts-translated-container .private-message-tts-translated-button {
-  top: 36px; /* Сдвиг вниз, если только транскрипция */
-}
-
-/* Позиционирование иконки TTS переведенного текста, если есть перевод */
-.private-message-actions-container:has(.private-message-transcription-container):has(.private-message-translate-container) .private-message-tts-translated-container .private-message-tts-translated-button {
-  top: 54px; /* Сдвиг вниз: транскрипция (16px) + перевод (16px) + TTS (16px) + gap (2px * 3) */
-}
-
-/* Динамический отступ слева для аудиосообщений с иконкой транскрипции */
+/* ДОБАВЛЕНО: Динамический отступ слева для аудиосообщений с иконкой транскрипции */
 .private-message-content-container:has(.private-message-transcription-container) .private-audio-player-wrapper {
   padding-left: 24px; /* Отступ слева для проигрывателя, чтобы избежать наложения */
-}
-
-/* Минимальная высота для контейнера сообщения при наличии всех иконок */
-.private-message-content-container:has(.private-message-transcription-container):has(.private-message-translate-container):has(.private-message-tts-translated-container) {
-  min-height: 82px; /* Высота для четырех иконок: 16px * 4 + gap 2px * 3 + padding 4px * 2 = 82px */
-}
-
-.private-message-translation-container {
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #333;
-}
-
-.private-message-transcription-container {
-  margin-top: 8px;
-  font-size: 14px;
-  color: #666;
-}
-
-.private-message-transcription {
-  display: block;
-  white-space: pre-wrap;
 }
 
 @media (max-width: 800px) {
@@ -1833,35 +1786,6 @@
 
   .private-message-content-container:has(.private-message-transcription-container) {
     min-height: 28px;
-  }
-
-  .private-message-content-container:has(.private-message-transcription-container) .private-audio-player-wrapper {
-    padding-left: 20px; /* Меньший отступ для мобильных */
-  }
-
-  /* ДОБАВЛЕНО: Адаптивные стили для иконок транскрипции, перевода и TTS */
-  .private-message-actions-container:has(.private-message-transcription-container) .private-message-translate-container .private-message-translate-button {
-    top: 16px; /* Сдвиг вниз на высоту иконки транскрипции (14px) + gap (2px) */
-  }
-
-  .private-message-actions-container:has(.private-message-transcription-container) .private-message-tts-container .private-message-tts-button {
-    top: 16px; /* Сдвиг вниз, если только транскрипция */
-  }
-
-  .private-message-actions-container:has(.private-message-transcription-container):has(.private-message-translate-container) .private-message-tts-container .private-message-tts-button {
-    top: 32px; /* Сдвиг вниз: транскрипция (14px) + перевод (14px) + gap (2px * 2) */
-  }
-
-  .private-message-actions-container:has(.private-message-transcription-container) .private-message-tts-translated-container .private-message-tts-translated-button {
-    top: 32px; /* Сдвиг вниз, если только транскрипция */
-  }
-
-  .private-message-actions-container:has(.private-message-transcription-container):has(.private-message-translate-container) .private-message-tts-translated-container .private-message-tts-translated-button {
-    top: 48px; /* Сдвиг вниз: транскрипция (14px) + перевод (14px) + TTS (14px) + gap (2px * 3) */
-  }
-
-  .private-message-content-container:has(.private-message-transcription-container):has(.private-message-translate-container):has(.private-message-tts-translated-container) {
-    min-height: 70px; /* Высота для четырех иконок: 14px * 4 + gap 2px * 3 + padding 3px * 2 = 70px */
   }
 
   .private-message-content-container:has(.private-message-transcription-container) .private-audio-player-wrapper {
