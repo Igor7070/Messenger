@@ -29,7 +29,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
 
   useEffect(() => {
     transcribeNextMessage();
-  }, [transcriptionQueue, isTranscribing, transcribeNextMessage]);
+  }, [transcriptionQueue, isTranscribing]);
 
   useEffect(() => {
     if (isTranscriptionEnabled && transcriptionMode === 'all') {
