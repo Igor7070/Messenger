@@ -117,6 +117,7 @@
     overflow-wrap: break-word;
     white-space: pre-wrap;
     box-sizing: border-box;
+    position: relative; /* Для привязки translate-container */
 }
 
 .private-message.private-current-user .private-message-content-container {
@@ -1365,6 +1366,13 @@
 /* ДОБАВЛЕНО: Динамический отступ слева для аудиосообщений с иконкой транскрипции */
 .private-message-content-container:has(.private-message-transcription-container) .private-audio-player-wrapper {
   padding-left: 24px; /* Отступ слева для проигрывателя, чтобы избежать наложения */
+}
+
+.private-message.private-message-audio-message .private-message-content-container {
+    min-height: 84px !important; /* Сохраняем, с !important для приоритета */
+    padding: 4px;
+    padding-bottom: 12px; /* Добавляем пространство снизу */
+    box-sizing: border-box;
 }
 
 @media (max-width: 800px) {
