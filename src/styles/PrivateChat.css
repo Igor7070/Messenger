@@ -1397,6 +1397,22 @@
     overflow: hidden; /* Предотвращает выход элементов за пределы */
 }
 
+.private-message.private-audio-message .private-message-content-container:has(.private-message-tts-translated-container),
+.private-message.private-audio-message .private-message-content-container:has(.private-message-transcription-container) {
+    min-height: auto; /* Подстраивается под содержимое */
+    padding-bottom: 12px; /* Дополнительный отступ снизу для иконок */
+}
+
+.private-message.private-audio-message .private-message-content-container {
+    width: auto; /* Подстраивается под содержимое */
+    min-width: 340px; /* Аудиоплеер (300px) + padding (8px * 2) + отступ для иконок (24px) */
+    max-width: none; /* Убираем ограничение ширины */
+    min-height: auto; /* Подстраивается под содержимое */
+    padding: 8px 8px 8px 32px; /* Левый отступ для иконок */
+    box-sizing: border-box;
+    overflow: visible; /* Позволяем иконкам отображаться */
+}
+
 @media (max-width: 800px) {
     .private-chat {
         margin: 10px;
