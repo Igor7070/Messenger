@@ -862,19 +862,21 @@
   font-size: 12px;
   cursor: pointer;
   padding: 2px;
-  position: absolute;
-  top: 0;
-  left: 0;
   color: #42a5f5;
   transition: color 0.3s ease, transform 0.2s ease;
   opacity: 0.6;
   line-height: 1;
   z-index: 101;
-  width: 16px; /* ИЗМЕНЕНО: Фиксированная ширина */
-  height: 16px; /* ИЗМЕНЕНО: Фиксированная высота */
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Специфичность для аудиосообщений */
+.private-message-audio-message .private-message-translate-container .private-message-translate-button {
+  position: static; /* Отключаем абсолютное позиционирование только для аудиосообщений */
 }
 
 /* Ховер-эффект */
@@ -1022,24 +1024,21 @@
   font-size: 12px;
   cursor: pointer;
   padding: 2px;
-  position: absolute;
-  top: 0;
-  left: 0;
   color: #42a5f5;
   transition: color 0.3s ease, transform 0.2s ease;
   opacity: 0.6;
   line-height: 1;
   z-index: 101;
-  width: 16px; /* ИЗМЕНЕНО: Фиксированная ширина */
-  height: 16px; /* ИЗМЕНЕНО: Фиксированная высота */
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* ДОБАВЛЕНО: Позиционирование TTS под переводом, если перевод включен */
-.private-message-actions-container:has(.private-message-translate-container) .private-message-tts-container .private-message-tts-button {
-  top: 18px; /* ИЗМЕНЕНО: Сдвиг вниз на высоту иконки перевода (16px) + gap (2px) */
+/* Специфичность для аудиосообщений */
+.private-message-audio-message .private-message-tts-container .private-message-tts-button {
+  position: static; /* Отключаем абсолютное позиционирование только для аудиосообщений */
 }
 
 .private-message-tts-container .private-message-tts-button:hover {
@@ -1107,24 +1106,21 @@
   border: none;
   cursor: pointer;
   padding: 2px;
-  position: absolute;
-  top: 32px !important; 
-  left: -2px; /* Сместить левее */
   color: #4a148c;
   transition: color 0.3s ease, transform 0.2s ease;
   opacity: 0.8;
   line-height: 1;
   z-index: 101;
-  width: 22px;
-  height: 22px;
+  width: 18px; /* Уменьшено для согласованности */
+  height: 18px; /* Уменьшено для согласованности */
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* ДОБАВЛЕНО: Позиционирование TTS переведенного текста под обычным TTS */
-.private-message-actions-container:has(.private-message-tts-container) .private-message-tts-translated-container .private-message-tts-translated-button {
-  top: 36px; /* Сдвиг вниз: иконка перевода (16px) + иконка TTS (16px) + gap (2px * 2) */
+/* Специфичность для аудиосообщений */
+.private-message-audio-message .private-message-tts-translated-container .private-message-tts-translated-button {
+  position: static; /* Отключаем абсолютное позиционирование только для аудиосообщений */
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button:hover {
@@ -1589,8 +1585,8 @@
     }
 
     .private-message-translate-container {
-        width: 14px; /* ИЗМЕНЕНО: Уменьшенная ширина для мобильных */
-        height: 14px; /* ИЗМЕНЕНО: Уменьшенная высота для мобильных */
+      width: 14px;
+      height: 14px;
     }
 
     .private-message-translate-container .private-message-translate-button {
@@ -1763,10 +1759,10 @@
   .private-message-transcription-container .private-message-transcription-button {
     font-size: 10px;
     padding: 1px;
-    top: 0;
-    right: 0;
     width: 14px;
     height: 14px;
+    color: #42a5f5;
+    opacity: 0.6;
   }
 
   .private-message-transcription-container .private-message-transcription-button[data-tooltip]::after {
