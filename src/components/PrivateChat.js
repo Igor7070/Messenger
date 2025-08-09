@@ -83,6 +83,11 @@ const PrivateChat = () => {
   const memoizedAudioMessages = useMemo(() => {
     return messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
   }, [messages]);
+
+  const [isTranscriptionEnabled, setIsTranscriptionEnabled] = useState(() => {
+    const saved = localStorage.getItem(`transcription_enabled_${chatId}`);
+    return saved ? JSON.parse(saved) : false;
+  });
   
   // ДОБАВЛЕНО: использование хука
   const {
@@ -111,6 +116,8 @@ const PrivateChat = () => {
     isTranslating,
     setIsTranslating,
     setIsSpellCheckEnabled,
+    isTranscriptionEnabled, // ДОБАВЛЕНО
+    setIsTranscriptionEnabled, // ДОБАВЛЕНО
   });
 
   const scrollToBottom = () => {
@@ -144,29 +151,44 @@ const PrivateChat = () => {
         const initialMessages = await getMessages(chatIdParam);
         const updatedMessages = initialMessages.map((msg) => {
           const translationKey = `translation_${chatIdParam}_${msg.id}`;
+          const transcriptionKey = `transcription_${chatIdParam}_${msg.id}`;
           const savedTranslation = localStorage.getItem(translationKey);
-          if (savedTranslation) {
-            const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
-            return {
-              ...msg,
-              delivered: msg.delivered_status,
-              read: msg.read_status,
-              translatedContent,
-              translationLanguage,
-              showOriginal: true,
-            };
-          }
-          return {
+          const savedTranscription = localStorage.getItem(transcriptionKey);
+          let messageData = {
             ...msg,
             delivered: msg.delivered_status,
             read: msg.read_status,
             showOriginal: true,
           };
+
+          if (savedTranslation) {
+            const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
+            messageData = {
+              ...messageData,
+              translatedContent,
+              translationLanguage,
+            };
+          }
+
+          if (savedTranscription && msg.messageType === 'audio') {
+            const { transcribedContent } = JSON.parse(savedTranscription);
+            messageData = {
+              ...messageData,
+              transcribedContent,
+              showTranscription: true,
+            };
+          }
+
+          return messageData;
         });
 
         setMessages(updatedMessages);
         if (isTranslationEnabled && translationMode === 'all') {
           translateExistingMessages();
+        }
+
+        if (isTranscriptionEnabled && transcriptionMode === 'all') {
+          transcribeExistingMessages();
         }
 
         // Загрузка настройки орфографии
@@ -176,7 +198,6 @@ const PrivateChat = () => {
         setIsTTSEnabled(localStorage.getItem(`tts_enabled_${chatIdParam}`) === 'true');
 
         // ДОБАВЛЕНО: Загрузка настройки транскрипции
-        setIsTranscriptionEnabled(localStorage.getItem(`transcription_enabled_${chatIdParam}`) === 'true');
         setTranscriptionMode(localStorage.getItem(`transcription_mode_${chatIdParam}`) || 'selective');
 
         setTimeout(() => {
@@ -458,6 +479,8 @@ const PrivateChat = () => {
           messageType: newMessage.messageType,
           translatedContent: isAudio ? null : newMessage.translatedContent,
           translationLanguage: isAudio ? null : newMessage.translationLanguage,
+          transcribedContent: isAudio ? newMessage.transcribedContent : null,
+          showTranscription: isAudio ? (newMessage.showTranscription || false) : false,
         };
         console.log('New message added:', newMsg); // Отладка
         // Проверяем, есть ли сообщение в messages или в очереди с переводом
@@ -1156,11 +1179,15 @@ const PrivateChat = () => {
   };
 
   const handleTTSOriginal = async (msg) => {
-    if (!msg.content || msg.messageType === 'audio') {
-      console.warn('No valid content for TTS:', { msgId: msg.id, content: msg.content });
+    const contentToSpeak = msg.messageType === 'audio' ? msg.transcribedContent : msg.content;
+    if (!contentToSpeak) {
+      console.warn('No valid content for TTS:', {
+        msgId: msg.id,
+        content: msg.content,
+        transcribedContent: msg.transcribedContent,
+      });
       return;
     }
-
     try {
       const response = await fetch('https://unlimitedpossibilities12.org/api/tts', {
         method: 'POST',
@@ -1168,15 +1195,13 @@ const PrivateChat = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text: msg.content,
-          language: 'auto', // Используем 'auto' для оригинального текста
+          text: contentToSpeak,
+          language: 'auto',
         }),
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const json = await response.json();
       if (json.audio) {
         const audioData = atob(json.audio);
@@ -1455,11 +1480,33 @@ const PrivateChat = () => {
                               </span>
                             </div>
                           )}
+                          {/* ДОБАВЛЕНО: Отображение транскрипции и перевода */}
+                          {isTranscriptionEnabled && msg.transcribedContent && (
+                            <span
+                              className={`private-message-content ${isTranslationEnabled ? 'translate-enabled' : ''} ${isTTSEnabled ? 'tts-enabled' : ''}`}
+                              onClick={() => {
+                                if (msg.translatedContent) {
+                                  setMessages((prevMessages) =>
+                                    prevMessages.map((m) =>
+                                      m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                    )
+                                  );
+                                }
+                              }}
+                              style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                            >
+                              <span className="private-original-content">
+                                {msg.showOriginal || !msg.translatedContent ? msg.transcribedContent : msg.translatedContent}
+                              </span>
+                              {msg.translatedContent && (
+                                <span className="private-translated-content">{msg.translatedContent}</span>
+                              )}
+                            </span>
+                          )}
                         </div>
                       </div>
                     ) : (
                       <>
-                        {/* ИЗМЕНЕНО: Добавлен класс tts-enabled для корректных отступов */}
                         <span
                           className={`private-message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''} ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
                           onClick={(e) => {
@@ -1503,9 +1550,20 @@ const PrivateChat = () => {
                     <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                   </div>
                   {/* ДОБАВЛЕНО: Отдельный контейнер для иконки перевода */}
-                  {(msg.messageType !== 'audio' && (isTranslationEnabled || isTTSEnabled)) || (msg.messageType === 'audio' && isTranscriptionEnabled) ? (
+                  {((msg.messageType === 'audio' && isTranscriptionEnabled) || (msg.messageType !== 'audio' && (isTranslationEnabled || isTTSEnabled))) ? (
                     <div className="private-message-actions-container">
-                      {msg.messageType !== 'audio' && isTranslationEnabled && (
+                      {msg.messageType === 'audio' && isTranscriptionEnabled && (
+                        <div className="private-message-transcription-container">
+                          <button
+                            className="private-message-transcription-button"
+                            onClick={() => transcribeAudioMessage(msg)}
+                            data-tooltip="Transcribe audio message"
+                          >
+                            🎤
+                          </button>
+                        </div>
+                      )}
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && msg.transcribedContent)) && isTranslationEnabled && (
                         <div className="private-message-translate-container">
                           <button
                             className="private-message-translate-button"
@@ -1516,7 +1574,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {msg.messageType !== 'audio' && isTTSEnabled && (
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && msg.transcribedContent)) && isTTSEnabled && (
                         <div className="private-message-tts-container">
                           <button
                             className="private-message-tts-button"
@@ -1527,7 +1585,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {msg.messageType !== 'audio' && isTTSEnabled && isTranslationEnabled && (
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && msg.transcribedContent)) && isTTSEnabled && isTranslationEnabled && (
                         <div className="private-message-tts-translated-container">
                           <button
                             className="private-message-tts-translated-button"
@@ -1537,17 +1595,6 @@ const PrivateChat = () => {
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
                               <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
                             </svg>
-                          </button>
-                        </div>
-                      )}
-                      {msg.messageType === 'audio' && isTranscriptionEnabled && (
-                        <div className="private-message-transcription-container">
-                          <button
-                            className="private-message-transcription-button"
-                            onClick={() => {} /* Placeholder for transcription handler */}
-                            data-tooltip="Transcribe audio message"
-                          >
-                            🎤
                           </button>
                         </div>
                       )}
