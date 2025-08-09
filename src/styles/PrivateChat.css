@@ -532,12 +532,12 @@
   line-height: 1.4;
 }
 
-.private-translated-content { /* Изменено */
+.private-translated-content {
   display: block;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: #666;
-  margin-top: 4px;
+  margin-bottom: 4px; /* Отступ снизу для аудиосообщений, чтобы отделить от аудиоплеера */
   line-height: 1.4;
 }
 
@@ -603,11 +603,11 @@
 
 /* ИЗМЕНЕНО: Стили для аудиосообщений */
 .private-audio-message-container {
-    margin-top: 5px;
     display: flex;
-    align-items: center;
+    flex-direction: column; /* Вертикальное расположение: перевод -> аудиоплеер -> транскрипция */
+    align-items: flex-start;
     width: 100%;
-    max-width: 100%; /* ДОБАВЛЕНО: Устанавливаем максимальную ширину на 100% от родителя */
+    max-width: 100%;
 }
 
 .private-audio-player {
@@ -1365,6 +1365,16 @@
 /* ДОБАВЛЕНО: Динамический отступ слева для аудиосообщений с иконкой транскрипции */
 .private-message-content-container:has(.private-message-transcription-container) .private-audio-player-wrapper {
   padding-left: 24px; /* Отступ слева для проигрывателя, чтобы избежать наложения */
+}
+
+/* ДОБАВЛЕНО: Стили для транскрипции в аудиосообщениях */
+.private-transcribed-content {
+  display: block;
+  font-family: 'Roboto', sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  color: #333333;
+  margin-top: 4px; /* Отступ сверху от аудиоплеера */
 }
 
 @media (max-width: 800px) {

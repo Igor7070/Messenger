@@ -1394,6 +1394,22 @@ const PrivateChat = () => {
                   <div className="private-message-content-wrapper">
                     {msg.messageType === 'audio' && msg.fileUrl ? (
                       <div className="private-audio-message-container">
+                        {/* Перевод над аудиоплеером */}
+                        {isTranslationEnabled && msg.translatedContent && (
+                          <span
+                            className="private-translated-content"
+                            onClick={() => {
+                              setMessages((prevMessages) =>
+                                prevMessages.map((m) =>
+                                  m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                )
+                              );
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                          </span>
+                        )}
                         <div className="private-audio-player-wrapper">
                           <audio
                             ref={(el) => {
@@ -1473,6 +1489,12 @@ const PrivateChat = () => {
                             </div>
                           )}
                         </div>
+                        {/* Транскрипция под аудиоплеером */}
+                        {isTranscriptionEnabled && msg.content && (
+                          <span className="private-transcribed-content">
+                            {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <>
