@@ -18,6 +18,8 @@ const usePrivateChatTranslationAndSpellCheck = ({
   isTranslating,
   setIsTranslating,
   setIsSpellCheckEnabled,
+  transcribedContentMap, // ДОБАВЛЕНО
+  setTranscribedContentMap, // ДОБАВЛЕНО
 }) => {
 
   // Проверка, является ли сообщение новым
@@ -45,9 +47,26 @@ const usePrivateChatTranslationAndSpellCheck = ({
         toast.error('Translation is not enabled');
         return;
       }
+
+      // ДОБАВЛЕНО: Выбор контента для перевода
+      const contentToTranslate = message.messageType === 'audio' && transcribedContentMap[message.id]?.content
+        ? transcribedContentMap[message.id].content
+        : message.content;
+
+      if (!contentToTranslate || contentToTranslate === 'Message deleted') {
+        console.warn('Translation not possible:', {
+          isTranslationEnabled,
+          content: contentToTranslate,
+          msgId: message.id,
+          isAudio: message.messageType === 'audio',
+        });
+        toast.error('No valid content to translate');
+        return;
+      }
+
       try {
         setIsTranslating(true);
-        const translatedContent = await translateMessage(message.content, translationLanguage);
+        const translatedContent = await translateMessage(contentToTranslate, translationLanguage);
         const translationKey = `translation_${chatId}_${message.id}`;
         const translationData = {
           translatedContent,
@@ -55,20 +74,33 @@ const usePrivateChatTranslationAndSpellCheck = ({
         };
         localStorage.setItem(translationKey, JSON.stringify(translationData));
 
-        setMessages((prevMessages) =>
-          prevMessages.map((msg) =>
-            msg.id === message.id
-              ? {
-                  ...msg,
-                  translatedContent,
-                  translationLanguage,
-                  showOriginal: true,
-                  delivered: msg.delivered ?? msg.delivered_status,
-                  read: msg.read ?? msg.read_status,
-                }
-              : msg
-          )
-        );
+        // ДОБАВЛЕНО: Обновление transcribedContentMap для аудиосообщений
+        if (message.messageType === 'audio' && transcribedContentMap[message.id]?.content) {
+          setTranscribedContentMap((prev) => ({
+            ...prev,
+            [message.id]: {
+              ...prev[message.id],
+              translatedContent,
+              translationLanguage,
+            },
+          }));
+        } else {
+          // Обновление messages для текстовых сообщений
+          setMessages((prevMessages) =>
+            prevMessages.map((msg) =>
+              msg.id === message.id
+                ? {
+                    ...msg,
+                    translatedContent,
+                    translationLanguage,
+                    showOriginal: true,
+                    delivered: msg.delivered ?? msg.delivered_status,
+                    read: msg.read ?? msg.read_status,
+                  }
+                : msg
+            )
+          );
+        }
 
         await saveTranslation(message.id, translatedContent, translationLanguage);
         toast.success('Message translated successfully');
@@ -79,7 +111,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
         setIsTranslating(false);
       }
     },
-    [chatId, isTranslationEnabled, translationLanguage, setMessages, setIsTranslating]
+    [chatId, isTranslationEnabled, translationLanguage, setMessages, setIsTranslating, transcribedContentMap, setTranscribedContentMap]
   );
 
   // Перевод существующих сообщений

@@ -79,6 +79,9 @@ const PrivateChat = () => {
   const [transcriptionMode, setTranscriptionMode] = useState('selective');
   const [showTranscriptionModal, setShowTranscriptionModal] = useState(false);
 
+  // ДОБАВЛЕНО: Состояние для транскрибированного контента
+  const [transcribedContentMap, setTranscribedContentMap] = useState({});
+
   // Мемоизация аудиосообщений
   const memoizedAudioMessages = useMemo(() => {
     return messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
@@ -111,6 +114,8 @@ const PrivateChat = () => {
     isTranslating,
     setIsTranslating,
     setIsSpellCheckEnabled,
+    transcribedContentMap, // ДОБАВЛЕНО
+    setTranscribedContentMap, // ДОБАВЛЕНО
   });
 
   const scrollToBottom = () => {
@@ -1156,8 +1161,12 @@ const PrivateChat = () => {
   };
 
   const handleTTSOriginal = async (msg) => {
-    if (!msg.content || msg.messageType === 'audio') {
-      console.warn('No valid content for TTS:', { msgId: msg.id, content: msg.content });
+    const contentToUse = msg.messageType === 'audio' && isTranscriptionEnabled
+      ? transcribedContentMap[msg.id]?.content
+      : msg.content;
+
+    if (!contentToUse || contentToUse === 'Message deleted') {
+      console.warn('No valid content for TTS:', { msgId: msg.id, content: contentToUse });
       return;
     }
 
@@ -1168,7 +1177,7 @@ const PrivateChat = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text: msg.content,
+          text: contentToUse,
           language: 'auto', // Используем 'auto' для оригинального текста
         }),
       });
@@ -1207,8 +1216,16 @@ const PrivateChat = () => {
   };
 
   const handleTTSTranslated = async (msg) => {
-    if (!msg.translatedContent || msg.messageType === 'audio') {
-      console.warn('No translated content for TTS:', { msgId: msg.id, translatedContent: msg.translatedContent });
+    const contentToUse = msg.messageType === 'audio' && isTranscriptionEnabled
+      ? transcribedContentMap[msg.id]?.translatedContent
+      : msg.translatedContent;
+
+    const languageToUse = msg.messageType === 'audio' && isTranscriptionEnabled
+      ? transcribedContentMap[msg.id]?.translationLanguage
+      : msg.translationLanguage;
+
+    if (!contentToUse) {
+      console.warn('No translated content for TTS:', { msgId: msg.id, translatedContent: contentToUse });
       return;
     }
 
@@ -1219,8 +1236,8 @@ const PrivateChat = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text: msg.translatedContent,
-          language: msg.translationLanguage || 'auto', // Используем язык перевода сообщения
+          text: contentToUse,
+          language: languageToUse || 'auto', // Используем язык перевода
         }),
       });
 
@@ -1505,7 +1522,18 @@ const PrivateChat = () => {
                   {/* ДОБАВЛЕНО: Отдельный контейнер для иконки перевода */}
                   {(msg.messageType !== 'audio' && (isTranslationEnabled || isTTSEnabled)) || (msg.messageType === 'audio' && isTranscriptionEnabled) ? (
                     <div className="private-message-actions-container">
-                      {msg.messageType !== 'audio' && isTranslationEnabled && (
+                      {msg.messageType === 'audio' && isTranscriptionEnabled && (
+                        <div className="private-message-transcription-container">
+                          <button
+                            className="private-message-transcription-button"
+                            onClick={() => {} /* Placeholder for transcription handler */}
+                            data-tooltip="Transcribe audio message"
+                          >
+                            🎤
+                          </button>
+                        </div>
+                      )}
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTranslationEnabled && (
                         <div className="private-message-translate-container">
                           <button
                             className="private-message-translate-button"
@@ -1516,7 +1544,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {msg.messageType !== 'audio' && isTTSEnabled && (
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTTSEnabled && (
                         <div className="private-message-tts-container">
                           <button
                             className="private-message-tts-button"
@@ -1527,7 +1555,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {msg.messageType !== 'audio' && isTTSEnabled && isTranslationEnabled && (
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTTSEnabled && isTranslationEnabled && (
                         <div className="private-message-tts-translated-container">
                           <button
                             className="private-message-tts-translated-button"
@@ -1537,17 +1565,6 @@ const PrivateChat = () => {
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
                               <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
                             </svg>
-                          </button>
-                        </div>
-                      )}
-                      {msg.messageType === 'audio' && isTranscriptionEnabled && (
-                        <div className="private-message-transcription-container">
-                          <button
-                            className="private-message-transcription-button"
-                            onClick={() => {} /* Placeholder for transcription handler */}
-                            data-tooltip="Transcribe audio message"
-                          >
-                            🎤
                           </button>
                         </div>
                       )}
