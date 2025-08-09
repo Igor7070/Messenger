@@ -99,6 +99,8 @@ const PrivateChat = () => {
     handleTranslationSettingsSave,
     handleSpellCheckToggle,
     spellCheckMessage,
+    transcribeAudioMessage, 
+    transcribeExistingMessages, 
   } = usePrivateChatTranslationAndSpellCheck({
     chatId,
     chatIdParam,

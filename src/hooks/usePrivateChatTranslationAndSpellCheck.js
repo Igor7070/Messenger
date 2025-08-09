@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { translateMessage, saveTranslation } from '../api/messages';
 import { toast } from 'react-toastify';
+import { useState, useEffect, useCallback } from 'react';
 
 const usePrivateChatTranslationAndSpellCheck = ({
   chatId,
@@ -20,6 +21,8 @@ const usePrivateChatTranslationAndSpellCheck = ({
   setIsSpellCheckEnabled,
   isTranscriptionEnabled, // Флаг для включения транскрипции
   setIsTranscriptionEnabled, // Функция для установки флага транскрипции
+  transcriptionMode, // ДОБАВЛЕНО
+  setTranscriptionMode, // ДОБАВЛЕНО
 }) => {
 
   const [transcriptionQueue, setTranscriptionQueue] = useState([]);
