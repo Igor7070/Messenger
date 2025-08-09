@@ -1176,9 +1176,19 @@
   visibility: visible;
 }
 
-/* ДОБАВЛЕНО: Минимальная высота для контейнера сообщения при наличии TTS перевода */
+/* Минимальная высота для текстовых сообщений с TTS перевода */
 .private-message-content-container:has(.private-message-tts-translated-container) {
-  min-height: 65px; /* Высота для трех иконок: 16px * 3 + gap 2px * 2 + padding 4px * 2 = 60px */
+  min-height: 65px; /* 16px * 3 иконки + 2px * 2 gap + 4px * 2 padding + 5px резерв */
+}
+
+/* Минимальная высота для аудиосообщений с TTS перевода */
+.private-message-audio-message .private-message-content-container:has(.private-message-tts-translated-container) {
+  min-height: 100px; /* 16px * 3 иконки + 2px * 2 gap + 4px * 2 padding + 40px (аудиоплеер) + 20px (перевод) + 20px (транскрипция) */
+}
+
+/* Минимальная высота для аудиосообщений с транскрипцией */
+.private-message-audio-message .private-message-content-container:has(.private-message-transcription-container) {
+  min-height: 80px; /* 16px * 2 иконки + 2px gap + 4px * 2 padding + 40px (аудиоплеер) + 20px (транскрипция) */
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button svg {
