@@ -1387,16 +1387,6 @@
   margin-top: 4px; /* Отступ сверху от аудиоплеера */
 }
 
-/* ДОБАВЛЕНО: Стили для контейнера аудиосообщений */
-.private-message-audio-message .private-message-content-container {
-    width: auto; /* Контейнер подстраивается под содержимое */
-    min-width: 340px; /* Учитываем аудиоплеер (300px) + padding (8px * 2) + отступ для иконок (24px) */
-    max-width: 100%; /* Не ограничиваем максимальную ширину сверх родителя */
-    min-height: auto; /* Высота подстраивается под содержимое */
-    padding: 8px 8px 8px 32px; /* Увеличен левый отступ для иконок */
-    overflow: hidden; /* Предотвращает выход элементов за пределы */
-}
-
 .private-message.private-audio-message .private-message-content-container:has(.private-message-tts-translated-container),
 .private-message.private-audio-message .private-message-content-container:has(.private-message-transcription-container) {
     min-height: auto; /* Подстраивается под содержимое */
@@ -1408,7 +1398,7 @@
     min-width: 340px; /* Аудиоплеер (300px) + padding (8px * 2) + отступ для иконок (24px) */
     max-width: none; /* Убираем ограничение ширины */
     min-height: auto; /* Подстраивается под содержимое */
-    padding: 8px 8px 8px 4px; /* Левый отступ для иконок */
+    padding: 8px 12px 8px 4px; /* Левый отступ для иконок */
     box-sizing: border-box;
     overflow: visible; /* Позволяем иконкам отображаться */
 }
