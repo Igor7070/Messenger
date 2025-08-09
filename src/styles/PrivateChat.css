@@ -1367,8 +1367,8 @@
   padding-left: 24px; /* Отступ слева для проигрывателя, чтобы избежать наложения */
 }
 
-.private-message-audio-message .private-message-content-container:has(.private-message-tts-translated-container) {
-  min-height: 70px; /* Для аудиосообщений: 16px * 3 иконки + 4px * 2 gap + 4px * 2 padding */
+.private-message-audio-message .private-message-content-container:has(.private-message-transcription-container, .private-message-tts-translated-container) {
+  min-height: 70px; /* Для аудиосообщений с четырьмя иконками: 16px * 4 + 2px * 3 gap + 4px * 2 padding = 78px, с запасом */
 }
 
 @media (max-width: 800px) {
@@ -1724,7 +1724,7 @@
     }
 
     .private-message-audio-message .private-message-content-container:has(.private-message-tts-translated-container) {
-        min-height: 50px; /* Для аудиосообщений: 14px * 3 иконки + 3px * 2 gap + 3px * 2 padding */
+        min-height: 60px; /* Для аудиосообщений: 14px * 3 иконки + 3px * 2 gap + 3px * 2 padding */
     }
 
     .private-message-tts-translated-container .private-message-tts-translated-button svg {
