@@ -1367,8 +1367,8 @@
   padding-left: 24px; /* Отступ слева для проигрывателя, чтобы избежать наложения */
 }
 
-.private-message-audio-message .private-message-content-container:has(.private-message-transcription-container):has(.private-message-tts-translated-container) {
-  min-height: 84px; /* Для аудиосообщений с четырьмя иконками: 16px * 4 + 2px * 3 gap + 4px * 2 padding = 78px, с запасом */
+.private-message-audio-message .private-message-content-container:has(.private-message-tts-translated-container) {
+  min-height: 100px; /* Увеличено с 84px до 90px для запаса пространства */
 }
 
 @media (max-width: 800px) {
