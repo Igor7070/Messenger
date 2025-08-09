@@ -1,7 +1,6 @@
-import { useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { translateMessage, saveTranslation } from '../api/messages';
 import { toast } from 'react-toastify';
-import { useState, useEffect, useCallback } from 'react';
 
 const usePrivateChatTranslationAndSpellCheck = ({
   chatId,
@@ -482,10 +481,12 @@ const usePrivateChatTranslationAndSpellCheck = ({
     handleTranslationSettingsSave,
     handleSpellCheckToggle,
     spellCheckMessage,
-    transcribeAudioMessage, // Экспорт функции транскрипции
+    transcribeAudioMessage,
     transcribeExistingMessages,
     translationMode,
     setTranslationMode,
+    transcriptionMode, // ДОБАВЛЕНО
+    setTranscriptionMode, // ДОБАВЛЕНО
   };
 };
 
