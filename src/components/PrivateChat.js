@@ -1201,11 +1201,6 @@ const PrivateChat = () => {
 
     if (!contentToUse || contentToUse === 'Message deleted') {
       console.warn('No valid content for TTS:', { msgId: msg.id, content: contentToUse });
-      if (msg.messageType === 'audio') {
-        toast.error('Transcription not available');
-      } else {
-        toast.error('No valid content to play');
-      }
       return;
     }
 
@@ -1217,7 +1212,7 @@ const PrivateChat = () => {
         },
         body: JSON.stringify({
           text: contentToUse,
-          language: 'auto',
+          language: 'auto', // Используем 'auto' для оригинального текста
         }),
       });
 
@@ -1265,11 +1260,6 @@ const PrivateChat = () => {
 
     if (!contentToUse) {
       console.warn('No translated content for TTS:', { msgId: msg.id, translatedContent: contentToUse });
-      if (msg.messageType === 'audio') {
-        toast.error('Transcription not available');
-      } else {
-        toast.error('No translated content available');
-      }
       return;
     }
 
@@ -1281,7 +1271,7 @@ const PrivateChat = () => {
         },
         body: JSON.stringify({
           text: contentToUse,
-          language: languageToUse || 'auto',
+          language: languageToUse || 'auto', // Используем язык перевода
         }),
       });
 
@@ -1339,10 +1329,6 @@ const PrivateChat = () => {
       toast.error('Transcription is not enabled');
       return;
     }
-    if (transcribedContentMap[message.id]?.content) {
-      toast.info('Message already transcribed');
-      return;
-    }
     try {
       setIsTranscribing(true);
       const response = await fetch(`https://unlimitedpossibilities12.org/api/transcribe/${message.id}`, {
@@ -1353,7 +1339,7 @@ const PrivateChat = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const content = await response.text();
+      const content = await response.text(); // Изменено с response.json() на response.text()
       if (!content) {
         throw new Error('Empty transcription received');
       }
@@ -1734,7 +1720,7 @@ const PrivateChat = () => {
                     <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                   </div>
                   {/* ДОБАВЛЕНО: Отдельный контейнер для иконки перевода */}
-                  {(msg.messageType !== 'audio' || isTranscriptionEnabled) && (
+                  {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && (
                     <div className="private-message-actions-container">
                       {msg.messageType === 'audio' && isTranscriptionEnabled && (
                         <div className="private-message-transcription-container">
@@ -1748,7 +1734,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {(msg.messageType !== 'audio' || isTranscriptionEnabled) && isTranslationEnabled && (
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && transcribedContentMap[msg.id]?.content)) && isTranslationEnabled && (
                         <div className="private-message-translate-container">
                           <button
                             className="private-message-translate-button"
@@ -1759,7 +1745,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {(msg.messageType !== 'audio' || isTranscriptionEnabled) && isTTSEnabled && (
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && transcribedContentMap[msg.id]?.content)) && isTTSEnabled && (
                         <div className="private-message-tts-container">
                           <button
                             className="private-message-tts-button"
@@ -1770,7 +1756,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {(msg.messageType !== 'audio' || isTranscriptionEnabled) && isTTSEnabled && isTranslationEnabled && (
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && transcribedContentMap[msg.id]?.content)) && isTTSEnabled && isTranslationEnabled && (
                         <div className="private-message-tts-translated-container">
                           <button
                             className="private-message-tts-translated-button"
