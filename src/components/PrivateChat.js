@@ -82,6 +82,10 @@ const PrivateChat = () => {
   // ДОБАВЛЕНО: Состояние для транскрибированного контента
   const [transcribedContentMap, setTranscribedContentMap] = useState({});
 
+  // Состояние для очереди транскрипции
+  const [transcriptionQueue, setTranscriptionQueue] = useState([]);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
   // Мемоизация аудиосообщений
   const memoizedAudioMessages = useMemo(() => {
     return messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
@@ -149,29 +153,40 @@ const PrivateChat = () => {
         const initialMessages = await getMessages(chatIdParam);
         const updatedMessages = initialMessages.map((msg) => {
           const translationKey = `translation_${chatIdParam}_${msg.id}`;
+          const transcriptionKey = `transcription_${chatIdParam}_${msg.id}`;
           const savedTranslation = localStorage.getItem(translationKey);
-          if (savedTranslation) {
-            const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
-            return {
-              ...msg,
-              delivered: msg.delivered_status,
-              read: msg.read_status,
-              translatedContent,
-              translationLanguage,
-              showOriginal: true,
-            };
-          }
-          return {
+          const savedTranscription = localStorage.getItem(transcriptionKey);
+          const result = {
             ...msg,
             delivered: msg.delivered_status,
             read: msg.read_status,
             showOriginal: true,
           };
+          if (savedTranslation) {
+            const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
+            result.translatedContent = translatedContent;
+            result.translationLanguage = translationLanguage;
+          }
+          if (savedTranscription && msg.messageType === 'audio') {
+            const transcriptionData = JSON.parse(savedTranscription);
+            setTranscribedContentMap((prev) => ({
+              ...prev,
+              [msg.id]: {
+                content: transcriptionData.content,
+                translatedContent: transcriptionData.translatedContent || null,
+                translationLanguage: transcriptionData.translationLanguage || null,
+              },
+            }));
+          }
+          return result;
         });
 
         setMessages(updatedMessages);
         if (isTranslationEnabled && translationMode === 'all') {
           translateExistingMessages();
+        }
+        if (isTranscriptionEnabled && transcriptionMode === 'all') {
+          transcribeExistingMessages(updatedMessages);
         }
 
         // Загрузка настройки орфографии
@@ -235,9 +250,18 @@ const PrivateChat = () => {
           const newMessage = JSON.parse(message.body);
           console.log('NewMessage:', newMessage);
           updateMessages(newMessage);
-          // Добавлено: перевод нового сообщения
-          if (isTranslationEnabled && translationMode === 'new' && isMessageNew(newMessage)) {
+          // Перевод нового сообщения
+          if (isTranslationEnabled && translationMode === 'new' && isMessageNew(newMessage) && newMessage.messageType !== 'audio') {
             setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+          }
+          // Транскрипция нового аудиосообщения
+          if (
+            isTranscriptionEnabled &&
+            (transcriptionMode === 'all' || transcriptionMode === 'new') &&
+            newMessage.messageType === 'audio' &&
+            isMessageNew(newMessage)
+          ) {
+            setTranscriptionQueue((prevQueue) => [...prevQueue, newMessage]);
           }
         });
       },
@@ -321,6 +345,10 @@ const PrivateChat = () => {
     translateNextMessage();
   }, [translationQueue, isTranslating]);
 
+  useEffect(() => {
+    transcribeNextMessage();
+  }, [transcriptionQueue, isTranscribing]);
+
   // ДОБАВЛЕНО: Пересчет символов на строку при изменении размера окна
   useEffect(() => {
     calculateCharPerLine();
@@ -395,10 +423,10 @@ const PrivateChat = () => {
   };
 
   const updateMessages = (newMessage) => {
-    console.log('Updating message:', newMessage); // Отладка
+    console.log('Updating message:', newMessage);
     setMessages((prevMessages) => {
       if (newMessage.content === 'Message deleted') {
-        console.log('Deleting message:', { id: newMessage.id, content: newMessage.content }); // Логирование удаления
+        console.log('Deleting message:', { id: newMessage.id, content: newMessage.content });
         return prevMessages.filter((msg) => msg.id !== newMessage.id);
       }
 
@@ -406,7 +434,6 @@ const PrivateChat = () => {
       const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
       if (existingMessageIndex !== -1) {
         const existingMessage = prevMessages[existingMessageIndex];
-        // Проверяем, нужно ли переводить
         const needsTranslation =
           isTranslationEnabled &&
           (translationMode === 'new' || translationMode === 'all') &&
@@ -414,7 +441,14 @@ const PrivateChat = () => {
           isMessageNew(newMessage) &&
           (!existingMessage.translatedContent || existingMessage.translationLanguage !== translationLanguage) &&
           !translationQueue.some((msg) => msg.id === newMessage.id);
-        
+        const needsTranscription =
+          isTranscriptionEnabled &&
+          (transcriptionMode === 'new' || transcriptionMode === 'all') &&
+          isAudio &&
+          isMessageNew(newMessage) &&
+          !transcribedContentMap[newMessage.id]?.content &&
+          !transcriptionQueue.some((msg) => msg.id === newMessage.id);
+
         const updatedMessages = [...prevMessages];
         updatedMessages[existingMessageIndex] = {
           ...existingMessage,
@@ -426,7 +460,7 @@ const PrivateChat = () => {
           translationLanguage: isAudio ? null : existingMessage.translationLanguage,
           showOriginal: existingMessage.showOriginal,
         };
-        console.log('Updated existing message:', updatedMessages[existingMessageIndex]); // Отладка
+        console.log('Updated existing message:', updatedMessages[existingMessageIndex]);
         if (needsTranslation) {
           console.log('Adding updated message to translation queue:', { id: newMessage.id, content: newMessage.content });
           setTranslationQueue((prevQueue) => {
@@ -436,21 +470,15 @@ const PrivateChat = () => {
             }
             return [...prevQueue, updatedMessages[existingMessageIndex]];
           });
-        } else {
-          console.log('No translation needed for updated message:', {
-            id: newMessage.id,
-            content: newMessage.content,
-            reason: !isTranslationEnabled
-              ? 'Translation disabled'
-              : isAudio
-              ? 'Audio message'
-              : !isMessageNew(newMessage)
-              ? 'Not new'
-              : existingMessage.translatedContent && existingMessage.translationLanguage === translationLanguage
-              ? 'Already translated'
-              : translationQueue.some((msg) => msg.id === newMessage.id)
-              ? 'In queue'
-              : 'Unknown',
+        }
+        if (needsTranscription) {
+          console.log('Adding updated message to transcription queue:', { id: newMessage.id, fileUrl: newMessage.fileUrl });
+          setTranscriptionQueue((prevQueue) => {
+            if (prevQueue.some((msg) => msg.id === newMessage.id)) {
+              console.log('Message already in transcription queue:', { id: newMessage.id, fileUrl: newMessage.fileUrl });
+              return prevQueue;
+            }
+            return [...prevQueue, updatedMessages[existingMessageIndex]];
           });
         }
         return updatedMessages;
@@ -464,14 +492,14 @@ const PrivateChat = () => {
           translatedContent: isAudio ? null : newMessage.translatedContent,
           translationLanguage: isAudio ? null : newMessage.translationLanguage,
         };
-        console.log('New message added:', newMsg); // Отладка
-        // Проверяем, есть ли сообщение в messages или в очереди с переводом
+        console.log('New message added:', newMsg);
         const alreadyTranslatedOrInProgress = prevMessages.some(
           (msg) =>
             msg.id === newMsg.id &&
             msg.translatedContent &&
             msg.translationLanguage === translationLanguage
         ) || translationQueue.some((msg) => msg.id === newMsg.id);
+        const alreadyTranscribedOrInProgress = transcribedContentMap[newMsg.id]?.content || transcriptionQueue.some((msg) => msg.id === newMsg.id);
         if (
           isTranslationEnabled &&
           (translationMode === 'new' || translationMode === 'all') &&
@@ -487,19 +515,21 @@ const PrivateChat = () => {
             }
             return [...prevQueue, newMsg];
           });
-        } else {
-          console.log('No translation needed for new message:', {
-            id: newMsg.id,
-            content: newMsg.content,
-            reason: !isTranslationEnabled
-              ? 'Translation disabled'
-              : isAudio
-              ? 'Audio message'
-              : !isMessageNew(newMsg)
-              ? 'Not new'
-              : alreadyTranslatedOrInProgress
-              ? 'Already translated or in queue'
-              : 'Unknown',
+        }
+        if (
+          isTranscriptionEnabled &&
+          (transcriptionMode === 'new' || transcriptionMode === 'all') &&
+          isAudio &&
+          isMessageNew(newMsg) &&
+          !alreadyTranscribedOrInProgress
+        ) {
+          console.log('Adding new message to transcription queue:', { id: newMsg.id, fileUrl: newMsg.fileUrl });
+          setTranscriptionQueue((prevQueue) => {
+            if (prevQueue.some((msg) => msg.id === newMsg.id)) {
+              console.log('Message already in transcription queue:', { id: newMsg.id, fileUrl: newMsg.fileUrl });
+              return prevQueue;
+            }
+            return [...prevQueue, newMsg];
           });
         }
         return [...prevMessages, newMsg];
@@ -1277,6 +1307,135 @@ const PrivateChat = () => {
   const handleTranscriptionSettingsSave = ({ isTranscriptionEnabled, transcriptionMode }) => {
     setIsTranscriptionEnabled(isTranscriptionEnabled);
     setTranscriptionMode(transcriptionMode);
+    localStorage.setItem(`transcription_enabled_${chatId}`, isTranscriptionEnabled);
+    localStorage.setItem(`transcription_mode_${chatId}`, transcriptionMode);
+    if (isTranscriptionEnabled) {
+      localStorage.setItem(`transcription_enabled_timestamp_${chatId}`, new Date().toISOString());
+      if (transcriptionMode === 'all') {
+        transcribeExistingMessages(messages);
+      }
+    } else {
+      localStorage.removeItem(`transcription_enabled_timestamp_${chatId}`);
+      setTranscribedContentMap({});
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith(`transcription_${chatId}_`))
+        .forEach((key) => localStorage.removeItem(key));
+    }
+  };
+
+  const transcribeSingleMessage = async (message) => {
+    if (!isTranscriptionEnabled) {
+      toast.error('Transcription is not enabled');
+      return;
+    }
+    try {
+      setIsTranscribing(true);
+      const response = await fetch(`https://unlimitedpossibilities12.org/api/transcribe/${message.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileUrl: message.fileUrl }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const { content } = await response.json();
+      setTranscribedContentMap((prev) => ({
+        ...prev,
+        [message.id]: {
+          content,
+          translatedContent: prev[message.id]?.translatedContent || null,
+          translationLanguage: prev[message.id]?.translationLanguage || null,
+        },
+      }));
+      localStorage.setItem(
+        `transcription_${chatId}_${message.id}`,
+        JSON.stringify({
+          content,
+          translatedContent: null,
+          translationLanguage: null,
+        })
+      );
+      if (isTranslationEnabled && (translationMode === 'all' || translationMode === 'new')) {
+        setTranslationQueue((prevQueue) => [...prevQueue, message]);
+      }
+      toast.success('Audio transcribed successfully');
+    } catch (error) {
+      console.error('Transcription error:', error);
+      toast.error('Failed to transcribe audio');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
+  const transcribeExistingMessages = (messagesToTranscribe) => {
+    if (!isTranscriptionEnabled || transcriptionMode !== 'all') return;
+    const queue = messagesToTranscribe
+      .filter((msg) => {
+        const isAudio = msg.messageType === 'audio';
+        const isTranscribed = transcribedContentMap[msg.id]?.content;
+        const isNew = isMessageNew(msg);
+        const isValid = isAudio && !isTranscribed && (transcriptionMode === 'all' || (transcriptionMode === 'new' && isNew));
+        if (!isValid) {
+          console.log(`Message ${msg.id} skipped from transcription queue:`, {
+            reason: !isAudio ? 'Not audio' : isTranscribed ? 'Already transcribed' : !isNew ? 'Not new' : 'Unknown',
+          });
+        }
+        return isValid;
+      })
+      .sort((a, b) => a.id - b.id);
+    if (queue.length > 0) {
+      console.log('Transcription queue:', queue.map(m => ({ id: m.id, fileUrl: m.fileUrl })));
+      setTranscriptionQueue(queue);
+    } else {
+      console.log('No messages to transcribe');
+    }
+  };
+
+  const transcribeNextMessage = async () => {
+    if (transcriptionQueue.length === 0 || isTranscribing) return;
+    setIsTranscribing(true);
+    const message = transcriptionQueue[0];
+    if (isTranscriptionEnabled && (transcriptionMode === 'all' || transcriptionMode === 'new')) {
+      try {
+        const response = await fetch(`https://unlimitedpossibilities12.org/api/transcribe/${message.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileUrl: message.fileUrl }),
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const { content } = await response.json();
+        setTranscribedContentMap((prev) => ({
+          ...prev,
+          [message.id]: {
+            content,
+            translatedContent: prev[message.id]?.translatedContent || null,
+            translationLanguage: prev[message.id]?.translationLanguage || null,
+          },
+        }));
+        localStorage.setItem(
+          `transcription_${chatId}_${message.id}`,
+          JSON.stringify({
+            content,
+            translatedContent: null,
+            translationLanguage: null,
+          })
+        );
+        if (isTranslationEnabled && (translationMode === 'all' || translationMode === 'new')) {
+          setTranslationQueue((prevQueue) => [...prevQueue, message]);
+        }
+      } catch (error) {
+        console.error('Transcription error for message:', { id: message.id, fileUrl: message.fileUrl, error: error.message });
+        toast.error('Failed to transcribe audio');
+      } finally {
+        setTranscriptionQueue((prevQueue) => prevQueue.slice(1));
+        setIsTranscribing(false);
+      }
+    } else {
+      setTranscriptionQueue((prevQueue) => prevQueue.slice(1));
+      setIsTranscribing(false);
+    }
   };
 
   return (
@@ -1395,7 +1554,7 @@ const PrivateChat = () => {
                     {msg.messageType === 'audio' && msg.fileUrl ? (
                       <div className="private-audio-message-container">
                         {/* Перевод над аудиоплеером */}
-                        {isTranslationEnabled && msg.translatedContent && (
+                        {isTranslationEnabled && isTranscriptionEnabled && transcribedContentMap[msg.id]?.translatedContent && (
                           <span
                             className="private-translated-content"
                             onClick={() => {
@@ -1407,7 +1566,7 @@ const PrivateChat = () => {
                             }}
                             style={{ cursor: 'pointer' }}
                           >
-                            {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                            {msg.showOriginal ? transcribedContentMap[msg.id]?.content : transcribedContentMap[msg.id]?.translatedContent}
                           </span>
                         )}
                         <div className="private-audio-player-wrapper">
@@ -1490,9 +1649,9 @@ const PrivateChat = () => {
                           )}
                         </div>
                         {/* Транскрипция под аудиоплеером */}
-                        {isTranscriptionEnabled && msg.content && (
+                        {isTranscriptionEnabled && transcribedContentMap[msg.id]?.content && (
                           <span className="private-transcribed-content">
-                            {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                            {msg.showOriginal ? transcribedContentMap[msg.id]?.content : transcribedContentMap[msg.id]?.translatedContent || transcribedContentMap[msg.id]?.content}
                           </span>
                         )}
                       </div>
@@ -1542,20 +1701,20 @@ const PrivateChat = () => {
                     <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                   </div>
                   {/* ДОБАВЛЕНО: Отдельный контейнер для иконки перевода */}
-                  {(msg.messageType !== 'audio' && (isTranslationEnabled || isTTSEnabled)) || (msg.messageType === 'audio' && isTranscriptionEnabled) ? (
+                  {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && transcribedContentMap[msg.id]?.content)) && (
                     <div className="private-message-actions-container">
                       {msg.messageType === 'audio' && isTranscriptionEnabled && (
                         <div className="private-message-transcription-container">
                           <button
                             className="private-message-transcription-button"
-                            onClick={() => {} /* Placeholder for transcription handler */}
+                            onClick={() => transcribeSingleMessage(msg)}
                             data-tooltip="Transcribe audio message"
                           >
                             🎤
                           </button>
                         </div>
                       )}
-                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTranslationEnabled && (
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && transcribedContentMap[msg.id]?.content)) && isTranslationEnabled && (
                         <div className="private-message-translate-container">
                           <button
                             className="private-message-translate-button"
@@ -1566,7 +1725,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTTSEnabled && (
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && transcribedContentMap[msg.id]?.content)) && isTTSEnabled && (
                         <div className="private-message-tts-container">
                           <button
                             className="private-message-tts-button"
@@ -1577,7 +1736,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTTSEnabled && isTranslationEnabled && (
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && transcribedContentMap[msg.id]?.content)) && isTTSEnabled && isTranslationEnabled && (
                         <div className="private-message-tts-translated-container">
                           <button
                             className="private-message-tts-translated-button"
@@ -1591,7 +1750,7 @@ const PrivateChat = () => {
                         </div>
                       )}
                     </div>
-                  ) : null}
+                  )}
                 </div>
               </div>
             </div>

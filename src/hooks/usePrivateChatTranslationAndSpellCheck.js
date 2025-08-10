@@ -48,7 +48,6 @@ const usePrivateChatTranslationAndSpellCheck = ({
         return;
       }
 
-      // ДОБАВЛЕНО: Выбор контента для перевода
       const contentToTranslate = message.messageType === 'audio' && transcribedContentMap[message.id]?.content
         ? transcribedContentMap[message.id].content
         : message.content;
@@ -68,13 +67,12 @@ const usePrivateChatTranslationAndSpellCheck = ({
         setIsTranslating(true);
         const translatedContent = await translateMessage(contentToTranslate, translationLanguage);
         const translationKey = `translation_${chatId}_${message.id}`;
+        const transcriptionKey = `transcription_${chatId}_${message.id}`;
         const translationData = {
           translatedContent,
           translationLanguage,
         };
-        localStorage.setItem(translationKey, JSON.stringify(translationData));
 
-        // ДОБАВЛЕНО: Обновление transcribedContentMap для аудиосообщений
         if (message.messageType === 'audio' && transcribedContentMap[message.id]?.content) {
           setTranscribedContentMap((prev) => ({
             ...prev,
@@ -84,8 +82,14 @@ const usePrivateChatTranslationAndSpellCheck = ({
               translationLanguage,
             },
           }));
+          const transcriptionData = {
+            content: transcribedContentMap[message.id].content,
+            translatedContent,
+            translationLanguage,
+          };
+          localStorage.setItem(transcriptionKey, JSON.stringify(transcriptionData));
         } else {
-          // Обновление messages для текстовых сообщений
+          localStorage.setItem(translationKey, JSON.stringify(translationData));
           setMessages((prevMessages) =>
             prevMessages.map((msg) =>
               msg.id === message.id
@@ -121,15 +125,17 @@ const usePrivateChatTranslationAndSpellCheck = ({
       .filter((msg, index) => {
         const isAudio = msg.messageType === 'audio';
         const isDeleted = msg.content === 'Message deleted';
-        const isTranslated = msg.translatedContent && msg.translationLanguage === translationLanguage;
-        const isValid = !isAudio && !isDeleted && isMessageNew(msg) && !isTranslated;
+        const hasTranscription = isAudio && transcribedContentMap[msg.id]?.content;
+        const isTranslated = (isAudio && transcribedContentMap[msg.id]?.translatedContent && transcribedContentMap[msg.id]?.translationLanguage === translationLanguage) ||
+                            (!isAudio && msg.translatedContent && msg.translationLanguage === translationLanguage);
+        const isValid = (!isAudio || hasTranscription) && !isDeleted && isMessageNew(msg) && !isTranslated;
         if (!isValid) {
           console.log(`Message at index ${index} skipped from translation queue:`, {
             id: msg.id,
-            content: msg.content,
-            reason: isAudio ? 'Audio message' : isDeleted ? 'Deleted message' : isTranslated ? 'Already translated' : 'Not new',
-            translatedContent: msg.translatedContent,
-            translationLanguage: msg.translationLanguage,
+            content: isAudio ? transcribedContentMap[msg.id]?.content : msg.content,
+            reason: isAudio && !hasTranscription ? 'Audio without transcription' : isDeleted ? 'Deleted message' : isTranslated ? 'Already translated' : 'Not new',
+            translatedContent: isAudio ? transcribedContentMap[msg.id]?.translatedContent : msg.translatedContent,
+            translationLanguage: isAudio ? transcribedContentMap[msg.id]?.translationLanguage : msg.translationLanguage,
           });
         }
         return isValid;
@@ -144,30 +150,32 @@ const usePrivateChatTranslationAndSpellCheck = ({
         read: msg.read ?? msg.read_status,
       }));
     if (queue.length > 0) {
-      console.log('Translation queue:', queue.map(m => ({ id: m.id, content: m.content })));
+      console.log('Translation queue:', queue.map(m => ({ id: m.id, content: m.messageType === 'audio' ? transcribedContentMap[m.id]?.content : m.content })));
       setTranslationQueue(queue);
     } else {
       console.log('No messages to translate');
     }
-  }, [isTranslationEnabled, translationMode, messages, translationLanguage, isMessageNew, setTranslationQueue]);
+  }, [isTranslationEnabled, translationMode, messages, translationLanguage, isMessageNew, setTranslationQueue, transcribedContentMap]);
 
   // Перевод одного сообщения
   const translateMessageFunc = useCallback(
     async (message) => {
-      // Проверяем актуальное состояние сообщения из messages
+      const contentToTranslate = message.messageType === 'audio' && transcribedContentMap[message.id]?.content
+        ? transcribedContentMap[message.id].content
+        : message.content;
+
       const currentMessage = messages.find((msg) => msg.id === message.id);
       if (
         currentMessage &&
-        currentMessage.translatedContent &&
-        currentMessage.translationLanguage === translationLanguage &&
-        currentMessage.content !== 'Message deleted' &&
-        currentMessage.messageType !== 'audio'
+        ((message.messageType === 'audio' && transcribedContentMap[message.id]?.translatedContent && transcribedContentMap[message.id]?.translationLanguage === translationLanguage) ||
+        (message.messageType !== 'audio' && currentMessage.translatedContent && currentMessage.translationLanguage === translationLanguage)) &&
+        contentToTranslate !== 'Message deleted'
       ) {
         console.log('Skipping translation, message already translated:', {
           id: currentMessage.id,
-          content: currentMessage.content,
-          translatedContent: currentMessage.translatedContent,
-          translationLanguage: currentMessage.translationLanguage,
+          content: contentToTranslate,
+          translatedContent: message.messageType === 'audio' ? transcribedContentMap[message.id]?.translatedContent : currentMessage.translatedContent,
+          translationLanguage: message.messageType === 'audio' ? transcribedContentMap[message.id]?.translationLanguage : currentMessage.translationLanguage,
         });
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
@@ -175,52 +183,58 @@ const usePrivateChatTranslationAndSpellCheck = ({
       }
 
       try {
-        console.log('Translating message:', message); // Отладка
-        const translatedContent = await translateMessage(message.content, translationLanguage);
-        const updatedMessage = {
-          ...message,
+        console.log('Translating message:', { id: message.id, content: contentToTranslate });
+        const translatedContent = await translateMessage(contentToTranslate, translationLanguage);
+        const translationKey = `translation_${chatId}_${message.id}`;
+        const transcriptionKey = `transcription_${chatId}_${message.id}`;
+        const translationData = {
           translatedContent,
           translationLanguage,
-          showOriginal: true,
-          delivered: message.delivered ?? message.delivered_status,
-          read: message.read ?? message.read_status,
         };
 
-        console.log('Updated message after translation:', updatedMessage); // Отладка
+        if (message.messageType === 'audio' && transcribedContentMap[message.id]?.content) {
+          setTranscribedContentMap((prev) => ({
+            ...prev,
+            [message.id]: {
+              ...prev[message.id],
+              translatedContent,
+              translationLanguage,
+            },
+          }));
+          const transcriptionData = {
+            content: transcribedContentMap[message.id].content,
+            translatedContent,
+            translationLanguage,
+          };
+          localStorage.setItem(transcriptionKey, JSON.stringify(transcriptionData));
+        } else {
+          localStorage.setItem(translationKey, JSON.stringify(translationData));
+          setMessages((prevMessages) =>
+            prevMessages.map((msg) =>
+              msg.id === message.id
+                ? {
+                    ...msg,
+                    translatedContent,
+                    translationLanguage,
+                    showOriginal: true,
+                    delivered: msg.delivered ?? msg.delivered_status,
+                    read: msg.read ?? msg.read_status,
+                  }
+                : msg
+            )
+          );
+        }
 
-        // Сохранение перевода локально
-        localStorage.setItem(
-          `translation_${chatId}_${message.id}`,
-          JSON.stringify({ translatedContent, translationLanguage })
-        );
-
-        // Сохранение перевода на сервере
         await saveTranslation(message.id, translatedContent, translationLanguage);
-
-        setMessages((prevMessages) =>
-          prevMessages.map((msg) =>
-            msg.id === message.id
-              ? {
-                  ...msg,
-                  translatedContent,
-                  translationLanguage,
-                  showOriginal: true,
-                  delivered: msg.delivered ?? msg.delivered_status,
-                  read: msg.read ?? msg.read_status,
-                }
-              : msg
-          )
-        );
-
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
       } catch (error) {
-        console.error('Translation error for message:', { id: message.id, content: message.content, error: error.message });
+        console.error('Translation error for message:', { id: message.id, content: contentToTranslate, error: error.message });
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
       }
     },
-    [chatId, translationLanguage, messages, setMessages, setTranslationQueue, setIsTranslating]
+    [chatId, translationLanguage, messages, setMessages, setTranslationQueue, setIsTranslating, transcribedContentMap, setTranscribedContentMap]
   );
 
   // Обработка следующего сообщения в очереди
@@ -243,10 +257,33 @@ const usePrivateChatTranslationAndSpellCheck = ({
       const hasTranslations = prevMessages.some(
         (msg) => msg.translatedContent || msg.translationLanguage
       );
-      if (!hasTranslations) return prevMessages;
+      if (!hasTranslations && Object.keys(transcribedContentMap).every((id) => !transcribedContentMap[id].translatedContent)) {
+        return prevMessages;
+      }
       // Удаляем переводы из localStorage
       prevMessages.forEach((msg) => {
         localStorage.removeItem(`translation_${chatId}_${msg.id}`);
+        if (msg.messageType === 'audio' && transcribedContentMap[msg.id]?.content) {
+          localStorage.setItem(
+            `transcription_${chatId}_${msg.id}`,
+            JSON.stringify({
+              content: transcribedContentMap[msg.id].content,
+              translatedContent: null,
+              translationLanguage: null,
+            })
+          );
+        }
+      });
+      setTranscribedContentMap((prev) => {
+        const newMap = {};
+        Object.keys(prev).forEach((id) => {
+          newMap[id] = {
+            content: prev[id].content,
+            translatedContent: null,
+            translationLanguage: null,
+          };
+        });
+        return newMap;
       });
       return prevMessages.map((msg) =>
         msg.translatedContent || msg.translationLanguage
@@ -259,7 +296,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
           : msg
       );
     });
-  }, [chatId, setMessages, setTranslationQueue]);
+  }, [chatId, setMessages, setTranslationQueue, transcribedContentMap, setTranscribedContentMap]);
 
   // Обработка сохранения настроек перевода
   const handleTranslationSettingsSave = (settings) => {
