@@ -160,7 +160,7 @@ const PrivateChat = () => {
             ...msg,
             delivered: msg.delivered_status,
             read: msg.read_status,
-            showOriginal: true,
+            showOriginal: false,
           };
           if (savedTranslation) {
             const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
@@ -487,7 +487,7 @@ const PrivateChat = () => {
           ...newMessage,
           delivered: newMessage.delivered_status,
           read: newMessage.read_status,
-          showOriginal: true,
+          showOriginal: false,
           messageType: newMessage.messageType,
           translatedContent: isAudio ? null : newMessage.translatedContent,
           translationLanguage: isAudio ? null : newMessage.translationLanguage,
@@ -1562,9 +1562,9 @@ const PrivateChat = () => {
                         {/* Перевод над аудиоплеером */}
                         {isTranscriptionEnabled && transcribedContentMap[msg.id]?.content && (
                           <span
-                            className="private-transcribed-content" // ИЗМЕНЕНО: Используем private-transcribed-content для перевода/оригинала (крупный шрифт)
+                            className="private-transcribed-content" // Крупный шрифт для перевода/оригинала
                             onClick={() => {
-                              if (transcribedContentMap[msg.id]?.translatedContent) { // ДОБАВЛЕНО: Проверяем наличие перевода
+                              if (transcribedContentMap[msg.id]?.translatedContent) {
                                 setMessages((prevMessages) =>
                                   prevMessages.map((m) =>
                                     m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
@@ -1572,10 +1572,12 @@ const PrivateChat = () => {
                                 );
                               }
                             }}
-                            style={{ cursor: transcribedContentMap[msg.id]?.translatedContent ? 'pointer' : 'default' }} // ИЗМЕНЕНО: Курсор зависит от наличия перевода
+                            style={{ cursor: transcribedContentMap[msg.id]?.translatedContent ? 'pointer' : 'default' }}
                           >
-                            {isTranslationEnabled && transcribedContentMap[msg.id]?.translatedContent && !msg.showOriginal
-                              ? transcribedContentMap[msg.id]?.translatedContent // ИЗМЕНЕНО: По умолчанию показываем перевод
+                            {isTranslationEnabled && transcribedContentMap[msg.id]?.translatedContent
+                              ? msg.showOriginal
+                                ? transcribedContentMap[msg.id]?.content
+                                : transcribedContentMap[msg.id]?.translatedContent
                               : transcribedContentMap[msg.id]?.content}
                           </span>
                         )}
@@ -1660,8 +1662,8 @@ const PrivateChat = () => {
                         </div>
                         {/* Транскрипция под аудиоплеером */}
                         {isTranscriptionEnabled && transcribedContentMap[msg.id]?.content && (
-                          <span className="private-translated-content"> {/* ИЗМЕНЕНО: Используем private-translated-content для транскрипции (меньший шрифт) */}
-                            {transcribedContentMap[msg.id]?.content} {/* ИЗМЕНЕНО: Всегда показываем оригинальную транскрипцию */}
+                          <span className="private-translated-content"> {/* Меньший шрифт для транскрипции */}
+                            {transcribedContentMap[msg.id]?.content}
                           </span>
                         )}
                       </div>
