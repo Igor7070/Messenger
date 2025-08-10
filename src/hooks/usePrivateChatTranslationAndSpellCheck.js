@@ -53,8 +53,8 @@ const usePrivateChatTranslationAndSpellCheck = ({
         return;
       }
 
-      const contentToTranslate = message.messageType === 'audio' && transcribedContentMap[message.id]?.content
-        ? transcribedContentMap[message.id].content
+      const contentToTranslate = message.messageType === 'audio' && isTranscriptionEnabled
+        ? transcribedContentMap[message.id]?.content
         : message.content;
 
       if (!contentToTranslate || contentToTranslate === 'Message deleted') {
@@ -64,7 +64,11 @@ const usePrivateChatTranslationAndSpellCheck = ({
           msgId: message.id,
           isAudio: message.messageType === 'audio',
         });
-        toast.error('No valid content to translate');
+        if (message.messageType === 'audio') {
+          toast.error('Transcription not available');
+        } else {
+          toast.error('No valid content to translate');
+        }
         return;
       }
 
@@ -78,7 +82,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
           translationLanguage,
         };
 
-        if (message.messageType === 'audio' && transcribedContentMap[message.id]?.content) {
+        if (message.messageType === 'audio' && isTranscriptionEnabled && transcribedContentMap[message.id]?.content) {
           setTranscribedContentMap((prev) => ({
             ...prev,
             [message.id]: {
@@ -120,7 +124,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
         setIsTranslating(false);
       }
     },
-    [chatId, isTranslationEnabled, translationLanguage, setMessages, setIsTranslating, transcribedContentMap, setTranscribedContentMap]
+    [chatId, isTranslationEnabled, translationLanguage, setMessages, setIsTranslating, transcribedContentMap, setTranscribedContentMap, isTranscriptionEnabled]
   );
 
   // Перевод существующих сообщений
