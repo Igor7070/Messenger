@@ -1323,47 +1323,29 @@ const PrivateChat = () => {
     }
   };
 
-  const transcribeSingleMessage = async (message) => {
-    if (!isTranscriptionEnabled) {
-      toast.error('Transcription is not enabled');
-      return;
-    }
+  const transcribeSingleMessage = async (msg: Message) => {
     try {
-      setIsTranscribing(true);
-      const response = await fetch(`https://unlimitedpossibilities12.org/api/transcribe/${message.id}`, {
+      const response = await fetch(`https://unlimitedpossibilities12.org/api/transcribe/${msg.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileUrl: message.fileUrl }),
+        body: JSON.stringify({ fileUrl: msg.fileUrl }),
       });
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`Transcription failed: ${response.statusText}`);
       }
-      const { content } = await response.json();
+      const transcribedContent = await response.text(); // Изменено: используем response.text() вместо response.json()
+      if (!transcribedContent) {
+        throw new Error('Empty transcription received');
+      }
       setTranscribedContentMap((prev) => ({
         ...prev,
-        [message.id]: {
-          content,
-          translatedContent: prev[message.id]?.translatedContent || null,
-          translationLanguage: prev[message.id]?.translationLanguage || null,
-        },
+        [msg.id]: { content: transcribedContent },
       }));
-      localStorage.setItem(
-        `transcription_${chatId}_${message.id}`,
-        JSON.stringify({
-          content,
-          translatedContent: null,
-          translationLanguage: null,
-        })
-      );
-      if (isTranslationEnabled && (translationMode === 'all' || translationMode === 'new')) {
-        setTranslationQueue((prevQueue) => [...prevQueue, message]);
-      }
-      toast.success('Audio transcribed successfully');
+      console.log(`Transcription successful for message ${msg.id}: ${transcribedContent}`);
+      messageAdapter.notifyDataSetChanged();
     } catch (error) {
-      console.error('Transcription error:', error);
-      toast.error('Failed to transcribe audio');
-    } finally {
-      setIsTranscribing(false);
+      console.error(`Transcription error for message ${msg.id}:`, error);
+      alert(`Transcription error: ${error.message}`);
     }
   };
 
