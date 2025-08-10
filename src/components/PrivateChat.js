@@ -1323,29 +1323,50 @@ const PrivateChat = () => {
     }
   };
 
-  const transcribeSingleMessage = async (msg: Message) => {
+  const transcribeSingleMessage = async (message) => {
+    if (!isTranscriptionEnabled) {
+      toast.error('Transcription is not enabled');
+      return;
+    }
     try {
-      const response = await fetch(`https://unlimitedpossibilities12.org/api/transcribe/${msg.id}`, {
+      setIsTranscribing(true);
+      const response = await fetch(`https://unlimitedpossibilities12.org/api/transcribe/${message.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileUrl: msg.fileUrl }),
+        body: JSON.stringify({ fileUrl: message.fileUrl }),
       });
       if (!response.ok) {
-        throw new Error(`Transcription failed: ${response.statusText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const transcribedContent = await response.text(); // Изменено: используем response.text() вместо response.json()
-      if (!transcribedContent) {
+      const content = await response.text(); // Изменено с response.json() на response.text()
+      if (!content) {
         throw new Error('Empty transcription received');
       }
       setTranscribedContentMap((prev) => ({
         ...prev,
-        [msg.id]: { content: transcribedContent },
+        [message.id]: {
+          content,
+          translatedContent: prev[message.id]?.translatedContent || null,
+          translationLanguage: prev[message.id]?.translationLanguage || null,
+        },
       }));
-      console.log(`Transcription successful for message ${msg.id}: ${transcribedContent}`);
-      messageAdapter.notifyDataSetChanged();
+      localStorage.setItem(
+        `transcription_${chatId}_${message.id}`,
+        JSON.stringify({
+          content,
+          translatedContent: null,
+          translationLanguage: null,
+        })
+      );
+      if (isTranslationEnabled && (translationMode === 'all' || translationMode === 'new')) {
+        setTranslationQueue((prevQueue) => [...prevQueue, message]);
+      }
+      toast.success('Audio transcribed successfully');
     } catch (error) {
-      console.error(`Transcription error for message ${msg.id}:`, error);
-      alert(`Transcription error: ${error.message}`);
+      console.error('Transcription error:', error);
+      toast.error('Failed to transcribe audio');
+    } finally {
+      setIsTranscribing(false);
     }
   };
 
@@ -1387,7 +1408,10 @@ const PrivateChat = () => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const { content } = await response.json();
+        const content = await response.text(); // Изменено с response.json() на response.text()
+        if (!content) {
+          throw new Error('Empty transcription received');
+        }
         setTranscribedContentMap((prev) => ({
           ...prev,
           [message.id]: {
