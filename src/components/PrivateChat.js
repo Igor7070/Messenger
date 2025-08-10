@@ -120,6 +120,8 @@ const PrivateChat = () => {
     setIsSpellCheckEnabled,
     transcribedContentMap, // ДОБАВЛЕНО
     setTranscribedContentMap, // ДОБАВЛЕНО
+    isTranscriptionEnabled, // Добавлено
+    transcriptionMode, // Добавлено
   });
 
   const scrollToBottom = () => {
@@ -438,14 +440,14 @@ const PrivateChat = () => {
           isTranslationEnabled &&
           (translationMode === 'new' || translationMode === 'all') &&
           !isAudio &&
-          isMessageNew(newMessage) &&
+          isMessageNew(newMessage, 'translation') && // Указываем контекст
           (!existingMessage.translatedContent || existingMessage.translationLanguage !== translationLanguage) &&
           !translationQueue.some((msg) => msg.id === newMessage.id);
         const needsTranscription =
           isTranscriptionEnabled &&
           (transcriptionMode === 'new' || transcriptionMode === 'all') &&
           isAudio &&
-          isMessageNew(newMessage) &&
+          isMessageNew(newMessage, 'transcription') && // Указываем контекст
           !transcribedContentMap[newMessage.id]?.content &&
           !transcriptionQueue.some((msg) => msg.id === newMessage.id);
 
@@ -493,18 +495,20 @@ const PrivateChat = () => {
           translationLanguage: isAudio ? null : newMessage.translationLanguage,
         };
         console.log('New message added:', newMsg);
-        const alreadyTranslatedOrInProgress = prevMessages.some(
-          (msg) =>
-            msg.id === newMsg.id &&
-            msg.translatedContent &&
-            msg.translationLanguage === translationLanguage
-        ) || translationQueue.some((msg) => msg.id === newMsg.id);
-        const alreadyTranscribedOrInProgress = transcribedContentMap[newMsg.id]?.content || transcriptionQueue.some((msg) => msg.id === newMsg.id);
+        const alreadyTranslatedOrInProgress =
+          prevMessages.some(
+            (msg) =>
+              msg.id === newMsg.id &&
+              msg.translatedContent &&
+              msg.translationLanguage === translationLanguage
+          ) || translationQueue.some((msg) => msg.id === newMsg.id);
+        const alreadyTranscribedOrInProgress =
+          transcribedContentMap[newMsg.id]?.content || transcriptionQueue.some((msg) => msg.id === newMsg.id);
         if (
           isTranslationEnabled &&
           (translationMode === 'new' || translationMode === 'all') &&
           !isAudio &&
-          isMessageNew(newMsg) &&
+          isMessageNew(newMsg, 'translation') && // Указываем контекст
           !alreadyTranslatedOrInProgress
         ) {
           console.log('Adding new message to translation queue:', { id: newMsg.id, content: newMsg.content });
@@ -520,7 +524,7 @@ const PrivateChat = () => {
           isTranscriptionEnabled &&
           (transcriptionMode === 'new' || transcriptionMode === 'all') &&
           isAudio &&
-          isMessageNew(newMsg) &&
+          isMessageNew(newMsg, 'transcription') && // Указываем контекст
           !alreadyTranscribedOrInProgress
         ) {
           console.log('Adding new message to transcription queue:', { id: newMsg.id, fileUrl: newMsg.fileUrl });
@@ -1373,7 +1377,7 @@ const PrivateChat = () => {
       .filter((msg) => {
         const isAudio = msg.messageType === 'audio';
         const isTranscribed = transcribedContentMap[msg.id]?.content;
-        const isNew = isMessageNew(msg);
+        const isNew = isMessageNew(msg, 'transcription'); // Указываем контекст
         const isValid = isAudio && !isTranscribed && (transcriptionMode === 'all' || (transcriptionMode === 'new' && isNew));
         if (!isValid) {
           console.log(`Message ${msg.id} skipped from transcription queue:`, {
@@ -1384,7 +1388,7 @@ const PrivateChat = () => {
       })
       .sort((a, b) => a.id - b.id);
     if (queue.length > 0) {
-      console.log('Transcription queue:', queue.map(m => ({ id: m.id, fileUrl: m.fileUrl })));
+      console.log('Transcription queue:', queue.map((m) => ({ id: m.id, fileUrl: m.fileUrl })));
       setTranscriptionQueue(queue);
     } else {
       console.log('No messages to transcribe');
@@ -1396,35 +1400,6 @@ const PrivateChat = () => {
       transcribeExistingMessages(messages);
     }
   }, [isTranscriptionEnabled, transcriptionMode, messages, transcribeExistingMessages]);
-
-  useEffect(() => {
-    if (isTranscriptionEnabled && transcriptionMode === 'new') {
-      console.log('Checking for new audio messages in transcriptionMode === "new"');
-      const newAudioMessages = messages
-        .filter((msg) => {
-          const isAudio = msg.messageType === 'audio';
-          const isTranscribed = transcribedContentMap[msg.id]?.content;
-          const isNew = isMessageNew(msg);
-          const isInQueue = transcriptionQueue.some((queuedMsg) => queuedMsg.id === msg.id);
-          const isValid = isAudio && !isTranscribed && isNew && !isInQueue;
-          if (!isValid) {
-            console.log(`Message ${msg.id} skipped from transcription queue:`, {
-              reason: !isAudio ? 'Not audio' : isTranscribed ? 'Already transcribed' : !isNew ? 'Not new' : isInQueue ? 'Already in queue' : 'Unknown',
-            });
-          }
-          return isValid;
-        })
-        .sort((a, b) => a.id - b.id);
-
-      if (newAudioMessages.length > 0) {
-        console.log('Adding new audio messages to transcription queue:', newAudioMessages.map((m) => ({ id: m.id, fileUrl: m.fileUrl })));
-        setTranscriptionQueue((prevQueue) => [
-          ...prevQueue,
-          ...newAudioMessages.filter((msg) => !prevQueue.some((queuedMsg) => queuedMsg.id === msg.id)),
-        ]);
-      }
-    }
-  }, [isTranscriptionEnabled, transcriptionMode, messages, transcribedContentMap, transcriptionQueue, isMessageNew]);
 
   const transcribeNextMessage = async () => {
     if (transcriptionQueue.length === 0 || isTranscribing) return;

@@ -20,13 +20,18 @@ const usePrivateChatTranslationAndSpellCheck = ({
   setIsSpellCheckEnabled,
   transcribedContentMap, // ДОБАВЛЕНО
   setTranscribedContentMap, // ДОБАВЛЕНО
+  isTranscriptionEnabled, // Добавлено
+  transcriptionMode, // Добавлено
 }) => {
 
   // Проверка, является ли сообщение новым
   const isMessageNew = useCallback(
-    (message) => {
-      if (translationMode !== 'new') return true;
-      const enabledTimestamp = localStorage.getItem(`translation_enabled_timestamp_${chatId}`);
+    (message, context = 'translation') => {
+      const modeKey = context === 'transcription' ? `transcription_mode_${chatId}` : `translation_mode_${chatId}`;
+      const timestampKey = context === 'transcription' ? `transcription_enabled_timestamp_${chatId}` : `translation_enabled_timestamp_${chatId}`;
+      const currentMode = localStorage.getItem(modeKey) || (context === 'transcription' ? transcriptionMode : translationMode);
+      if (currentMode !== 'new') return true;
+      const enabledTimestamp = localStorage.getItem(timestampKey);
       if (!enabledTimestamp) return false;
       try {
         const messageTime = new Date(message.timestamp).getTime();
@@ -37,7 +42,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
         return false;
       }
     },
-    [chatId, translationMode]
+    [chatId, translationMode, transcriptionMode]
   );
 
   // Перевод существующего сообщения (для ручного перевода)
