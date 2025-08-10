@@ -1559,10 +1559,10 @@ const PrivateChat = () => {
                   <div className="private-message-content-wrapper">
                     {msg.messageType === 'audio' && msg.fileUrl ? (
                       <div className="private-audio-message-container">
-                        {/* Транскрипция над аудиоплеером */}
+                        {/* Перевод над аудиоплеером */}
                         {isTranscriptionEnabled && transcribedContentMap[msg.id]?.content && (
                           <span
-                            className="private-translated-content" // ИЗМЕНЕНО: Используем private-translated-content для транскрипции
+                            className="private-transcribed-content" // ИЗМЕНЕНО: Используем private-transcribed-content для перевода/оригинала (крупный шрифт)
                             onClick={() => {
                               if (transcribedContentMap[msg.id]?.translatedContent) { // ДОБАВЛЕНО: Проверяем наличие перевода
                                 setMessages((prevMessages) =>
@@ -1658,10 +1658,10 @@ const PrivateChat = () => {
                             </div>
                           )}
                         </div>
-                        {/* Перевод под аудиоплеером */}
-                        {isTranslationEnabled && isTranscriptionEnabled && transcribedContentMap[msg.id]?.translatedContent && (
-                          <span className="private-transcribed-content"> {/* ИЗМЕНЕНО: Используем private-transcribed-content для перевода */}
-                            {transcribedContentMap[msg.id]?.translatedContent} {/* ИЗМЕНЕНО: Всегда показываем перевод */}
+                        {/* Транскрипция под аудиоплеером */}
+                        {isTranscriptionEnabled && transcribedContentMap[msg.id]?.content && (
+                          <span className="private-translated-content"> {/* ИЗМЕНЕНО: Используем private-translated-content для транскрипции (меньший шрифт) */}
+                            {transcribedContentMap[msg.id]?.content} {/* ИЗМЕНЕНО: Всегда показываем оригинальную транскрипцию */}
                           </span>
                         )}
                       </div>
