@@ -1701,7 +1701,7 @@ const PrivateChat = () => {
                     <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                   </div>
                   {/* ДОБАВЛЕНО: Отдельный контейнер для иконки перевода */}
-                  {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && transcribedContentMap[msg.id]?.content)) && (
+                  {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && (
                     <div className="private-message-actions-container">
                       {msg.messageType === 'audio' && isTranscriptionEnabled && (
                         <div className="private-message-transcription-container">
@@ -1709,6 +1709,7 @@ const PrivateChat = () => {
                             className="private-message-transcription-button"
                             onClick={() => transcribeSingleMessage(msg)}
                             data-tooltip="Transcribe audio message"
+                            disabled={transcribedContentMap[msg.id]?.content} // Отключаем кнопку, если транскрипция уже есть
                           >
                             🎤
                           </button>
