@@ -402,6 +402,12 @@ const PrivateChat = () => {
     });
   }, [memoizedAudioMessages]);
 
+  useEffect(() => {
+    if (isTranscriptionEnabled && transcriptionMode === 'all') {
+      transcribeExistingMessages(messages);
+    }
+  }, [isTranscriptionEnabled, transcriptionMode, messages, transcribeExistingMessages]);
+
   const markAllMessagesAsRead = (updatedMessages) => {
     console.log('markAllMessagesAsRead is working...');
     if (Array.isArray(updatedMessages)) {
@@ -1311,9 +1317,6 @@ const PrivateChat = () => {
     localStorage.setItem(`transcription_mode_${chatId}`, transcriptionMode);
     if (isTranscriptionEnabled) {
       localStorage.setItem(`transcription_enabled_timestamp_${chatId}`, new Date().toISOString());
-      if (transcriptionMode === 'all') {
-        transcribeExistingMessages(messages);
-      }
     } else {
       localStorage.removeItem(`transcription_enabled_timestamp_${chatId}`);
       setTranscribedContentMap({});
