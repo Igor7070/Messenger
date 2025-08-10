@@ -402,12 +402,6 @@ const PrivateChat = () => {
     });
   }, [memoizedAudioMessages]);
 
-  useEffect(() => {
-    if (isTranscriptionEnabled && transcriptionMode === 'all') {
-      transcribeExistingMessages(messages);
-    }
-  }, [isTranscriptionEnabled, transcriptionMode, messages, transcribeExistingMessages]);
-
   const markAllMessagesAsRead = (updatedMessages) => {
     console.log('markAllMessagesAsRead is working...');
     if (Array.isArray(updatedMessages)) {
@@ -1396,6 +1390,12 @@ const PrivateChat = () => {
       console.log('No messages to transcribe');
     }
   };
+
+  useEffect(() => {
+    if (isTranscriptionEnabled && transcriptionMode === 'all') {
+      transcribeExistingMessages(messages);
+    }
+  }, [isTranscriptionEnabled, transcriptionMode, messages, transcribeExistingMessages]);
 
   const transcribeNextMessage = async () => {
     if (transcriptionQueue.length === 0 || isTranscribing) return;
