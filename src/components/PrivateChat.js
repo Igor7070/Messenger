@@ -1397,6 +1397,35 @@ const PrivateChat = () => {
     }
   }, [isTranscriptionEnabled, transcriptionMode, messages, transcribeExistingMessages]);
 
+  useEffect(() => {
+    if (isTranscriptionEnabled && transcriptionMode === 'new') {
+      console.log('Checking for new audio messages in transcriptionMode === "new"');
+      const newAudioMessages = messages
+        .filter((msg) => {
+          const isAudio = msg.messageType === 'audio';
+          const isTranscribed = transcribedContentMap[msg.id]?.content;
+          const isNew = isMessageNew(msg);
+          const isInQueue = transcriptionQueue.some((queuedMsg) => queuedMsg.id === msg.id);
+          const isValid = isAudio && !isTranscribed && isNew && !isInQueue;
+          if (!isValid) {
+            console.log(`Message ${msg.id} skipped from transcription queue:`, {
+              reason: !isAudio ? 'Not audio' : isTranscribed ? 'Already transcribed' : !isNew ? 'Not new' : isInQueue ? 'Already in queue' : 'Unknown',
+            });
+          }
+          return isValid;
+        })
+        .sort((a, b) => a.id - b.id);
+
+      if (newAudioMessages.length > 0) {
+        console.log('Adding new audio messages to transcription queue:', newAudioMessages.map((m) => ({ id: m.id, fileUrl: m.fileUrl })));
+        setTranscriptionQueue((prevQueue) => [
+          ...prevQueue,
+          ...newAudioMessages.filter((msg) => !prevQueue.some((queuedMsg) => queuedMsg.id === msg.id)),
+        ]);
+      }
+    }
+  }, [isTranscriptionEnabled, transcriptionMode, messages, transcribedContentMap, transcriptionQueue, isMessageNew]);
+
   const transcribeNextMessage = async () => {
     if (transcriptionQueue.length === 0 || isTranscribing) return;
     setIsTranscribing(true);
