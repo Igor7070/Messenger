@@ -152,8 +152,12 @@ const usePrivateChatTranslationAndSpellCheck = ({
         delivered: msg.delivered ?? msg.delivered_status,
         read: msg.read ?? msg.read_status,
       }));
+
     if (queue.length > 0) {
-      console.log('Translation queue:', queue.map(m => ({ id: m.id, content: isAudio ? transcribedContentMap[m.id]?.content : m.content })));
+      console.log('Translation queue:', queue.map(m => ({
+        id: m.id,
+        content: m.messageType === 'audio' ? transcribedContentMap[m.id]?.content : m.content
+      })));
       setTranslationQueue((prevQueue) => {
         const existingIds = new Set(prevQueue.map((m) => m.id));
         return [...prevQueue, ...queue.filter((m) => !existingIds.has(m.id))];
