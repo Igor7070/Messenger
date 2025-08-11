@@ -133,14 +133,12 @@ const usePrivateChatTranslationAndSpellCheck = ({
         const hasTranscription = isAudio && transcribedContentMap[msg.id]?.content;
         const isTranslated = (isAudio && transcribedContentMap[msg.id]?.translatedContent && transcribedContentMap[msg.id]?.translationLanguage === translationLanguage) ||
                             (!isAudio && msg.translatedContent && msg.translationLanguage === translationLanguage);
-        const isValid = (!isAudio || hasTranscription) && !isDeleted && isMessageNew(msg) && !isTranslated;
+        const isValid = (!isAudio || hasTranscription) && !isDeleted && !isTranslated;
         if (!isValid) {
           console.log(`Message at index ${index} skipped from translation queue:`, {
             id: msg.id,
             content: isAudio ? transcribedContentMap[msg.id]?.content : msg.content,
-            reason: isAudio && !hasTranscription ? 'Audio without transcription' : isDeleted ? 'Deleted message' : isTranslated ? 'Already translated' : 'Not new',
-            translatedContent: isAudio ? transcribedContentMap[msg.id]?.translatedContent : msg.translatedContent,
-            translationLanguage: isAudio ? transcribedContentMap[msg.id]?.translationLanguage : msg.translationLanguage,
+            reason: isAudio && !hasTranscription ? 'Audio without transcription' : isDeleted ? 'Deleted message' : isTranslated ? 'Already translated' : 'Unknown',
           });
         }
         return isValid;
@@ -155,12 +153,15 @@ const usePrivateChatTranslationAndSpellCheck = ({
         read: msg.read ?? msg.read_status,
       }));
     if (queue.length > 0) {
-      console.log('Translation queue:', queue.map(m => ({ id: m.id, content: m.messageType === 'audio' ? transcribedContentMap[m.id]?.content : m.content })));
-      setTranslationQueue(queue);
+      console.log('Translation queue:', queue.map(m => ({ id: m.id, content: isAudio ? transcribedContentMap[m.id]?.content : m.content })));
+      setTranslationQueue((prevQueue) => {
+        const existingIds = new Set(prevQueue.map((m) => m.id));
+        return [...prevQueue, ...queue.filter((m) => !existingIds.has(m.id))];
+      });
     } else {
       console.log('No messages to translate');
     }
-  }, [isTranslationEnabled, translationMode, messages, translationLanguage, isMessageNew, setTranslationQueue, transcribedContentMap]);
+  }, [isTranslationEnabled, translationMode, messages, translationLanguage, transcribedContentMap, setTranslationQueue]);
 
   // Перевод одного сообщения
   const translateMessageFunc = useCallback(
