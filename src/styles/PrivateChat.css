@@ -1403,6 +1403,36 @@
     overflow: visible; /* Позволяем иконкам отображаться */
 }
 
+/* Обновление стилей для private-transcribed-content в аудиосообщениях */
+.private-message-audio-message .private-transcribed-content {
+  display: block;
+  font-family: 'Roboto', sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  color: #333333;
+  margin-top: 4px;
+  width: 300px; /* Соответствует ширине .private-audio-player-wrapper */
+  max-width: 300px;
+  padding-left: 24px; /* Отступ для иконок (16px иконка + 8px зазор) */
+  padding-right: 8px; /* Симметричный отступ справа */
+  box-sizing: border-box;
+}
+
+/* Обновление стилей для private-translated-content в аудиосообщениях */
+.private-message-audio-message .private-translated-content {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 4px;
+  line-height: 1.4;
+  width: 300px; /* Соответствует ширине .private-audio-player-wrapper */
+  max-width: 300px;
+  padding-left: 24px; /* Отступ для иконок (16px иконка + 8px зазор) */
+  padding-right: 8px; /* Симметричный отступ справа */
+  box-sizing: border-box;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         margin: 10px;
@@ -1834,5 +1864,19 @@
   .private-message.private-audio-message .private-message-content-container:has(.private-message-transcription-container) {
       min-height: auto;
       padding-bottom: 16px;
+  }
+
+  .private-message-audio-message .private-transcribed-content {
+    width: 240px; /* Соответствует ширине .private-audio-player-wrapper на мобильных */
+    max-width: 240px;
+    padding-left: 20px; /* Меньший отступ для иконок на мобильных (14px иконка + 6px зазор) */
+    padding-right: 6px;
+  }
+
+  .private-message-audio-message .private-translated-content {
+    width: 240px; /* Соответствует ширине .private-audio-player-wrapper на мобильных */
+    max-width: 240px;
+    padding-left: 20px; /* Меньший отступ для иконок на мобильных (14px иконка + 6px зазор) */
+    padding-right: 6px;
   }
 }
