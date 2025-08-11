@@ -10,8 +10,6 @@
     font-family: 'Roboto', sans-serif;
     max-width: 800px;
     margin: 20px auto;
-    min-height: 60vh; /* Добавлено: минимальная высота 80% высоты области просмотра */
-    height: calc(100vh - 60px); /* Добавлено: адаптивная высота, учитывающая margin (20px сверху и снизу) */
 }
 
 .private-chat-name {
@@ -38,7 +36,7 @@
 .private-message-list {
     border: 1px solid #D8DCE0;
     padding: 10px;
-    height: 400px;
+    height: 500px;
     overflow-y: scroll;
     margin-bottom: 15px;
     background-color: #E8ECEF;
