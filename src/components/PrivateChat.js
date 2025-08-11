@@ -1195,6 +1195,11 @@ const PrivateChat = () => {
   };
 
   const handleTTSOriginal = async (msg) => {
+    if (msg.messageType === 'audio' && !transcribedContentMap[msg.id]?.content) {
+      toast.error('Transcription is not available for this audio message');
+      return;
+    }
+
     const contentToUse = msg.messageType === 'audio' && isTranscriptionEnabled
       ? transcribedContentMap[msg.id]?.content
       : msg.content;
@@ -1250,6 +1255,11 @@ const PrivateChat = () => {
   };
 
   const handleTTSTranslated = async (msg) => {
+    if (msg.messageType === 'audio' && !transcribedContentMap[msg.id]?.content) {
+      toast.error('Transcription is not available for this audio message');
+      return;
+    }
+
     const contentToUse = msg.messageType === 'audio' && isTranscriptionEnabled
       ? transcribedContentMap[msg.id]?.translatedContent
       : msg.translatedContent;
@@ -1734,7 +1744,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && transcribedContentMap[msg.id]?.content)) && isTranslationEnabled && (
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTranslationEnabled && (
                         <div className="private-message-translate-container">
                           <button
                             className="private-message-translate-button"
@@ -1745,7 +1755,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && transcribedContentMap[msg.id]?.content)) && isTTSEnabled && (
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTTSEnabled && (
                         <div className="private-message-tts-container">
                           <button
                             className="private-message-tts-button"
@@ -1756,7 +1766,7 @@ const PrivateChat = () => {
                           </button>
                         </div>
                       )}
-                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled && transcribedContentMap[msg.id]?.content)) && isTTSEnabled && isTranslationEnabled && (
+                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTTSEnabled && isTranslationEnabled && (
                         <div className="private-message-tts-translated-container">
                           <button
                             className="private-message-tts-translated-button"

@@ -53,6 +53,11 @@ const usePrivateChatTranslationAndSpellCheck = ({
         return;
       }
 
+      if (message.messageType === 'audio' && !transcribedContentMap[message.id]?.content) {
+        toast.error('Transcription is not available for this audio message');
+        return;
+      }
+
       const contentToTranslate = message.messageType === 'audio' && transcribedContentMap[message.id]?.content
         ? transcribedContentMap[message.id].content
         : message.content;
