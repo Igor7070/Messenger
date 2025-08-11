@@ -1474,9 +1474,6 @@ const PrivateChat = () => {
             🎤
           </button>
           {isTranscriptionEnabled && <span className="private-transcription-indicator">ON</span>}
-        </div>
-        {displayChatName}
-        <div className="private-translation-controls"> 
           <button
             className="private-tts-button"
             onClick={handleTTSToggle}
@@ -1486,6 +1483,9 @@ const PrivateChat = () => {
             🔊
           </button>
           {isTTSEnabled && <span className="private-tts-indicator">ON</span>}
+        </div>
+        {displayChatName}
+        <div className="private-translation-controls"> 
           <button
             className="private-spellcheck-button" 
             onClick={handleSpellCheckToggle}
