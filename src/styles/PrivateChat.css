@@ -1385,9 +1385,10 @@
   line-height: 1.4;
   color: #333333;
   margin-top: 4px;
-  width: 100%; /* Добавлено: Ограничиваем ширину контейнером */
-  max-width: 300px; /* Добавлено: Соответствует ширине .private-audio-player-wrapper */
-  box-sizing: border-box; /* Добавлено: Учитываем padding */
+  width: 100%;
+  max-width: 300px;
+  box-sizing: border-box;
+  padding-left: 24px; /* Добавлено: Отступ слева, чтобы выровнять по левому краю .private-audio-player-wrapper */
 }
 
 .private-message.private-audio-message .private-translated-content {
@@ -1397,9 +1398,10 @@
   color: #666;
   margin-bottom: 4px;
   line-height: 1.4;
-  width: 100%; /* Добавлено: Ограничиваем ширину контейнером */
-  max-width: 300px; /* Добавлено: Соответствует ширине .private-audio-player-wrapper */
-  box-sizing: border-box; /* Добавлено: Учитываем padding */
+  width: 100%;
+  max-width: 300px;
+  box-sizing: border-box;
+  padding-left: 24px; /* Добавлено: Отступ слева, чтобы выровнять по левому краю .private-audio-player-wrapper */
 }
 
 .private-message.private-audio-message .private-message-content-container:has(.private-message-tts-translated-container),
@@ -1852,14 +1854,16 @@
   }
 
   .private-transcribed-content {
-    width: 100%; /* Добавлено: Ограничиваем ширину контейнером */
-    max-width: 240px; /* Добавлено: Соответствует ширине .private-audio-player-wrapper на мобильных */
-    box-sizing: border-box; /* Добавлено: Учитываем padding */
+    width: 100%;
+    max-width: 240px;
+    box-sizing: border-box;
+    padding-left: 20px; /* Добавлено: Отступ слева для мобильных, чтобы выровнять по .private-audio-player-wrapper */
   }
 
   .private-message.private-audio-message .private-translated-content {
-    width: 100%; /* Добавлено: Ограничиваем ширину контейнером */
-    max-width: 240px; /* Добавлено: Соответствует ширине .private-audio-player-wrapper на мобильных */
-    box-sizing: border-box; /* Добавлено: Учитываем padding */
+    width: 100%;
+    max-width: 240px;
+    box-sizing: border-box;
+    padding-left: 20px; /* Добавлено: Отступ слева для мобильных, чтобы выровнять по .private-audio-player-wrapper */
   }
 }
