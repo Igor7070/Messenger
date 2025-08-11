@@ -1384,7 +1384,24 @@
   font-size: 16px;
   line-height: 1.4;
   color: #333333;
-  margin-top: 4px; /* Отступ сверху от аудиоплеера */
+  margin-top: 4px;
+  width: 100%;
+  max-width: 300px;
+  box-sizing: border-box;
+  padding-left: 24px; /* Добавлено: Отступ слева, чтобы выровнять по левому краю .private-audio-player-wrapper */
+}
+
+.private-message.private-audio-message .private-translated-content {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 4px;
+  line-height: 1.4;
+  width: 100%;
+  max-width: 300px;
+  box-sizing: border-box;
+  padding-left: 24px; /* Добавлено: Отступ слева, чтобы выровнять по левому краю .private-audio-player-wrapper */
 }
 
 .private-message.private-audio-message .private-message-content-container:has(.private-message-tts-translated-container),
@@ -1834,5 +1851,19 @@
   .private-message.private-audio-message .private-message-content-container:has(.private-message-transcription-container) {
       min-height: auto;
       padding-bottom: 16px;
+  }
+
+  .private-transcribed-content {
+    width: 100%;
+    max-width: 240px;
+    box-sizing: border-box;
+    padding-left: 20px; /* Добавлено: Отступ слева для мобильных, чтобы выровнять по .private-audio-player-wrapper */
+  }
+
+  .private-message.private-audio-message .private-translated-content {
+    width: 100%;
+    max-width: 240px;
+    box-sizing: border-box;
+    padding-left: 20px; /* Добавлено: Отступ слева для мобильных, чтобы выровнять по .private-audio-player-wrapper */
   }
 }
