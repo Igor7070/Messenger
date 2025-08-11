@@ -905,7 +905,7 @@
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
+  z-index: 10000;
   min-width: 80px;
   text-align: center;
 }
@@ -927,7 +927,7 @@
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
-  z-index: 1000;
+  z-index: 10000;
 }
 
 .private-message-translate-container .private-message-translate-button[data-tooltip]:hover::before {
@@ -1065,7 +1065,7 @@
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
+  z-index: 10000;
   min-width: 80px;
   text-align: center;
 }
@@ -1086,7 +1086,7 @@
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
-  z-index: 1000;
+  z-index: 10000;
 }
 
 .private-message-tts-container .private-message-tts-button[data-tooltip]:hover::before {
@@ -1147,7 +1147,7 @@
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
+  z-index: 10000;
   min-width: 80px;
   text-align: center;
 }
@@ -1168,7 +1168,7 @@
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
-  z-index: 1000;
+  z-index: 10000;
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]:hover::before {
@@ -1338,7 +1338,7 @@
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
+  z-index: 10000;
   min-width: 80px;
   text-align: center;
 }
@@ -1359,7 +1359,7 @@
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
-  z-index: 1000;
+  z-index: 10000;
 }
 
 .private-message-transcription-container .private-message-transcription-button[data-tooltip]:hover::before {
@@ -1666,6 +1666,7 @@
         border: 2px solid transparent;
         border-bottom-color: #333333;
         top: -6px;
+        z-index: 10000;
     }
 
     .private-message-body {
@@ -1722,12 +1723,14 @@
         font-size: 9px;
         padding: 2px 5px;
         top: -28px;
+        z-index: 10000;
     }
 
     .private-message-tts-container .private-message-tts-button[data-tooltip]::before {
         border: 2px solid transparent;
         border-bottom-color: #333333;
         top: -6px;
+        z-index: 10000;
     }
 
     /* ДОБАВЛЕНО: Адаптивные стили для контейнера иконки TTS переведенного текста */
@@ -1759,12 +1762,14 @@
         font-size: 9px;
         padding: 2px 5px;
         top: -28px;
+        z-index: 10000;
     }
 
     .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::before {
         border: 2px solid transparent;
         border-bottom-color: #333333;
         top: -6px;
+        z-index: 10000;
     }
 
     /* ДОБАВЛЕНО: Минимальная высота для контейнера сообщения при наличии TTS перевода на мобильных */
@@ -1831,12 +1836,14 @@
     font-size: 9px;
     padding: 2px 5px;
     top: -28px;
+    z-index: 10000;
   }
 
   .private-message-transcription-container .private-message-transcription-button[data-tooltip]::before {
     border: 2px solid transparent;
     border-bottom-color: #333333;
     top: -6px;
+    z-index: 10000;
   }
 
   .private-message-content-container:has(.private-message-transcription-container) {
