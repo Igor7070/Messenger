@@ -1778,14 +1778,16 @@ const PrivateChat = () => {
                   {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && (
                     <div className="private-message-actions-container">
                       {msg.messageType === 'audio' && isTranscriptionEnabled && (
-                        <div className="private-message-transcription-container">
+                        <div
+                          className="private-message-transcription-container"
+                          onMouseEnter={(e) => showTooltip(e, 'Transcribe audio message')}
+                          onMouseLeave={hideTooltip}
+                        >
                           <button
                             className="private-message-transcription-button"
                             onClick={() => transcribeSingleMessage(msg)}
                             data-tooltip="Transcribe audio message"
                             disabled={transcribedContentMap[msg.id]?.content}
-                            onMouseEnter={(e) => showTooltip(e, 'Transcribe audio message')}
-                            onMouseLeave={hideTooltip}
                           >
                             🎤
                           </button>
