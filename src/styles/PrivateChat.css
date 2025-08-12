@@ -10,6 +10,7 @@
     font-family: 'Roboto', sans-serif;
     max-width: 800px;
     margin: 20px auto;
+    overflow: visible;
 }
 
 .private-chat-name {
