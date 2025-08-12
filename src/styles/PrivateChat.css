@@ -797,55 +797,6 @@
   position: relative;
 }
 
-.private-message-translate-button[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + 2px);
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #333333; /* Темный фон */
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  padding: 3px 6px;
-  border-radius: 4px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  z-index: 100000; /* Высокий z-index */
-  text-align: center; /* Центрирование текста */
-  min-width: max-content; /* Фон подстраивается под ширину текста */
-  width: 100%; /* Фон полностью покрывает текст */
-}
-
-.private-message-translate-button[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Стрелка для tooltip */
-.private-message-translate-button[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  bottom: -3px; /* ИЗМЕНЕНО: Уменьшен отступ */
-  left: 50%;
-  transform: translateX(-50%);
-  border: 3px solid transparent; /* ИЗМЕНЕНО: Меньшая стрелка */
-  border-top-color: #333333;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  z-index: 100000; /* Очень высокий z-index для стрелки */
-}
-
-.private-message-translate-button[data-tooltip]:hover::before {
-  opacity: 1;
-  visibility: visible;
-}
-
 /* Стили для нового контейнера private-message-content-wrapper */
 .private-message-content-wrapper {
   display: block;
