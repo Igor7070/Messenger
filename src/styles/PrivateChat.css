@@ -891,24 +891,24 @@
 .private-message-tts-container .private-message-tts-button[data-tooltip]::after,
 .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::after {
   content: attr(data-tooltip);
-  position: fixed; /* Изменено: Используем fixed вместо absolute для рендеринга относительно окна */
-  top: var(--tooltip-top, -30px); /* Используем CSS-переменную для динамической позиции */
-  left: var(--tooltip-left, 50%); /* Используем CSS-переменную для динамической позиции */
-  transform: translateX(-50%); /* Центрируем относительно кнопки */
+  position: absolute;
+  top: -30px;
+  right: 0;
+  transform: translateX(50%);
   background-color: #333333;
   color: #FFFFFF;
   font-family: 'Inter', sans-serif;
   font-size: 10px;
   font-weight: 500;
-  padding: 4px 10px; /* Увеличен правый padding для полного фона */
+  padding: 4px 8px;
   border-radius: 4px;
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 10001; /* Увеличен z-index для отображения поверх всех элементов */
-  min-width: 100px; /* Увеличена минимальная ширина для полного текста "Translate message" */
+  z-index: 10000;
+  min-width: 80px;
   text-align: center;
 }
 
@@ -926,16 +926,16 @@
 .private-message-tts-container .private-message-tts-button[data-tooltip]::before,
 .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::before {
   content: '';
-  position: fixed; /* Изменено: Соответствует position: fixed у tooltip */
-  top: var(--tooltip-top, -8px); /* Используем CSS-переменную для динамической позиции */
-  left: var(--tooltip-left, 50%); /* Используем CSS-переменную для динамической позиции */
-  transform: translateX(-50%) translateY(22px); /* Смещение стрелки вниз относительно tooltip */
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
   border: 4px solid transparent;
   border-bottom-color: #333333;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
-  z-index: 10001; /* Увеличен z-index для соответствия */
+  z-index: 10000;
 }
 
 .private-message-translate-container .private-message-translate-button[data-tooltip]:hover::before,
@@ -1531,24 +1531,19 @@
     .private-message-tts-container .private-message-tts-button[data-tooltip]::after,
     .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::after {
         font-size: 9px;
-        padding: 3px 8px; /* Увеличен padding для полного фона */
-        top: var(--tooltip-top, -28px); /* Используем CSS-переменную */
-        left: var(--tooltip-left, 50%); /* Используем CSS-переменную */
-        transform: translateX(-50%); /* Центрируем относительно кнопки */
-        z-index: 10001; /* Увеличен z-index */
-        min-width: 80px; /* Уменьшена минимальная ширина для мобильных */
+        padding: 2px 5px;
+        top: -28px;
+        z-index: 10000;
     }
 
     .private-message-translate-container .private-message-translate-button[data-tooltip]::before,
     .private-message-transcription-container .private-message-transcription-button[data-tooltip]::before,
     .private-message-tts-container .private-message-tts-button[data-tooltip]::before,
     .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::before {
-        border: 3px solid transparent; /* Увеличена стрелка для видимости */
+        border: 2px solid transparent;
         border-bottom-color: #333333;
-        top: var(--tooltip-top, -6px); /* Используем CSS-переменную */
-        left: var(--tooltip-left, 50%); /* Используем CSS-переменную */
-        transform: translateX(-50%) translateY(20px); /* Смещение стрелки для мобильных */
-        z-index: 10001; /* Увеличен z-index */
+        top: -6px;
+        z-index: 10000;
     }
 
     .private-message-body {

@@ -86,9 +86,6 @@ const PrivateChat = () => {
   const [transcriptionQueue, setTranscriptionQueue] = useState([]);
   const [isTranscribing, setIsTranscribing] = useState(false);
 
-  // Состояние для хранения позиции tooltip
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, msgId: null, type: null });
-
   // Мемоизация аудиосообщений
   const memoizedAudioMessages = useMemo(() => {
     return messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
@@ -1464,59 +1461,6 @@ const PrivateChat = () => {
     }
   };
 
-  // Функция для вычисления позиции tooltip
-  const calculateTooltipPosition = (e, msgId, type) => {
-    const buttonRect = e.currentTarget.getBoundingClientRect();
-    const tooltipWidth = 100; // Минимальная ширина tooltip из CSS
-    const tooltipHeight = 24; // Примерная высота tooltip (4px padding * 2 + 10px font + 6px запас)
-    const scrollY = window.scrollY || window.pageYOffset;
-    const scrollX = window.scrollX || window.pageXOffset;
-
-    let top = buttonRect.top + scrollY - tooltipHeight - 8; // 8px для стрелки
-    let left = buttonRect.left + scrollX + buttonRect.width / 2 - tooltipWidth / 2;
-
-    // Корректировка, чтобы tooltip не выходил за границы окна
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-
-    if (left < 10) {
-      left = 10; // Отступ от левого края
-    } else if (left + tooltipWidth > windowWidth - 10) {
-      left = windowWidth - tooltipWidth - 10; // Отступ от правого края
-    }
-
-    if (top < 10) {
-      top = buttonRect.bottom + scrollY + 8; // Перемещаем tooltip под кнопку, если не помещается сверху
-    }
-
-    setTooltipPosition({ top, left, msgId, type });
-  };
-
-  // Обработчик наведения на кнопку перевода
-  const handleTranslateButtonHover = (e, msgId) => {
-    calculateTooltipPosition(e, msgId, 'translate');
-  };
-
-  // Обработчик наведения на кнопку транскрипции
-  const handleTranscriptionButtonHover = (e, msgId) => {
-    calculateTooltipPosition(e, msgId, 'transcription');
-  };
-
-  // Обработчик наведения на кнопку TTS
-  const handleTTSButtonHover = (e, msgId) => {
-    calculateTooltipPosition(e, msgId, 'tts');
-  };
-
-  // Обработчик наведения на кнопку TTS переведенного текста
-  const handleTTSTranslatedButtonHover = (e, msgId) => {
-    calculateTooltipPosition(e, msgId, 'tts-translated');
-  };
-
-  // Обработчик ухода курсора с кнопки
-  const handleButtonMouseLeave = () => {
-    setTooltipPosition({ top: 0, left: 0, msgId: null, type: null });
-  };
-
   return (
     <div className="private-chat">
       <div className="private-chat-name">
@@ -1793,18 +1737,8 @@ const PrivateChat = () => {
                           <button
                             className="private-message-transcription-button"
                             onClick={() => transcribeSingleMessage(msg)}
-                            onMouseEnter={(e) => handleTranscriptionButtonHover(e, msg.id)}
-                            onMouseLeave={handleButtonMouseLeave}
                             data-tooltip="Transcribe audio message"
-                            disabled={transcribedContentMap[msg.id]?.content}
-                            style={
-                              tooltipPosition.msgId === msg.id && tooltipPosition.type === 'transcription'
-                                ? {
-                                    '--tooltip-top': `${tooltipPosition.top}px`,
-                                    '--tooltip-left': `${tooltipPosition.left}px`,
-                                  }
-                                : {}
-                            }
+                            disabled={transcribedContentMap[msg.id]?.content} // Отключаем кнопку, если транскрипция уже есть
                           >
                             🎤
                           </button>
@@ -1815,17 +1749,7 @@ const PrivateChat = () => {
                           <button
                             className="private-message-translate-button"
                             onClick={() => translateSingleMessage(msg)}
-                            onMouseEnter={(e) => handleTranslateButtonHover(e, msg.id)}
-                            onMouseLeave={handleButtonMouseLeave}
                             data-tooltip="Translate message"
-                            style={
-                              tooltipPosition.msgId === msg.id && tooltipPosition.type === 'translate'
-                                ? {
-                                    '--tooltip-top': `${tooltipPosition.top}px`,
-                                    '--tooltip-left': `${tooltipPosition.left}px`,
-                                  }
-                                : {}
-                            }
                           >
                             🌐
                           </button>
@@ -1836,17 +1760,7 @@ const PrivateChat = () => {
                           <button
                             className="private-message-tts-button"
                             onClick={() => handleTTSOriginal(msg)}
-                            onMouseEnter={(e) => handleTTSButtonHover(e, msg.id)}
-                            onMouseLeave={handleButtonMouseLeave}
                             data-tooltip="Listen to message"
-                            style={
-                              tooltipPosition.msgId === msg.id && tooltipPosition.type === 'tts'
-                                ? {
-                                    '--tooltip-top': `${tooltipPosition.top}px`,
-                                    '--tooltip-left': `${tooltipPosition.left}px`,
-                                  }
-                                : {}
-                            }
                           >
                             🔊
                           </button>
@@ -1857,17 +1771,7 @@ const PrivateChat = () => {
                           <button
                             className="private-message-tts-translated-button"
                             onClick={() => handleTTSTranslated(msg)}
-                            onMouseEnter={(e) => handleTTSTranslatedButtonHover(e, msg.id)}
-                            onMouseLeave={handleButtonMouseLeave}
                             data-tooltip="Listen to translated message"
-                            style={
-                              tooltipPosition.msgId === msg.id && tooltipPosition.type === 'tts-translated'
-                                ? {
-                                    '--tooltip-top': `${tooltipPosition.top}px`,
-                                    '--tooltip-left': `${tooltipPosition.left}px`,
-                                  }
-                                : {}
-                            }
                           >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
                               <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
