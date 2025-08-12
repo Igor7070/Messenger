@@ -1461,6 +1461,51 @@ const PrivateChat = () => {
     }
   };
 
+  const showTooltip = (event, tooltipText) => {
+    // Удаляем существующие подсказки, если есть
+    const existingTooltip = document.querySelector('.tooltip-dynamic');
+    const existingArrow = document.querySelector('.tooltip-dynamic-arrow');
+    if (existingTooltip) existingTooltip.remove();
+    if (existingArrow) existingArrow.remove();
+
+    // Создаем элемент подсказки
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tooltip-dynamic';
+    tooltip.textContent = tooltipText;
+
+    // Создаем элемент стрелки
+    const arrow = document.createElement('div');
+    arrow.className = 'tooltip-dynamic-arrow';
+
+    // Добавляем элементы в body
+    document.body.appendChild(tooltip);
+    document.body.appendChild(arrow);
+
+    // Получаем координаты кнопки
+    const button = event.currentTarget;
+    const rect = button.getBoundingClientRect();
+    const isMobile = window.innerWidth <= 800;
+
+    // Позиционируем подсказку
+    const tooltipHeight = isMobile ? 20 : 24; // Примерная высота (font-size + padding)
+    tooltip.style.top = `${rect.top - tooltipHeight - (isMobile ? 4 : 8)}px`; // top: -28px/-30px + стрелка
+    tooltip.style.left = `${rect.left + rect.width / 2}px`; // Центрируем по кнопке
+    tooltip.style.transform = 'translateX(-50%)'; // Смещаем на 50% влево
+
+    // Позиционируем стрелку
+    arrow.style.top = `${rect.top - (isMobile ? 4 : 8)}px`; // top: -6px/-8px
+    arrow.style.left = `${rect.left + rect.width / 2}px`;
+    arrow.style.transform = 'translateX(-50%)';
+  };
+
+  const hideTooltip = () => {
+    // Удаляем подсказку и стрелку
+    const tooltip = document.querySelector('.tooltip-dynamic');
+    const arrow = document.querySelector('.tooltip-dynamic-arrow');
+    if (tooltip) tooltip.remove();
+    if (arrow) arrow.remove();
+  };
+
   return (
     <div className="private-chat">
       <div className="private-chat-name">
@@ -1738,7 +1783,9 @@ const PrivateChat = () => {
                             className="private-message-transcription-button"
                             onClick={() => transcribeSingleMessage(msg)}
                             data-tooltip="Transcribe audio message"
-                            disabled={transcribedContentMap[msg.id]?.content} // Отключаем кнопку, если транскрипция уже есть
+                            disabled={transcribedContentMap[msg.id]?.content}
+                            onMouseEnter={(e) => showTooltip(e, 'Transcribe audio message')}
+                            onMouseLeave={hideTooltip}
                           >
                             🎤
                           </button>
@@ -1750,6 +1797,8 @@ const PrivateChat = () => {
                             className="private-message-translate-button"
                             onClick={() => translateSingleMessage(msg)}
                             data-tooltip="Translate message"
+                            onMouseEnter={(e) => showTooltip(e, 'Translate message')}
+                            onMouseLeave={hideTooltip}
                           >
                             🌐
                           </button>
@@ -1761,6 +1810,8 @@ const PrivateChat = () => {
                             className="private-message-tts-button"
                             onClick={() => handleTTSOriginal(msg)}
                             data-tooltip="Listen to message"
+                            onMouseEnter={(e) => showTooltip(e, 'Listen to message')}
+                            onMouseLeave={hideTooltip}
                           >
                             🔊
                           </button>
@@ -1772,6 +1823,8 @@ const PrivateChat = () => {
                             className="private-message-tts-translated-button"
                             onClick={() => handleTTSTranslated(msg)}
                             data-tooltip="Listen to translated message"
+                            onMouseEnter={(e) => showTooltip(e, 'Listen to translated message')}
+                            onMouseLeave={hideTooltip}
                           >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
                               <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
