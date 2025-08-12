@@ -1525,63 +1525,174 @@ const PrivateChat = () => {
         />
       )}
       <div className="private-message-list" ref={messageListRef}>
-        {messages.map((msg, index) => (
-          <div
-            key={msg.id}
-            className={`private-message ${
-              msg.sender.id === userId ? 'private-current-user' : 'private-other-user'
-            } ${isFirstMessage(msg, index) ? 'first-message' : ''} ${
-              msg.messageType === 'audio' ? 'private-audio-message' : ''
-            }`}
-            onContextMenu={(e) => handleRightClick(e, msg)}
-          >
-            <div className="private-message-wrapper">
-              {shouldShowAvatar(msg, index) && (
-                <div className="private-avatar-container">
-                  {msg.sender.avatar ? (
-                    <div className="private-avatar-wrapper">
-                      <img
-                        src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
-                        alt={`${msg.sender.username} avatar`}
-                        className="private-message-avatar"
-                        onClick={() => handleAvatarClick(msg.sender.id)}
-                        style={{ cursor: 'pointer' }}
-                      />
-                      {usersStatus[msg.sender.id]?.online && (
-                        <span className="status-indicator-online-privatechat"></span>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="private-avatar-wrapper">
-                      <div
-                        className="private-message-avatar"
-                        onClick={() => handleAvatarClick(msg.sender.id)}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        {msg.sender.username.charAt(0).toUpperCase()}
+        <div className="private-message-list-inner">
+          {messages.map((msg, index) => (
+            <div
+              key={msg.id}
+              className={`private-message ${
+                msg.sender.id === userId ? 'private-current-user' : 'private-other-user'
+              } ${isFirstMessage(msg, index) ? 'first-message' : ''} ${
+                msg.messageType === 'audio' ? 'private-audio-message' : ''
+              }`}
+              onContextMenu={(e) => handleRightClick(e, msg)}
+            >
+              <div className="private-message-wrapper">
+                {shouldShowAvatar(msg, index) && (
+                  <div className="private-avatar-container">
+                    {msg.sender.avatar ? (
+                      <div className="private-avatar-wrapper">
+                        <img
+                          src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
+                          alt={`${msg.sender.username} avatar`}
+                          className="private-message-avatar"
+                          onClick={() => handleAvatarClick(msg.sender.id)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        {usersStatus[msg.sender.id]?.online && (
+                          <span className="status-indicator-online-privatechat"></span>
+                        )}
                       </div>
-                      {usersStatus[msg.sender.id]?.online && (
-                        <span className="status-indicator-online-privatechat"></span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-              <div
-                className={`private-message-content-container ${
-                  shouldShowAvatar(msg, index) ? '' : 'no-avatar'
-                }`}
-              >
-                <div className="private-message-body">
-                  <div className="private-message-content-wrapper">
-                    {msg.messageType === 'audio' && msg.fileUrl ? (
-                      <div className="private-audio-message-container">
-                        {/* Перевод над аудиоплеером */}
-                        {isTranscriptionEnabled && transcribedContentMap[msg.id]?.content && (
+                    ) : (
+                      <div className="private-avatar-wrapper">
+                        <div
+                          className="private-message-avatar"
+                          onClick={() => handleAvatarClick(msg.sender.id)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {msg.sender.username.charAt(0).toUpperCase()}
+                        </div>
+                        {usersStatus[msg.sender.id]?.online && (
+                          <span className="status-indicator-online-privatechat"></span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div
+                  className={`private-message-content-container ${
+                    shouldShowAvatar(msg, index) ? '' : 'no-avatar'
+                  }`}
+                >
+                  <div className="private-message-body">
+                    <div className="private-message-content-wrapper">
+                      {msg.messageType === 'audio' && msg.fileUrl ? (
+                        <div className="private-audio-message-container">
+                          {/* Перевод над аудиоплеером */}
+                          {isTranscriptionEnabled && transcribedContentMap[msg.id]?.content && (
+                            <span
+                              className="private-transcribed-content" // Крупный шрифт для перевода/оригинала
+                              onClick={() => {
+                                if (transcribedContentMap[msg.id]?.translatedContent) {
+                                  setMessages((prevMessages) =>
+                                    prevMessages.map((m) =>
+                                      m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                    )
+                                  );
+                                }
+                              }}
+                              style={{ cursor: transcribedContentMap[msg.id]?.translatedContent ? 'pointer' : 'default' }}
+                            >
+                              {isTranslationEnabled && transcribedContentMap[msg.id]?.translatedContent
+                                ? msg.showOriginal
+                                  ? transcribedContentMap[msg.id]?.content
+                                  : transcribedContentMap[msg.id]?.translatedContent
+                                : transcribedContentMap[msg.id]?.content}
+                            </span>
+                          )}
+                          <div className="private-audio-player-wrapper">
+                            <audio
+                              ref={(el) => {
+                                if (el && audioRefs.current[msg.id] !== el) {
+                                  audioRefs.current[msg.id] = el;
+                                  if (!audioProgress[msg.id]?.isPreloading) {
+                                    console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
+                                  }
+                                }
+                              }}
+                              onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
+                              onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
+                              onCanPlay={() => handleCanPlay(msg.id)}
+                              onError={(e) => handleAudioError(msg.id, e)}
+                              onEnded={() => handleAudioEnded(msg.id)}
+                              className="private-audio-player"
+                              preload="auto"
+                            >
+                              <source src={msg.fileUrl} type={msg.fileUrl.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'} />
+                              Your browser does not support the audio element.
+                            </audio>
+                            {audioProgress[msg.id]?.error ? (
+                              <span className="private-audio-error">{audioProgress[msg.id].error}</span>
+                            ) : (
+                              <div className="private-audio-controls">
+                                <button
+                                  className="private-audio-play-pause"
+                                  onClick={() => {
+                                    const audio = audioRefs.current[msg.id];
+                                    if (!audio || !audioProgress[msg.id]?.isReady) {
+                                      console.log(`Play blocked for msg ${msg.id}:`, audioProgress[msg.id], 'readyState:', audio?.readyState);
+                                      return;
+                                    }
+                                    if (audio.paused) {
+                                      audio.play().catch((e) => {
+                                        console.error('Play error:', e);
+                                        handleAudioError(msg.id, e);
+                                      });
+                                    } else {
+                                      audio.pause();
+                                    }
+                                    setAudioProgress((prev) => ({
+                                      ...prev,
+                                      [msg.id]: {
+                                        ...prev[msg.id],
+                                        isPlaying: audio.paused ? false : true,
+                                      },
+                                    }));
+                                  }}
+                                  disabled={!audioProgress[msg.id]?.isReady}
+                                >
+                                  {audioProgress[msg.id]?.isPlaying ? '⏸' : '▶'}
+                                </button>
+                                <div
+                                  className="private-audio-progress-bar"
+                                  onClick={(e) => handleSeek(msg.id, e)}
+                                  onMouseDown={(e) => handleDragStart(msg.id, e)}
+                                  style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
+                                >
+                                  <div
+                                    className="private-audio-progress"
+                                    style={{
+                                      width: `${
+                                        audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
+                                          ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
+                                          : 0
+                                      }%`,
+                                    }}
+                                  >
+                                    <div className="private-audio-progress-thumb"></div>
+                                  </div>
+                                </div>
+                                <span className="private-audio-time">
+                                  {formatAudioTime(audioProgress[msg.id]?.currentTime || 0)} /{' '}
+                                  {formatAudioTime(audioProgress[msg.id]?.duration || 0)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {/* Транскрипция под аудиоплеером */}
+                          {isTranscriptionEnabled && transcribedContentMap[msg.id]?.content && (
+                            <span className="private-translated-content"> {/* Меньший шрифт для транскрипции */}
+                              {transcribedContentMap[msg.id]?.content}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {/* ИЗМЕНЕНО: Добавлен класс tts-enabled для корректных отступов */}
                           <span
-                            className="private-transcribed-content" // Крупный шрифт для перевода/оригинала
-                            onClick={() => {
-                              if (transcribedContentMap[msg.id]?.translatedContent) {
+                            className={`private-message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''} ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
+                            onClick={(e) => {
+                              if (e.target.tagName === 'A') return;
+                              if (msg.translatedContent) {
                                 setMessages((prevMessages) =>
                                   prevMessages.map((m) =>
                                     m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
@@ -1589,204 +1700,95 @@ const PrivateChat = () => {
                                 );
                               }
                             }}
-                            style={{ cursor: transcribedContentMap[msg.id]?.translatedContent ? 'pointer' : 'default' }}
+                            style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
                           >
-                            {isTranslationEnabled && transcribedContentMap[msg.id]?.translatedContent
-                              ? msg.showOriginal
-                                ? transcribedContentMap[msg.id]?.content
-                                : transcribedContentMap[msg.id]?.translatedContent
-                              : transcribedContentMap[msg.id]?.content}
+                            <span className="private-original-content">
+                              {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                            </span>
+                            {msg.translatedContent && (
+                              <span className="private-translated-content">{msg.translatedContent}</span>
+                            )}
                           </span>
-                        )}
-                        <div className="private-audio-player-wrapper">
-                          <audio
-                            ref={(el) => {
-                              if (el && audioRefs.current[msg.id] !== el) {
-                                audioRefs.current[msg.id] = el;
-                                if (!audioProgress[msg.id]?.isPreloading) {
-                                  console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
-                                }
-                              }
-                            }}
-                            onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
-                            onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
-                            onCanPlay={() => handleCanPlay(msg.id)}
-                            onError={(e) => handleAudioError(msg.id, e)}
-                            onEnded={() => handleAudioEnded(msg.id)}
-                            className="private-audio-player"
-                            preload="auto"
-                          >
-                            <source src={msg.fileUrl} type={msg.fileUrl.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'} />
-                            Your browser does not support the audio element.
-                          </audio>
-                          {audioProgress[msg.id]?.error ? (
-                            <span className="private-audio-error">{audioProgress[msg.id].error}</span>
-                          ) : (
-                            <div className="private-audio-controls">
-                              <button
-                                className="private-audio-play-pause"
-                                onClick={() => {
-                                  const audio = audioRefs.current[msg.id];
-                                  if (!audio || !audioProgress[msg.id]?.isReady) {
-                                    console.log(`Play blocked for msg ${msg.id}:`, audioProgress[msg.id], 'readyState:', audio?.readyState);
-                                    return;
-                                  }
-                                  if (audio.paused) {
-                                    audio.play().catch((e) => {
-                                      console.error('Play error:', e);
-                                      handleAudioError(msg.id, e);
-                                    });
-                                  } else {
-                                    audio.pause();
-                                  }
-                                  setAudioProgress((prev) => ({
-                                    ...prev,
-                                    [msg.id]: {
-                                      ...prev[msg.id],
-                                      isPlaying: audio.paused ? false : true,
-                                    },
-                                  }));
-                                }}
-                                disabled={!audioProgress[msg.id]?.isReady}
-                              >
-                                {audioProgress[msg.id]?.isPlaying ? '⏸' : '▶'}
-                              </button>
-                              <div
-                                className="private-audio-progress-bar"
-                                onClick={(e) => handleSeek(msg.id, e)}
-                                onMouseDown={(e) => handleDragStart(msg.id, e)}
-                                style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
-                              >
-                                <div
-                                  className="private-audio-progress"
-                                  style={{
-                                    width: `${
-                                      audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
-                                        ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
-                                        : 0
-                                    }%`,
-                                  }}
-                                >
-                                  <div className="private-audio-progress-thumb"></div>
-                                </div>
-                              </div>
-                              <span className="private-audio-time">
-                                {formatAudioTime(audioProgress[msg.id]?.currentTime || 0)} /{' '}
-                                {formatAudioTime(audioProgress[msg.id]?.duration || 0)}
-                              </span>
-                            </div>
+                          {msg.fileUrl && (
+                            <a
+                              href={msg.fileUrl}
+                              download
+                              className={`private-file-link ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''} ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
+                            >
+                              📥 Download file
+                            </a>
                           )}
-                        </div>
-                        {/* Транскрипция под аудиоплеером */}
-                        {isTranscriptionEnabled && transcribedContentMap[msg.id]?.content && (
-                          <span className="private-translated-content"> {/* Меньший шрифт для транскрипции */}
-                            {transcribedContentMap[msg.id]?.content}
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <>
-                        {/* ИЗМЕНЕНО: Добавлен класс tts-enabled для корректных отступов */}
-                        <span
-                          className={`private-message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''} ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
-                          onClick={(e) => {
-                            if (e.target.tagName === 'A') return;
-                            if (msg.translatedContent) {
-                              setMessages((prevMessages) =>
-                                prevMessages.map((m) =>
-                                  m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
-                                )
-                              );
-                            }
-                          }}
-                          style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
-                        >
-                          <span className="private-original-content">
-                            {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
-                          </span>
-                          {msg.translatedContent && (
-                            <span className="private-translated-content">{msg.translatedContent}</span>
-                          )}
-                        </span>
-                        {msg.fileUrl && (
-                          <a
-                            href={msg.fileUrl}
-                            download
-                            className={`private-file-link ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''} ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
-                          >
-                            📥 Download file
-                          </a>
-                        )}
-                      </>
-                    )}
-                    <div className="private-message-status">
-                      {msg.sender.id === userId && (
-                        <>
-                          {msg.delivered && <span className="private-delivery-indicator">✔️</span>}
-                          {msg.read && <span className="private-read-indicator">✔️</span>}
                         </>
                       )}
+                      <div className="private-message-status">
+                        {msg.sender.id === userId && (
+                          <>
+                            {msg.delivered && <span className="private-delivery-indicator">✔️</span>}
+                            {msg.read && <span className="private-read-indicator">✔️</span>}
+                          </>
+                        )}
+                      </div>
+                      <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                     </div>
-                    <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
+                    {/* ДОБАВЛЕНО: Отдельный контейнер для иконки перевода */}
+                    {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && (
+                      <div className="private-message-actions-container">
+                        {msg.messageType === 'audio' && isTranscriptionEnabled && (
+                          <div className="private-message-transcription-container">
+                            <button
+                              className="private-message-transcription-button"
+                              onClick={() => transcribeSingleMessage(msg)}
+                              data-tooltip="Transcribe audio message"
+                              disabled={transcribedContentMap[msg.id]?.content} // Отключаем кнопку, если транскрипция уже есть
+                            >
+                              🎤
+                            </button>
+                          </div>
+                        )}
+                        {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTranslationEnabled && (
+                          <div className="private-message-translate-container">
+                            <button
+                              className="private-message-translate-button"
+                              onClick={() => translateSingleMessage(msg)}
+                              data-tooltip="Translate message"
+                            >
+                              🌐
+                            </button>
+                          </div>
+                        )}
+                        {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTTSEnabled && (
+                          <div className="private-message-tts-container">
+                            <button
+                              className="private-message-tts-button"
+                              onClick={() => handleTTSOriginal(msg)}
+                              data-tooltip="Listen to message"
+                            >
+                              🔊
+                            </button>
+                          </div>
+                        )}
+                        {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTTSEnabled && isTranslationEnabled && (
+                          <div className="private-message-tts-translated-container">
+                            <button
+                              className="private-message-tts-translated-button"
+                              onClick={() => handleTTSTranslated(msg)}
+                              data-tooltip="Listen to translated message"
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
+                              </svg>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {/* ДОБАВЛЕНО: Отдельный контейнер для иконки перевода */}
-                  {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && (
-                    <div className="private-message-actions-container">
-                      {msg.messageType === 'audio' && isTranscriptionEnabled && (
-                        <div className="private-message-transcription-container">
-                          <button
-                            className="private-message-transcription-button"
-                            onClick={() => transcribeSingleMessage(msg)}
-                            data-tooltip="Transcribe audio message"
-                            disabled={transcribedContentMap[msg.id]?.content} // Отключаем кнопку, если транскрипция уже есть
-                          >
-                            🎤
-                          </button>
-                        </div>
-                      )}
-                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTranslationEnabled && (
-                        <div className="private-message-translate-container">
-                          <button
-                            className="private-message-translate-button"
-                            onClick={() => translateSingleMessage(msg)}
-                            data-tooltip="Translate message"
-                          >
-                            🌐
-                          </button>
-                        </div>
-                      )}
-                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTTSEnabled && (
-                        <div className="private-message-tts-container">
-                          <button
-                            className="private-message-tts-button"
-                            onClick={() => handleTTSOriginal(msg)}
-                            data-tooltip="Listen to message"
-                          >
-                            🔊
-                          </button>
-                        </div>
-                      )}
-                      {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && isTTSEnabled && isTranslationEnabled && (
-                        <div className="private-message-tts-translated-container">
-                          <button
-                            className="private-message-tts-translated-button"
-                            onClick={() => handleTTSTranslated(msg)}
-                            data-tooltip="Listen to translated message"
-                          >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
-                            </svg>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
       <div className="private-input-container">
         <div className="private-textarea-wrapper">

@@ -37,7 +37,7 @@
     border: 1px solid #D8DCE0;
     padding: 10px;
     height: 540px;
-    overflow-y: scroll;
+    overflow: visible; /* ИЗМЕНЕНО: Убираем обрезку tooltip'ов */
     margin-bottom: 15px;
     background-color: #E8ECEF;
     border-radius: 5px;
@@ -46,16 +46,25 @@
     gap: 8px;
 }
 
-.private-message-list::-webkit-scrollbar {
+.private-message-list-inner {
+    flex: 1; /* Занимает всю доступную высоту родителя */
+    overflow-y: scroll; /* Включаем вертикальную прокрутку */
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Наследуем gap от .private-message-list */
+}
+
+/* Стили скроллбара для .private-message-list-inner */
+.private-message-list-inner::-webkit-scrollbar {
     width: 8px;
 }
 
-.private-message-list::-webkit-scrollbar-thumb {
+.private-message-list-inner::-webkit-scrollbar-thumb {
     background-color: #B0BEC5;
     border-radius: 4px;
 }
 
-.private-message-list::-webkit-scrollbar-track {
+.private-message-list-inner::-webkit-scrollbar-track {
     background-color: #E8ECEF;
 }
 
@@ -1873,4 +1882,38 @@
     box-sizing: border-box;
     padding-left: 20px; /* Добавлено: Отступ слева для мобильных, чтобы выровнять по .private-audio-player-wrapper */
   }
+
+  .private-message-list {
+        border: 1px solid #D8DCE0;
+        padding: 10px;
+        height: 540px;
+        overflow: visible; /* ИЗМЕНЕНО: Убираем обрезку tooltip'ов */
+        margin-bottom: 15px;
+        background-color: #E8ECEF;
+        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .private-message-list-inner {
+        flex: 1; /* Занимает всю доступную высоту */
+        overflow-y: scroll; /* Прокрутка для сообщений */
+        display: flex;
+        flex-direction: column;
+        gap: 8px; /* Наследуем gap */
+    }
+
+    .private-message-list-inner::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .private-message-list-inner::-webkit-scrollbar-thumb {
+        background-color: #B0BEC5;
+        border-radius: 4px;
+    }
+
+    .private-message-list-inner::-webkit-scrollbar-track {
+        background-color: #E8ECEF;
+    }
 }
