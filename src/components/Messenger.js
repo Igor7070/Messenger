@@ -1606,48 +1606,46 @@ const Messenger = () => {
                         )}
                       </div>
                     ) : (
-                      <>
-                        <div className="message-content-wrapper">
-                          <span
-                            className={`message-content ${
+                      <div className="message-content-wrapper">
+                        <span
+                          className={`message-content ${
+                            isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
+                          } ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
+                          onClick={(e) => {
+                            if (e.target.tagName === 'A') return;
+                            if (msg.translatedContent) {
+                              setMessages((prevMessages) =>
+                                prevMessages.map((m) =>
+                                  m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                )
+                              );
+                            }
+                          }}
+                          style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                        >
+                          <span className="original-content">
+                            {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                          </span>
+                          {msg.translatedContent && (
+                            <span className="translated-content">{msg.translatedContent}</span>
+                          )}
+                        </span>
+                        {msg.fileUrl && (
+                          <a
+                            href={msg.fileUrl}
+                            download
+                            className={`file-link ${
                               isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
                             } ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
-                            onClick={(e) => {
-                              if (e.target.tagName === 'A') return;
-                              if (msg.translatedContent) {
-                                setMessages((prevMessages) =>
-                                  prevMessages.map((m) =>
-                                    m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
-                                  )
-                                );
-                              }
-                            }}
-                            style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
                           >
-                            <span className="original-content">
-                              {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
-                            </span>
-                            {msg.translatedContent && (
-                              <span className="translated-content">{msg.translatedContent}</span>
-                            )}
-                          </span>
-                          {msg.fileUrl && (
-                            <a
-                              href={msg.fileUrl}
-                              download
-                              className={`file-link ${
-                                isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
-                              } ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
-                            >
-                              📥 Download file
-                            </a>
-                          )}
-                        </div>
-                      </>
+                            📥 Download file
+                          </a>
+                        )}
+                      </div>
                     )}
                     {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && (
                       <div className="message-actions-container">
-                        {msg.messageType === 'audio' && isTranscriptionEnabled && (
+                        {msg.messageType === 'audio' && isTranscriptionEnabled && !transcribedContentMap[msg.id]?.content && (
                           <div className="message-transcription-container">
                             <button
                               className="message-transcription-button"
@@ -1655,7 +1653,6 @@ const Messenger = () => {
                               onMouseEnter={(e) => showTooltip(e, 'Transcribe audio')}
                               onMouseLeave={hideTooltip}
                               data-tooltip="Transcribe audio"
-                              disabled={transcribedContentMap[msg.id]?.content}
                             >
                               🎤
                             </button>
@@ -1715,21 +1712,6 @@ const Messenger = () => {
                               data-tooltip="Listen to transcribed text"
                             >
                               🔊
-                            </button>
-                          </div>
-                        )}
-                        {msg.messageType === 'audio' && isTTSEnabled && isTranslationEnabled && transcribedContentMap[msg.id]?.translatedContent && (
-                          <div className="message-tts-translated-transcribed-container">
-                            <button
-                              className="message-tts-translated-transcribed-button"
-                              onClick={() => handleTTSTranslated(msg)}
-                              onMouseEnter={(e) => showTooltip(e, 'Listen to translated transcribed text')}
-                              onMouseLeave={hideTooltip}
-                              data-tooltip="Listen to translated transcribed text"
-                            >
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
-                              </svg>
                             </button>
                           </div>
                         )}
