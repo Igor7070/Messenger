@@ -723,9 +723,6 @@
 }
 
 .message-translate-container {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 16px;
     height: 16px;
 }
@@ -814,7 +811,7 @@
     left: 4px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px; /* Увеличен gap для лучшего разделения иконок */
     z-index: 100;
 }
 
@@ -1366,8 +1363,6 @@
     }
 
     .message-translate-container {
-        top: 0;
-        left: 0;
         width: 14px;
         height: 14px;
     }
@@ -1375,8 +1370,6 @@
     .message-translate-container .message-translate-button {
         font-size: 10px;
         padding: 1px;
-        top: 0;
-        left: 0;
         width: 14px;
         height: 14px;
     }
@@ -1433,8 +1426,6 @@
     .message-tts-container .message-tts-button {
         font-size: 10px;
         padding: 1px;
-        top: 0;
-        left: 0;
         width: 14px;
         height: 14px;
     }
@@ -1458,7 +1449,7 @@
     }
 
     .message-tts-translated-container .message-tts-translated-button {
-        font-size: 10 dobropx;
+        font-size: 10px; /* Исправлено с "10 dobropx" на "10px" */
         padding: 1px;
         width: 14px;
         height: 14px;
