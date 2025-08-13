@@ -1645,18 +1645,18 @@ const Messenger = () => {
                     )}
                     {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && (
                       <div className="message-actions-container">
-                        {msg.messageType === 'audio' && isTranscriptionEnabled && !transcribedContentMap[msg.id]?.content && (
-                          <div className="message-transcription-container">
-                            <button
-                              className="message-transcription-button"
-                              onClick={() => transcribeSingleMessage(msg)}
-                              onMouseEnter={(e) => showTooltip(e, 'Transcribe audio')}
-                              onMouseLeave={hideTooltip}
-                              data-tooltip="Transcribe audio"
-                            >
-                              🎤
-                            </button>
-                          </div>
+                        {msg.messageType === 'audio' && isTranscriptionEnabled && (
+                            <div className="message-transcription-container">
+                                <button
+                                    className="message-transcription-button"
+                                    onClick={() => transcribeSingleMessage(msg)}
+                                    onMouseEnter={(e) => showTooltip(e, 'Transcribe audio')}
+                                    onMouseLeave={hideTooltip}
+                                    data-tooltip="Transcribe audio"
+                                >
+                                    🎤
+                                </button>
+                            </div>
                         )}
                         {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) &&
                           isTranslationEnabled && (
