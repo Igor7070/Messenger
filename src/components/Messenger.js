@@ -1356,7 +1356,7 @@ const Messenger = () => {
           >
             🎤
           </button>
-          {isTranscriptionEnabled && <span className="transcription-indicator">TR</span>}
+          {isTranscriptionEnabled && <span className="transcription-indicator">ON</span>}
           <button
             className="tts-button"
             onClick={() => {
@@ -1377,7 +1377,7 @@ const Messenger = () => {
           >
             🔊
           </button>
-          {isTTSEnabled && <span className="tts-indicator">TTS</span>}
+          {isTTSEnabled && <span className="tts-indicator">ON</span>}
         </div>
         <div className="chat-name">Group Chat: {chatName}</div>
         <div className="translation-controls">
@@ -1701,19 +1701,6 @@ const Messenger = () => {
                                 </svg>
                               </button>
                             </div>
-                          )}
-                        {msg.messageType === 'audio' && isTTSEnabled && transcribedContentMap[msg.id]?.content && (
-                          <div className="message-tts-transcribed-container">
-                            <button
-                              className="message-tts-transcribed-button"
-                              onClick={() => handleTTSTranscribed(msg)}
-                              onMouseEnter={(e) => showTooltip(e, 'Listen to transcribed text')}
-                              onMouseLeave={hideTooltip}
-                              data-tooltip="Listen to transcribed text"
-                            >
-                              🔊
-                            </button>
-                          </div>
                         )}
                       </div>
                     )}

@@ -14,16 +14,23 @@
 }
 
 .chat-header-group {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    font-family: 'Inter', 'Open Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333333;
     padding: 12px;
     background-color: #FFFFFF;
     border-radius: 5px;
     margin-bottom: 15px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    letter-spacing: 0.2px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     position: relative;
-    min-height: 44px;
 }
 
 .chat-name {
@@ -36,7 +43,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    flex: 1; /* Позволяет занимать доступное пространство */
+    flex: 1;
 }
 
 .user-creation {
@@ -355,6 +362,16 @@
     gap: 8px;
     position: absolute;
     right: 12px;
+}
+
+.transcription-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    position: absolute;
+    left: 12px;
+    height: 100%;
 }
 
 .translation-button,
@@ -719,9 +736,6 @@
     font-size: 12px;
     cursor: pointer;
     padding: 2px;
-    position: absolute;
-    top: 0;
-    left: 0;
     color: #42a5f5;
     transition: color 0.3s ease, transform 0.2s ease;
     opacity: 0.6;
@@ -815,9 +829,6 @@
     font-size: 12px;
     cursor: pointer;
     padding: 2px;
-    position: absolute;
-    top: 0;
-    left: 0;
     color: #42a5f5;
     transition: color 0.3s ease, transform 0.2s ease;
     opacity: 0.6;
@@ -828,10 +839,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.message-actions-container:has(.message-translate-container) .message-tts-container .message-tts-button {
-    top: 18px;
 }
 
 .message-tts-container .message-tts-button:hover {
@@ -897,23 +904,16 @@
     border: none;
     cursor: pointer;
     padding: 2px;
-    position: absolute;
-    top: 36px;
-    left: -2px;
     color: #4a148c;
     transition: color 0.3s ease, transform 0.2s ease;
     opacity: 0.8;
     line-height: 1;
     z-index: 101;
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.message-actions-container:has(.message-tts-container) .message-tts-translated-container .message-tts-translated-button {
-    top: 36px;
 }
 
 .message-tts-translated-container .message-tts-translated-button:hover {
@@ -983,6 +983,10 @@
     min-height: 65px;
 }
 
+.message.audio-message .message-content-container:has(.message-tts-translated-container) {
+    min-height: 100px;
+}
+
 .message-transcription-container {
     width: 16px;
     height: 16px;
@@ -1012,16 +1016,51 @@
     opacity: 1;
 }
 
-.message-actions-container:has(.message-translate-container) .message-transcription-container .message-transcription-button {
-    top: 18px;
+.message-transcription-container .message-transcription-button[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333333;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    min-width: 80px;
+    text-align: center;
 }
 
-.message-actions-container:has(.message-tts-container) .message-transcription-container .message-transcription-button {
-    top: 36px;
+.message-transcription-container .message-transcription-button[data-tooltip]:hover::after {
+    opacity: 1;
+    visibility: visible;
 }
 
-.message-actions-container:has(.message-translate-container:has(.message-tts-container)) .message-transcription-container .message-transcription-button {
-    top: 36px;
+.message-transcription-container .message-transcription-button[data-tooltip]::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-bottom-color: #333333;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 1000;
+}
+
+.message-transcription-container .message-transcription-button[data-tooltip]:hover::before {
+    opacity: 1;
+    visibility: visible;
 }
 
 .message.audio-message {
@@ -1065,17 +1104,13 @@
     padding-left: 24px;
 }
 
-.message-content-container:has(.message-transcription-container) {
-    min-height: 30px;
-}
-
 .message-content-container:has(.message-transcription-container) .audio-player-wrapper {
     padding-left: 24px;
 }
 
 .message.audio-message .message-content-container:has(.message-tts-translated-container),
 .message.audio-message .message-content-container:has(.message-transcription-container) {
-    min-height: auto;
+    min-height: 100px;
     padding-bottom: 20px;
 }
 
@@ -1194,6 +1229,11 @@
 
     .translation-controls {
         right: 8px;
+    }
+
+    .transcription-controls {
+        left: 8px;
+        gap: 6px;
     }
 
     .translation-button,
@@ -1412,31 +1452,16 @@
         top: -6px;
     }
 
-    .message-actions-container:has(.message-translate-container) .message-tts-container .message-tts-button {
-        top: 16px;
-    }
-
     .message-tts-translated-container {
         width: 14px;
         height: 14px;
     }
 
     .message-tts-translated-container .message-tts-translated-button {
-        padding: 3px;
-        top: -3px;
-        left: -2px;
-        width: 20px;
-        height: 20px;
-        color: #4a148c;
-        opacity: 0.8;
-    }
-
-    .message-tts-translated-container .message-tts-translated-button:hover {
-        color: #2e0a54;
-    }
-
-    .message-actions-container:has(.message-tts-container) .message-tts-translated-container .message-tts-translated-button {
-        top: 32px;
+        font-size: 10 dobropx;
+        padding: 1px;
+        width: 14px;
+        height: 14px;
     }
 
     .message-tts-translated-container .message-tts-translated-button[data-tooltip]::after {
@@ -1452,45 +1477,17 @@
         top: -6px;
     }
 
+    .message-tts-translated-container .message-tts-translated-button svg {
+        width: 14px;
+        height: 14px;
+    }
+
     .message-content-container:has(.message-tts-translated-container) {
         min-height: 52px;
     }
 
-    .message-tts-translated-container .message-tts-translated-button svg {
-        width: 16px;
-        height: 16px;
-        fill: #4a148c;
-    }
-
-    .message-tts-translated-container .message-tts-translated-button:hover svg {
-        fill: #2e0a54;
-    }
-
-    .transcription-controls {
-        left: 8px;
-        gap: 6px;
-    }
-
-    .transcription-button {
-        font-size: 18px;
-        padding: 3px;
-        height: 24px;
-        width: 24px;
-    }
-
-    .transcription-button[data-tooltip]::after {
-        font-size: 11px;
-        padding: 5px 10px;
-        top: -32px;
-    }
-
-    .transcription-button[data-tooltip]::before {
-        top: -6px;
-    }
-
-    .transcription-indicator {
-        font-size: 12px;
-        padding: 2px 5px;
+    .message.audio-message .message-content-container:has(.message-tts-translated-container) {
+        min-height: 80px;
     }
 
     .message-transcription-container {
@@ -1503,21 +1500,27 @@
         padding: 1px;
         width: 14px;
         height: 14px;
-        color: #42a5f5;
-        opacity: 0.6;
     }
 
-    .message-content-container:has(.message-transcription-container) {
-        min-height: 28px;
+    .message-transcription-container .message-transcription-button[data-tooltip]::after {
+        font-size: 9px;
+        padding: 2px 5px;
+        top: -28px;
+        min-width: 70px;
     }
 
-    .message.audio-message .audio-player-wrapper {
+    .message-transcription-container .message-transcription-button[data-tooltip]::before {
+        border: 2px solid transparent;
+        border-bottom-color: #333333;
+        top: -6px;
+    }
+
+    .message-content-container:has(.message-transcription-container) .audio-player-wrapper {
         padding-left: 20px;
     }
 
-    .message.audio-message .message-content-container:has(.message-tts-translated-container),
     .message.audio-message .message-content-container:has(.message-transcription-container) {
-        min-height: auto;
+        min-height: 80px;
         padding-bottom: 16px;
     }
 
