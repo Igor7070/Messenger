@@ -1345,512 +1345,517 @@ const Messenger = () => {
     };
 
     return (
-        <div className="messenger">
-            <div className="private-chat-name">
-                <div className="chat-name">Group Chat: {chatName}</div>
-                <div className="private-translation-controls">
-                    <button
-                        className="tts-button"
-                        onClick={() => {
-                            setIsTTSEnabled((prev) => {
-                                const newState = !prev;
-                                localStorage.setItem(`tts_enabled_${chatId}`, newState);
-                                if (!newState) {
-                                    if (ttsAudioRef.current) {
-                                        ttsAudioRef.current.pause();
-                                        ttsAudioRef.current = null;
-                                    }
-                                }
-                                return newState;
-                            });
-                        }}
-                        onMouseEnter={(e) => showTooltip(e, isTTSEnabled ? 'Text-to-speech is ON' : 'Text-to-speech is OFF')}
-                        onMouseLeave={hideTooltip}
-                        data-tooltip={isTTSEnabled ? 'Text-to-speech is ON' : 'Text-to-speech is OFF'}
-                        style={{ color: isTTSEnabled ? '#42a5f5' : '#B0BEC5' }}
-                    >
-                        🔊
-                    </button>
-                    {isTTSEnabled && <span className="tts-indicator">TTS</span>}
-                    <button
-                        className="spellcheck-button"
-                        onClick={handleSpellCheckToggle}
-                        onMouseEnter={(e) => showTooltip(e, isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF')}
-                        onMouseLeave={hideTooltip}
-                        data-tooltip={isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF'}
-                        style={{ color: isSpellCheckEnabled ? '#42a5f5' : '#B0BEC5' }}
-                    >
-                        ✍️
-                    </button>
-                    {isSpellCheckEnabled && <span className="spellcheck-indicator">SC</span>}
-                    <button
-                        className="translation-button"
-                        onClick={() => setShowTranslationModal(true)}
-                        onMouseEnter={(e) => showTooltip(e, 'Toggle translation for messages')}
-                        onMouseLeave={hideTooltip}
-                        data-tooltip="Toggle translation for messages"
-                        style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
-                    >
-                        🌐
-                    </button>
-                    {isTranslationEnabled && (
-                        <span className="translation-indicator">
-                            {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
-                        </span>
-                    )}
-                    <button
-                        className="transcription-button"
-                        onClick={() => setShowTranscriptionModal(true)}
-                        onMouseEnter={(e) => showTooltip(e, isTranscriptionEnabled ? 'Transcription is ON' : 'Transcription is OFF')}
-                        onMouseLeave={hideTooltip}
-                        data-tooltip={isTranscriptionEnabled ? 'Transcription is ON' : 'Transcription is OFF'}
-                        style={{ color: isTranscriptionEnabled ? '#42a5f5' : '#B0BEC5' }}
-                    >
-                        🎤
-                    </button>
-                    {isTranscriptionEnabled && <span className="transcription-indicator">TR</span>}
-                </div>
-            </div>
-            {showTranslationModal && (
-                <TranslationSettingsModal
-                    chatId={chatId}
-                    onSave={handleTranslationSettingsSave}
-                    onClose={() => setShowTranslationModal(false)}
-                />
-            )}
-            {showTranscriptionModal && (
-                <TranscriptionSettingsModal
-                    chatId={chatId}
-                    onSave={handleTranscriptionSettingsSave}
-                    onClose={() => setShowTranscriptionModal(false)}
-                />
-            )}
-            <div className="user-creation">
-                {!isLoggedIn ? (
-                    <>
-                        <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="Enter username"
-                            className="input-username"
-                        />
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Enter password"
-                            className="input-password"
-                        />
-                        <button onClick={handleCreateUser} className="create-user-button">Create User</button>
-                        <button onClick={handleLogin} className="login-button">Login</button>
-                    </>
-                ) : (
-                    <button onClick={handleLogout} className="logout-button">Logout</button>
-                )}
-            </div>
-            {errorMessage && <div className="error-message">{errorMessage}</div>}
-            <div className="message-list" ref={messageListRef}>
-                {messages.map((msg, index) => (
-                    msg.sender ? (
-                        <div
-                            key={msg.id}
-                            className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'} ${
-                                msg.messageType === 'audio' ? 'audio-message' : ''
-                            }`}
-                            onContextMenu={(e) => handleRightClick(e, msg)}
-                        >
-                            <div className="message-wrapper">
-                                {shouldShowAvatar(msg) && (
-                                    <div className="avatar-container">
-                                        {msg.sender.avatar ? (
-                                            <div className="avatar-wrapper">
-                                                <img
-                                                    src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
-                                                    alt={`${msg.sender.username} avatar`}
-                                                    className="message-avatar"
-                                                    onClick={() => handleAvatarClick(msg.sender.id)}
-                                                    style={{ cursor: 'pointer' }}
-                                                />
-                                                {usersStatus[msg.sender.id]?.online && (
-                                                    <span className="status-indicator-online-groupchat"></span>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="avatar-wrapper">
-                                                <div
-                                                    className="message-avatar"
-                                                    onClick={() => handleAvatarClick(msg.sender.id)}
-                                                    style={{ cursor: 'pointer' }}
-                                                >
-                                                    {msg.sender.username.charAt(0).toUpperCase()}
-                                                </div>
-                                                {usersStatus[msg.sender.id]?.online && (
-                                                    <span className="status-indicator-online-groupchat"></span>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                <div className="message-content-container">
-                                    <div className="message-body">
-                                        {msg.sender.id !== userId && (
-                                            <span
-                                                className={`sender-name ${
-                                                    (isTranslationEnabled || isTTSEnabled) && msg.messageType !== 'audio' ? 'translate-enabled' : ''
-                                                }`}
-                                            >
-                                                {msg.sender.username}
-                                            </span>
-                                        )}
-                                        {msg.content && (
-                                            <div className="message-content-wrapper">
-                                                <div
-                                                    className={`message-content ${
-                                                        (isTranslationEnabled || isTTSEnabled) && msg.messageType !== 'audio' ? 'translate-enabled' : ''
-                                                    }`}
-                                                    onClick={(e) => {
-                                                        if (e.target.tagName === 'A') return;
-                                                        if (msg.translatedContent) {
-                                                            setMessages((prevMessages) =>
-                                                                prevMessages.map((m) =>
-                                                                    m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
-                                                                )
-                                                            );
-                                                        }
-                                                    }}
-                                                    style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
-                                                >
-                                                    <span className="original-content">
-                                                        {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
-                                                    </span>
-                                                    {msg.translatedContent && (
-                                                        <span className="translated-content">{msg.translatedContent}</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                        {msg.messageType !== 'audio' && (isTranslationEnabled || isTTSEnabled) && (
-                                            <div className="message-actions-container">
-                                                {isTranslationEnabled && (
-                                                    <div className="message-translate-container">
-                                                        <button
-                                                            className="message-translate-button"
-                                                            onClick={() => translateSingleMessage(msg)}
-                                                            onMouseEnter={(e) => showTooltip(e, 'Translate message')}
-                                                            onMouseLeave={hideTooltip}
-                                                            data-tooltip="Translate message"
-                                                        >
-                                                            🌐
-                                                        </button>
-                                                    </div>
-                                                )}
-                                                {isTTSEnabled && (
-                                                    <div className="message-tts-container">
-                                                        <button
-                                                            className="message-tts-button"
-                                                            onClick={() => handleTTSOriginal(msg)}
-                                                            onMouseEnter={(e) => showTooltip(e, 'Listen to message')}
-                                                            onMouseLeave={hideTooltip}
-                                                            data-tooltip="Listen to message"
-                                                        >
-                                                            🔊
-                                                        </button>
-                                                    </div>
-                                                )}
-                                                {isTTSEnabled && isTranslationEnabled && msg.translatedContent && (
-                                                    <div className="message-tts-translated-container">
-                                                        <button
-                                                            className="message-tts-translated-button"
-                                                            onClick={() => handleTTSTranslated(msg)}
-                                                            onMouseEnter={(e) => showTooltip(e, 'Listen to translated message')}
-                                                            onMouseLeave={hideTooltip}
-                                                            data-tooltip="Listen to translated message"
-                                                        >
-                                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
-                                                                <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                        {msg.messageType === 'audio' && msg.fileUrl ? (
-                                            <div className="audio-message-container">
-                                                <div className="audio-player-wrapper">
-                                                    <audio
-                                                        ref={(el) => {
-                                                            if (el && audioRefs.current[msg.id] !== el) {
-                                                                audioRefs.current[msg.id] = el;
-                                                                if (!audioProgress[msg.id]?.isPreloading) {
-                                                                    console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
-                                                                }
-                                                            }
-                                                        }}
-                                                        onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
-                                                        onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
-                                                        onCanPlay={() => handleCanPlay(msg.id)}
-                                                        onError={(e) => handleAudioError(msg.id, e)}
-                                                        onEnded={() => handleAudioEnded(msg.id)}
-                                                        className="audio-player"
-                                                        preload="auto"
-                                                    >
-                                                        <source src={msg.fileUrl} type={msg.fileUrl.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'} />
-                                                        Your browser does not support the audio element.
-                                                    </audio>
-                                                    {audioProgress[msg.id]?.error ? (
-                                                        <span className="audio-error">{audioProgress[msg.id].error}</span>
-                                                    ) : (
-                                                        <div className="audio-controls">
-                                                            <button
-                                                                className="audio-play-pause"
-                                                                onClick={() => {
-                                                                    const audio = audioRefs.current[msg.id];
-                                                                    if (!audio || !audioProgress[msg.id]?.isReady) {
-                                                                        console.log(`Play blocked for msg ${msg.id}:`, audioProgress[msg.id], 'readyState:', audio?.readyState);
-                                                                        return;
-                                                                    }
-                                                                    if (audio.paused) {
-                                                                        audio.play().catch((e) => {
-                                                                            console.error('Play error:', e);
-                                                                            handleAudioError(msg.id, e);
-                                                                        });
-                                                                    } else {
-                                                                        audio.pause();
-                                                                    }
-                                                                    setAudioProgress((prev) => ({
-                                                                        ...prev,
-                                                                        [msg.id]: {
-                                                                            ...prev[msg.id],
-                                                                            isPlaying: audio.paused ? false : true,
-                                                                        },
-                                                                    }));
-                                                                }}
-                                                                disabled={!audioProgress[msg.id]?.isReady}
-                                                            >
-                                                                {audioProgress[msg.id]?.isPlaying ? '⏸' : '▶'}
-                                                            </button>
-                                                            <div
-                                                                className="audio-progress-bar"
-                                                                onClick={(e) => handleSeek(msg.id, e)}
-                                                                onMouseDown={(e) => handleDragStart(msg.id, e)}
-                                                                style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
-                                                            >
-                                                                <div
-                                                                    className="audio-progress"
-                                                                    style={{
-                                                                        width: `${
-                                                                            audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
-                                                                                ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
-                                                                                : 0
-                                                                        }%`,
-                                                                    }}
-                                                                >
-                                                                    <div className="audio-progress-thumb"></div>
-                                                                </div>
-                                                            </div>
-                                                            <span className="audio-time">
-                                                                {formatAudioTime(audioProgress[msg.id]?.currentTime || 0)} /{' '}
-                                                                {formatAudioTime(audioProgress[msg.id]?.duration || 0)}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                {isTranscriptionEnabled && (
-                                                    <div className="transcription-container">
-                                                        {transcribedContentMap[msg.id]?.content ? (
-                                                            <div className="transcription-content-wrapper">
-                                                                <div
-                                                                    className="transcription-content"
-                                                                    onClick={() => {
-                                                                        setMessages((prevMessages) =>
-                                                                            prevMessages.map((m) =>
-                                                                                m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
-                                                                            )
-                                                                        );
-                                                                    }}
-                                                                    style={{ cursor: 'pointer' }}
-                                                                >
-                                                                    <span className="transcribed-content">
-                                                                        {msg.showOriginal
-                                                                            ? transcribedContentMap[msg.id].content
-                                                                            : transcribedContentMap[msg.id].translatedContent || transcribedContentMap[msg.id].content}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        ) : null}
-                                                        {(isTranscriptionEnabled || isTTSEnabled) && (
-                                                            <div className="message-actions-container">
-                                                                <div className="message-transcribe-container">
-                                                                    <button
-                                                                        className="message-transcribe-button"
-                                                                        onClick={() => transcribeSingleMessage(msg)}
-                                                                        onMouseEnter={(e) => showTooltip(e, 'Transcribe audio')}
-                                                                        onMouseLeave={hideTooltip}
-                                                                        data-tooltip="Transcribe audio"
-                                                                    >
-                                                                        🎤
-                                                                    </button>
-                                                                </div>
-                                                                {isTTSEnabled && transcribedContentMap[msg.id]?.content && (
-                                                                    <div className="message-tts-transcribed-container">
-                                                                        <button
-                                                                            className="message-tts-transcribed-button"
-                                                                            onClick={() => handleTTSTranscribed(msg)}
-                                                                            onMouseEnter={(e) => showTooltip(e, 'Listen to transcribed text')}
-                                                                            onMouseLeave={hideTooltip}
-                                                                            data-tooltip="Listen to transcribed text"
-                                                                        >
-                                                                            🔊
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                                {isTTSEnabled && isTranslationEnabled && transcribedContentMap[msg.id]?.translatedContent && (
-                                                                    <div className="message-tts-translated-transcribed-container">
-                                                                        <button
-                                                                            className="message-tts-translated-transcribed-button"
-                                                                            onClick={() => handleTTSTranslated(msg)}
-                                                                            onMouseEnter={(e) => showTooltip(e, 'Listen to translated transcribed text')}
-                                                                            onMouseLeave={hideTooltip}
-                                                                            data-tooltip="Listen to translated transcribed text"
-                                                                        >
-                                                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
-                                                                                <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
-                                                                            </svg>
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : msg.fileUrl ? (
-                                            <a
-                                                href={msg.fileUrl}
-                                                download
-                                                className={`file-link ${
-                                                    (isTranslationEnabled || isTTSEnabled) && msg.messageType !== 'audio' ? 'translate-enabled' : ''
-                                                }`}
-                                            >
-                                                📥 Download file
-                                            </a>
-                                        ) : null}
-                                        <div className="message-timestamp">{formatTimestamp(msg.timestamp)}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ) : null
-                ))}
-                <div ref={messagesEndRef} />
-            </div>
-            <div className="input-container">
-                <div className="textarea-wrapper">
-                    <div className="textarea-inner">
-                        <span
-                            onClick={() => fileInputRef.current.click()}
-                            className="attach-icon"
-                            role="button"
-                            aria-label="Attach File"
-                        >
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 015 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 005 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z" fill="#757575"/>
-                            </svg>
-                        </span>
-                        <textarea
-                            ref={textAreaRef}
-                            value={content}
-                            onChange={handleInputChange}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Enter your message..."
-                            className="input-message"
-                            rows={rows}
-                        />
-                        <input
-                            type="file"
-                            onChange={handleFileChange}
-                            className="file-input"
-                            ref={fileInputRef}
-                            id="file-input"
-                        />
-                        {content.length === 0 && micIconState !== 'sending' && !selectedFile && (
-                            <div className="mic-icon-container">
-                                <span
-                                    onClick={isRecording ? stopRecording : startRecording}
-                                    className={`mic-icon ${micIconState} ${!isLoggedIn ? 'disabled' : ''}`}
-                                    role="button"
-                                    aria-label={micIconState === 'mic' ? 'Start Recording' : micIconState === 'recording' ? 'Stop Recording' : 'Sending Audio'}
-                                >
-                                    {micIconState === 'mic' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#757575"/>
-                                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#757575"/>
-                                    </svg>}
-                                    {micIconState === 'recording' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <circle cx="12" cy="12" r="8" fill="#FF0000"/>
-                                    </svg>}
-                                    {micIconState === 'sending' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
-                                    </svg>}
-                                </span>
-                            </div>
-                        )}
-                        {(content.length > 0 || selectedFile) && (
-                            <div className="send-icon-container">
-                                <span
-                                    onClick={sendMessage}
-                                    className="send-icon"
-                                    role="button"
-                                    aria-label="Send Message"
-                                >
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
-                                    </svg>
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                    {selectedFile && (
-                        <div className="attached-file">
-                            <span className="attached-file-name">{selectedFile.name}</span>
-                            <button
-                                className="remove-file-button"
-                                onClick={() => {
-                                    setSelectedFile(null);
-                                    if (fileInputRef.current) {
-                                        fileInputRef.current.value = null;
-                                    }
-                                }}
-                                aria-label="Remove attached file"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-            {contextMenu.visible && (
-                <div
-                    className="context-menu"
-                    style={{ top: contextMenu.y, left: contextMenu.x }}
-                    onMouseLeave={() => setContextMenu({ visible: false })}
-                >
-                    <button onClick={() => handleMenuAction('edit')}>Edit</button>
-                    <button onClick={() => handleMenuAction('delete')}>Delete</button>
-                </div>
-            )}
-            {incomingCall && (
-                <IncomingCallNotification
-                    callerId={incomingCall.callerId}
-                    callerName={incomingCall.callerName}
-                    avatar={incomingCall.avatar}
-                    callType={incomingCall.type}
-                    onAccept={() => acceptCall(navigate)}
-                    onReject={rejectCall}
-                />
-            )}
+    <div className="messenger">
+      <div className="chat-header-group">
+        <div className="transcription-controls">
+          <button
+            className="transcription-button"
+            onClick={() => setShowTranscriptionModal(true)}
+            data-tooltip={isTranscriptionEnabled ? 'Transcription is ON' : 'Transcription is OFF'}
+            style={{ color: isTranscriptionEnabled ? '#42a5f5' : '#B0BEC5' }}
+          >
+            🎤
+          </button>
+          {isTranscriptionEnabled && <span className="transcription-indicator">TR</span>}
+          <button
+            className="tts-button"
+            onClick={() => {
+              setIsTTSEnabled((prev) => {
+                const newState = !prev;
+                localStorage.setItem(`tts_enabled_${chatId}`, newState);
+                if (!newState) {
+                  if (ttsAudioRef.current) {
+                    ttsAudioRef.current.pause();
+                    ttsAudioRef.current = null;
+                  }
+                }
+                return newState;
+              });
+            }}
+            data-tooltip={isTTSEnabled ? 'Text-to-speech is ON' : 'Text-to-speech is OFF'}
+            style={{ color: isTTSEnabled ? '#42a5f5' : '#B0BEC5' }}
+          >
+            🔊
+          </button>
+          {isTTSEnabled && <span className="tts-indicator">TTS</span>}
         </div>
-    );
+        <div className="chat-name">Group Chat: {chatName}</div>
+        <div className="translation-controls">
+          <button
+            className="spellcheck-button"
+            onClick={handleSpellCheckToggle}
+            data-tooltip={isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF'}
+            style={{ color: isSpellCheckEnabled ? '#42a5f5' : '#B0BEC5' }}
+          >
+            ✍️
+          </button>
+          {isSpellCheckEnabled && <span className="spellcheck-indicator">SC</span>}
+          <button
+            className="translation-button"
+            onClick={() => setShowTranslationModal(true)}
+            data-tooltip="Toggle translation for messages"
+            style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
+          >
+            🌐
+          </button>
+          {isTranslationEnabled && (
+            <span className="translation-indicator">
+              {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
+            </span>
+          )}
+        </div>
+      </div>
+      {showTranslationModal && (
+        <TranslationSettingsModal
+          chatId={chatId}
+          onSave={handleTranslationSettingsSave}
+          onClose={() => setShowTranslationModal(false)}
+        />
+      )}
+      {showTranscriptionModal && (
+        <TranscriptionSettingsModal
+          chatId={chatId}
+          onSave={handleTranscriptionSettingsSave}
+          onClose={() => setShowTranscriptionModal(false)}
+        />
+      )}
+      <div className="user-creation">
+        {!isLoggedIn ? (
+          <>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter username"
+              className="input-username"
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter password"
+              className="input-password"
+            />
+            <button onClick={handleCreateUser} className="create-user-button">Create User</button>
+            <button onClick={handleLogin} className="login-button">Login</button>
+          </>
+        ) : (
+          <button onClick={handleLogout} className="logout-button">Logout</button>
+        )}
+      </div>
+      {errorMessage && <div className="error-message">{errorMessage}</div>}
+      <div className="message-list" ref={messageListRef}>
+        {messages.map((msg, index) => (
+          msg.sender ? (
+            <div
+              key={msg.id}
+              className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'} ${
+                msg.messageType === 'audio' ? 'audio-message' : ''
+              }`}
+              onContextMenu={(e) => handleRightClick(e, msg)}
+            >
+              <div className="message-wrapper">
+                {shouldShowAvatar(msg) && (
+                  <div className="avatar-container">
+                    {msg.sender.avatar ? (
+                      <div className="avatar-wrapper">
+                        <img
+                          src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
+                          alt={`${msg.sender.username} avatar`}
+                          className="message-avatar"
+                          onClick={() => handleAvatarClick(msg.sender.id)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        {usersStatus[msg.sender.id]?.online && (
+                          <span className="status-indicator-online-groupchat"></span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="avatar-wrapper">
+                        <div
+                          className="message-avatar"
+                          onClick={() => handleAvatarClick(msg.sender.id)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {msg.sender.username.charAt(0).toUpperCase()}
+                        </div>
+                        {usersStatus[msg.sender.id]?.online && (
+                          <span className="status-indicator-online-groupchat"></span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className={`message-content-container ${shouldShowAvatar(msg) ? '' : 'no-avatar'}`}>
+                  <div className="message-body">
+                    {msg.sender.id !== userId && (
+                      <span
+                        className={`sender-name ${
+                          (isTranslationEnabled || isTTSEnabled) && msg.messageType !== 'audio' ? 'translate-enabled' : ''
+                        }`}
+                      >
+                        {msg.sender.username}
+                      </span>
+                    )}
+                    {msg.messageType === 'audio' && msg.fileUrl ? (
+                      <div className="audio-message-container">
+                        {/* Перевод над аудиоплеером */}
+                        {isTranscriptionEnabled && transcribedContentMap[msg.id]?.content && (
+                          <span
+                            className="transcribed-content"
+                            onClick={() => {
+                              if (transcribedContentMap[msg.id]?.translatedContent) {
+                                setMessages((prevMessages) =>
+                                  prevMessages.map((m) =>
+                                    m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                  )
+                                );
+                              }
+                            }}
+                            style={{ cursor: transcribedContentMap[msg.id]?.translatedContent ? 'pointer' : 'default' }}
+                          >
+                            {isTranslationEnabled && transcribedContentMap[msg.id]?.translatedContent
+                              ? msg.showOriginal
+                                ? transcribedContentMap[msg.id]?.content
+                                : transcribedContentMap[msg.id]?.translatedContent
+                              : transcribedContentMap[msg.id]?.content}
+                          </span>
+                        )}
+                        <div className="audio-player-wrapper">
+                          <audio
+                            ref={(el) => {
+                              if (el && audioRefs.current[msg.id] !== el) {
+                                audioRefs.current[msg.id] = el;
+                                if (!audioProgress[msg.id]?.isPreloading) {
+                                  console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
+                                }
+                              }
+                            }}
+                            onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
+                            onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
+                            onCanPlay={() => handleCanPlay(msg.id)}
+                            onError={(e) => handleAudioError(msg.id, e)}
+                            onEnded={() => handleAudioEnded(msg.id)}
+                            className="audio-player"
+                            preload="auto"
+                          >
+                            <source src={msg.fileUrl} type={msg.fileUrl.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'} />
+                            Your browser does not support the audio element.
+                          </audio>
+                          {audioProgress[msg.id]?.error ? (
+                            <span className="audio-error">{audioProgress[msg.id].error}</span>
+                          ) : (
+                            <div className="audio-controls">
+                              <button
+                                className="audio-play-pause"
+                                onClick={() => {
+                                  const audio = audioRefs.current[msg.id];
+                                  if (!audio || !audioProgress[msg.id]?.isReady) {
+                                    console.log(`Play blocked for msg ${msg.id}:`, audioProgress[msg.id], 'readyState:', audio?.readyState);
+                                    return;
+                                  }
+                                  if (audio.paused) {
+                                    audio.play().catch((e) => {
+                                      console.error('Play error:', e);
+                                      handleAudioError(msg.id, e);
+                                    });
+                                  } else {
+                                    audio.pause();
+                                  }
+                                  setAudioProgress((prev) => ({
+                                    ...prev,
+                                    [msg.id]: {
+                                      ...prev[msg.id],
+                                      isPlaying: audio.paused ? false : true,
+                                    },
+                                  }));
+                                }}
+                                disabled={!audioProgress[msg.id]?.isReady}
+                              >
+                                {audioProgress[msg.id]?.isPlaying ? '⏸' : '▶'}
+                              </button>
+                              <div
+                                className="audio-progress-bar"
+                                onClick={(e) => handleSeek(msg.id, e)}
+                                onMouseDown={(e) => handleDragStart(msg.id, e)}
+                                style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
+                              >
+                                <div
+                                  className="audio-progress"
+                                  style={{
+                                    width: `${
+                                      audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
+                                        ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
+                                        : 0
+                                    }%`,
+                                  }}
+                                >
+                                  <div className="audio-progress-thumb"></div>
+                                </div>
+                              </div>
+                              <span className="audio-time">
+                                {formatAudioTime(audioProgress[msg.id]?.currentTime || 0)} /{' '}
+                                {formatAudioTime(audioProgress[msg.id]?.duration || 0)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {/* Транскрипция под аудиоплеером */}
+                        {isTranscriptionEnabled && transcribedContentMap[msg.id]?.content && (
+                          <span className="translated-content">{transcribedContentMap[msg.id]?.content}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="message-content-wrapper">
+                          <span
+                            className={`message-content ${
+                              isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
+                            } ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
+                            onClick={(e) => {
+                              if (e.target.tagName === 'A') return;
+                              if (msg.translatedContent) {
+                                setMessages((prevMessages) =>
+                                  prevMessages.map((m) =>
+                                    m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                  )
+                                );
+                              }
+                            }}
+                            style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                          >
+                            <span className="original-content">
+                              {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                            </span>
+                            {msg.translatedContent && (
+                              <span className="translated-content">{msg.translatedContent}</span>
+                            )}
+                          </span>
+                          {msg.fileUrl && (
+                            <a
+                              href={msg.fileUrl}
+                              download
+                              className={`file-link ${
+                                isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
+                              } ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
+                            >
+                              📥 Download file
+                            </a>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && (
+                      <div className="message-actions-container">
+                        {msg.messageType === 'audio' && isTranscriptionEnabled && (
+                          <div className="message-transcription-container">
+                            <button
+                              className="message-transcription-button"
+                              onClick={() => transcribeSingleMessage(msg)}
+                              onMouseEnter={(e) => showTooltip(e, 'Transcribe audio')}
+                              onMouseLeave={hideTooltip}
+                              data-tooltip="Transcribe audio"
+                              disabled={transcribedContentMap[msg.id]?.content}
+                            >
+                              🎤
+                            </button>
+                          </div>
+                        )}
+                        {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) &&
+                          isTranslationEnabled && (
+                            <div className="message-translate-container">
+                              <button
+                                className="message-translate-button"
+                                onClick={() => translateSingleMessage(msg)}
+                                onMouseEnter={(e) => showTooltip(e, 'Translate message')}
+                                onMouseLeave={hideTooltip}
+                                data-tooltip="Translate message"
+                              >
+                                🌐
+                              </button>
+                            </div>
+                          )}
+                        {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) &&
+                          isTTSEnabled && (
+                            <div className="message-tts-container">
+                              <button
+                                className="message-tts-button"
+                                onClick={() => handleTTSOriginal(msg)}
+                                onMouseEnter={(e) => showTooltip(e, 'Listen to message')}
+                                onMouseLeave={hideTooltip}
+                                data-tooltip="Listen to message"
+                              >
+                                🔊
+                              </button>
+                            </div>
+                          )}
+                        {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) &&
+                          isTTSEnabled && isTranslationEnabled && (
+                            <div className="message-tts-translated-container">
+                              <button
+                                className="message-tts-translated-button"
+                                onClick={() => handleTTSTranslated(msg)}
+                                onMouseEnter={(e) => showTooltip(e, 'Listen to translated message')}
+                                onMouseLeave={hideTooltip}
+                                data-tooltip="Listen to translated message"
+                              >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                        {msg.messageType === 'audio' && isTTSEnabled && transcribedContentMap[msg.id]?.content && (
+                          <div className="message-tts-transcribed-container">
+                            <button
+                              className="message-tts-transcribed-button"
+                              onClick={() => handleTTSTranscribed(msg)}
+                              onMouseEnter={(e) => showTooltip(e, 'Listen to transcribed text')}
+                              onMouseLeave={hideTooltip}
+                              data-tooltip="Listen to transcribed text"
+                            >
+                              🔊
+                            </button>
+                          </div>
+                        )}
+                        {msg.messageType === 'audio' && isTTSEnabled && isTranslationEnabled && transcribedContentMap[msg.id]?.translatedContent && (
+                          <div className="message-tts-translated-transcribed-container">
+                            <button
+                              className="message-tts-translated-transcribed-button"
+                              onClick={() => handleTTSTranslated(msg)}
+                              onMouseEnter={(e) => showTooltip(e, 'Listen to translated transcribed text')}
+                              onMouseLeave={hideTooltip}
+                              data-tooltip="Listen to translated transcribed text"
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
+                              </svg>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="message-timestamp">{formatTimestamp(msg.timestamp)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+      <div className="input-container">
+        <div className="textarea-wrapper">
+          <div className="textarea-inner">
+            <span
+              onClick={() => fileInputRef.current.click()}
+              className="attach-icon"
+              role="button"
+              aria-label="Attach File"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 015 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 005 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z" fill="#757575"/>
+              </svg>
+            </span>
+            <textarea
+              ref={textAreaRef}
+              value={content}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Enter your message..."
+              className="input-message"
+              rows={rows}
+            />
+            <input
+              type="file"
+              onChange={handleFileChange}
+              className="file-input"
+              ref={fileInputRef}
+              id="file-input"
+            />
+            {content.length === 0 && micIconState !== 'sending' && !selectedFile && (
+              <div className="mic-icon-container">
+                <span
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className={`mic-icon ${micIconState} ${!isLoggedIn ? 'disabled' : ''}`}
+                  role="button"
+                  aria-label={micIconState === 'mic' ? 'Start Recording' : micIconState === 'recording' ? 'Stop Recording' : 'Sending Audio'}
+                >
+                  {micIconState === 'mic' && (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#757575"/>
+                      <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#757575"/>
+                    </svg>
+                  )}
+                  {micIconState === 'recording' && (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="8" fill="#FF0000"/>
+                    </svg>
+                  )}
+                  {micIconState === 'sending' && (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
+                    </svg>
+                  )}
+                </span>
+              </div>
+            )}
+            {(content.length > 0 || selectedFile) && (
+              <div className="send-icon-container">
+                <span
+                  onClick={sendMessage}
+                  className="send-icon"
+                  role="button"
+                  aria-label="Send Message"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
+                  </svg>
+                </span>
+              </div>
+            )}
+          </div>
+          {selectedFile && (
+            <div className="attached-file">
+              <span className="attached-file-name">{selectedFile.name}</span>
+              <button
+                className="remove-file-button"
+                onClick={() => {
+                  setSelectedFile(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = null;
+                  }
+                }}
+                aria-label="Remove attached file"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      {contextMenu.visible && (
+        <div
+          className="context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onMouseLeave={() => setContextMenu({ visible: false })}
+        >
+          <button onClick={() => handleMenuAction('edit')}>Edit</button>
+          <button onClick={() => handleMenuAction('delete')}>Delete</button>
+        </div>
+      )}
+      {incomingCall && (
+        <IncomingCallNotification
+          callerId={incomingCall.callerId}
+          callerName={incomingCall.callerName}
+          avatar={incomingCall.avatar}
+          callType={incomingCall.type}
+          onAccept={() => acceptCall(navigate)}
+          onReject={rejectCall}
+        />
+      )}
+    </div>
+  );
 };
 
 export default Messenger;
