@@ -13,6 +13,7 @@ import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 import TranslationSettingsModal from './TranslationSettingsModal';
+import TranscriptionSettingsModal from './TranscriptionSettingsModal'; // ДОБАВЛЕНО: Импорт модального окна для транскрипции
 import { translateMessage, saveTranslation } from '../api/messages';
 import useGroupChatTranslationAndSpellCheck from '../hooks/useGroupChatTranslationAndSpellCheck';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -47,7 +48,7 @@ const Messenger = () => {
     const messagesEndRef = useRef(null);
     const messageListRef = useRef(null);
     const fileInputRef = useRef(null);
-    const mediaRecorderRef = useRef(null); // *** ДОБАВЛЕНО: Референция для MediaRecorder ***
+    const mediaRecorderRef = useRef(null);
     const { chatId } = useParams();
     const navigate = useNavigate();
     const { userInteracted, handleInteraction } = useUserInteraction();
@@ -61,17 +62,19 @@ const Messenger = () => {
     const [translationQueue, setTranslationQueue] = useState([]);
     const [isTranslating, setIsTranslating] = useState(false);
     const [showTranslationModal, setShowTranslationModal] = useState(false);
+    const [showTranscriptionModal, setShowTranscriptionModal] = useState(false); // ДОБАВЛЕНО: Для модального окна транскрипции
 
     const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
 
     // Состояния для аудиозаписи
     const [isRecording, setIsRecording] = useState(false);
     const [audioBlob, setAudioBlob] = useState(null);
-    const [micIconState, setMicIconState] = useState('mic'); // 'mic', 'recording', 'sending'
+    const [micIconState, setMicIconState] = useState('mic');
 
     // Состояния для аудиоплеера
-    const [audioProgress, setAudioProgress] = useState({}); // { [msgId]: { currentTime: 0, duration: 0, isPlaying: false, isReady: false, error: null } }
-    const audioRefs = useRef({}); // Референции для аудиоэлементов
+    const [audioProgress, setAudioProgress] = useState({});
+    const audioRefs = useRef({});
+    const [isDragging, setIsDragging] = useState(null); // ДОБАВЛЕНО: Для перетаскивания ползунка
 
     // Состояния для TTS
     const [isTTSEnabled, setIsTTSEnabled] = useState(false);
@@ -81,37 +84,54 @@ const Messenger = () => {
     const ffmpeg = useRef(new FFmpeg());
     const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
 
-    // Состояние для отслеживания перетаскивания
-    const [isDragging, setIsDragging] = useState(null); // msgId, если перетаскивание активно
+    // Состояния для транскрипции
+    const [isTranscriptionEnabled, setIsTranscriptionEnabled] = useState(false);
+    const [transcriptionMode, setTranscriptionMode] = useState('selective');
+    const [transcribedContentMap, setTranscribedContentMap] = useState({});
+    const [transcriptionQueue, setTranscriptionQueue] = useState([]);
+    const [isTranscribing, setIsTranscribing] = useState(false);
 
     // Использование хука
     const {
-      isMessageNew,
-      translateExistingMessages,
-      translateNextMessage,
-      translateMessageFunc,
-      translateSingleMessage,
-      clearTranslations,
-      handleTranslationSettingsSave,
-      handleSpellCheckToggle,
-      spellCheckMessage,
+        isMessageNew,
+        translateExistingMessages,
+        translateNextMessage,
+        translateMessageFunc,
+        translateSingleMessage,
+        clearTranslations,
+        handleTranslationSettingsSave,
+        handleSpellCheckToggle,
+        spellCheckMessage,
+        transcribeSingleMessage,
+        transcribeExistingMessages,
+        transcribeNextMessage,
     } = useGroupChatTranslationAndSpellCheck({
-      chatId,
-      messages,
-      setMessages,
-      isTranslationEnabled,
-      setIsTranslationEnabled,
-      translationLanguage,
-      setTranslationLanguage,
-      translationMode, // Передаём существующее состояние
-      setTranslationMode, // Передаём существующее состояние
-      translationQueue,
-      setTranslationQueue,
-      isTranslating,
-      setIsTranslating,
-      setIsSpellCheckEnabled,
-      isTTSEnabled,
-      setIsTTSEnabled,
+        chatId,
+        messages,
+        setMessages,
+        isTranslationEnabled,
+        setIsTranslationEnabled,
+        translationLanguage,
+        setTranslationLanguage,
+        translationMode,
+        setTranslationMode,
+        translationQueue,
+        setTranslationQueue,
+        isTranslating,
+        setIsTranslating,
+        setIsSpellCheckEnabled,
+        isTTSEnabled,
+        setIsTTSEnabled,
+        isTranscriptionEnabled,
+        setIsTranscriptionEnabled,
+        transcriptionMode,
+        setTranscriptionMode,
+        transcribedContentMap,
+        setTranscribedContentMap,
+        transcriptionQueue,
+        setTranscriptionQueue,
+        isTranscribing,
+        setIsTranscribing,
     });
 
     // Мемоизация аудиосообщений
@@ -147,55 +167,151 @@ const Messenger = () => {
         navigate(`/user/${senderId}`);
     };
 
+    // Функция для отправки уведомлений
+    const sendNotification = (message, contentToUse) => {
+        if (client && client.connected) {
+            const notification = {
+                chatId: message.chat.id,
+                senderId: message.sender.id,
+                content: contentToUse || message.content,
+                timestamp: message.timestamp,
+                messageType: message.messageType,
+            };
+            client.publish({
+                destination: `/app/notify/chat/${chatId}`,
+                body: JSON.stringify(notification),
+            });
+            console.log('Notification sent:', notification);
+        } else {
+            console.error('Cannot send notification: STOMP client is not connected');
+        }
+    };
+
+    // Динамические всплывающие подсказки
+    const showTooltip = (event, tooltipText) => {
+        const existingTooltip = document.querySelector('.tooltip-dynamic');
+        const existingArrow = document.querySelector('.tooltip-dynamic-arrow');
+        if (existingTooltip) existingTooltip.remove();
+        if (existingArrow) existingArrow.remove();
+
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tooltip-dynamic';
+        tooltip.textContent = tooltipText;
+
+        const arrow = document.createElement('div');
+        arrow.className = 'tooltip-dynamic-arrow';
+
+        document.body.appendChild(tooltip);
+        document.body.appendChild(arrow);
+
+        const button = event.currentTarget;
+        const rect = button.getBoundingClientRect();
+        const isMobile = window.innerWidth <= 800;
+
+        tooltip.style.top = `${rect.top - (isMobile ? 20 : 24) - (isMobile ? 4 : 8)}px`;
+        tooltip.style.left = `${rect.left + rect.width / 2}px`;
+        tooltip.style.transform = 'translateX(-50%)';
+
+        arrow.style.top = `${rect.top - (isMobile ? 4 : 8)}px`;
+        arrow.style.left = `${rect.left + rect.width / 2}px`;
+        arrow.style.transform = 'translateX(-50%)';
+    };
+
+    const hideTooltip = () => {
+        const tooltip = document.querySelector('.tooltip-dynamic');
+        const arrow = document.querySelector('.tooltip-dynamic-arrow');
+        if (tooltip) tooltip.remove();
+        if (arrow) arrow.remove();
+    };
+
+    // Обработчик сохранения настроек транскрипции
+    const handleTranscriptionSettingsSave = ({ isTranscriptionEnabled, transcriptionMode }) => {
+        setIsTranscriptionEnabled(isTranscriptionEnabled);
+        setTranscriptionMode(transcriptionMode);
+        localStorage.setItem(`transcription_enabled_${chatId}`, isTranscriptionEnabled);
+        localStorage.setItem(`transcription_mode_${chatId}`, transcriptionMode);
+        if (isTranscriptionEnabled) {
+            localStorage.setItem(`transcription_enabled_timestamp_${chatId}`, new Date().toISOString());
+        } else {
+            localStorage.removeItem(`transcription_enabled_timestamp_${chatId}`);
+            setTranscribedContentMap({});
+            Object.keys(localStorage)
+                .filter((key) => key.startsWith(`transcription_${chatId}_`))
+                .forEach((key) => localStorage.removeItem(key));
+        }
+    };
+
     useEffect(() => {
         const initializeChat = async () => {
             try {
-            // Загружаем настройки пользователя и перевода
-            const storedUserId = localStorage.getItem('userId');
-            const storedUsername = localStorage.getItem('username');
-            if (storedUserId && storedUsername) {
-                const userIdNum = Number(storedUserId);
-                setUserId(userIdNum);
-                setCurrentUserId(userIdNum);
-                setContextUserId(userIdNum);
-                setNotificationUserId(userIdNum);
-                setUsername(storedUsername);
-                setIsLoggedIn(true);
-                setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatId}`) === 'true');
-                setTranslationLanguage(localStorage.getItem(`translation_language_${chatId}`) || 'auto');
-                setTranslationMode(localStorage.getItem(`translation_mode_${chatId}`) || 'selective');
-                setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatId}`) === 'true');
-                setIsTTSEnabled(localStorage.getItem(`tts_enabled_${chatId}`) === 'true');
-            } else {
-                toast.error('User is not authorized');
-                navigate('/');
-                return;
-            }
-
-            // Загружаем сообщения
-            const messages = await getMessages(chatId);
-            const updatedMessages = messages.map((msg) => {
-                const translationKey = `translation_${chatId}_${msg.id}`;
-                const savedTranslation = localStorage.getItem(translationKey);
-                if (savedTranslation) {
-                const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
-                return { ...msg, translatedContent, translationLanguage, showOriginal: true };
+                // Загружаем настройки пользователя и перевода
+                const storedUserId = localStorage.getItem('userId');
+                const storedUsername = localStorage.getItem('username');
+                if (storedUserId && storedUsername) {
+                    const userIdNum = Number(storedUserId);
+                    setUserId(userIdNum);
+                    setCurrentUserId(userIdNum);
+                    setContextUserId(userIdNum);
+                    setNotificationUserId(userIdNum);
+                    setUsername(storedUsername);
+                    setIsLoggedIn(true);
+                    setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatId}`) === 'true');
+                    setTranslationLanguage(localStorage.getItem(`translation_language_${chatId}`) || 'auto');
+                    setTranslationMode(localStorage.getItem(`translation_mode_${chatId}`) || 'selective');
+                    setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatId}`) === 'true');
+                    setIsTTSEnabled(localStorage.getItem(`tts_enabled_${chatId}`) === 'true');
+                    setIsTranscriptionEnabled(localStorage.getItem(`transcription_enabled_${chatId}`) === 'true');
+                    setTranscriptionMode(localStorage.getItem(`transcription_mode_${chatId}`) || 'selective');
+                } else {
+                    toast.error('User is not authorized');
+                    navigate('/');
+                    return;
                 }
-                return { ...msg, showOriginal: true };
-            });
-            setMessages(updatedMessages);
-            const name = await getChatName(chatId);
-            setChatName(name);
-            if (messages.length > 0) {
-                localStorage.setItem(`last_visit_chat_${chatId}`, messages[messages.length - 1].timestamp);
-            }
-            setTimeout(() => {
-                scrollToBottom();
-            }, 0);
+
+                // Загружаем сообщения
+                const initialMessages = await getMessages(chatId);
+                const updatedMessages = initialMessages.map((msg) => {
+                    const translationKey = `translation_${chatId}_${msg.id}`;
+                    const transcriptionKey = `transcription_${chatId}_${msg.id}`;
+                    const savedTranslation = localStorage.getItem(translationKey);
+                    const savedTranscription = localStorage.getItem(transcriptionKey);
+                    const result = {
+                        ...msg,
+                        delivered: msg.delivered_status,
+                        read: msg.read_status,
+                        showOriginal: msg.messageType !== 'audio' && savedTranslation ? true : false,
+                    };
+                    if (savedTranslation) {
+                        const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
+                        result.translatedContent = translatedContent;
+                        result.translationLanguage = translationLanguage;
+                    }
+                    if (savedTranscription && msg.messageType === 'audio') {
+                        const transcriptionData = JSON.parse(savedTranscription);
+                        setTranscribedContentMap((prev) => ({
+                            ...prev,
+                            [msg.id]: {
+                                content: transcriptionData.content,
+                                translatedContent: transcriptionData.translatedContent || null,
+                                translationLanguage: transcriptionData.translationLanguage || null,
+                            },
+                        }));
+                    }
+                    return result;
+                });
+                setMessages(updatedMessages);
+                const name = await getChatName(chatId);
+                setChatName(name);
+                if (updatedMessages.length > 0) {
+                    localStorage.setItem(`last_visit_chat_${chatId}`, updatedMessages[updatedMessages.length - 1].timestamp);
+                }
+                setTimeout(() => {
+                    scrollToBottom();
+                }, 0);
             } catch (error) {
-            console.error('Ошибка при загрузке данных чата:', error);
-            toast.error('Failed to load chat data');
-            navigate('/');
+                console.error('Ошибка при загрузке данных чата:', error);
+                toast.error('Failed to load chat data');
+                navigate('/');
             }
         };
 
@@ -210,43 +326,53 @@ const Messenger = () => {
             console.log('Clearing translations');
             clearTranslations();
         }
-    }, [isTranslationEnabled, translationLanguage, translationMode, messages, translateExistingMessages, clearTranslations]);
+        if (isTranscriptionEnabled && transcriptionMode === 'all' && memoizedAudioMessages.length > 0) {
+            transcribeExistingMessages();
+        }
+    }, [isTranslationEnabled, translationLanguage, translationMode, messages, translateExistingMessages, clearTranslations, isTranscriptionEnabled, transcriptionMode, memoizedAudioMessages, transcribeExistingMessages]);
 
     useEffect(() => {
-        if (!isTranslationEnabled && messages.some((msg) => msg.translatedContent || msg.translationLanguage)) {
-            console.log('Cleaning translations in messages due to disabled translation');
+        if (
+            (!isTranslationEnabled && messages.some((msg) => msg.translatedContent || msg.translationLanguage)) ||
+            (!isTranscriptionEnabled && Object.keys(transcribedContentMap).length > 0)
+        ) {
+            console.log('Cleaning translations and transcriptions due to disabled features');
             setMessages((prevMessages) =>
-                prevMessages.map((msg) =>
-                    msg.translatedContent || msg.translationLanguage
-                    ? {
-                        ...msg,
-                        translatedContent: null,
-                        translationLanguage: null,
-                        showOriginal: true,
-                        }
-                    : msg
-                )
+                prevMessages.map((msg) => ({
+                    ...msg,
+                    translatedContent: null,
+                    translationLanguage: null,
+                    showOriginal: true,
+                }))
             );
+            setTranscribedContentMap({});
         }
-    }, [isTranslationEnabled, messages]);
+    }, [isTranslationEnabled, isTranscriptionEnabled]);
 
-    // Добавлено: обработка новых сообщений для перевода
     useEffect(() => {
         const stompClientInstance = new Client({
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
-            console.log('Connected to WebSocket');
-            stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
-                const newMessage = JSON.parse(message.body);
-                updateMessages(newMessage);
-                // Добавлено: перевод нового сообщения
-                if (isTranslationEnabled && (translationMode === 'new' || translationMode === 'all') && isMessageNew(newMessage)) {
-                    setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
-                }
-            });
+                console.log('Connected to WebSocket');
+                stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
+                    const newMessage = JSON.parse(message.body);
+                    updateMessages(newMessage);
+                    if (isTranslationEnabled && (translationMode === 'new' || translationMode === 'all') && isMessageNew(newMessage)) {
+                        setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+                    }
+                    if (
+                        isTranscriptionEnabled &&
+                        (transcriptionMode === 'new' || transcriptionMode === 'all') &&
+                        newMessage.messageType === 'audio' &&
+                        newMessage.fileUrl &&
+                        isMessageNew(newMessage)
+                    ) {
+                        setTranscriptionQueue((prevQueue) => [...prevQueue, newMessage]);
+                    }
+                });
             },
             onWebSocketError: (error) => {
-            console.error('WebSocket error:', error);
+                console.error('WebSocket error:', error);
             },
         });
 
@@ -256,7 +382,7 @@ const Messenger = () => {
         return () => {
             stompClientInstance.deactivate();
         };
-    }, [chatId, isTranslationEnabled, translationLanguage, translationMode, isMessageNew]); // Изменено: добавлены зависимости
+    }, [chatId, isTranslationEnabled, translationLanguage, translationMode, isMessageNew, isTranscriptionEnabled, transcriptionMode]);
 
     useEffect(() => {
         const handleClick = () => {
@@ -270,18 +396,20 @@ const Messenger = () => {
     }, [handleInteraction]);
 
     useEffect(() => {
-        // Прокрутка при добавлении нового сообщения
         if (messages.length > 0) {
             setTimeout(() => {
-            scrollToBottom();
-            }, 0); // setTimeout для выполнения после рендера
+                scrollToBottom();
+            }, 0);
         }
     }, [messages.length]);
 
-    // Добавлено: обработка очереди переводов
     useEffect(() => {
         translateNextMessage();
-    }, [translationQueue, isTranslating]);
+    }, [translationQueue, isTranslating, translateNextMessage]);
+
+    useEffect(() => {
+        transcribeNextMessage();
+    }, [transcriptionQueue, isTranscribing, transcribeNextMessage]);
 
     useEffect(() => {
         const calculateCharPerLine = () => {
@@ -289,8 +417,8 @@ const Messenger = () => {
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 context.font = window.innerWidth <= 800 ? '14px Roboto' : '16px Roboto';
-                const avgCharWidth = context.measureText('m').width; // Средняя ширина символа
-                const textareaWidth = textAreaRef.current.clientWidth - 50; // Учитываем padding (40px десктоп, 36px мобильный)
+                const avgCharWidth = context.measureText('m').width;
+                const textareaWidth = textAreaRef.current.clientWidth - 50;
                 const chars = Math.floor(textareaWidth / avgCharWidth);
                 setCharPerLine(chars);
             }
@@ -300,7 +428,6 @@ const Messenger = () => {
         return () => window.removeEventListener('resize', calculateCharPerLine);
     }, []);
 
-    // ДОБАВЛЕНО: useEffect для добавления/удаления слушателей событий перетаскивания
     useEffect(() => {
         if (isDragging) {
             window.addEventListener('mousemove', handleDragMove);
@@ -313,7 +440,7 @@ const Messenger = () => {
     }, [isDragging]);
 
     useEffect(() => {
-        const visibleAudioMessages = memoizedAudioMessages.slice(-10); // Ограничиваем последними 10 аудиосообщениями
+        const visibleAudioMessages = memoizedAudioMessages.slice(-10);
         visibleAudioMessages.forEach((msg) => {
             if (
                 audioRefs.current[msg.id] &&
@@ -335,35 +462,73 @@ const Messenger = () => {
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
             if (newMessage.content === 'Message deleted') {
-            return prevMessages.filter((msg) => msg.id !== newMessage.id);
+                setTranscribedContentMap((prevMap) => {
+                    const newMap = { ...prevMap };
+                    delete newMap[newMessage.id];
+                    return newMap;
+                });
+                return prevMessages.filter((msg) => msg.id !== newMessage.id);
             }
 
             const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
+            const isAudio = newMessage.messageType === 'audio';
             if (existingMessageIndex !== -1) {
-            const updatedMessages = [...prevMessages];
-            updatedMessages[existingMessageIndex] = {
-                ...newMessage,
-                translatedContent: updatedMessages[existingMessageIndex].translatedContent,
-                translationLanguage: updatedMessages[existingMessageIndex].translationLanguage,
-                showOriginal: updatedMessages[existingMessageIndex].showOriginal,
-            };
-            if (
-              isTranslationEnabled &&
-              (translationMode === 'new' || translationMode === 'all') &&
-              isMessageNew(newMessage) &&
-              (!updatedMessages[existingMessageIndex].translatedContent ||
-                    updatedMessages[existingMessageIndex].translationLanguage !== translationLanguage)
-            ) {
-              setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
-            }
-            return updatedMessages;
+                const updatedMessages = [...prevMessages];
+                updatedMessages[existingMessageIndex] = {
+                    ...updatedMessages[existingMessageIndex],
+                    ...newMessage,
+                    delivered: newMessage.delivered_status ?? updatedMessages[existingMessageIndex].delivered,
+                    read: newMessage.read_status ?? updatedMessages[existingMessageIndex].read,
+                    messageType: newMessage.messageType ?? updatedMessages[existingMessageIndex].messageType,
+                    translatedContent: isAudio ? null : updatedMessages[existingMessageIndex].translatedContent,
+                    translationLanguage: isAudio ? null : updatedMessages[existingMessageIndex].translationLanguage,
+                    showOriginal: updatedMessages[existingMessageIndex].showOriginal,
+                };
+                if (
+                    isTranslationEnabled &&
+                    (translationMode === 'new' || translationMode === 'all') &&
+                    isMessageNew(newMessage) &&
+                    (!updatedMessages[existingMessageIndex].translatedContent ||
+                        updatedMessages[existingMessageIndex].translationLanguage !== translationLanguage)
+                ) {
+                    setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+                }
+                if (
+                    isTranscriptionEnabled &&
+                    (transcriptionMode === 'new' || transcriptionMode === 'all') &&
+                    newMessage.messageType === 'audio' &&
+                    newMessage.fileUrl &&
+                    isMessageNew(newMessage) &&
+                    !transcribedContentMap[newMessage.id]?.content
+                ) {
+                    setTranscriptionQueue((prevQueue) => [...prevQueue, newMessage]);
+                }
+                return updatedMessages;
             } else {
-            const updatedMessages = [...prevMessages, { ...newMessage, showOriginal: true }];
-            localStorage.setItem(`last_visit_chat_${chatId}`, newMessage.timestamp);
-            if (isTranslationEnabled && isMessageNew(newMessage)) {
-                setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
-            }
-            return updatedMessages;
+                const newMsg = {
+                    ...newMessage,
+                    delivered: newMessage.delivered_status,
+                    read: newMessage.read_status,
+                    showOriginal: false,
+                    messageType: newMessage.messageType,
+                    translatedContent: isAudio ? null : newMessage.translatedContent,
+                    translationLanguage: isAudio ? null : newMessage.translationLanguage,
+                };
+                const updatedMessages = [...prevMessages, newMsg];
+                localStorage.setItem(`last_visit_chat_${chatId}`, newMessage.timestamp);
+                if (isTranslationEnabled && isMessageNew(newMessage)) {
+                    setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
+                }
+                if (
+                    isTranscriptionEnabled &&
+                    (transcriptionMode === 'new' || transcriptionMode === 'all') &&
+                    newMessage.messageType === 'audio' &&
+                    newMessage.fileUrl &&
+                    isMessageNew(newMessage)
+                ) {
+                    setTranscriptionQueue((prevQueue) => [...prevQueue, newMessage]);
+                }
+                return updatedMessages;
             }
         });
     };
@@ -392,7 +557,6 @@ const Messenger = () => {
             const currentUsername = username;
             const chatName = await getChatName(chatId);
 
-            // Проверяем орфографию, если включена
             let finalContent = content;
             if (isSpellCheckEnabled) {
                 const spellCheckTimestamp = localStorage.getItem(`spellcheck_enabled_timestamp_${chatId}`);
@@ -409,27 +573,29 @@ const Messenger = () => {
                 fileUrl: selectedFile ? await uploadFile(selectedFile) : audioBlob ? await uploadFile(audioBlob) : null,
                 timestamp: new Date().toISOString(),
                 messageType: audioBlob ? 'audio' : selectedFile ? 'file' : 'text',
-                contentType: audioBlob ? 'audio/mpeg' : selectedFile ? selectedFile.type : null // ДОБАВЛЕНО: Указываем contentType для аудио
+                contentType: audioBlob ? 'audio/mpeg' : selectedFile ? selectedFile.type : null,
             };
 
             console.log('Sending message:', message);
 
             if (client && client.connected) {
                 if (editingMessageId) {
-                    const existingMessage = messages.find(msg => msg.id === editingMessageId);
+                    const existingMessage = messages.find((msg) => msg.id === editingMessageId);
                     if (existingMessage && existingMessage.sender.id === userId) {
                         client.publish({ destination: `/app/editMessage/${chatId}`, body: JSON.stringify(message) });
-                        setMessages(prevMessages =>
-                            prevMessages.map(msg =>
+                        setMessages((prevMessages) =>
+                            prevMessages.map((msg) =>
                                 msg.id === editingMessageId ? { ...msg, content: finalContent, timestamp: message.timestamp } : msg
                             )
                         );
+                        sendNotification(message, finalContent);
                     } else {
                         toast.error('You can only edit your own messages.');
                         return;
                     }
                 } else {
                     client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
+                    sendNotification(message, finalContent);
                 }
 
                 resetForm();
@@ -440,6 +606,45 @@ const Messenger = () => {
         } else {
             console.warn('Content, file, or audio is missing');
             toast.error('Please provide a message, file, or audio');
+        }
+    };
+
+    const sendAudioMessage = async (audioBlob) => {
+        if (!audioBlob || !userId) {
+            console.warn('Audio or userId is missing');
+            toast.error('Failed to send audio message');
+            setMicIconState('mic');
+            return;
+        }
+
+        const currentUsername = username;
+        const chatName = await getChatName(chatId);
+
+        const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
+
+        const message = {
+            id: Date.now(),
+            content: '',
+            sender: { id: userId, username: currentUsername },
+            chat: { id: chatId, name: chatName },
+            fileUrl: await uploadFile(audioFile),
+            timestamp: new Date().toISOString(),
+            messageType: 'audio',
+            contentType: 'audio/mpeg',
+        };
+
+        console.log('Sending audio message:', message);
+
+        if (client && client.connected) {
+            client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
+            sendNotification(message, '');
+            setAudioBlob(null);
+            console.log('Audio message sent');
+            setMicIconState('mic');
+        } else {
+            console.error('STOMP client is not connected');
+            toast.error('WebSocket not connected');
+            setMicIconState('mic');
         }
     };
 
@@ -486,8 +691,7 @@ const Messenger = () => {
                 body: JSON.stringify(id),
             });
 
-            setMessages(prevMessages => prevMessages.filter(msg => msg.id !== id));
-
+            setMessages((prevMessages) => prevMessages.filter((msg) => msg.id !== id));
             toast.success('Message deleted!');
         } else {
             toast.error('Failed to delete message. Try again.');
@@ -572,11 +776,10 @@ const Messenger = () => {
     const handleInputChange = (e) => {
         const newValue = e.target.value;
         setContent(newValue);
-        const newRows = Math.min(5, calculateRows(newValue)); // Ограничиваем до 5 строк
+        const newRows = Math.min(5, calculateRows(newValue));
         setRows(newRows);
-        const lineHeight = window.innerWidth <= 800 ? 20 : 24; // 20px для мобильных, 24px для десктопа
-        textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`; // Учитываем padding (10px + 10px)
-        // ДОБАВЛЕНО: Управление классом scroll-enabled для скроллбара
+        const lineHeight = window.innerWidth <= 800 ? 20 : 24;
+        textAreaRef.current.style.height = `${newRows * lineHeight + 20}px`;
         if (newRows >= 5) {
             textAreaRef.current.classList.add('scroll-enabled');
         } else {
@@ -585,33 +788,30 @@ const Messenger = () => {
     };
 
     const calculateRows = (text) => {
-        if (!text) return 1; // Если текст пустой, возвращаем 1 строку
-        const lines = text.split('\n'); // Разбиваем текст на строки по переносам
-        let totalRows = lines.length; // Количество строк по переносам
+        if (!text) return 1;
+        const lines = text.split('\n');
+        let totalRows = lines.length;
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
         context.font = window.innerWidth <= 800 ? '14px Roboto' : '16px Roboto';
         lines.forEach((line) => {
             if (line.length > 0) {
                 const textWidth = context.measureText(line).width;
-                const textareaWidth = textAreaRef.current.clientWidth - (window.innerWidth <= 800 ? 36 : 40); // Учитываем padding
+                const textareaWidth = textAreaRef.current.clientWidth - (window.innerWidth <= 800 ? 36 : 40);
                 if (textWidth > textareaWidth) {
-                    totalRows += Math.floor(textWidth / textareaWidth); // Дополнительные строки при превышении ширины
+                    totalRows += Math.floor(textWidth / textareaWidth);
                 }
             }
         });
-        return Math.max(1, totalRows); // Минимально 1 строка
+        return Math.max(1, totalRows);
     };
 
-    // Определяем, показывать ли аватар
     const shouldShowAvatar = (msg) => {
         return msg.sender.id !== userId;
     };
 
-    // *** ДОБАВЛЕНО: Метод для начала записи аудио ***
     const startRecording = async () => {
         try {
-            // ДОБАВЛЕНО: Загружаем FFmpeg перед началом записи
             await loadFFmpeg();
 
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -625,9 +825,9 @@ const Messenger = () => {
                     return;
                 }
             }
-            const mediaRecorder = new MediaRecorder(stream, { 
+            const mediaRecorder = new MediaRecorder(stream, {
                 mimeType,
-                audioBitsPerSecond: 128000 // Устанавливаем битрейт
+                audioBitsPerSecond: 128000,
             });
             mediaRecorderRef.current = mediaRecorder;
             const chunks = [];
@@ -642,7 +842,6 @@ const Messenger = () => {
                 const webmBlob = new Blob(chunks, { type: mimeType });
                 console.log(`Recorded audio: size=${webmBlob.size}, type=${webmBlob.type}`);
 
-                // ДОБАВЛЕНО: Конвертация в .mp3
                 try {
                     const inputName = 'input.webm';
                     const outputName = 'output.mp3';
@@ -653,19 +852,19 @@ const Messenger = () => {
                     const mp3Blob = new Blob([mp3Data.buffer], { type: 'audio/mpeg' });
                     console.log(`Converted audio: size=${mp3Blob.size}, type=${mp3Blob.type}`);
                     setAudioBlob(mp3Blob);
-                    stream.getTracks().forEach(track => track.stop());
+                    stream.getTracks().forEach((track) => track.stop());
                     setMicIconState('sending');
                     sendAudioMessage(mp3Blob);
                 } catch (error) {
                     console.error('Error converting to mp3:', error);
                     toast.error('Failed to convert audio');
-                    stream.getTracks().forEach(track => track.stop());
+                    stream.getTracks().forEach((track) => track.stop());
                     setMicIconState('mic');
                 }
             };
 
             setMicIconState('recording');
-            mediaRecorder.start(1000); // Разбиваем на 1-секундные чанки
+            mediaRecorder.start(1000);
             setIsRecording(true);
             toast.info('Recording started');
         } catch (error) {
@@ -675,17 +874,15 @@ const Messenger = () => {
         }
     };
 
-    // *** ДОБАВЛЕНО: Метод для остановки записи аудио ***
     const stopRecording = () => {
         if (mediaRecorderRef.current && isRecording) {
-            setMicIconState('sending'); // ДОБАВЛЕНО: Сброс иконки на микрофон (временно, до отправки)
+            setMicIconState('sending');
             mediaRecorderRef.current.stop();
             setIsRecording(false);
             toast.info('Recording stopped');
         }
     };
 
-    // ДОБАВЛЕНО: Загрузка FFmpeg
     const loadFFmpeg = async () => {
         if (!ffmpegLoaded) {
             try {
@@ -703,61 +900,19 @@ const Messenger = () => {
     const resetForm = () => {
         setContent('');
         setSelectedFile(null);
-        setAudioBlob(null); // Сброс аудио
+        setAudioBlob(null);
         setEditingMessageId(null);
         setRows(1);
-        setMicIconState('mic'); // Сброс иконки микрофона
+        setMicIconState('mic');
         if (fileInputRef.current) {
             fileInputRef.current.value = null;
         }
         if (textAreaRef.current) {
             textAreaRef.current.style.height = '44px';
-            // ДОБАВЛЕНО: Удаляем класс scroll-enabled при сбросе
             textAreaRef.current.classList.remove('scroll-enabled');
         }
     };
 
-    // *** ДОБАВЛЕНО: Метод для отправки аудиосообщения ***
-    const sendAudioMessage = async (audioBlob) => {
-        if (!audioBlob || !userId) {
-            console.warn('Audio or userId is missing');
-            toast.error('Failed to send audio message');
-            setMicIconState('mic');
-            return;
-        }
-
-        const currentUsername = username;
-        const chatName = await getChatName(chatId);
-
-        // ДОБАВЛЕНО: Создаём файл с расширением .mp3
-        const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
-
-        const message = {
-            id: Date.now(),
-            content: '',
-            sender: { id: userId, username: currentUsername },
-            chat: { id: chatId, name: chatName },
-            fileUrl: await uploadFile(audioFile),
-            timestamp: new Date().toISOString(),
-            messageType: 'audio',
-            contentType: 'audio/mpeg' // ДОБАВЛЕНО: Указываем contentType для .mp3
-        };
-
-        console.log('Sending audio message:', message);
-
-        if (client && client.connected) {
-            client.publish({ destination: `/app/sendMessage/chat/${chatId}`, body: JSON.stringify(message) });
-            setAudioBlob(null);
-            console.log('Audio message sent');
-            setMicIconState('mic');
-        } else {
-            console.error('STOMP client is not connected');
-            toast.error('WebSocket not connected');
-            setMicIconState('mic');
-        }
-    };
-
-    // Форматирование времени в формате MM:SS
     const formatAudioTime = (seconds) => {
         if (isNaN(seconds) || seconds === 0 || seconds === Infinity) return '0:00';
         const minutes = Math.floor(seconds / 60);
@@ -765,7 +920,6 @@ const Messenger = () => {
         return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
     };
 
-    // Обработчик изменения времени воспроизведения
     const handleTimeUpdate = (msgId, audioElement) => {
         setAudioProgress((prev) => {
             const prevData = prev[msgId] || {};
@@ -790,7 +944,6 @@ const Messenger = () => {
         });
     };
 
-    // Обработчик загрузки метаданных
     const handleLoadedMetadata = (msgId, audioElement) => {
         console.log(`Metadata loaded for msg ${msgId}: duration=${audioElement.duration}, readyState=${audioElement.readyState}`);
         const duration = isFinite(audioElement.duration) && audioElement.duration > 0 ? audioElement.duration : 0;
@@ -815,7 +968,6 @@ const Messenger = () => {
         });
     };
 
-    // Обработчик события canplay
     const handleCanPlay = (msgId) => {
         console.log(`Audio can play for msg ${msgId}, readyState=${audioRefs.current[msgId]?.readyState}`);
         setAudioProgress((prev) => ({
@@ -828,7 +980,6 @@ const Messenger = () => {
         }));
     };
 
-    // Обработчик клика по дорожке
     const handleSeek = (msgId, e) => {
         const audio = audioRefs.current[msgId];
         if (!audio || !audioProgress[msgId]?.isReady) {
@@ -850,7 +1001,27 @@ const Messenger = () => {
         }));
     };
 
-    // Обработчик ошибок аудио
+    const handleDragStart = (msgId, e) => {
+        e.preventDefault();
+        const audio = audioRefs.current[msgId];
+        if (!audio || !audioProgress[msgId]?.isReady) {
+            console.log(`Drag blocked for msg ${msgId}: audio not ready`);
+            return;
+        }
+        setIsDragging(msgId);
+        handleSeek(msgId, e);
+    };
+
+    const handleDragMove = (e) => {
+        if (isDragging) {
+            handleSeek(isDragging, e);
+        }
+    };
+
+    const handleDragEnd = () => {
+        setIsDragging(null);
+    };
+
     const handleAudioError = (msgId, error) => {
         const audio = audioRefs.current[msgId];
         console.error(`Audio error for msg ${msgId}:`, error, 'URL:', audio?.src, 'readyState:', audio?.readyState);
@@ -872,7 +1043,6 @@ const Messenger = () => {
         });
     };
 
-    // Обработчик окончания воспроизведения
     const handleAudioEnded = (msgId) => {
         console.log(`Audio ended for msg ${msgId}`);
         const audio = audioRefs.current[msgId];
@@ -893,7 +1063,6 @@ const Messenger = () => {
         }
     };
 
-    // Предзагрузка аудио
     const preloadAudio = (msgId, url) => {
         const audio = audioRefs.current[msgId];
         if (audio && !audioProgress[msgId]?.isReady && !audioProgress[msgId]?.isPreloading) {
@@ -913,96 +1082,82 @@ const Messenger = () => {
                 }));
                 return;
             }
-            const cacheBusterUrl = `${url}?t=${Date.now()}`; // Обход кэша
+            const cacheBusterUrl = `${url}?t=${Date.now()}`;
             audio.src = cacheBusterUrl;
-            // ДОБАВЛЕНО: Устанавливаем тип в зависимости от расширения файла
             audio.type = url.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm';
             audio.load();
-            audio.addEventListener('loadedmetadata', () => {
-                console.log(`Loaded metadata for msg ${msgId}: duration=${audio.duration}, readyState=${audio.readyState}`);
-                setAudioProgress((prev) => ({
-                    ...prev,
-                    [msgId]: {
-                        ...prev[msgId],
-                        isPreloading: false,
-                        isReady: audio.readyState >= 2,
-                        error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
-                    },
-                }));
-            }, { once: true });
-            audio.addEventListener('canplay', () => {
-                console.log(`Can play msg ${msgId}: readyState=${audio.readyState}`);
-                setAudioProgress((prev) => ({
-                    ...prev,
-                    [msgId]: {
-                        ...prev[msgId],
-                        isPreloading: false,
-                        isReady: true,
-                    },
-                }));
-            }, { once: true });
-            audio.addEventListener('error', (e) => {
-                const errorMsg = e.target.error ? `Error code: ${e.target.error.code}, message: ${e.target.error.message}` : 'Unknown error';
-                console.error(`Preload error for msg ${msgId}: ${errorMsg}, URL: ${url}, readyState: ${audio.readyState}`);
-                setAudioProgress((prev) => {
-                    const prevData = prev[msgId] || {};
-                    if (!prevData.retryCount || prevData.retryCount < 2) {
-                        setTimeout(() => {
-                            console.log(`Retrying preload for msg ${msgId}, attempt ${prevData.retryCount + 1}`);
-                            audio.src = `${url}?t=${Date.now()}`;
-                            audio.load();
-                        }, 2000);
+            audio.addEventListener(
+                'loadedmetadata',
+                () => {
+                    console.log(`Loaded metadata for msg ${msgId}: duration=${audio.duration}, readyState=${audio.readyState}`);
+                    setAudioProgress((prev) => ({
+                        ...prev,
+                        [msgId]: {
+                            ...prev[msgId],
+                            isPreloading: false,
+                            isReady: audio.readyState >= 2,
+                            error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
+                        },
+                    }));
+                },
+                { once: true }
+            );
+            audio.addEventListener(
+                'canplay',
+                () => {
+                    console.log(`Can play msg ${msgId}: readyState=${audio.readyState}`);
+                    setAudioProgress((prev) => ({
+                        ...prev,
+                        [msgId]: {
+                            ...prev[msgId],
+                            isPreloading: false,
+                            isReady: true,
+                        },
+                    }));
+                },
+                { once: true }
+            );
+            audio.addEventListener(
+                'error',
+                (e) => {
+                    const errorMsg = e.target.error ? `Error code: ${e.target.error.code}, message: ${e.target.error.message}` : 'Unknown error';
+                    console.error(`Preload error for msg ${msgId}: ${errorMsg}, URL: ${url}, readyState: ${audio.readyState}`);
+                    setAudioProgress((prev) => {
+                        const prevData = prev[msgId] || {};
+                        if (!prevData.retryCount || prevData.retryCount < 2) {
+                            setTimeout(() => {
+                                console.log(`Retrying preload for msg ${msgId}, attempt ${prevData.retryCount + 1}`);
+                                audio.src = `${url}?t=${Date.now()}`;
+                                audio.load();
+                            }, 2000);
+                            return {
+                                ...prev,
+                                [msgId]: {
+                                    ...prevData,
+                                    isPreloading: false,
+                                    isReady: false,
+                                    error: 'Retrying to preload audio...',
+                                    retryCount: (prevData.retryCount || 0) + 1,
+                                },
+                            };
+                        }
+                        toast.error('Failed to preload audio message');
                         return {
                             ...prev,
                             [msgId]: {
                                 ...prevData,
                                 isPreloading: false,
                                 isReady: false,
-                                error: 'Retrying to preload audio...',
-                                retryCount: (prevData.retryCount || 0) + 1,
+                                error: `Failed to preload audio: ${errorMsg}`,
                             },
                         };
-                    }
-                    toast.error('Failed to preload audio message');
-                    return {
-                        ...prev,
-                        [msgId]: {
-                            ...prevData,
-                            isPreloading: false,
-                            isReady: false,
-                            error: `Failed to preload audio: ${errorMsg}`,
-                        },
-                    };
-                });
-            }, { once: true });
+                    });
+                },
+                { once: true }
+            );
         }
     };
 
-    // ДОБАВЛЕНО: Обработчик начала перетаскивания
-    const handleDragStart = (msgId, e) => {
-        e.preventDefault();
-        const audio = audioRefs.current[msgId];
-        if (!audio || !audioProgress[msgId]?.isReady) {
-            console.log(`Drag blocked for msg ${msgId}: audio not ready`);
-            return;
-        }
-        setIsDragging(msgId);
-        handleSeek(msgId, e); // Выполняем начальную перемотку
-    };
-
-    // ДОБАВЛЕНО: Обработчик движения мыши при перетаскивании
-    const handleDragMove = (e) => {
-        if (isDragging) {
-            handleSeek(isDragging, e);
-        }
-    };
-
-    // ДОБАВЛЕНО: Обработчик окончания перетаскивания
-    const handleDragEnd = () => {
-        setIsDragging(null);
-    };
-
-    // *** ДОБАВЛЕНО: Обработчики для TTS ***
     const handleTTSOriginal = async (msg) => {
         if (!isTTSEnabled) {
             toast.error('Text-to-speech is not enabled');
@@ -1022,7 +1177,7 @@ const Messenger = () => {
                 },
                 body: JSON.stringify({
                     text: msg.content,
-                    language: 'auto', // Используем 'auto' для оригинального текста
+                    language: 'auto',
                 }),
             });
 
@@ -1038,10 +1193,9 @@ const Messenger = () => {
                 for (let i = 0; i < audioData.length; i++) {
                     view[i] = audioData.charCodeAt(i);
                 }
-                const blob = new Blob([arrayBuffer], { type: 'audio/mp3' });
+                const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
                 const url = URL.createObjectURL(blob);
-                
-                // Останавливаем и очищаем предыдущее аудио
+
                 if (ttsAudioRef.current) {
                     ttsAudioRef.current.pause();
                     URL.revokeObjectURL(ttsAudioRef.current.src);
@@ -1067,12 +1221,18 @@ const Messenger = () => {
     };
 
     const handleTTSTranslated = async (msg) => {
-        if (!isTTSEnabled || !msg.translatedContent) {
-            toast.error('No translated content available or TTS is disabled');
+        if (msg.messageType === 'audio' && !transcribedContentMap[msg.id]?.content) {
+            toast.error('Transcription is not available for this audio message');
             return;
         }
-        if (msg.messageType === 'audio') {
-            console.warn('No valid content for TTS:', { msgId: msg.id, translatedContent: msg.translatedContent });
+        const contentToUse = msg.messageType === 'audio' && isTranscriptionEnabled
+            ? transcribedContentMap[msg.id]?.translatedContent
+            : msg.translatedContent;
+        const languageToUse = msg.messageType === 'audio' && isTranscriptionEnabled
+            ? transcribedContentMap[msg.id]?.translationLanguage
+            : msg.translationLanguage;
+        if (!contentToUse) {
+            console.warn('No translated content for TTS:', { msgId: msg.id, translatedContent: contentToUse });
             toast.error('No valid content for TTS');
             return;
         }
@@ -1084,8 +1244,8 @@ const Messenger = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    text: msg.translatedContent,
-                    language: msg.translationLanguage || 'auto', // Используем язык перевода сообщения
+                    text: contentToUse,
+                    language: languageToUse || 'auto',
                 }),
             });
 
@@ -1101,10 +1261,9 @@ const Messenger = () => {
                 for (let i = 0; i < audioData.length; i++) {
                     view[i] = audioData.charCodeAt(i);
                 }
-                const blob = new Blob([arrayBuffer], { type: 'audio/mp3' });
+                const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
                 const url = URL.createObjectURL(blob);
-                
-                // Останавливаем и очищаем предыдущее аудио
+
                 if (ttsAudioRef.current) {
                     ttsAudioRef.current.pause();
                     URL.revokeObjectURL(ttsAudioRef.current.src);
@@ -1129,11 +1288,67 @@ const Messenger = () => {
         }
     };
 
+    const handleTTSTranscribed = async (msg) => {
+        if (!isTTSEnabled || !transcribedContentMap[msg.id]?.content) {
+            toast.error('No transcribed content available or TTS is disabled');
+            return;
+        }
+        try {
+            const response = await fetch('https://unlimitedpossibilities12.org/api/tts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text: transcribedContentMap[msg.id].content,
+                    language: 'auto',
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const json = await response.json();
+            if (json.audio) {
+                const audioData = atob(json.audio);
+                const arrayBuffer = new ArrayBuffer(audioData.length);
+                const view = new Uint8Array(arrayBuffer);
+                for (let i = 0; i < audioData.length; i++) {
+                    view[i] = audioData.charCodeAt(i);
+                }
+                const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+                const url = URL.createObjectURL(blob);
+
+                if (ttsAudioRef.current) {
+                    ttsAudioRef.current.pause();
+                    URL.revokeObjectURL(ttsAudioRef.current.src);
+                }
+                ttsAudioRef.current = new Audio(url);
+                ttsAudioRef.current.play().catch((error) => {
+                    console.error('Error playing TTS audio for transcribed content:', error);
+                    toast.error('Failed to play TTS audio');
+                });
+                ttsAudioRef.current.onended = () => {
+                    URL.revokeObjectURL(url);
+                    ttsAudioRef.current = null;
+                    console.log('TTS audio playback ended for transcribed content:', { msgId: msg.id });
+                };
+            } else {
+                console.error('No audio data in TTS response:', json);
+                toast.error('Failed to generate TTS audio');
+            }
+        } catch (error) {
+            console.error('TTS request error for transcribed content:', error);
+            toast.error('Failed to generate TTS audio');
+        }
+    };
+
     return (
         <div className="messenger">
-            <div className="chat-header-group">
+            <div className="private-chat-name">
                 <div className="chat-name">Group Chat: {chatName}</div>
-                <div className="translation-controls">
+                <div className="private-translation-controls">
                     <button
                         className="tts-button"
                         onClick={() => {
@@ -1141,7 +1356,6 @@ const Messenger = () => {
                                 const newState = !prev;
                                 localStorage.setItem(`tts_enabled_${chatId}`, newState);
                                 if (!newState) {
-                                    // Остановка текущего воспроизведения TTS при выключении
                                     if (ttsAudioRef.current) {
                                         ttsAudioRef.current.pause();
                                         ttsAudioRef.current = null;
@@ -1150,6 +1364,8 @@ const Messenger = () => {
                                 return newState;
                             });
                         }}
+                        onMouseEnter={(e) => showTooltip(e, isTTSEnabled ? 'Text-to-speech is ON' : 'Text-to-speech is OFF')}
+                        onMouseLeave={hideTooltip}
                         data-tooltip={isTTSEnabled ? 'Text-to-speech is ON' : 'Text-to-speech is OFF'}
                         style={{ color: isTTSEnabled ? '#42a5f5' : '#B0BEC5' }}
                     >
@@ -1157,9 +1373,11 @@ const Messenger = () => {
                     </button>
                     {isTTSEnabled && <span className="tts-indicator">TTS</span>}
                     <button
-                        className="spellcheck-button" // Новая кнопка
+                        className="spellcheck-button"
                         onClick={handleSpellCheckToggle}
-                        data-tooltip={isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF'} // Подсказка
+                        onMouseEnter={(e) => showTooltip(e, isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF')}
+                        onMouseLeave={hideTooltip}
+                        data-tooltip={isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF'}
                         style={{ color: isSpellCheckEnabled ? '#42a5f5' : '#B0BEC5' }}
                     >
                         ✍️
@@ -1168,7 +1386,9 @@ const Messenger = () => {
                     <button
                         className="translation-button"
                         onClick={() => setShowTranslationModal(true)}
-                        data-tooltip="Toggle translation for messages" // Подсказка
+                        onMouseEnter={(e) => showTooltip(e, 'Toggle translation for messages')}
+                        onMouseLeave={hideTooltip}
+                        data-tooltip="Toggle translation for messages"
                         style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
                     >
                         🌐
@@ -1178,6 +1398,17 @@ const Messenger = () => {
                             {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
                         </span>
                     )}
+                    <button
+                        className="transcription-button"
+                        onClick={() => setShowTranscriptionModal(true)}
+                        onMouseEnter={(e) => showTooltip(e, isTranscriptionEnabled ? 'Transcription is ON' : 'Transcription is OFF')}
+                        onMouseLeave={hideTooltip}
+                        data-tooltip={isTranscriptionEnabled ? 'Transcription is ON' : 'Transcription is OFF'}
+                        style={{ color: isTranscriptionEnabled ? '#42a5f5' : '#B0BEC5' }}
+                    >
+                        🎤
+                    </button>
+                    {isTranscriptionEnabled && <span className="transcription-indicator">TR</span>}
                 </div>
             </div>
             {showTranslationModal && (
@@ -1185,6 +1416,13 @@ const Messenger = () => {
                     chatId={chatId}
                     onSave={handleTranslationSettingsSave}
                     onClose={() => setShowTranslationModal(false)}
+                />
+            )}
+            {showTranscriptionModal && (
+                <TranscriptionSettingsModal
+                    chatId={chatId}
+                    onSave={handleTranscriptionSettingsSave}
+                    onClose={() => setShowTranscriptionModal(false)}
                 />
             )}
             <div className="user-creation">
@@ -1219,40 +1457,40 @@ const Messenger = () => {
                             key={msg.id}
                             className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'} ${
                                 msg.messageType === 'audio' ? 'audio-message' : ''
-                            }`} // *** ИЗМЕНЕНО: Добавлен класс audio-message ***
+                            }`}
                             onContextMenu={(e) => handleRightClick(e, msg)}
                         >
                             <div className="message-wrapper">
                                 {shouldShowAvatar(msg) && (
-                                <div className="avatar-container">
-                                    {msg.sender.avatar ? (
-                                        <div className="avatar-wrapper">
-                                            <img
-                                                src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
-                                                alt={`${msg.sender.username} avatar`}
-                                                className="message-avatar"
-                                                onClick={() => handleAvatarClick(msg.sender.id)}
-                                                style={{ cursor: 'pointer' }}
-                                            />
-                                            {usersStatus[msg.sender.id]?.online && (
-                                                <span className="status-indicator-online-groupchat"></span>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div className="avatar-wrapper">
-                                            <div
-                                                className="message-avatar"
-                                                onClick={() => handleAvatarClick(msg.sender.id)}
-                                                style={{ cursor: 'pointer' }}
-                                            >
-                                                {msg.sender.username.charAt(0).toUpperCase()}
+                                    <div className="avatar-container">
+                                        {msg.sender.avatar ? (
+                                            <div className="avatar-wrapper">
+                                                <img
+                                                    src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
+                                                    alt={`${msg.sender.username} avatar`}
+                                                    className="message-avatar"
+                                                    onClick={() => handleAvatarClick(msg.sender.id)}
+                                                    style={{ cursor: 'pointer' }}
+                                                />
+                                                {usersStatus[msg.sender.id]?.online && (
+                                                    <span className="status-indicator-online-groupchat"></span>
+                                                )}
                                             </div>
-                                            {usersStatus[msg.sender.id]?.online && (
-                                                <span className="status-indicator-online-groupchat"></span>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
+                                        ) : (
+                                            <div className="avatar-wrapper">
+                                                <div
+                                                    className="message-avatar"
+                                                    onClick={() => handleAvatarClick(msg.sender.id)}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    {msg.sender.username.charAt(0).toUpperCase()}
+                                                </div>
+                                                {usersStatus[msg.sender.id]?.online && (
+                                                    <span className="status-indicator-online-groupchat"></span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                                 <div className="message-content-container">
                                     <div className="message-body">
@@ -1265,7 +1503,6 @@ const Messenger = () => {
                                                 {msg.sender.username}
                                             </span>
                                         )}
-                                        {/* Рендеринг текстового сообщения */}
                                         {msg.content && (
                                             <div className="message-content-wrapper">
                                                 <div
@@ -1300,6 +1537,8 @@ const Messenger = () => {
                                                         <button
                                                             className="message-translate-button"
                                                             onClick={() => translateSingleMessage(msg)}
+                                                            onMouseEnter={(e) => showTooltip(e, 'Translate message')}
+                                                            onMouseLeave={hideTooltip}
                                                             data-tooltip="Translate message"
                                                         >
                                                             🌐
@@ -1311,17 +1550,21 @@ const Messenger = () => {
                                                         <button
                                                             className="message-tts-button"
                                                             onClick={() => handleTTSOriginal(msg)}
+                                                            onMouseEnter={(e) => showTooltip(e, 'Listen to message')}
+                                                            onMouseLeave={hideTooltip}
                                                             data-tooltip="Listen to message"
                                                         >
                                                             🔊
                                                         </button>
                                                     </div>
                                                 )}
-                                                {isTTSEnabled && isTranslationEnabled && (
+                                                {isTTSEnabled && isTranslationEnabled && msg.translatedContent && (
                                                     <div className="message-tts-translated-container">
                                                         <button
                                                             className="message-tts-translated-button"
                                                             onClick={() => handleTTSTranslated(msg)}
+                                                            onMouseEnter={(e) => showTooltip(e, 'Listen to translated message')}
+                                                            onMouseLeave={hideTooltip}
                                                             data-tooltip="Listen to translated message"
                                                         >
                                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
@@ -1332,7 +1575,6 @@ const Messenger = () => {
                                                 )}
                                             </div>
                                         )}
-                                        {/* Рендеринг аудио или файла */}
                                         {msg.messageType === 'audio' && msg.fileUrl ? (
                                             <div className="audio-message-container">
                                                 <div className="audio-player-wrapper">
@@ -1401,10 +1643,9 @@ const Messenger = () => {
                                                                             audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
                                                                                 ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
                                                                                 : 0
-                                                                        }%`
+                                                                        }%`,
                                                                     }}
                                                                 >
-                                                                    {/* ДОБАВЛЕНО: Ползунок */}
                                                                     <div className="audio-progress-thumb"></div>
                                                                 </div>
                                                             </div>
@@ -1415,6 +1656,74 @@ const Messenger = () => {
                                                         </div>
                                                     )}
                                                 </div>
+                                                {isTranscriptionEnabled && (
+                                                    <div className="transcription-container">
+                                                        {transcribedContentMap[msg.id]?.content ? (
+                                                            <div className="transcription-content-wrapper">
+                                                                <div
+                                                                    className="transcription-content"
+                                                                    onClick={() => {
+                                                                        setMessages((prevMessages) =>
+                                                                            prevMessages.map((m) =>
+                                                                                m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                                                            )
+                                                                        );
+                                                                    }}
+                                                                    style={{ cursor: 'pointer' }}
+                                                                >
+                                                                    <span className="transcribed-content">
+                                                                        {msg.showOriginal
+                                                                            ? transcribedContentMap[msg.id].content
+                                                                            : transcribedContentMap[msg.id].translatedContent || transcribedContentMap[msg.id].content}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        ) : null}
+                                                        {(isTranscriptionEnabled || isTTSEnabled) && (
+                                                            <div className="message-actions-container">
+                                                                <div className="message-transcribe-container">
+                                                                    <button
+                                                                        className="message-transcribe-button"
+                                                                        onClick={() => transcribeSingleMessage(msg)}
+                                                                        onMouseEnter={(e) => showTooltip(e, 'Transcribe audio')}
+                                                                        onMouseLeave={hideTooltip}
+                                                                        data-tooltip="Transcribe audio"
+                                                                    >
+                                                                        🎤
+                                                                    </button>
+                                                                </div>
+                                                                {isTTSEnabled && transcribedContentMap[msg.id]?.content && (
+                                                                    <div className="message-tts-transcribed-container">
+                                                                        <button
+                                                                            className="message-tts-transcribed-button"
+                                                                            onClick={() => handleTTSTranscribed(msg)}
+                                                                            onMouseEnter={(e) => showTooltip(e, 'Listen to transcribed text')}
+                                                                            onMouseLeave={hideTooltip}
+                                                                            data-tooltip="Listen to transcribed text"
+                                                                        >
+                                                                            🔊
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                                {isTTSEnabled && isTranslationEnabled && transcribedContentMap[msg.id]?.translatedContent && (
+                                                                    <div className="message-tts-translated-transcribed-container">
+                                                                        <button
+                                                                            className="message-tts-translated-transcribed-button"
+                                                                            onClick={() => handleTTSTranslated(msg)}
+                                                                            onMouseEnter={(e) => showTooltip(e, 'Listen to translated transcribed text')}
+                                                                            onMouseLeave={hideTooltip}
+                                                                            data-tooltip="Listen to translated transcribed text"
+                                                                        >
+                                                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
+                                                                                <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
+                                                                            </svg>
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : msg.fileUrl ? (
                                             <a

@@ -550,11 +550,11 @@
 }
 
 .audio-message-container {
-    margin-top: 5px;
-    display: flex;
-    align-items: center;
-    width: 100%;
-    max-width: 100%; /* Устанавливаем максимальную ширину на 100% от родителя */
+  display: flex;
+  flex-direction: column; /* Вертикальное расположение: перевод -> аудиоплеер -> транскрипция */
+  align-items: flex-start;
+  width: 100%;
+  max-width: 100%;
 }
 
 .audio-player {
@@ -1161,6 +1161,246 @@
   min-height: 65px; /* Высота для трех иконок: 16px * 3 + gap 2px * 2 + padding 4px * 2 = 60px */
 }
 
+.transcription-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  position: absolute;
+  left: 12px;
+  height: 100%;
+}
+
+.transcription-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  position: relative;
+  transition: color 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  height: 28px;
+  width: 28px;
+}
+
+.transcription-button:hover {
+  transform: scale(1.1);
+}
+
+.transcription-button[data-tooltip] {
+  position: relative;
+}
+
+.transcription-button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -36px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333333;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 100000;
+}
+
+.transcription-button[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.transcription-button[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #333333;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.transcription-button[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.transcription-indicator {
+  font-size: 14px;
+  color: #42a5f5;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  background: rgba(66, 165, 245, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.message-transcription-container {
+  width: 16px;
+  height: 16px;
+}
+
+.message-transcription-container .message-transcription-button {
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px;
+  color: #42a5f5;
+  transition: color 0.3s ease, transform 0.2s ease;
+  opacity: 0.6;
+  line-height: 1;
+  z-index: 101;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.message-transcription-container .message-transcription-button:hover {
+  color: #1976d2;
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.message-actions-container:has(.message-translate-container) .message-transcription-container .message-transcription-button {
+  top: 18px; /* Сдвиг вниз: иконка перевода (16px) + gap (2px) */
+}
+
+.message-actions-container:has(.message-tts-container) .message-transcription-container .message-transcription-button {
+  top: 36px; /* Сдвиг вниз: иконка перевода (16px) + иконка TTS (16px) + gap (2px * 2) */
+}
+
+.message-actions-container:has(.message-translate-container:has(.message-tts-container)) .message-transcription-container .message-transcription-button {
+  top: 36px; /* Сдвиг вниз: иконка перевода (16px) + иконка TTS (16px) + gap (2px * 2) */
+}
+
+.message.audio-message {
+  border-radius: 12px;
+  background-color: #f0f0f0;
+}
+
+.message.audio-message .message-content-container {
+  width: auto; /* Подстраивается под содержимое */
+  min-width: 340px; /* Аудиоплеер (300px) + padding (8px * 2) + отступ для иконок (24px) */
+  max-width: none; /* Убираем ограничение ширины */
+  min-height: auto; /* Подстраивается под содержимое */
+  padding: 8px 8px 8px 4px; /* Левый отступ для иконок */
+  box-sizing: border-box;
+  overflow: visible; /* Позволяем иконкам отображаться */
+}
+
+.transcribed-content {
+  display: block;
+  font-family: 'Roboto', sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  color: #333333;
+  margin-top: 4px;
+  width: 100%;
+  max-width: 300px;
+  box-sizing: border-box;
+  padding-left: 24px; /* Отступ слева, чтобы выровнять по .audio-player-wrapper */
+}
+
+.message.audio-message .translated-content {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 4px;
+  line-height: 1.4;
+  width: 100%;
+  max-width: 300px;
+  box-sizing: border-box;
+  padding-left: 24px; /* Отступ слева, чтобы выровнять по .audio-player-wrapper */
+}
+
+.message-content-container:has(.message-transcription-container) {
+  min-height: 30px; /* Минимальная высота для текстовой транскрипции */
+}
+
+.message-content-container:has(.message-transcription-container) .audio-player-wrapper {
+  padding-left: 24px; /* Отступ слева для проигрывателя, чтобы избежать наложения */
+}
+
+.message.audio-message .message-content-container:has(.message-tts-translated-container),
+.message.audio-message .message-content-container:has(.message-transcription-container) {
+  min-height: auto; /* Подстраивается под содержимое */
+  padding-bottom: 20px; /* Дополнительный отступ снизу для иконок */
+}
+
+.message-translate-container .message-translate-button[data-tooltip]::after,
+.message-transcription-container .message-transcription-button[data-tooltip]::after,
+.message-tts-container .message-tts-button[data-tooltip]::after,
+.message-tts-translated-container .message-tts-translated-button[data-tooltip]::after {
+  display: none; /* Отключаем псевдоэлементы, так как используем JS */
+}
+
+.message-translate-container .message-translate-button[data-tooltip]:hover::after,
+.message-transcription-container .message-transcription-button[data-tooltip]:hover::after,
+.message-tts-container .message-tts-button[data-tooltip]:hover::after,
+.message-tts-translated-container .message-tts-translated-button[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.message-translate-container .message-translate-button[data-tooltip]::before,
+.message-transcription-container .message-transcription-button[data-tooltip]::before,
+.message-tts-container .message-tts-button[data-tooltip]::before,
+.message-tts-translated-container .message-tts-translated-button[data-tooltip]::before {
+  display: none; /* Отключаем псевдоэлементы, так как используем JS */
+}
+
+.message-translate-container .message-translate-button[data-tooltip]:hover::before,
+.message-transcription-container .message-transcription-button[data-tooltip]:hover::before,
+.message-tts-container .message-tts-button[data-tooltip]:hover::before,
+.message-tts-translated-container .message-tts-translated-button[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tooltip-dynamic {
+  position: fixed; /* Изменено на fixed для позиционирования в body */
+  background-color: #333333;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 100000; /* Очень высокий z-index */
+  min-width: 80px;
+  text-align: center;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.tooltip-dynamic-arrow {
+  position: fixed;
+  border: 4px solid transparent;
+  border-bottom-color: #333333;
+  z-index: 100000;
+}
+
 @media (max-width: 800px) {
     .messenger {
         margin: 10px;
@@ -1506,5 +1746,85 @@
 
     .message-tts-translated-container .message-tts-translated-button:hover svg {
         fill: #2e0a54;
+    }
+
+    .transcription-controls {
+        left: 8px;
+        gap: 6px;
+    }
+
+    .transcription-button {
+        font-size: 18px;
+        padding: 3px;
+        height: 24px;
+        width: 24px;
+    }
+
+    .transcription-button[data-tooltip]::after {
+        font-size: 11px;
+        padding: 5px 10px;
+        top: -32px;
+    }
+
+    .transcription-button[data-tooltip]::before {
+        top: -6px;
+    }
+
+    .transcription-indicator {
+        font-size: 12px;
+        padding: 2px 5px;
+    }
+
+    .message-transcription-container {
+        width: 14px;
+        height: 14px;
+    }
+
+    .message-transcription-container .message-transcription-button {
+        font-size: 10px;
+        padding: 1px;
+        width: 14px;
+        height: 14px;
+        color: #42a5f5;
+        opacity: 0.6;
+    }
+
+    .message-content-container:has(.message-transcription-container) {
+        min-height: 28px;
+    }
+
+    .message.audio-message .audio-player-wrapper {
+        padding-left: 20px; /* Меньший отступ для мобильных */
+    }
+
+    .message.audio-message .message-content-container:has(.message-tts-translated-container),
+    .message.audio-message .message-content-container:has(.message-transcription-container) {
+        min-height: auto;
+        padding-bottom: 16px;
+    }
+
+    .transcribed-content {
+        width: 100%;
+        max-width: 240px;
+        box-sizing: border-box;
+        padding-left: 20px; /* Отступ слева для мобильных, чтобы выровнять по .audio-player-wrapper */
+    }
+
+    .message.audio-message .translated-content {
+        width: 100%;
+        max-width: 240px;
+        box-sizing: border-box;
+        padding-left: 20px; /* Отступ слева для мобильных, чтобы выровнять по .audio-player-wrapper */
+    }
+
+    .tooltip-dynamic {
+        font-size: 9px;
+        padding: 2px 5px;
+        min-width: 80px;
+    }
+
+    .tooltip-dynamic-arrow {
+        border: 2px solid transparent;
+        border-bottom-color: #333333;
     }
 }
