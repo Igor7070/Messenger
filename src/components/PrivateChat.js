@@ -355,12 +355,6 @@ const PrivateChat = () => {
     transcribeNextMessage();
   }, [transcriptionQueue, isTranscribing]);
 
-  useEffect(() => {
-    if (isTranscriptionEnabled && transcriptionMode === 'all') {
-      transcribeExistingMessages(messages);
-    }
-  }, [isTranscriptionEnabled, transcriptionMode, messages, transcribeExistingMessages]);
-
   // ДОБАВЛЕНО: Пересчет символов на строку при изменении размера окна
   useEffect(() => {
     calculateCharPerLine();
@@ -1372,6 +1366,12 @@ const PrivateChat = () => {
     if (tooltip) tooltip.remove();
     if (arrow) arrow.remove();
   };
+
+  useEffect(() => {
+    if (isTranscriptionEnabled && transcriptionMode === 'all') {
+      transcribeExistingMessages(messages);
+    }
+  }, [isTranscriptionEnabled, transcriptionMode, messages, transcribeExistingMessages]);
 
   return (
     <div className="private-chat">

@@ -527,10 +527,6 @@ const usePrivateChatTranslationAndSpellCheck = ({
         .sort((a, b) => a.id - b.id);
       if (queue.length > 0) {
         console.log('Transcription queue:', queue.map((m) => ({ id: m.id, fileUrl: m.fileUrl })));
-        if (typeof setTranscriptionQueue !== 'function') {
-          console.error('transcribeExistingMessages: setTranscriptionQueue is not a function', { setTranscriptionQueue });
-          return;
-        }
         setTranscriptionQueue(queue);
       } else {
         console.log('No messages to transcribe');
