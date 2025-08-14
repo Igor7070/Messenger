@@ -322,15 +322,12 @@ const Messenger = () => {
       if (isTranslationEnabled && translationMode === 'all' && messages.length > 0) {
           console.log('Translating existing messages with language:', translationLanguage);
           translateExistingMessages();
-      } else if (!isTranslationEnabled) {
-          console.log('Clearing translations');
-          clearTranslations();
       }
       if (isTranscriptionEnabled && transcriptionMode === 'all' && memoizedAudioMessages.length > 0) {
           console.log('Transcribing existing audio messages');
           transcribeExistingMessages();
       }
-    }, [isTranslationEnabled, translationLanguage, translationMode, messages, translateExistingMessages, clearTranslations, isTranscriptionEnabled, transcriptionMode, memoizedAudioMessages, transcribeExistingMessages]);
+    }, [isTranslationEnabled, translationLanguage, translationMode, messages, translateExistingMessages, isTranscriptionEnabled, transcriptionMode, memoizedAudioMessages, transcribeExistingMessages]);
 
     useEffect(() => {
         if (

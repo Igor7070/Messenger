@@ -410,53 +410,76 @@ const useGroupChatTranslationAndSpellCheck = ({
   const clearTranslations = useCallback(() => {
     setTranslationQueue([]);
     setTranscriptionQueue([]);
-    setMessages((prevMessages) => {
-      const hasTranslations = prevMessages.some((msg) => msg.translatedContent || msg.translationLanguage);
-      const hasTranscriptions = Object.keys(transcribedContentMap).length > 0;
-      if (!hasTranslations && !hasTranscriptions) return prevMessages;
-      prevMessages.forEach((msg) => {
+    const hasTranslations = messages.some((msg) => msg.translatedContent || msg.translationLanguage);
+    const hasTranscriptions = Object.keys(transcribedContentMap).length > 0;
+    if (!hasTranslations && !hasTranscriptions) return;
+    messages.forEach((msg) => {
         localStorage.removeItem(`translation_${chatId}_${msg.id}`);
         localStorage.removeItem(`transcription_${chatId}_${msg.id}`);
-      });
-      setTranscribedContentMap({});
-      return prevMessages.map((msg) =>
-        msg.translatedContent || msg.translationLanguage
-          ? {
-              ...msg,
-              translatedContent: null,
-              translationLanguage: null,
-              showOriginal: true,
-            }
-          : msg
-      );
     });
-  }, [chatId, setMessages, setTranslationQueue, setTranscriptionQueue, transcribedContentMap, setTranscribedContentMap]);
+    setTranscribedContentMap({});
+    setMessages((prevMessages) =>
+        prevMessages.map((msg) =>
+            msg.translatedContent || msg.translationLanguage
+                ? {
+                      ...msg,
+                      translatedContent: null,
+                      translationLanguage: null,
+                      showOriginal: true,
+                  }
+                : msg
+        )
+    );
+  }, [chatId, messages, setMessages, setTranslationQueue, setTranscriptionQueue, transcribedContentMap, setTranscribedContentMap]);
 
-  // Обработка сохранения настроек перевода
   const handleTranslationSettingsSave = useCallback(
     (settings) => {
-      setIsTranslationEnabled(settings.isTranslationEnabled);
-      setTranslationLanguage(settings.translationLanguage);
-      setTranslationMode(settings.translationMode);
-      if (typeof settings.isTTSEnabled !== 'undefined') {
-        setIsTTSEnabled(settings.isTTSEnabled);
-        localStorage.setItem(`tts_enabled_${chatId}`, settings.isTTSEnabled);
-      }
-      localStorage.setItem(`translation_enabled_${chatId}`, settings.isTranslationEnabled);
-      localStorage.setItem(`translation_language_${chatId}`, settings.translationLanguage);
-      localStorage.setItem(`translation_mode_${chatId}`, settings.translationMode);
-      if (settings.isTranslationEnabled) {
-        localStorage.setItem(`translation_enabled_timestamp_${chatId}`, new Date().toISOString());
-      } else {
-        localStorage.removeItem(`translation_enabled_timestamp_${chatId}`);
-      }
-      if (settings.isTranslationEnabled && settings.translationMode === 'all') {
-        translateExistingMessages();
-      } else if (!settings.isTranslationEnabled) {
-        clearTranslations();
-      }
+        setIsTranslationEnabled(settings.isTranslationEnabled);
+        setTranslationLanguage(settings.translationLanguage);
+        setTranslationMode(settings.translationMode);
+        if (typeof settings.isTTSEnabled !== 'undefined') {
+            setIsTTSEnabled(settings.isTTSEnabled);
+            localStorage.setItem(`tts_enabled_${chatId}`, settings.isTTSEnabled);
+        }
+        localStorage.setItem(`translation_enabled_${chatId}`, settings.isTranslationEnabled);
+        localStorage.setItem(`translation_language_${chatId}`, settings.translationLanguage);
+        localStorage.setItem(`translation_mode_${chatId}`, settings.translationMode);
+        if (settings.isTranslationEnabled) {
+            localStorage.setItem(`translation_enabled_timestamp_${chatId}`, new Date().toISOString());
+            if (settings.translationMode === 'all' && messages.length > 0) {
+                console.log('Triggering translation of existing messages on settings save');
+                translateExistingMessages();
+            }
+        } else {
+            localStorage.removeItem(`translation_enabled_timestamp_${chatId}`);
+            clearTranslations();
+        }
     },
-    [chatId, setIsTranslationEnabled, setTranslationLanguage, setTranslationMode, setIsTTSEnabled, translateExistingMessages, clearTranslations]
+    [chatId, setIsTranslationEnabled, setTranslationLanguage, setTranslationMode, setIsTTSEnabled, translateExistingMessages, clearTranslations, messages]
+  );
+
+  const handleTranscriptionSettingsSave = useCallback(
+    ({ isTranscriptionEnabled, transcriptionMode }) => {
+        setIsTranscriptionEnabled(isTranscriptionEnabled);
+        setTranscriptionMode(transcriptionMode);
+        localStorage.setItem(`transcription_enabled_${chatId}`, isTranscriptionEnabled);
+        localStorage.setItem(`transcription_mode_${chatId}`, transcriptionMode);
+        if (isTranscriptionEnabled) {
+            localStorage.setItem(`transcription_enabled_timestamp_${chatId}`, new Date().toISOString());
+            if (transcriptionMode === 'all' && messages.length > 0) {
+                console.log('Triggering transcription of existing audio messages on settings save');
+                transcribeExistingMessages();
+            }
+        } else {
+            localStorage.removeItem(`transcription_enabled_timestamp_${chatId}`);
+            setTranscribedContentMap({});
+            Object.keys(localStorage)
+                .filter((key) => key.startsWith(`transcription_${chatId}_`))
+                .forEach((key) => localStorage.removeItem(key));
+            clearTranslations(); // Очистка переводов транскрипций при отключении
+        }
+    },
+    [chatId, setIsTranscriptionEnabled, setTranscriptionMode, setTranscribedContentMap, messages, transcribeExistingMessages, clearTranslations]
   );
 
   // Переключение орфографии
