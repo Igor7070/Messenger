@@ -18,10 +18,16 @@ const usePrivateChatTranslationAndSpellCheck = ({
   isTranslating,
   setIsTranslating,
   setIsSpellCheckEnabled,
-  transcribedContentMap, // ДОБАВЛЕНО
-  setTranscribedContentMap, // ДОБАВЛЕНО
-  isTranscriptionEnabled, // Добавлено
-  transcriptionMode, // Добавлено
+  transcribedContentMap, 
+  setTranscribedContentMap, 
+  isTranscriptionEnabled,
+  setIsTranscriptionEnabled, // ДОБАВЛЕНО
+  transcriptionMode,
+  setTranscriptionMode, // ДОБАВЛЕНО
+  transcriptionQueue, // ДОБАВЛЕНО
+  setTranscriptionQueue, // ДОБАВЛЕНО
+  isTranscribing, // ДОБАВЛЕНО
+  setIsTranscribing, // ДОБАВЛЕНО
 }) => {
 
   // Проверка, является ли сообщение новым
@@ -368,6 +374,167 @@ const usePrivateChatTranslationAndSpellCheck = ({
     }
   }, []);
 
+  // ДОБАВЛЕНО: Обработка следующего сообщения в очереди транскрипции
+  const transcribeNextMessage = useCallback(async () => {
+    if (transcriptionQueue.length === 0 || isTranscribing) return;
+    setIsTranscribing(true);
+    const message = transcriptionQueue[0];
+    if (isTranscriptionEnabled && (transcriptionMode === 'all' || transcriptionMode === 'new')) {
+      try {
+        const response = await fetch(`https://unlimitedpossibilities12.org/api/transcribe/${message.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileUrl: message.fileUrl }),
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const content = await response.text();
+        if (!content) {
+          throw new Error('Empty transcription received');
+        }
+        setTranscribedContentMap((prev) => ({
+          ...prev,
+          [message.id]: {
+            content,
+            translatedContent: prev[message.id]?.translatedContent || null,
+            translationLanguage: prev[message.id]?.translationLanguage || null,
+          },
+        }));
+        localStorage.setItem(
+          `transcription_${chatId}_${message.id}`,
+          JSON.stringify({
+            content,
+            translatedContent: null,
+            translationLanguage: null,
+          })
+        );
+        if (isTranslationEnabled && (translationMode === 'all' || transcriptionMode === 'new')) {
+          setTranslationQueue((prevQueue) => [...prevQueue, message]);
+        }
+      } catch (error) {
+        console.error('Transcription error for message:', { id: message.id, fileUrl: message.fileUrl, error: error.message });
+        toast.error('Failed to transcribe audio');
+      } finally {
+        setTranscriptionQueue((prevQueue) => prevQueue.slice(1));
+        setIsTranscribing(false);
+      }
+    } else {
+      setTranscriptionQueue((prevQueue) => prevQueue.slice(1));
+      setIsTranscribing(false);
+    }
+  }, [
+    transcriptionQueue,
+    isTranscribing,
+    isTranscriptionEnabled,
+    transcriptionMode,
+    setIsTranscribing,
+    setTranscribedContentMap,
+    chatId,
+    setTranslationQueue,
+    isTranslationEnabled,
+    translationMode,
+  ]);
+
+  // ДОБАВЛЕНО: Обработка сохранения настроек транскрипции
+  const handleTranscriptionSettingsSave = useCallback(
+    ({ isTranscriptionEnabled, transcriptionMode }) => {
+      setIsTranscriptionEnabled(isTranscriptionEnabled);
+      setTranscriptionMode(transcriptionMode);
+      localStorage.setItem(`transcription_enabled_${chatId}`, isTranscriptionEnabled);
+      localStorage.setItem(`transcription_mode_${chatId}`, transcriptionMode);
+      if (isTranscriptionEnabled) {
+        localStorage.setItem(`transcription_enabled_timestamp_${chatId}`, new Date().toISOString());
+      } else {
+        localStorage.removeItem(`transcription_enabled_timestamp_${chatId}`);
+        setTranscribedContentMap({});
+        Object.keys(localStorage)
+          .filter((key) => key.startsWith(`transcription_${chatId}_`))
+          .forEach((key) => localStorage.removeItem(key));
+      }
+    },
+    [chatId, setIsTranscriptionEnabled, setTranscriptionMode, setTranscribedContentMap]
+  );
+
+  // ДОБАВЛЕНО: Транскрипция одного сообщения
+  const transcribeSingleMessage = useCallback(
+    async (message) => {
+      if (!isTranscriptionEnabled) {
+        toast.error('Transcription is not enabled');
+        return;
+      }
+      try {
+        setIsTranscribing(true);
+        const response = await fetch(`https://unlimitedpossibilities12.org/api/transcribe/${message.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileUrl: message.fileUrl }),
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const content = await response.text();
+        if (!content) {
+          throw new Error('Empty transcription received');
+        }
+        setTranscribedContentMap((prev) => ({
+          ...prev,
+          [message.id]: {
+            content,
+            translatedContent: prev[message.id]?.translatedContent || null,
+            translationLanguage: prev[message.id]?.translationLanguage || null,
+          },
+        }));
+        localStorage.setItem(
+          `transcription_${chatId}_${message.id}`,
+          JSON.stringify({
+            content,
+            translatedContent: null,
+            translationLanguage: null,
+          })
+        );
+        if (isTranslationEnabled && (translationMode === 'all' || transcriptionMode === 'new')) {
+          setTranslationQueue((prevQueue) => [...prevQueue, message]);
+        }
+        toast.success('Audio transcribed successfully');
+      } catch (error) {
+        console.error('Transcription error:', error);
+        toast.error('Failed to transcribe audio');
+      } finally {
+        setIsTranscribing(false);
+      }
+    },
+    [chatId, isTranscriptionEnabled, setIsTranscribing, setTranscribedContentMap, isTranslationEnabled, translationMode, setTranslationQueue]
+  );
+
+  // ДОБАВЛЕНО: Транскрипция существующих сообщений
+  const transcribeExistingMessages = useCallback(
+    (messagesToTranscribe) => {
+      if (!isTranscriptionEnabled || transcriptionMode !== 'all') return;
+      const queue = messagesToTranscribe
+        .filter((msg) => {
+          const isAudio = msg.messageType === 'audio';
+          const isTranscribed = transcribedContentMap[msg.id]?.content;
+          const isNew = isMessageNew(msg, 'transcription');
+          const isValid = isAudio && !isTranscribed && (transcriptionMode === 'all' || (transcriptionMode === 'new' && isNew));
+          if (!isValid) {
+            console.log(`Message ${msg.id} skipped from transcription queue:`, {
+              reason: !isAudio ? 'Not audio' : isTranscribed ? 'Already transcribed' : !isNew ? 'Not new' : 'Unknown',
+            });
+          }
+          return isValid;
+        })
+        .sort((a, b) => a.id - b.id);
+      if (queue.length > 0) {
+        console.log('Transcription queue:', queue.map((m) => ({ id: m.id, fileUrl: m.fileUrl })));
+        setTranscriptionQueue(queue);
+      } else {
+        console.log('No messages to transcribe');
+      }
+    },
+    [isTranscriptionEnabled, transcriptionMode, transcribedContentMap, isMessageNew, setTranscriptionQueue]
+  );
+
   return {
     isMessageNew,
     translateExistingMessages,
@@ -380,6 +547,10 @@ const usePrivateChatTranslationAndSpellCheck = ({
     spellCheckMessage,
     translationMode,
     setTranslationMode,
+    transcribeNextMessage, // ДОБАВЛЕНО
+    handleTranscriptionSettingsSave, // ДОБАВЛЕНО
+    transcribeSingleMessage, // ДОБАВЛЕНО
+    transcribeExistingMessages, // ДОБАВЛЕНО
   };
 };
 
