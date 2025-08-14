@@ -224,23 +224,6 @@ const Messenger = () => {
         if (arrow) arrow.remove();
     };
 
-    // Обработчик сохранения настроек транскрипции
-    const handleTranscriptionSettingsSave = ({ isTranscriptionEnabled, transcriptionMode }) => {
-        setIsTranscriptionEnabled(isTranscriptionEnabled);
-        setTranscriptionMode(transcriptionMode);
-        localStorage.setItem(`transcription_enabled_${chatId}`, isTranscriptionEnabled);
-        localStorage.setItem(`transcription_mode_${chatId}`, transcriptionMode);
-        if (isTranscriptionEnabled) {
-            localStorage.setItem(`transcription_enabled_timestamp_${chatId}`, new Date().toISOString());
-        } else {
-            localStorage.removeItem(`transcription_enabled_timestamp_${chatId}`);
-            setTranscribedContentMap({});
-            Object.keys(localStorage)
-                .filter((key) => key.startsWith(`transcription_${chatId}_`))
-                .forEach((key) => localStorage.removeItem(key));
-        }
-    };
-
     useEffect(() => {
         const initializeChat = async () => {
             try {
