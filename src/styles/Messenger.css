@@ -220,6 +220,10 @@
     padding: 0 0 0 4px;
 }
 
+.message.audio-message .sender-name {
+    padding-left: 24px; /* Синхронизируем с отступами .transcribed-content и .audio-player-wrapper */
+}
+
 .sender-name.translate-enabled,
 .sender-name.tts-enabled {
     padding-left: 28px;
@@ -1406,6 +1410,10 @@
 
     .sender-name {
         padding-left: 4px;
+    }
+
+    .message.audio-message .sender-name {
+        padding-left: 20px; /* Синхронизируем с отступами .transcribed-content и .audio-player-wrapper */
     }
 
     .message-content {
