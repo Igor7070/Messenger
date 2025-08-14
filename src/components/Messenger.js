@@ -102,6 +102,7 @@ const Messenger = () => {
         handleTranslationSettingsSave,
         handleSpellCheckToggle,
         spellCheckMessage,
+        handleTranscriptionSettingsSave,
         transcribeSingleMessage,
         transcribeExistingMessages,
         transcribeNextMessage,
