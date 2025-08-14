@@ -277,7 +277,7 @@
 
 .input-message {
     width: 100%;
-    padding: 10px 44px 10px 44px;
+    padding: 10px 36px 10px 36px; /* Уменьшено с 44px до 36px для согласованности с исходным кодом */
     border: 1px solid #0288d1;
     border-radius: 5px;
     resize: none;
@@ -680,6 +680,19 @@
     background-color: #1976d2;
 }
 
+.attach-icon {
+    position: absolute;
+    left: 8px; /* Уменьшено с 10px для более плотного прилегания, как в исходном коде */
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
 .attached-file {
     display: flex;
     align-items: center;
@@ -688,9 +701,9 @@
     padding: 5px 10px;
     background-color: #e8ecef;
     border-radius: 5px;
-    max-width: calc(100% - 88px);
-    margin-left: 44px;
-    margin-right: 44px;
+    max-width: calc(100% - 72px); /* Уменьшено с 88px до 72px, как в исходном коде */
+    margin-left: 36px; /* Уменьшено с 44px до 36px */
+    margin-right: 36px; /* Уменьшено с 44px до 36px */
     overflow: hidden;
 }
 
