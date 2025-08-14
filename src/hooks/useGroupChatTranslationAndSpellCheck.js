@@ -173,6 +173,13 @@ const useGroupChatTranslationAndSpellCheck = ({
             translationLanguage: null,
           })
         );
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg.id === message.id
+              ? { ...msg, showOriginal: false } // Устанавливаем showOriginal в false после транскрипции
+              : msg
+          )
+        );
         if (isTranslationEnabled && (translationMode === 'all' || translationMode === 'new')) {
           setTranslationQueue((prevQueue) => [...prevQueue, message]);
         }
