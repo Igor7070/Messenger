@@ -51,26 +51,6 @@ const useGroupChatTranslationAndSpellCheck = ({
     [chatId, translationMode, transcriptionMode]
   );
 
-  // Сохранение настроек транскрипции
-  const handleTranscriptionSettingsSave = useCallback(
-    ({ isTranscriptionEnabled, transcriptionMode }) => {
-      setIsTranscriptionEnabled(isTranscriptionEnabled);
-      setTranscriptionMode(transcriptionMode);
-      localStorage.setItem(`transcription_enabled_${chatId}`, isTranscriptionEnabled);
-      localStorage.setItem(`transcription_mode_${chatId}`, transcriptionMode);
-      if (isTranscriptionEnabled) {
-        localStorage.setItem(`transcription_enabled_timestamp_${chatId}`, new Date().toISOString());
-      } else {
-        localStorage.removeItem(`transcription_enabled_timestamp_${chatId}`);
-        setTranscribedContentMap({});
-        Object.keys(localStorage)
-          .filter((key) => key.startsWith(`transcription_${chatId}_`))
-          .forEach((key) => localStorage.removeItem(key));
-      }
-    },
-    [chatId, setIsTranscriptionEnabled, setTranscriptionMode, setTranscribedContentMap]
-  );
-
   // Транскрипция одного аудиосообщения
   const transcribeSingleMessage = useCallback(
     async (message) => {
@@ -476,10 +456,9 @@ const useGroupChatTranslationAndSpellCheck = ({
             Object.keys(localStorage)
                 .filter((key) => key.startsWith(`transcription_${chatId}_`))
                 .forEach((key) => localStorage.removeItem(key));
-            clearTranslations(); // Очистка переводов транскрипций при отключении
         }
     },
-    [chatId, setIsTranscriptionEnabled, setTranscriptionMode, setTranscribedContentMap, messages, transcribeExistingMessages, clearTranslations]
+    [chatId, setIsTranscriptionEnabled, setTranscriptionMode, setTranscribedContentMap, messages, transcribeExistingMessages]
   );
 
   // Переключение орфографии
