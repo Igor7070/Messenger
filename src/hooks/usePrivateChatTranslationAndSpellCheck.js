@@ -178,6 +178,34 @@ const usePrivateChatTranslationAndSpellCheck = ({
     }
   }, [isTranslationEnabled, translationMode, messages, translationLanguage, transcribedContentMap, setTranslationQueue]);
 
+  // ДОБАВЛЕНО: Транскрипция существующих сообщений
+  const transcribeExistingMessages = useCallback(
+    (messagesToTranscribe) => {
+      if (!isTranscriptionEnabled || transcriptionMode !== 'all') return;
+      const queue = messagesToTranscribe
+        .filter((msg) => {
+          const isAudio = msg.messageType === 'audio';
+          const isTranscribed = transcribedContentMap[msg.id]?.content;
+          const isNew = isMessageNew(msg, 'transcription');
+          const isValid = isAudio && !isTranscribed && (transcriptionMode === 'all' || (transcriptionMode === 'new' && isNew));
+          if (!isValid) {
+            console.log(`Message ${msg.id} skipped from transcription queue:`, {
+              reason: !isAudio ? 'Not audio' : isTranscribed ? 'Already transcribed' : !isNew ? 'Not new' : 'Unknown',
+            });
+          }
+          return isValid;
+        })
+        .sort((a, b) => a.id - b.id);
+      if (queue.length > 0) {
+        console.log('Transcription queue:', queue.map((m) => ({ id: m.id, fileUrl: m.fileUrl })));
+        setTranscriptionQueue(queue);
+      } else {
+        console.log('No messages to transcribe');
+      }
+    },
+    [isTranscriptionEnabled, transcriptionMode, transcribedContentMap, isMessageNew, setTranscriptionQueue]
+  );
+
   // Перевод одного сообщения
   const translateMessageFunc = useCallback(
     async (message) => {
@@ -505,34 +533,6 @@ const usePrivateChatTranslationAndSpellCheck = ({
       }
     },
     [chatId, isTranscriptionEnabled, setIsTranscribing, setTranscribedContentMap, isTranslationEnabled, translationMode, setTranslationQueue]
-  );
-
-  // ДОБАВЛЕНО: Транскрипция существующих сообщений
-  const transcribeExistingMessages = useCallback(
-    (messagesToTranscribe) => {
-      if (!isTranscriptionEnabled || transcriptionMode !== 'all') return;
-      const queue = messagesToTranscribe
-        .filter((msg) => {
-          const isAudio = msg.messageType === 'audio';
-          const isTranscribed = transcribedContentMap[msg.id]?.content;
-          const isNew = isMessageNew(msg, 'transcription');
-          const isValid = isAudio && !isTranscribed && (transcriptionMode === 'all' || (transcriptionMode === 'new' && isNew));
-          if (!isValid) {
-            console.log(`Message ${msg.id} skipped from transcription queue:`, {
-              reason: !isAudio ? 'Not audio' : isTranscribed ? 'Already transcribed' : !isNew ? 'Not new' : 'Unknown',
-            });
-          }
-          return isValid;
-        })
-        .sort((a, b) => a.id - b.id);
-      if (queue.length > 0) {
-        console.log('Transcription queue:', queue.map((m) => ({ id: m.id, fileUrl: m.fileUrl })));
-        setTranscriptionQueue(queue);
-      } else {
-        console.log('No messages to transcribe');
-      }
-    },
-    [isTranscriptionEnabled, transcriptionMode, transcribedContentMap, isMessageNew, setTranscriptionQueue]
   );
 
   return {
