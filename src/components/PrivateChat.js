@@ -172,7 +172,7 @@ const PrivateChat = () => {
             ...msg,
             delivered: msg.delivered_status,
             read: msg.read_status,
-            showOriginal: msg.messageType !== 'audio' && savedTranslation ? true : false, // Оригинал для текстовых с переводом
+            showOriginal: savedTranslation || (msg.messageType === 'audio' && savedTranscription && JSON.parse(savedTranscription).translatedContent) ? false : true, // Оригинал для текстовых с переводом
           };
           if (savedTranslation) {
             const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
