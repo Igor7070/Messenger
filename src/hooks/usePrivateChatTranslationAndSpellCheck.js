@@ -430,6 +430,14 @@ const usePrivateChatTranslationAndSpellCheck = ({
           if (isTranslationEnabled && (translationMode === 'all' || translationMode === 'new')) {
               setTranslationQueue((prevQueue) => [...prevQueue, message]);
           }
+          if (isTranslationEnabled && (translationMode === 'all' || translationMode === 'new')) {
+              setTranslationQueue((prevQueue) => [...prevQueue, message]);
+              setMessages((prevMessages) =>
+                  prevMessages.map((msg) =>
+                      msg.id === message.id ? { ...msg, showOriginal: false } : msg
+                  )
+              );
+          }
           toast.success('Audio transcribed successfully');
       } catch (error) {
           console.error('Transcription error:', error);
@@ -501,6 +509,14 @@ const usePrivateChatTranslationAndSpellCheck = ({
               );
               if (isTranslationEnabled && (translationMode === 'all' || translationMode === 'new')) {
                   setTranslationQueue((prevQueue) => [...prevQueue, message]);
+              }
+              if (isTranslationEnabled && (translationMode === 'all' || translationMode === 'new')) {
+                  setTranslationQueue((prevQueue) => [...prevQueue, message]);
+                  setMessages((prevMessages) =>
+                      prevMessages.map((msg) =>
+                          msg.id === message.id ? { ...msg, showOriginal: false } : msg
+                      )
+                  );
               }
           } catch (error) {
               console.error('Transcription error for message:', { id: message.id, fileUrl: message.fileUrl, error: error.message });

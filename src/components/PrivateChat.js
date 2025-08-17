@@ -499,7 +499,7 @@ const PrivateChat = () => {
           ...newMessage,
           delivered: newMessage.delivered_status,
           read: newMessage.read_status,
-          showOriginal: !isAudio && newMessage.translatedContent ? false : true,
+          showOriginal: !isAudio && newMessage.translatedContent ? false : false,
           messageType: newMessage.messageType,
           translatedContent: isAudio ? null : newMessage.translatedContent,
           translationLanguage: isAudio ? null : newMessage.translationLanguage,
