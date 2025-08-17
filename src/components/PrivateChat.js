@@ -122,10 +122,16 @@ const PrivateChat = () => {
     isTranslating,
     setIsTranslating,
     setIsSpellCheckEnabled,
-    transcribedContentMap, // ДОБАВЛЕНО
-    setTranscribedContentMap, // ДОБАВЛЕНО
-    isTranscriptionEnabled, // Добавлено
-    transcriptionMode, // Добавлено
+    transcribedContentMap,
+    setTranscribedContentMap,
+    isTranscriptionEnabled,
+    setIsTranscriptionEnabled, // ДОБАВЛЕНО
+    transcriptionMode,
+    setTranscriptionMode, // ДОБАВЛЕНО
+    transcriptionQueue, // ДОБАВЛЕНО
+    setTranscriptionQueue, // ДОБАВЛЕНО
+    isTranscribing, // ДОБАВЛЕНО
+    setIsTranscribing, // ДОБАВЛЕНО
   });
 
   const scrollToBottom = () => {
