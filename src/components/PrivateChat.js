@@ -470,7 +470,7 @@ const PrivateChat = () => {
           messageType: newMessage.messageType ?? existingMessage.messageType,
           translatedContent: isAudio ? null : existingMessage.translatedContent,
           translationLanguage: isAudio ? null : existingMessage.translationLanguage,
-          showOriginal: existingMessage.showOriginal,
+          showOriginal: isAudio && transcribedContentMap[newMessage.id]?.translatedContent ? false : existingMessage.showOriginal,
         };
         console.log('Updated existing message:', updatedMessages[existingMessageIndex]);
         if (needsTranslation) {
@@ -499,7 +499,7 @@ const PrivateChat = () => {
           ...newMessage,
           delivered: newMessage.delivered_status,
           read: newMessage.read_status,
-          showOriginal: false,
+          showOriginal: !isAudio && newMessage.translatedContent ? false : true,
           messageType: newMessage.messageType,
           translatedContent: isAudio ? null : newMessage.translatedContent,
           translationLanguage: isAudio ? null : newMessage.translationLanguage,
