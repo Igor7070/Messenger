@@ -264,14 +264,15 @@ const Messenger = () => {
                       ...msg,
                       delivered: msg.delivered_status,
                       read: msg.read_status,
-                      showOriginal: true, // Всегда показываем оригинал по умолчанию
+                      showOriginal: true, // По умолчанию показываем оригинал
                   };
-                  // Загружаем переводы только если перевод включён и сообщение не аудио
+                  // Загружаем переводы для текстовых сообщений, если перевод включён
                   if (translationEnabled && savedTranslation && msg.messageType !== 'audio') {
                       const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
                       result.translatedContent = translatedContent;
                       result.translationLanguage = translationLanguage;
                   }
+                  // Загружаем транскрипции для аудиосообщений
                   if (savedTranscription && msg.messageType === 'audio') {
                       const transcriptionData = JSON.parse(savedTranscription);
                       setTranscribedContentMap((prev) => ({
@@ -282,6 +283,10 @@ const Messenger = () => {
                               translationLanguage: transcriptionData.translationLanguage || null,
                           },
                       }));
+                      // Если перевод включён и есть переведённая транскрипция, показываем перевод
+                      if (translationEnabled && transcriptionData.translatedContent) {
+                          result.showOriginal = false;
+                      }
                   }
                   return result;
               });
