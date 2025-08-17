@@ -226,80 +226,89 @@ const Messenger = () => {
     };
 
     useEffect(() => {
-        const initializeChat = async () => {
-            try {
-                // Загружаем настройки пользователя и перевода
-                const storedUserId = localStorage.getItem('userId');
-                const storedUsername = localStorage.getItem('username');
-                if (storedUserId && storedUsername) {
-                    const userIdNum = Number(storedUserId);
-                    setUserId(userIdNum);
-                    setCurrentUserId(userIdNum);
-                    setContextUserId(userIdNum);
-                    setNotificationUserId(userIdNum);
-                    setUsername(storedUsername);
-                    setIsLoggedIn(true);
-                    setIsTranslationEnabled(localStorage.getItem(`translation_enabled_${chatId}`) === 'true');
-                    setTranslationLanguage(localStorage.getItem(`translation_language_${chatId}`) || 'auto');
-                    setTranslationMode(localStorage.getItem(`translation_mode_${chatId}`) || 'selective');
-                    setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatId}`) === 'true');
-                    setIsTTSEnabled(localStorage.getItem(`tts_enabled_${chatId}`) === 'true');
-                    setIsTranscriptionEnabled(localStorage.getItem(`transcription_enabled_${chatId}`) === 'true');
-                    setTranscriptionMode(localStorage.getItem(`transcription_mode_${chatId}`) || 'selective');
-                } else {
-                    toast.error('User is not authorized');
-                    navigate('/');
-                    return;
-                }
+      const initializeChat = async () => {
+          try {
+              // Загружаем настройки пользователя и перевода
+              const storedUserId = localStorage.getItem('userId');
+              const storedUsername = localStorage.getItem('username');
+              let translationEnabled = localStorage.getItem(`translation_enabled_${chatId}`) === 'true';
+              if (storedUserId && storedUsername) {
+                  const userIdNum = Number(storedUserId);
+                  setUserId(userIdNum);
+                  setCurrentUserId(userIdNum);
+                  setContextUserId(userIdNum);
+                  setNotificationUserId(userIdNum);
+                  setUsername(storedUsername);
+                  setIsLoggedIn(true);
+                  setIsTranslationEnabled(translationEnabled);
+                  setTranslationLanguage(localStorage.getItem(`translation_language_${chatId}`) || 'auto');
+                  setTranslationMode(localStorage.getItem(`translation_mode_${chatId}`) || 'selective');
+                  setIsSpellCheckEnabled(localStorage.getItem(`spellcheck_enabled_${chatId}`) === 'true');
+                  setIsTTSEnabled(localStorage.getItem(`tts_enabled_${chatId}`) === 'true');
+                  setIsTranscriptionEnabled(localStorage.getItem(`transcription_enabled_${chatId}`) === 'true');
+                  setTranscriptionMode(localStorage.getItem(`transcription_mode_${chatId}`) || 'selective');
+              } else {
+                  toast.error('User is not authorized');
+                  navigate('/');
+                  return;
+              }
 
-                // Загружаем сообщения
-                const initialMessages = await getMessages(chatId);
-                const updatedMessages = initialMessages.map((msg) => {
-                    const translationKey = `translation_${chatId}_${msg.id}`;
-                    const transcriptionKey = `transcription_${chatId}_${msg.id}`;
-                    const savedTranslation = localStorage.getItem(translationKey);
-                    const savedTranscription = localStorage.getItem(transcriptionKey);
-                    const result = {
-                        ...msg,
-                        delivered: msg.delivered_status,
-                        read: msg.read_status,
-                        showOriginal: msg.messageType !== 'audio' && savedTranslation ? true : false,
-                    };
-                    if (savedTranslation) {
-                        const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
-                        result.translatedContent = translatedContent;
-                        result.translationLanguage = translationLanguage;
-                    }
-                    if (savedTranscription && msg.messageType === 'audio') {
-                        const transcriptionData = JSON.parse(savedTranscription);
-                        setTranscribedContentMap((prev) => ({
-                            ...prev,
-                            [msg.id]: {
-                                content: transcriptionData.content,
-                                translatedContent: transcriptionData.translatedContent || null,
-                                translationLanguage: transcriptionData.translationLanguage || null,
-                            },
-                        }));
-                    }
-                    return result;
-                });
-                setMessages(updatedMessages);
-                const name = await getChatName(chatId);
-                setChatName(name);
-                if (updatedMessages.length > 0) {
-                    localStorage.setItem(`last_visit_chat_${chatId}`, updatedMessages[updatedMessages.length - 1].timestamp);
-                }
-                setTimeout(() => {
-                    scrollToBottom();
-                }, 0);
-            } catch (error) {
-                console.error('Ошибка при загрузке данных чата:', error);
-                toast.error('Failed to load chat data');
-                navigate('/');
-            }
-        };
+              // Загружаем сообщения
+              const initialMessages = await getMessages(chatId);
+              const updatedMessages = initialMessages.map((msg) => {
+                  const translationKey = `translation_${chatId}_${msg.id}`;
+                  const transcriptionKey = `transcription_${chatId}_${msg.id}`;
+                  const savedTranslation = localStorage.getItem(translationKey);
+                  const savedTranscription = localStorage.getItem(transcriptionKey);
+                  const result = {
+                      ...msg,
+                      delivered: msg.delivered_status,
+                      read: msg.read_status,
+                      showOriginal: true, // Всегда показываем оригинал по умолчанию
+                  };
+                  // Загружаем переводы только если перевод включён и сообщение не аудио
+                  if (translationEnabled && savedTranslation && msg.messageType !== 'audio') {
+                      const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
+                      result.translatedContent = translatedContent;
+                      result.translationLanguage = translationLanguage;
+                  }
+                  if (savedTranscription && msg.messageType === 'audio') {
+                      const transcriptionData = JSON.parse(savedTranscription);
+                      setTranscribedContentMap((prev) => ({
+                          ...prev,
+                          [msg.id]: {
+                              content: transcriptionData.content,
+                              translatedContent: transcriptionData.translatedContent || null,
+                              translationLanguage: transcriptionData.translationLanguage || null,
+                          },
+                      }));
+                  }
+                  return result;
+              });
+              setMessages(updatedMessages);
+              const name = await getChatName(chatId);
+              setChatName(name);
+              if (updatedMessages.length > 0) {
+                  localStorage.setItem(`last_visit_chat_${chatId}`, updatedMessages[updatedMessages.length - 1].timestamp);
+              }
+              setTimeout(() => {
+                  scrollToBottom();
+              }, 0);
 
-        initializeChat();
+              // Очищаем переводы из localStorage, если перевод отключён
+              if (!translationEnabled) {
+                  Object.keys(localStorage)
+                      .filter((key) => key.startsWith(`translation_${chatId}_`))
+                      .forEach((key) => localStorage.removeItem(key));
+              }
+          } catch (error) {
+              console.error('Ошибка при загрузке данных чата:', error);
+              toast.error('Failed to load chat data');
+              navigate('/');
+          }
+      };
+
+      initializeChat();
     }, [chatId, setContextUserId, setNotificationUserId, navigate]);
 
     useEffect(() => {
