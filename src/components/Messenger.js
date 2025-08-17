@@ -271,6 +271,9 @@ const Messenger = () => {
                       const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
                       result.translatedContent = translatedContent;
                       result.translationLanguage = translationLanguage;
+                  } else {
+                      result.translatedContent = null; // Явно сбрасываем перевод
+                      result.translationLanguage = null; // Явно сбрасываем язык
                   }
                   // Загружаем транскрипции для аудиосообщений
                   if (savedTranscription && msg.messageType === 'audio') {
@@ -299,13 +302,6 @@ const Messenger = () => {
               setTimeout(() => {
                   scrollToBottom();
               }, 0);
-
-              // Очищаем переводы из localStorage, если перевод отключён
-              if (!translationEnabled) {
-                  Object.keys(localStorage)
-                      .filter((key) => key.startsWith(`translation_${chatId}_`))
-                      .forEach((key) => localStorage.removeItem(key));
-              }
           } catch (error) {
               console.error('Ошибка при загрузке данных чата:', error);
               toast.error('Failed to load chat data');
