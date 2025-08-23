@@ -146,13 +146,6 @@
   font-family: 'Roboto', sans-serif;
 }
 
-.calls-scroll-hint {
-  text-align: center;
-  font-size: 14px;
-  color: #757575;
-  padding: 5px;
-}
-
 .calls-start-group-call-button {
   padding: 10px 20px;
   border: none;

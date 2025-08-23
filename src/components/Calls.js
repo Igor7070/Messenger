@@ -96,7 +96,7 @@ const Calls = () => {
           className="calls-search-input"
         />
         <ul className="calls-user-list">
-          {filteredUsers.slice(0, 3).map((user) => (
+          {filteredUsers.map((user) => (
             <li key={user.id} className="calls-user-item">
               <input
                 type="checkbox"
@@ -117,9 +117,6 @@ const Calls = () => {
               <span className="calls-user-name">{user.username}</span>
             </li>
           ))}
-          {filteredUsers.length > 3 && (
-            <li className="calls-scroll-hint">Scroll to see more users...</li>
-          )}
         </ul>
         <button
           onClick={handleStartGroupCall}
