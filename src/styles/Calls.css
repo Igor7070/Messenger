@@ -25,7 +25,7 @@
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background-color: #1976D2; /* Синий цвет */
+  background-color: #1976D2;
   color: white;
   border: none;
   border-radius: 50%;
@@ -41,7 +41,7 @@
 }
 
 .group-call-button:hover {
-  background-color: #1565C0; /* Темнее при наведении */
+  background-color: #1565C0;
   transform: scale(1.1);
 }
 
@@ -52,4 +52,145 @@
 
 .plus-icon {
   font-size: 16px;
+}
+
+.group-call-modal {
+  background: #F1F8E9;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  width: 400px;
+  max-width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.group-call-modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-title {
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #2E7D32;
+  text-align: center;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 600;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #A5D6A7;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  font-size: 16px;
+  box-sizing: border-box;
+  font-family: 'Roboto', sans-serif;
+}
+
+.user-list {
+  list-style-type: none;
+  padding: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #C8E6C9;
+  transition: background-color 0.2s;
+}
+
+.user-item:hover {
+  background-color: #E8F5E9;
+}
+
+.user-item:last-child {
+  border-bottom: none;
+}
+
+.user-checkbox {
+  margin-right: 10px;
+}
+
+.user-avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #757575;
+  overflow: hidden;
+  border: 2px solid #81C784;
+}
+
+.user-name {
+  margin-left: 10px;
+  font-size: 16px;
+  color: #424242;
+  font-family: 'Roboto', sans-serif;
+}
+
+.scroll-hint {
+  text-align: center;
+  font-size: 14px;
+  color: #757575;
+  padding: 5px;
+}
+
+.start-group-call-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #4CAF50;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  width: 100%;
+  transition: background-color 0.3s;
+}
+
+.start-group-call-button:hover {
+  background-color: #45a049;
+}
+
+.start-group-call-button:disabled {
+  background-color: #B0BEC5;
+  cursor: not-allowed;
+}
+
+.modal-close-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #e57373;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  width: 100%;
+  margin-top: 10px;
+  transition: background-color 0.3s;
+}
+
+.modal-close-button:hover {
+  background-color: #d32f2f;
 }

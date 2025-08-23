@@ -11,6 +11,7 @@ import VideoCall from './VideoCall';
 import VoiceCallWithTranslate from './VoiceCallWithTranslate';
 import PersonalChats from './PersonalChats';
 import Calls from './Calls';
+import GroupCallActivity from './GroupCallActivity';
 import { NotificationProvider } from '../context/NotificationContext';
 import { UserInteractionProvider } from '../context/UserInteractionContext';
 import { UserStatusProvider, useUserStatusContext } from '../context/UserStatusContext';
@@ -93,6 +94,7 @@ const AppContent = () => {
             <Route path="/user/:userId/personal-chats" element={<PersonalChats />} />
             <Route path="/voice-call-translate/:roomId" element={<VoiceCallWithTranslate />} />
             <Route path="/calls" element={<Calls />} />
+            <Route path="/group-call" element={<GroupCallActivity />} />
           </Routes>
         </PrivateMessageNotificationProvider>
       </ErrorBoundary>
