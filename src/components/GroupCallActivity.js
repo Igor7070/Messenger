@@ -31,7 +31,7 @@ const GroupCallActivity = () => {
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
   const callStartTime = useRef(Date.now());
   const hasNotifiedEndCall = useRef(false);
-  const hasSentInvite = useRef(false); // Флаг для предотвращения повторных приглашений
+  const hasSentInvite = useRef(false);
 
   const [chartData, setChartData] = useState({
     labels: [],
@@ -120,7 +120,7 @@ const GroupCallActivity = () => {
     });
     stompClient.current.activate();
 
-    // Установка гудка только если компонент смонтирован
+    // Установка гудка
     if (isInitiator && isMounted) {
       setIsWaiting(true);
       ringtoneRef.current.loop = true;
@@ -244,7 +244,7 @@ const GroupCallActivity = () => {
 
       peerConnection.oniceconnectionstatechange = () => {
         console.log(`ICE Connection State for ${userId}: ${peerConnection.iceConnectionState}`);
-        if (peerConnection.iceConnectionState === 'failed') {
+        if (peerConnection.iceConnectionstate === 'failed') {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           endCall();
@@ -288,6 +288,8 @@ const GroupCallActivity = () => {
     }
     setIsCallStarted(true);
     setIsWaiting(false);
+    ringtoneRef.current.pause();
+    ringtoneRef.current.currentTime = 0;
     console.log('Starting group call for participants:', Array.from(readyUsers));
 
     try {
@@ -350,12 +352,13 @@ const GroupCallActivity = () => {
             const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
             toast.success(`${userName} is ready`);
             console.log(`User ${userName} is ready`);
-            if (readyUsers.size + 1 >= callParticipants.length - 1 && !isCallStarted) {
+            // Запускаем звонок, если хотя бы один участник готов
+            if (!isCallStarted) {
               setIsWaiting(false);
               ringtoneRef.current.pause();
               ringtoneRef.current.currentTime = 0;
               startCall();
-              console.log('Call started for all ready participants');
+              console.log('Call started for ready participants');
             }
           }
           break;
