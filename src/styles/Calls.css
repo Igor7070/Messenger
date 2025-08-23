@@ -1,0 +1,55 @@
+.calls-container {
+  position: relative;
+  padding: 20px;
+  background-color: #DAF7A9;
+  border-radius: 12px;
+  max-width: 600px;
+  margin: auto;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 2px solid #A5D6A7;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.calls-container h1 {
+  color: #2E7D32;
+  font-size: 28px;
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.group-call-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #1976D2; /* Синий цвет */
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s, transform 0.2s;
+  z-index: 1000;
+}
+
+.group-call-button:hover {
+  background-color: #1565C0; /* Темнее при наведении */
+  transform: scale(1.1);
+}
+
+.group-call-icon {
+  font-size: 20px;
+  margin-right: 5px;
+}
+
+.plus-icon {
+  font-size: 16px;
+}

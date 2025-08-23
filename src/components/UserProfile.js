@@ -443,6 +443,7 @@ const UserProfile = () => {
             {userId === String(currentUserId) && (
                 <div className="button-container">
                     <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
+                    <button onClick={() => navigate('/calls')} className="calls-button">Calls</button>
                     <button onClick={handlePersonalChats} className="personal-chats-button">
                         Personal Chats
                     </button>

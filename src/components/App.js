@@ -10,6 +10,7 @@ import VoiceCall from './VoiceCall';
 import VideoCall from './VideoCall';
 import VoiceCallWithTranslate from './VoiceCallWithTranslate';
 import PersonalChats from './PersonalChats';
+import Calls from './Calls';
 import { NotificationProvider } from '../context/NotificationContext';
 import { UserInteractionProvider } from '../context/UserInteractionContext';
 import { UserStatusProvider, useUserStatusContext } from '../context/UserStatusContext';
@@ -91,6 +92,7 @@ const AppContent = () => {
             <Route path="/video-call/:roomId" element={<VideoCall />} />
             <Route path="/user/:userId/personal-chats" element={<PersonalChats />} />
             <Route path="/voice-call-translate/:roomId" element={<VoiceCallWithTranslate />} />
+            <Route path="/calls" element={<Calls />} />
           </Routes>
         </PrivateMessageNotificationProvider>
       </ErrorBoundary>
