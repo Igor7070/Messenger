@@ -31,6 +31,7 @@ const GroupCallActivity = () => {
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
   const callStartTime = useRef(Date.now());
   const hasNotifiedEndCall = useRef(false);
+  const hasSentInvite = useRef(false); // Флаг для предотвращения повторных приглашений
 
   const [chartData, setChartData] = useState({
     labels: [],
@@ -85,7 +86,8 @@ const GroupCallActivity = () => {
           }
         });
 
-        if (isInitiator) {
+        if (isInitiator && !hasSentInvite.current) {
+          hasSentInvite.current = true;
           sendGroupCallInvite();
         }
 
@@ -110,6 +112,10 @@ const GroupCallActivity = () => {
       },
       onDisconnect: () => {
         console.log('WebSocket disconnected for room:', roomId.current);
+        if (isMounted && !isCallEnded) {
+          toast.error('WebSocket connection lost.');
+          endCall();
+        }
       },
     });
     stompClient.current.activate();
@@ -174,8 +180,9 @@ const GroupCallActivity = () => {
       clearTimeout(readyTimeout);
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
-      if (isCallEnded && stompClient.current) {
+      if (stompClient.current) {
         stompClient.current.deactivate();
+        console.log('WebSocket deactivated on cleanup');
       }
     };
   }, [currentUserId, initiator.id, isInitiator, navigate, startTime, isCallEnded, isCallStarted]);
@@ -280,7 +287,7 @@ const GroupCallActivity = () => {
       return;
     }
     setIsCallStarted(true);
-    setIsWaiting(false); // Сбрасываем isWaiting при начале звонка
+    setIsWaiting(false);
     console.log('Starting group call for participants:', Array.from(readyUsers));
 
     try {
@@ -343,7 +350,7 @@ const GroupCallActivity = () => {
             const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
             toast.success(`${userName} is ready`);
             console.log(`User ${userName} is ready`);
-            if (readyUsers.size + 1 >= callParticipants.length - 1) {
+            if (readyUsers.size + 1 >= callParticipants.length - 1 && !isCallStarted) {
               setIsWaiting(false);
               ringtoneRef.current.pause();
               ringtoneRef.current.currentTime = 0;
@@ -392,7 +399,10 @@ const GroupCallActivity = () => {
             toast.warn(`${userName} rejected the group call`);
             setCallParticipants((prev) => prev.filter((u) => u.id !== Number(from)));
             peerConnections.current.delete(from);
-            if (callParticipants.length <= 1) endCall();
+            if (callParticipants.length <= 1) {
+              console.log('No participants left after reject, ending call');
+              endCall();
+            }
           }
           break;
 
