@@ -20,6 +20,7 @@ const GroupCallActivity = () => {
   const localAudioRef = useRef(null);
   const remoteAudioRefs = useRef(new Map());
   const stompClient = useRef(null);
+  const signalQueue = useRef([]); // Очередь для сигналов
   const [callParticipants, setCallParticipants] = useState(participants);
   const [callDuration, setCallDuration] = useState('00:00');
   const [startTime, setStartTime] = useState('');
@@ -52,9 +53,7 @@ const GroupCallActivity = () => {
       currentUserId,
       initiatorId: initiator.id,
       isInitiator,
-      startTime,
       isCallEnded,
-      isCallStarted,
     });
 
     if (!currentUserId || !initiator.id) {
@@ -89,6 +88,16 @@ const GroupCallActivity = () => {
         if (isInitiator && !hasSentInvite.current) {
           hasSentInvite.current = true;
           sendGroupCallInvite();
+        }
+
+        // Отправка сигналов из очереди
+        while (signalQueue.current.length > 0 && stompClient.current.connected) {
+          const signalMessage = signalQueue.current.shift();
+          stompClient.current.publish({
+            destination: `/app/groupSignal/${roomId.current}`,
+            body: JSON.stringify(signalMessage),
+          });
+          console.log('Signal sent from queue:', signalMessage);
         }
 
         return () => {
@@ -180,12 +189,12 @@ const GroupCallActivity = () => {
       clearTimeout(readyTimeout);
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
-      if (stompClient.current) {
+      if (stompClient.current && !isCallEnded) {
         stompClient.current.deactivate();
         console.log('WebSocket deactivated on cleanup');
       }
     };
-  }, [currentUserId, initiator.id, isInitiator, navigate, startTime, isCallEnded, isCallStarted]);
+  }, [currentUserId, initiator.id, isInitiator, navigate, isCallEnded]); // Убраны startTime и isCallStarted
 
   const sendGroupCallInvite = () => {
     const groupCallRequest = {
@@ -354,7 +363,7 @@ const GroupCallActivity = () => {
             const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
             toast.success(`${userName} is ready`);
             console.log(`User ${userName} is ready`);
-            // Останавливаем гудок и начинаем звонок для одного участника или если все готовы
+            // Останавливаем гудок и начинаем звонок
             if (!isCallStarted) {
               setIsWaiting(false);
               ringtoneRef.current.pause();
@@ -451,14 +460,18 @@ const GroupCallActivity = () => {
       });
       console.log('Signal sent:', signalMessage);
     } else {
-      console.warn('STOMP client not connected, retrying in 500ms:', signalMessage);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      console.warn('STOMP client not connected, queuing signal:', signalMessage);
+      signalQueue.current.push(signalMessage);
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Увеличено время ожидания
       if (stompClient.current.connected) {
-        stompClient.current.publish({
-          destination: `/app/groupSignal/${roomId.current}`,
-          body: JSON.stringify(signalMessage),
-        });
-        console.log('Signal sent after retry:', signalMessage);
+        while (signalQueue.current.length > 0) {
+          const queuedSignal = signalQueue.current.shift();
+          stompClient.current.publish({
+            destination: `/app/groupSignal/${roomId.current}`,
+            body: JSON.stringify(queuedSignal),
+          });
+          console.log('Signal sent after retry:', queuedSignal);
+        }
       } else {
         console.error('STOMP client still not connected after retry');
         toast.error('Failed to send signal due to connection issues');
