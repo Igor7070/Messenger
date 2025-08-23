@@ -244,7 +244,7 @@ const GroupCallActivity = () => {
 
       peerConnection.oniceconnectionstatechange = () => {
         console.log(`ICE Connection State for ${userId}: ${peerConnection.iceConnectionState}`);
-        if (peerConnection.iceConnectionstate === 'failed') {
+        if (peerConnection.iceConnectionState === 'failed') {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           endCall();
@@ -290,20 +290,22 @@ const GroupCallActivity = () => {
     setIsWaiting(false);
     ringtoneRef.current.pause();
     ringtoneRef.current.currentTime = 0;
-    console.log('Starting group call for participants:', Array.from(readyUsers));
+    console.log('Starting group call for participants:', callParticipants.map((u) => u.id));
 
     try {
-      for (const userId of readyUsers) {
-        const peerConnection = await initializePeerConnection(userId);
-        if (isInitiator && peerConnection) {
-          const offer = await peerConnection.createOffer();
-          await peerConnection.setLocalDescription(offer);
-          sendSignal({
-            from: currentUserId,
-            to: userId,
-            signal: { type: 'offer', sdp: offer.sdp },
-          });
-          console.log(`Sent offer to user ${userId}`);
+      for (const user of callParticipants) {
+        if (user.id !== initiator.id && user.id !== Number(currentUserId)) {
+          const peerConnection = await initializePeerConnection(String(user.id));
+          if (isInitiator && peerConnection) {
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            sendSignal({
+              from: currentUserId,
+              to: String(user.id),
+              signal: { type: 'offer', sdp: offer.sdp },
+            });
+            console.log(`Sent offer to user ${user.id}`);
+          }
         }
       }
     } catch (error) {
@@ -352,13 +354,15 @@ const GroupCallActivity = () => {
             const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
             toast.success(`${userName} is ready`);
             console.log(`User ${userName} is ready`);
-            // Запускаем звонок, если хотя бы один участник готов
+            // Останавливаем гудок и начинаем звонок для одного участника или если все готовы
             if (!isCallStarted) {
               setIsWaiting(false);
               ringtoneRef.current.pause();
               ringtoneRef.current.currentTime = 0;
-              startCall();
-              console.log('Call started for ready participants');
+              if (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1) {
+                startCall();
+                console.log('Call started for ready participants');
+              }
             }
           }
           break;
