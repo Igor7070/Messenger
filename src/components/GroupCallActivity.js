@@ -53,11 +53,7 @@ const GroupCallActivity = () => {
       return;
     }
 
-    if (isInitiator) {
-      setIsWaiting(true);
-      ringtoneRef.current.loop = true;
-      ringtoneRef.current.play().catch((error) => console.error('Error playing ringtone:', error));
-    }
+    let isMounted = true;
 
     // Инициализация WebSocket
     const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
@@ -67,8 +63,10 @@ const GroupCallActivity = () => {
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
       onConnect: () => {
+        if (!isMounted) return;
         console.log('Connected to WebSocket for room:', roomId.current);
         const subscription = stompClient.current.subscribe(`/topic/room/${roomId.current}`, (message) => {
+          if (!isMounted) return;
           try {
             const signalMessage = JSON.parse(message.body);
             console.log('Received signal on /topic/room/' + roomId.current + ':', signalMessage);
@@ -83,8 +81,10 @@ const GroupCallActivity = () => {
         }
 
         return () => {
-          console.log('Unsubscribing from /topic/room/' + roomId.current);
-          subscription.unsubscribe();
+          if (isMounted) {
+            console.log('Unsubscribing from /topic/room/' + roomId.current);
+            subscription.unsubscribe();
+          }
         };
       },
       onStompError: (frame) => {
@@ -98,7 +98,6 @@ const GroupCallActivity = () => {
           route: window.location.pathname,
           roomId: roomId.current,
         });
-        // Не завершаем звонок автоматически при ошибке WebSocket
       },
       onDisconnect: () => {
         console.log('WebSocket disconnected for room:', roomId.current);
@@ -106,9 +105,18 @@ const GroupCallActivity = () => {
     });
     stompClient.current.activate();
 
+    // Установка гудка только если компонент смонтирован
+    if (isInitiator && isMounted) {
+      setIsWaiting(true);
+      ringtoneRef.current.loop = true;
+      ringtoneRef.current.play().catch((error) => {
+        if (isMounted) console.error('Error playing ringtone:', error);
+      });
+    }
+
     // Таймер звонка
-    callStartTime.current = Date.now();
     const timerInterval = setInterval(() => {
+      if (!isMounted) return;
       const duration = Math.floor((Date.now() - callStartTime.current) / 1000);
       const minutes = Math.floor(duration / 60);
       const seconds = duration % 60;
@@ -117,6 +125,7 @@ const GroupCallActivity = () => {
 
     // Время начала и текущее время
     const timeInterval = setInterval(() => {
+      if (!isMounted) return;
       const now = new Date();
       setCurrentTime(now.toLocaleTimeString('en-US', { hour12: false }));
       if (!startTime) {
@@ -126,6 +135,7 @@ const GroupCallActivity = () => {
 
     // Анимация графика (заглушка)
     const chartInterval = setInterval(() => {
+      if (!isMounted) return;
       setChartData((prevData) => {
         const newLabels = [...prevData.labels, new Date().toLocaleTimeString()];
         const newData = [...prevData.datasets[0].data, Math.random() * 100];
@@ -138,7 +148,7 @@ const GroupCallActivity = () => {
 
     // Таймаут для ожидания сигналов ready
     const readyTimeout = setTimeout(() => {
-      if (isInitiator && isWaiting && readyUsers.size === 0) {
+      if (isInitiator && isWaiting && readyUsers.size === 0 && isMounted) {
         console.warn('No participants responded within 30 seconds, ending call.');
         toast.error('No participants responded to the call.');
         endCall();
@@ -146,19 +156,18 @@ const GroupCallActivity = () => {
     }, 30000);
 
     return () => {
+      isMounted = false;
       clearInterval(timerInterval);
       clearInterval(timeInterval);
       clearInterval(chartInterval);
       clearTimeout(readyTimeout);
-      // Останавливаем гудок
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
-      // Вызываем endCall только если звонок был завершен явно
-      if (isCallEnded) {
-        if (stompClient.current) stompClient.current.deactivate();
+      if (isCallEnded && stompClient.current) {
+        stompClient.current.deactivate();
       }
     };
-  }, [currentUserId, initiator.id, isInitiator, navigate, startTime, isCallEnded, isWaiting, readyUsers]);
+  }, [currentUserId, initiator.id, isInitiator, navigate, startTime, isCallEnded]);
 
   const sendGroupCallInvite = () => {
     const groupCallRequest = {
@@ -294,6 +303,7 @@ const GroupCallActivity = () => {
         case 'ready':
           if (isInitiator) {
             setReadyUsers((prev) => {
+              if (prev.has(from)) return prev; // Игнорируем дублирующиеся ready
               const newSet = new Set([...prev, from]);
               console.log('Ready users updated:', Array.from(newSet));
               return newSet;
@@ -373,16 +383,30 @@ const GroupCallActivity = () => {
     }
   };
 
-  const sendSignal = (signalMessage) => {
-    if (stompClient.current && stompClient.current.connected) {
+  const sendSignal = async (signalMessage) => {
+    if (!stompClient.current) {
+      console.error('STOMP client is not initialized');
+      return;
+    }
+    if (stompClient.current.connected) {
       stompClient.current.publish({
         destination: `/app/groupSignal/${roomId.current}`,
         body: JSON.stringify(signalMessage),
       });
       console.log('Signal sent:', signalMessage);
     } else {
-      console.error('STOMP client not connected');
-      toast.error('Connection lost');
+      console.warn('STOMP client not connected, retrying in 500ms:', signalMessage);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (stompClient.current.connected) {
+        stompClient.current.publish({
+          destination: `/app/groupSignal/${roomId.current}`,
+          body: JSON.stringify(signalMessage),
+        });
+        console.log('Signal sent after retry:', signalMessage);
+      } else {
+        console.error('STOMP client still not connected after retry');
+        toast.error('Failed to send signal due to connection issues');
+      }
     }
   };
 
@@ -395,7 +419,6 @@ const GroupCallActivity = () => {
         .filter((u) => u.id !== Number(currentUserId))
         .forEach((user) => {
           sendSignal({ from: currentUserId, to: String(user.id), signal: { type: 'endCall' } });
-          // Отправляем endCall также через /app/call/{userId}
           const endCallMessage = {
             type: 'endCall',
             roomId: roomId.current,
@@ -435,6 +458,7 @@ const GroupCallActivity = () => {
     ringtoneRef.current.pause();
     ringtoneRef.current.currentTime = 0;
 
+    toast.info('Group call ended');
     navigate('/');
   };
 
