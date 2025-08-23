@@ -86,6 +86,7 @@ export const CallWebSocketProvider = ({ children }) => {
                             const callType = incomingCall?.type || callRequestRef.current?.type || 'voice'; // Запасной вариант — 'voice'
                             const cancelMessage = callType === 'video' ? 'The video call was cancelled.' :
                                 callType === 'translate' ? 'The translate call was cancelled.' :
+                                callType === 'group' ? 'The group call was cancelled.' :
                                 'The voice call was cancelled.';
                             setIncomingCallWithLog(null);
                             callRequestRef.current = null;
@@ -101,7 +102,7 @@ export const CallWebSocketProvider = ({ children }) => {
                                 audioSrc: audioRef.current?.src,
                             });
                         }
-                    } else if (callRequest.type === 'voice' || callRequest.type === 'video' || callRequest.type === 'translate') {
+                    } else if (callRequest.type === 'voice' || callRequest.type === 'video' || callRequest.type === 'translate' || callRequest.type === 'group') {
                         console.log('Получен запрос на звонок:', callRequest);
                         handleIncomingCall(callRequest);
                     } else {
@@ -127,15 +128,18 @@ export const CallWebSocketProvider = ({ children }) => {
         console.log('Входящий запрос на звонок:', callRequest);
         callRequestRef.current = {
             roomId: callRequest.roomId,
-            callerId: callRequest.callerId,
+            callerId: callRequest.callerId || callRequest.initiatorId,
             recipientId: callRequest.recipientId,
             type: callRequest.type,
+            initiatorName: callRequest.initiatorName, // Для группового звонка
+            recipientIds: callRequest.recipientIds,   // Для группового звонка
         };
         console.log('callRequestRef установлен:', callRequestRef.current);
         setIncomingCallWithLog(callRequest);
         try {
-            console.log('Начало fetch для callerId:', callRequest.callerId);
-            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callRequest.callerId}`);
+            const callerId = callRequest.callerId || callRequest.initiatorId;
+            console.log('Начало fetch для callerId/initiatorId:', callerId);
+            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
             console.log('fetch завершен, status:', response.status);
             if (response.ok) {
                 const callerData = await response.json();
@@ -187,7 +191,7 @@ export const CallWebSocketProvider = ({ children }) => {
         console.log('Функция acceptCall в CallWebSocketContext работает...');
         console.log('Входящий звонок принят:', incomingCall);
 
-        const callerId = incomingCall.callerId;
+        const callerId = incomingCall.callerId || incomingCall.initiatorId;
         const recipientId = currentUserId;
 
         const fetchUserNames = async () => {
@@ -209,21 +213,32 @@ export const CallWebSocketProvider = ({ children }) => {
                     setIncomingCallWithLog(null);
                     callRequestRef.current = null;
 
-                    const route = incomingCall.type === 'video' ? `/video-call/${incomingCall.roomId}` :
-                        incomingCall.type === 'translate' ? `/voice-call-translate/${incomingCall.roomId}` :
-                        `/voice-call/${incomingCall.roomId}`;
-                    navigate(route, {
-                        state: {
+                    let route;
+                    let state;
+                    if (incomingCall.type === 'group') {
+                        route = `/group-call`;
+                        state = {
+                            participants: [{ id: callerId, username: callerData.username }], // Будет дополнено в GroupCallActivity
+                            initiator: { id: callerId, username: callerData.username },
+                        };
+                    } else {
+                        route = incomingCall.type === 'video' ? `/video-call/${incomingCall.roomId}` :
+                            incomingCall.type === 'translate' ? `/voice-call-translate/${incomingCall.roomId}` :
+                            `/voice-call/${incomingCall.roomId}`;
+                        state = {
                             incomingCall,
                             isCaller: false,
                             currentUserId,
                             callerName: callerData.username,
                             recipientName: recipientData.username,
-                        },
-                    });
+                        };
+                    }
+
+                    navigate(route, { state });
                     toast.success(
                         incomingCall.type === 'video' ? 'Video call accepted' :
                         incomingCall.type === 'translate' ? 'Translate call accepted' :
+                        incomingCall.type === 'group' ? 'Group call accepted' :
                         'Voice call accepted'
                     );
                 } else {
