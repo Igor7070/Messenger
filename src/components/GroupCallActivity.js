@@ -29,7 +29,7 @@ const GroupCallActivity = () => {
   const [isCallStarted, setIsCallStarted] = useState(false);
   const [isCallEnded, setIsCallEnded] = useState(false);
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
-  const callStartTime = useRef(null);
+  const callStartTime = useRef(Date.now());
   const hasNotifiedEndCall = useRef(false);
 
   const [chartData, setChartData] = useState({
@@ -47,6 +47,15 @@ const GroupCallActivity = () => {
   });
 
   useEffect(() => {
+    console.log('useEffect called with dependencies:', {
+      currentUserId,
+      initiatorId: initiator.id,
+      isInitiator,
+      startTime,
+      isCallEnded,
+      isCallStarted,
+    });
+
     if (!currentUserId || !initiator.id) {
       toast.error('User ID or initiator ID is missing.');
       navigate('/');
@@ -148,10 +157,12 @@ const GroupCallActivity = () => {
 
     // Таймаут для ожидания сигналов ready
     const readyTimeout = setTimeout(() => {
-      if (isInitiator && isWaiting && readyUsers.size === 0 && isMounted) {
+      if (isInitiator && isWaiting && readyUsers.size === 0 && isMounted && !isCallStarted) {
         console.warn('No participants responded within 30 seconds, ending call.');
         toast.error('No participants responded to the call.');
         endCall();
+      } else if (isInitiator && isWaiting && isMounted) {
+        console.log('Participants responded, call status:', { isCallStarted, readyUsers: Array.from(readyUsers) });
       }
     }, 30000);
 
@@ -167,7 +178,7 @@ const GroupCallActivity = () => {
         stompClient.current.deactivate();
       }
     };
-  }, [currentUserId, initiator.id, isInitiator, navigate, startTime, isCallEnded]);
+  }, [currentUserId, initiator.id, isInitiator, navigate, startTime, isCallEnded, isCallStarted]);
 
   const sendGroupCallInvite = () => {
     const groupCallRequest = {
@@ -175,19 +186,23 @@ const GroupCallActivity = () => {
       initiatorId: String(initiator.id),
       initiatorName: initiator.username,
       roomId: roomId.current,
-      recipientIds: participants
+      recipientIds: callParticipants
         .filter((p) => p.id !== initiator.id)
         .map((p) => String(p.id)),
     };
 
-    participants
+    callParticipants
       .filter((p) => p.id !== initiator.id)
       .forEach((user) => {
-        stompClient.current.publish({
-          destination: `/app/groupCall/${user.id}`,
-          body: JSON.stringify(groupCallRequest),
-        });
-        console.log(`Sent group call invite to user ${user.id}`);
+        if (stompClient.current && stompClient.current.connected) {
+          stompClient.current.publish({
+            destination: `/app/groupCall/${user.id}`,
+            body: JSON.stringify(groupCallRequest),
+          });
+          console.log(`Sent group call invite to user ${user.id}`);
+        } else {
+          console.warn(`Cannot send invite to user ${user.id}: STOMP client not connected`);
+        }
       });
   };
 
@@ -223,8 +238,12 @@ const GroupCallActivity = () => {
       peerConnection.oniceconnectionstatechange = () => {
         console.log(`ICE Connection State for ${userId}: ${peerConnection.iceConnectionState}`);
         if (peerConnection.iceConnectionState === 'failed') {
-          toast.error(`Connection failed for user ${userId}.`);
+          console.error(`WebRTC connection failed for user ${userId}`);
+          toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           endCall();
+        } else if (peerConnection.iceConnectionState === 'disconnected') {
+          console.warn(`WebRTC connection disconnected for user ${userId}`);
+          toast.warn(`User ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`} disconnected`);
         }
       };
 
@@ -256,22 +275,32 @@ const GroupCallActivity = () => {
   };
 
   const startCall = async () => {
-    if (isCallStarted) return;
+    if (isCallStarted) {
+      console.log('Call already started, skipping startCall');
+      return;
+    }
     setIsCallStarted(true);
+    setIsWaiting(false); // Сбрасываем isWaiting при начале звонка
+    console.log('Starting group call for participants:', Array.from(readyUsers));
 
-    for (const user of callParticipants) {
-      if (user.id !== initiator.id && user.id !== Number(currentUserId)) {
-        const peerConnection = await initializePeerConnection(String(user.id));
+    try {
+      for (const userId of readyUsers) {
+        const peerConnection = await initializePeerConnection(userId);
         if (isInitiator && peerConnection) {
           const offer = await peerConnection.createOffer();
           await peerConnection.setLocalDescription(offer);
           sendSignal({
             from: currentUserId,
-            to: String(user.id),
+            to: userId,
             signal: { type: 'offer', sdp: offer.sdp },
           });
+          console.log(`Sent offer to user ${userId}`);
         }
       }
+    } catch (error) {
+      console.error('Error starting group call:', error);
+      toast.error('Failed to start group call.');
+      endCall();
     }
   };
 
@@ -279,7 +308,7 @@ const GroupCallActivity = () => {
     if (signalMessage.from === currentUserId) return;
 
     const { signal, from, to } = signalMessage;
-    if (to && to !== currentUserId) return;
+    if (to && to !== currentUserId && to !== null) return;
 
     try {
       switch (signal.type) {
@@ -303,7 +332,10 @@ const GroupCallActivity = () => {
         case 'ready':
           if (isInitiator) {
             setReadyUsers((prev) => {
-              if (prev.has(from)) return prev; // Игнорируем дублирующиеся ready
+              if (prev.has(from)) {
+                console.log(`Ignoring duplicate ready signal from user ${from}`);
+                return prev;
+              }
               const newSet = new Set([...prev, from]);
               console.log('Ready users updated:', Array.from(newSet));
               return newSet;
@@ -316,6 +348,7 @@ const GroupCallActivity = () => {
               ringtoneRef.current.pause();
               ringtoneRef.current.currentTime = 0;
               startCall();
+              console.log('Call started for all ready participants');
             }
           }
           break;
@@ -374,9 +407,15 @@ const GroupCallActivity = () => {
               peerConnection.close();
               peerConnections.current.delete(from);
             }
-            if (callParticipants.length <= 1) endCall();
+            if (callParticipants.length <= 1) {
+              console.log('Last participant left, ending call');
+              endCall();
+            }
           }
           break;
+
+        default:
+          console.warn('Unknown signal type:', signal.type);
       }
     } catch (error) {
       console.error('Error processing signal:', error);
@@ -411,8 +450,13 @@ const GroupCallActivity = () => {
   };
 
   const endCall = () => {
-    if (isCallEnded) return;
+    if (isCallEnded) {
+      console.log('Call already ended, skipping endCall');
+      return;
+    }
     setIsCallEnded(true);
+    setIsCallStarted(false);
+    setIsWaiting(false);
 
     if (stompClient.current && stompClient.current.connected) {
       callParticipants
@@ -454,11 +498,13 @@ const GroupCallActivity = () => {
     });
     remoteAudioRefs.current.clear();
 
-    setIsWaiting(false);
     ringtoneRef.current.pause();
     ringtoneRef.current.currentTime = 0;
 
-    toast.info('Group call ended');
+    if (!hasNotifiedEndCall.current) {
+      hasNotifiedEndCall.current = true;
+      toast.info('Group call ended');
+    }
     navigate('/');
   };
 
