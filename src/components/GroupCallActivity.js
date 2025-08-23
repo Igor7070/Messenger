@@ -67,10 +67,11 @@ const GroupCallActivity = () => {
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
       onConnect: () => {
-        console.log('Connected to WebSocket');
-        stompClient.current.subscribe(`/topic/room/${roomId.current}`, (message) => {
+        console.log('Connected to WebSocket for room:', roomId.current);
+        const subscription = stompClient.current.subscribe(`/topic/room/${roomId.current}`, (message) => {
           try {
             const signalMessage = JSON.parse(message.body);
+            console.log('Received signal on /topic/room/' + roomId.current + ':', signalMessage);
             handleSignal(signalMessage);
           } catch (error) {
             console.error('Error parsing WebSocket message:', error);
@@ -80,13 +81,28 @@ const GroupCallActivity = () => {
         if (isInitiator) {
           sendGroupCallInvite();
         }
+
+        return () => {
+          console.log('Unsubscribing from /topic/room/' + roomId.current);
+          subscription.unsubscribe();
+        };
       },
       onStompError: (frame) => {
         console.error('STOMP error:', frame);
         toast.error('STOMP protocol error.');
       },
-      onWebSocketError: (error) => console.error('WebSocket error:', error),
-      onDisconnect: () => console.log('WebSocket disconnected'),
+      onWebSocketError: (error) => {
+        console.warn('WebSocket error:', {
+          error,
+          timestamp: new Date().toISOString(),
+          route: window.location.pathname,
+          roomId: roomId.current,
+        });
+        // Не завершаем звонок автоматически при ошибке WebSocket
+      },
+      onDisconnect: () => {
+        console.log('WebSocket disconnected for room:', roomId.current);
+      },
     });
     stompClient.current.activate();
 
@@ -120,14 +136,29 @@ const GroupCallActivity = () => {
       });
     }, 1000);
 
+    // Таймаут для ожидания сигналов ready
+    const readyTimeout = setTimeout(() => {
+      if (isInitiator && isWaiting && readyUsers.size === 0) {
+        console.warn('No participants responded within 30 seconds, ending call.');
+        toast.error('No participants responded to the call.');
+        endCall();
+      }
+    }, 30000);
+
     return () => {
       clearInterval(timerInterval);
       clearInterval(timeInterval);
       clearInterval(chartInterval);
-      if (!isCallEnded) endCall();
-      if (stompClient.current) stompClient.current.deactivate();
+      clearTimeout(readyTimeout);
+      // Останавливаем гудок
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+      // Вызываем endCall только если звонок был завершен явно
+      if (isCallEnded) {
+        if (stompClient.current) stompClient.current.deactivate();
+      }
     };
-  }, [currentUserId, initiator.id, isInitiator, navigate, startTime, isCallEnded]);
+  }, [currentUserId, initiator.id, isInitiator, navigate, startTime, isCallEnded, isWaiting, readyUsers]);
 
   const sendGroupCallInvite = () => {
     const groupCallRequest = {
@@ -262,10 +293,15 @@ const GroupCallActivity = () => {
 
         case 'ready':
           if (isInitiator) {
-            setReadyUsers((prev) => new Set([...prev, from]));
+            setReadyUsers((prev) => {
+              const newSet = new Set([...prev, from]);
+              console.log('Ready users updated:', Array.from(newSet));
+              return newSet;
+            });
             const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
+            toast.success(`${userName} is ready`);
             console.log(`User ${userName} is ready`);
-            if (readyUsers.size + 1 === callParticipants.length - 1) {
+            if (readyUsers.size + 1 >= callParticipants.length - 1) {
               setIsWaiting(false);
               ringtoneRef.current.pause();
               ringtoneRef.current.currentTime = 0;
@@ -359,8 +395,21 @@ const GroupCallActivity = () => {
         .filter((u) => u.id !== Number(currentUserId))
         .forEach((user) => {
           sendSignal({ from: currentUserId, to: String(user.id), signal: { type: 'endCall' } });
+          // Отправляем endCall также через /app/call/{userId}
+          const endCallMessage = {
+            type: 'endCall',
+            roomId: roomId.current,
+            initiatorId: initiator.id,
+            recipientId: user.id,
+          };
+          stompClient.current.publish({
+            destination: `/app/call/${user.id}`,
+            body: JSON.stringify(endCallMessage),
+          });
+          console.log(`Sent endCall to /app/call/${user.id}:`, endCallMessage);
         });
       stompClient.current.deactivate();
+      console.log('WebSocket connection deactivated in endCall.');
     }
 
     peerConnections.current.forEach((pc) => {
@@ -382,11 +431,9 @@ const GroupCallActivity = () => {
     });
     remoteAudioRefs.current.clear();
 
-    if (isInitiator) {
-      setIsWaiting(false);
-      ringtoneRef.current.pause();
-      ringtoneRef.current.currentTime = 0;
-    }
+    setIsWaiting(false);
+    ringtoneRef.current.pause();
+    ringtoneRef.current.currentTime = 0;
 
     navigate('/');
   };
