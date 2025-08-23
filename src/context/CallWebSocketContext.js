@@ -15,7 +15,6 @@ export const CallWebSocketProvider = ({ children }) => {
   audioRef.current.loop = true;
   const { userInteracted } = useUserInteraction();
 
-  // Логирование для отладки
   const setIncomingCallWithLog = (value) => {
     console.log('CallWebSocketContext: Вызов setIncomingCall:', value);
     console.log('CallWebSocketContext: Текущее incomingCall:', incomingCall);
@@ -24,7 +23,6 @@ export const CallWebSocketProvider = ({ children }) => {
     setIncomingCall(value);
   };
 
-  // Инициализация currentUserId из localStorage
   useEffect(() => {
     const storedUserId = localStorage.getItem('userId');
     if (storedUserId) {
@@ -32,12 +30,10 @@ export const CallWebSocketProvider = ({ children }) => {
     }
   }, []);
 
-  // Логирование изменений incomingCall
   useEffect(() => {
     console.log('CallWebSocketContext: Состояние incomingCall изменилось:', incomingCall);
   }, [incomingCall]);
 
-  // Управление звуком
   useEffect(() => {
     if (incomingCall && userInteracted) {
       console.log('CallWebSocketContext: Попытка воспроизведения звука, userInteracted:', userInteracted);
@@ -52,7 +48,6 @@ export const CallWebSocketProvider = ({ children }) => {
     }
   }, [incomingCall, userInteracted]);
 
-  // Инициализация WebSocket для звонков
   useEffect(() => {
     if (!currentUserId) return;
 
@@ -70,14 +65,14 @@ export const CallWebSocketProvider = ({ children }) => {
           handleMessage(message);
         });
 
-        // Подписка на /topic/groupCall/{currentUserId} для групповых звонков
-        const groupCallSubscription = stompClient.current.subscribe(`/topic/groupCall/${currentUserId}`, (message) => {
-          console.log('CallWebSocketContext: Получено сообщение в /topic/groupCall/' + currentUserId + ':', message.body);
+        // Подписка на /topic/groupCalls/{currentUserId} для групповых звонков
+        const groupCallSubscription = stompClient.current.subscribe(`/topic/groupCalls/${currentUserId}`, (message) => {
+          console.log('CallWebSocketContext: Получено сообщение в /topic/groupCalls/' + currentUserId + ':', message.body);
           handleMessage(message);
         });
 
         return () => {
-          console.log('CallWebSocketContext: Отписка от /topic/calls/' + currentUserId + ' и /topic/groupCall/' + currentUserId);
+          console.log('CallWebSocketContext: Отписка от /topic/calls/' + currentUserId + ' и /topic/groupCalls/' + currentUserId);
           callsSubscription.unsubscribe();
           groupCallSubscription.unsubscribe();
         };
@@ -100,7 +95,6 @@ export const CallWebSocketProvider = ({ children }) => {
     };
   }, [currentUserId]);
 
-  // Обработка сообщений (общая для /topic/calls и /topic/groupCall)
   const handleMessage = (message) => {
     let callRequest;
     try {
@@ -147,7 +141,6 @@ export const CallWebSocketProvider = ({ children }) => {
     }
   };
 
-  // Обработка входящего звонка
   const handleIncomingCall = async (callRequest) => {
     console.log('CallWebSocketContext: Входящий запрос на звонок:', callRequest);
     callRequestRef.current = {
@@ -191,7 +184,6 @@ export const CallWebSocketProvider = ({ children }) => {
     }
   };
 
-  // Отправка сигнала
   const sendSignal = (signalMessage, roomId) => {
     if (stompClient.current && stompClient.current.connected) {
       console.log('CallWebSocketContext: Отправка сигнала:', JSON.stringify(signalMessage, null, 2));
@@ -207,7 +199,6 @@ export const CallWebSocketProvider = ({ children }) => {
     }
   };
 
-  // Принятие звонка
   const acceptCall = (navigate) => {
     if (!incomingCall) return;
 
@@ -289,7 +280,6 @@ export const CallWebSocketProvider = ({ children }) => {
     fetchUserNames();
   };
 
-  // Отклонение звонка
   const rejectCall = () => {
     if (!incomingCall) return;
 
