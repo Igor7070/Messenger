@@ -76,59 +76,59 @@ const Calls = () => {
   return (
     <div className="calls-container">
       <h1>Calls</h1>
-      <button className="group-call-button" onClick={handleGroupCallButtonClick}>
-        <FaUsers className="group-call-icon" />
-        <FaPlus className="plus-icon" />
+      <button className="calls-group-call-button" onClick={handleGroupCallButtonClick}>
+        <FaUsers className="calls-group-call-icon" />
+        <FaPlus className="calls-plus-icon" />
       </button>
 
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={() => setModalIsOpen(false)}
-        className="group-call-modal"
-        overlayClassName="group-call-modal-overlay"
+        className="calls-group-call-modal"
+        overlayClassName="calls-group-call-modal-overlay"
       >
-        <h2 className="modal-title">Select Users for Group Call</h2>
+        <h2 className="calls-modal-title">Select Users for Group Call</h2>
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search users..."
-          className="search-input"
+          className="calls-search-input"
         />
-        <ul className="user-list">
+        <ul className="calls-user-list">
           {filteredUsers.slice(0, 3).map((user) => (
-            <li key={user.id} className="user-item">
+            <li key={user.id} className="calls-user-item">
               <input
                 type="checkbox"
                 checked={selectedUsers.includes(user.id)}
                 onChange={() => handleUserSelection(user.id)}
                 disabled={!selectedUsers.includes(user.id) && selectedUsers.length >= 4}
-                className="user-checkbox"
+                className="calls-user-checkbox"
               />
               {user.avatar ? (
                 <img
                   src={`https://unlimitedpossibilities12.org${user.avatar}`}
                   alt={`${user.username} avatar`}
-                  className="user-avatar"
+                  className="calls-user-avatar"
                 />
               ) : (
-                <div className="user-avatar">{user.username.charAt(0).toUpperCase()}</div>
+                <div className="calls-user-avatar">{user.username.charAt(0).toUpperCase()}</div>
               )}
-              <span className="user-name">{user.username}</span>
+              <span className="calls-user-name">{user.username}</span>
             </li>
           ))}
           {filteredUsers.length > 3 && (
-            <li className="scroll-hint">Scroll to see more users...</li>
+            <li className="calls-scroll-hint">Scroll to see more users...</li>
           )}
         </ul>
         <button
           onClick={handleStartGroupCall}
-          className="start-group-call-button"
+          className="calls-start-group-call-button"
           disabled={selectedUsers.length === 0}
         >
           Start A Group Call
         </button>
-        <button onClick={() => setModalIsOpen(false)} className="modal-close-button">
+        <button onClick={() => setModalIsOpen(false)} className="calls-modal-close-button">
           Close
         </button>
       </Modal>

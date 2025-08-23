@@ -21,7 +21,7 @@
   margin-bottom: 20px;
 }
 
-.group-call-button {
+.calls-group-call-button {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -40,21 +40,21 @@
   z-index: 1000;
 }
 
-.group-call-button:hover {
+.calls-group-call-button:hover {
   background-color: #1565C0;
   transform: scale(1.1);
 }
 
-.group-call-icon {
+.calls-group-call-icon {
   font-size: 20px;
   margin-right: 5px;
 }
 
-.plus-icon {
+.calls-plus-icon {
   font-size: 16px;
 }
 
-.group-call-modal {
+.calls-group-call-modal {
   background: #F1F8E9;
   border-radius: 10px;
   padding: 20px;
@@ -68,7 +68,7 @@
   align-items: center;
 }
 
-.group-call-modal-overlay {
+.calls-group-call-modal-overlay {
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
@@ -76,7 +76,7 @@
   z-index: 1000;
 }
 
-.modal-title {
+.calls-modal-title {
   margin-bottom: 20px;
   font-size: 24px;
   color: #2E7D32;
@@ -85,7 +85,7 @@
   font-weight: 600;
 }
 
-.search-input {
+.calls-search-input {
   width: 100%;
   padding: 10px;
   border: 1px solid #A5D6A7;
@@ -96,7 +96,7 @@
   font-family: 'Roboto', sans-serif;
 }
 
-.user-list {
+.calls-user-list {
   list-style-type: none;
   padding: 0;
   max-height: 150px;
@@ -105,7 +105,7 @@
   margin-bottom: 20px;
 }
 
-.user-item {
+.calls-user-item {
   display: flex;
   align-items: center;
   padding: 10px;
@@ -113,19 +113,19 @@
   transition: background-color 0.2s;
 }
 
-.user-item:hover {
+.calls-user-item:hover {
   background-color: #E8F5E9;
 }
 
-.user-item:last-child {
+.calls-user-item:last-child {
   border-bottom: none;
 }
 
-.user-checkbox {
+.calls-user-checkbox {
   margin-right: 10px;
 }
 
-.user-avatar {
+.calls-user-avatar {
   width: 35px;
   height: 35px;
   border-radius: 50%;
@@ -139,21 +139,21 @@
   border: 2px solid #81C784;
 }
 
-.user-name {
+.calls-user-name {
   margin-left: 10px;
   font-size: 16px;
   color: #424242;
   font-family: 'Roboto', sans-serif;
 }
 
-.scroll-hint {
+.calls-scroll-hint {
   text-align: center;
   font-size: 14px;
   color: #757575;
   padding: 5px;
 }
 
-.start-group-call-button {
+.calls-start-group-call-button {
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
@@ -167,16 +167,16 @@
   transition: background-color 0.3s;
 }
 
-.start-group-call-button:hover {
+.calls-start-group-call-button:hover {
   background-color: #45a049;
 }
 
-.start-group-call-button:disabled {
+.calls-start-group-call-button:disabled {
   background-color: #B0BEC5;
   cursor: not-allowed;
 }
 
-.modal-close-button {
+.calls-modal-close-button {
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
@@ -191,6 +191,6 @@
   transition: background-color 0.3s;
 }
 
-.modal-close-button:hover {
+.calls-modal-close-button:hover {
   background-color: #d32f2f;
 }
