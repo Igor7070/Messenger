@@ -12,10 +12,10 @@ Chart.register(...registerables);
 const GroupCallActivity = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const { participants = [], initiator = {}, roomId: incomingRoomId } = state || {};
+  const { participants = [], initiator = {} } = state || {};
   const isInitiator = Number(localStorage.getItem('userId')) === initiator.id;
   const currentUserId = localStorage.getItem('userId');
-  const roomId = useRef(isInitiator ? crypto.randomUUID() : incomingRoomId || null);
+  const roomId = useRef(isInitiator ? crypto.randomUUID() : null);
   const peerConnections = useRef(new Map());
   const localAudioRef = useRef(null);
   const remoteAudioRefs = useRef(new Map());
@@ -59,8 +59,6 @@ const GroupCallActivity = () => {
 
     if (!roomId.current) {
       console.error('Cannot initialize WebSocket: roomId is null');
-      toast.error('Invalid room ID for WebSocket connection.');
-      navigate('/');
       return;
     }
 
@@ -149,18 +147,18 @@ const GroupCallActivity = () => {
       initiatorId: initiator.id,
       isInitiator,
       isCallEnded,
-      incomingRoomId,
     });
 
-    if (!currentUserId || !initiator.id || (!isInitiator && !incomingRoomId)) {
-      console.error('Missing required data:', { currentUserId, initiatorId: initiator.id, incomingRoomId });
-      toast.error('User ID, initiator ID, or room ID is missing.');
+    if (!currentUserId || !initiator.id) {
+      toast.error('User ID or initiator ID is missing.');
       navigate('/');
       return;
     }
 
-    // Инициализация WebSocket для всех случаев
-    initializeWebSocket();
+    // Инициализация WebSocket только для инициатора
+    if (isInitiator) {
+      initializeWebSocket();
+    }
 
     // Установка гудка для инициатора
     if (isInitiator && isMounted) {
@@ -231,7 +229,7 @@ const GroupCallActivity = () => {
         console.log('WebSocket deactivated on cleanup');
       }
     };
-  }, [currentUserId, initiator.id, isInitiator, navigate, isCallEnded, incomingRoomId]);
+  }, [currentUserId, initiator.id, isInitiator, navigate, isCallEnded]);
 
   const sendGroupCallInvite = () => {
     if (!roomId.current) {
@@ -385,10 +383,10 @@ const GroupCallActivity = () => {
             roomId.current = signal.roomId;
             console.log('Updated roomId to:', roomId.current);
             toast.info(`${signal.initiatorName} invites you to a group call`);
-
+            
             // Инициализация WebSocket
             initializeWebSocket();
-
+            
             // Ждем подключения WebSocket
             let attempts = 0;
             const maxAttempts = 50; // 5 секунд (50 * 100ms)
@@ -408,8 +406,9 @@ const GroupCallActivity = () => {
             };
 
             if (await waitForConnection()) {
+              subscribeToRoom();
               // Отправляем сигналы acceptCall и ready
-              await sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } });
+              await sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'acceptCall' } });
               await sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'ready' } });
               // Инициализируем PeerConnection
               await initializePeerConnection(signal.initiatorId);
