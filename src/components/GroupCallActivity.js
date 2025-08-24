@@ -11,11 +11,12 @@ Chart.register(...registerables);
 
 const GroupCallActivity = () => {
   const navigate = useNavigate();
-  const { state } = useLocation();
-  const { participants = [], initiator = {} } = state || {};
+  const location = useLocation(); // Переносим useLocation на верхний уровень
+  const { state } = location;
+  const { participants = [], initiator = {}, roomId: initialRoomId } = state || {};
   const isInitiator = Number(localStorage.getItem('userId')) === initiator.id;
   const currentUserId = localStorage.getItem('userId');
-  const roomId = useRef(isInitiator ? crypto.randomUUID() : null);
+  const roomId = useRef(isInitiator ? crypto.randomUUID() : initialRoomId || null);
   const peerConnections = useRef(new Map());
   const localAudioRef = useRef(null);
   const remoteAudioRefs = useRef(new Map());
@@ -51,14 +52,16 @@ const GroupCallActivity = () => {
   });
 
   const initializeWebSocket = () => {
-    if (stompClient.current && stompClient.current.connected) {
-      console.log('WebSocket already connected for room:', roomId.current);
-      subscribeToRoom();
+    if (!roomId.current) {
+      console.error('Cannot initialize WebSocket: roomId is null');
+      toast.error('Invalid room ID for WebSocket connection.');
+      navigate('/');
       return;
     }
 
-    if (!roomId.current) {
-      console.error('Cannot initialize WebSocket: roomId is null');
+    if (stompClient.current && stompClient.current.connected) {
+      console.log('WebSocket already connected for room:', roomId.current);
+      subscribeToRoom();
       return;
     }
 
@@ -153,14 +156,6 @@ const GroupCallActivity = () => {
       toast.error('User ID or initiator ID is missing.');
       navigate('/');
       return;
-    }
-
-    // Получаем roomId из location.state для неинициатора
-    const location = useLocation();
-    const { roomId: initialRoomId } = location.state || {};
-    if (!isInitiator && initialRoomId) {
-      roomId.current = initialRoomId;
-      console.log('Set roomId from location.state:', roomId.current);
     }
 
     // Проверяем, что roomId установлен
@@ -407,10 +402,10 @@ const GroupCallActivity = () => {
             roomId.current = signal.roomId;
             console.log('Updated roomId to:', roomId.current);
             toast.info(`${signal.initiatorName} invites you to a group call`);
-            
+
             // Инициализация WebSocket
             initializeWebSocket();
-            
+
             // Ждем подключения WebSocket
             let attempts = 0;
             const maxAttempts = 50; // 5 секунд (50 * 100ms)
