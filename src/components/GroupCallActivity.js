@@ -53,6 +53,12 @@ const GroupCallActivity = () => {
   const initializeWebSocket = () => {
     if (stompClient.current && stompClient.current.connected) {
       console.log('WebSocket already connected for room:', roomId.current);
+      subscribeToRoom();
+      return;
+    }
+
+    if (!roomId.current) {
+      console.error('Cannot initialize WebSocket: roomId is null');
       return;
     }
 
@@ -75,15 +81,15 @@ const GroupCallActivity = () => {
             destination: `/app/groupSignal/${roomId.current}`,
             body: JSON.stringify(signalMessage),
           });
-          console.log('Signal sent from queue:', signalMessage);
+          console.log('Signal sent from queue to /app/groupSignal/' + roomId.current + ':', signalMessage);
         }
       },
       onStompError: (frame) => {
-        console.error('STOMP error:', frame);
+        console.error('STOMP error for room ' + roomId.current + ':', frame);
         toast.error('STOMP protocol error.');
       },
       onWebSocketError: (error) => {
-        console.warn('WebSocket error:', {
+        console.warn('WebSocket error for room ' + roomId.current + ':', {
           error,
           timestamp: new Date().toISOString(),
           route: window.location.pathname,
@@ -91,6 +97,7 @@ const GroupCallActivity = () => {
         });
         setTimeout(() => {
           if (isMounted && !stompClient.current.connected) {
+            console.log('Retrying WebSocket activation for room:', roomId.current);
             stompClient.current.activate();
           }
         }, 1000);
@@ -109,7 +116,11 @@ const GroupCallActivity = () => {
   };
 
   const subscribeToRoom = () => {
-    if (stompClient.current && stompClient.current.connected && roomId.current) {
+    if (!roomId.current) {
+      console.error('Cannot subscribe to room: roomId is null');
+      return;
+    }
+    if (stompClient.current && stompClient.current.connected) {
       subscriptionRef.current = stompClient.current.subscribe(`/topic/room/${roomId.current}`, (message) => {
         if (!isMounted) return;
         try {
@@ -117,15 +128,16 @@ const GroupCallActivity = () => {
           console.log('Received signal on /topic/room/' + roomId.current + ':', signalMessage);
           handleSignal(signalMessage);
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error('Error parsing WebSocket message for room ' + roomId.current + ':', error);
         }
       });
       console.log('Subscribed to /topic/room/' + roomId.current);
     } else {
-      console.warn('Cannot subscribe to room: STOMP client not connected or roomId not set', {
+      console.warn('Cannot subscribe to room: STOMP client not connected', {
         connected: stompClient.current?.connected,
         roomId: roomId.current,
       });
+      initializeWebSocket();
     }
   };
 
@@ -362,27 +374,46 @@ const GroupCallActivity = () => {
         case 'groupCallInvite':
           if (!isInitiator) {
             console.log('Processing groupCallInvite:', signalMessage);
-            roomId.current = signal.roomId;
-            toast.info(`${signal.initiatorName} invites you to a group call`);
-            initializeWebSocket();
-            // Ждем подключения WebSocket
-            let attempts = 0;
-            const maxAttempts = 50; // 5 секунд (50 * 100ms)
-            while (!stompClient.current?.connected && attempts < maxAttempts) {
-              console.log('Waiting for WebSocket connection... Attempt:', attempts + 1);
-              await new Promise((resolve) => setTimeout(resolve, 100));
-              attempts++;
-            }
-            if (!stompClient.current?.connected) {
-              console.error('WebSocket failed to connect after', maxAttempts, 'attempts');
-              toast.error('Failed to connect to WebSocket.');
+            if (!signal.roomId) {
+              console.error('groupCallInvite received with null roomId');
+              toast.error('Invalid call invite received.');
               navigate('/');
               return;
             }
-            subscribeToRoom();
-            sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'acceptCall' } });
-            sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'ready' } });
-            await initializePeerConnection(signal.initiatorId);
+            roomId.current = signal.roomId;
+            console.log('Updated roomId to:', roomId.current);
+            toast.info(`${signal.initiatorName} invites you to a group call`);
+            
+            // Инициализация WebSocket
+            initializeWebSocket();
+            
+            // Ждем подключения WebSocket
+            let attempts = 0;
+            const maxAttempts = 50; // 5 секунд (50 * 100ms)
+            const waitForConnection = async () => {
+              while (!stompClient.current?.connected && attempts < maxAttempts) {
+                console.log('Waiting for WebSocket connection... Attempt:', attempts + 1);
+                await new Promise((resolve) => setTimeout(resolve, 100));
+                attempts++;
+              }
+              if (!stompClient.current?.connected) {
+                console.error('WebSocket failed to connect after', maxAttempts, 'attempts for room:', roomId.current);
+                toast.error('Failed to connect to WebSocket.');
+                navigate('/');
+                return false;
+              }
+              return true;
+            };
+
+            if (await waitForConnection()) {
+              subscribeToRoom();
+              // Отправляем сигналы acceptCall и ready
+              await sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'acceptCall' } });
+              await sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'ready' } });
+              // Инициализируем PeerConnection
+              await initializePeerConnection(signal.initiatorId);
+              console.log('Processed groupCallInvite: sent acceptCall, ready, and initialized PeerConnection for initiator', signal.initiatorId);
+            }
           }
           break;
 
@@ -495,16 +526,22 @@ const GroupCallActivity = () => {
   };
 
   const sendSignal = async (signalMessage) => {
+    if (!roomId.current) {
+      console.error('Cannot send signal: roomId is null');
+      signalQueue.current.push(signalMessage);
+      return;
+    }
     if (!stompClient.current) {
       console.error('STOMP client is not initialized');
       signalQueue.current.push(signalMessage);
+      initializeWebSocket();
       return;
     }
     const maxRetries = 3;
     let retries = 0;
 
     while (retries < maxRetries && !stompClient.current.connected) {
-      console.warn('STOMP client not connected, queuing signal:', signalMessage);
+      console.warn('STOMP client not connected, queuing signal for room:', roomId.current, signalMessage);
       signalQueue.current.push(signalMessage);
       await new Promise((resolve) => setTimeout(resolve, 2000));
       retries++;
@@ -517,15 +554,16 @@ const GroupCallActivity = () => {
           destination: `/app/groupSignal/${roomId.current}`,
           body: JSON.stringify(queuedSignal),
         });
-        console.log('Signal sent from queue:', queuedSignal);
+        console.log('Signal sent from queue to /app/groupSignal/' + roomId.current + ':', queuedSignal);
       }
       stompClient.current.publish({
         destination: `/app/groupSignal/${roomId.current}`,
         body: JSON.stringify(signalMessage),
       });
-      console.log('Signal sent:', signalMessage);
+      console.log('Signal sent to /app/groupSignal/' + roomId.current + ':', signalMessage);
     } else {
-      console.error('STOMP client still not connected after retries');
+      console.error('STOMP client still not connected after retries for room:', roomId.current);
+      signalQueue.current.push(signalMessage);
       toast.error('Failed to send signal due to connection issues');
       endCall();
     }
