@@ -35,7 +35,7 @@ const GroupCallActivity = () => {
   const callStartTime = useRef(Date.now());
   const hasNotifiedEndCall = useRef(false);
   const hasSentInvite = useRef(false);
-  const isMounted = useRef(true); // Используем useRef вместо let для стабильности
+  const isMounted = useRef(true);
 
   const [chartData, setChartData] = useState({
     labels: [],
@@ -59,7 +59,7 @@ const GroupCallActivity = () => {
     currentUserId,
   });
 
-  // Функция для отправки сигналов с очередью
+  // Функция для отправки сигналов
   const sendSignal = useCallback(
     async (signalMessage) => {
       if (!roomId.current) {
@@ -77,7 +77,7 @@ const GroupCallActivity = () => {
       let retries = 0;
 
       while (retries < maxRetries && !stompClient.current.connected) {
-        console.warn('STOMP client not connected, queuing signal for room:', roomId.current, signalMessage);
+        console.warn('STOMP client not connected, queuing signal:', signalMessage);
         signalQueue.current.push(signalMessage);
         await new Promise((resolve) => setTimeout(resolve, 2000));
         retries++;
@@ -98,13 +98,13 @@ const GroupCallActivity = () => {
         });
         console.log('Signal sent to /app/groupSignal/' + roomId.current + ':', signalMessage);
       } else {
-        console.error('STOMP client still not connected after retries for room:', roomId.current);
+        console.error('STOMP client still not connected after retries');
         signalQueue.current.push(signalMessage);
         toast.error('Failed to send signal due to connection issues');
         endCall();
       }
     },
-    []
+    [isCallEnded]
   );
 
   // Инициализация WebSocket
@@ -165,7 +165,7 @@ const GroupCallActivity = () => {
 
     console.log('Activating WebSocket for room:', roomId.current);
     stompClient.current.activate();
-  }, [isInitiator, navigate, isCallEnded]);
+  }, [isInitiator, isCallEnded, navigate]);
 
   // Подписка на комнату
   const subscribeToRoom = useCallback(() => {
@@ -184,7 +184,11 @@ const GroupCallActivity = () => {
           if (!isMounted.current) return;
           try {
             const signalMessage = JSON.parse(message.body);
-            console.log('Received signal on /topic/room/' + roomId.current + ' at:', new Date().toISOString(), signalMessage);
+            console.log(
+              'Received signal on /topic/room/' + roomId.current + ' at:',
+              new Date().toISOString(),
+              signalMessage
+            );
             handleSignal(signalMessage);
           } catch (error) {
             console.error('Error parsing WebSocket message for room ' + roomId.current + ':', error);
@@ -203,81 +207,91 @@ const GroupCallActivity = () => {
   }, []);
 
   // Инициализация PeerConnection
-  const initializePeerConnection = useCallback(async (userId) => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localAudioRef.current.srcObject = stream;
-
-      const iceServers = [
-        { urls: 'stun:stun.l.google.com:19302' },
-        {
-          urls: 'turn:13.49.238.121:3478?transport=tcp',
-          username: 'username', // Используем одинаковые учетные данные
-          credential: 'key',
-        },
-      ];
-
-      const peerConnection = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'all' });
-      peerConnections.current.set(userId, peerConnection);
-
-      peerConnection.ontrack = (event) => {
-        const stream = event.streams[0];
-        if (stream) {
-          const audioElement = document.createElement('audio');
-          audioElement.srcObject = stream;
-          audioElement.autoplay = true;
-          remoteAudioRefs.current.set(userId, audioElement);
-          document.body.appendChild(audioElement);
-          console.log(`Remote audio track added for user ${userId}`);
-        }
-      };
-
-      peerConnection.oniceconnectionstatechange = () => {
-        console.log(`ICE Connection State for ${userId}: ${peerConnection.iceConnectionState}`);
-        if (peerConnection.iceConnectionState === 'failed') {
-          console.error(`WebRTC connection failed for user ${userId}`);
-          toast.error(
-            `Connection failed for user ${
-              callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`
-            }`
-          );
+  const initializePeerConnection = useCallback(
+    async (userId) => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (!localAudioRef.current) {
+          console.error('localAudioRef is null, cannot set srcObject');
+          toast.error('Audio element not initialized.');
           endCall();
-        } else if (peerConnection.iceConnectionState === 'disconnected') {
-          console.warn(`WebRTC connection disconnected for user ${userId}`);
-          toast.warn(
-            `User ${
-              callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`
-            } disconnected`
-          );
+          return null;
         }
-      };
+        localAudioRef.current.srcObject = stream;
 
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          sendSignal({
-            from: currentUserId,
-            to: userId,
-            signal: {
-              type: 'candidate',
-              iceCandidate: {
-                candidate: event.candidate.candidate,
-                sdpMid: event.candidate.sdpMid,
-                sdpMLineIndex: event.candidate.sdpMLineIndex.toString(),
+        const iceServers = [
+          { urls: 'stun:stun.l.google.com:19302' },
+          {
+            urls: 'turn:13.49.238.121:3478?transport=tcp',
+            username: 'username',
+            credential: 'key',
+          },
+        ];
+
+        const peerConnection = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'all' });
+        peerConnections.current.set(userId, peerConnection);
+
+        peerConnection.ontrack = (event) => {
+          const stream = event.streams[0];
+          if (stream) {
+            const audioElement = document.createElement('audio');
+            audioElement.srcObject = stream;
+            audioElement.autoplay = true;
+            remoteAudioRefs.current.set(userId, audioElement);
+            document.body.appendChild(audioElement);
+            console.log(`Remote audio track added for user ${userId}`);
+          }
+        };
+
+        peerConnection.oniceconnectionstatechange = () => {
+          console.log(`ICE Connection State for ${userId}: ${peerConnection.iceConnectionState}`);
+          if (peerConnection.iceConnectionState === 'failed') {
+            console.error(`WebRTC connection failed for user ${userId}`);
+            toast.error(
+              `Connection failed for user ${
+                callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`
+              }`
+            );
+            endCall();
+          } else if (peerConnection.iceConnectionState === 'disconnected') {
+            console.warn(`WebRTC connection disconnected for user ${userId}`);
+            toast.warn(
+              `User ${
+                callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`
+              } disconnected`
+            );
+          }
+        };
+
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) {
+            sendSignal({
+              from: currentUserId,
+              to: userId,
+              signal: {
+                type: 'candidate',
+                iceCandidate: {
+                  candidate: event.candidate.candidate,
+                  sdpMid: event.candidate.sdpMid,
+                  sdpMLineIndex: event.candidate.sdpMLineIndex.toString(),
+                },
               },
-            },
-          });
-        }
-      };
+            });
+          }
+        };
 
-      stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream));
-      console.log(`PeerConnection initialized for user ${userId}`);
-      return peerConnection;
-    } catch (error) {
-      console.error(`Error initializing PeerConnection for user ${userId}:`, error);
-      toast.error('Failed to access microphone.');
-      endCall();
-    }
-  }, [currentUserId, callParticipants, sendSignal, isCallEnded]);
+        stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream));
+        console.log(`PeerConnection initialized for user ${userId}`);
+        return peerConnection;
+      } catch (error) {
+        console.error(`Error initializing PeerConnection for user ${userId}:`, error);
+        toast.error('Failed to access microphone.');
+        endCall();
+        return null;
+      }
+    },
+    [currentUserId, callParticipants, sendSignal, isCallEnded]
+  );
 
   // Отправка приглашения в групповой звонок
   const sendGroupCallInvite = useCallback(() => {
@@ -311,39 +325,42 @@ const GroupCallActivity = () => {
   }, [initiator, callParticipants]);
 
   // Запуск звонка
-  const startCall = useCallback(async () => {
-    if (isCallStarted) {
-      console.log('Call already started, skipping startCall');
-      return;
-    }
-    setIsCallStarted(true);
-    setIsWaiting(false);
-    ringtoneRef.current.pause();
-    ringtoneRef.current.currentTime = 0;
-    console.log('Starting group call for participants:', callParticipants.map((u) => u.id));
+  const startCall = useCallback(
+    async () => {
+      if (isCallStarted) {
+        console.log('Call already started, skipping startCall');
+        return;
+      }
+      setIsCallStarted(true);
+      setIsWaiting(false);
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+      console.log('Starting group call for participants:', callParticipants.map((u) => u.id));
 
-    try {
-      for (const user of callParticipants) {
-        if (user.id !== initiator.id && user.id !== Number(currentUserId)) {
-          const peerConnection = await initializePeerConnection(String(user.id));
-          if (isInitiator && peerConnection) {
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            sendSignal({
-              from: currentUserId,
-              to: String(user.id),
-              signal: { type: 'offer', sdp: offer.sdp },
-            });
-            console.log(`Sent offer to user ${user.id}`);
+      try {
+        for (const user of callParticipants) {
+          if (user.id !== initiator.id && user.id !== Number(currentUserId)) {
+            const peerConnection = await initializePeerConnection(String(user.id));
+            if (isInitiator && peerConnection) {
+              const offer = await peerConnection.createOffer();
+              await peerConnection.setLocalDescription(offer);
+              sendSignal({
+                from: currentUserId,
+                to: String(user.id),
+                signal: { type: 'offer', sdp: offer.sdp },
+              });
+              console.log(`Sent offer to user ${user.id}`);
+            }
           }
         }
+      } catch (error) {
+        console.error('Error starting group call:', error);
+        toast.error('Failed to start group call.');
+        endCall();
       }
-    } catch (error) {
-      console.error('Error starting group call:', error);
-      toast.error('Failed to start group call.');
-      endCall();
-    }
-  }, [isCallStarted, callParticipants, currentUserId, initiator.id, initializePeerConnection, sendSignal, isCallEnded]);
+    },
+    [isCallStarted, callParticipants, currentUserId, initiator.id, initializePeerConnection, sendSignal, isCallEnded]
+  );
 
   // Обработка сигналов
   const handleSignal = useCallback(
@@ -377,7 +394,7 @@ const GroupCallActivity = () => {
               toast.info(`${signal.initiatorName} invites you to a group call`);
 
               initializeWebSocket();
-              await new Promise((resolve) => setTimeout(resolve, 1000)); // Даем время на подключение
+              await new Promise((resolve) => setTimeout(resolve, 1000));
               if (stompClient.current?.connected) {
                 subscribeToRoom();
                 await sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'acceptCall' } });
@@ -429,6 +446,7 @@ const GroupCallActivity = () => {
               const peerConnection = peerConnections.current.get(from) || (await initializePeerConnection(from));
               if (!peerConnection) {
                 console.error(`No peerConnection for user ${from}`);
+                signalQueue.current.push(signalMessage);
                 return;
               }
               try {
@@ -639,21 +657,12 @@ const GroupCallActivity = () => {
       }
     }, 30000);
 
-    const offerTimeout = setTimeout(() => {
-      if (!isInitiator && !peerConnections.current.size && !isCallStarted && isMounted.current) {
-        console.error('No offer received within 30 seconds, aborting call');
-        toast.error('Failed to establish call: no offer received');
-        endCall();
-      }
-    }, 30000);
-
     return () => {
       isMounted.current = false;
       clearInterval(timerInterval);
       clearInterval(timeInterval);
       clearInterval(chartInterval);
       clearTimeout(readyTimeout);
-      clearTimeout(offerTimeout);
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
       if (stompClient.current && !isCallEnded) {
