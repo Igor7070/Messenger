@@ -11,7 +11,7 @@ Chart.register(...registerables);
 
 const GroupCallActivity = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // Переносим useLocation на верхний уровень
+  const location = useLocation();
   const { state } = location;
   const { participants = [], initiator = {}, roomId: initialRoomId } = state || {};
   const isInitiator = Number(localStorage.getItem('userId')) === initiator.id;
@@ -50,6 +50,8 @@ const GroupCallActivity = () => {
       },
     ],
   });
+
+  console.log('GroupCallActivity: Initial state:', { state, initialRoomId, isInitiator, roomId: roomId.current });
 
   const initializeWebSocket = () => {
     if (!roomId.current) {
@@ -150,9 +152,12 @@ const GroupCallActivity = () => {
       initiatorId: initiator.id,
       isInitiator,
       isCallEnded,
+      roomId: roomId.current,
+      locationState: state,
     });
 
     if (!currentUserId || !initiator.id) {
+      console.error('User ID or initiator ID is missing');
       toast.error('User ID or initiator ID is missing.');
       navigate('/');
       return;
@@ -248,7 +253,7 @@ const GroupCallActivity = () => {
         console.log('WebSocket deactivated on cleanup');
       }
     };
-  }, [currentUserId, initiator.id, isInitiator, navigate, isCallEnded]);
+  }, [currentUserId, initiator.id, isInitiator, navigate, isCallEnded, state]);
 
   const sendGroupCallInvite = () => {
     if (!roomId.current) {
@@ -311,7 +316,7 @@ const GroupCallActivity = () => {
 
       peerConnection.oniceconnectionstatechange = () => {
         console.log(`ICE Connection State for ${userId}: ${peerConnection.iceConnectionState}`);
-        if (peerConnection.iceConnectionState === 'failed') {
+        if (peerConnection.iceConnectionstate === 'failed') {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           endCall();

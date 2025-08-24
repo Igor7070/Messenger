@@ -20,6 +20,7 @@ export const CallWebSocketProvider = ({ children }) => {
     console.log('CallWebSocketContext: Текущее incomingCall:', incomingCall);
     console.log('CallWebSocketContext: Текущее callRequestRef:', callRequestRef.current);
     console.log('CallWebSocketContext: Стек вызовов:', new Error().stack);
+    callRequestRef.current = value; // Сохраняем в ref перед setState
     setIncomingCall(value);
   };
 
@@ -188,7 +189,7 @@ export const CallWebSocketProvider = ({ children }) => {
     if (stompClient.current && stompClient.current.connected) {
       console.log('CallWebSocketContext: Отправка сигнала:', JSON.stringify(signalMessage, null, 2));
       let destination;
-      if (signalMessage.signal.type === 'groupCallInvite') {
+      if (signalMessage.signal?.type === 'groupCallInvite') {
         destination = `/app/groupCall/${signalMessage.to}`;
       } else if (callRequestRef.current?.type === 'group') {
         destination = `/app/groupSignal/${roomId}`; // Используем /app/groupSignal/ для групповых вызовов
@@ -207,7 +208,11 @@ export const CallWebSocketProvider = ({ children }) => {
   };
 
   const acceptCall = (navigate) => {
-    if (!incomingCall) return;
+    if (!incomingCall || !callRequestRef.current) {
+      console.error('CallWebSocketContext: No incoming call or callRequestRef to accept');
+      toast.error('No active call to accept');
+      return;
+    }
 
     audioRef.current.pause();
     audioRef.current.currentTime = 0;
@@ -216,6 +221,7 @@ export const CallWebSocketProvider = ({ children }) => {
 
     const callerId = incomingCall.callerId || incomingCall.initiatorId;
     const recipientId = currentUserId;
+    const roomId = callRequestRef.current.roomId; // Используем roomId из callRequestRef для надёжности
 
     const fetchUserNames = async () => {
       try {
@@ -228,14 +234,15 @@ export const CallWebSocketProvider = ({ children }) => {
           const callerData = await callerResponse.json();
           const recipientData = await recipientResponse.json();
 
+          // Отправляем сигналы
           sendSignal(
             { from: currentUserId, signal: { type: 'acceptCall' } },
-            incomingCall.roomId
+            roomId
           );
           if (incomingCall.type === 'group') {
             sendSignal(
               { from: currentUserId, to: incomingCall.initiatorId, signal: { type: 'ready' } },
-              incomingCall.roomId
+              roomId
             );
           }
 
@@ -245,8 +252,9 @@ export const CallWebSocketProvider = ({ children }) => {
           let route;
           let state;
           if (incomingCall.type === 'group') {
-            route = `/group-call`;
+            route = '/group-call';
             state = {
+              roomId: roomId, // Явно добавляем roomId в state
               participants: [
                 { id: callerId, username: callerData.username, avatar: callerData.avatar },
                 { id: recipientId, username: recipientData.username, avatar: recipientData.avatar },
@@ -255,10 +263,11 @@ export const CallWebSocketProvider = ({ children }) => {
             };
           } else {
             route =
-              incomingCall.type === 'video' ? `/video-call/${incomingCall.roomId}` :
-              incomingCall.type === 'translate' ? `/voice-call-translate/${incomingCall.roomId}` :
-              `/voice-call/${incomingCall.roomId}`;
+              incomingCall.type === 'video' ? `/video-call/${roomId}` :
+              incomingCall.type === 'translate' ? `/voice-call-translate/${roomId}` :
+              `/voice-call/${roomId}`;
             state = {
+              roomId: roomId, // Явно добавляем roomId
               incomingCall,
               isCaller: false,
               currentUserId,
@@ -267,6 +276,7 @@ export const CallWebSocketProvider = ({ children }) => {
             };
           }
 
+          console.log('CallWebSocketContext: Navigating to:', route, 'with state:', state);
           navigate(route, { state });
           toast.success(
             incomingCall.type === 'video' ? 'Video call accepted' :
@@ -288,16 +298,20 @@ export const CallWebSocketProvider = ({ children }) => {
   };
 
   const rejectCall = () => {
-    if (!incomingCall) return;
+    if (!incomingCall || !callRequestRef.current) {
+      console.error('CallWebSocketContext: No incoming call or callRequestRef to reject');
+      toast.error('No active call to reject');
+      return;
+    }
 
     audioRef.current.pause();
     audioRef.current.currentTime = 0;
-    setIncomingCallWithLog(null);
-    callRequestRef.current = null;
     sendSignal(
       { from: currentUserId, signal: { type: 'rejectCall' } },
-      incomingCall.roomId
+      callRequestRef.current.roomId
     );
+    setIncomingCallWithLog(null);
+    callRequestRef.current = null;
     toast.info(
       incomingCall.type === 'video' ? 'Video call rejected' :
       incomingCall.type === 'translate' ? 'Translate call rejected' :
