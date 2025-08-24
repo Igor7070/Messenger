@@ -155,10 +155,24 @@ const GroupCallActivity = () => {
       return;
     }
 
-    // Инициализация WebSocket только для инициатора
-    if (isInitiator) {
-      initializeWebSocket();
+    // Получаем roomId из location.state для неинициатора
+    const location = useLocation();
+    const { roomId: initialRoomId } = location.state || {};
+    if (!isInitiator && initialRoomId) {
+      roomId.current = initialRoomId;
+      console.log('Set roomId from location.state:', roomId.current);
     }
+
+    // Проверяем, что roomId установлен
+    if (!roomId.current) {
+      console.error('roomId is null, cannot proceed');
+      toast.error('Invalid room ID');
+      navigate('/');
+      return;
+    }
+
+    // Инициализация WebSocket для всех случаев
+    initializeWebSocket();
 
     // Установка гудка для инициатора
     if (isInitiator && isMounted) {
@@ -201,7 +215,7 @@ const GroupCallActivity = () => {
       });
     }, 1000);
 
-    // Таймаут для ожидания сигналов ready
+    // Таймаут для ожидания сигналов ready (для инициатора)
     const readyTimeout = setTimeout(() => {
       if (isInitiator && isWaiting && readyUsers.size === 0 && isMounted && !isCallStarted) {
         console.warn('No participants responded within 30 seconds, ending call.');
@@ -212,12 +226,22 @@ const GroupCallActivity = () => {
       }
     }, 30000);
 
+    // Таймаут для ожидания offer (для неинициатора)
+    const offerTimeout = setTimeout(() => {
+      if (!isInitiator && !peerConnections.current.size && !isCallStarted && isMounted) {
+        console.error('No offer received within 30 seconds, aborting call');
+        toast.error('Failed to establish call: no offer received');
+        endCall();
+      }
+    }, 30000);
+
     return () => {
       isMounted = false;
       clearInterval(timerInterval);
       clearInterval(timeInterval);
       clearInterval(chartInterval);
       clearTimeout(readyTimeout);
+      clearTimeout(offerTimeout);
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
       if (stompClient.current && !isCallEnded) {
