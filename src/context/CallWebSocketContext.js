@@ -187,7 +187,14 @@ export const CallWebSocketProvider = ({ children }) => {
   const sendSignal = (signalMessage, roomId) => {
     if (stompClient.current && stompClient.current.connected) {
       console.log('CallWebSocketContext: Отправка сигнала:', JSON.stringify(signalMessage, null, 2));
-      const destination = signalMessage.signal.type === 'groupCallInvite' ? `/app/groupCall/${signalMessage.to}` : `/app/signal/${roomId}`;
+      let destination;
+      if (signalMessage.signal.type === 'groupCallInvite') {
+        destination = `/app/groupCall/${signalMessage.to}`;
+      } else if (callRequestRef.current?.type === 'group') {
+        destination = `/app/groupSignal/${roomId}`; // Используем /app/groupSignal/ для групповых вызовов
+      } else {
+        destination = `/app/signal/${roomId}`; // Для обычных вызовов
+      }
       stompClient.current.publish({
         destination,
         body: JSON.stringify(signalMessage),
