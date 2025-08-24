@@ -551,13 +551,13 @@ const GroupCallActivity = () => {
       while (signalQueue.current.length > 0) {
         const queuedSignal = signalQueue.current.shift();
         stompClient.current.publish({
-          destination: `/app/groupSignal/${roomId.current}`,
+          destination: `/app/groupSignal/${roomId.current}`, // Изменено с /app/signal/
           body: JSON.stringify(queuedSignal),
         });
         console.log('Signal sent from queue to /app/groupSignal/' + roomId.current + ':', queuedSignal);
       }
       stompClient.current.publish({
-        destination: `/app/groupSignal/${roomId.current}`,
+        destination: `/app/groupSignal/${roomId.current}`, // Изменено с /app/signal/
         body: JSON.stringify(signalMessage),
       });
       console.log('Signal sent to /app/groupSignal/' + roomId.current + ':', signalMessage);
