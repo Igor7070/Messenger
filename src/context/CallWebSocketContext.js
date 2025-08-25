@@ -12,6 +12,9 @@ export const CallWebSocketProvider = ({ children }) => {
   const stompClient = useRef(null);
   const callRequestRef = useRef(null);
   const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
+  const subscriptionRef = useRef(null); // Для подписки на /topic/room/{roomId}
+  const signalQueue = useRef([]); // Очередь сигналов для групповых звонков
+  const groupSignalHandler = useRef(null); // Для передачи сигналов в GroupCallActivity
   audioRef.current.loop = true;
   const { userInteracted } = useUserInteraction();
 
@@ -20,7 +23,7 @@ export const CallWebSocketProvider = ({ children }) => {
     console.log('CallWebSocketContext: Текущее incomingCall:', incomingCall);
     console.log('CallWebSocketContext: Текущее callRequestRef:', callRequestRef.current);
     console.log('CallWebSocketContext: Стек вызовов:', new Error().stack);
-    callRequestRef.current = value; // Сохраняем в ref перед setState
+    callRequestRef.current = value;
     setIncomingCall(value);
   };
 
@@ -72,10 +75,27 @@ export const CallWebSocketProvider = ({ children }) => {
           handleMessage(message);
         });
 
+        // Обработка очереди сигналов
+        while (signalQueue.current.length > 0 && stompClient.current.connected) {
+          const signalMessage = signalQueue.current.shift();
+          const roomId = signalMessage.roomId || callRequestRef.current?.roomId;
+          if (roomId) {
+            stompClient.current.publish({
+              destination: `/app/groupSignal/${roomId}`,
+              body: JSON.stringify(signalMessage),
+            });
+            console.log('CallWebSocketContext: Signal sent from queue to /app/groupSignal/' + roomId + ':', signalMessage);
+          }
+        }
+
         return () => {
           console.log('CallWebSocketContext: Отписка от /topic/calls/' + currentUserId + ' и /topic/groupCalls/' + currentUserId);
           callsSubscription.unsubscribe();
           groupCallSubscription.unsubscribe();
+          if (subscriptionRef.current) {
+            subscriptionRef.current.unsubscribe();
+            console.log('CallWebSocketContext: Отписка от /topic/room/' + callRequestRef.current?.roomId);
+          }
         };
       },
       onWebSocketError: (error) => {
@@ -84,6 +104,8 @@ export const CallWebSocketProvider = ({ children }) => {
       },
       onDisconnect: () => {
         console.log('CallWebSocketContext: WebSocket для звонков отключён');
+        setIncomingCallWithLog(null);
+        callRequestRef.current = null;
       },
     });
     stompClient.current.activate();
@@ -95,6 +117,30 @@ export const CallWebSocketProvider = ({ children }) => {
       }
     };
   }, [currentUserId]);
+
+  const subscribeToRoom = (roomId) => {
+    if (!roomId) {
+      console.error('CallWebSocketContext: Cannot subscribe to room: roomId is null');
+      return;
+    }
+    if (stompClient.current && stompClient.current.connected) {
+      subscriptionRef.current = stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
+        console.log('CallWebSocketContext: Raw message received on /topic/room/' + roomId + ':', message.body);
+        try {
+          const signalMessage = JSON.parse(message.body);
+          console.log('CallWebSocketContext: Parsed signal:', signalMessage);
+          if (groupSignalHandler.current) {
+            groupSignalHandler.current(signalMessage); // Передаем сигнал в GroupCallActivity
+          }
+        } catch (error) {
+          console.error('CallWebSocketContext: Error parsing WebSocket message for room ' + roomId + ':', error, 'Raw message:', message.body);
+        }
+      });
+      console.log('CallWebSocketContext: Subscribed to /topic/room/' + roomId);
+    } else {
+      console.warn('CallWebSocketContext: Cannot subscribe to room: STOMP client not connected', { roomId });
+    }
+  };
 
   const handleMessage = (message) => {
     let callRequest;
@@ -124,6 +170,11 @@ export const CallWebSocketProvider = ({ children }) => {
         callRequestRef.current = null;
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
+        if (subscriptionRef.current) {
+          subscriptionRef.current.unsubscribe();
+          console.log('CallWebSocketContext: Отписка от /topic/room/' + callRequest.roomId);
+          subscriptionRef.current = null;
+        }
         console.log('CallWebSocketContext: Отправляем тост:', cancelMessage);
         toast.info(cancelMessage);
       } else {
@@ -153,6 +204,32 @@ export const CallWebSocketProvider = ({ children }) => {
       recipientIds: callRequest.recipientIds,
     };
     console.log('CallWebSocketContext: callRequestRef установлен:', callRequestRef.current);
+
+    if (callRequest.type === 'group') {
+      // Инициализация подписки на /topic/room/{roomId} для групповых звонков
+      if (stompClient.current && stompClient.current.connected) {
+        subscribeToRoom(callRequest.roomId);
+      } else {
+        // Ждем подключения WebSocket
+        let attempts = 0;
+        const maxAttempts = 50; // 5 секунд
+        while (!stompClient.current?.connected && attempts < maxAttempts) {
+          console.log('CallWebSocketContext: Waiting for WebSocket connection... Attempt:', attempts + 1);
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          attempts++;
+        }
+        if (stompClient.current?.connected) {
+          subscribeToRoom(callRequest.roomId);
+        } else {
+          console.error('CallWebSocketContext: WebSocket failed to connect for group call');
+          toast.error('Failed to connect to WebSocket.');
+          setIncomingCallWithLog(null);
+          callRequestRef.current = null;
+          return;
+        }
+      }
+    }
+
     setIncomingCallWithLog(callRequest);
     try {
       const callerId = callRequest.callerId || callRequest.initiatorId;
@@ -186,13 +263,18 @@ export const CallWebSocketProvider = ({ children }) => {
   };
 
   const sendSignal = (signalMessage, roomId) => {
+    if (!stompClient.current) {
+      console.error('CallWebSocketContext: STOMP client is not initialized');
+      signalQueue.current.push({ ...signalMessage, roomId });
+      return;
+    }
     if (stompClient.current && stompClient.current.connected) {
       console.log('CallWebSocketContext: Отправка сигнала:', JSON.stringify(signalMessage, null, 2));
       let destination;
       if (signalMessage.signal?.type === 'groupCallInvite') {
         destination = `/app/groupCall/${signalMessage.to}`;
-      } else if (callRequestRef.current?.type === 'group') {
-        destination = `/app/groupSignal/${roomId}`; // Используем /app/groupSignal/ для групповых вызовов
+      } else if (callRequestRef.current?.type === 'group' || signalMessage.signal?.type === 'group') {
+        destination = `/app/groupSignal/${roomId}`; // Для групповых вызовов
       } else {
         destination = `/app/signal/${roomId}`; // Для обычных вызовов
       }
@@ -202,8 +284,8 @@ export const CallWebSocketProvider = ({ children }) => {
       });
       console.log('CallWebSocketContext: Сигнал успешно отправлен на:', destination);
     } else {
-      console.error('CallWebSocketContext: STOMP client is not connected');
-      toast.error('Failed to send signal. Please try again.');
+      console.warn('CallWebSocketContext: STOMP client is not connected, queuing signal:', signalMessage);
+      signalQueue.current.push({ ...signalMessage, roomId });
     }
   };
 
@@ -221,7 +303,7 @@ export const CallWebSocketProvider = ({ children }) => {
 
     const callerId = incomingCall.callerId || incomingCall.initiatorId;
     const recipientId = currentUserId;
-    const roomId = callRequestRef.current.roomId; // Используем roomId из callRequestRef для надёжности
+    const roomId = callRequestRef.current.roomId;
 
     const fetchUserNames = async () => {
       try {
@@ -234,14 +316,19 @@ export const CallWebSocketProvider = ({ children }) => {
           const callerData = await callerResponse.json();
           const recipientData = await recipientResponse.json();
 
-          // Отправляем сигналы
-          sendSignal(
-            { from: currentUserId, signal: { type: 'acceptCall' } },
-            roomId
-          );
+          // Отправляем сигналы для групповых звонков
           if (incomingCall.type === 'group') {
             sendSignal(
+              { from: currentUserId, signal: { type: 'acceptCall' } },
+              roomId
+            );
+            sendSignal(
               { from: currentUserId, to: incomingCall.initiatorId, signal: { type: 'ready' } },
+              roomId
+            );
+          } else {
+            sendSignal(
+              { from: currentUserId, signal: { type: 'acceptCall' } },
               roomId
             );
           }
@@ -254,10 +341,13 @@ export const CallWebSocketProvider = ({ children }) => {
           if (incomingCall.type === 'group') {
             route = '/group-call';
             state = {
-              roomId: roomId, // Явно добавляем roomId в state
+              roomId: roomId,
               participants: [
                 { id: callerId, username: callerData.username, avatar: callerData.avatar },
                 { id: recipientId, username: recipientData.username, avatar: recipientData.avatar },
+                ...(incomingCall.recipientIds || [])
+                  .filter((id) => id !== String(recipientId))
+                  .map((id) => ({ id: Number(id), username: 'Unknown', avatar: null })), // Заглушка для других участников
               ],
               initiator: { id: callerId, username: callerData.username, avatar: callerData.avatar },
             };
@@ -267,7 +357,7 @@ export const CallWebSocketProvider = ({ children }) => {
               incomingCall.type === 'translate' ? `/voice-call-translate/${roomId}` :
               `/voice-call/${roomId}`;
             state = {
-              roomId: roomId, // Явно добавляем roomId
+              roomId: roomId,
               incomingCall,
               isCaller: false,
               currentUserId,
@@ -312,12 +402,21 @@ export const CallWebSocketProvider = ({ children }) => {
     );
     setIncomingCallWithLog(null);
     callRequestRef.current = null;
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+      console.log('CallWebSocketContext: Отписка от /topic/room/' + callRequestRef.current.roomId);
+      subscriptionRef.current = null;
+    }
     toast.info(
       incomingCall.type === 'video' ? 'Video call rejected' :
       incomingCall.type === 'translate' ? 'Translate call rejected' :
       incomingCall.type === 'group' ? 'Group call rejected' :
       'Voice call rejected'
     );
+  };
+
+  const setGroupSignalHandler = (handler) => {
+    groupSignalHandler.current = handler;
   };
 
   return (
@@ -327,6 +426,8 @@ export const CallWebSocketProvider = ({ children }) => {
         acceptCall,
         rejectCall,
         setCurrentUserId,
+        sendSignal,
+        setGroupSignalHandler,
       }}
     >
       {children}
