@@ -128,12 +128,13 @@ const GroupCallActivity = () => {
     if (stompClient.current && stompClient.current.connected) {
       subscriptionRef.current = stompClient.current.subscribe(`/topic/room/${roomId.current}`, (message) => {
         if (!isMounted) return;
+        console.log('Raw message received on /topic/room/' + roomId.current + ':', message.body);
         try {
           const signalMessage = JSON.parse(message.body);
-          console.log('Received signal on /topic/room/' + roomId.current + ':', signalMessage);
+          console.log('Parsed signal:', signalMessage);
           handleSignal(signalMessage);
         } catch (error) {
-          console.error('Error parsing WebSocket message for room ' + roomId.current + ':', error);
+          console.error('Error parsing WebSocket message for room ' + roomId.current + ':', error, 'Raw message:', message.body);
         }
       });
       console.log('Subscribed to /topic/room/' + roomId.current);
@@ -233,7 +234,7 @@ const GroupCallActivity = () => {
         toast.error('Failed to establish call: no offer received');
         endCall();
       }
-    }, 30000);
+    }, 60000);
 
     return () => {
       isMounted = false;
@@ -391,7 +392,8 @@ const GroupCallActivity = () => {
     if (signalMessage.from === currentUserId) return;
 
     const { signal, from, to } = signalMessage;
-    if (to && to !== currentUserId && to !== null) return;
+    // if (to && to !== currentUserId && to !== null) return; // Закомментировано для отладки
+    console.log('Signal received for processing:', { from, to, type: signal.type, currentUserId });
 
     try {
       switch (signal.type) {
