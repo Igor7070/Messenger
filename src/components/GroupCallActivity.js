@@ -143,7 +143,8 @@ const GroupCallActivity = () => {
       return;
     }
 
-    // Устанавливаем обработчик сигналов из CallWebSocketContext
+    // Устанавливаем обработчик сигналов немедленно
+    console.log('Setting signal handler at', new Date().toISOString());
     setSignalHandlerCallback(handleSignal);
 
     // Инициализация WebSocket для отправки сигналов
@@ -209,7 +210,7 @@ const GroupCallActivity = () => {
         toast.error('Failed to establish call: no offer received');
         endCall();
       }
-    }, 60000); // Увеличено до 60 секунд
+    }, 60000);
 
     return () => {
       isMounted = false;
@@ -224,7 +225,8 @@ const GroupCallActivity = () => {
         stompClient.current.deactivate();
         console.log('WebSocket deactivated on cleanup');
       }
-      // Очистка обработчика сигналов
+      // Очистка обработчика сигналов только при размонтировании
+      console.log('Clearing signal handler at', new Date().toISOString());
       setSignalHandlerCallback(null);
     };
   }, [currentUserId, initiator.id, isInitiator, navigate, isCallEnded, state, setSignalHandlerCallback]);
