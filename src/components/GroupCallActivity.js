@@ -164,7 +164,6 @@ const GroupCallActivity = () => {
       return;
     }
 
-    // Проверяем, что roomId установлен
     if (!roomId.current) {
       console.error('roomId is null, cannot proceed');
       toast.error('Invalid room ID');
@@ -172,7 +171,8 @@ const GroupCallActivity = () => {
       return;
     }
 
-    // Инициализация WebSocket для всех случаев
+    // Инициализация WebSocket немедленно
+    console.log('Initializing WebSocket immediately at', new Date().toISOString());
     initializeWebSocket();
 
     // Установка гудка для инициатора
@@ -230,11 +230,11 @@ const GroupCallActivity = () => {
     // Таймаут для ожидания offer (для неинициатора)
     const offerTimeout = setTimeout(() => {
       if (!isInitiator && !peerConnections.current.size && !isCallStarted && isMounted) {
-        console.error('No offer received within 30 seconds, aborting call');
+        console.error('No offer received within 30 seconds, aborting call at', new Date().toISOString());
         toast.error('Failed to establish call: no offer received');
         endCall();
       }
-    }, 60000);
+    }, 30000);
 
     return () => {
       isMounted = false;
