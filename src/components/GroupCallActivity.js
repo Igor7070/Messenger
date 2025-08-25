@@ -65,7 +65,6 @@ const GroupCallActivity = () => {
 
     if (stompClient.current && stompClient.current.connected) {
       console.log('WebSocket already connected for room:', roomId.current);
-      subscribeToRoom();
       return;
     }
 
@@ -404,7 +403,6 @@ const GroupCallActivity = () => {
             };
 
             if (await waitForConnection()) {
-              subscribeToRoom();
               // Отправляем сигналы acceptCall и ready
               await sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'acceptCall' } });
               await sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'ready' } });
