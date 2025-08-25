@@ -11,9 +11,6 @@ export const CallWebSocketProvider = ({ children }) => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const stompClient = useRef(null);
   const callRequestRef = useRef(null);
-  const roomSubscriptionRef = useRef(null);
-  const [signalHandler, setSignalHandler] = useState(null);
-  const signalQueue = useRef([]);
   const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
   audioRef.current.loop = true;
   const { userInteracted } = useUserInteraction();
@@ -93,10 +90,6 @@ export const CallWebSocketProvider = ({ children }) => {
 
     return () => {
       if (stompClient.current) {
-        if (roomSubscriptionRef.current) {
-          roomSubscriptionRef.current.unsubscribe();
-          console.log('CallWebSocketContext: Unsubscribed from room');
-        }
         stompClient.current.deactivate();
         console.log('CallWebSocketContext: WebSocket для звонков отключён при размонтировании');
       }
@@ -143,9 +136,6 @@ export const CallWebSocketProvider = ({ children }) => {
       }
     } else if (callRequest.type === 'voice' || callRequest.type === 'video' || callRequest.type === 'translate' || callRequest.type === 'group') {
       console.log('CallWebSocketContext: Получен запрос на звонок:', callRequest);
-      if (callRequest.type === 'group') {
-        subscribeToRoom(callRequest.roomId);
-      }
       handleIncomingCall(callRequest);
     } else {
       console.log('CallWebSocketContext: Получено сообщение с неизвестным типом:', callRequest);
@@ -192,50 +182,6 @@ export const CallWebSocketProvider = ({ children }) => {
         callerName: 'Unknown',
         avatar: null,
       });
-    }
-  };
-
-  const subscribeToRoom = (roomId) => {
-    if (!roomId) {
-      console.error('CallWebSocketContext: Cannot subscribe to room: roomId is null');
-      return;
-    }
-    if (stompClient.current && stompClient.current.connected) {
-      if (roomSubscriptionRef.current) {
-        console.log('CallWebSocketContext: Already subscribed to /topic/room/' + roomId);
-        return;
-      }
-      roomSubscriptionRef.current = stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
-        console.log('CallWebSocketContext: Raw message received on /topic/room/' + roomId + ':', message.body);
-        try {
-          const signalMessage = JSON.parse(message.body);
-          console.log('CallWebSocketContext: Parsed signal:', signalMessage);
-          if (signalHandler) {
-            signalHandler(signalMessage);
-          } else {
-            signalQueue.current.push(signalMessage);
-            console.log('CallWebSocketContext: Signal queued, waiting for handler:', signalMessage);
-          }
-        } catch (error) {
-          console.error('CallWebSocketContext: Error parsing WebSocket message for room ' + roomId + ':', error, 'Raw message:', message.body);
-        }
-      });
-      console.log('CallWebSocketContext: Subscribed to /topic/room/' + roomId + ' at', new Date().toISOString());
-    } else {
-      console.warn('CallWebSocketContext: Cannot subscribe to room: STOMP client not connected', {
-        connected: stompClient.current?.connected,
-        roomId,
-      });
-    }
-  };
-
-  const setSignalHandlerCallback = (handler) => {
-    setSignalHandler(() => handler);
-    console.log('CallWebSocketContext: Signal handler set, processing queued signals:', signalQueue.current.length);
-    while (signalQueue.current.length > 0) {
-      const signalMessage = signalQueue.current.shift();
-      handler(signalMessage);
-      console.log('CallWebSocketContext: Processed queued signal:', signalMessage);
     }
   };
 
@@ -381,7 +327,6 @@ export const CallWebSocketProvider = ({ children }) => {
         acceptCall,
         rejectCall,
         setCurrentUserId,
-        setSignalHandlerCallback,
       }}
     >
       {children}
