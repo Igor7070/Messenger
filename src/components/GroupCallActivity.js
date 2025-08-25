@@ -5,7 +5,6 @@ import SockJS from 'sockjs-client';
 import { toast } from 'react-toastify';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
-import { useCallWebSocket } from '../context/CallWebSocketContext';
 import '../styles/GroupCallActivity.css';
 
 Chart.register(...registerables);
@@ -15,7 +14,6 @@ const GroupCallActivity = () => {
   const location = useLocation();
   const { state } = location;
   const { participants = [], initiator = {}, roomId: initialRoomId } = state || {};
-  const { setSignalHandlerCallback } = useCallWebSocket();
   const isInitiator = Number(localStorage.getItem('userId')) === initiator.id;
   const currentUserId = localStorage.getItem('userId');
   const roomId = useRef(isInitiator ? crypto.randomUUID() : initialRoomId || null);
@@ -24,6 +22,7 @@ const GroupCallActivity = () => {
   const remoteAudioRefs = useRef(new Map());
   const stompClient = useRef(null);
   const signalQueue = useRef([]);
+  const subscriptionRef = useRef(null);
   const [callParticipants, setCallParticipants] = useState(participants);
   const [callDuration, setCallDuration] = useState('00:00');
   const [startTime, setStartTime] = useState('');
@@ -62,8 +61,9 @@ const GroupCallActivity = () => {
       return;
     }
 
-    if (stompClient.current && stompClient.current.active) {
-      console.log('WebSocket already active for room:', roomId.current);
+    if (stompClient.current && stompClient.current.connected) {
+      console.log('WebSocket already connected for room:', roomId.current);
+      subscribeToRoom();
       return;
     }
 
@@ -75,6 +75,7 @@ const GroupCallActivity = () => {
       onConnect: () => {
         if (!isMounted) return;
         console.log('Connected to WebSocket for room:', roomId.current);
+        subscribeToRoom();
         if (isInitiator && !hasSentInvite.current) {
           hasSentInvite.current = true;
           sendGroupCallInvite();
@@ -99,14 +100,12 @@ const GroupCallActivity = () => {
           route: window.location.pathname,
           roomId: roomId.current,
         });
-        if (isMounted && !isCallEnded) {
-          console.log('Retrying WebSocket activation for room:', roomId.current);
-          setTimeout(() => {
-            if (isMounted && !stompClient.current.active) {
-              stompClient.current.activate();
-            }
-          }, 1000);
-        }
+        setTimeout(() => {
+          if (isMounted && !stompClient.current.connected) {
+            console.log('Retrying WebSocket activation for room:', roomId.current);
+            stompClient.current.activate();
+          }
+        }, 1000);
       },
       onDisconnect: () => {
         console.log('WebSocket disconnected for room:', roomId.current);
@@ -119,6 +118,33 @@ const GroupCallActivity = () => {
 
     console.log('Activating WebSocket for room:', roomId.current);
     stompClient.current.activate();
+  };
+
+  const subscribeToRoom = () => {
+    if (!roomId.current) {
+      console.error('Cannot subscribe to room: roomId is null');
+      return;
+    }
+    if (stompClient.current && stompClient.current.connected) {
+      subscriptionRef.current = stompClient.current.subscribe(`/topic/room/${roomId.current}`, (message) => {
+        if (!isMounted) return;
+        console.log('Raw message received on /topic/room/' + roomId.current + ':', message.body);
+        try {
+          const signalMessage = JSON.parse(message.body);
+          console.log('Parsed signal:', signalMessage);
+          handleSignal(signalMessage);
+        } catch (error) {
+          console.error('Error parsing WebSocket message for room ' + roomId.current + ':', error, 'Raw message:', message.body);
+        }
+      });
+      console.log('Subscribed to /topic/room/' + roomId.current);
+    } else {
+      console.warn('Cannot subscribe to room: STOMP client not connected', {
+        connected: stompClient.current?.connected,
+        roomId: roomId.current,
+      });
+      initializeWebSocket();
+    }
   };
 
   useEffect(() => {
@@ -138,6 +164,7 @@ const GroupCallActivity = () => {
       return;
     }
 
+    // Проверяем, что roomId установлен
     if (!roomId.current) {
       console.error('roomId is null, cannot proceed');
       toast.error('Invalid room ID');
@@ -145,11 +172,7 @@ const GroupCallActivity = () => {
       return;
     }
 
-    // Устанавливаем обработчик сигналов немедленно
-    console.log('Setting signal handler at', new Date().toISOString());
-    setSignalHandlerCallback(handleSignal);
-
-    // Инициализация WebSocket
+    // Инициализация WebSocket для всех случаев
     initializeWebSocket();
 
     // Установка гудка для инициатора
@@ -207,7 +230,7 @@ const GroupCallActivity = () => {
     // Таймаут для ожидания offer (для неинициатора)
     const offerTimeout = setTimeout(() => {
       if (!isInitiator && !peerConnections.current.size && !isCallStarted && isMounted) {
-        console.error('No offer received within 60 seconds, aborting call at', new Date().toISOString());
+        console.error('No offer received within 30 seconds, aborting call');
         toast.error('Failed to establish call: no offer received');
         endCall();
       }
@@ -223,13 +246,15 @@ const GroupCallActivity = () => {
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
       if (stompClient.current && !isCallEnded) {
+        if (subscriptionRef.current) {
+          subscriptionRef.current.unsubscribe();
+          console.log('Unsubscribed from /topic/room/' + roomId.current);
+        }
         stompClient.current.deactivate();
         console.log('WebSocket deactivated on cleanup');
       }
-      console.log('Clearing signal handler at', new Date().toISOString());
-      setSignalHandlerCallback(null);
     };
-  }, [currentUserId, initiator.id, isInitiator, navigate, isCallEnded, state, setSignalHandlerCallback]);
+  }, [currentUserId, initiator.id, isInitiator, navigate, isCallEnded, state]);
 
   const sendGroupCallInvite = () => {
     if (!roomId.current) {
@@ -292,7 +317,7 @@ const GroupCallActivity = () => {
 
       peerConnection.oniceconnectionstatechange = () => {
         console.log(`ICE Connection State for ${userId}: ${peerConnection.iceConnectionState}`);
-        if (peerConnection.iceConnectionState === 'failed') {
+        if (peerConnection.iceConnectionstate === 'failed') {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           endCall();
@@ -367,6 +392,7 @@ const GroupCallActivity = () => {
     if (signalMessage.from === currentUserId) return;
 
     const { signal, from, to } = signalMessage;
+    // if (to && to !== currentUserId && to !== null) return; // Закомментировано для отладки
     console.log('Signal received for processing:', { from, to, type: signal.type, currentUserId });
 
     try {
@@ -387,8 +413,9 @@ const GroupCallActivity = () => {
             // Инициализация WebSocket
             initializeWebSocket();
 
+            // Ждем подключения WebSocket
             let attempts = 0;
-            const maxAttempts = 50;
+            const maxAttempts = 50; // 5 секунд (50 * 100ms)
             const waitForConnection = async () => {
               while (!stompClient.current?.connected && attempts < maxAttempts) {
                 console.log('Waiting for WebSocket connection... Attempt:', attempts + 1);
@@ -405,8 +432,11 @@ const GroupCallActivity = () => {
             };
 
             if (await waitForConnection()) {
+              subscribeToRoom();
+              // Отправляем сигналы acceptCall и ready
               await sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'acceptCall' } });
               await sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'ready' } });
+              // Инициализируем PeerConnection
               await initializePeerConnection(signal.initiatorId);
               console.log('Processed groupCallInvite: sent acceptCall, ready, and initialized PeerConnection for initiator', signal.initiatorId);
             }
