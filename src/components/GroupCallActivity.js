@@ -5,7 +5,7 @@ import SockJS from 'sockjs-client';
 import { toast } from 'react-toastify';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
-import { useCallWebSocket } from '../context/CallWebSocketContext'; // Импортируем контекст
+import { useCallWebSocket } from '../context/CallWebSocketContext';
 import '../styles/GroupCallActivity.css';
 
 Chart.register(...registerables);
@@ -15,7 +15,7 @@ const GroupCallActivity = () => {
   const location = useLocation();
   const { state } = location;
   const { participants = [], initiator = {}, roomId: initialRoomId } = state || {};
-  const { setSignalHandlerCallback } = useCallWebSocket(); // Получаем setSignalHandlerCallback
+  const { setSignalHandlerCallback } = useCallWebSocket();
   const isInitiator = Number(localStorage.getItem('userId')) === initiator.id;
   const currentUserId = localStorage.getItem('userId');
   const roomId = useRef(isInitiator ? crypto.randomUUID() : initialRoomId || null);
@@ -62,8 +62,8 @@ const GroupCallActivity = () => {
       return;
     }
 
-    if (stompClient.current && stompClient.current.connected) {
-      console.log('WebSocket already connected for room:', roomId.current);
+    if (stompClient.current && stompClient.current.active) {
+      console.log('WebSocket already active for room:', roomId.current);
       return;
     }
 
@@ -99,12 +99,14 @@ const GroupCallActivity = () => {
           route: window.location.pathname,
           roomId: roomId.current,
         });
-        setTimeout(() => {
-          if (isMounted && !stompClient.current.connected) {
-            console.log('Retrying WebSocket activation for room:', roomId.current);
-            stompClient.current.activate();
-          }
-        }, 1000);
+        if (isMounted && !isCallEnded) {
+          console.log('Retrying WebSocket activation for room:', roomId.current);
+          setTimeout(() => {
+            if (isMounted && !stompClient.current.active) {
+              stompClient.current.activate();
+            }
+          }, 1000);
+        }
       },
       onDisconnect: () => {
         console.log('WebSocket disconnected for room:', roomId.current);
@@ -147,8 +149,7 @@ const GroupCallActivity = () => {
     console.log('Setting signal handler at', new Date().toISOString());
     setSignalHandlerCallback(handleSignal);
 
-    // Инициализация WebSocket для отправки сигналов
-    console.log('Initializing WebSocket immediately at', new Date().toISOString());
+    // Инициализация WebSocket
     initializeWebSocket();
 
     // Установка гудка для инициатора
@@ -225,7 +226,6 @@ const GroupCallActivity = () => {
         stompClient.current.deactivate();
         console.log('WebSocket deactivated on cleanup');
       }
-      // Очистка обработчика сигналов только при размонтировании
       console.log('Clearing signal handler at', new Date().toISOString());
       setSignalHandlerCallback(null);
     };
@@ -384,7 +384,7 @@ const GroupCallActivity = () => {
             console.log('Updated roomId to:', roomId.current);
             toast.info(`${signal.initiatorName} invites you to a group call`);
 
-            // Подписка теперь в CallWebSocketContext, поэтому здесь только инициализация WebSocket
+            // Инициализация WebSocket
             initializeWebSocket();
 
             let attempts = 0;
