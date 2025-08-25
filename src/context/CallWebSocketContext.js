@@ -271,10 +271,11 @@ export const CallWebSocketProvider = ({ children }) => {
     if (stompClient.current && stompClient.current.connected) {
       console.log('CallWebSocketContext: Отправка сигнала:', JSON.stringify(signalMessage, null, 2));
       let destination;
-      if (signalMessage.signal?.type === 'groupCallInvite') {
+      // Для приглашений группового звонка используем /app/groupCall/{userId}
+      if (signalMessage.signal?.type === 'group' && signalMessage.to) {
         destination = `/app/groupCall/${signalMessage.to}`;
       } else if (callRequestRef.current?.type === 'group' || signalMessage.signal?.type === 'group') {
-        destination = `/app/groupSignal/${roomId}`; // Для групповых вызовов
+        destination = `/app/groupSignal/${roomId}`; // Для остальных сигналов группового звонка
       } else {
         destination = `/app/signal/${roomId}`; // Для обычных вызовов
       }
