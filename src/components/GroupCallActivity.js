@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { toast } from 'react-toastify';
@@ -13,6 +14,7 @@ const GroupCallActivity = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { state } = location;
+  const { setSignalHandlerCallback } = useCallWebSocket();
   const { participants = [], initiator = {}, roomId: initialRoomId } = state || {};
   const isInitiator = Number(localStorage.getItem('userId')) === initiator.id;
   const currentUserId = localStorage.getItem('userId');
@@ -75,7 +77,6 @@ const GroupCallActivity = () => {
       onConnect: () => {
         if (!isMounted) return;
         console.log('Connected to WebSocket for room:', roomId.current);
-        subscribeToRoom();
         if (isInitiator && !hasSentInvite.current) {
           hasSentInvite.current = true;
           sendGroupCallInvite();
@@ -120,33 +121,6 @@ const GroupCallActivity = () => {
     stompClient.current.activate();
   };
 
-  const subscribeToRoom = () => {
-    if (!roomId.current) {
-      console.error('Cannot subscribe to room: roomId is null');
-      return;
-    }
-    if (stompClient.current && stompClient.current.connected) {
-      subscriptionRef.current = stompClient.current.subscribe(`/topic/room/${roomId.current}`, (message) => {
-        if (!isMounted) return;
-        console.log('Raw message received on /topic/room/' + roomId.current + ':', message.body);
-        try {
-          const signalMessage = JSON.parse(message.body);
-          console.log('Parsed signal:', signalMessage);
-          handleSignal(signalMessage);
-        } catch (error) {
-          console.error('Error parsing WebSocket message for room ' + roomId.current + ':', error, 'Raw message:', message.body);
-        }
-      });
-      console.log('Subscribed to /topic/room/' + roomId.current);
-    } else {
-      console.warn('Cannot subscribe to room: STOMP client not connected', {
-        connected: stompClient.current?.connected,
-        roomId: roomId.current,
-      });
-      initializeWebSocket();
-    }
-  };
-
   useEffect(() => {
     console.log('useEffect called with dependencies:', {
       currentUserId,
@@ -171,6 +145,8 @@ const GroupCallActivity = () => {
       navigate('/');
       return;
     }
+
+    setSignalHandlerCallback(handleSignal);
 
     // Инициализация WebSocket для всех случаев
     initializeWebSocket();
@@ -246,10 +222,6 @@ const GroupCallActivity = () => {
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
       if (stompClient.current && !isCallEnded) {
-        if (subscriptionRef.current) {
-          subscriptionRef.current.unsubscribe();
-          console.log('Unsubscribed from /topic/room/' + roomId.current);
-        }
         stompClient.current.deactivate();
         console.log('WebSocket deactivated on cleanup');
       }
