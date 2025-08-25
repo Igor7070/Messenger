@@ -33,7 +33,7 @@ const GroupCallActivity = () => {
   const hasSentInvite = useRef(false);
   let isMounted = true;
 
-  const { sendSignal, setGroupSignalHandler } = useCallWebSocket();
+  const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
 
   const [chartData, setChartData] = useState({
     labels: [],
@@ -77,6 +77,12 @@ const GroupCallActivity = () => {
 
     // Регистрация обработчика сигналов для групповых звонков
     setGroupSignalHandler(handleSignal);
+
+    // Подписка на /topic/room/{roomId} для инициатора
+    if (isInitiator) {
+      sendSignal({ signal: { type: 'group', roomId: roomId.current } }, roomId.current); // Уведомляем сервер о комнате
+      subscribeToRoom(roomId.current); // Подписываемся на /topic/room/{roomId}
+    }
 
     // Для неинициатора отправляем acceptCall и ready
     if (!isInitiator) {
