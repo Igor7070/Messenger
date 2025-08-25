@@ -13,6 +13,7 @@ export const CallWebSocketProvider = ({ children }) => {
   const callRequestRef = useRef(null);
   const roomSubscriptionRef = useRef(null);
   const [signalHandler, setSignalHandler] = useState(null);
+  const signalQueue = useRef([]);
   const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
   audioRef.current.loop = true;
   const { userInteracted } = useUserInteraction();
@@ -211,6 +212,9 @@ export const CallWebSocketProvider = ({ children }) => {
           console.log('CallWebSocketContext: Parsed signal:', signalMessage);
           if (signalHandler) {
             signalHandler(signalMessage);
+          } else {
+            signalQueue.current.push(signalMessage);
+            console.log('CallWebSocketContext: Signal queued, waiting for handler:', signalMessage);
           }
         } catch (error) {
           console.error('CallWebSocketContext: Error parsing WebSocket message for room ' + roomId + ':', error, 'Raw message:', message.body);
@@ -227,6 +231,12 @@ export const CallWebSocketProvider = ({ children }) => {
 
   const setSignalHandlerCallback = (handler) => {
     setSignalHandler(() => handler);
+    console.log('CallWebSocketContext: Signal handler set, processing queued signals:', signalQueue.current.length);
+    while (signalQueue.current.length > 0) {
+      const signalMessage = signalQueue.current.shift();
+      handler(signalMessage);
+      console.log('CallWebSocketContext: Processed queued signal:', signalMessage);
+    }
   };
 
   const sendSignal = (signalMessage, roomId) => {

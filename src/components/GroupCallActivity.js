@@ -23,7 +23,6 @@ const GroupCallActivity = () => {
   const localAudioRef = useRef(null);
   const remoteAudioRefs = useRef(new Map());
   const stompClient = useRef(null);
-  const signalQueue = useRef([]);
   const subscriptionRef = useRef(null);
   const [callParticipants, setCallParticipants] = useState(participants);
   const [callDuration, setCallDuration] = useState('00:00');
@@ -79,14 +78,6 @@ const GroupCallActivity = () => {
         if (isInitiator && !hasSentInvite.current) {
           hasSentInvite.current = true;
           sendGroupCallInvite();
-        }
-        while (signalQueue.current.length > 0 && stompClient.current.connected) {
-          const signalMessage = signalQueue.current.shift();
-          stompClient.current.publish({
-            destination: `/app/groupSignal/${roomId.current}`,
-            body: JSON.stringify(signalMessage),
-          });
-          console.log('Signal sent from queue to /app/groupSignal/' + roomId.current + ':', signalMessage);
         }
       },
       onStompError: (frame) => {
@@ -529,12 +520,10 @@ const GroupCallActivity = () => {
   const sendSignal = async (signalMessage) => {
     if (!roomId.current) {
       console.error('Cannot send signal: roomId is null');
-      signalQueue.current.push(signalMessage);
       return;
     }
     if (!stompClient.current) {
       console.error('STOMP client is not initialized');
-      signalQueue.current.push(signalMessage);
       initializeWebSocket();
       return;
     }
@@ -542,21 +531,12 @@ const GroupCallActivity = () => {
     let retries = 0;
 
     while (retries < maxRetries && !stompClient.current.connected) {
-      console.warn('STOMP client not connected, queuing signal for room:', roomId.current, signalMessage);
-      signalQueue.current.push(signalMessage);
+      console.warn('STOMP client not connected, retrying for room:', roomId.current, signalMessage);
       await new Promise((resolve) => setTimeout(resolve, 2000));
       retries++;
     }
 
     if (stompClient.current.connected) {
-      while (signalQueue.current.length > 0) {
-        const queuedSignal = signalQueue.current.shift();
-        stompClient.current.publish({
-          destination: `/app/groupSignal/${roomId.current}`,
-          body: JSON.stringify(queuedSignal),
-        });
-        console.log('Signal sent from queue to /app/groupSignal/' + roomId.current + ':', queuedSignal);
-      }
       stompClient.current.publish({
         destination: `/app/groupSignal/${roomId.current}`,
         body: JSON.stringify(signalMessage),
@@ -564,7 +544,6 @@ const GroupCallActivity = () => {
       console.log('Signal sent to /app/groupSignal/' + roomId.current + ':', signalMessage);
     } else {
       console.error('STOMP client still not connected after retries for room:', roomId.current);
-      signalQueue.current.push(signalMessage);
       toast.error('Failed to send signal due to connection issues');
       endCall();
     }
