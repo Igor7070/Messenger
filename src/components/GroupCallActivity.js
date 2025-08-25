@@ -164,7 +164,6 @@ const GroupCallActivity = () => {
       return;
     }
 
-    // Проверяем, что roomId установлен
     if (!roomId.current) {
       console.error('roomId is null, cannot proceed');
       toast.error('Invalid room ID');
@@ -172,8 +171,32 @@ const GroupCallActivity = () => {
       return;
     }
 
-    // Инициализация WebSocket для всех случаев
+    // Инициализация WebSocket немедленно
     initializeWebSocket();
+
+    // Для неинициатора ждем подключения WebSocket перед отправкой сигналов
+    if (!isInitiator) {
+      const waitForConnection = async () => {
+        let attempts = 0;
+        const maxAttempts = 50; // 5 секунд (50 * 100ms)
+        while (!stompClient.current?.connected && attempts < maxAttempts) {
+          console.log('Waiting for WebSocket connection... Attempt:', attempts + 1);
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          attempts++;
+        }
+        if (stompClient.current?.connected) {
+          console.log('WebSocket connected, sending acceptCall and ready signals');
+          await sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } });
+          await sendSignal({ from: currentUserId, to: String(initiator.id), signal: { type: 'ready' } });
+          await initializePeerConnection(String(initiator.id));
+        } else {
+          console.error('WebSocket failed to connect after', maxAttempts, 'attempts for room:', roomId.current);
+          toast.error('Failed to connect to WebSocket.');
+          navigate('/');
+        }
+      };
+      waitForConnection();
+    }
 
     // Установка гудка для инициатора
     if (isInitiator && isMounted) {
@@ -216,21 +239,19 @@ const GroupCallActivity = () => {
       });
     }, 1000);
 
-    // Таймаут для ожидания сигналов ready (для инициатора)
+    // Таймаут для ожидания ready (для инициатора)
     const readyTimeout = setTimeout(() => {
       if (isInitiator && isWaiting && readyUsers.size === 0 && isMounted && !isCallStarted) {
         console.warn('No participants responded within 30 seconds, ending call.');
         toast.error('No participants responded to the call.');
         endCall();
-      } else if (isInitiator && isWaiting && isMounted) {
-        console.log('Participants responded, call status:', { isCallStarted, readyUsers: Array.from(readyUsers) });
       }
     }, 30000);
 
     // Таймаут для ожидания offer (для неинициатора)
     const offerTimeout = setTimeout(() => {
       if (!isInitiator && !peerConnections.current.size && !isCallStarted && isMounted) {
-        console.error('No offer received within 30 seconds, aborting call');
+        console.error('No offer received within 60 seconds, aborting call');
         toast.error('Failed to establish call: no offer received');
         endCall();
       }
@@ -317,7 +338,7 @@ const GroupCallActivity = () => {
 
       peerConnection.oniceconnectionstatechange = () => {
         console.log(`ICE Connection State for ${userId}: ${peerConnection.iceConnectionState}`);
-        if (peerConnection.iceConnectionstate === 'failed') {
+        if (peerConnection.iceConnectionState === 'failed') {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           endCall();
@@ -392,7 +413,6 @@ const GroupCallActivity = () => {
     if (signalMessage.from === currentUserId) return;
 
     const { signal, from, to } = signalMessage;
-    // if (to && to !== currentUserId && to !== null) return; // Закомментировано для отладки
     console.log('Signal received for processing:', { from, to, type: signal.type, currentUserId });
 
     try {
@@ -409,37 +429,7 @@ const GroupCallActivity = () => {
             roomId.current = signal.roomId;
             console.log('Updated roomId to:', roomId.current);
             toast.info(`${signal.initiatorName} invites you to a group call`);
-
-            // Инициализация WebSocket
-            initializeWebSocket();
-
-            // Ждем подключения WebSocket
-            let attempts = 0;
-            const maxAttempts = 50; // 5 секунд (50 * 100ms)
-            const waitForConnection = async () => {
-              while (!stompClient.current?.connected && attempts < maxAttempts) {
-                console.log('Waiting for WebSocket connection... Attempt:', attempts + 1);
-                await new Promise((resolve) => setTimeout(resolve, 100));
-                attempts++;
-              }
-              if (!stompClient.current?.connected) {
-                console.error('WebSocket failed to connect after', maxAttempts, 'attempts for room:', roomId.current);
-                toast.error('Failed to connect to WebSocket.');
-                navigate('/');
-                return false;
-              }
-              return true;
-            };
-
-            if (await waitForConnection()) {
-              subscribeToRoom();
-              // Отправляем сигналы acceptCall и ready
-              await sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'acceptCall' } });
-              await sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'ready' } });
-              // Инициализируем PeerConnection
-              await initializePeerConnection(signal.initiatorId);
-              console.log('Processed groupCallInvite: sent acceptCall, ready, and initialized PeerConnection for initiator', signal.initiatorId);
-            }
+            // WebSocket уже инициализируется в useEffect
           }
           break;
 
@@ -464,14 +454,9 @@ const GroupCallActivity = () => {
             const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
             toast.success(`${userName} is ready`);
             console.log(`User ${userName} is ready`);
-            if (!isCallStarted) {
-              setIsWaiting(false);
-              ringtoneRef.current.pause();
-              ringtoneRef.current.currentTime = 0;
-              if (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1) {
-                startCall();
-                console.log('Call started for ready participants');
-              }
+            if (!isCallStarted && (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1)) {
+              startCall();
+              console.log('Call started for ready participants');
             }
           }
           break;
