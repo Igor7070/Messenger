@@ -5,7 +5,7 @@ import SockJS from 'sockjs-client';
 import { toast } from 'react-toastify';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
-import { useCallWebSocket } from './CallWebSocketContext'; // Импортируем контекст
+import { useCallWebSocket } from '../context/CallWebSocketContext'; // Импортируем контекст
 import '../styles/GroupCallActivity.css';
 
 Chart.register(...registerables);
