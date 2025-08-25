@@ -408,14 +408,13 @@ const GroupCallActivity = () => {
             }
             roomId.current = signal.roomId;
             console.log('Updated roomId to:', roomId.current);
-            toast.info(`${signal.initiatorName} invites you to a group call`);
+            toast.info(`${signal.initiatorName} invites you to a group call`); // Убрана лишняя скобка
 
-            // Инициализация WebSocket
             initializeWebSocket();
+            subscribeToRoom(); // Подписываемся сразу после инициализации WebSocket
 
-            // Ждем подключения WebSocket
             let attempts = 0;
-            const maxAttempts = 50; // 5 секунд (50 * 100ms)
+            const maxAttempts = 50;
             const waitForConnection = async () => {
               while (!stompClient.current?.connected && attempts < maxAttempts) {
                 console.log('Waiting for WebSocket connection... Attempt:', attempts + 1);
@@ -432,11 +431,8 @@ const GroupCallActivity = () => {
             };
 
             if (await waitForConnection()) {
-              subscribeToRoom();
-              // Отправляем сигналы acceptCall и ready
               await sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'acceptCall' } });
               await sendSignal({ from: currentUserId, to: signal.initiatorId, signal: { type: 'ready' } });
-              // Инициализируем PeerConnection
               await initializePeerConnection(signal.initiatorId);
               console.log('Processed groupCallInvite: sent acceptCall, ready, and initialized PeerConnection for initiator', signal.initiatorId);
             }
