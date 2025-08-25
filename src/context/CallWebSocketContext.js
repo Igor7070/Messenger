@@ -9,8 +9,10 @@ const CallWebSocketContext = createContext();
 export const CallWebSocketProvider = ({ children }) => {
   const [incomingCall, setIncomingCall] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [signalHandler, setSignalHandler] = useState(null); // Для передачи сигналов в GroupCallActivity.js
   const stompClient = useRef(null);
   const callRequestRef = useRef(null);
+  const roomSubscriptionRef = useRef(null); // Для подписки на /topic/room/{roomId}
   const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
   audioRef.current.loop = true;
   const { userInteracted } = useUserInteraction();
@@ -22,6 +24,45 @@ export const CallWebSocketProvider = ({ children }) => {
     console.log('CallWebSocketContext: Стек вызовов:', new Error().stack);
     callRequestRef.current = value; // Сохраняем в ref перед setState
     setIncomingCall(value);
+  };
+
+  // Функция для установки обработчика сигналов из GroupCallActivity.js
+  const setSignalHandlerCallback = (handler) => {
+    setSignalHandler(() => handler);
+  };
+
+  // Подписка на /topic/room/{roomId}
+  const subscribeToRoom = (roomId) => {
+    if (!roomId) {
+      console.error('CallWebSocketContext: Cannot subscribe to room: roomId is null');
+      return;
+    }
+    if (stompClient.current && stompClient.current.connected) {
+      if (roomSubscriptionRef.current) {
+        console.log('CallWebSocketContext: Already subscribed to /topic/room/' + roomId);
+        return;
+      }
+      roomSubscriptionRef.current = stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
+        console.log('CallWebSocketContext: Raw message received on /topic/room/' + roomId + ':', message.body);
+        try {
+          const signalMessage = JSON.parse(message.body);
+          console.log('CallWebSocketContext: Parsed signal:', signalMessage);
+          if (signalHandler) {
+            signalHandler(signalMessage); // Передаем сигнал в GroupCallActivity.js
+          } else {
+            console.warn('CallWebSocketContext: No signal handler set for message:', signalMessage);
+          }
+        } catch (error) {
+          console.error('CallWebSocketContext: Error parsing WebSocket message for room ' + roomId + ':', error, 'Raw message:', message.body);
+        }
+      });
+      console.log('CallWebSocketContext: Subscribed to /topic/room/' + roomId + ' at', new Date().toISOString());
+    } else {
+      console.warn('CallWebSocketContext: Cannot subscribe to room: STOMP client not connected', {
+        connected: stompClient.current?.connected,
+        roomId,
+      });
+    }
   };
 
   useEffect(() => {
@@ -57,6 +98,8 @@ export const CallWebSocketProvider = ({ children }) => {
       webSocketFactory: () => socket,
       connectTimeout: 10000,
       reconnectDelay: 5000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
       onConnect: () => {
         console.log('CallWebSocketContext: Подключено к WebSocket для звонков, userId:', currentUserId);
 
@@ -90,6 +133,10 @@ export const CallWebSocketProvider = ({ children }) => {
 
     return () => {
       if (stompClient.current) {
+        if (roomSubscriptionRef.current) {
+          roomSubscriptionRef.current.unsubscribe();
+          console.log('CallWebSocketContext: Unsubscribed from room');
+        }
         stompClient.current.deactivate();
         console.log('CallWebSocketContext: WebSocket для звонков отключён при размонтировании');
       }
@@ -153,11 +200,18 @@ export const CallWebSocketProvider = ({ children }) => {
       recipientIds: callRequest.recipientIds,
     };
     console.log('CallWebSocketContext: callRequestRef установлен:', callRequestRef.current);
-    setIncomingCallWithLog(callRequest);
+
+    // Подписываемся на /topic/room/{roomId} сразу после получения groupCallInvite для группового вызова
+    if (callRequest.type === 'group' && callRequest.roomId) {
+      subscribeToRoom(callRequest.roomId);
+    }
+
     try {
       const callerId = callRequest.callerId || callRequest.initiatorId;
       console.log('CallWebSocketContext: Начало fetch для callerId/initiatorId:', callerId);
-      const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`);
+      const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
       console.log('CallWebSocketContext: fetch завершен, status:', response.status);
       if (response.ok) {
         const callerData = await response.json();
@@ -226,8 +280,12 @@ export const CallWebSocketProvider = ({ children }) => {
     const fetchUserNames = async () => {
       try {
         const [callerResponse, recipientResponse] = await Promise.all([
-          fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`),
-          fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`),
+          fetch(`https://unlimitedpossibilities12.org/api/users/${callerId}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+          }),
+          fetch(`https://unlimitedpossibilities12.org/api/users/${recipientId}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+          }),
         ]);
 
         if (callerResponse.ok && recipientResponse.ok) {
@@ -258,6 +316,9 @@ export const CallWebSocketProvider = ({ children }) => {
               participants: [
                 { id: callerId, username: callerData.username, avatar: callerData.avatar },
                 { id: recipientId, username: recipientData.username, avatar: recipientData.avatar },
+                ...(incomingCall.recipientIds || [])
+                  .filter(id => id !== recipientId)
+                  .map(id => ({ id: Number(id), username: `User ${id}`, avatar: null })),
               ],
               initiator: { id: callerId, username: callerData.username, avatar: callerData.avatar },
             };
@@ -327,6 +388,7 @@ export const CallWebSocketProvider = ({ children }) => {
         acceptCall,
         rejectCall,
         setCurrentUserId,
+        setSignalHandlerCallback, // Экспортируем для GroupCallActivity.js
       }}
     >
       {children}
