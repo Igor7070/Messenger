@@ -434,6 +434,7 @@ export const CallWebSocketProvider = ({ children }) => {
         setCurrentUserId,
         sendSignal,
         setGroupSignalHandler,
+        subscribeToRoom,
       }}
     >
       {children}
