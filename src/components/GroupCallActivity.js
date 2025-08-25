@@ -478,12 +478,17 @@ const GroupCallActivity = () => {
 
         case 'offer':
           if (!isInitiator) {
+            console.log('Processing offer from:', from, 'signal:', signal);
             const peerConnection = peerConnections.current.get(from) || (await initializePeerConnection(from));
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            sendSignal({ from: currentUserId, to: from, signal: { type: 'answer', sdp: answer.sdp } });
-            console.log(`Sent answer to user ${from}`);
+            try {
+              await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+              const answer = await peerConnection.createAnswer();
+              await peerConnection.setLocalDescription(answer);
+              sendSignal({ from: currentUserId, to: from, signal: { type: 'answer', sdp: answer.sdp } });
+              console.log(`Sent answer to user ${from}`);
+            } catch (error) {
+              console.error('Error processing offer from user', from, ':', error, 'Signal:', signal);
+            }
           }
           break;
 
