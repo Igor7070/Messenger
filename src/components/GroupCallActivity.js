@@ -181,8 +181,9 @@ const GroupCallActivity = () => {
     callParticipants
       .filter((p) => p.id !== initiator.id)
       .forEach((user) => {
-        sendSignal({ signal: groupCallRequest, to: String(user.id) }, roomId.current);
-        console.log(`Sent group call invite to user ${user.id}`, groupCallRequest);
+        console.log('GroupCallActivity: Подготовка groupCallInvite для пользователя:', user.id, groupCallRequest);
+        sendSignal(groupCallRequest, roomId.current, String(user.id)); // Передаём to отдельно
+        console.log(`GroupCallActivity: Sent group call invite to user ${user.id}`, groupCallRequest);
       });
   };
 

@@ -262,25 +262,24 @@ export const CallWebSocketProvider = ({ children }) => {
     }
   };
 
-  const sendSignal = (signalMessage, roomId) => {
+  const sendSignal = (signalMessage, roomId, to = null) => {
     if (!stompClient.current) {
       console.error('CallWebSocketContext: STOMP client is not initialized');
-      signalQueue.current.push({ ...signalMessage, roomId });
+      signalQueue.current.push({ ...signalMessage, roomId, to });
       return;
     }
     if (stompClient.current && stompClient.current.connected) {
       console.log('CallWebSocketContext: Отправка сигнала:', JSON.stringify(signalMessage, null, 2));
       let destination;
-      // Приоритет для groupCallInvite
-      if (signalMessage.signal?.type === 'group' && signalMessage.to) {
-        destination = `/app/groupCall/${signalMessage.to}`;
+      if (signalMessage.type === 'group' && to) {
+        destination = `/app/groupCall/${to}`;
         console.log('CallWebSocketContext: Отправка groupCallInvite на:', destination);
-      } else if (signalMessage.signal?.type === 'group') {
+      } else if (signalMessage.signal?.type === 'group' && signalMessage.to) {
+        destination = `/app/groupCall/${signalMessage.to}`;
+        console.log('CallWebSocketContext: Отправка groupCallInvite (legacy) на:', destination);
+      } else if (signalMessage.signal?.type === 'group' || callRequestRef.current?.type === 'group') {
         destination = `/app/groupSignal/${roomId}`;
         console.log('CallWebSocketContext: Отправка группового сигнала на:', destination);
-      } else if (callRequestRef.current?.type === 'group') {
-        destination = `/app/groupSignal/${roomId}`;
-        console.log('CallWebSocketContext: Отправка сигнала для группового вызова на:', destination);
       } else {
         destination = `/app/signal/${roomId}`;
         console.log('CallWebSocketContext: Отправка обычного сигнала на:', destination);
@@ -292,7 +291,7 @@ export const CallWebSocketProvider = ({ children }) => {
       console.log('CallWebSocketContext: Сигнал успешно отправлен на:', destination);
     } else {
       console.warn('CallWebSocketContext: STOMP client is not connected, queuing signal:', signalMessage);
-      signalQueue.current.push({ ...signalMessage, roomId });
+      signalQueue.current.push({ ...signalMessage, roomId, to });
     }
   };
 
