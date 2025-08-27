@@ -408,6 +408,9 @@ const GroupCallActivity = () => {
       return;
     }
 
+    // Получаем peerConnection один раз для использования в switch
+    const peerConnection = peerConnections.current.get(from);
+
     try {
       switch (signal.type) {
         case 'groupCallInvite':
@@ -451,7 +454,6 @@ const GroupCallActivity = () => {
           }
           // Отправляем offer от неинициатора другим участникам после получения ready
           if (!isInitiator) {
-            const peerConnection = peerConnections.current.get(from);
             if (peerConnection && !peerConnection.localDescription) {
               const offer = await peerConnection.createOffer();
               await peerConnection.setLocalDescription(offer);
@@ -470,7 +472,6 @@ const GroupCallActivity = () => {
 
         case 'offer':
           console.log('Processing offer from:', from, 'signal:', signal);
-          const peerConnection = peerConnections.current.get(from);
           if (!peerConnection) {
             console.error(`No PeerConnection for user ${from}`);
             return;
@@ -498,7 +499,6 @@ const GroupCallActivity = () => {
           break;
 
         case 'answer':
-          const peerConnection = peerConnections.current.get(from);
           if (peerConnection && !peerConnection.remoteDescription) {
             await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
             console.log(`Processed answer from user ${from}`);
@@ -509,7 +509,6 @@ const GroupCallActivity = () => {
 
         case 'candidate':
           const { iceCandidate } = signal;
-          const peerConnection = peerConnections.current.get(from);
           if (peerConnection && iceCandidate.candidate) {
             const candidate = new RTCIceCandidate({
               candidate: iceCandidate.candidate,
@@ -550,7 +549,6 @@ const GroupCallActivity = () => {
             const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
             toast.info(`${userName} left the group call`);
             setCallParticipants((prev) => prev.filter((u) => u.id !== Number(from)));
-            const peerConnection = peerConnections.current.get(from);
             if (peerConnection) {
               peerConnection.close();
               peerConnections.current.delete(from);
