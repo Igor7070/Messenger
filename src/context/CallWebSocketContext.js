@@ -22,7 +22,6 @@ export const CallWebSocketProvider = ({ children }) => {
     console.log('CallWebSocketContext: Вызов setIncomingCall:', value);
     console.log('CallWebSocketContext: Текущее incomingCall:', incomingCall);
     console.log('CallWebSocketContext: Текущее callRequestRef:', callRequestRef.current);
-    console.log('CallWebSocketContext: Стек вызовов:', new Error().stack);
     callRequestRef.current = value;
     setIncomingCall(value);
   };
@@ -118,28 +117,47 @@ export const CallWebSocketProvider = ({ children }) => {
     };
   }, [currentUserId]);
 
-  const subscribeToRoom = (roomId) => {
+  const subscribeToRoom = (roomId, onSuccess, onError) => {
     if (!roomId) {
       console.error('CallWebSocketContext: Cannot subscribe to room: roomId is null');
+      onError?.(new Error('Room ID is null'));
       return;
     }
-    if (stompClient.current && stompClient.current.connected) {
+
+    let retries = 5;
+    const retryDelay = 1000;
+
+    const trySubscribe = () => {
+      if (!stompClient.current || !stompClient.current.connected) {
+        if (retries > 0) {
+          console.warn(`CallWebSocketContext: WebSocket not connected, retrying in ${retryDelay}ms, retries left: ${retries}`);
+          retries--;
+          setTimeout(trySubscribe, retryDelay);
+          return;
+        } else {
+          console.error('CallWebSocketContext: Failed to subscribe to /topic/room/' + roomId + ': max retries reached');
+          onError?.(new Error('WebSocket subscription failed'));
+          return;
+        }
+      }
+
       subscriptionRef.current = stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
         console.log('CallWebSocketContext: Raw message received on /topic/room/' + roomId + ':', message.body);
         try {
           const signalMessage = JSON.parse(message.body);
           console.log('CallWebSocketContext: Parsed signal:', signalMessage);
           if (groupSignalHandler.current) {
-            groupSignalHandler.current(signalMessage); // Передаем сигнал в GroupCallActivity
+            groupSignalHandler.current(signalMessage);
           }
         } catch (error) {
           console.error('CallWebSocketContext: Error parsing WebSocket message for room ' + roomId + ':', error, 'Raw message:', message.body);
         }
       });
       console.log('CallWebSocketContext: Subscribed to /topic/room/' + roomId);
-    } else {
-      console.warn('CallWebSocketContext: Cannot subscribe to room: STOMP client not connected', { roomId });
-    }
+      onSuccess?.();
+    };
+
+    trySubscribe();
   };
 
   const handleMessage = (message) => {
@@ -206,28 +224,14 @@ export const CallWebSocketProvider = ({ children }) => {
     console.log('CallWebSocketContext: callRequestRef установлен:', callRequestRef.current);
 
     if (callRequest.type === 'group') {
-      // Инициализация подписки на /topic/room/{roomId} для групповых звонков
-      if (stompClient.current && stompClient.current.connected) {
-        subscribeToRoom(callRequest.roomId);
-      } else {
-        // Ждем подключения WebSocket
-        let attempts = 0;
-        const maxAttempts = 50; // 5 секунд
-        while (!stompClient.current?.connected && attempts < maxAttempts) {
-          console.log('CallWebSocketContext: Waiting for WebSocket connection... Attempt:', attempts + 1);
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          attempts++;
-        }
-        if (stompClient.current?.connected) {
-          subscribeToRoom(callRequest.roomId);
-        } else {
-          console.error('CallWebSocketContext: WebSocket failed to connect for group call');
-          toast.error('Failed to connect to WebSocket.');
-          setIncomingCallWithLog(null);
-          callRequestRef.current = null;
-          return;
-        }
-      }
+      subscribeToRoom(callRequest.roomId, () => {
+        console.log('CallWebSocketContext: Successfully subscribed to /topic/room/' + callRequest.roomId);
+      }, (error) => {
+        console.error('CallWebSocketContext: Failed to subscribe to /topic/room/' + callRequest.roomId + ':', error);
+        toast.error('Failed to connect to group call server');
+        setIncomingCallWithLog(null);
+        callRequestRef.current = null;
+      });
     }
 
     setIncomingCallWithLog(callRequest);
@@ -353,7 +357,7 @@ export const CallWebSocketProvider = ({ children }) => {
                 { id: recipientId, username: recipientData.username, avatar: recipientData.avatar },
                 ...(incomingCall.recipientIds || [])
                   .filter((id) => id !== String(recipientId))
-                  .map((id) => ({ id: Number(id), username: 'Unknown', avatar: null })), // Заглушка для других участников
+                  .map((id) => ({ id: Number(id), username: 'Unknown', avatar: null })),
               ],
               initiator: { id: callerId, username: callerData.username, avatar: callerData.avatar },
             };

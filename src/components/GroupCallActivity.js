@@ -19,6 +19,7 @@ const GroupCallActivity = () => {
   const peerConnections = useRef(new Map());
   const localAudioRef = useRef(null);
   const remoteAudioRefs = useRef(new Map());
+  const pendingCandidates = useRef(new Map()); // Очередь для ICE-кандидатов
   const [callParticipants, setCallParticipants] = useState(participants);
   const [callDuration, setCallDuration] = useState('00:00');
   const [startTime, setStartTime] = useState('');
@@ -80,12 +81,18 @@ const GroupCallActivity = () => {
 
     // Подписка на /topic/room/{roomId} для инициатора
     if (isInitiator) {
-      sendSignal({ signal: { type: 'group', roomId: roomId.current } }, roomId.current); // Уведомляем сервер о комнате
-      subscribeToRoom(roomId.current); // Подписываемся на /topic/room/{roomId}
+      sendSignal({ signal: { type: 'group', roomId: roomId.current } }, roomId.current);
+      subscribeToRoom(roomId.current, () => {
+        console.log(`Successfully subscribed to room ${roomId.current}`);
+      }, (error) => {
+        console.error('Subscription error:', error);
+        toast.error('Failed to connect to call server');
+        endCall();
+      });
     }
 
     // Для неинициатора отправляем acceptCall и ready
-    if (!isInitiator) {
+    if (!isInitiator && localAudioRef.current) {
       sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
       sendSignal({ from: currentUserId, to: String(initiator.id), signal: { type: 'ready' } }, roomId.current);
       initializePeerConnection(String(initiator.id));
@@ -165,7 +172,6 @@ const GroupCallActivity = () => {
       clearTimeout(offerTimeout);
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
-      // Отписка от сигналов в контексте выполняется в CallWebSocketContext
     };
   }, [currentUserId, initiator.id, isInitiator, navigate, isCallEnded, state, sendSignal, setGroupSignalHandler]);
 
@@ -188,18 +194,28 @@ const GroupCallActivity = () => {
       .filter((p) => p.id !== initiator.id)
       .forEach((user) => {
         console.log('GroupCallActivity: Подготовка groupCallInvite для пользователя:', user.id, groupCallRequest);
-        sendSignal(groupCallRequest, roomId.current, String(user.id)); // Передаём to отдельно
+        sendSignal(groupCallRequest, roomId.current, String(user.id));
         console.log(`GroupCallActivity: Sent group call invite to user ${user.id}`, groupCallRequest);
       });
   };
 
   const initializePeerConnection = async (userId) => {
     try {
+      if (!localAudioRef.current) {
+        console.error(`Cannot initialize PeerConnection for user ${userId}: localAudioRef is null`);
+        toast.error('Audio element not ready');
+        endCall();
+        return null;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log(`Local stream tracks for user ${userId}:`, stream.getTracks());
       localAudioRef.current.srcObject = stream;
 
       const iceServers = [
         { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
         {
           urls: 'turn:13.49.238.121:3478?transport=tcp',
           username: isInitiator ? 'username1' : 'username2',
@@ -212,13 +228,17 @@ const GroupCallActivity = () => {
 
       peerConnection.ontrack = (event) => {
         const stream = event.streams[0];
+        console.log(`ontrack event for user ${userId}:`, event);
         if (stream) {
+          console.log(`Remote stream tracks for user ${userId}:`, stream.getTracks());
           const audioElement = document.createElement('audio');
           audioElement.srcObject = stream;
           audioElement.autoplay = true;
           remoteAudioRefs.current.set(userId, audioElement);
           document.body.appendChild(audioElement);
           console.log(`Remote audio track added for user ${userId}`);
+        } else {
+          console.error(`No stream received for user ${userId}`);
         }
       };
 
@@ -251,6 +271,7 @@ const GroupCallActivity = () => {
             },
             roomId.current
           );
+          console.log(`Sent ICE candidate for user ${userId}:`, event.candidate);
         }
       };
 
@@ -261,6 +282,7 @@ const GroupCallActivity = () => {
       console.error(`Error initializing PeerConnection for user ${userId}:`, error);
       toast.error('Failed to access microphone.');
       endCall();
+      return null;
     }
   };
 
@@ -321,7 +343,6 @@ const GroupCallActivity = () => {
             roomId.current = signal.roomId;
             console.log('Updated roomId to:', roomId.current);
             toast.info(`${signal.initiatorName} invites you to a group call`);
-            // Подписка и сигналы обрабатываются в CallWebSocketContext
           }
           break;
 
@@ -357,17 +378,29 @@ const GroupCallActivity = () => {
           if (!isInitiator) {
             console.log('Processing offer from:', from, 'signal:', signal);
             const peerConnection = peerConnections.current.get(from) || (await initializePeerConnection(from));
-            try {
-              await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
-              const answer = await peerConnection.createAnswer();
-              await peerConnection.setLocalDescription(answer);
-              sendSignal(
-                { from: currentUserId, to: from, signal: { type: 'answer', sdp: answer.sdp } },
-                roomId.current
-              );
-              console.log(`Sent answer to user ${from}`);
-            } catch (error) {
-              console.error('Error processing offer from user', from, ':', error, 'Signal:', signal);
+            if (!peerConnection) {
+              console.error(`No PeerConnection for user ${from}`);
+              return;
+            }
+            if (peerConnection.remoteDescription) {
+              console.warn(`Ignoring duplicate offer from ${from}`);
+              return;
+            }
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            sendSignal(
+              { from: currentUserId, to: from, signal: { type: 'answer', sdp: answer.sdp } },
+              roomId.current
+            );
+            console.log(`Sent answer to user ${from}`);
+            // Обработать отложенные ICE-кандидаты
+            if (pendingCandidates.current.has(from)) {
+              for (const candidate of pendingCandidates.current.get(from)) {
+                await peerConnection.addIceCandidate(candidate);
+                console.log(`Processed pending ICE candidate for ${from}`);
+              }
+              pendingCandidates.current.delete(from);
             }
           }
           break;
@@ -386,14 +419,23 @@ const GroupCallActivity = () => {
           const { iceCandidate } = signal;
           const peerConnection = peerConnections.current.get(from);
           if (peerConnection && iceCandidate.candidate) {
-            await peerConnection.addIceCandidate(
-              new RTCIceCandidate({
-                candidate: iceCandidate.candidate,
-                sdpMid: iceCandidate.sdpMid,
-                sdpMLineIndex: Number(iceCandidate.sdpMLineIndex),
-              })
-            );
-            console.log(`Processed ICE candidate from user ${from}`);
+            const candidate = new RTCIceCandidate({
+              candidate: iceCandidate.candidate,
+              sdpMid: iceCandidate.sdpMid,
+              sdpMLineIndex: Number(iceCandidate.sdpMLineIndex),
+            });
+            if (peerConnection.remoteDescription) {
+              await peerConnection.addIceCandidate(candidate);
+              console.log(`Processed ICE candidate from user ${from}`);
+            } else {
+              console.warn(`Queuing ICE candidate for ${from}: remoteDescription not set`);
+              pendingCandidates.current.set(from, [
+                ...(pendingCandidates.current.get(from) || []),
+                candidate,
+              ]);
+            }
+          } else {
+            console.error(`Cannot add ICE candidate: peerConnection=${!!peerConnection}, candidate=${!!iceCandidate.candidate}`);
           }
           break;
 
