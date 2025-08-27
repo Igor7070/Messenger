@@ -76,11 +76,10 @@ const GroupCallActivity = () => {
       return;
     }
 
-    let unsubscribeRoom; // Для хранения функции отписки
+    let unsubscribeRoom;
 
     const initializeCall = async () => {
       try {
-        // Получение локального аудиопотока
         if (!localAudioRef.current) {
           console.error('localAudioRef is null');
           toast.error('Audio element not ready');
@@ -92,7 +91,6 @@ const GroupCallActivity = () => {
         console.log('Local stream tracks:', stream.getTracks());
         localAudioRef.current.srcObject = stream;
 
-        // Инициализация peerConnections для всех участников, кроме текущего пользователя
         for (const user of participants) {
           if (user.id !== Number(currentUserId) && !peerConnections.current.has(String(user.id))) {
             console.log('Initializing peerConnection for user:', user.id);
@@ -100,21 +98,32 @@ const GroupCallActivity = () => {
           }
         }
 
-        // Регистрация обработчика сигналов
         setGroupSignalHandler(handleSignal);
 
-        // Подписка на комнату
-        unsubscribeRoom = subscribeToRoom(
-          roomId.current,
-          () => {
-            console.log(`Successfully subscribed to room ${roomId.current}`);
-            if (isInitiator && !hasSentInvite.current) {
-              hasSentInvite.current = true;
-              sendGroupCallInvite();
-            } else if (!isInitiator) {
-              console.log('Sending acceptCall and ready signals');
+        // Подписка и отправка сигналов
+        if (isInitiator) {
+          sendSignal({ signal: { type: 'group', roomId: roomId.current } }, roomId.current); // Немедленная отправка group
+          unsubscribeRoom = subscribeToRoom(
+            roomId.current,
+            () => {
+              console.log(`Successfully subscribed to room ${roomId.current}`);
+              if (!hasSentInvite.current) {
+                hasSentInvite.current = true;
+                sendGroupCallInvite();
+              }
+            },
+            (error) => {
+              console.error('Subscription error:', error);
+              toast.error('Failed to connect to call server');
+              endCall();
+            }
+          );
+        } else {
+          unsubscribeRoom = subscribeToRoom(
+            roomId.current,
+            () => {
+              console.log(`Successfully subscribed to room ${roomId.current}`);
               sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
-              // Отправляем ready всем участникам, кроме себя
               participants
                 .filter((p) => p.id !== Number(currentUserId))
                 .forEach((user) => {
@@ -123,16 +132,15 @@ const GroupCallActivity = () => {
                     roomId.current
                   );
                 });
+            },
+            (error) => {
+              console.error('Subscription error:', error);
+              toast.error('Failed to connect to call server');
+              endCall();
             }
-          },
-          (error) => {
-            console.error('Subscription error:', error);
-            toast.error('Failed to connect to call server');
-            endCall();
-          }
-        );
+          );
+        }
 
-        // Установка гудка для инициатора
         if (isInitiator) {
           setIsWaiting(true);
           ringtoneRef.current.loop = true;
@@ -149,7 +157,6 @@ const GroupCallActivity = () => {
 
     initializeCall();
 
-    // Таймер звонка
     const timerInterval = setInterval(() => {
       if (!isMounted) return;
       const duration = Math.floor((Date.now() - callStartTime.current) / 1000);
@@ -158,7 +165,6 @@ const GroupCallActivity = () => {
       setCallDuration(`${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
     }, 1000);
 
-    // Время начала и текущее время
     const timeInterval = setInterval(() => {
       if (!isMounted) return;
       const now = new Date();
@@ -168,7 +174,6 @@ const GroupCallActivity = () => {
       }
     }, 1000);
 
-    // Анимация графика
     const chartInterval = setInterval(() => {
       if (!isMounted) return;
       setChartData((prevData) => {
@@ -181,7 +186,6 @@ const GroupCallActivity = () => {
       });
     }, 1000);
 
-    // Таймаут для ожидания ready (для инициатора)
     const readyTimeout = setTimeout(() => {
       if (isInitiator && isWaiting && readyUsers.size === 0 && isMounted && !isCallStarted) {
         console.warn('No participants responded within 30 seconds, ending call.');
@@ -190,7 +194,6 @@ const GroupCallActivity = () => {
       }
     }, 30000);
 
-    // Таймаут для ожидания offer (для неинициатора)
     const offerTimeout = setTimeout(() => {
       if (!isInitiator && !isCallStarted && isMounted) {
         console.error('No offer received within 60 seconds, aborting call');
@@ -223,7 +226,7 @@ const GroupCallActivity = () => {
       });
       remoteAudioRefs.current.clear();
       if (unsubscribeRoom) {
-        unsubscribeRoom(); // Отписываемся от WebSocket
+        unsubscribeRoom();
         console.log(`Unsubscribed from room ${roomId.current}`);
       }
     };
