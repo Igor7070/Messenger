@@ -76,6 +76,8 @@ const GroupCallActivity = () => {
       return;
     }
 
+    let unsubscribeRoom; // Для хранения функции отписки
+
     const initializeCall = async () => {
       try {
         // Получение локального аудиопотока
@@ -102,7 +104,7 @@ const GroupCallActivity = () => {
         setGroupSignalHandler(handleSignal);
 
         // Подписка на комнату
-        subscribeToRoom(
+        unsubscribeRoom = subscribeToRoom(
           roomId.current,
           () => {
             console.log(`Successfully subscribed to room ${roomId.current}`);
@@ -112,10 +114,15 @@ const GroupCallActivity = () => {
             } else if (!isInitiator) {
               console.log('Sending acceptCall and ready signals');
               sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
-              sendSignal(
-                { from: currentUserId, to: String(initiator.id), signal: { type: 'ready' } },
-                roomId.current
-              );
+              // Отправляем ready всем участникам, кроме себя
+              participants
+                .filter((p) => p.id !== Number(currentUserId))
+                .forEach((user) => {
+                  sendSignal(
+                    { from: currentUserId, to: String(user.id), signal: { type: 'ready' } },
+                    roomId.current
+                  );
+                });
             }
           },
           (error) => {
@@ -185,7 +192,7 @@ const GroupCallActivity = () => {
 
     // Таймаут для ожидания offer (для неинициатора)
     const offerTimeout = setTimeout(() => {
-      if (!isInitiator && !peerConnections.current.size && !isCallStarted && isMounted) {
+      if (!isInitiator && !isCallStarted && isMounted) {
         console.error('No offer received within 60 seconds, aborting call');
         toast.error('Failed to establish call: no offer received');
         endCall();
@@ -215,6 +222,10 @@ const GroupCallActivity = () => {
         audio.remove();
       });
       remoteAudioRefs.current.clear();
+      if (unsubscribeRoom) {
+        unsubscribeRoom(); // Отписываемся от WebSocket
+        console.log(`Unsubscribed from room ${roomId.current}`);
+      }
     };
   }, [currentUserId, initiator.id, isInitiator, isCallEnded, participants, sendSignal, setGroupSignalHandler, navigate]);
 
@@ -367,7 +378,20 @@ const GroupCallActivity = () => {
   };
 
   const handleSignal = async (signalMessage) => {
-    if (signalMessage.from === currentUserId) return;
+    if (isCallEnded) {
+      console.log('Call already ended, ignoring signal:', signalMessage);
+      return;
+    }
+
+    if (signalMessage.from === currentUserId) {
+      console.log('Ignoring signal from self:', signalMessage);
+      return;
+    }
+
+    if (!signalMessage.from) {
+      console.warn('Ignoring signal with null from:', signalMessage);
+      return;
+    }
 
     const { signal, from, to } = signalMessage;
     console.log('Signal received for processing:', { from, to, type: signal.type, currentUserId });
@@ -409,66 +433,77 @@ const GroupCallActivity = () => {
           break;
 
         case 'ready':
-          if (isInitiator) {
-            setReadyUsers((prev) => {
-              if (prev.has(from)) {
-                console.log(`Ignoring duplicate ready signal from user ${from}`);
-                return prev;
-              }
-              const newSet = new Set([...prev, from]);
-              console.log('Ready users updated:', Array.from(newSet));
-              return newSet;
-            });
-            const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
-            toast.success(`${userName} is ready`);
-            console.log(`User ${userName} is ready`);
-            if (!isCallStarted && (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1)) {
-              startCall();
-              console.log('Call started for ready participants');
+          setReadyUsers((prev) => {
+            if (prev.has(from)) {
+              console.log(`Ignoring duplicate ready signal from user ${from}`);
+              return prev;
+            }
+            const newSet = new Set([...prev, from]);
+            console.log('Ready users updated:', Array.from(newSet));
+            return newSet;
+          });
+          const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
+          toast.success(`${userName} is ready`);
+          console.log(`User ${userName} is ready`);
+          if (!isCallStarted && (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1)) {
+            startCall();
+            console.log('Call started for ready participants');
+          }
+          // Отправляем offer от неинициатора другим участникам после получения ready
+          if (!isInitiator) {
+            const peerConnection = peerConnections.current.get(from);
+            if (peerConnection && !peerConnection.localDescription) {
+              const offer = await peerConnection.createOffer();
+              await peerConnection.setLocalDescription(offer);
+              sendSignal(
+                {
+                  from: currentUserId,
+                  to: from,
+                  signal: { type: 'offer', sdp: offer.sdp },
+                },
+                roomId.current
+              );
+              console.log(`Sent offer to user ${from} after receiving ready`);
             }
           }
           break;
 
         case 'offer':
-          if (!isInitiator) {
-            console.log('Processing offer from:', from, 'signal:', signal);
-            const peerConnection = peerConnections.current.get(from);
-            if (!peerConnection) {
-              console.error(`No PeerConnection for user ${from}`);
-              return;
+          console.log('Processing offer from:', from, 'signal:', signal);
+          const peerConnection = peerConnections.current.get(from);
+          if (!peerConnection) {
+            console.error(`No PeerConnection for user ${from}`);
+            return;
+          }
+          if (peerConnection.remoteDescription) {
+            console.warn(`Ignoring duplicate offer from ${from}`);
+            return;
+          }
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+          const answer = await peerConnection.createAnswer();
+          await peerConnection.setLocalDescription(answer);
+          sendSignal(
+            { from: currentUserId, to: from, signal: { type: 'answer', sdp: answer.sdp } },
+            roomId.current
+          );
+          console.log(`Sent answer to user ${from}`);
+          // Обработать отложенные ICE-кандидаты
+          if (pendingCandidates.current.has(from)) {
+            for (const candidate of pendingCandidates.current.get(from)) {
+              await peerConnection.addIceCandidate(candidate);
+              console.log(`Processed pending ICE candidate for ${from}`);
             }
-            if (peerConnection.remoteDescription) {
-              console.warn(`Ignoring duplicate offer from ${from}`);
-              return;
-            }
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            sendSignal(
-              { from: currentUserId, to: from, signal: { type: 'answer', sdp: answer.sdp } },
-              roomId.current
-            );
-            console.log(`Sent answer to user ${from}`);
-            // Обработать отложенные ICE-кандидаты
-            if (pendingCandidates.current.has(from)) {
-              for (const candidate of pendingCandidates.current.get(from)) {
-                await peerConnection.addIceCandidate(candidate);
-                console.log(`Processed pending ICE candidate for ${from}`);
-              }
-              pendingCandidates.current.delete(from);
-            }
+            pendingCandidates.current.delete(from);
           }
           break;
 
         case 'answer':
-          if (isInitiator) {
-            const peerConnection = peerConnections.current.get(from);
-            if (peerConnection && !peerConnection.remoteDescription) {
-              await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
-              console.log(`Processed answer from user ${from}`);
-            } else {
-              console.warn(`No peerConnection or remoteDescription already set for user ${from}`);
-            }
+          const peerConnection = peerConnections.current.get(from);
+          if (peerConnection && !peerConnection.remoteDescription) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+            console.log(`Processed answer from user ${from}`);
+          } else {
+            console.warn(`No peerConnection or remoteDescription already set for user ${from}`);
           }
           break;
 
@@ -544,33 +579,34 @@ const GroupCallActivity = () => {
     setIsCallStarted(false);
     setIsWaiting(false);
 
+    // Отправляем сигнал endCall только один раз для каждого участника
     callParticipants
       .filter((u) => u.id !== Number(currentUserId))
       .forEach((user) => {
         sendSignal(
-          { from: currentUserId, to: String(user.id), signal: { type: 'endCall' } },
+          {
+            from: currentUserId,
+            to: String(user.id),
+            signal: { type: 'endCall', roomId: roomId.current },
+          },
           roomId.current
         );
-        const endCallMessage = {
-          type: 'endCall',
-          roomId: roomId.current,
-          initiatorId: initiator.id,
-          recipientId: user.id,
-        };
-        sendSignal({ signal: endCallMessage, to: String(user.id) }, roomId.current);
         console.log(`Sent endCall to user ${user.id}`);
       });
 
+    // Закрываем все peerConnections
     peerConnections.current.forEach((pc) => {
       pc.close();
     });
     peerConnections.current.clear();
 
+    // Очищаем локальный аудиопоток
     if (localAudioRef.current && localAudioRef.current.srcObject) {
       localAudioRef.current.srcObject.getTracks().forEach((track) => track.stop());
       localAudioRef.current.srcObject = null;
     }
 
+    // Очищаем удаленные аудиопотоки
     remoteAudioRefs.current.forEach((audio) => {
       if (audio.srcObject) {
         audio.srcObject.getTracks().forEach((track) => track.stop());
@@ -580,6 +616,7 @@ const GroupCallActivity = () => {
     });
     remoteAudioRefs.current.clear();
 
+    // Останавливаем рингтон
     ringtoneRef.current.pause();
     ringtoneRef.current.currentTime = 0;
 
@@ -587,6 +624,7 @@ const GroupCallActivity = () => {
       hasNotifiedEndCall.current = true;
       toast.info('Group call ended');
     }
+
     navigate('/');
   };
 
