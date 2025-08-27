@@ -618,6 +618,12 @@ const GroupCallActivity = () => {
     ringtoneRef.current.pause();
     ringtoneRef.current.currentTime = 0;
 
+    // Отключаем STOMP-клиент
+    if (stompClient.current && stompClient.current.connected) {
+      stompClient.current.deactivate();
+      console.log('CallWebSocketContext: STOMP client deactivated');
+    }
+
     if (!hasNotifiedEndCall.current) {
       hasNotifiedEndCall.current = true;
       toast.info('Group call ended');
