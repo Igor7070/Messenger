@@ -275,15 +275,13 @@ export const CallWebSocketProvider = ({ children }) => {
     if (stompClient.current && stompClient.current.connected) {
       console.log('CallWebSocketContext: Отправка сигнала:', JSON.stringify(signalMessage, null, 2));
       let destination;
-      if (signalMessage.type === 'group' && to) {
-        destination = `/app/groupCall/${to}`;
-        console.log('CallWebSocketContext: Отправка groupCallInvite на:', destination);
-      } else if (signalMessage.signal?.type === 'group' && signalMessage.to) {
-        destination = `/app/groupCall/${signalMessage.to}`;
-        console.log('CallWebSocketContext: Отправка groupCallInvite (legacy) на:', destination);
-      } else if (signalMessage.signal?.type === 'group' || callRequestRef.current?.type === 'group') {
+      // Для групповых звонков всегда используем /app/groupSignal/{roomId}
+      if (signalMessage.type === 'group' || signalMessage.signal?.type === 'group' || callRequestRef.current?.type === 'group') {
         destination = `/app/groupSignal/${roomId}`;
         console.log('CallWebSocketContext: Отправка группового сигнала на:', destination);
+      } else if (to) {
+        destination = `/app/groupCall/${to}`;
+        console.log('CallWebSocketContext: Отправка groupCallInvite на:', destination);
       } else {
         destination = `/app/signal/${roomId}`;
         console.log('CallWebSocketContext: Отправка обычного сигнала на:', destination);

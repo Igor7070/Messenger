@@ -59,7 +59,7 @@ const GroupCallActivity = () => {
       isInitiator,
       isCallEnded,
       roomId: roomId.current,
-      locationState: state,
+      participants,
     });
 
     if (!currentUserId || !initiator.id) {
@@ -76,42 +76,71 @@ const GroupCallActivity = () => {
       return;
     }
 
-    // Регистрация обработчика сигналов для групповых звонков
-    setGroupSignalHandler(handleSignal);
+    const initializeCall = async () => {
+      try {
+        // Получение локального аудиопотока
+        if (!localAudioRef.current) {
+          console.error('localAudioRef is null');
+          toast.error('Audio element not ready');
+          navigate('/');
+          return;
+        }
 
-    // Подписка на /topic/room/{roomId} для инициатора
-    if (isInitiator) {
-      sendSignal({ signal: { type: 'group', roomId: roomId.current } }, roomId.current);
-      subscribeToRoom(roomId.current, () => {
-        console.log(`Successfully subscribed to room ${roomId.current}`);
-      }, (error) => {
-        console.error('Subscription error:', error);
-        toast.error('Failed to connect to call server');
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('Local stream tracks:', stream.getTracks());
+        localAudioRef.current.srcObject = stream;
+
+        // Инициализация peerConnections для всех участников, кроме текущего пользователя
+        for (const user of participants) {
+          if (user.id !== Number(currentUserId) && !peerConnections.current.has(String(user.id))) {
+            console.log('Initializing peerConnection for user:', user.id);
+            await initializePeerConnection(String(user.id));
+          }
+        }
+
+        // Регистрация обработчика сигналов
+        setGroupSignalHandler(handleSignal);
+
+        // Подписка на комнату
+        subscribeToRoom(
+          roomId.current,
+          () => {
+            console.log(`Successfully subscribed to room ${roomId.current}`);
+            if (isInitiator && !hasSentInvite.current) {
+              hasSentInvite.current = true;
+              sendGroupCallInvite();
+            } else if (!isInitiator) {
+              console.log('Sending acceptCall and ready signals');
+              sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
+              sendSignal(
+                { from: currentUserId, to: String(initiator.id), signal: { type: 'ready' } },
+                roomId.current
+              );
+            }
+          },
+          (error) => {
+            console.error('Subscription error:', error);
+            toast.error('Failed to connect to call server');
+            endCall();
+          }
+        );
+
+        // Установка гудка для инициатора
+        if (isInitiator) {
+          setIsWaiting(true);
+          ringtoneRef.current.loop = true;
+          ringtoneRef.current.play().catch((error) => {
+            if (isMounted) console.error('Error playing ringtone:', error);
+          });
+        }
+      } catch (error) {
+        console.error('Error initializing call:', error);
+        toast.error('Failed to initialize group call');
         endCall();
-      });
-    }
+      }
+    };
 
-    // Для неинициатора отправляем acceptCall и ready
-    if (!isInitiator && localAudioRef.current) {
-      sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
-      sendSignal({ from: currentUserId, to: String(initiator.id), signal: { type: 'ready' } }, roomId.current);
-      initializePeerConnection(String(initiator.id));
-    }
-
-    // Установка гудка для инициатора
-    if (isInitiator && isMounted) {
-      setIsWaiting(true);
-      ringtoneRef.current.loop = true;
-      ringtoneRef.current.play().catch((error) => {
-        if (isMounted) console.error('Error playing ringtone:', error);
-      });
-    }
-
-    // Отправка приглашения для инициатора
-    if (isInitiator && !hasSentInvite.current) {
-      hasSentInvite.current = true;
-      sendGroupCallInvite();
-    }
+    initializeCall();
 
     // Таймер звонка
     const timerInterval = setInterval(() => {
@@ -172,8 +201,22 @@ const GroupCallActivity = () => {
       clearTimeout(offerTimeout);
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
+      peerConnections.current.forEach((pc) => pc.close());
+      peerConnections.current.clear();
+      if (localAudioRef.current && localAudioRef.current.srcObject) {
+        localAudioRef.current.srcObject.getTracks().forEach((track) => track.stop());
+        localAudioRef.current.srcObject = null;
+      }
+      remoteAudioRefs.current.forEach((audio) => {
+        if (audio.srcObject) {
+          audio.srcObject.getTracks().forEach((track) => track.stop());
+          audio.srcObject = null;
+        }
+        audio.remove();
+      });
+      remoteAudioRefs.current.clear();
     };
-  }, [currentUserId, initiator.id, isInitiator, navigate, isCallEnded, state, sendSignal, setGroupSignalHandler]);
+  }, [currentUserId, initiator.id, isInitiator, isCallEnded, participants, sendSignal, setGroupSignalHandler, navigate]);
 
   const sendGroupCallInvite = () => {
     if (!roomId.current) {
@@ -329,6 +372,18 @@ const GroupCallActivity = () => {
     const { signal, from, to } = signalMessage;
     console.log('Signal received for processing:', { from, to, type: signal.type, currentUserId });
 
+    // Инициализация peerConnection для отправителя, если отсутствует
+    if (!peerConnections.current.has(from) && from !== String(currentUserId)) {
+      console.log('Initializing peerConnection for user:', from);
+      await initializePeerConnection(from);
+    }
+
+    // Пропускаем сигналы, не адресованные текущему пользователю, кроме acceptCall и ready
+    if (to && to !== String(currentUserId) && signal.type !== 'acceptCall' && signal.type !== 'ready') {
+      console.log('Ignoring signal not addressed to current user:', { from, to, currentUserId });
+      return;
+    }
+
     try {
       switch (signal.type) {
         case 'groupCallInvite':
@@ -377,7 +432,7 @@ const GroupCallActivity = () => {
         case 'offer':
           if (!isInitiator) {
             console.log('Processing offer from:', from, 'signal:', signal);
-            const peerConnection = peerConnections.current.get(from) || (await initializePeerConnection(from));
+            const peerConnection = peerConnections.current.get(from);
             if (!peerConnection) {
               console.error(`No PeerConnection for user ${from}`);
               return;
@@ -411,6 +466,8 @@ const GroupCallActivity = () => {
             if (peerConnection && !peerConnection.remoteDescription) {
               await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
               console.log(`Processed answer from user ${from}`);
+            } else {
+              console.warn(`No peerConnection or remoteDescription already set for user ${from}`);
             }
           }
           break;
