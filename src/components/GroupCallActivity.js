@@ -100,29 +100,21 @@ const GroupCallActivity = () => {
 
         setGroupSignalHandler(handleSignal);
 
-        // Подписка и отправка сигналов
+        // Немедленная отправка сигнала group для инициатора
         if (isInitiator) {
-          sendSignal({ signal: { type: 'group', roomId: roomId.current } }, roomId.current); // Немедленная отправка group
-          unsubscribeRoom = subscribeToRoom(
-            roomId.current,
-            () => {
-              console.log(`Successfully subscribed to room ${roomId.current}`);
-              if (!hasSentInvite.current) {
-                hasSentInvite.current = true;
-                sendGroupCallInvite();
-              }
-            },
-            (error) => {
-              console.error('Subscription error:', error);
-              toast.error('Failed to connect to call server');
-              endCall();
-            }
-          );
-        } else {
-          unsubscribeRoom = subscribeToRoom(
-            roomId.current,
-            () => {
-              console.log(`Successfully subscribed to room ${roomId.current}`);
+          sendSignal({ signal: { type: 'group', roomId: roomId.current } }, roomId.current);
+        }
+
+        // Подписка на комнату
+        unsubscribeRoom = subscribeToRoom(
+          roomId.current,
+          () => {
+            console.log(`Successfully subscribed to room ${roomId.current}`);
+            if (isInitiator && !hasSentInvite.current) {
+              hasSentInvite.current = true;
+              sendGroupCallInvite();
+            } else if (!isInitiator) {
+              console.log('Sending acceptCall and ready signals');
               sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
               participants
                 .filter((p) => p.id !== Number(currentUserId))
@@ -132,14 +124,14 @@ const GroupCallActivity = () => {
                     roomId.current
                   );
                 });
-            },
-            (error) => {
-              console.error('Subscription error:', error);
-              toast.error('Failed to connect to call server');
-              endCall();
             }
-          );
-        }
+          },
+          (error) => {
+            console.error('Subscription error:', error);
+            toast.error('Failed to connect to call server');
+            endCall();
+          }
+        );
 
         if (isInitiator) {
           setIsWaiting(true);
