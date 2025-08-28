@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState, useMemo, useContext } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
-import { useUserStatusContext } from '../context/UserStatusContext';
 import '../styles/GroupCallActivity.css';
 
 Chart.register(...registerables);
@@ -38,7 +37,6 @@ const GroupCallActivity = () => {
   const unsubscribeRoomRef = useRef(null);
   let isMounted = true;
 
-  const { usersStatus } = useContext(UserStatusContext);
   const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
   const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
 
@@ -61,9 +59,12 @@ const GroupCallActivity = () => {
   useEffect(() => {
     const fetchParticipants = async () => {
       try {
-        const response = await fetch(`https://unlimitedpossibilities12.org/api/room/${roomId.current}/participants`, {
+        const response = await fetch(`https://unlimitedpossibilities12.org/api/webrtc/room/${roomId.current}/participants`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
         });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const participants = await response.json();
         setCallParticipants(participants.map((p) => ({ id: Number(p.id), username: p.username || `User ${p.id}` })));
         console.log('Updated callParticipants:', participants);
@@ -77,16 +78,6 @@ const GroupCallActivity = () => {
       fetchParticipants();
     }
   }, [roomId.current, isCallEnded]);
-
-  useEffect(() => {
-    if (callParticipants.length > 0) {
-      const updatedParticipants = callParticipants.map((p) => ({
-        ...p,
-        username: usersStatus[p.id]?.username || p.username || `User ${p.id}`,
-      }));
-      setCallParticipants(updatedParticipants);
-    }
-  }, [usersStatus, callParticipants]);
 
   useEffect(() => {
     console.log('useEffect called with dependencies:', {
