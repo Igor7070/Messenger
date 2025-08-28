@@ -38,6 +38,7 @@ const GroupCallActivity = () => {
   const hasProcessedInvite = useRef(new Set());
   const unsubscribeRoomRef = useRef(null);
   const offerTimeoutRef = useRef(null);
+  const readyTimeoutRef = useRef(null); 
 
   const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
 
@@ -58,8 +59,6 @@ const GroupCallActivity = () => {
   console.log('GroupCallActivity: Initial state:', { state, initialRoomId, isInitiator, roomId: roomId.current });
 
   useEffect(() => {
-    const readyTimeoutRef = useRef(null); // Используем useRef для readyTimeout
-
     console.log('useEffect called with dependencies:', {
       currentUserId,
       initiatorId: initiator.id,
@@ -405,7 +404,7 @@ const GroupCallActivity = () => {
     }
   };
 
-  const startCall = async (readyTimeoutRef) => {
+  const startCall = async () => {
     if (isCallStarted) {
       console.log('Call already started, skipping startCall');
       return;
@@ -486,7 +485,7 @@ const GroupCallActivity = () => {
 
     if (!peerConnections.current.has(from) && from !== String(currentUserId)) {
       console.log('Initializing peerConnection for user:', from);
-      const peerConnection = await initializePeerConnection(from);
+      const peerConnection = await initializePeerConnection(from, readyTimeoutRef);
       if (!peerConnection) {
         console.warn(`Failed to initialize PeerConnection for user ${from}`);
         return;
@@ -523,7 +522,7 @@ const GroupCallActivity = () => {
             return newSet;
           });
           if (!isCallStarted && (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1)) {
-            startCall(readyTimeoutRef); // Передаем readyTimeoutRef
+            startCall(); // Убрали readyTimeoutRef, так как он доступен на уровне компонента
             console.log('Call started for ready participants');
           }
           if (!isInitiator) {
