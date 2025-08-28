@@ -58,7 +58,7 @@ const GroupCallActivity = () => {
   console.log('GroupCallActivity: Initial state:', { state, initialRoomId, isInitiator, roomId: roomId.current });
 
   useEffect(() => {
-    let readyTimeout; // Объявляем readyTimeout
+    const readyTimeoutRef = useRef(null); // Используем useRef для readyTimeout
 
     console.log('useEffect called with dependencies:', {
       currentUserId,
@@ -136,7 +136,7 @@ const GroupCallActivity = () => {
         for (const user of memoizedParticipants) {
           if (user.id !== Number(currentUserId) && !peerConnections.current.has(String(user.id))) {
             console.log('Initializing peerConnection for user:', user.id);
-            await initializePeerConnection(String(user.id));
+            await initializePeerConnection(String(user.id), readyTimeoutRef); // Передаем readyTimeoutRef
           }
         }
 
@@ -226,7 +226,7 @@ const GroupCallActivity = () => {
       });
     }, 1000);
 
-    readyTimeout = setTimeout(() => {
+    readyTimeoutRef.current = setTimeout(() => {
       console.log('readyTimeout check:', { isInitiator, isWaiting, readyUsers: Array.from(readyUsers), isCallStarted });
       if (isInitiator && isWaiting && isMounted && !isCallStarted) {
         let hasActiveConnections = false;
@@ -257,7 +257,7 @@ const GroupCallActivity = () => {
       clearInterval(timerInterval);
       clearInterval(timeInterval);
       clearInterval(chartInterval);
-      if (readyTimeout) clearTimeout(readyTimeout);
+      if (readyTimeoutRef.current) clearTimeout(readyTimeoutRef.current);
       if (offerTimeoutRef.current) {
         clearTimeout(offerTimeoutRef.current);
         offerTimeoutRef.current = null;
@@ -309,7 +309,7 @@ const GroupCallActivity = () => {
       });
   };
 
-  const initializePeerConnection = async (userId) => {
+  const initializePeerConnection = async (userId, readyTimeoutRef) => {
     try {
       if (!localAudioRef.current) {
         console.error(`Cannot initialize PeerConnection for user ${userId}: localAudioRef is null`);
@@ -356,7 +356,10 @@ const GroupCallActivity = () => {
         console.log(`ICE Connection State for ${userId}: ${peerConnection.iceConnectionState}`);
         if (peerConnection.iceConnectionState === 'connected') {
           console.log(`Connection established with user ${userId}, clearing readyTimeout`);
-          clearTimeout(readyTimeout); // Сбрасываем readyTimeout
+          if (readyTimeoutRef.current) {
+            clearTimeout(readyTimeoutRef.current);
+            readyTimeoutRef.current = null;
+          }
           setIsWaiting(false);
           setIsCallStarted(true);
           setReadyUsers((prev) => new Set([...prev, userId]));
@@ -402,7 +405,7 @@ const GroupCallActivity = () => {
     }
   };
 
-  const startCall = async () => {
+  const startCall = async (readyTimeoutRef) => {
     if (isCallStarted) {
       console.log('Call already started, skipping startCall');
       return;
@@ -412,13 +415,15 @@ const GroupCallActivity = () => {
     ringtoneRef.current.pause();
     ringtoneRef.current.currentTime = 0;
     console.log('Starting group call for participants:', callParticipants.map((u) => u.id));
-    clearTimeout(readyTimeout); // Сбрасываем readyTimeout
-    console.log('Cleared readyTimeout in startCall');
+    if (readyTimeoutRef.current) {
+      clearTimeout(readyTimeoutRef.current);
+      console.log('Cleared readyTimeout in startCall');
+    }
 
     try {
       for (const user of callParticipants) {
         if (user.id !== initiator.id && user.id !== Number(currentUserId)) {
-          const peerConnection = await initializePeerConnection(String(user.id));
+          const peerConnection = await initializePeerConnection(String(user.id), readyTimeoutRef);
           if (isInitiator && peerConnection) {
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
@@ -518,7 +523,7 @@ const GroupCallActivity = () => {
             return newSet;
           });
           if (!isCallStarted && (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1)) {
-            startCall();
+            startCall(readyTimeoutRef); // Передаем readyTimeoutRef
             console.log('Call started for ready participants');
           }
           if (!isInitiator) {
