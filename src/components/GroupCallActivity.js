@@ -386,8 +386,8 @@ const GroupCallActivity = () => {
   };
 
   const handleSignal = async (signalMessage) => {
-    if (isCallEnded) {
-      console.log('Call already ended, ignoring signal:', signalMessage);
+    if (isCallEnded || !isMounted || !localAudioRef.current) {
+      console.log('Ignoring signal due to call ended, component unmounted, or localAudioRef null:', signalMessage);
       return;
     }
 
@@ -425,7 +425,11 @@ const GroupCallActivity = () => {
 
     if (!peerConnections.current.has(from) && from !== String(currentUserId)) {
       console.log('Initializing peerConnection for user:', from);
-      await initializePeerConnection(from);
+      const peerConnection = await initializePeerConnection(from);
+      if (!peerConnection) {
+        console.warn(`Failed to initialize PeerConnection for user ${from}`);
+        return;
+      }
     }
 
     if (to && to !== String(currentUserId) && signal.type !== 'acceptCall' && signal.type !== 'ready') {
@@ -584,25 +588,28 @@ const GroupCallActivity = () => {
     setIsCallStarted(false);
     setIsWaiting(false);
 
-    // Отправляем сигнал endCall
-    callParticipants
-      .filter((u) => u.id !== Number(currentUserId))
-      .forEach((user) => {
-        sendSignal(
-          {
-            from: currentUserId,
-            to: String(user.id),
-            signal: { type: 'endCall', roomId: roomId.current },
-          },
-          roomId.current
-        );
-        console.log(`Sent endCall to user ${user.id}`);
-      });
+    // Отправляем сигнал endCall только один раз
+    if (!hasNotifiedEndCall.current) {
+      callParticipants
+        .filter((u) => u.id !== Number(currentUserId))
+        .forEach((user) => {
+          sendSignal(
+            {
+              from: currentUserId,
+              to: String(user.id),
+              signal: { type: 'endCall', roomId: roomId.current },
+            },
+            roomId.current
+          );
+          console.log(`Sent endCall to user ${user.id}`);
+        });
+    }
 
     // Явно отписываемся от комнаты
     if (unsubscribeRoomRef.current) {
       unsubscribeRoomRef.current();
       console.log(`Unsubscribed from room ${roomId.current} in endCall`);
+      unsubscribeRoomRef.current = null;
     }
 
     // Закрываем все peerConnections

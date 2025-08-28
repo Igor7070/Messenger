@@ -87,16 +87,6 @@ export const CallWebSocketProvider = ({ children }) => {
             console.log('CallWebSocketContext: Signal sent from queue to /app/groupSignal/' + roomId + ':', signalMessage);
           }
         }
-
-        return () => {
-          console.log('CallWebSocketContext: Отписка от /topic/calls/' + currentUserId + ' и /topic/groupCalls/' + currentUserId);
-          callsSubscription.unsubscribe();
-          groupCallSubscription.unsubscribe();
-          if (subscriptionRef.current) {
-            subscriptionRef.current.unsubscribe();
-            console.log('CallWebSocketContext: Отписка от /topic/room/' + callRequestRef.current?.roomId);
-          }
-        };
       },
       onWebSocketError: (error) => {
         console.error('CallWebSocketContext: Ошибка WebSocket для звонков:', error);
@@ -106,7 +96,12 @@ export const CallWebSocketProvider = ({ children }) => {
         console.log('CallWebSocketContext: WebSocket для звонков отключён');
         setIncomingCallWithLog(null);
         callRequestRef.current = null;
-        setIsCallEnded(true); // Устанавливаем isCallEnded при отключении
+        if (subscriptionRef.current) {
+          subscriptionRef.current.unsubscribe();
+          console.log('CallWebSocketContext: Отписка от /topic/room/' + callRequestRef.current?.roomId);
+          subscriptionRef.current = null;
+        }
+        setIsCallEnded(true);
       },
     });
     stompClient.current.activate();
@@ -115,7 +110,12 @@ export const CallWebSocketProvider = ({ children }) => {
       if (stompClient.current) {
         stompClient.current.deactivate();
         console.log('CallWebSocketContext: WebSocket для звонков отключён при размонтировании');
-        setIsCallEnded(true); // Устанавливаем isCallEnded при размонтировании
+        if (subscriptionRef.current) {
+          subscriptionRef.current.unsubscribe();
+          console.log('CallWebSocketContext: Отписка от /topic/room/' + callRequestRef.current?.roomId);
+          subscriptionRef.current = null;
+        }
+        setIsCallEnded(true);
       }
     };
   }, [currentUserId]);
@@ -167,7 +167,18 @@ export const CallWebSocketProvider = ({ children }) => {
       });
       console.log('CallWebSocketContext: Subscribed to /topic/room/' + roomId);
       onSuccess?.();
+
+      // Таймаут для автоматической отписки после завершения вызова
+      const unsubscribeTimeout = setTimeout(() => {
+        if (subscriptionRef.current) {
+          subscriptionRef.current.unsubscribe();
+          console.log(`CallWebSocketContext: Unsubscribed from /topic/room/${roomId} due to timeout`);
+          subscriptionRef.current = null;
+        }
+      }, 30000); // Отписка через 30 секунд после завершения
+
       return () => {
+        clearTimeout(unsubscribeTimeout);
         if (subscriptionRef.current) {
           subscriptionRef.current.unsubscribe();
           console.log(`CallWebSocketContext: Unsubscribed from /topic/room/${roomId}`);
