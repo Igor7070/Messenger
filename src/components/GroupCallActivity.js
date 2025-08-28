@@ -36,6 +36,7 @@ const GroupCallActivity = () => {
 
   const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
   const hasProcessedInvite = useRef(new Set());
+  const unsubscribeRoomRef = useRef(null);
 
   const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
 
@@ -79,7 +80,7 @@ const GroupCallActivity = () => {
       return;
     }
 
-    let unsubscribeRoom;
+    const unsubscribeRoomRef = useRef(null); // Храним функцию отписки
 
     const initializeCall = async () => {
       if (isCallEnded) {
@@ -112,7 +113,7 @@ const GroupCallActivity = () => {
           sendSignal({ signal: { type: 'group', roomId: roomId.current } }, roomId.current);
         }
 
-        unsubscribeRoom = subscribeToRoom(
+        unsubscribeRoomRef.current = subscribeToRoom(
           roomId.current,
           () => {
             console.log(`Successfully subscribed to room ${roomId.current}`);
@@ -120,7 +121,7 @@ const GroupCallActivity = () => {
               hasSentInvite.current = true;
               sendGroupCallInvite();
             } else if (!isInitiator && !hasSentInvite.current) {
-              hasSentInvite.current = true; // Предотвращаем повторную отправку
+              hasSentInvite.current = true;
               console.log('Sending acceptCall and ready signals');
               sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
               memoizedParticipants
@@ -231,8 +232,8 @@ const GroupCallActivity = () => {
         audio.remove();
       });
       remoteAudioRefs.current.clear();
-      if (unsubscribeRoom) {
-        unsubscribeRoom();
+      if (unsubscribeRoomRef.current) {
+        unsubscribeRoomRef.current();
         console.log(`Unsubscribed from room ${roomId.current}`);
       }
     };
@@ -585,6 +586,7 @@ const GroupCallActivity = () => {
     setIsCallStarted(false);
     setIsWaiting(false);
 
+    // Отправляем сигнал endCall
     callParticipants
       .filter((u) => u.id !== Number(currentUserId))
       .forEach((user) => {
@@ -599,16 +601,25 @@ const GroupCallActivity = () => {
         console.log(`Sent endCall to user ${user.id}`);
       });
 
+    // Явно отписываемся от комнаты
+    if (typeof unsubscribeRoom === 'function') {
+      unsubscribeRoom();
+      console.log(`Unsubscribed from room ${roomId.current} in endCall`);
+    }
+
+    // Закрываем все peerConnections
     peerConnections.current.forEach((pc) => {
       pc.close();
     });
     peerConnections.current.clear();
 
+    // Очищаем локальный аудиопоток
     if (localAudioRef.current && localAudioRef.current.srcObject) {
       localAudioRef.current.srcObject.getTracks().forEach((track) => track.stop());
       localAudioRef.current.srcObject = null;
     }
 
+    // Очищаем удалённые аудиопотоки
     remoteAudioRefs.current.forEach((audio) => {
       if (audio.srcObject) {
         audio.srcObject.getTracks().forEach((track) => track.stop());
@@ -618,12 +629,11 @@ const GroupCallActivity = () => {
     });
     remoteAudioRefs.current.clear();
 
+    // Останавливаем рингтон
     ringtoneRef.current.pause();
     ringtoneRef.current.currentTime = 0;
 
-    setIsCallEnded(true);
-    console.log('GroupCallActivity: Set isCallEnded to true in context');
-
+    // Уведомляем и завершаем
     if (!hasNotifiedEndCall.current) {
       hasNotifiedEndCall.current = true;
       toast.info('Group call ended');
