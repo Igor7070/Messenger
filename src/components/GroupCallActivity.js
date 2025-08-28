@@ -38,6 +38,7 @@ const GroupCallActivity = () => {
   const hasProcessedInvite = useRef(new Set());
   const unsubscribeRoomRef = useRef(null);
   const offerTimeoutRef = useRef(null);
+  const readyTimeoutRef = useRef(null);
 
   const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
 
@@ -224,11 +225,21 @@ const GroupCallActivity = () => {
       });
     }, 1000);
 
-    const readyTimeout = setTimeout(() => {
-      if (isInitiator && isWaiting && readyUsers.size === 0 && isMounted && !isCallStarted) {
-        console.warn('No participants responded within 30 seconds, ending call.');
-        toast.error('No participants responded to the call.');
-        endCall();
+    readyTimeoutRef.current = setTimeout(() => {
+      console.log('readyTimeout check:', { isInitiator, isWaiting, readyUsers: Array.from(readyUsers), isCallStarted });
+      if (isInitiator && isWaiting && isMounted && !isCallStarted) {
+        let hasActiveConnections = false;
+        peerConnections.current.forEach((pc, userId) => {
+          if (pc.iceConnectionState === 'connected') {
+            hasActiveConnections = true;
+            console.log(`Active connection detected with user ${userId}, skipping endCall`);
+          }
+        });
+        if (!hasActiveConnections) {
+          console.warn('No active connections within 30 seconds, ending call.');
+          toast.error('No participants responded to the call.');
+          endCall();
+        }
       }
     }, 30000);
 
@@ -245,7 +256,7 @@ const GroupCallActivity = () => {
       clearInterval(timerInterval);
       clearInterval(timeInterval);
       clearInterval(chartInterval);
-      clearTimeout(readyTimeout);
+      if (readyTimeoutRef.current) clearTimeout(readyTimeoutRef.current);
       if (offerTimeoutRef.current) {
         clearTimeout(offerTimeoutRef.current);
         offerTimeoutRef.current = null;
@@ -342,7 +353,16 @@ const GroupCallActivity = () => {
 
       peerConnection.oniceconnectionstatechange = () => {
         console.log(`ICE Connection State for ${userId}: ${peerConnection.iceConnectionState}`);
-        if (peerConnection.iceConnectionState === 'failed') {
+        if (peerConnection.iceConnectionState === 'connected') {
+          console.log(`Connection established with user ${userId}, clearing readyTimeout`);
+          if (readyTimeoutRef.current) {
+            clearTimeout(readyTimeoutRef.current);
+            readyTimeoutRef.current = null;
+          }
+          setIsWaiting(false);
+          setIsCallStarted(true);
+          setReadyUsers((prev) => new Set([...prev, userId]));
+        } else if (peerConnection.iceConnectionState === 'failed') {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           endCall();
