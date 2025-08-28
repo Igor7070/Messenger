@@ -37,6 +37,7 @@ const GroupCallActivity = () => {
   const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
   const hasProcessedInvite = useRef(new Set());
   const unsubscribeRoomRef = useRef(null);
+  const offerTimeoutRef = useRef(null);
 
   const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
 
@@ -231,7 +232,8 @@ const GroupCallActivity = () => {
       }
     }, 30000);
 
-    const offerTimeout = setTimeout(() => {
+    const offerTimeoutRef = useRef(null);
+    offerTimeoutRef.current = setTimeout(() => {
       if (!isInitiator && !isCallStarted && isMounted) {
         console.error('No offer received within 60 seconds, aborting call');
         toast.error('Failed to establish call: no offer received');
@@ -245,7 +247,10 @@ const GroupCallActivity = () => {
       clearInterval(timeInterval);
       clearInterval(chartInterval);
       clearTimeout(readyTimeout);
-      clearTimeout(offerTimeout);
+      if (offerTimeoutRef.current) {
+        clearTimeout(offerTimeoutRef.current);
+        offerTimeoutRef.current = null;
+      }
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
       peerConnections.current.forEach((pc) => pc.close());
@@ -539,6 +544,12 @@ const GroupCallActivity = () => {
             }
             pendingCandidates.current.delete(from);
           }
+          // Очищаем таймер offerTimeout, так как соединение установлено
+          if (offerTimeoutRef.current) {
+            clearTimeout(offerTimeoutRef.current);
+            offerTimeoutRef.current = null;
+            console.log('Cleared offerTimeout after receiving offer');
+          }
           break;
 
         case 'answer':
@@ -587,17 +598,26 @@ const GroupCallActivity = () => {
           break;
 
         case 'endCall':
+          if (to && to !== String(currentUserId)) {
+            console.log('Ignoring endCall signal not addressed to current user:', { from, to, currentUserId });
+            return;
+          }
           if (!hasNotifiedEndCall.current) {
             hasNotifiedEndCall.current = true;
             const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
             toast.info(`${userName} left the group call`);
-            setCallParticipants((prev) => prev.filter((u) => u.id !== Number(from)));
+            setCallParticipants((prev) => {
+              const updatedParticipants = prev.filter((u) => u.id !== Number(from));
+              console.log('Updated participants after endCall:', updatedParticipants);
+              return updatedParticipants;
+            });
             if (peerConnection) {
               peerConnection.close();
               peerConnections.current.delete(from);
             }
-            if (callParticipants.length <= 1) {
-              console.log('Last participant left, ending call');
+            // Завершаем вызов только для инициатора или если остался один участник
+            if (isInitiator || callParticipants.length <= 2) {
+              console.log('Ending call: initiator or less than 2 participants remain');
               endCall();
             }
           }
