@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
+import { UserStatusContext } from '../context/UserStatusContext';
 import '../styles/GroupCallActivity.css';
 
 Chart.register(...registerables);
@@ -19,7 +20,7 @@ const GroupCallActivity = () => {
   const peerConnections = useRef(new Map());
   const localAudioRef = useRef(null);
   const remoteAudioRefs = useRef(new Map());
-  const pendingCandidates = useRef(new Map()); // Очередь для ICE-кандидатов
+  const pendingCandidates = useRef(new Map());
   const [callParticipants, setCallParticipants] = useState(participants);
   const [callDuration, setCallDuration] = useState('00:00');
   const [startTime, setStartTime] = useState('');
@@ -32,13 +33,14 @@ const GroupCallActivity = () => {
   const callStartTime = useRef(Date.now());
   const hasNotifiedEndCall = useRef(false);
   const hasSentInvite = useRef(false);
-  let isMounted = true;
-
-  const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
+  const hasReceivedOffer = useRef(false);
   const hasProcessedInvite = useRef(new Set());
   const unsubscribeRoomRef = useRef(null);
+  let isMounted = true;
 
+  const { usersStatus } = useContext(UserStatusContext);
   const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
+  const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
 
   const [chartData, setChartData] = useState({
     labels: [],
@@ -55,6 +57,36 @@ const GroupCallActivity = () => {
   });
 
   console.log('GroupCallActivity: Initial state:', { state, initialRoomId, isInitiator, roomId: roomId.current });
+
+  useEffect(() => {
+    const fetchParticipants = async () => {
+      try {
+        const response = await fetch(`https://unlimitedpossibilities12.org/api/room/${roomId.current}/participants`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
+        });
+        const participants = await response.json();
+        setCallParticipants(participants.map((p) => ({ id: Number(p.id), username: p.username || `User ${p.id}` })));
+        console.log('Updated callParticipants:', participants);
+      } catch (error) {
+        console.error('Error fetching participants:', error);
+        toast.error('Failed to load call participants');
+      }
+    };
+
+    if (roomId.current && !isCallEnded) {
+      fetchParticipants();
+    }
+  }, [roomId.current, isCallEnded]);
+
+  useEffect(() => {
+    if (callParticipants.length > 0) {
+      const updatedParticipants = callParticipants.map((p) => ({
+        ...p,
+        username: usersStatus[p.id]?.username || p.username || `User ${p.id}`,
+      }));
+      setCallParticipants(updatedParticipants);
+    }
+  }, [usersStatus, callParticipants]);
 
   useEffect(() => {
     console.log('useEffect called with dependencies:', {
@@ -200,7 +232,7 @@ const GroupCallActivity = () => {
     }, 30000);
 
     const offerTimeout = setTimeout(() => {
-      if (!isInitiator && !isCallStarted && isMounted) {
+      if (!isInitiator && !isCallStarted && !hasReceivedOffer.current && isMounted) {
         console.error('No offer received within 60 seconds, aborting call');
         toast.error('Failed to establish call: no offer received');
         endCall();
@@ -250,6 +282,10 @@ const GroupCallActivity = () => {
       recipientIds: callParticipants
         .filter((p) => p.id !== initiator.id)
         .map((p) => String(p.id)),
+      participants: callParticipants.map((p) => ({
+        id: String(p.id),
+        username: p.username || `User ${p.id}`,
+      })),
     };
 
     callParticipants
@@ -404,6 +440,10 @@ const GroupCallActivity = () => {
     const { signal, from, to } = signalMessage;
     console.log('Signal received for processing:', { from, to, type: signal.type, currentUserId });
 
+    if (signal.type === 'offer') {
+      hasReceivedOffer.current = true;
+    }
+
     if (signal.type === 'groupCallInvite' && !isInitiator) {
       if (hasProcessedInvite.current.has(from)) {
         console.log(`Ignoring duplicate groupCallInvite from ${from}`);
@@ -420,6 +460,13 @@ const GroupCallActivity = () => {
       roomId.current = signal.roomId;
       console.log('Updated roomId to:', roomId.current);
       toast.info(`${signal.initiatorName} invites you to a group call`);
+      if (signal.participants) {
+        setCallParticipants(signal.participants.map((p) => ({
+          id: Number(p.id),
+          username: p.username || `User ${p.id}`,
+        })));
+        console.log('Updated callParticipants from groupCallInvite:', signal.participants);
+      }
       return;
     }
 
@@ -456,11 +503,11 @@ const GroupCallActivity = () => {
             }
             const newSet = new Set([...prev, from]);
             console.log('Ready users updated:', Array.from(newSet));
+            const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
+            toast.success(`${userName} is ready`);
+            console.log(`User ${userName} is ready`);
             return newSet;
           });
-          const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
-          toast.success(`${userName} is ready`);
-          console.log(`User ${userName} is ready`);
           if (!isCallStarted && (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1)) {
             startCall();
             console.log('Call started for ready participants');
@@ -488,8 +535,8 @@ const GroupCallActivity = () => {
             console.error(`No PeerConnection for user ${from}`);
             return;
           }
-          if (peerConnection.remoteDescription) {
-            console.warn(`Ignoring duplicate offer from ${from}`);
+          if (peerConnection.signalingState !== 'stable') {
+            console.warn(`Ignoring offer from ${from}: PeerConnection is in ${peerConnection.signalingState} state`);
             return;
           }
           await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
@@ -510,11 +557,11 @@ const GroupCallActivity = () => {
           break;
 
         case 'answer':
-          if (peerConnection && !peerConnection.remoteDescription) {
+          if (peerConnection && peerConnection.signalingState === 'have-local-offer') {
             await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
             console.log(`Processed answer from user ${from}`);
           } else {
-            console.warn(`No peerConnection or remoteDescription already set for user ${from}`);
+            console.warn(`Ignoring answer from ${from}: PeerConnection is in ${peerConnection?.signalingState || 'no connection'} state`);
           }
           break;
 
@@ -588,7 +635,6 @@ const GroupCallActivity = () => {
     setIsCallStarted(false);
     setIsWaiting(false);
 
-    // Отправляем сигнал endCall только один раз
     if (!hasNotifiedEndCall.current) {
       callParticipants
         .filter((u) => u.id !== Number(currentUserId))
@@ -605,26 +651,22 @@ const GroupCallActivity = () => {
         });
     }
 
-    // Явно отписываемся от комнаты
     if (unsubscribeRoomRef.current) {
       unsubscribeRoomRef.current();
       console.log(`Unsubscribed from room ${roomId.current} in endCall`);
       unsubscribeRoomRef.current = null;
     }
 
-    // Закрываем все peerConnections
     peerConnections.current.forEach((pc) => {
       pc.close();
     });
     peerConnections.current.clear();
 
-    // Очищаем локальный аудиопоток
     if (localAudioRef.current && localAudioRef.current.srcObject) {
       localAudioRef.current.srcObject.getTracks().forEach((track) => track.stop());
       localAudioRef.current.srcObject = null;
     }
 
-    // Очищаем удалённые аудиопотоки
     remoteAudioRefs.current.forEach((audio) => {
       if (audio.srcObject) {
         audio.srcObject.getTracks().forEach((track) => track.stop());
@@ -634,11 +676,9 @@ const GroupCallActivity = () => {
     });
     remoteAudioRefs.current.clear();
 
-    // Останавливаем рингтон
     ringtoneRef.current.pause();
     ringtoneRef.current.currentTime = 0;
 
-    // Уведомляем и завершаем
     if (!hasNotifiedEndCall.current) {
       hasNotifiedEndCall.current = true;
       toast.info('Group call ended');
