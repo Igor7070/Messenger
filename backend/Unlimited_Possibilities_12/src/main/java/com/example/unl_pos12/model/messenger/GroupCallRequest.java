@@ -8,6 +8,7 @@ public class GroupCallRequest {
     private List<String> recipientIds; // Список ID получателей
     private String roomId; // ID комнаты
     private String initiatorName; // Имя инициатора (для уведомлений)
+    private List<UserDTO> participants; // Список участников с id и username
 
     public String getType() {
         return type;
@@ -49,6 +50,14 @@ public class GroupCallRequest {
         this.initiatorName = initiatorName;
     }
 
+    public List<UserDTO> getParticipants() {
+        return participants;
+    }
+
+    public void setParticipants(List<UserDTO> participants) {
+        this.participants = participants;
+    }
+
     @Override
     public String toString() {
         return "GroupCallRequest{" +
@@ -57,6 +66,7 @@ public class GroupCallRequest {
                 ", recipientIds=" + recipientIds +
                 ", roomId='" + roomId + '\'' +
                 ", initiatorName='" + initiatorName + '\'' +
+                ", participants=" + participants +
                 '}';
     }
 }
