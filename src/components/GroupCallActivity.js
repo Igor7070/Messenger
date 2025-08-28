@@ -359,9 +359,12 @@ const GroupCallActivity = () => {
             clearTimeout(readyTimeoutRef.current);
             readyTimeoutRef.current = null;
           }
-          setIsWaiting(false);
-          setIsCallStarted(true);
-          setReadyUsers((prev) => new Set([...prev, userId]));
+          setReadyUsers((prev) => {
+            if (prev.has(userId)) return prev;
+            const newSet = new Set([...prev, userId]);
+            console.log(`Added user ${userId} to readyUsers:`, Array.from(newSet));
+            return newSet;
+          });
         } else if (peerConnection.iceConnectionState === 'failed') {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
