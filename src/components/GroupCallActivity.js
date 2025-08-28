@@ -80,8 +80,6 @@ const GroupCallActivity = () => {
       return;
     }
 
-    const unsubscribeRoomRef = useRef(null); // Храним функцию отписки
-
     const initializeCall = async () => {
       if (isCallEnded) {
         console.log('Call already ended, skipping initialization');
@@ -602,8 +600,8 @@ const GroupCallActivity = () => {
       });
 
     // Явно отписываемся от комнаты
-    if (typeof unsubscribeRoom === 'function') {
-      unsubscribeRoom();
+    if (unsubscribeRoomRef.current) {
+      unsubscribeRoomRef.current();
       console.log(`Unsubscribed from room ${roomId.current} in endCall`);
     }
 
