@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
-import { UserStatusContext } from '../context/UserStatusContext';
+import { useUserStatusContext } from '../context/UserStatusContext';
 import '../styles/GroupCallActivity.css';
 
 Chart.register(...registerables);
