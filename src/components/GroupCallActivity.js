@@ -94,6 +94,38 @@ const GroupCallActivity = () => {
       }
 
       try {
+        // Получение данных участников через API
+        const fetchParticipants = async () => {
+          try {
+            const updatedParticipants = await Promise.all(
+              memoizedParticipants.map(async (user) => {
+                if (user.id === Number(currentUserId)) {
+                  return { ...user, username: user.username || `User ${user.id}` };
+                }
+                const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${user.id}`, {
+                  headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
+                });
+                if (!response.ok) {
+                  console.error(`Failed to fetch user ${user.id}`);
+                  return { ...user, username: `User ${user.id}`, avatar: null };
+                }
+                const userData = await response.json();
+                return {
+                  id: user.id,
+                  username: userData.username || `User ${user.id}`,
+                  avatar: userData.avatar || null,
+                };
+              })
+            );
+            setCallParticipants(updatedParticipants);
+            console.log('Updated callParticipants:', updatedParticipants);
+          } catch (error) {
+            console.error('Error fetching participants:', error);
+            toast.error('Failed to load participant details');
+          }
+        };
+        await fetchParticipants();
+
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         console.log('Local stream tracks:', stream.getTracks());
         localAudioRef.current.srcObject = stream;
@@ -456,11 +488,11 @@ const GroupCallActivity = () => {
             }
             const newSet = new Set([...prev, from]);
             console.log('Ready users updated:', Array.from(newSet));
+            const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
+            toast.success(`${userName} is ready`);
+            console.log(`User ${userName} is ready`);
             return newSet;
           });
-          const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
-          toast.success(`${userName} is ready`);
-          console.log(`User ${userName} is ready`);
           if (!isCallStarted && (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1)) {
             startCall();
             console.log('Call started for ready participants');
