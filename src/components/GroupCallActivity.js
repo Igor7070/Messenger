@@ -232,7 +232,6 @@ const GroupCallActivity = () => {
       }
     }, 30000);
 
-    const offerTimeoutRef = useRef(null);
     offerTimeoutRef.current = setTimeout(() => {
       if (!isInitiator && !isCallStarted && isMounted) {
         console.error('No offer received within 60 seconds, aborting call');
