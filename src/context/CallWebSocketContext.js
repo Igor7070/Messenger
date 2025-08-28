@@ -306,9 +306,10 @@ export const CallWebSocketProvider = ({ children }) => {
     if (stompClient.current && stompClient.current.connected) {
       console.log('CallWebSocketContext: Отправка сигнала:', JSON.stringify(signalMessage, null, 2));
       let destination;
-      // Для групповых звонков всегда используем /app/groupSignal/{roomId}
-      if (
-        signalMessage.type === 'group' ||
+      if (signalMessage.type === 'group' && to) {
+        destination = `/app/groupCall/${to}`; // Восстанавливаем отправку groupCallInvite на /app/groupCall/{to}
+        console.log('CallWebSocketContext: Отправка groupCallInvite на:', destination);
+      } else if (
         signalMessage.signal?.type === 'group' ||
         signalMessage.signal?.type === 'acceptCall' ||
         signalMessage.signal?.type === 'ready' ||
@@ -321,9 +322,6 @@ export const CallWebSocketProvider = ({ children }) => {
       ) {
         destination = `/app/groupSignal/${roomId}`;
         console.log('CallWebSocketContext: Отправка группового сигнала на:', destination);
-      } else if (to) {
-        destination = `/app/groupCall/${to}`;
-        console.log('CallWebSocketContext: Отправка groupCallInvite на:', destination);
       } else {
         destination = `/app/signal/${roomId}`;
         console.log('CallWebSocketContext: Отправка обычного сигнала на:', destination);
