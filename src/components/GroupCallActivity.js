@@ -461,7 +461,7 @@ const GroupCallActivity = () => {
     }
 
     const { signal, from, to } = signalMessage;
-    console.log('Signal received for processing:', { from, to, type: signal.type, currentUserId });
+    console.log('Signal received:', { from, to, type: signal.type, currentUserId, signalingState: peerConnections.current.get(from)?.signalingState });
 
     if (signal.type === 'groupCallInvite' && !isInitiator) {
       if (hasProcessedInvite.current.has(from)) {
@@ -491,8 +491,8 @@ const GroupCallActivity = () => {
       }
     }
 
-    if (to && to !== String(currentUserId) && signal.type !== 'acceptCall' && signal.type !== 'ready') {
-      console.log('Ignoring signal not addressed to current user:', { from, to, currentUserId });
+    if (to && to !== String(currentUserId) && !['acceptCall', 'ready', 'groupCallInvite'].includes(signal.type)) {
+      console.log('Ignoring signal not addressed to current user:', { from, to, type: signal.type, currentUserId });
       return;
     }
 
@@ -537,6 +537,8 @@ const GroupCallActivity = () => {
                 roomId.current
               );
               console.log(`Sent offer to user ${from} after receiving ready`);
+            } else {
+              console.warn(`Cannot send offer to ${from}: peerConnection=${!!peerConnection}, localDescription=${!!peerConnection?.localDescription}`);
             }
           }
           break;
@@ -548,8 +550,14 @@ const GroupCallActivity = () => {
             return;
           }
           if (peerConnection.signalingState !== 'stable') {
-            console.warn(`Ignoring offer from ${from} due to signaling state: ${peerConnection.signalingState}`);
-            return;
+            console.warn(`Cannot process offer from ${from} due to signaling state: ${peerConnection.signalingState}`);
+            if (peerConnection.signalingState === 'have-local-offer' || peerConnection.signalingState === 'have-remote-offer') {
+              console.log(`Attempting to rollback to stable state for user ${from}`);
+              await peerConnection.setLocalDescription({ type: 'rollback' });
+            } else {
+              console.log(`Ignoring offer from ${from} due to non-recoverable state`);
+              return;
+            }
           }
           await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
           const answer = await peerConnection.createAnswer();
@@ -636,7 +644,6 @@ const GroupCallActivity = () => {
               peerConnection.close();
               peerConnections.current.delete(from);
             }
-            // Завершаем вызов только для инициатора или если остался один участник
             if (isInitiator || callParticipants.length <= 2) {
               console.log('Ending call: initiator or less than 2 participants remain');
               endCall();
