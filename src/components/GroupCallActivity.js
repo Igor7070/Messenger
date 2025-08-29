@@ -463,18 +463,37 @@ const GroupCallActivity = () => {
     const { signal, from, to } = signalMessage;
     console.log('Signal received for processing:', { from, to, type: signal.type, currentUserId });
 
-    if (to && to !== String(currentUserId) && signal.type !== 'acceptCall' && signal.type !== 'ready') {
-      console.log('Ignoring signal not addressed to current user:', { from, to, currentUserId });
+    if (signal.type === 'groupCallInvite' && !isInitiator) {
+      if (hasProcessedInvite.current.has(from)) {
+        console.log(`Ignoring duplicate groupCallInvite from ${from}`);
+        return;
+      }
+      hasProcessedInvite.current.add(from);
+      console.log('Processing groupCallInvite:', signalMessage);
+      if (!signal.roomId) {
+        console.error('groupCallInvite received with null roomId');
+        toast.error('Invalid call invite received.');
+        navigate('/');
+        return;
+      }
+      roomId.current = signal.roomId;
+      console.log('Updated roomId to:', roomId.current);
+      toast.info(`${signal.initiatorName} invites you to a group call`);
       return;
     }
 
-    if (!peerConnections.current.has(from)) {
+    if (!peerConnections.current.has(from) && from !== String(currentUserId)) {
       console.log('Initializing peerConnection for user:', from);
       const peerConnection = await initializePeerConnection(from);
       if (!peerConnection) {
         console.warn(`Failed to initialize PeerConnection for user ${from}`);
         return;
       }
+    }
+
+    if (to && to !== String(currentUserId) && signal.type !== 'acceptCall' && signal.type !== 'ready') {
+      console.log('Ignoring signal not addressed to current user:', { from, to, currentUserId });
+      return;
     }
 
     const peerConnection = peerConnections.current.get(from);
@@ -489,40 +508,48 @@ const GroupCallActivity = () => {
           break;
 
         case 'ready':
-          if (readyUsers.has(from)) {
-            console.log(`Ignoring duplicate ready signal from user ${from}`);
-            return;
-          }
           setReadyUsers((prev) => {
+            if (prev.has(from)) {
+              console.log(`Ignoring duplicate ready signal from user ${from}`);
+              return prev;
+            }
             const newSet = new Set([...prev, from]);
             console.log('Ready users updated:', Array.from(newSet));
             const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
             toast.success(`${userName} is ready`);
+            console.log(`User ${userName} is ready`);
             return newSet;
           });
           if (!isCallStarted && (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1)) {
             startCall();
+            console.log('Call started for ready participants');
           }
-          if (!isInitiator && peerConnection && peerConnection.signalingState === 'stable') {
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            sendSignal(
-              { from: currentUserId, to: from, signal: { type: 'offer', sdp: offer.sdp } },
-              roomId.current
-            );
-            console.log(`Sent offer to user ${from} after receiving ready`);
+          if (!isInitiator) {
+            if (peerConnection && !peerConnection.localDescription) {
+              const offer = await peerConnection.createOffer();
+              await peerConnection.setLocalDescription(offer);
+              sendSignal(
+                {
+                  from: currentUserId,
+                  to: from,
+                  signal: { type: 'offer', sdp: offer.sdp },
+                },
+                roomId.current
+              );
+              console.log(`Sent offer to user ${from} after receiving ready`);
+            }
           }
           break;
 
         case 'offer':
-          console.log('Processing offer from:', from);
+          console.log('Processing offer from:', from, 'signal:', signal);
+          if (!peerConnection) {
+            console.error(`No PeerConnection for user ${from}`);
+            return;
+          }
           if (peerConnection.signalingState !== 'stable') {
             console.warn(`Ignoring offer from ${from} due to signaling state: ${peerConnection.signalingState}`);
-            peerConnection.close();
-            peerConnections.current.delete(from);
-            const newPeerConnection = await initializePeerConnection(from);
-            if (!newPeerConnection) return;
-            peerConnections.current.set(from, newPeerConnection);
+            return;
           }
           await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
           const answer = await peerConnection.createAnswer();
@@ -542,15 +569,16 @@ const GroupCallActivity = () => {
           if (offerTimeoutRef.current) {
             clearTimeout(offerTimeoutRef.current);
             offerTimeoutRef.current = null;
+            console.log('Cleared offerTimeout after receiving offer');
           }
           break;
 
         case 'answer':
-          if (peerConnection.signalingState === 'have-local-offer') {
+          if (peerConnection && !peerConnection.remoteDescription) {
             await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
             console.log(`Processed answer from user ${from}`);
           } else {
-            console.warn(`Ignoring answer from ${from} due to signaling state: ${peerConnection.signalingState}`);
+            console.warn(`No peerConnection or remoteDescription already set for user ${from}`);
           }
           break;
 
@@ -584,6 +612,7 @@ const GroupCallActivity = () => {
             setCallParticipants((prev) => prev.filter((u) => u.id !== Number(from)));
             peerConnections.current.delete(from);
             if (callParticipants.length <= 1) {
+              console.log('No participants left after reject, ending call');
               endCall();
             }
           }
@@ -600,13 +629,16 @@ const GroupCallActivity = () => {
             toast.info(`${userName} left the group call`);
             setCallParticipants((prev) => {
               const updatedParticipants = prev.filter((u) => u.id !== Number(from));
+              console.log('Updated participants after endCall:', updatedParticipants);
               return updatedParticipants;
             });
             if (peerConnection) {
               peerConnection.close();
               peerConnections.current.delete(from);
             }
+            // Завершаем вызов только для инициатора или если остался один участник
             if (isInitiator || callParticipants.length <= 2) {
+              console.log('Ending call: initiator or less than 2 participants remain');
               endCall();
             }
           }
@@ -617,22 +649,6 @@ const GroupCallActivity = () => {
       }
     } catch (error) {
       console.error('Error processing signal:', error);
-      if (error.name === 'InvalidStateError') {
-        console.warn(`Resetting peer connection for user ${from} due to InvalidStateError`);
-        peerConnection.close();
-        peerConnections.current.delete(from);
-        const newPeerConnection = await initializePeerConnection(from);
-        if (newPeerConnection && signal.type === 'offer') {
-          await newPeerConnection.setRemoteDescription(new RTCSessionDescription(signal));
-          const answer = await newPeerConnection.createAnswer();
-          await newPeerConnection.setLocalDescription(answer);
-          sendSignal(
-            { from: currentUserId, to: from, signal: { type: 'answer', sdp: answer.sdp } },
-            roomId.current
-          );
-          console.log(`Sent answer to user ${from} after reset`);
-        }
-      }
     }
   };
 
