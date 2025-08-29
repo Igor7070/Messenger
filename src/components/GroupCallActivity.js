@@ -32,6 +32,7 @@ const GroupCallActivity = () => {
   const callStartTime = useRef(Date.now());
   const hasNotifiedEndCall = useRef(false);
   const hasSentInvite = useRef(false);
+  const hasSentSignals = useRef(false); // Новое состояние для предотвращения дублирования сигналов
   let isMounted = true;
 
   const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
@@ -152,8 +153,8 @@ const GroupCallActivity = () => {
             if (isInitiator && !hasSentInvite.current) {
               hasSentInvite.current = true;
               sendGroupCallInvite();
-            } else if (!isInitiator && !hasSentInvite.current) {
-              hasSentInvite.current = true;
+            } else if (!isInitiator && !hasSentSignals.current) {
+              hasSentSignals.current = true; // Предотвращаем дублирование сигналов
               console.log('Sending acceptCall and ready signals');
               sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
               memoizedParticipants
@@ -168,8 +169,6 @@ const GroupCallActivity = () => {
                     console.log(`Sent ready signal to user ${user.id}`);
                   }
                 });
-              // Отправляем ready всем участникам, чтобы инициировать обмен offer
-              setTimeout(() => initiateOffers(), 1000); // Даем время для получения ready от других
             }
           },
           (error) => {
@@ -429,7 +428,7 @@ const GroupCallActivity = () => {
 
     try {
       for (const user of callParticipants) {
-        if (user?.id && user.id !== Number(currentUserId) && readyUsers.has(String(user.id))) {
+        if (user?.id && user.id !== Number(currentUserId)) {
           let peerConnection = peerConnections.current.get(String(user.id));
           if (!peerConnection) {
             peerConnection = await initializePeerConnection(String(user.id));
@@ -474,7 +473,7 @@ const GroupCallActivity = () => {
 
     try {
       for (const user of callParticipants) {
-        if (user.id !== Number(currentUserId) && readyUsers.has(String(user.id))) {
+        if (user.id !== Number(currentUserId)) {
           let peerConnection = peerConnections.current.get(String(user.id));
           if (!peerConnection) {
             peerConnection = await initializePeerConnection(String(user.id));
@@ -579,12 +578,33 @@ const GroupCallActivity = () => {
             toast.success(`${userName} is ready`);
             return newSet;
           });
-          if (isInitiator && !isCallStarted) {
+          if (isInitiator) {
             if (callParticipants.length <= 2 || new Set([...readyUsers, from]).size >= callParticipants.length - 1) {
               startCall();
             }
           } else {
-            initiateOffers();
+            // Отправляем offer для пользователя, который прислал ready
+            let peerConnection = peerConnections.current.get(from);
+            if (!peerConnection) {
+              peerConnection = await initializePeerConnection(from);
+              if (!peerConnection) {
+                console.error(`Failed to initialize PeerConnection for user ${from}`);
+                return;
+              }
+            }
+            if (!peerConnection.localDescription) {
+              const offer = await peerConnection.createOffer();
+              await peerConnection.setLocalDescription(offer);
+              sendSignal(
+                {
+                  from: currentUserId,
+                  to: from,
+                  signal: { type: 'offer', sdp: offer.sdp },
+                },
+                roomId.current
+              );
+              console.log(`Sent offer to user ${from} after receiving ready`);
+            }
           }
           break;
 
