@@ -547,8 +547,8 @@ const GroupCallActivity = () => {
             console.error(`No PeerConnection for user ${from}`);
             return;
           }
-          if (peerConnection.remoteDescription) {
-            console.warn(`Ignoring duplicate offer from ${from}`);
+          if (peerConnection.signalingState !== 'stable') {
+            console.warn(`Ignoring offer from ${from} due to signaling state: ${peerConnection.signalingState}`);
             return;
           }
           await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
@@ -566,7 +566,6 @@ const GroupCallActivity = () => {
             }
             pendingCandidates.current.delete(from);
           }
-          // Очищаем таймер offerTimeout, так как соединение установлено
           if (offerTimeoutRef.current) {
             clearTimeout(offerTimeoutRef.current);
             offerTimeoutRef.current = null;
