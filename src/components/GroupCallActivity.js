@@ -19,7 +19,8 @@ const GroupCallActivity = () => {
   const peerConnections = useRef(new Map());
   const localAudioRef = useRef(null);
   const remoteAudioRefs = useRef(new Map());
-  const pendingCandidates = useRef(new Map()); // Очередь для ICE-кандидатов
+  const pendingCandidates = useRef(new Map());
+  const pendingStreams = useRef(new Map());
   const [callParticipants, setCallParticipants] = useState(participants);
   const [callDuration, setCallDuration] = useState('00:00');
   const [startTime, setStartTime] = useState('');
@@ -32,8 +33,6 @@ const GroupCallActivity = () => {
   const callStartTime = useRef(Date.now());
   const hasNotifiedEndCall = useRef(false);
   const hasSentInvite = useRef(false);
-
-  const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
   const hasProcessedInvite = useRef(new Set());
   const unsubscribeRoomRef = useRef(null);
   const offerTimeoutRef = useRef(null);
@@ -97,7 +96,7 @@ const GroupCallActivity = () => {
       }
 
       try {
-        // Получение данных участников через API
+        // Fetch participant details
         const fetchParticipants = async () => {
           try {
             const updatedParticipants = await Promise.all(
@@ -129,24 +128,24 @@ const GroupCallActivity = () => {
         };
         await fetchParticipants();
 
-        // Получение локального потока
+        // Get local stream
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         console.log('Local stream tracks:', stream.getTracks());
         localStream.current = stream;
         localAudioRef.current.srcObject = stream;
 
-        // Создаем аудиоэлементы для всех участников
+        // Create audio elements for all participants
         memoizedParticipants.forEach((participant) => {
           if (participant.id !== Number(currentUserId) && !remoteAudioRefs.current.has(String(participant.id))) {
             const audioElement = document.createElement('audio');
             audioElement.id = `remote-audio-${participant.id}`;
-            document.body.appendChild(audioElement); // Добавляем в DOM
+            document.body.appendChild(audioElement);
             remoteAudioRefs.current.set(String(participant.id), audioElement);
             console.log(`Created and appended audio element for user ${participant.id}`);
           }
         });
 
-        // Присваивание отложенных потоков
+        // Assign pending streams
         pendingStreams.current.forEach((stream, userId) => {
           const audioElement = remoteAudioRefs.current.get(userId);
           if (audioElement && !audioElement.srcObject) {
@@ -159,7 +158,7 @@ const GroupCallActivity = () => {
 
         setGroupSignalHandler(handleSignal);
 
-        // Подписка на комнату
+        // Subscribe to room
         unsubscribeRoomRef.current = subscribeToRoom(
           roomId.current,
           () => {
@@ -336,7 +335,7 @@ const GroupCallActivity = () => {
     callParticipants
       .filter((p) => p.id !== initiator.id)
       .forEach((user) => {
-        console.log('GroupCallActivity: Подготовка groupCallInvite для пользователя:', user.id, groupCallRequest);
+        console.log('GroupCallActivity: Preparing groupCallInvite for user:', user.id, groupCallRequest);
         sendSignal(groupCallRequest, roomId.current, String(user.id));
         console.log(`GroupCallActivity: Sent group call invite to user ${user.id}`, groupCallRequest);
       });
@@ -499,6 +498,8 @@ const GroupCallActivity = () => {
       return;
     }
 
+    let peerConnection = peerConnections.current.get(from);
+
     try {
       switch (signal.type) {
         case 'acceptCall':
@@ -521,7 +522,6 @@ const GroupCallActivity = () => {
             return newSet;
           });
           if (isInitiator && isMounted.current) {
-            let peerConnection = peerConnections.current.get(from);
             if (!peerConnection) {
               peerConnection = await initializePeerConnection(from);
               if (!peerConnection) {
@@ -552,7 +552,6 @@ const GroupCallActivity = () => {
 
         case 'offer':
           console.log('Processing offer from:', from, 'signal:', signal);
-          let peerConnection = peerConnections.current.get(from);
           if (!peerConnection) {
             console.error(`No PeerConnection for user ${from}, initializing new one`);
             peerConnection = await initializePeerConnection(from);
@@ -608,7 +607,6 @@ const GroupCallActivity = () => {
           break;
 
         case 'answer':
-          const peerConnection = peerConnections.current.get(from);
           if (peerConnection && !peerConnection.remoteDescription) {
             await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
             console.log(`Processed answer from user ${from}`);
@@ -618,13 +616,11 @@ const GroupCallActivity = () => {
           break;
 
         case 'candidate':
-          const peerConnection = peerConnections.current.get(from);
-          const { iceCandidate } = signal;
-          if (peerConnection && iceCandidate.candidate) {
+          if (peerConnection && signal.iceCandidate.candidate) {
             const candidate = new RTCIceCandidate({
-              candidate: iceCandidate.candidate,
-              sdpMid: iceCandidate.sdpMid,
-              sdpMLineIndex: Number(iceCandidate.sdpMLineIndex),
+              candidate: signal.iceCandidate.candidate,
+              sdpMid: signal.iceCandidate.sdpMid,
+              sdpMLineIndex: Number(signal.iceCandidate.sdpMLineIndex),
             });
             if (peerConnection.remoteDescription) {
               await peerConnection.addIceCandidate(candidate);
@@ -637,7 +633,7 @@ const GroupCallActivity = () => {
               ]);
             }
           } else {
-            console.error(`Cannot add ICE candidate: peerConnection=${!!peerConnection}, candidate=${!!iceCandidate.candidate}`);
+            console.error(`Cannot add ICE candidate: peerConnection=${!!peerConnection}, candidate=${!!signal.iceCandidate.candidate}`);
           }
           break;
 
@@ -668,7 +664,6 @@ const GroupCallActivity = () => {
               console.log('Updated participants after endCall:', updatedParticipants);
               return updatedParticipants;
             });
-            const peerConnection = peerConnections.current.get(from);
             if (peerConnection) {
               peerConnection.close();
               peerConnections.current.delete(from);
@@ -697,7 +692,6 @@ const GroupCallActivity = () => {
     setIsCallStarted(false);
     setIsWaiting(false);
 
-    // Отправляем сигнал endCall только один раз
     if (!hasNotifiedEndCall.current) {
       hasNotifiedEndCall.current = true;
       callParticipants
@@ -716,14 +710,12 @@ const GroupCallActivity = () => {
       toast.info('Group call ended');
     }
 
-    // Явно отписываемся от комнаты
     if (unsubscribeRoomRef.current) {
       unsubscribeRoomRef.current();
       console.log(`Unsubscribed from room ${roomId.current} in endCall`);
       unsubscribeRoomRef.current = null;
     }
 
-    // Закрываем все peerConnections
     peerConnections.current.forEach((pc) => {
       pc.close();
     });
@@ -731,7 +723,6 @@ const GroupCallActivity = () => {
     pendingStreams.current.clear();
     pendingCandidates.current.clear();
 
-    // Очищаем локальный аудиопоток
     if (localStream.current) {
       localStream.current.getTracks().forEach((track) => track.stop());
       localStream.current = null;
@@ -741,7 +732,6 @@ const GroupCallActivity = () => {
       localAudioRef.current.srcObject = null;
     }
 
-    // Очищаем удалённые аудиопотоки
     remoteAudioRefs.current.forEach((audio) => {
       if (audio.srcObject) {
         audio.srcObject.getTracks().forEach((track) => track.stop());
@@ -751,12 +741,13 @@ const GroupCallActivity = () => {
     });
     remoteAudioRefs.current.clear();
 
-    // Останавливаем рингтон
     ringtoneRef.current.pause();
     ringtoneRef.current.currentTime = 0;
 
     navigate('/');
   };
+
+  const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
 
   return (
     <div className="group-call-container">
