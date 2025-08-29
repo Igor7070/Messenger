@@ -148,14 +148,14 @@ const GroupCallActivity = () => {
         localStream.current = stream;
         localAudioRef.current.srcObject = stream;
 
-        // Create audio elements for all participants
+        // Assign audio elements from DOM
         memoizedParticipants.forEach((participant) => {
-          if (participant?.id && participant.id !== Number(currentUserId) && !remoteAudioRefs.current.has(String(participant.id))) {
-            const audioElement = document.createElement('audio');
-            audioElement.id = `remote-audio-${participant.id}`;
-            document.body.appendChild(audioElement);
-            remoteAudioRefs.current.set(String(participant.id), audioElement);
-            console.log(`Created and appended audio element for user ${participant.id}`);
+          if (participant?.id && participant.id !== Number(currentUserId)) {
+            const audioElement = document.getElementById(`remote-audio-${participant.id}`);
+            if (audioElement && !remoteAudioRefs.current.has(String(participant.id))) {
+              remoteAudioRefs.current.set(String(participant.id), audioElement);
+              console.log(`Assigned existing audio element for user ${participant.id}`);
+            }
           }
         });
 
@@ -196,8 +196,11 @@ const GroupCallActivity = () => {
                     console.log(`Sent ready signal to user ${user.id}`);
                   }
                 });
-              // Отправляем ready всем участникам, чтобы инициировать обмен offer
-              setTimeout(() => initiateOffers(), 1000); // Даем время для получения ready от других
+              setTimeout(() => {
+                if (isMounted.current && !isCallStarted) {
+                  initiateOffers();
+                }
+              }, 1000);
             }
           },
           (error) => {
@@ -213,26 +216,6 @@ const GroupCallActivity = () => {
           ringtoneRef.current.play().catch((error) => {
             if (isMounted.current) console.error('Error playing ringtone:', error);
           });
-        }
-
-        // Проверка статуса инициатора
-        const checkInitiatorStatus = async () => {
-          try {
-            const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${initiator.id}`, {
-              headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
-            });
-            const initiatorData = await response.json();
-            if (!initiatorData.online) {
-              console.error('Initiator is offline, ending call');
-              toast.error('Call initiator is offline');
-              endCall();
-            }
-          } catch (error) {
-            console.error('Error checking initiator status:', error);
-          }
-        };
-        if (!isInitiator) {
-          checkInitiatorStatus();
         }
       } catch (error) {
         console.error('Error initializing call:', error);
@@ -298,12 +281,12 @@ const GroupCallActivity = () => {
           }
         });
         if (!hasActiveConnections) {
-          console.warn('No active connections within 30 seconds, ending call.');
+          console.warn('No active connections within 60 seconds, ending call.');
           toast.error('No participants responded to the call.');
           endCall();
         }
       }
-    }, 30000);
+    }, 60000);
 
     offerTimeoutRef.current = setTimeout(() => {
       if (!isMounted.current) return;
@@ -627,7 +610,6 @@ const GroupCallActivity = () => {
               startCall();
             }
           } else {
-            // Не-инициатор отправляет offer другим участникам
             initiateOffers();
           }
           break;
