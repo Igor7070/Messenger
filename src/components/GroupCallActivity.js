@@ -32,7 +32,7 @@ const GroupCallActivity = () => {
   const callStartTime = useRef(Date.now());
   const hasNotifiedEndCall = useRef(false);
   const hasSentInvite = useRef(false);
-  const hasSentSignals = useRef(false); // Новое состояние для предотвращения дублирования сигналов
+  const hasSentSignals = useRef(new Set()); // Изменено на Set для отслеживания отправленных сигналов
   let isMounted = true;
 
   const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
@@ -153,15 +153,15 @@ const GroupCallActivity = () => {
             if (isInitiator && !hasSentInvite.current) {
               hasSentInvite.current = true;
               sendGroupCallInvite();
-            } else if (!isInitiator && !hasSentSignals.current) {
-              hasSentSignals.current = true; // Предотвращаем дублирование сигналов
+            } else if (!isInitiator && !hasSentSignals.current.has('initial')) {
+              hasSentSignals.current.add('initial'); // Предотвращаем дублирование начальных сигналов
               console.log('Sending acceptCall and ready signals');
               sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
               memoizedParticipants
                 .filter((p) => p.id !== Number(currentUserId))
                 .forEach((user) => {
-                  if (!hasProcessedInvite.current.has(String(user.id))) {
-                    hasProcessedInvite.current.add(String(user.id));
+                  if (!hasSentSignals.current.has(`ready_${user.id}`)) {
+                    hasSentSignals.current.add(`ready_${user.id}`);
                     sendSignal(
                       { from: currentUserId, to: String(user.id), signal: { type: 'ready' } },
                       roomId.current
@@ -183,6 +183,7 @@ const GroupCallActivity = () => {
           ringtoneRef.current.loop = true;
           ringtoneRef.current.play().catch((error) => {
             if (isMounted) console.error('Error playing ringtone:', error);
+            toast.info('Please interact with the page to enable audio');
           });
         }
       } catch (error) {
@@ -377,6 +378,8 @@ const GroupCallActivity = () => {
             console.log(`Added user ${userId} to readyUsers:`, Array.from(newSet));
             return newSet;
           });
+          setIsCallStarted(true);
+          setIsWaiting(false);
         } else if (peerConnection.iceConnectionState === 'failed') {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
@@ -424,7 +427,7 @@ const GroupCallActivity = () => {
       console.log('Call already started or component unmounted, skipping initiateOffers');
       return;
     }
-    console.log('Initiating offers for all ready participants:', Array.from(readyUsers));
+    console.log('Initiating offers for all participants:', callParticipants.map((u) => u.id));
 
     try {
       for (const user of callParticipants) {
@@ -579,7 +582,7 @@ const GroupCallActivity = () => {
             return newSet;
           });
           if (isInitiator) {
-            if (callParticipants.length <= 2 || new Set([...readyUsers, from]).size >= callParticipants.length - 1) {
+            if (new Set([...readyUsers, from]).size >= callParticipants.filter((p) => p.id !== Number(currentUserId)).length) {
               startCall();
             }
           } else {
@@ -592,7 +595,8 @@ const GroupCallActivity = () => {
                 return;
               }
             }
-            if (!peerConnection.localDescription) {
+            if (!peerConnection.localDescription && !hasSentSignals.current.has(`offer_${from}`)) {
+              hasSentSignals.current.add(`offer_${from}`);
               const offer = await peerConnection.createOffer();
               await peerConnection.setLocalDescription(offer);
               sendSignal(
@@ -715,6 +719,7 @@ const GroupCallActivity = () => {
       }
     } catch (error) {
       console.error('Error processing signal:', error);
+      toast.error('Error processing signal');
     }
   };
 
