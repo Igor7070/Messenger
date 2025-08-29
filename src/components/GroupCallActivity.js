@@ -420,9 +420,9 @@ const GroupCallActivity = () => {
 
     try {
       for (const user of callParticipants) {
-        if (user.id !== initiator.id && user.id !== Number(currentUserId)) {
-          const peerConnection = await initializePeerConnection(String(user.id));
-          if (isInitiator && peerConnection) {
+        if (user.id !== initiator.id && user.id !== Number(currentUserId) && readyUsers.has(String(user.id))) {
+          const peerConnection = peerConnections.current.get(String(user.id)) || (await initializePeerConnection(String(user.id)));
+          if (peerConnection && !peerConnection.localDescription) {
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
             sendSignal(
@@ -434,6 +434,8 @@ const GroupCallActivity = () => {
               roomId.current
             );
             console.log(`Sent offer to user ${user.id}`);
+          } else {
+            console.log(`Skipping offer for user ${user.id}: PeerConnection already has localDescription or does not exist`);
           }
         }
       }
@@ -520,11 +522,8 @@ const GroupCallActivity = () => {
             console.log(`User ${userName} is ready`);
             return newSet;
           });
-          if (!isCallStarted && (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1)) {
-            startCall();
-            console.log('Call started for ready participants');
-          }
-          if (!isInitiator) {
+          if (isInitiator) {
+            const peerConnection = peerConnections.current.get(from) || (await initializePeerConnection(from));
             if (peerConnection && !peerConnection.localDescription) {
               const offer = await peerConnection.createOffer();
               await peerConnection.setLocalDescription(offer);
@@ -538,6 +537,10 @@ const GroupCallActivity = () => {
               );
               console.log(`Sent offer to user ${from} after receiving ready`);
             }
+          }
+          if (!isCallStarted && (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1)) {
+            startCall();
+            console.log('Call started for ready participants');
           }
           break;
 
