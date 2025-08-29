@@ -547,33 +547,50 @@ const GroupCallActivity = () => {
         case 'offer':
           console.log('Processing offer from:', from, 'signal:', signal);
           if (!peerConnection) {
-            console.error(`No PeerConnection for user ${from}`);
-            return;
-          }
-          if (peerConnection.remoteDescription) {
-            console.warn(`Ignoring duplicate offer from ${from}`);
-            return;
-          }
-          await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
-          const answer = await peerConnection.createAnswer();
-          await peerConnection.setLocalDescription(answer);
-          sendSignal(
-            { from: currentUserId, to: from, signal: { type: 'answer', sdp: answer.sdp } },
-            roomId.current
-          );
-          console.log(`Sent answer to user ${from}`);
-          if (pendingCandidates.current.has(from)) {
-            for (const candidate of pendingCandidates.current.get(from)) {
-              await peerConnection.addIceCandidate(candidate);
-              console.log(`Processed pending ICE candidate for ${from}`);
+            console.error(`No PeerConnection for user ${from}, initializing new one`);
+            const newPeerConnection = await initializePeerConnection(from);
+            if (!newPeerConnection) {
+              console.error(`Failed to initialize PeerConnection for user ${from}`);
+              toast.error('Failed to initialize connection');
+              return;
             }
-            pendingCandidates.current.delete(from);
+            peerConnections.current.set(from, newPeerConnection);
+            peerConnection = newPeerConnection;
           }
-          // Очищаем таймер offerTimeout, так как соединение установлено
-          if (offerTimeoutRef.current) {
-            clearTimeout(offerTimeoutRef.current);
-            offerTimeoutRef.current = null;
-            console.log('Cleared offerTimeout after receiving offer');
+          try {
+            if (peerConnection.signalingState !== 'stable' && peerConnection.signalingState !== 'have-local-offer') {
+              console.warn(`Invalid signaling state for user ${from}: ${peerConnection.signalingState}, reinitializing`);
+              peerConnection.close();
+              const newPeerConnection = await initializePeerConnection(from);
+              peerConnections.current.set(from, newPeerConnection);
+              peerConnection = newPeerConnection;
+            }
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+            console.log(`Set remote description for user ${from}`);
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            console.log(`Created and set local answer for user ${from}`);
+            sendSignal(
+              { from: currentUserId, to: from, signal: { type: 'answer', sdp: answer.sdp } },
+              roomId.current
+            );
+            console.log(`Sent answer to user ${from}`);
+            if (pendingCandidates.current.has(from)) {
+              for (const candidate of pendingCandidates.current.get(from)) {
+                await peerConnection.addIceCandidate(candidate);
+                console.log(`Processed pending ICE candidate for ${from}`);
+              }
+              pendingCandidates.current.delete(from);
+            }
+            if (offerTimeoutRef.current) {
+              clearTimeout(offerTimeoutRef.current);
+              offerTimeoutRef.current = null;
+              console.log('Cleared offerTimeout after receiving offer');
+            }
+          } catch (error) {
+            console.error(`Error processing offer from user ${from}:`, error);
+            toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`}`);
+            endCall();
           }
           break;
 
