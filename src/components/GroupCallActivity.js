@@ -34,6 +34,8 @@ const GroupCallActivity = () => {
   const hasNotifiedEndCall = useRef(false);
   const hasSentInvite = useRef(false);
   const processedSignals = useRef(new Set());
+  const unsubscribeRoomRef = useRef(null); // Добавлено объявление
+  const hasProcessedInvite = useRef(new Set()); // Добавлено объявление
   let isMounted = true;
 
   const { sendSignal, setGroupSignalHandler, subscribeToRoom, isStompConnected } = useCallWebSocket();
@@ -355,6 +357,12 @@ const GroupCallActivity = () => {
           audioElement.onloadedmetadata = () => {
             console.log(`Audio element for user ${userId} loaded metadata`);
             audioElement.play().catch((error) => console.error(`Error playing audio for user ${userId}:`, error));
+          };
+          audioElement.onplaying = () => {
+            console.log(`Audio for user ${userId} is playing`);
+          };
+          audioElement.onerror = (error) => {
+            console.error(`Audio error for user ${userId}:`, error);
           };
           remoteAudioRefs.current.set(userId, audioElement);
           document.body.appendChild(audioElement);
