@@ -56,7 +56,16 @@ const GroupCallActivity = () => {
     ],
   });
 
-  console.log('GroupCallActivity: Initial state:', { state, initialRoomId, isInitiator, roomId: roomId.current });
+  const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
+
+  console.log('GroupCallActivity: Initial state:', {
+    state,
+    initialRoomId,
+    isInitiator,
+    roomId: roomId.current,
+    initiator,
+    participants: memoizedParticipants,
+  });
 
   useEffect(() => {
     console.log('useEffect called with dependencies:', {
@@ -68,8 +77,8 @@ const GroupCallActivity = () => {
       participants: memoizedParticipants,
     });
 
-    if (!currentUserId || !initiator.id) {
-      console.error('User ID or initiator ID is missing');
+    if (!currentUserId || !initiator?.id) {
+      console.error('User ID or initiator ID is missing', { currentUserId, initiator });
       toast.error('User ID or initiator ID is missing.');
       navigate('/');
       return;
@@ -101,6 +110,10 @@ const GroupCallActivity = () => {
           try {
             const updatedParticipants = await Promise.all(
               memoizedParticipants.map(async (user) => {
+                if (!user?.id) {
+                  console.error('Invalid user object in participants:', user);
+                  return { id: Date.now(), username: 'Unknown User', avatar: null };
+                }
                 if (user.id === Number(currentUserId)) {
                   return { ...user, username: user.username || `User ${user.id}` };
                 }
@@ -119,7 +132,7 @@ const GroupCallActivity = () => {
                 };
               })
             );
-            setCallParticipants(updatedParticipants);
+            setCallParticipants(updatedParticipants.filter((user) => user.id));
             console.log('Updated callParticipants:', updatedParticipants);
           } catch (error) {
             console.error('Error fetching participants:', error);
@@ -136,7 +149,7 @@ const GroupCallActivity = () => {
 
         // Create audio elements for all participants
         memoizedParticipants.forEach((participant) => {
-          if (participant.id !== Number(currentUserId) && !remoteAudioRefs.current.has(String(participant.id))) {
+          if (participant?.id && participant.id !== Number(currentUserId) && !remoteAudioRefs.current.has(String(participant.id))) {
             const audioElement = document.createElement('audio');
             audioElement.id = `remote-audio-${participant.id}`;
             document.body.appendChild(audioElement);
@@ -171,7 +184,7 @@ const GroupCallActivity = () => {
               console.log('Sending acceptCall and ready signals');
               sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
               memoizedParticipants
-                .filter((p) => p.id !== Number(currentUserId))
+                .filter((p) => p?.id && p.id !== Number(currentUserId))
                 .forEach((user) => {
                   if (!hasProcessedInvite.current.has(String(user.id))) {
                     hasProcessedInvite.current.add(String(user.id));
@@ -315,7 +328,7 @@ const GroupCallActivity = () => {
         console.log(`Unsubscribed from room ${roomId.current}`);
       }
     };
-  }, [currentUserId, initiator.id, isInitiator, isCallEnded, memoizedParticipants, sendSignal, setGroupSignalHandler, navigate]);
+  }, [currentUserId, initiator?.id, isInitiator, isCallEnded, memoizedParticipants, sendSignal, setGroupSignalHandler, navigate]);
 
   const sendGroupCallInvite = () => {
     if (!roomId.current) {
@@ -324,16 +337,16 @@ const GroupCallActivity = () => {
     }
     const groupCallRequest = {
       type: 'group',
-      initiatorId: String(initiator.id),
-      initiatorName: initiator.username,
+      initiatorId: String(initiator.id || currentUserId),
+      initiatorName: initiator.username || `User ${currentUserId}`,
       roomId: roomId.current,
       recipientIds: callParticipants
-        .filter((p) => p.id !== initiator.id)
+        .filter((p) => p?.id && p.id !== initiator.id)
         .map((p) => String(p.id)),
     };
 
     callParticipants
-      .filter((p) => p.id !== initiator.id)
+      .filter((p) => p?.id && p.id !== initiator.id)
       .forEach((user) => {
         console.log('GroupCallActivity: Preparing groupCallInvite for user:', user.id, groupCallRequest);
         sendSignal(groupCallRequest, roomId.current, String(user.id));
@@ -387,7 +400,7 @@ const GroupCallActivity = () => {
         console.log(`ICE Connection State for ${userId}: ${peerConnection.iceConnectionState}, signalingState: ${peerConnection.signalingState}`);
         if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
           console.error(`ICE connection failed for user ${userId}`);
-          toast.error(`Connection lost with ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
+          toast.error(`Connection lost with ${callParticipants.find((u) => u?.id === Number(userId))?.username || `User ${userId}`}`);
           peerConnection.close();
           peerConnections.current.delete(userId);
         }
@@ -418,11 +431,11 @@ const GroupCallActivity = () => {
     setIsWaiting(false);
     ringtoneRef.current.pause();
     ringtoneRef.current.currentTime = 0;
-    console.log('Starting group call for participants:', callParticipants.map((u) => u.id));
+    console.log('Starting group call for participants:', callParticipants.map((u) => u?.id));
 
     try {
       for (const user of callParticipants) {
-        if (user.id !== initiator.id && user.id !== Number(currentUserId) && readyUsers.current.has(String(user.id))) {
+        if (user?.id && user.id !== initiator.id && user.id !== Number(currentUserId) && readyUsers.current.has(String(user.id))) {
           let peerConnection = peerConnections.current.get(String(user.id));
           if (!peerConnection) {
             peerConnection = await initializePeerConnection(String(user.id));
@@ -489,7 +502,7 @@ const GroupCallActivity = () => {
       }
       roomId.current = signal.roomId;
       console.log('Updated roomId to:', roomId.current);
-      toast.info(`${signal.initiatorName} invites you to a group call`);
+      toast.info(`${signal.initiatorName || 'Unknown User'} invites you to a group call`);
       return;
     }
 
@@ -504,7 +517,7 @@ const GroupCallActivity = () => {
       switch (signal.type) {
         case 'acceptCall':
           if (isInitiator) {
-            const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
+            const userName = callParticipants.find((u) => u?.id === Number(from))?.username || `User ${from}`;
             toast.success(`${userName} accepted the group call`);
           }
           break;
@@ -517,7 +530,7 @@ const GroupCallActivity = () => {
             }
             const newSet = new Set([...prev, from]);
             console.log('Ready users updated:', Array.from(newSet));
-            const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
+            const userName = callParticipants.find((u) => u?.id === Number(from))?.username || `User ${from}`;
             toast.success(`${userName} is ready`);
             return newSet;
           });
@@ -600,7 +613,7 @@ const GroupCallActivity = () => {
             }
           } catch (error) {
             console.error(`Error processing offer from user ${from}:`, error);
-            toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`}`);
+            toast.error(`Failed to process offer from ${callParticipants.find((u) => u?.id === Number(from))?.username || `User ${from}`}`);
             peerConnection?.close();
             peerConnections.current.delete(from);
           }
@@ -639,9 +652,9 @@ const GroupCallActivity = () => {
 
         case 'rejectCall':
           if (isInitiator) {
-            const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
+            const userName = callParticipants.find((u) => u?.id === Number(from))?.username || `User ${from}`;
             toast.warn(`${userName} rejected the group call`);
-            setCallParticipants((prev) => prev.filter((u) => u.id !== Number(from)));
+            setCallParticipants((prev) => prev.filter((u) => u?.id !== Number(from)));
             peerConnections.current.delete(from);
             if (callParticipants.length <= 2) {
               console.log('No participants left after reject, ending call');
@@ -657,10 +670,10 @@ const GroupCallActivity = () => {
           }
           if (!hasNotifiedEndCall.current) {
             hasNotifiedEndCall.current = true;
-            const userName = callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`;
+            const userName = callParticipants.find((u) => u?.id === Number(from))?.username || `User ${from}`;
             toast.info(`${userName} left the group call`);
             setCallParticipants((prev) => {
-              const updatedParticipants = prev.filter((u) => u.id !== Number(from));
+              const updatedParticipants = prev.filter((u) => u?.id !== Number(from));
               console.log('Updated participants after endCall:', updatedParticipants);
               return updatedParticipants;
             });
@@ -695,7 +708,7 @@ const GroupCallActivity = () => {
     if (!hasNotifiedEndCall.current) {
       hasNotifiedEndCall.current = true;
       callParticipants
-        .filter((u) => u.id !== Number(currentUserId))
+        .filter((u) => u?.id && u.id !== Number(currentUserId))
         .forEach((user) => {
           sendSignal(
             {
@@ -747,11 +760,17 @@ const GroupCallActivity = () => {
     navigate('/');
   };
 
-  const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
+  // Проверка данных перед рендерингом
+  if (!initiator || !callParticipants?.length) {
+    console.error('Invalid initiator or participants:', { initiator, callParticipants });
+    toast.error('Invalid call data');
+    navigate('/');
+    return null;
+  }
 
   return (
     <div className="group-call-container">
-      <h1 className="group-call-title">Group Call with {initiator.username}</h1>
+      <h1 className="group-call-title">Group Call with {initiator.username || 'Unknown User'}</h1>
       <div className="group-call-info">
         <p className="call-timer">Duration: {callDuration}</p>
         <p className="call-start-time">Start: {startTime}</p>
@@ -760,20 +779,32 @@ const GroupCallActivity = () => {
       <div className="group-call-participants">
         <h2>Participants</h2>
         <ul className="group-call-participant-list">
-          {callParticipants.map((user) => (
-            <li key={user.id} className="group-call-participant-item">
-              {user.avatar ? (
-                <img
-                  src={`https://unlimitedpossibilities12.org${user.avatar}`}
-                  alt={`${user.username} avatar`}
-                  className="group-call-participant-avatar"
-                />
-              ) : (
-                <div className="group-call-participant-avatar">{user.username.charAt(0).toUpperCase()}</div>
-              )}
-              <span className="group-call-participant-name">{user.username}</span>
-            </li>
-          ))}
+          {callParticipants.map((user) => {
+            if (!user?.id) {
+              console.warn('Invalid user in callParticipants:', user);
+              return null;
+            }
+            return (
+              <li key={user.id} className="group-call-participant-item">
+                {user.avatar ? (
+                  <img
+                    src={`https://unlimitedpossibilities12.org${user.avatar}`}
+                    alt={`${user.username || `User ${user.id}`} avatar`}
+                    className="group-call-participant-avatar"
+                    onError={(e) => {
+                      console.error(`Failed to load avatar for user ${user.id}`);
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="group-call-participant-avatar">
+                    {(user.username || `User ${user.id}`).charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="group-call-participant-name">{user.username || `User ${user.id}`}</span>
+              </li>
+            );
+          })}
         </ul>
       </div>
       <div className="group-call-chart-container">
