@@ -156,11 +156,13 @@ const GroupCallActivity = () => {
               hasSentInvite.current = true;
               console.log('Sending acceptCall signal');
               sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
-              // Отправляем ready только для тех, кто еще не получил
+              
+              // Отправляем ready только для участников, которым еще не отправляли
+              const sentSignals = new Set();
               memoizedParticipants
-                .filter((p) => p.id !== Number(currentUserId) && !hasProcessedInvite.current.has(String(p.id)))
+                .filter((p) => p.id !== Number(currentUserId) && !sentSignals.has(String(p.id)))
                 .forEach((user) => {
-                  hasProcessedInvite.current.add(String(user.id));
+                  sentSignals.add(String(user.id));
                   sendSignal(
                     { from: currentUserId, to: String(user.id), signal: { type: 'ready' } },
                     roomId.current
@@ -570,31 +572,61 @@ const GroupCallActivity = () => {
             return;
           }
           try {
-            // Проверяем, можно ли установить remoteDescription
-            if (peerConnection.signalingState !== 'stable' && peerConnection.signalingState !== 'have-local-offer') {
-              console.log(`Rolling back to stable state for user ${from} from state ${peerConnection.signalingState}`);
-              await peerConnection.setLocalDescription({ type: 'rollback' });
+            // Проверяем состояние signalingState
+            const currentState = peerConnection.signalingState;
+            console.log(`Current signaling state for user ${from}: ${currentState}`);
+            
+            // Пропускаем обработку, если уже есть remoteDescription с таким же SDP
+            if (peerConnection.remoteDescription && peerConnection.remoteDescription.sdp === signal.sdp) {
+              console.log(`Ignoring duplicate offer from ${from}`);
+              return;
             }
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            sendSignal(
-              { from: currentUserId, to: from, signal: { type: 'answer', sdp: answer.sdp } },
-              roomId.current
-            );
-            console.log(`Sent answer to user ${from}`);
-            // Обрабатываем отложенные ICE-кандидаты
-            if (pendingCandidates.current.has(from)) {
-              for (const candidate of pendingCandidates.current.get(from)) {
-                await peerConnection.addIceCandidate(candidate);
-                console.log(`Processed pending ICE candidate for ${from}`);
+
+            // Устанавливаем remoteDescription только если состояние позволяет
+            if (currentState === 'stable' || currentState === 'have-local-offer') {
+              await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+              console.log(`Set remoteDescription for user ${from}`);
+              
+              const answer = await peerConnection.createAnswer();
+              await peerConnection.setLocalDescription(answer);
+              console.log(`Set localDescription for user ${from}, signalingState: ${peerConnection.signalingState}`);
+              
+              sendSignal(
+                { from: currentUserId, to: from, signal: { type: 'answer', sdp: answer.sdp } },
+                roomId.current
+              );
+              console.log(`Sent answer to user ${from}`);
+
+              // Обрабатываем отложенные ICE-кандидаты
+              if (pendingCandidates.current.has(from)) {
+                for (const candidate of pendingCandidates.current.get(from)) {
+                  await peerConnection.addIceCandidate(candidate);
+                  console.log(`Processed pending ICE candidate for ${from}`);
+                }
+                pendingCandidates.current.delete(from);
               }
-              pendingCandidates.current.delete(from);
-            }
-            if (offerTimeoutRef.current) {
-              clearTimeout(offerTimeoutRef.current);
-              offerTimeoutRef.current = null;
-              console.log('Cleared offerTimeout after receiving offer');
+
+              if (offerTimeoutRef.current) {
+                clearTimeout(offerTimeoutRef.current);
+                offerTimeoutRef.current = null;
+                console.log('Cleared offerTimeout after receiving offer');
+              }
+            } else {
+              console.warn(`Cannot process offer from ${from} in signaling state: ${currentState}`);
+              // Если состояние некорректное, пробуем откат
+              if (currentState !== 'closed') {
+                await peerConnection.setLocalDescription({ type: 'rollback' });
+                console.log(`Rolled back to stable state for user ${from}`);
+                // Повторно устанавливаем remoteDescription
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                sendSignal(
+                  { from: currentUserId, to: from, signal: { type: 'answer', sdp: answer.sdp } },
+                  roomId.current
+                );
+                console.log(`Sent answer to user ${from} after rollback`);
+              }
             }
           } catch (error) {
             console.error(`Error processing offer from ${from}:`, error);
@@ -603,11 +635,22 @@ const GroupCallActivity = () => {
           break;
 
         case 'answer':
-          if (peerConnection && !peerConnection.remoteDescription) {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
-            console.log(`Processed answer from user ${from}`);
-          } else {
-            console.warn(`No peerConnection or remoteDescription already set for user ${from}`);
+          console.log('Processing answer from:', from, 'signal:', signal);
+          if (!peerConnection) {
+            console.error(`No PeerConnection for user ${from}`);
+            return;
+          }
+          try {
+            console.log(`Current signaling state for user ${from}: ${peerConnection.signalingState}`);
+            if (peerConnection.signalingState === 'have-local-offer') {
+              await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+              console.log(`Set remoteDescription (answer) for user ${from}`);
+            } else {
+              console.warn(`Cannot process answer from ${from} in signaling state: ${peerConnection.signalingState}`);
+            }
+          } catch (error) {
+            console.error(`Error processing answer from ${from}:`, error);
+            toast.error(`Failed to process answer from ${callParticipants.find((u) => u.id === Number(from))?.username || `User ${from}`}`);
           }
           break;
 
