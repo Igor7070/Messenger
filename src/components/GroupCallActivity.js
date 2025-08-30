@@ -43,6 +43,8 @@ const GroupCallActivity = () => {
   const signalQueue = useRef(new Map());
   const isProcessingSignal = useRef(new Map());
 
+  const retryOfferTimers = useRef(new Map());
+
   const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
 
   const [chartData, setChartData] = useState({
@@ -135,6 +137,7 @@ const GroupCallActivity = () => {
         console.log('Local stream tracks:', stream.getTracks());
         localAudioRef.current.srcObject = stream;
 
+        // Инициализация PeerConnection для всех участников, кроме себя
         for (const user of memoizedParticipants) {
           if (user.id !== Number(currentUserId) && !peerConnections.current.has(String(user.id))) {
             console.log('Initializing peerConnection for user:', user.id);
@@ -144,13 +147,10 @@ const GroupCallActivity = () => {
 
         setGroupSignalHandler(handleSignal);
 
-        if (isInitiator) {
-          sendSignal({ signal: { type: 'group', roomId: roomId.current } }, roomId.current);
-        }
-
+        // Подписка на комнату
         unsubscribeRoomRef.current = subscribeToRoom(
           roomId.current,
-          () => {
+          async () => {
             console.log(`Successfully subscribed to room ${roomId.current}`);
             if (isInitiator && !hasSentInvite.current) {
               hasSentInvite.current = true;
@@ -159,8 +159,8 @@ const GroupCallActivity = () => {
               hasSentInvite.current = true;
               console.log('Sending acceptCall signal');
               sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
-              
-              // Отправляем ready только для участников, которым еще не отправляли
+
+              // Отправляем ready всем участникам
               const sentSignals = new Set();
               memoizedParticipants
                 .filter((p) => p.id !== Number(currentUserId) && !sentSignals.has(String(p.id)))
@@ -172,6 +172,26 @@ const GroupCallActivity = () => {
                   );
                   console.log(`Sent ready to user ${user.id}`);
                 });
+
+              // Неинициатор отправляет offer всем участникам
+              for (const user of memoizedParticipants) {
+                if (user.id !== Number(currentUserId)) {
+                  const peerConnection = peerConnections.current.get(String(user.id));
+                  if (peerConnection && !peerConnection.localDescription) {
+                    try {
+                      const offer = await peerConnection.createOffer();
+                      await peerConnection.setLocalDescription(offer);
+                      sendSignal(
+                        { from: currentUserId, to: String(user.id), signal: { type: 'offer', sdp: offer.sdp } },
+                        roomId.current
+                      );
+                      console.log(`Non-initiator sent offer to user ${user.id}`);
+                    } catch (error) {
+                      console.error(`Error sending offer to user ${user.id}:`, error);
+                    }
+                  }
+                }
+              }
             }
           },
           (error) => {
@@ -269,6 +289,8 @@ const GroupCallActivity = () => {
         clearTimeout(offerTimeoutRef.current);
         offerTimeoutRef.current = null;
       }
+      retryOfferTimers.current.forEach((timer) => clearTimeout(timer));
+      retryOfferTimers.current.clear();
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
       peerConnections.current.forEach((pc) => pc.close());
