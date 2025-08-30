@@ -465,14 +465,12 @@ const GroupCallActivity = () => {
           }
           const peerConnection = peerConnections.current.get(String(user.id));
           if (peerConnection) {
-            // Проверяем состояние соединения и сигнализации
+            // Проверяем состояние соединения
             if (
               peerConnection.iceConnectionState !== 'connected' &&
-              peerConnection.iceConnectionState !== 'completed' &&
-              peerConnection.signalingState !== 'stable' &&
-              peerConnection.signalingState !== 'have-remote-offer'
+              peerConnection.iceConnectionState !== 'completed'
             ) {
-              // Сбрасываем localDescription, если оно есть
+              // Сбрасываем localDescription, если соединение не установлено
               if (peerConnection.localDescription) {
                 console.log(`Resetting localDescription for user ${user.id}`);
                 await peerConnection.setLocalDescription(null).catch((error) => {
@@ -495,7 +493,7 @@ const GroupCallActivity = () => {
                 console.log(`Sent offer to user ${user.id}`);
               }
             } else {
-              console.log(`Skipping offer for user ${user.id}: already connected, stable, or awaiting answer`);
+              console.log(`Skipping offer for user ${user.id}: already connected`);
             }
           } else {
             console.warn(`No peerConnection for user ${user.id}`);
@@ -639,10 +637,15 @@ const GroupCallActivity = () => {
               console.log(`User ${userName} is ready`);
               return newSet;
             });
-            // Вызываем startCall только если звонок ещё не начат
-            if (!isCallStarted) {
+            // Запускаем startCall для неинициаторов сразу после получения ready
+            if (!isInitiator && !isCallStarted) {
               startCall();
-              console.log('Call started after receiving ready signal');
+              console.log('Call started for non-initiator after receiving ready signal');
+            }
+            // Для инициатора запускаем startCall, если ещё не запущен
+            if (isInitiator && !isCallStarted) {
+              startCall();
+              console.log('Call started for initiator after receiving ready signal');
             }
             break;
 
