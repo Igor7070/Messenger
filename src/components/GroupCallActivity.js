@@ -664,17 +664,46 @@ const GroupCallActivity = () => {
                   offerTimeoutRef.current = null;
                   console.log('Cleared offerTimeout after receiving offer');
                 }
+                // Запускаем startCall после получения offer
                 if (!isCallStarted) {
                   startCall();
                   console.log('Call started after receiving offer');
                 }
               } else {
-                console.warn(`Ignoring offer from ${currentFrom} in signaling state: ${currentState}`);
-                continue; // Игнорируем offer вместо сброса соединения
+                console.warn(`Cannot process offer from ${currentFrom} in signaling state: ${currentState}, resetting peerConnection`);
+                peerConnections.current.delete(currentFrom);
+                const newPeerConnection = await initializePeerConnection(currentFrom, localAudioRef.current.srcObject);
+                if (newPeerConnection) {
+                  await newPeerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
+                  const answer = await newPeerConnection.createAnswer();
+                  await newPeerConnection.setLocalDescription(answer);
+                  const signalKey = `${currentUserId}-${currentFrom}-answer-${answer.sdp.slice(0, 50)}`;
+                  if (!sentSignals.current.has(signalKey)) {
+                    sentSignals.current.add(signalKey);
+                    sendSignal(
+                      { from: currentUserId, to: currentFrom, signal: { type: 'answer', sdp: answer.sdp } },
+                      roomId.current
+                    );
+                    console.log(`Sent answer to user ${currentFrom} after resetting peerConnection`);
+                  }
+                  if (pendingCandidates.current.has(currentFrom)) {
+                    for (const candidate of pendingCandidates.current.get(currentFrom)) {
+                      await newPeerConnection.addIceCandidate(candidate);
+                      console.log(`Processed pending ICE candidate for ${currentFrom}`);
+                    }
+                    pendingCandidates.current.delete(currentFrom);
+                  }
+                  if (!isCallStarted) {
+                    startCall();
+                    console.log('Call started after receiving offer and resetting peerConnection');
+                  }
+                } else {
+                  console.error(`Failed to reset peerConnection for ${currentFrom}`);
+                }
               }
             } catch (error) {
               console.error(`Error processing offer from ${currentFrom}:`, error);
-              toast.error(`Не удалось обработать offer от ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `Пользователь ${currentFrom}`}`);
+              toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
             }
             break;
 
