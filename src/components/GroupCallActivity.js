@@ -464,24 +464,39 @@ const GroupCallActivity = () => {
             await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
           }
           const peerConnection = peerConnections.current.get(String(user.id));
-          if (peerConnection && !peerConnection.localDescription) {
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
-            if (!sentSignals.current.has(signalKey)) {
-              sentSignals.current.add(signalKey);
-              sendSignal(
-                {
-                  from: currentUserId,
-                  to: String(user.id),
-                  signal: { type: 'offer', sdp: offer.sdp },
-                },
-                roomId.current
-              );
-              console.log(`Sent offer to user ${user.id}`);
+          if (peerConnection) {
+            // Проверяем состояние соединения
+            if (
+              peerConnection.iceConnectionState !== 'connected' &&
+              peerConnection.iceConnectionState !== 'completed'
+            ) {
+              // Сбрасываем localDescription, если соединение не установлено
+              if (peerConnection.localDescription) {
+                console.log(`Resetting localDescription for user ${user.id}`);
+                await peerConnection.setLocalDescription(null).catch((error) => {
+                  console.error(`Error resetting localDescription for ${user.id}:`, error);
+                });
+              }
+              const offer = await peerConnection.createOffer();
+              await peerConnection.setLocalDescription(offer);
+              const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
+              if (!sentSignals.current.has(signalKey)) {
+                sentSignals.current.add(signalKey);
+                sendSignal(
+                  {
+                    from: currentUserId,
+                    to: String(user.id),
+                    signal: { type: 'offer', sdp: offer.sdp },
+                  },
+                  roomId.current
+                );
+                console.log(`Sent offer to user ${user.id}`);
+              }
+            } else {
+              console.log(`Skipping offer for user ${user.id}: already connected`);
             }
           } else {
-            console.warn(`Skipping offer for user ${user.id}: peerConnection=${!!peerConnection}, localDescription=${!!peerConnection?.localDescription}`);
+            console.warn(`No peerConnection for user ${user.id}`);
           }
         }
       }
