@@ -622,10 +622,15 @@ const GroupCallActivity = () => {
               console.log(`User ${userName} is ready`);
               return newSet;
             });
-            // Упрощённое условие: запускаем startCall при получении первого ready
-            if (!isCallStarted) {
+            // Запускаем startCall для неинициаторов сразу после получения ready
+            if (!isInitiator && !isCallStarted) {
               startCall();
-              console.log('Call started after receiving ready signal');
+              console.log('Call started for non-initiator after receiving ready signal');
+            }
+            // Для инициатора запускаем startCall, если ещё не запущен
+            if (isInitiator && !isCallStarted) {
+              startCall();
+              console.log('Call started for initiator after receiving ready signal');
             }
             break;
 
