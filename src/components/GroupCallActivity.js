@@ -258,9 +258,20 @@ const GroupCallActivity = () => {
 
     offerTimeoutRef.current = setTimeout(() => {
       if (!isInitiator && !isCallStarted && isMounted) {
-        console.error('No offer received within 60 seconds, aborting call');
-        toast.error('Failed to establish call: no offer received');
-        endCall();
+        let hasActiveConnections = false;
+        peerConnections.current.forEach((pc, userId) => {
+          if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+            hasActiveConnections = true;
+            console.log(`Active connection with user ${userId}, skipping offer timeout`);
+          }
+        });
+        if (!hasActiveConnections) {
+          console.error('No offer received within 60 seconds and no active connections, aborting call');
+          toast.error('Не удалось установить звонок: не получен offer');
+          endCall();
+        } else {
+          console.log('Offer timeout skipped due to active connections');
+        }
       }
     }, 60000);
 
