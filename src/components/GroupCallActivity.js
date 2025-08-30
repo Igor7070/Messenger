@@ -735,10 +735,41 @@ const GroupCallActivity = () => {
                 console.log(`Set remoteDescription (answer) for user ${currentFrom}`);
               } else {
                 console.warn(`Cannot process answer from ${currentFrom} in signaling state: ${peerConnection.signalingState}`);
+                // Проверяем, если соединение не установлено, перезапускаем сигнализацию
+                if (
+                  peerConnection.signalingState === 'stable' ||
+                  peerConnection.signalingState === 'have-remote-offer' ||
+                  peerConnection.iceConnectionState === 'new' ||
+                  peerConnection.iceConnectionState === 'checking'
+                ) {
+                  console.log(`Resetting peerConnection for user ${currentFrom} due to incorrect signaling state`);
+                  peerConnections.current.delete(currentFrom);
+                  const newPeerConnection = await initializePeerConnection(currentFrom, localAudioRef.current.srcObject);
+                  if (newPeerConnection) {
+                    const offer = await newPeerConnection.createOffer();
+                    await newPeerConnection.setLocalDescription(offer);
+                    const signalKey = `${currentUserId}-${currentFrom}-offer-${offer.sdp.slice(0, 50)}`;
+                    if (!sentSignals.current.has(signalKey)) {
+                      sentSignals.current.add(signalKey);
+                      sendSignal(
+                        {
+                          from: currentUserId,
+                          to: currentFrom,
+                          signal: { type: 'offer', sdp: offer.sdp },
+                        },
+                        roomId.current
+                      );
+                      console.log(`Sent new offer to user ${currentFrom} after resetting peerConnection`);
+                    }
+                  } else {
+                    console.error(`Failed to reset peerConnection for ${currentFrom}`);
+                    toast.error(`Не удалось восстановить соединение с ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                  }
+                }
               }
             } catch (error) {
               console.error(`Error processing answer from ${currentFrom}:`, error);
-              toast.error(`Failed to process answer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+              toast.error(`Не удалось обработать answer от ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
             }
             break;
 
