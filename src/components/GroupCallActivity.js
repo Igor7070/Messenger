@@ -43,8 +43,6 @@ const GroupCallActivity = () => {
   const signalQueue = useRef(new Map());
   const isProcessingSignal = useRef(new Map());
 
-  const retryOfferTimers = useRef(new Map());
-
   const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
 
   const [chartData, setChartData] = useState({
@@ -137,7 +135,6 @@ const GroupCallActivity = () => {
         console.log('Local stream tracks:', stream.getTracks());
         localAudioRef.current.srcObject = stream;
 
-        // Инициализация PeerConnection для всех участников, кроме себя
         for (const user of memoizedParticipants) {
           if (user.id !== Number(currentUserId) && !peerConnections.current.has(String(user.id))) {
             console.log('Initializing peerConnection for user:', user.id);
@@ -147,10 +144,13 @@ const GroupCallActivity = () => {
 
         setGroupSignalHandler(handleSignal);
 
-        // Подписка на комнату
+        if (isInitiator) {
+          sendSignal({ signal: { type: 'group', roomId: roomId.current } }, roomId.current);
+        }
+
         unsubscribeRoomRef.current = subscribeToRoom(
           roomId.current,
-          async () => {
+          () => {
             console.log(`Successfully subscribed to room ${roomId.current}`);
             if (isInitiator && !hasSentInvite.current) {
               hasSentInvite.current = true;
@@ -159,8 +159,8 @@ const GroupCallActivity = () => {
               hasSentInvite.current = true;
               console.log('Sending acceptCall signal');
               sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
-
-              // Отправляем ready всем участникам
+              
+              // Отправляем ready только для участников, которым еще не отправляли
               const sentSignals = new Set();
               memoizedParticipants
                 .filter((p) => p.id !== Number(currentUserId) && !sentSignals.has(String(p.id)))
@@ -172,26 +172,6 @@ const GroupCallActivity = () => {
                   );
                   console.log(`Sent ready to user ${user.id}`);
                 });
-
-              // Неинициатор отправляет offer всем участникам
-              for (const user of memoizedParticipants) {
-                if (user.id !== Number(currentUserId)) {
-                  const peerConnection = peerConnections.current.get(String(user.id));
-                  if (peerConnection && !peerConnection.localDescription) {
-                    try {
-                      const offer = await peerConnection.createOffer();
-                      await peerConnection.setLocalDescription(offer);
-                      sendSignal(
-                        { from: currentUserId, to: String(user.id), signal: { type: 'offer', sdp: offer.sdp } },
-                        roomId.current
-                      );
-                      console.log(`Non-initiator sent offer to user ${user.id}`);
-                    } catch (error) {
-                      console.error(`Error sending offer to user ${user.id}:`, error);
-                    }
-                  }
-                }
-              }
             }
           },
           (error) => {
@@ -289,8 +269,6 @@ const GroupCallActivity = () => {
         clearTimeout(offerTimeoutRef.current);
         offerTimeoutRef.current = null;
       }
-      retryOfferTimers.current.forEach((timer) => clearTimeout(timer));
-      retryOfferTimers.current.clear();
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
       peerConnections.current.forEach((pc) => pc.close());
@@ -450,9 +428,9 @@ const GroupCallActivity = () => {
 
     try {
       for (const user of callParticipants) {
-        if (user.id !== initiator.id && user.id !== Number(currentUserId)) {
+        if (user.id !== Number(currentUserId)) { // Исключаем только себя
           const peerConnection = await initializePeerConnection(String(user.id));
-          if (isInitiator && peerConnection) {
+          if (isInitiator && peerConnection && !peerConnection.localDescription) {
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
             sendSignal(
@@ -581,6 +559,7 @@ const GroupCallActivity = () => {
               const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
               toast.success(`${userName} accepted the group call`);
             }
+            // Удаляем отправку offer для acceptCall, чтобы избежать дублирования
             break;
 
           case 'ready':
@@ -600,6 +579,27 @@ const GroupCallActivity = () => {
               startCall();
               console.log('Call started for ready participants');
             }
+            // Неинициатор отправляет offer всем участникам, если еще не отправлял
+            if (!isInitiator) {
+              for (const user of callParticipants) {
+                if (user.id !== Number(currentUserId) && !peerConnections.current.get(String(user.id))?.localDescription) {
+                  const peerConn = peerConnections.current.get(String(user.id));
+                  if (peerConn) {
+                    try {
+                      const offer = await peerConn.createOffer();
+                      await peerConn.setLocalDescription(offer);
+                      sendSignal(
+                        { from: currentUserId, to: String(user.id), signal: { type: 'offer', sdp: offer.sdp } },
+                        roomId.current
+                      );
+                      console.log(`Sent offer to user ${user.id} after receiving ready`);
+                    } catch (error) {
+                      console.error(`Error sending offer to user ${user.id}:`, error);
+                    }
+                  }
+                }
+              }
+            }
             break;
 
           case 'offer':
@@ -614,8 +614,14 @@ const GroupCallActivity = () => {
                 continue;
               }
 
+              // Если состояние have-local-offer, выполняем откат
+              if (currentState === 'have-local-offer') {
+                console.log(`Rolling back signaling state for user ${currentFrom}`);
+                await peerConnection.setLocalDescription({ type: 'rollback' });
+              }
+
               // Проверяем состояние
-              if (currentState === 'stable') {
+              if (currentState === 'stable' || currentState === 'have-local-offer') {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
                 console.log(`Set remoteDescription for user ${currentFrom}`);
                 const answer = await peerConnection.createAnswer();
@@ -747,10 +753,6 @@ const GroupCallActivity = () => {
     setIsCallEnded(true);
     setIsCallStarted(false);
     setIsWaiting(false);
-
-    // Очищаем таймеры повторных попыток
-    retryOfferTimers.current.forEach((timer) => clearTimeout(timer));
-    retryOfferTimers.current.clear();
 
     // Отправляем сигнал endCall только один раз
     if (!hasNotifiedEndCall.current) {
