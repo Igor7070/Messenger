@@ -465,12 +465,13 @@ const GroupCallActivity = () => {
           }
           const peerConnection = peerConnections.current.get(String(user.id));
           if (peerConnection) {
-            // Проверяем состояние соединения
+            // Проверяем состояние соединения и сигнализации
             if (
               peerConnection.iceConnectionState !== 'connected' &&
-              peerConnection.iceConnectionState !== 'completed'
+              peerConnection.iceConnectionState !== 'completed' &&
+              peerConnection.signalingState !== 'stable'
             ) {
-              // Сбрасываем localDescription, если соединение не установлено
+              // Сбрасываем localDescription, если оно есть
               if (peerConnection.localDescription) {
                 console.log(`Resetting localDescription for user ${user.id}`);
                 await peerConnection.setLocalDescription(null).catch((error) => {
@@ -493,7 +494,7 @@ const GroupCallActivity = () => {
                 console.log(`Sent offer to user ${user.id}`);
               }
             } else {
-              console.log(`Skipping offer for user ${user.id}: already connected`);
+              console.log(`Skipping offer for user ${user.id}: already connected or signaling state is stable`);
             }
           } else {
             console.warn(`No peerConnection for user ${user.id}`);
