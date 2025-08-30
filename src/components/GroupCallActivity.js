@@ -40,6 +40,7 @@ const GroupCallActivity = () => {
   const offerTimeoutRef = useRef(null);
   const readyTimeoutRef = useRef(null);
   const sentSignals = useRef(new Set());
+  const receivedSignals = useRef(new Set()); // Добавлено для фильтрации входящих сигналов
 
   const signalQueue = useRef(new Map());
   const isProcessingSignal = useRef(new Map());
@@ -357,13 +358,19 @@ const GroupCallActivity = () => {
           audioElement.srcObject = stream;
           audioElement.autoplay = true;
           audioElement.onloadedmetadata = () => {
-            audioElement.play().catch((error) => console.error(`Error playing audio for ${userId}:`, error));
+            audioElement.play().then(() => {
+              console.log(`Audio playing for user ${userId}`);
+            }).catch((error) => {
+              console.error(`Error playing audio for ${userId}:`, error);
+              toast.error(`Failed to play audio for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
+            });
           };
           remoteAudioRefs.current.set(userId, audioElement);
           document.body.appendChild(audioElement);
           console.log(`Remote audio track added for user ${userId}`);
         } else {
           console.error(`No stream received for user ${userId}`);
+          toast.error(`No audio stream received for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
         }
       };
 
@@ -385,7 +392,7 @@ const GroupCallActivity = () => {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           endCall();
-        } else if (peerConnection.iceConnectionState === 'disconnected') {
+        } else if (peerConnection.iceConnectionstate === 'disconnected') {
           console.warn(`WebRTC connection disconnected for user ${userId}`);
           toast.warn(`User ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`} disconnected`);
         }
@@ -493,6 +500,14 @@ const GroupCallActivity = () => {
     const { signal, from, to } = signalMessage;
     console.log('Signal received:', { from, to, type: signal.type, currentUserId });
 
+    // Фильтрация дублирующихся сигналов
+    const signalKey = `${from}-${to || 'null'}-${signal.type}-${signal.sdp?.slice(0, 50) || signal.iceCandidate?.candidate || 'no-sdp'}`;
+    if (receivedSignals.current.has(signalKey)) {
+      console.log(`Ignoring duplicate signal: ${signalKey}`);
+      return;
+    }
+    receivedSignals.current.add(signalKey);
+
     if (!signalQueue.current.has(from)) {
       signalQueue.current.set(from, []);
       isProcessingSignal.current.set(from, false);
@@ -596,9 +611,10 @@ const GroupCallActivity = () => {
               console.log(`User ${userName} is ready`);
               return newSet;
             });
-            if (!isCallStarted && (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1)) {
+            // Упрощённое условие: запускаем startCall при получении первого ready
+            if (!isCallStarted) {
               startCall();
-              console.log('Call started for ready participants');
+              console.log('Call started after receiving ready signal');
             }
             break;
 
@@ -637,6 +653,11 @@ const GroupCallActivity = () => {
                   offerTimeoutRef.current = null;
                   console.log('Cleared offerTimeout after receiving offer');
                 }
+                // Запускаем startCall после получения offer
+                if (!isCallStarted) {
+                  startCall();
+                  console.log('Call started after receiving offer');
+                }
               } else {
                 console.warn(`Cannot process offer from ${currentFrom} in signaling state: ${currentState}, resetting peerConnection`);
                 peerConnections.current.delete(currentFrom);
@@ -660,6 +681,10 @@ const GroupCallActivity = () => {
                       console.log(`Processed pending ICE candidate for ${currentFrom}`);
                     }
                     pendingCandidates.current.delete(currentFrom);
+                  }
+                  if (!isCallStarted) {
+                    startCall();
+                    console.log('Call started after receiving offer and resetting peerConnection');
                   }
                 } else {
                   console.error(`Failed to reset peerConnection for ${currentFrom}`);
