@@ -457,6 +457,32 @@ const GroupCallActivity = () => {
         }
       };
 
+      peerConnection.onnegotiationneeded = async () => {
+        if (peerConnection.signalingState !== 'stable') {
+          console.log(`Ignoring onnegotiationneeded for user ${userId}: signalingState=${peerConnection.signalingState}`);
+          return;
+        }
+        try {
+          const offer = await peerConnection.createOffer();
+          await peerConnection.setLocalDescription(offer);
+          const signalKey = `${currentUserId}-${userId}-offer-${offer.sdp.slice(0, 50)}`;
+          if (!sentSignals.current.has(signalKey)) {
+            sentSignals.current.add(signalKey);
+            sendSignal(
+              {
+                from: currentUserId,
+                to: userId,
+                signal: { type: 'offer', sdp: offer.sdp },
+              },
+              roomId.current
+            );
+            console.log(`Sent offer to user ${userId} via onnegotiationneeded`);
+          }
+        } catch (error) {
+          console.error(`Error in onnegotiationneeded for user ${userId}:`, error);
+        }
+      };
+
       stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream));
       console.log(`PeerConnection initialized for user ${userId}`);
       return peerConnection;
