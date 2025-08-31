@@ -47,6 +47,8 @@ const GroupCallActivity = () => {
 
   const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
 
+  const pendingSignals = useRef([]); // Добавляем очередь для сигналов
+
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [
@@ -143,6 +145,24 @@ const GroupCallActivity = () => {
           }
         }
 
+        // Временный обработчик сигналов до завершения инициализации
+        setGroupSignalHandler((signalMessage) => {
+          if (!localAudioRef.current) {
+            console.log('Queuing signal until localAudioRef is ready:', signalMessage);
+            pendingSignals.current.push(signalMessage);
+            return;
+          }
+          handleSignal(signalMessage);
+        });
+
+        // Обрабатываем отложенные сигналы после инициализации
+        while (pendingSignals.current.length > 0) {
+          const signal = pendingSignals.current.shift();
+          console.log('Processing queued signal:', signal);
+          await handleSignal(signal);
+        }
+
+        // Устанавливаем основной обработчик сигналов
         setGroupSignalHandler(handleSignal);
 
         if (isInitiator) {
