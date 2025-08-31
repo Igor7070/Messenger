@@ -220,14 +220,17 @@ const GroupCallActivity = () => {
       }
     };
 
-    if (document.getElementById('local-audio')) {
-      localAudioRef.current = document.getElementById('local-audio');
-      initializeCall();
-    } else {
-      console.error('Local audio element not found in DOM');
-      toast.error('Audio element not ready');
-      endCall();
+    localAudioRef.current = document.getElementById('local-audio');
+    if (!localAudioRef.current) {
+      console.error('Local audio element not found in DOM, creating one');
+      const audioElement = document.createElement('audio');
+      audioElement.id = 'local-audio';
+      audioElement.setAttribute('autoplay', '');
+      audioElement.setAttribute('muted', '');
+      document.body.appendChild(audioElement);
+      localAudioRef.current = audioElement;
     }
+    initializeCall();
 
     const timerInterval = setInterval(() => {
       if (!isMounted) return;
@@ -532,8 +535,8 @@ const GroupCallActivity = () => {
   };
 
   const handleSignal = async (signalMessage) => {
-    if (isCallEnded || !isMounted || !localAudioRef.current) {
-      console.log('Ignoring signal due to call ended, component unmounted, or localAudioRef null:', signalMessage);
+    if (isCallEnded || !isMounted) {
+      console.log('Ignoring signal due to call ended or component unmounted:', signalMessage);
       return;
     }
 
