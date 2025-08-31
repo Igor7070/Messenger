@@ -447,8 +447,8 @@ const GroupCallActivity = () => {
 
   const startCall = async () => {
     if (isCallStarted) {
-      console.log('Call already started, skipping startCall');
-      return;
+        console.log('Call already started, skipping startCall');
+        return;
     }
     setIsCallStarted(true);
     setIsWaiting(false);
@@ -457,53 +457,46 @@ const GroupCallActivity = () => {
     console.log('Starting group call for participants:', callParticipants.map((u) => u.id));
 
     try {
-      for (const user of callParticipants) {
-        if (user.id !== Number(currentUserId)) {
-          if (!peerConnections.current.has(String(user.id))) {
-            console.log(`Initializing peerConnection for user ${user.id}`);
-            await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
-          }
-          const peerConnection = peerConnections.current.get(String(user.id));
-          if (peerConnection) {
-            // Проверяем состояние соединения
-            if (
-              peerConnection.iceConnectionState !== 'connected' &&
-              peerConnection.iceConnectionState !== 'completed'
-            ) {
-              // Сбрасываем localDescription, если соединение не установлено
-              if (peerConnection.localDescription) {
-                console.log(`Resetting localDescription for user ${user.id}`);
-                await peerConnection.setLocalDescription(null).catch((error) => {
-                  console.error(`Error resetting localDescription for ${user.id}:`, error);
-                });
-              }
-              const offer = await peerConnection.createOffer();
-              await peerConnection.setLocalDescription(offer);
-              const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
-              if (!sentSignals.current.has(signalKey)) {
-                sentSignals.current.add(signalKey);
-                sendSignal(
-                  {
-                    from: currentUserId,
-                    to: String(user.id),
-                    signal: { type: 'offer', sdp: offer.sdp },
-                  },
-                  roomId.current
-                );
-                console.log(`Sent offer to user ${user.id}`);
-              }
-            } else {
-              console.log(`Skipping offer for user ${user.id}: already connected`);
+        for (const user of callParticipants) {
+            if (user.id !== Number(currentUserId)) {
+                if (!peerConnections.current.has(String(user.id))) {
+                    console.log(`Initializing peerConnection for user ${user.id}`);
+                    await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
+                }
+                const peerConnection = peerConnections.current.get(String(user.id));
+                if (peerConnection) {
+                    if (
+                        peerConnection.iceConnectionState !== 'connected' &&
+                        peerConnection.iceConnectionState !== 'completed' &&
+                        peerConnection.signalingState === 'stable'
+                    ) {
+                        const offer = await peerConnection.createOffer();
+                        await peerConnection.setLocalDescription(offer);
+                        const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
+                        if (!sentSignals.current.has(signalKey)) {
+                            sentSignals.current.add(signalKey);
+                            sendSignal(
+                                {
+                                    from: currentUserId,
+                                    to: String(user.id),
+                                    signal: { type: 'offer', sdp: offer.sdp },
+                                },
+                                roomId.current
+                            );
+                            console.log(`Sent offer to user ${user.id}`);
+                        }
+                    } else {
+                        console.log(`Skipping offer for user ${user.id}: signalingState=${peerConnection.signalingState}, iceConnectionState=${peerConnection.iceConnectionState}`);
+                    }
+                } else {
+                    console.warn(`No peerConnection for user ${user.id}`);
+                }
             }
-          } else {
-            console.warn(`No peerConnection for user ${user.id}`);
-          }
         }
-      }
     } catch (error) {
-      console.error('Error starting group call:', error);
-      toast.error('Failed to start group call.');
-      endCall();
+        console.error('Error starting group call:', error);
+        toast.error('Failed to start group call.');
+        endCall();
     }
   };
 
