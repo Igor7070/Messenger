@@ -34,7 +34,7 @@ const GroupCallActivity = () => {
   const hasSentInvite = useRef(false);
   let isMounted = true;
 
-  const memoizedParticipants = useMemo(() => participants, [participants]);
+  const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
   const hasProcessedInvite = useRef(new Set());
   const unsubscribeRoomRef = useRef(null);
   const offerTimeoutRef = useRef(null);
@@ -46,8 +46,6 @@ const GroupCallActivity = () => {
   const isProcessingSignal = useRef(new Map());
 
   const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
-
-  const pendingSignals = useRef([]); // Добавляем очередь для сигналов
 
   const [chartData, setChartData] = useState({
     labels: [],
@@ -145,24 +143,6 @@ const GroupCallActivity = () => {
           }
         }
 
-        // Временный обработчик сигналов до завершения инициализации
-        setGroupSignalHandler((signalMessage) => {
-          if (!localAudioRef.current) {
-            console.log('Queuing signal until localAudioRef is ready:', signalMessage);
-            pendingSignals.current.push(signalMessage);
-            return;
-          }
-          handleSignal(signalMessage);
-        });
-
-        // Обрабатываем отложенные сигналы после инициализации
-        while (pendingSignals.current.length > 0) {
-          const signal = pendingSignals.current.shift();
-          console.log('Processing queued signal:', signal);
-          await handleSignal(signal);
-        }
-
-        // Устанавливаем основной обработчик сигналов
         setGroupSignalHandler(handleSignal);
 
         if (isInitiator) {
@@ -220,17 +200,14 @@ const GroupCallActivity = () => {
       }
     };
 
-    localAudioRef.current = document.getElementById('local-audio');
-    if (!localAudioRef.current) {
-      console.error('Local audio element not found in DOM, creating one');
-      const audioElement = document.createElement('audio');
-      audioElement.id = 'local-audio';
-      audioElement.setAttribute('autoplay', '');
-      audioElement.setAttribute('muted', '');
-      document.body.appendChild(audioElement);
-      localAudioRef.current = audioElement;
+    if (document.getElementById('local-audio')) {
+      localAudioRef.current = document.getElementById('local-audio');
+      initializeCall();
+    } else {
+      console.error('Local audio element not found in DOM');
+      toast.error('Audio element not ready');
+      endCall();
     }
-    initializeCall();
 
     const timerInterval = setInterval(() => {
       if (!isMounted) return;
@@ -457,32 +434,6 @@ const GroupCallActivity = () => {
         }
       };
 
-      peerConnection.onnegotiationneeded = async () => {
-        if (peerConnection.signalingState !== 'stable') {
-          console.log(`Ignoring onnegotiationneeded for user ${userId}: signalingState=${peerConnection.signalingState}`);
-          return;
-        }
-        try {
-          const offer = await peerConnection.createOffer();
-          await peerConnection.setLocalDescription(offer);
-          const signalKey = `${currentUserId}-${userId}-offer-${offer.sdp.slice(0, 50)}`;
-          if (!sentSignals.current.has(signalKey)) {
-            sentSignals.current.add(signalKey);
-            sendSignal(
-              {
-                from: currentUserId,
-                to: userId,
-                signal: { type: 'offer', sdp: offer.sdp },
-              },
-              roomId.current
-            );
-            console.log(`Sent offer to user ${userId} via onnegotiationneeded`);
-          }
-        } catch (error) {
-          console.error(`Error in onnegotiationneeded for user ${userId}:`, error);
-        }
-      };
-
       stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream));
       console.log(`PeerConnection initialized for user ${userId}`);
       return peerConnection;
@@ -561,8 +512,8 @@ const GroupCallActivity = () => {
   };
 
   const handleSignal = async (signalMessage) => {
-    if (isCallEnded) {
-      console.log('Ignoring signal due to call ended:', signalMessage);
+    if (isCallEnded || !isMounted || !localAudioRef.current) {
+      console.log('Ignoring signal due to call ended, component unmounted, or localAudioRef null:', signalMessage);
       return;
     }
 
@@ -786,14 +737,6 @@ const GroupCallActivity = () => {
               if (peerConnection.signalingState === 'have-local-offer') {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
                 console.log(`Set remoteDescription (answer) for user ${currentFrom}`);
-                // Применяем все ожидающие ICE-кандидаты
-                if (pendingCandidates.current.has(currentFrom)) {
-                  for (const candidate of pendingCandidates.current.get(currentFrom)) {
-                    await peerConnection.addIceCandidate(candidate);
-                    console.log(`Processed pending ICE candidate for ${currentFrom}`);
-                  }
-                  pendingCandidates.current.delete(currentFrom);
-                }
               } else {
                 console.warn(`Cannot process answer from ${currentFrom} in signaling state: ${peerConnection.signalingState}`);
               }
