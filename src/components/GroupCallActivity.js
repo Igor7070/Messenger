@@ -757,30 +757,13 @@ const GroupCallActivity = () => {
               if (peerConnection.signalingState === 'have-local-offer') {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
                 console.log(`Set remoteDescription (answer) for user ${currentFrom}`);
+                // Применяем все ожидающие ICE-кандидаты
                 if (pendingCandidates.current.has(currentFrom)) {
                   for (const candidate of pendingCandidates.current.get(currentFrom)) {
                     await peerConnection.addIceCandidate(candidate);
                     console.log(`Processed pending ICE candidate for ${currentFrom}`);
                   }
                   pendingCandidates.current.delete(currentFrom);
-                }
-              } else if (peerConnection.signalingState === 'stable') {
-                console.warn(`Received answer in stable state for ${currentFrom}, resetting peerConnection`);
-                peerConnections.current.delete(currentFrom);
-                const newPeerConnection = await initializePeerConnection(currentFrom, localAudioRef.current.srcObject);
-                if (newPeerConnection) {
-                  await newPeerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
-                  console.log(`Set remoteDescription (answer) for user ${currentFrom} after reset`);
-                  if (pendingCandidates.current.has(currentFrom)) {
-                    for (const candidate of pendingCandidates.current.get(currentFrom)) {
-                      await newPeerConnection.addIceCandidate(candidate);
-                      console.log(`Processed pending ICE candidate for ${currentFrom}`);
-                    }
-                    pendingCandidates.current.delete(currentFrom);
-                  }
-                } else {
-                  console.error(`Failed to reset peerConnection for ${currentFrom}`);
-                  toast.error(`Failed to process answer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
                 }
               } else {
                 console.warn(`Cannot process answer from ${currentFrom} in signaling state: ${peerConnection.signalingState}`);
