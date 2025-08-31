@@ -477,7 +477,7 @@ const GroupCallActivity = () => {
                 });
               }
               // Создаем offer только если нет remoteDescription или соединение не установлено
-              if (!peerConnection.remoteDescription) {
+              if (!peerConnection.remoteDescription && peerConnection.signalingState === 'stable') {
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
                 const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
@@ -494,7 +494,7 @@ const GroupCallActivity = () => {
                   console.log(`Sent offer to user ${user.id}`);
                 }
               } else {
-                console.log(`Skipping offer for user ${user.id}: remoteDescription exists`);
+                console.log(`Skipping offer for user ${user.id}: remoteDescription exists or signalingState=${peerConnection.signalingState}`);
               }
             } else {
               console.log(`Skipping offer for user ${user.id}: already connected, iceConnectionState=${peerConnection.iceConnectionState}`);
