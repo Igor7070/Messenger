@@ -535,8 +535,8 @@ const GroupCallActivity = () => {
   };
 
   const handleSignal = async (signalMessage) => {
-    if (isCallEnded || !isMounted) {
-      console.log('Ignoring signal due to call ended or component unmounted:', signalMessage);
+    if (isCallEnded) {
+      console.log('Ignoring signal due to call ended:', signalMessage);
       return;
     }
 
