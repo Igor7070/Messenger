@@ -662,39 +662,68 @@ const GroupCallActivity = () => {
                 console.log(`Ignoring duplicate offer from ${currentFrom}`);
                 continue;
               }
-              if (currentState === 'have-local-offer') {
-                // Сбрасываем локальный offer, чтобы обработать входящий
-                console.log(`Rolling back local offer for ${currentFrom} to process incoming offer`);
-                await peerConnection.setLocalDescription({ type: 'rollback' });
-              }
-              await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
-              console.log(`Set remoteDescription for user ${currentFrom}`);
-              const answer = await peerConnection.createAnswer();
-              await peerConnection.setLocalDescription(answer);
-              const signalKey = `${currentUserId}-${currentFrom}-answer-${answer.sdp.slice(0, 50)}`;
-              if (!sentSignals.current.has(signalKey)) {
-                sentSignals.current.add(signalKey);
-                sendSignal(
-                  { from: currentUserId, to: currentFrom, signal: { type: 'answer', sdp: answer.sdp } },
-                  roomId.current
-                );
-                console.log(`Sent answer to user ${currentFrom}`);
-              }
-              if (pendingCandidates.current.has(currentFrom)) {
-                for (const candidate of pendingCandidates.current.get(currentFrom)) {
-                  await peerConnection.addIceCandidate(candidate);
-                  console.log(`Processed pending ICE candidate for ${currentFrom}`);
+              if (currentState === 'stable') {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
+                console.log(`Set remoteDescription for user ${currentFrom}`);
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                const signalKey = `${currentUserId}-${currentFrom}-answer-${answer.sdp.slice(0, 50)}`;
+                if (!sentSignals.current.has(signalKey)) {
+                  sentSignals.current.add(signalKey);
+                  sendSignal(
+                    { from: currentUserId, to: currentFrom, signal: { type: 'answer', sdp: answer.sdp } },
+                    roomId.current
+                  );
+                  console.log(`Sent answer to user ${currentFrom}`);
                 }
-                pendingCandidates.current.delete(currentFrom);
-              }
-              if (offerTimeoutRef.current) {
-                clearTimeout(offerTimeoutRef.current);
-                offerTimeoutRef.current = null;
-                console.log('Cleared offerTimeout after receiving offer');
-              }
-              if (!isCallStarted) {
-                startCall();
-                console.log('Call started after receiving offer');
+                if (pendingCandidates.current.has(currentFrom)) {
+                  for (const candidate of pendingCandidates.current.get(currentFrom)) {
+                    await peerConnection.addIceCandidate(candidate);
+                    console.log(`Processed pending ICE candidate for ${currentFrom}`);
+                  }
+                  pendingCandidates.current.delete(currentFrom);
+                }
+                if (offerTimeoutRef.current) {
+                  clearTimeout(offerTimeoutRef.current);
+                  offerTimeoutRef.current = null;
+                  console.log('Cleared offerTimeout after receiving offer');
+                }
+                // Запускаем startCall после получения offer
+                if (!isCallStarted) {
+                  startCall();
+                  console.log('Call started after receiving offer');
+                }
+              } else {
+                console.warn(`Cannot process offer from ${currentFrom} in signaling state: ${currentState}, resetting peerConnection`);
+                peerConnections.current.delete(currentFrom);
+                const newPeerConnection = await initializePeerConnection(currentFrom, localAudioRef.current.srcObject);
+                if (newPeerConnection) {
+                  await newPeerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
+                  const answer = await newPeerConnection.createAnswer();
+                  await newPeerConnection.setLocalDescription(answer);
+                  const signalKey = `${currentUserId}-${currentFrom}-answer-${answer.sdp.slice(0, 50)}`;
+                  if (!sentSignals.current.has(signalKey)) {
+                    sentSignals.current.add(signalKey);
+                    sendSignal(
+                      { from: currentUserId, to: currentFrom, signal: { type: 'answer', sdp: answer.sdp } },
+                      roomId.current
+                    );
+                    console.log(`Sent answer to user ${currentFrom} after resetting peerConnection`);
+                  }
+                  if (pendingCandidates.current.has(currentFrom)) {
+                    for (const candidate of pendingCandidates.current.get(currentFrom)) {
+                      await newPeerConnection.addIceCandidate(candidate);
+                      console.log(`Processed pending ICE candidate for ${currentFrom}`);
+                    }
+                    pendingCandidates.current.delete(currentFrom);
+                  }
+                  if (!isCallStarted) {
+                    startCall();
+                    console.log('Call started after receiving offer and resetting peerConnection');
+                  }
+                } else {
+                  console.error(`Failed to reset peerConnection for ${currentFrom}`);
+                }
               }
             } catch (error) {
               console.error(`Error processing offer from ${currentFrom}:`, error);
