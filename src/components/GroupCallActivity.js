@@ -737,6 +737,14 @@ const GroupCallActivity = () => {
               if (peerConnection.signalingState === 'have-local-offer') {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
                 console.log(`Set remoteDescription (answer) for user ${currentFrom}`);
+                // Применяем все ожидающие ICE-кандидаты
+                if (pendingCandidates.current.has(currentFrom)) {
+                  for (const candidate of pendingCandidates.current.get(currentFrom)) {
+                    await peerConnection.addIceCandidate(candidate);
+                    console.log(`Processed pending ICE candidate for ${currentFrom}`);
+                  }
+                  pendingCandidates.current.delete(currentFrom);
+                }
               } else {
                 console.warn(`Cannot process answer from ${currentFrom} in signaling state: ${peerConnection.signalingState}`);
               }
