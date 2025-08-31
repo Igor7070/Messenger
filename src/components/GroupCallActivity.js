@@ -359,6 +359,34 @@ const GroupCallActivity = () => {
       const peerConnection = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'all' });
       peerConnections.current.set(userId, peerConnection);
 
+      // Добавляем обработчик onnegotiationneeded
+      peerConnection.onnegotiationneeded = async () => {
+        console.log(`onnegotiationneeded triggered for user ${userId}, signalingState: ${peerConnection.signalingState}`);
+        try {
+          if (peerConnection.signalingState === 'stable' && peerConnection.iceConnectionState !== 'connected' && peerConnection.iceConnectionState !== 'completed') {
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            const signalKey = `${currentUserId}-${userId}-offer-${offer.sdp.slice(0, 50)}`;
+            if (!sentSignals.current.has(signalKey)) {
+              sentSignals.current.add(signalKey);
+              sendSignal(
+                {
+                  from: currentUserId,
+                  to: userId,
+                  signal: { type: 'offer', sdp: offer.sdp },
+                },
+                roomId.current
+              );
+              console.log(`Sent offer to user ${userId} due to onnegotiationneeded`);
+            }
+          } else {
+            console.log(`Ignoring onnegotiationneeded for user ${userId}, signalingState: ${peerConnection.signalingState}, iceConnectionState: ${peerConnection.iceConnectionState}`);
+          }
+        } catch (error) {
+          console.error(`Error in onnegotiationneeded for user ${userId}:`, error);
+        }
+      };
+
       peerConnection.ontrack = (event) => {
         const stream = event.streams[0];
         console.log(`ontrack event for user ${userId}:`, event);
@@ -403,7 +431,7 @@ const GroupCallActivity = () => {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           endCall();
-        } else if (peerConnection.iceConnectionstate === 'disconnected') {
+        } else if (peerConnection.iceConnectionState === 'disconnected') {
           console.warn(`WebRTC connection disconnected for user ${userId}`);
           toast.warn(`User ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`} disconnected`);
         }
