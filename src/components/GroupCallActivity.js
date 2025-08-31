@@ -34,7 +34,7 @@ const GroupCallActivity = () => {
   const hasSentInvite = useRef(false);
   let isMounted = true;
 
-  const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
+  const memoizedParticipants = useMemo(() => participants, [participants]);
   const hasProcessedInvite = useRef(new Set());
   const unsubscribeRoomRef = useRef(null);
   const offerTimeoutRef = useRef(null);
