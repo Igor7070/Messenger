@@ -381,7 +381,7 @@ const GroupCallActivity = () => {
       peerConnection.onnegotiationneeded = async () => {
         console.log(`onnegotiationneeded triggered for user ${userId}`);
         try {
-          if (peerConnection.signalingState === 'stable') {
+          if (peerConnection.signalingState === 'stable' && !peerConnection.localDescription && !peerConnection.remoteDescription) {
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
             const signalKey = `${currentUserId}-${userId}-offer-${offer.sdp.slice(0, 50)}`;
@@ -398,7 +398,7 @@ const GroupCallActivity = () => {
               console.log(`Sent offer to user ${userId} due to onnegotiationneeded`);
             }
           } else {
-            console.log(`Skipping onnegotiationneeded for user ${userId}: signalingState=${peerConnection.signalingState}`);
+            console.log(`Skipping onnegotiationneeded for user ${userId}: signalingState=${peerConnection.signalingState}, localDescription=${!!peerConnection.localDescription}, remoteDescription=${!!peerConnection.remoteDescription}`);
           }
         } catch (error) {
           console.error(`Error in onnegotiationneeded for user ${userId}:`, error);
