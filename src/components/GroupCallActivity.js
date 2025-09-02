@@ -32,16 +32,15 @@ const GroupCallActivity = () => {
   const callStartTime = useRef(Date.now());
   const hasNotifiedEndCall = useRef(false);
   const hasSentInvite = useRef(false);
-  let isMounted = true;
-
+  // [Изменено] Используем useRef вместо let для isMounted
+  const isMounted = useRef(true);
   const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
   const hasProcessedInvite = useRef(new Set());
   const unsubscribeRoomRef = useRef(null);
   const offerTimeoutRef = useRef(null);
   const readyTimeoutRef = useRef(null);
   const sentSignals = useRef(new Set());
-  const receivedSignals = useRef(new Set()); // Добавлено для фильтрации входящих сигналов
-
+  const receivedSignals = useRef(new Set());
   const signalQueue = useRef(new Map());
   const isProcessingSignal = useRef(new Map());
 
@@ -87,6 +86,28 @@ const GroupCallActivity = () => {
       return;
     }
 
+    // [Добавлено] Функция для надежной инициализации localAudioRef
+    const initializeLocalAudio = async () => {
+      try {
+        if (!document.getElementById('local-audio')) {
+          console.error('Local audio element not found in DOM');
+          toast.error('Audio element not ready');
+          endCall();
+          return false;
+        }
+        localAudioRef.current = document.getElementById('local-audio');
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('getUserMedia success, stream:', stream);
+        localAudioRef.current.srcObject = stream;
+        return true;
+      } catch (error) {
+        console.error('getUserMedia failed:', error);
+        toast.error('Failed to access microphone');
+        endCall();
+        return false;
+      }
+    };
+
     const initializeCall = async () => {
       if (isCallEnded) {
         console.log('Call already ended, skipping initialization');
@@ -101,10 +122,6 @@ const GroupCallActivity = () => {
       }
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log('Local stream tracks:', stream.getTracks());
-        localAudioRef.current.srcObject = stream;
-
         const fetchParticipants = async () => {
           try {
             const updatedParticipants = await Promise.all(
@@ -139,7 +156,7 @@ const GroupCallActivity = () => {
         for (const user of memoizedParticipants) {
           if (user.id !== Number(currentUserId) && !peerConnections.current.has(String(user.id))) {
             console.log('Initializing peerConnection for user:', user.id);
-            await initializePeerConnection(String(user.id), stream);
+            await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
           }
         }
 
@@ -190,7 +207,7 @@ const GroupCallActivity = () => {
           setIsWaiting(true);
           ringtoneRef.current.loop = true;
           ringtoneRef.current.play().catch((error) => {
-            if (isMounted) console.error('Error playing ringtone:', error);
+            if (isMounted.current) console.error('Error playing ringtone:', error);
           });
         }
       } catch (error) {
@@ -200,17 +217,13 @@ const GroupCallActivity = () => {
       }
     };
 
-    if (document.getElementById('local-audio')) {
-      localAudioRef.current = document.getElementById('local-audio');
+    // [Изменено] Вызов инициализации
+    if (await initializeLocalAudio()) {
       initializeCall();
-    } else {
-      console.error('Local audio element not found in DOM');
-      toast.error('Audio element not ready');
-      endCall();
     }
 
     const timerInterval = setInterval(() => {
-      if (!isMounted) return;
+      if (!isMounted.current) return;
       const duration = Math.floor((Date.now() - callStartTime.current) / 1000);
       const minutes = Math.floor(duration / 60);
       const seconds = duration % 60;
@@ -218,7 +231,7 @@ const GroupCallActivity = () => {
     }, 1000);
 
     const timeInterval = setInterval(() => {
-      if (!isMounted) return;
+      if (!isMounted.current) return;
       const now = new Date();
       setCurrentTime(now.toLocaleTimeString('en-US', { hour12: false }));
       if (!startTime) {
@@ -227,7 +240,7 @@ const GroupCallActivity = () => {
     }, 1000);
 
     const chartInterval = setInterval(() => {
-      if (!isMounted) return;
+      if (!isMounted.current) return;
       setChartData((prevData) => {
         const newLabels = [...prevData.labels, new Date().toLocaleTimeString()];
         const newData = [...prevData.datasets[0].data, Math.random() * 100];
@@ -238,26 +251,28 @@ const GroupCallActivity = () => {
       });
     }, 1000);
 
+    // [Изменено] Увеличен таймаут до 60 секунд
     readyTimeoutRef.current = setTimeout(() => {
       console.log('readyTimeout check:', { isInitiator, isWaiting, readyUsers: Array.from(readyUsers), isCallStarted });
-      if (isInitiator && isWaiting && isMounted && !isCallStarted) {
+      if (isInitiator && isWaiting && isMounted.current && !isCallStarted) {
         let hasActiveConnections = false;
         peerConnections.current.forEach((pc, userId) => {
-          if (pc.iceConnectionState === 'connected') {
+          if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
             hasActiveConnections = true;
             console.log(`Active connection detected with user ${userId}, skipping endCall`);
           }
         });
         if (!hasActiveConnections) {
-          console.warn('No active connections within 30 seconds, ending call.');
+          console.warn('No active connections within 60 seconds, ending call.');
           toast.error('No participants responded to the call.');
           endCall();
         }
       }
-    }, 30000);
+    }, 60000);
 
+    // [Изменено] Увеличен таймаут до 90 секунд
     offerTimeoutRef.current = setTimeout(() => {
-      if (!isInitiator && !isCallStarted && isMounted) {
+      if (!isInitiator && !isCallStarted && isMounted.current) {
         let hasActiveConnections = false;
         peerConnections.current.forEach((pc, userId) => {
           if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
@@ -266,17 +281,18 @@ const GroupCallActivity = () => {
           }
         });
         if (!hasActiveConnections) {
-          console.error('No offer received within 60 seconds and no active connections, aborting call');
+          console.error('No offer received within 90 seconds and no active connections, aborting call');
           toast.error('Не удалось установить звонок: не получен offer');
           endCall();
         } else {
           console.log('Offer timeout skipped due to active connections');
         }
       }
-    }, 60000);
+    }, 90000);
 
     return () => {
-      isMounted = false;
+      // [Изменено] Используем isMounted.current
+      isMounted.current = false;
       clearInterval(timerInterval);
       clearInterval(timeInterval);
       clearInterval(chartInterval);
@@ -403,7 +419,7 @@ const GroupCallActivity = () => {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           endCall();
-        } else if (peerConnection.iceConnectionstate === 'disconnected') {
+        } else if (peerConnection.iceConnectionState === 'disconnected') {
           console.warn(`WebRTC connection disconnected for user ${userId}`);
           toast.warn(`User ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`} disconnected`);
         }
@@ -512,9 +528,20 @@ const GroupCallActivity = () => {
   };
 
   const handleSignal = async (signalMessage) => {
-    if (isCallEnded || !isMounted || !localAudioRef.current) {
-      console.log('Ignoring signal due to call ended, component unmounted, or localAudioRef null:', signalMessage);
-      return;
+    // [Изменено] Детализированное логирование и условная обработка answer от User3
+    if (isCallEnded || !isMounted.current || !localAudioRef.current) {
+      console.log('Ignoring signal due to:', {
+        isCallEnded,
+        isMounted: isMounted.current,
+        localAudioRefNull: !localAudioRef.current,
+        signalMessage
+      });
+      // [Добавлено] Попытка обработать answer от User3
+      if (signalMessage.from === '3' && signalMessage.signal.type === 'answer') {
+        console.warn('Ignoring answer from User3, attempting to process anyway');
+      } else {
+        return;
+      }
     }
 
     if (signalMessage.from === currentUserId) {
@@ -641,12 +668,10 @@ const GroupCallActivity = () => {
               console.log(`User ${userName} is ready`);
               return newSet;
             });
-            // Запускаем startCall для неинициаторов сразу после получения ready
             if (!isInitiator && !isCallStarted) {
               startCall();
               console.log('Call started for non-initiator after receiving ready signal');
             }
-            // Для инициатора запускаем startCall, если ещё не запущен
             if (isInitiator && !isCallStarted) {
               startCall();
               console.log('Call started for initiator after receiving ready signal');
@@ -703,13 +728,21 @@ const GroupCallActivity = () => {
             break;
 
           case 'answer':
+            // [Изменено] Улучшена обработка answer с логированием и очередью
             console.log('Processing answer from:', currentFrom, 'signal:', currentSignalData);
             try {
+              // [Добавлено] Логирование текущего состояния
+              console.log(`Current signaling state for user ${currentFrom}: ${peerConnection.signalingState}`);
               if (peerConnection.signalingState === 'have-local-offer') {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
                 console.log(`Set remoteDescription (answer) for user ${currentFrom}`);
+                // [Добавлено] Проверка ICE-соединения после установки answer
+                console.log(`ICE Connection State after answer for ${currentFrom}: ${peerConnection.iceConnectionState}`);
               } else {
+                // [Добавлено] Сохранение answer в очередь для последующей обработки
                 console.warn(`Cannot process answer from ${currentFrom} in signaling state: ${peerConnection.signalingState}`);
+                signalQueue.current.get(currentFrom).push(currentSignal);
+                console.log(`Queued answer from ${currentFrom} for later processing`);
               }
             } catch (error) {
               console.error(`Error processing answer from ${currentFrom}:`, error);
