@@ -108,119 +108,12 @@ const GroupCallActivity = () => {
       }
     };
 
-    const initializeCall = async () => {
-      if (isCallEnded) {
-        console.log('Call already ended, skipping initialization');
-        return;
+    // [Изменено] Оборачиваем в асинхронную IIFE для использования await
+    (async () => {
+      if (await initializeLocalAudio()) {
+        await initializeCall();
       }
-
-      if (!localAudioRef.current) {
-        console.error('localAudioRef is null');
-        toast.error('Audio element not ready');
-        endCall();
-        return;
-      }
-
-      try {
-        const fetchParticipants = async () => {
-          try {
-            const updatedParticipants = await Promise.all(
-              memoizedParticipants.map(async (user) => {
-                if (user.id === Number(currentUserId)) {
-                  return { ...user, username: user.username || `User ${user.id}` };
-                }
-                const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${user.id}`, {
-                  headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
-                });
-                if (!response.ok) {
-                  console.error(`Failed to fetch user ${user.id}`);
-                  return { ...user, username: `User ${user.id}`, avatar: null };
-                }
-                const userData = await response.json();
-                return {
-                  id: user.id,
-                  username: userData.username || `User ${user.id}`,
-                  avatar: userData.avatar || null,
-                };
-              })
-            );
-            setCallParticipants(updatedParticipants);
-            console.log('Updated callParticipants:', updatedParticipants);
-          } catch (error) {
-            console.error('Error fetching participants:', error);
-            toast.error('Failed to load participant details');
-          }
-        };
-        await fetchParticipants();
-
-        for (const user of memoizedParticipants) {
-          if (user.id !== Number(currentUserId) && !peerConnections.current.has(String(user.id))) {
-            console.log('Initializing peerConnection for user:', user.id);
-            await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
-          }
-        }
-
-        setGroupSignalHandler(handleSignal);
-
-        if (isInitiator) {
-          sendSignal({ signal: { type: 'group', roomId: roomId.current } }, roomId.current);
-        }
-
-        unsubscribeRoomRef.current = subscribeToRoom(
-          roomId.current,
-          () => {
-            console.log(`Successfully subscribed to room ${roomId.current}`);
-            if (isInitiator && !hasSentInvite.current) {
-              hasSentInvite.current = true;
-              sendGroupCallInvite();
-            } else if (!isInitiator && !hasSentInvite.current) {
-              hasSentInvite.current = true;
-              console.log('Sending acceptCall signal');
-              const acceptCallKey = `${currentUserId}-acceptCall`;
-              if (!sentSignals.current.has(acceptCallKey)) {
-                sentSignals.current.add(acceptCallKey);
-                sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
-              }
-              memoizedParticipants
-                .filter((p) => p.id !== Number(currentUserId))
-                .forEach((user) => {
-                  const signalKey = `${currentUserId}-${user.id}-ready`;
-                  if (!sentSignals.current.has(signalKey)) {
-                    sentSignals.current.add(signalKey);
-                    sendSignal(
-                      { from: currentUserId, to: String(user.id), signal: { type: 'ready' } },
-                      roomId.current
-                    );
-                    console.log(`Sent ready to user ${user.id}`);
-                  }
-                });
-            }
-          },
-          (error) => {
-            console.error('Subscription error:', error);
-            toast.error('Failed to connect to call server');
-            endCall();
-          }
-        );
-
-        if (isInitiator) {
-          setIsWaiting(true);
-          ringtoneRef.current.loop = true;
-          ringtoneRef.current.play().catch((error) => {
-            if (isMounted.current) console.error('Error playing ringtone:', error);
-          });
-        }
-      } catch (error) {
-        console.error('Error initializing call:', error);
-        toast.error('Failed to initialize group call');
-        endCall();
-      }
-    };
-
-    // [Изменено] Вызов инициализации
-    if (await initializeLocalAudio()) {
-      initializeCall();
-    }
+    })();
 
     const timerInterval = setInterval(() => {
       if (!isMounted.current) return;
