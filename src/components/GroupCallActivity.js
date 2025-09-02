@@ -32,15 +32,16 @@ const GroupCallActivity = () => {
   const callStartTime = useRef(Date.now());
   const hasNotifiedEndCall = useRef(false);
   const hasSentInvite = useRef(false);
-  // [Изменено] Используем useRef вместо let для isMounted
-  const isMounted = useRef(true);
+  let isMounted = true;
+
   const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
   const hasProcessedInvite = useRef(new Set());
   const unsubscribeRoomRef = useRef(null);
   const offerTimeoutRef = useRef(null);
   const readyTimeoutRef = useRef(null);
   const sentSignals = useRef(new Set());
-  const receivedSignals = useRef(new Set());
+  const receivedSignals = useRef(new Set()); // Добавлено для фильтрации входящих сигналов
+
   const signalQueue = useRef(new Map());
   const isProcessingSignal = useRef(new Map());
 
@@ -61,115 +62,6 @@ const GroupCallActivity = () => {
   });
 
   console.log('GroupCallActivity: Initial state:', { state, initialRoomId, isInitiator, roomId: roomId.current });
-
-  const initializeCall = async () => {
-    if (isCallEnded) {
-      console.log('Call already ended, skipping initialization');
-      return;
-    }
-
-    if (!localAudioRef.current) {
-      console.error('localAudioRef is null');
-      toast.error('Audio element not ready');
-      endCall();
-      return;
-    }
-
-    try {
-      const fetchParticipants = async () => {
-        try {
-          const updatedParticipants = await Promise.all(
-            memoizedParticipants.map(async (user) => {
-              if (user.id === Number(currentUserId)) {
-                return { ...user, username: user.username || `User ${user.id}` };
-              }
-              const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${user.id}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
-              });
-              if (!response.ok) {
-                console.error(`Failed to fetch user ${user.id}`);
-                return { ...user, username: `User ${user.id}`, avatar: null };
-              }
-              const userData = await response.json();
-              return {
-                id: user.id,
-                username: userData.username || `User ${user.id}`,
-                avatar: userData.avatar || null,
-              };
-            })
-          );
-          setCallParticipants(updatedParticipants);
-          console.log('Updated callParticipants:', updatedParticipants);
-        } catch (error) {
-          console.error('Error fetching participants:', error);
-          toast.error('Failed to load participant details');
-        }
-      };
-      await fetchParticipants();
-
-      for (const user of memoizedParticipants) {
-        if (user.id !== Number(currentUserId) && !peerConnections.current.has(String(user.id))) {
-          console.log('Initializing peerConnection for user:', user.id);
-          await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
-        }
-      }
-
-      setGroupSignalHandler(handleSignal);
-
-      if (isInitiator) {
-        sendSignal({ signal: { type: 'group', roomId: roomId.current } }, roomId.current);
-      }
-
-      unsubscribeRoomRef.current = subscribeToRoom(
-        roomId.current,
-        () => {
-          console.log(`Successfully subscribed to room ${roomId.current}`);
-          if (isInitiator && !hasSentInvite.current) {
-            hasSentInvite.current = true;
-            sendGroupCallInvite();
-          } else if (!isInitiator && !hasSentInvite.current) {
-            hasSentInvite.current = true;
-            console.log('Sending acceptCall signal');
-            const acceptCallKey = `${currentUserId}-acceptCall`;
-            if (!sentSignals.current.has(acceptCallKey)) {
-              sentSignals.current.add(acceptCallKey);
-              sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
-            }
-            memoizedParticipants
-              .filter((p) => p.id !== Number(currentUserId))
-              .forEach((user) => {
-                const signalKey = `${currentUserId}-${user.id}-ready`;
-                if (!sentSignals.current.has(signalKey)) {
-                  sentSignals.current.add(signalKey);
-                  sendSignal(
-                    { from: currentUserId, to: String(user.id), signal: { type: 'ready' } },
-                    roomId.current
-                  );
-                  console.log(`Sent ready to user ${user.id}`);
-                }
-              });
-          }
-        },
-        (error) => {
-          console.error('Subscription error:', error);
-          toast.error('Failed to connect to call server');
-          endCall();
-        }
-      );
-
-      if (isInitiator) {
-        setIsWaiting(true);
-        ringtoneRef.current.loop = true;
-        ringtoneRef.current.play().catch((error) => {
-          if (isMounted.current) console.error('Error playing ringtone:', error);
-        });
-      }
-    } catch (error) {
-      console.error('Error initializing call:', error);
-      toast.error('Failed to initialize group call');
-      endCall();
-    }
-  };
 
   useEffect(() => {
     console.log('useEffect called with dependencies:', {
@@ -195,37 +87,130 @@ const GroupCallActivity = () => {
       return;
     }
 
-    // [Добавлено] Функция для надежной инициализации localAudioRef
-    const initializeLocalAudio = async () => {
-      try {
-        if (!document.getElementById('local-audio')) {
-          console.error('Local audio element not found in DOM');
-          toast.error('Audio element not ready');
-          endCall();
-          return false;
-        }
-        localAudioRef.current = document.getElementById('local-audio');
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log('getUserMedia success, stream:', stream);
-        localAudioRef.current.srcObject = stream;
-        return true;
-      } catch (error) {
-        console.error('getUserMedia failed:', error);
-        toast.error('Failed to access microphone');
+    const initializeCall = async () => {
+      if (isCallEnded) {
+        console.log('Call already ended, skipping initialization');
+        return;
+      }
+
+      if (!localAudioRef.current) {
+        console.error('localAudioRef is null');
+        toast.error('Audio element not ready');
         endCall();
-        return false;
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('Local stream tracks:', stream.getTracks());
+        localAudioRef.current.srcObject = stream;
+
+        const fetchParticipants = async () => {
+          try {
+            const updatedParticipants = await Promise.all(
+              memoizedParticipants.map(async (user) => {
+                if (user.id === Number(currentUserId)) {
+                  return { ...user, username: user.username || `User ${user.id}` };
+                }
+                const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${user.id}`, {
+                  headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
+                });
+                if (!response.ok) {
+                  console.error(`Failed to fetch user ${user.id}`);
+                  return { ...user, username: `User ${user.id}`, avatar: null };
+                }
+                const userData = await response.json();
+                return {
+                  id: user.id,
+                  username: userData.username || `User ${user.id}`,
+                  avatar: userData.avatar || null,
+                };
+              })
+            );
+            setCallParticipants(updatedParticipants);
+            console.log('Updated callParticipants:', updatedParticipants);
+          } catch (error) {
+            console.error('Error fetching participants:', error);
+            toast.error('Failed to load participant details');
+          }
+        };
+        await fetchParticipants();
+
+        for (const user of memoizedParticipants) {
+          if (user.id !== Number(currentUserId) && !peerConnections.current.has(String(user.id))) {
+            console.log('Initializing peerConnection for user:', user.id);
+            await initializePeerConnection(String(user.id), stream);
+          }
+        }
+
+        setGroupSignalHandler(handleSignal);
+
+        if (isInitiator) {
+          sendSignal({ signal: { type: 'group', roomId: roomId.current } }, roomId.current);
+        }
+
+        unsubscribeRoomRef.current = subscribeToRoom(
+          roomId.current,
+          () => {
+            console.log(`Successfully subscribed to room ${roomId.current}`);
+            if (isInitiator && !hasSentInvite.current) {
+              hasSentInvite.current = true;
+              sendGroupCallInvite();
+            } else if (!isInitiator && !hasSentInvite.current) {
+              hasSentInvite.current = true;
+              console.log('Sending acceptCall signal');
+              const acceptCallKey = `${currentUserId}-acceptCall`;
+              if (!sentSignals.current.has(acceptCallKey)) {
+                sentSignals.current.add(acceptCallKey);
+                sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
+              }
+              memoizedParticipants
+                .filter((p) => p.id !== Number(currentUserId))
+                .forEach((user) => {
+                  const signalKey = `${currentUserId}-${user.id}-ready`;
+                  if (!sentSignals.current.has(signalKey)) {
+                    sentSignals.current.add(signalKey);
+                    sendSignal(
+                      { from: currentUserId, to: String(user.id), signal: { type: 'ready' } },
+                      roomId.current
+                    );
+                    console.log(`Sent ready to user ${user.id}`);
+                  }
+                });
+            }
+          },
+          (error) => {
+            console.error('Subscription error:', error);
+            toast.error('Failed to connect to call server');
+            endCall();
+          }
+        );
+
+        if (isInitiator) {
+          setIsWaiting(true);
+          ringtoneRef.current.loop = true;
+          ringtoneRef.current.play().catch((error) => {
+            if (isMounted) console.error('Error playing ringtone:', error);
+          });
+        }
+      } catch (error) {
+        console.error('Error initializing call:', error);
+        toast.error('Failed to initialize group call');
+        endCall();
       }
     };
 
-    // [Изменено] Оборачиваем в асинхронную IIFE для использования await
-    (async () => {
-      if (await initializeLocalAudio()) {
-        await initializeCall();
-      }
-    })();
+    if (document.getElementById('local-audio')) {
+      localAudioRef.current = document.getElementById('local-audio');
+      initializeCall();
+    } else {
+      console.error('Local audio element not found in DOM');
+      toast.error('Audio element not ready');
+      endCall();
+    }
 
     const timerInterval = setInterval(() => {
-      if (!isMounted.current) return;
+      if (!isMounted) return;
       const duration = Math.floor((Date.now() - callStartTime.current) / 1000);
       const minutes = Math.floor(duration / 60);
       const seconds = duration % 60;
@@ -233,7 +218,7 @@ const GroupCallActivity = () => {
     }, 1000);
 
     const timeInterval = setInterval(() => {
-      if (!isMounted.current) return;
+      if (!isMounted) return;
       const now = new Date();
       setCurrentTime(now.toLocaleTimeString('en-US', { hour12: false }));
       if (!startTime) {
@@ -242,7 +227,7 @@ const GroupCallActivity = () => {
     }, 1000);
 
     const chartInterval = setInterval(() => {
-      if (!isMounted.current) return;
+      if (!isMounted) return;
       setChartData((prevData) => {
         const newLabels = [...prevData.labels, new Date().toLocaleTimeString()];
         const newData = [...prevData.datasets[0].data, Math.random() * 100];
@@ -253,28 +238,26 @@ const GroupCallActivity = () => {
       });
     }, 1000);
 
-    // [Изменено] Увеличен таймаут до 60 секунд
     readyTimeoutRef.current = setTimeout(() => {
       console.log('readyTimeout check:', { isInitiator, isWaiting, readyUsers: Array.from(readyUsers), isCallStarted });
-      if (isInitiator && isWaiting && isMounted.current && !isCallStarted) {
+      if (isInitiator && isWaiting && isMounted && !isCallStarted) {
         let hasActiveConnections = false;
         peerConnections.current.forEach((pc, userId) => {
-          if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+          if (pc.iceConnectionState === 'connected') {
             hasActiveConnections = true;
             console.log(`Active connection detected with user ${userId}, skipping endCall`);
           }
         });
         if (!hasActiveConnections) {
-          console.warn('No active connections within 60 seconds, ending call.');
+          console.warn('No active connections within 30 seconds, ending call.');
           toast.error('No participants responded to the call.');
           endCall();
         }
       }
-    }, 60000);
+    }, 30000);
 
-    // [Изменено] Увеличен таймаут до 90 секунд
     offerTimeoutRef.current = setTimeout(() => {
-      if (!isInitiator && !isCallStarted && isMounted.current) {
+      if (!isInitiator && !isCallStarted && isMounted) {
         let hasActiveConnections = false;
         peerConnections.current.forEach((pc, userId) => {
           if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
@@ -283,18 +266,17 @@ const GroupCallActivity = () => {
           }
         });
         if (!hasActiveConnections) {
-          console.error('No offer received within 90 seconds and no active connections, aborting call');
+          console.error('No offer received within 60 seconds and no active connections, aborting call');
           toast.error('Не удалось установить звонок: не получен offer');
           endCall();
         } else {
           console.log('Offer timeout skipped due to active connections');
         }
       }
-    }, 90000);
+    }, 60000);
 
     return () => {
-      // [Изменено] Используем isMounted.current
-      isMounted.current = false;
+      isMounted = false;
       clearInterval(timerInterval);
       clearInterval(timeInterval);
       clearInterval(chartInterval);
@@ -421,7 +403,7 @@ const GroupCallActivity = () => {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           endCall();
-        } else if (peerConnection.iceConnectionState === 'disconnected') {
+        } else if (peerConnection.iceConnectionstate === 'disconnected') {
           console.warn(`WebRTC connection disconnected for user ${userId}`);
           toast.warn(`User ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`} disconnected`);
         }
@@ -530,20 +512,9 @@ const GroupCallActivity = () => {
   };
 
   const handleSignal = async (signalMessage) => {
-    // [Изменено] Детализированное логирование и условная обработка answer от User3
-    if (isCallEnded || !isMounted.current || !localAudioRef.current) {
-      console.log('Ignoring signal due to:', {
-        isCallEnded,
-        isMounted: isMounted.current,
-        localAudioRefNull: !localAudioRef.current,
-        signalMessage
-      });
-      // [Добавлено] Попытка обработать answer от User3
-      if (signalMessage.from === '3' && signalMessage.signal.type === 'answer') {
-        console.warn('Ignoring answer from User3, attempting to process anyway');
-      } else {
-        return;
-      }
+    if (isCallEnded || !isMounted || !localAudioRef.current) {
+      console.log('Ignoring signal due to call ended, component unmounted, or localAudioRef null:', signalMessage);
+      return;
     }
 
     if (signalMessage.from === currentUserId) {
@@ -670,10 +641,12 @@ const GroupCallActivity = () => {
               console.log(`User ${userName} is ready`);
               return newSet;
             });
+            // Запускаем startCall для неинициаторов сразу после получения ready
             if (!isInitiator && !isCallStarted) {
               startCall();
               console.log('Call started for non-initiator after receiving ready signal');
             }
+            // Для инициатора запускаем startCall, если ещё не запущен
             if (isInitiator && !isCallStarted) {
               startCall();
               console.log('Call started for initiator after receiving ready signal');
@@ -730,21 +703,13 @@ const GroupCallActivity = () => {
             break;
 
           case 'answer':
-            // [Изменено] Улучшена обработка answer с логированием и очередью
             console.log('Processing answer from:', currentFrom, 'signal:', currentSignalData);
             try {
-              // [Добавлено] Логирование текущего состояния
-              console.log(`Current signaling state for user ${currentFrom}: ${peerConnection.signalingState}`);
               if (peerConnection.signalingState === 'have-local-offer') {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
                 console.log(`Set remoteDescription (answer) for user ${currentFrom}`);
-                // [Добавлено] Проверка ICE-соединения после установки answer
-                console.log(`ICE Connection State after answer for ${currentFrom}: ${peerConnection.iceConnectionState}`);
               } else {
-                // [Добавлено] Сохранение answer в очередь для последующей обработки
                 console.warn(`Cannot process answer from ${currentFrom} in signaling state: ${peerConnection.signalingState}`);
-                signalQueue.current.get(currentFrom).push(currentSignal);
-                console.log(`Queued answer from ${currentFrom} for later processing`);
               }
             } catch (error) {
               console.error(`Error processing answer from ${currentFrom}:`, error);
