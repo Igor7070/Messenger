@@ -19,7 +19,7 @@ const GroupCallActivity = () => {
   const peerConnections = useRef(new Map());
   const localAudioRef = useRef(null);
   const remoteAudioRefs = useRef(new Map());
-  const pendingCandidates = useRef(new Map());
+  const pendingCandidates = useRef(new Map()); // Очередь для ICE-кандидатов
   const [callParticipants, setCallParticipants] = useState(participants);
   const [callDuration, setCallDuration] = useState('00:00');
   const [startTime, setStartTime] = useState('');
@@ -39,8 +39,6 @@ const GroupCallActivity = () => {
   const unsubscribeRoomRef = useRef(null);
   const offerTimeoutRef = useRef(null);
   const readyTimeoutRef = useRef(null);
-  const sentSignals = useRef(new Set());
-  const receivedSignals = useRef(new Set()); // Добавлено для фильтрации входящих сигналов
 
   const signalQueue = useRef(new Map());
   const isProcessingSignal = useRef(new Map());
@@ -101,10 +99,7 @@ const GroupCallActivity = () => {
       }
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log('Local stream tracks:', stream.getTracks());
-        localAudioRef.current.srcObject = stream;
-
+        // Получение данных участников через API
         const fetchParticipants = async () => {
           try {
             const updatedParticipants = await Promise.all(
@@ -136,10 +131,14 @@ const GroupCallActivity = () => {
         };
         await fetchParticipants();
 
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('Local stream tracks:', stream.getTracks());
+        localAudioRef.current.srcObject = stream;
+
         for (const user of memoizedParticipants) {
           if (user.id !== Number(currentUserId) && !peerConnections.current.has(String(user.id))) {
             console.log('Initializing peerConnection for user:', user.id);
-            await initializePeerConnection(String(user.id), stream);
+            await initializePeerConnection(String(user.id));
           }
         }
 
@@ -159,23 +158,19 @@ const GroupCallActivity = () => {
             } else if (!isInitiator && !hasSentInvite.current) {
               hasSentInvite.current = true;
               console.log('Sending acceptCall signal');
-              const acceptCallKey = `${currentUserId}-acceptCall`;
-              if (!sentSignals.current.has(acceptCallKey)) {
-                sentSignals.current.add(acceptCallKey);
-                sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
-              }
+              sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
+              
+              // Отправляем ready только для участников, которым еще не отправляли
+              const sentSignals = new Set();
               memoizedParticipants
-                .filter((p) => p.id !== Number(currentUserId))
+                .filter((p) => p.id !== Number(currentUserId) && !sentSignals.has(String(p.id)))
                 .forEach((user) => {
-                  const signalKey = `${currentUserId}-${user.id}-ready`;
-                  if (!sentSignals.current.has(signalKey)) {
-                    sentSignals.current.add(signalKey);
-                    sendSignal(
-                      { from: currentUserId, to: String(user.id), signal: { type: 'ready' } },
-                      roomId.current
-                    );
-                    console.log(`Sent ready to user ${user.id}`);
-                  }
+                  sentSignals.add(String(user.id));
+                  sendSignal(
+                    { from: currentUserId, to: String(user.id), signal: { type: 'ready' } },
+                    roomId.current
+                  );
+                  console.log(`Sent ready to user ${user.id}`);
                 });
             }
           },
@@ -258,20 +253,9 @@ const GroupCallActivity = () => {
 
     offerTimeoutRef.current = setTimeout(() => {
       if (!isInitiator && !isCallStarted && isMounted) {
-        let hasActiveConnections = false;
-        peerConnections.current.forEach((pc, userId) => {
-          if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-            hasActiveConnections = true;
-            console.log(`Active connection with user ${userId}, skipping offer timeout`);
-          }
-        });
-        if (!hasActiveConnections) {
-          console.error('No offer received within 60 seconds and no active connections, aborting call');
-          toast.error('Не удалось установить звонок: не получен offer');
-          endCall();
-        } else {
-          console.log('Offer timeout skipped due to active connections');
-        }
+        console.error('No offer received within 60 seconds, aborting call');
+        toast.error('Failed to establish call: no offer received');
+        endCall();
       }
     }, 60000);
 
@@ -326,17 +310,13 @@ const GroupCallActivity = () => {
     callParticipants
       .filter((p) => p.id !== initiator.id)
       .forEach((user) => {
-        const signalKey = `${currentUserId}-${user.id}-groupCallInvite`;
-        if (!sentSignals.current.has(signalKey)) {
-          sentSignals.current.add(signalKey);
-          console.log('GroupCallActivity: Подготовка groupCallInvite для пользователя:', user.id, groupCallRequest);
-          sendSignal(groupCallRequest, roomId.current, String(user.id));
-          console.log(`GroupCallActivity: Sent group call invite to user ${user.id}`, groupCallRequest);
-        }
+        console.log('GroupCallActivity: Подготовка groupCallInvite для пользователя:', user.id, groupCallRequest);
+        sendSignal(groupCallRequest, roomId.current, String(user.id));
+        console.log(`GroupCallActivity: Sent group call invite to user ${user.id}`, groupCallRequest);
       });
   };
 
-  const initializePeerConnection = async (userId, stream) => {
+  const initializePeerConnection = async (userId) => {
     try {
       if (!localAudioRef.current) {
         console.error(`Cannot initialize PeerConnection for user ${userId}: localAudioRef is null`);
@@ -344,6 +324,10 @@ const GroupCallActivity = () => {
         endCall();
         return null;
       }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log(`Local stream tracks for user ${userId}:`, stream.getTracks());
+      localAudioRef.current.srcObject = stream;
 
       const iceServers = [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -365,23 +349,13 @@ const GroupCallActivity = () => {
         if (stream) {
           console.log(`Remote stream tracks for user ${userId}:`, stream.getTracks());
           const audioElement = document.createElement('audio');
-          audioElement.id = `remote-audio-${userId}`;
           audioElement.srcObject = stream;
           audioElement.autoplay = true;
-          audioElement.onloadedmetadata = () => {
-            audioElement.play().then(() => {
-              console.log(`Audio playing for user ${userId}`);
-            }).catch((error) => {
-              console.error(`Error playing audio for ${userId}:`, error);
-              toast.error(`Failed to play audio for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
-            });
-          };
           remoteAudioRefs.current.set(userId, audioElement);
           document.body.appendChild(audioElement);
           console.log(`Remote audio track added for user ${userId}`);
         } else {
           console.error(`No stream received for user ${userId}`);
-          toast.error(`No audio stream received for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
         }
       };
 
@@ -403,7 +377,7 @@ const GroupCallActivity = () => {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           endCall();
-        } else if (peerConnection.iceConnectionstate === 'disconnected') {
+        } else if (peerConnection.iceConnectionState === 'disconnected') {
           console.warn(`WebRTC connection disconnected for user ${userId}`);
           toast.warn(`User ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`} disconnected`);
         }
@@ -411,26 +385,22 @@ const GroupCallActivity = () => {
 
       peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-          const signalKey = `${currentUserId}-${userId}-candidate-${event.candidate.candidate}`;
-          if (!sentSignals.current.has(signalKey)) {
-            sentSignals.current.add(signalKey);
-            sendSignal(
-              {
-                from: currentUserId,
-                to: userId,
-                signal: {
-                  type: 'candidate',
-                  iceCandidate: {
-                    candidate: event.candidate.candidate,
-                    sdpMid: event.candidate.sdpMid,
-                    sdpMLineIndex: event.candidate.sdpMLineIndex.toString(),
-                  },
+          sendSignal(
+            {
+              from: currentUserId,
+              to: userId,
+              signal: {
+                type: 'candidate',
+                iceCandidate: {
+                  candidate: event.candidate.candidate,
+                  sdpMid: event.candidate.sdpMid,
+                  sdpMLineIndex: event.candidate.sdpMLineIndex.toString(),
                 },
               },
-              roomId.current
-            );
-            console.log(`Sent ICE candidate for user ${userId}:`, event.candidate);
-          }
+            },
+            roomId.current
+          );
+          console.log(`Sent ICE candidate for user ${userId}:`, event.candidate);
         }
       };
 
@@ -458,49 +428,20 @@ const GroupCallActivity = () => {
 
     try {
       for (const user of callParticipants) {
-        if (user.id !== Number(currentUserId)) {
-          if (!peerConnections.current.has(String(user.id))) {
-            console.log(`Initializing peerConnection for user ${user.id}`);
-            await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
-          }
-          const peerConnection = peerConnections.current.get(String(user.id));
-          if (peerConnection) {
-            if (
-              peerConnection.iceConnectionState !== 'connected' &&
-              peerConnection.iceConnectionState !== 'completed'
-            ) {
-              // Сбрасываем localDescription только если нет remoteDescription
-              if (peerConnection.localDescription && !peerConnection.remoteDescription) {
-                console.log(`Resetting localDescription for user ${user.id}`);
-                await peerConnection.setLocalDescription(null).catch((error) => {
-                  console.error(`Error resetting localDescription for ${user.id}:`, error);
-                });
-              }
-              // Создаем offer только если нет remoteDescription или соединение не установлено
-              if (!peerConnection.remoteDescription) {
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-                const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
-                if (!sentSignals.current.has(signalKey)) {
-                  sentSignals.current.add(signalKey);
-                  sendSignal(
-                    {
-                      from: currentUserId,
-                      to: String(user.id),
-                      signal: { type: 'offer', sdp: offer.sdp },
-                    },
-                    roomId.current
-                  );
-                  console.log(`Sent offer to user ${user.id}`);
-                }
-              } else {
-                console.log(`Skipping offer for user ${user.id}: remoteDescription exists`);
-              }
-            } else {
-              console.log(`Skipping offer for user ${user.id}: already connected, iceConnectionState=${peerConnection.iceConnectionState}`);
-            }
-          } else {
-            console.warn(`No peerConnection for user ${user.id}`);
+        if (user.id !== initiator.id && user.id !== Number(currentUserId)) {
+          const peerConnection = await initializePeerConnection(String(user.id));
+          if (isInitiator && peerConnection) {
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            sendSignal(
+              {
+                from: currentUserId,
+                to: String(user.id),
+                signal: { type: 'offer', sdp: offer.sdp },
+              },
+              roomId.current
+            );
+            console.log(`Sent offer to user ${user.id}`);
           }
         }
       }
@@ -513,277 +454,291 @@ const GroupCallActivity = () => {
 
   const handleSignal = async (signalMessage) => {
     if (isCallEnded || !isMounted || !localAudioRef.current) {
-      console.log('Ignoring signal due to call ended, component unmounted, or localAudioRef null:', signalMessage);
-      return;
+        console.log('Ignoring signal due to call ended, component unmounted, or localAudioRef null:', signalMessage);
+        return;
     }
 
     if (signalMessage.from === currentUserId) {
-      console.log('Ignoring signal from self:', signalMessage);
-      return;
+        console.log('Ignoring signal from self:', signalMessage);
+        return;
     }
 
     if (!signalMessage.from) {
-      console.warn('Ignoring signal with null from:', signalMessage);
-      return;
+        console.warn('Ignoring signal with null from:', signalMessage);
+        return;
     }
 
     const { signal, from, to } = signalMessage;
     console.log('Signal received:', { from, to, type: signal.type, currentUserId });
 
-    // Фильтрация дублирующихся сигналов
-    const signalKey = `${from}-${to || 'null'}-${signal.type}-${signal.sdp?.slice(0, 50) || signal.iceCandidate?.candidate || 'no-sdp'}`;
-    if (receivedSignals.current.has(signalKey)) {
-      console.log(`Ignoring duplicate signal: ${signalKey}`);
-      return;
-    }
-    receivedSignals.current.add(signalKey);
-
+    // Инициализация очереди для пользователя
     if (!signalQueue.current.has(from)) {
-      signalQueue.current.set(from, []);
-      isProcessingSignal.current.set(from, false);
+        signalQueue.current.set(from, []);
+        isProcessingSignal.current.set(from, false);
     }
 
+    // Добавляем сигнал в очередь
     signalQueue.current.get(from).push(signalMessage);
 
+    // Если уже обрабатываем сигналы для этого пользователя, выходим
     if (isProcessingSignal.current.get(from)) {
-      console.log(`Queuing signal from ${from}, already processing`);
-      return;
+        console.log(`Queuing signal from ${from}, already processing`);
+        return;
     }
 
     isProcessingSignal.current.set(from, true);
 
+    // Обрабатываем сигналы из очереди
     while (signalQueue.current.get(from).length > 0) {
-      const currentSignal = signalQueue.current.get(from).shift();
-      const { signal: currentSignalData, from: currentFrom, to } = currentSignal;
+        const currentSignal = signalQueue.current.get(from).shift();
+        const { signal: currentSignalData, from: currentFrom, to } = currentSignal;
 
-      if (to && to !== String(currentUserId) && !['acceptCall', 'ready', 'groupCallInvite'].includes(currentSignalData.type)) {
-        console.log('Ignoring signal not addressed to current user:', { from: currentFrom, to, type: currentSignalData.type, currentUserId });
-        continue;
-      }
+        // Проверяем, что сигнал адресован текущему пользователю
+        if (to && to !== String(currentUserId) && !['acceptCall', 'ready', 'groupCallInvite'].includes(currentSignalData.type)) {
+            console.log('Ignoring signal not addressed to current user:', { from: currentFrom, to, type: currentSignalData.type, currentUserId });
+            continue;
+        }
 
-      if (!peerConnections.current.has(currentFrom) && currentFrom !== String(currentUserId)) {
-        console.log('Initializing peerConnection for user:', currentFrom);
-        const peerConnection = await initializePeerConnection(currentFrom, localAudioRef.current.srcObject);
+        // Инициализация peerConnection, если отсутствует
+        if (!peerConnections.current.has(currentFrom) && currentFrom !== String(currentUserId)) {
+            console.log('Initializing peerConnection for user:', currentFrom);
+            const peerConnection = await initializePeerConnection(currentFrom);
+            if (!peerConnection) {
+                console.warn(`Failed to initialize PeerConnection for user ${currentFrom}`);
+                toast.error('Failed to initialize connection.');
+                continue;
+            }
+        }
+
+        const peerConnection = peerConnections.current.get(currentFrom);
         if (!peerConnection) {
-          console.warn(`Failed to initialize PeerConnection for user ${currentFrom}`);
-          toast.error('Failed to initialize connection.');
-          continue;
+            console.error(`No peerConnection for user ${currentFrom} after initialization attempt`);
+            continue;
         }
-      }
 
-      const peerConnection = peerConnections.current.get(currentFrom);
-      if (!peerConnection) {
-        console.error(`No peerConnection for user ${currentFrom} after initialization attempt`);
-        continue;
-      }
+        try {
+            switch (currentSignalData.type) {
+                case 'groupCallInvite':
+                    if (!isInitiator) {
+                        if (hasProcessedInvite.current.has(currentFrom)) {
+                            console.log(`Ignoring duplicate groupCallInvite from ${currentFrom}`);
+                            continue;
+                        }
+                        hasProcessedInvite.current.add(currentFrom);
+                        console.log('Processing groupCallInvite:', currentSignal);
+                        if (!currentSignalData.roomId) {
+                            console.error('groupCallInvite received with null roomId');
+                            toast.error('Invalid call invite received.');
+                            navigate('/');
+                            return;
+                        }
+                        roomId.current = currentSignalData.roomId;
+                        console.log('Updated roomId to:', roomId.current);
+                        toast.info(`${currentSignalData.initiatorName} invites you to a group call`);
+                        // Отправляем acceptCall всем участникам
+                        callParticipants
+                            .filter((p) => p.id !== Number(currentUserId))
+                            .forEach((user) => {
+                                sendSignal(
+                                    { from: currentUserId, to: String(user.id), signal: { type: 'acceptCall' } },
+                                    roomId.current
+                                );
+                                console.log(`Sent acceptCall to user ${user.id}`);
+                            });
+                        // Отправляем ready инициатору
+                        sendSignal(
+                            { from: currentUserId, to: currentFrom, signal: { type: 'ready' } },
+                            roomId.current
+                        );
+                        console.log(`Sent ready to user ${currentFrom}`);
+                    }
+                    break;
 
-      try {
-        switch (currentSignalData.type) {
-          case 'groupCallInvite':
-            if (!isInitiator) {
-              if (hasProcessedInvite.current.has(currentFrom)) {
-                console.log(`Ignoring duplicate groupCallInvite from ${currentFrom}`);
-                continue;
-              }
-              hasProcessedInvite.current.add(currentFrom);
-              console.log('Processing groupCallInvite:', currentSignal);
-              if (!currentSignalData.roomId) {
-                console.error('groupCallInvite received with null roomId');
-                toast.error('Invalid call invite received.');
-                navigate('/');
-                return;
-              }
-              roomId.current = currentSignalData.roomId;
-              console.log('Updated roomId to:', roomId.current);
-              toast.info(`${currentSignalData.initiatorName} invites you to a group call`);
-              callParticipants
-                .filter((p) => p.id !== Number(currentUserId))
-                .forEach((user) => {
-                  const signalKey = `${currentUserId}-${user.id}-acceptCall`;
-                  if (!sentSignals.current.has(signalKey)) {
-                    sentSignals.current.add(signalKey);
-                    sendSignal(
-                      { from: currentUserId, to: String(user.id), signal: { type: 'acceptCall' } },
-                      roomId.current
-                    );
-                    console.log(`Sent acceptCall to user ${user.id}`);
-                  }
-                });
-              const signalKey = `${currentUserId}-${currentFrom}-ready`;
-              if (!sentSignals.current.has(signalKey)) {
-                sentSignals.current.add(signalKey);
-                sendSignal(
-                  { from: currentUserId, to: currentFrom, signal: { type: 'ready' } },
-                  roomId.current
-                );
-                console.log(`Sent ready to user ${currentFrom}`);
-              }
-            }
-            break;
+                case 'acceptCall':
+                    if (isInitiator) {
+                        const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
+                        toast.success(`${userName} accepted the group call`);
+                    } else {
+                        // Для неинициатора: инициировать PeerConnection и отправить offer
+                        if (currentFrom !== String(initiator.id) && !peerConnection.localDescription) {
+                            console.log(`Non-initiator received acceptCall from ${currentFrom}, sending offer`);
+                            const offer = await peerConnection.createOffer();
+                            await peerConnection.setLocalDescription(offer);
+                            sendSignal(
+                                { from: currentUserId, to: currentFrom, signal: { type: 'offer', sdp: offer.sdp } },
+                                roomId.current
+                            );
+                            console.log(`Sent offer to user ${currentFrom}`);
+                        } else {
+                            console.log(`Skipping acceptCall handling for ${currentFrom}: already connected or initiator`);
+                        }
+                    }
+                    break;
 
-          case 'acceptCall':
-            if (isInitiator) {
-              const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
-              toast.success(`${userName} accepted the group call`);
-            }
-            break;
+                case 'ready':
+                    setReadyUsers((prev) => {
+                        if (prev.has(currentFrom)) {
+                            console.log(`Ignoring duplicate ready signal from user ${currentFrom}`);
+                            return prev;
+                        }
+                        const newSet = new Set([...prev, currentFrom]);
+                        console.log('Ready users updated:', Array.from(newSet));
+                        const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
+                        toast.success(`${userName} is ready`);
+                        console.log(`User ${userName} is ready`);
+                        return newSet;
+                    });
+                    if (!isCallStarted && (callParticipants.length <= 2 || readyUsers.size + 1 >= callParticipants.length - 1)) {
+                        startCall();
+                        console.log('Call started for ready participants');
+                    }
+                    if (!isInitiator) {
+                        if (peerConnection && !peerConnection.localDescription) {
+                            const offer = await peerConnection.createOffer();
+                            await peerConnection.setLocalDescription(offer);
+                            sendSignal(
+                                { from: currentUserId, to: currentFrom, signal: { type: 'offer', sdp: offer.sdp } },
+                                roomId.current
+                            );
+                            console.log(`Sent offer to user ${currentFrom} after receiving ready`);
+                        } else {
+                            console.warn(`Cannot send offer to ${currentFrom}: peerConnection=${!!peerConnection}, localDescription=${!!peerConnection?.localDescription}`);
+                        }
+                    }
+                    break;
 
-          case 'ready':
-            setReadyUsers((prev) => {
-              if (prev.has(currentFrom)) {
-                console.log(`Ignoring duplicate ready signal from user ${currentFrom}`);
-                return prev;
-              }
-              const newSet = new Set([...prev, currentFrom]);
-              console.log('Ready users updated:', Array.from(newSet));
-              const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
-              toast.success(`${userName} is ready`);
-              console.log(`User ${userName} is ready`);
-              return newSet;
-            });
-            // Запускаем startCall для неинициаторов сразу после получения ready
-            if (!isInitiator && !isCallStarted) {
-              startCall();
-              console.log('Call started for non-initiator after receiving ready signal');
-            }
-            // Для инициатора запускаем startCall, если ещё не запущен
-            if (isInitiator && !isCallStarted) {
-              startCall();
-              console.log('Call started for initiator after receiving ready signal');
-            }
-            break;
+                case 'offer':
+                    console.log('Processing offer from:', currentFrom, 'signal:', currentSignalData);
+                    try {
+                        const currentState = peerConnection.signalingState;
+                        console.log(`Current signaling state for user ${currentFrom}: ${currentState}`);
 
-          case 'offer':
-            console.log('Processing offer from:', currentFrom, 'signal:', currentSignalData);
-            try {
-              const currentState = peerConnection.signalingState;
-              console.log(`Current signaling state for user ${currentFrom}: ${currentState}`);
-              if (peerConnection.remoteDescription && peerConnection.remoteDescription.sdp === currentSignalData.sdp) {
-                console.log(`Ignoring duplicate offer from ${currentFrom}`);
-                continue;
-              }
-              if (currentState !== 'stable') {
-                console.log(`Rolling back signaling state for user ${currentFrom} from ${currentState}`);
-                await peerConnection.setLocalDescription({ type: 'rollback' });
-                console.log(`Rollback successful for user ${currentFrom}`);
-              }
-              await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
-              console.log(`Set remoteDescription for user ${currentFrom}`);
-              const answer = await peerConnection.createAnswer();
-              await peerConnection.setLocalDescription(answer);
-              const signalKey = `${currentUserId}-${currentFrom}-answer-${answer.sdp.slice(0, 50)}`;
-              if (!sentSignals.current.has(signalKey)) {
-                sentSignals.current.add(signalKey);
-                sendSignal(
-                  { from: currentUserId, to: currentFrom, signal: { type: 'answer', sdp: answer.sdp } },
-                  roomId.current
-                );
-                console.log(`Sent answer to user ${currentFrom}`);
-              }
-              if (pendingCandidates.current.has(currentFrom)) {
-                for (const candidate of pendingCandidates.current.get(currentFrom)) {
-                  await peerConnection.addIceCandidate(candidate);
-                  console.log(`Processed pending ICE candidate for ${currentFrom}`);
-                }
-                pendingCandidates.current.delete(currentFrom);
-              }
-              if (offerTimeoutRef.current) {
-                clearTimeout(offerTimeoutRef.current);
-                offerTimeoutRef.current = null;
-                console.log('Cleared offerTimeout after receiving offer');
-              }
-              if (!isCallStarted) {
-                startCall();
-                console.log('Call started after receiving offer');
-              }
-            } catch (error) {
-              console.error(`Error processing offer from ${currentFrom}:`, error);
-              toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
-            }
-            break;
+                        // Пропускаем дублирующиеся offer
+                        if (peerConnection.remoteDescription && peerConnection.remoteDescription.sdp === currentSignalData.sdp) {
+                            console.log(`Ignoring duplicate offer from ${currentFrom}`);
+                            continue;
+                        }
 
-          case 'answer':
-            console.log('Processing answer from:', currentFrom, 'signal:', currentSignalData);
-            try {
-              if (peerConnection.signalingState === 'have-local-offer') {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
-                console.log(`Set remoteDescription (answer) for user ${currentFrom}`);
-              } else {
-                console.warn(`Cannot process answer from ${currentFrom} in signaling state: ${peerConnection.signalingState}`);
-              }
-            } catch (error) {
-              console.error(`Error processing answer from ${currentFrom}:`, error);
-              toast.error(`Failed to process answer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
-            }
-            break;
+                        // Проверяем состояние
+                        if (currentState === 'stable') {
+                            await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
+                            console.log(`Set remoteDescription for user ${currentFrom}`);
+                            const answer = await peerConnection.createAnswer();
+                            await peerConnection.setLocalDescription(answer);
+                            console.log(`Set localDescription for user ${currentFrom}, signalingState: ${peerConnection.signalingState}`);
+                            sendSignal(
+                                { from: currentUserId, to: currentFrom, signal: { type: 'answer', sdp: answer.sdp } },
+                                roomId.current
+                            );
+                            console.log(`Sent answer to user ${currentFrom}`);
 
-          case 'candidate':
-            const { iceCandidate } = currentSignalData;
-            if (peerConnection && iceCandidate.candidate) {
-              const candidate = new RTCIceCandidate({
-                candidate: iceCandidate.candidate,
-                sdpMid: iceCandidate.sdpMid,
-                sdpMLineIndex: Number(iceCandidate.sdpMLineIndex),
-              });
-              if (peerConnection.remoteDescription) {
-                await peerConnection.addIceCandidate(candidate);
-                console.log(`Processed ICE candidate from user ${currentFrom}`);
-              } else {
-                console.warn(`Queuing ICE candidate for ${currentFrom}: remoteDescription not set`);
-                pendingCandidates.current.set(currentFrom, [
-                  ...(pendingCandidates.current.get(currentFrom) || []),
-                  candidate,
-                ]);
-              }
-            } else {
-              console.error(`Cannot add ICE candidate: peerConnection=${!!peerConnection}, candidate=${!!iceCandidate.candidate}`);
-            }
-            break;
+                            // Обрабатываем отложенные ICE-кандидаты
+                            if (pendingCandidates.current.has(currentFrom)) {
+                                for (const candidate of pendingCandidates.current.get(currentFrom)) {
+                                    await peerConnection.addIceCandidate(candidate);
+                                    console.log(`Processed pending ICE candidate for ${currentFrom}`);
+                                }
+                                pendingCandidates.current.delete(currentFrom);
+                            }
 
-          case 'rejectCall':
-            if (isInitiator) {
-              const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
-              toast.warn(`${userName} rejected the group call`);
-              setCallParticipants((prev) => prev.filter((u) => u.id !== Number(currentFrom)));
-              peerConnections.current.delete(currentFrom);
-              if (callParticipants.length <= 1) {
-                console.log('No participants left after reject, ending call');
-                endCall();
-              }
-            }
-            break;
+                            if (offerTimeoutRef.current) {
+                                clearTimeout(offerTimeoutRef.current);
+                                offerTimeoutRef.current = null;
+                                console.log('Cleared offerTimeout after receiving offer');
+                            }
+                        } else {
+                            console.warn(`Cannot process offer from ${currentFrom} in signaling state: ${currentState}`);
+                            signalQueue.current.get(currentFrom).unshift(currentSignal); // Возвращаем в начало очереди
+                            break;
+                        }
+                    } catch (error) {
+                        console.error(`Error processing offer from ${currentFrom}:`, error);
+                        toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                    }
+                    break;
 
-          case 'endCall':
-            if (to && to !== String(currentUserId)) {
-              console.log('Ignoring endCall signal not addressed to current user:', { from: currentFrom, to, currentUserId });
-              continue;
-            }
-            if (!hasNotifiedEndCall.current) {
-              hasNotifiedEndCall.current = true;
-              const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
-              toast.info(`${userName} left the group call`);
-              setCallParticipants((prev) => {
-                const updatedParticipants = prev.filter((u) => u.id !== Number(currentFrom));
-                console.log('Updated participants after endCall:', updatedParticipants);
-                return updatedParticipants;
-              });
-              if (peerConnection) {
-                peerConnection.close();
-                peerConnections.current.delete(currentFrom);
-              }
-              if (isInitiator || callParticipants.length <= 2) {
-                console.log('Ending call: initiator or less than 2 participants remain');
-                endCall();
-              }
-            }
-            break;
+                case 'answer':
+                    console.log('Processing answer from:', currentFrom, 'signal:', currentSignalData);
+                    try {
+                        if (peerConnection.signalingState === 'have-local-offer') {
+                            await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
+                            console.log(`Set remoteDescription (answer) for user ${currentFrom}`);
+                        } else {
+                            console.warn(`Cannot process answer from ${currentFrom} in signaling state: ${peerConnection.signalingState}`);
+                        }
+                    } catch (error) {
+                        console.error(`Error processing answer from ${currentFrom}:`, error);
+                        toast.error(`Failed to process answer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                    }
+                    break;
 
-          default:
-            console.warn('Unknown signal type:', currentSignalData.type);
+                case 'candidate':
+                    const { iceCandidate } = currentSignalData;
+                    if (peerConnection && iceCandidate.candidate) {
+                        const candidate = new RTCIceCandidate({
+                            candidate: iceCandidate.candidate,
+                            sdpMid: iceCandidate.sdpMid,
+                            sdpMLineIndex: Number(iceCandidate.sdpMLineIndex),
+                        });
+                        if (peerConnection.remoteDescription) {
+                            await peerConnection.addIceCandidate(candidate);
+                            console.log(`Processed ICE candidate from user ${currentFrom}`);
+                        } else {
+                            console.warn(`Queuing ICE candidate for ${currentFrom}: remoteDescription not set`);
+                            pendingCandidates.current.set(currentFrom, [
+                                ...(pendingCandidates.current.get(currentFrom) || []),
+                                candidate,
+                            ]);
+                        }
+                    } else {
+                        console.error(`Cannot add ICE candidate: peerConnection=${!!peerConnection}, candidate=${!!iceCandidate.candidate}`);
+                    }
+                    break;
+
+                case 'rejectCall':
+                    if (isInitiator) {
+                        const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
+                        toast.warn(`${userName} rejected the group call`);
+                        setCallParticipants((prev) => prev.filter((u) => u.id !== Number(currentFrom)));
+                        peerConnections.current.delete(currentFrom);
+                        if (callParticipants.length <= 1) {
+                            console.log('No participants left after reject, ending call');
+                            endCall();
+                        }
+                    }
+                    break;
+
+                case 'endCall':
+                    if (to && to !== String(currentUserId)) {
+                        console.log('Ignoring endCall signal not addressed to current user:', { from: currentFrom, to, currentUserId });
+                        continue;
+                    }
+                    if (!hasNotifiedEndCall.current) {
+                        hasNotifiedEndCall.current = true;
+                        const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
+                        toast.info(`${userName} left the group call`);
+                        setCallParticipants((prev) => {
+                            const updatedParticipants = prev.filter((u) => u.id !== Number(currentFrom));
+                            console.log('Updated participants after endCall:', updatedParticipants);
+                            return updatedParticipants;
+                        });
+                        if (peerConnection) {
+                            peerConnection.close();
+                            peerConnections.current.delete(currentFrom);
+                        }
+                        if (isInitiator || callParticipants.length <= 2) {
+                            console.log('Ending call: initiator or less than 2 participants remain');
+                            endCall();
+                        }
+                    }
+                    break;
+
+                default:
+                    console.warn('Unknown signal type:', currentSignalData.type);
+            }
+        } catch (error) {
+            console.error('Error processing signal:', error);
         }
-      } catch (error) {
-        console.error('Error processing signal:', error);
-      }
     }
 
     isProcessingSignal.current.set(from, false);
@@ -798,42 +753,43 @@ const GroupCallActivity = () => {
     setIsCallStarted(false);
     setIsWaiting(false);
 
+    // Отправляем сигнал endCall только один раз
     if (!hasNotifiedEndCall.current) {
       callParticipants
         .filter((u) => u.id !== Number(currentUserId))
         .forEach((user) => {
-          const signalKey = `${currentUserId}-${user.id}-endCall`;
-          if (!sentSignals.current.has(signalKey)) {
-            sentSignals.current.add(signalKey);
-            sendSignal(
-              {
-                from: currentUserId,
-                to: String(user.id),
-                signal: { type: 'endCall', roomId: roomId.current },
-              },
-              roomId.current
-            );
-            console.log(`Sent endCall to user ${user.id}`);
-          }
+          sendSignal(
+            {
+              from: currentUserId,
+              to: String(user.id),
+              signal: { type: 'endCall', roomId: roomId.current },
+            },
+            roomId.current
+          );
+          console.log(`Sent endCall to user ${user.id}`);
         });
     }
 
+    // Явно отписываемся от комнаты
     if (unsubscribeRoomRef.current) {
       unsubscribeRoomRef.current();
       console.log(`Unsubscribed from room ${roomId.current} in endCall`);
       unsubscribeRoomRef.current = null;
     }
 
+    // Закрываем все peerConnections
     peerConnections.current.forEach((pc) => {
       pc.close();
     });
     peerConnections.current.clear();
 
+    // Очищаем локальный аудиопоток
     if (localAudioRef.current && localAudioRef.current.srcObject) {
       localAudioRef.current.srcObject.getTracks().forEach((track) => track.stop());
       localAudioRef.current.srcObject = null;
     }
 
+    // Очищаем удалённые аудиопотоки
     remoteAudioRefs.current.forEach((audio) => {
       if (audio.srcObject) {
         audio.srcObject.getTracks().forEach((track) => track.stop());
@@ -843,9 +799,11 @@ const GroupCallActivity = () => {
     });
     remoteAudioRefs.current.clear();
 
+    // Останавливаем рингтон
     ringtoneRef.current.pause();
     ringtoneRef.current.currentTime = 0;
 
+    // Уведомляем и завершаем
     if (!hasNotifiedEndCall.current) {
       hasNotifiedEndCall.current = true;
       toast.info('Group call ended');
