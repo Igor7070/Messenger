@@ -199,6 +199,7 @@ const GroupCallActivity = () => {
       }
     };
 
+    // Ожидание готовности local-audio
     const waitForLocalAudio = () => {
       const audioElement = document.getElementById('local-audio');
       if (audioElement) {
@@ -217,6 +218,7 @@ const GroupCallActivity = () => {
           }
         });
         observer.observe(document.body, { childList: true, subtree: true });
+        // Таймаут на случай, если элемент не появится
         setTimeout(() => {
           if (!localAudioRef.current) {
             console.error('Local audio element not found after timeout');
@@ -229,6 +231,24 @@ const GroupCallActivity = () => {
     };
 
     waitForLocalAudio();
+
+    // Обработка очереди сигналов
+    const handleQueuedSignals = () => {
+      if (localAudioRef.current && localAudioRef.current.srcObject && signalQueue.current.size > 0) {
+        console.log('Processing queued signals:', signalQueue.current.size);
+        signalQueue.current.forEach((signals, from) => {
+          while (signals.length > 0) {
+            const signal = signals.shift();
+            handleSignal(signal);
+          }
+        });
+      }
+    };
+
+    // Вызываем обработку сигналов после инициализации localAudioRef
+    if (localAudioRef.current) {
+      handleQueuedSignals();
+    }
 
     const timerInterval = setInterval(() => {
       if (!isMounted) return;
@@ -329,6 +349,7 @@ const GroupCallActivity = () => {
     };
   }, [currentUserId, initiator.id, isInitiator, isCallEnded, memoizedParticipants, sendSignal, setGroupSignalHandler, navigate]);
 
+  // Обработка очереди сигналов
   useEffect(() => {
     if (localAudioRef.current && localAudioRef.current.srcObject && signalQueue.current.size > 0) {
       console.log('Processing queued signals:', signalQueue.current.size);
@@ -339,7 +360,7 @@ const GroupCallActivity = () => {
         }
       });
     }
-  }, [localAudioRef.current?.srcObject]);
+  }, [localAudioRef.current]);
 
   const sendGroupCallInvite = () => {
     if (!roomId.current) {
@@ -378,7 +399,7 @@ const GroupCallActivity = () => {
         return null;
       }
 
-      console.log(`initializePeerConnection: localAudioRef.current.srcObject tracks for user ${userId}:`, stream.getTracks());
+      console.log('initializePeerConnection: localAudioRef.current.srcObject tracks:', stream.getTracks());
 
       const iceServers = [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -551,6 +572,11 @@ const GroupCallActivity = () => {
   const handleSignal = async (signalMessage) => {
     console.log('Signal received:', { ...signalMessage, currentUserId });
 
+    if (isCallEnded || !isMounted) {
+      console.log('Ignoring signal due to call ended or component unmounted:', signalMessage);
+      return;
+    }
+
     if (signalMessage.from === currentUserId) {
       console.log('Ignoring signal from self:', signalMessage);
       return;
@@ -571,21 +597,10 @@ const GroupCallActivity = () => {
     }
     receivedSignals.current.add(signalKey);
 
-    // Проверка isCallEnded только для endCall и rejectCall
-    if (isCallEnded && ['endCall', 'rejectCall'].includes(signal.type)) {
-      console.log('Ignoring signal due to call ended:', signalMessage);
-      return;
-    }
-
     // Очередь сигналов, если localAudioRef или srcObject не готовы
-    if (
-      !localAudioRef.current ||
-      !localAudioRef.current.srcObject ||
-      !peerConnections.current.has(from) ||
-      !peerConnections.current.get(from).remoteDescription
-    ) {
+    if (!localAudioRef.current || !localAudioRef.current.srcObject) {
       if (!['groupCallInvite', 'acceptCall', 'ready'].includes(signal.type)) {
-        console.warn(`Queuing signal from ${from}: localAudioRef, srcObject, or peerConnection not ready`);
+        console.warn(`localAudioRef or srcObject is null, queuing signal from ${from}`);
         if (!signalQueue.current.has(from)) {
           signalQueue.current.set(from, []);
         }
@@ -758,32 +773,11 @@ const GroupCallActivity = () => {
           case 'answer':
             console.log('Processing answer from:', currentFrom, 'signal:', currentSignalData);
             try {
-              const currentState = peerConnection.signalingState;
-              console.log(`Current signaling state for user ${currentFrom}: ${currentState}`);
-              if (currentState === 'have-local-offer') {
+              if (peerConnection.signalingState === 'have-local-offer') {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
                 console.log(`Set remoteDescription (answer) for user ${currentFrom}`);
               } else {
-                console.warn(`Cannot process answer from ${currentFrom} in signaling state: ${currentState}`);
-                // Попробуем перезапустить offer, если состояние некорректно
-                if (currentState === 'stable' && localAudioRef.current?.srcObject) {
-                  console.log(`Restarting offer for user ${currentFrom} due to incorrect signaling state`);
-                  const offer = await peerConnection.createOffer();
-                  await peerConnection.setLocalDescription(offer);
-                  const signalKey = `${currentUserId}-${currentFrom}-offer-${offer.sdp.slice(0, 50)}`;
-                  if (!sentSignals.current.has(signalKey)) {
-                    sentSignals.current.add(signalKey);
-                    sendSignal(
-                      {
-                        from: currentUserId,
-                        to: currentFrom,
-                        signal: { type: 'offer', sdp: offer.sdp },
-                      },
-                      roomId.current
-                    );
-                    console.log(`Sent new offer to user ${currentFrom}`);
-                  }
-                }
+                console.warn(`Cannot process answer from ${currentFrom} in signaling state: ${peerConnection.signalingState}`);
               }
             } catch (error) {
               console.error(`Error processing answer from ${currentFrom}:`, error);
