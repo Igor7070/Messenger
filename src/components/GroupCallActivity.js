@@ -585,7 +585,7 @@ const GroupCallActivity = () => {
                           endCall();
                         }
                       }
-                    }, 10000)
+                    }, 30000)
                   );
                 }
               } else {
