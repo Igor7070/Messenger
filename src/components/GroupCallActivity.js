@@ -745,6 +745,11 @@ const GroupCallActivity = () => {
               const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
               toast.success(`${userName} accepted the group call`);
             }
+            // Запускаем startCall для неинициаторов после получения acceptCall
+            if (!isInitiator && !isCallStarted) {
+              startCall();
+              console.log('Call started for non-initiator after receiving acceptCall');
+            }
             break;
 
           case 'ready':
