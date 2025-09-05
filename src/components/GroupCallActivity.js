@@ -358,9 +358,10 @@ const GroupCallActivity = () => {
           const signal = signals.shift();
           handleSignal(signal);
         }
+        signalQueue.current.delete(from); // Очищаем очередь после обработки
       });
     }
-  }, [localAudioRef.current]);
+  }, [localAudioRef.current?.srcObject]); // Зависимость от srcObject
 
   const sendGroupCallInvite = () => {
     if (!roomId.current) {
@@ -572,11 +573,6 @@ const GroupCallActivity = () => {
   const handleSignal = async (signalMessage) => {
     console.log('Signal received:', { ...signalMessage, currentUserId });
 
-    if (isCallEnded || !isMounted) {
-      console.log('Ignoring signal due to call ended or component unmounted:', signalMessage);
-      return;
-    }
-
     if (signalMessage.from === currentUserId) {
       console.log('Ignoring signal from self:', signalMessage);
       return;
@@ -599,14 +595,12 @@ const GroupCallActivity = () => {
 
     // Очередь сигналов, если localAudioRef или srcObject не готовы
     if (!localAudioRef.current || !localAudioRef.current.srcObject) {
-      if (!['groupCallInvite', 'acceptCall', 'ready'].includes(signal.type)) {
-        console.warn(`localAudioRef or srcObject is null, queuing signal from ${from}`);
-        if (!signalQueue.current.has(from)) {
-          signalQueue.current.set(from, []);
-        }
-        signalQueue.current.get(from).push(signalMessage);
-        return;
+      console.warn(`localAudioRef or srcObject is null, queuing signal from ${from}`);
+      if (!signalQueue.current.has(from)) {
+        signalQueue.current.set(from, []);
       }
+      signalQueue.current.get(from).push(signalMessage);
+      return;
     }
 
     if (!signalQueue.current.has(from)) {
@@ -778,6 +772,19 @@ const GroupCallActivity = () => {
                 console.log(`Set remoteDescription (answer) for user ${currentFrom}`);
               } else {
                 console.warn(`Cannot process answer from ${currentFrom} in signaling state: ${peerConnection.signalingState}`);
+                // Сбрасываем и отправляем новый offer
+                await peerConnection.setLocalDescription({ type: 'rollback' });
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                const signalKey = `${currentUserId}-${currentFrom}-offer-${offer.sdp.slice(0, 50)}`;
+                if (!sentSignals.current.has(signalKey)) {
+                  sentSignals.current.add(signalKey);
+                  sendSignal(
+                    { from: currentUserId, to: currentFrom, signal: { type: 'offer', sdp: offer.sdp } },
+                    roomId.current
+                  );
+                  console.log(`Sent new offer to user ${currentFrom} after invalid answer state`);
+                }
               }
             } catch (error) {
               console.error(`Error processing answer from ${currentFrom}:`, error);
