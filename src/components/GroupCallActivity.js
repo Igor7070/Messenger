@@ -40,8 +40,7 @@ const GroupCallActivity = () => {
   const offerTimeoutRef = useRef(null);
   const readyTimeoutRef = useRef(null);
   const sentSignals = useRef(new Set());
-  const receivedSignals = useRef(new Set()); // Добавлено для фильтрации входящих сигналов
-
+  const receivedSignals = useRef(new Set());
   const signalQueue = useRef(new Map());
   const isProcessingSignal = useRef(new Map());
 
@@ -93,17 +92,17 @@ const GroupCallActivity = () => {
         return;
       }
 
-      if (!localAudioRef.current) {
-        console.error('localAudioRef is null');
-        toast.error('Audio element not ready');
-        endCall();
-        return;
-      }
-
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         console.log('Local stream tracks:', stream.getTracks());
-        localAudioRef.current.srcObject = stream;
+        if (localAudioRef.current) {
+          localAudioRef.current.srcObject = stream;
+        } else {
+          console.error('localAudioRef is null during stream assignment');
+          toast.error('Audio element not ready');
+          endCall();
+          return;
+        }
 
         const fetchParticipants = async () => {
           try {
@@ -200,13 +199,55 @@ const GroupCallActivity = () => {
       }
     };
 
-    if (document.getElementById('local-audio')) {
-      localAudioRef.current = document.getElementById('local-audio');
-      initializeCall();
-    } else {
-      console.error('Local audio element not found in DOM');
-      toast.error('Audio element not ready');
-      endCall();
+    // Ожидание готовности local-audio
+    const waitForLocalAudio = () => {
+      const audioElement = document.getElementById('local-audio');
+      if (audioElement) {
+        console.log('local-audio element found, assigning to localAudioRef');
+        localAudioRef.current = audioElement;
+        initializeCall();
+      } else {
+        console.warn('local-audio element not found, setting up MutationObserver...');
+        const observer = new MutationObserver((mutations, obs) => {
+          const audio = document.getElementById('local-audio');
+          if (audio) {
+            console.log('local-audio element found via MutationObserver');
+            localAudioRef.current = audio;
+            initializeCall();
+            obs.disconnect();
+          }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+        // Таймаут на случай, если элемент не появится
+        setTimeout(() => {
+          if (!localAudioRef.current) {
+            console.error('Local audio element not found after timeout');
+            toast.error('Audio element not ready');
+            endCall();
+            observer.disconnect();
+          }
+        }, 5000);
+      }
+    };
+
+    waitForLocalAudio();
+
+    // Обработка очереди сигналов
+    const handleQueuedSignals = () => {
+      if (localAudioRef.current && localAudioRef.current.srcObject && signalQueue.current.size > 0) {
+        console.log('Processing queued signals:', signalQueue.current.size);
+        signalQueue.current.forEach((signals, from) => {
+          while (signals.length > 0) {
+            const signal = signals.shift();
+            handleSignal(signal);
+          }
+        });
+      }
+    };
+
+    // Вызываем обработку сигналов после инициализации localAudioRef
+    if (localAudioRef.current) {
+      handleQueuedSignals();
     }
 
     const timerInterval = setInterval(() => {
@@ -308,6 +349,19 @@ const GroupCallActivity = () => {
     };
   }, [currentUserId, initiator.id, isInitiator, isCallEnded, memoizedParticipants, sendSignal, setGroupSignalHandler, navigate]);
 
+  // Обработка очереди сигналов
+  useEffect(() => {
+    if (localAudioRef.current && localAudioRef.current.srcObject && signalQueue.current.size > 0) {
+      console.log('Processing queued signals:', signalQueue.current.size);
+      signalQueue.current.forEach((signals, from) => {
+        while (signals.length > 0) {
+          const signal = signals.shift();
+          handleSignal(signal);
+        }
+      });
+    }
+  }, [localAudioRef.current]);
+
   const sendGroupCallInvite = () => {
     if (!roomId.current) {
       console.error('Cannot send group call invite: roomId is null');
@@ -338,12 +392,14 @@ const GroupCallActivity = () => {
 
   const initializePeerConnection = async (userId, stream) => {
     try {
-      if (!localAudioRef.current) {
-        console.error(`Cannot initialize PeerConnection for user ${userId}: localAudioRef is null`);
-        toast.error('Audio element not ready');
+      if (!localAudioRef.current || !stream) {
+        console.error(`Cannot initialize PeerConnection for user ${userId}: localAudioRef or stream is null`);
+        toast.error('Audio element or stream not ready');
         endCall();
         return null;
       }
+
+      console.log('initializePeerConnection: localAudioRef.current.srcObject tracks:', stream.getTracks());
 
       const iceServers = [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -403,7 +459,7 @@ const GroupCallActivity = () => {
           console.error(`WebRTC connection failed for user ${userId}`);
           toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           endCall();
-        } else if (peerConnection.iceConnectionstate === 'disconnected') {
+        } else if (peerConnection.iceConnectionState === 'disconnected') {
           console.warn(`WebRTC connection disconnected for user ${userId}`);
           toast.warn(`User ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`} disconnected`);
         }
@@ -450,6 +506,10 @@ const GroupCallActivity = () => {
       console.log('Call already started, skipping startCall');
       return;
     }
+    if (!localAudioRef.current || !localAudioRef.current.srcObject) {
+      console.warn('Cannot start call: localAudioRef or srcObject not ready');
+      return;
+    }
     setIsCallStarted(true);
     setIsWaiting(false);
     ringtoneRef.current.pause();
@@ -469,14 +529,12 @@ const GroupCallActivity = () => {
               peerConnection.iceConnectionState !== 'connected' &&
               peerConnection.iceConnectionState !== 'completed'
             ) {
-              // Сбрасываем localDescription только если нет remoteDescription
               if (peerConnection.localDescription && !peerConnection.remoteDescription) {
                 console.log(`Resetting localDescription for user ${user.id}`);
                 await peerConnection.setLocalDescription(null).catch((error) => {
                   console.error(`Error resetting localDescription for ${user.id}:`, error);
                 });
               }
-              // Создаем offer только если нет remoteDescription или соединение не установлено
               if (!peerConnection.remoteDescription) {
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
@@ -512,8 +570,10 @@ const GroupCallActivity = () => {
   };
 
   const handleSignal = async (signalMessage) => {
-    if (isCallEnded || !isMounted || !localAudioRef.current) {
-      console.log('Ignoring signal due to call ended, component unmounted, or localAudioRef null:', signalMessage);
+    console.log('Signal received:', { ...signalMessage, currentUserId });
+
+    if (isCallEnded || !isMounted) {
+      console.log('Ignoring signal due to call ended or component unmounted:', signalMessage);
       return;
     }
 
@@ -528,7 +588,6 @@ const GroupCallActivity = () => {
     }
 
     const { signal, from, to } = signalMessage;
-    console.log('Signal received:', { from, to, type: signal.type, currentUserId });
 
     // Фильтрация дублирующихся сигналов
     const signalKey = `${from}-${to || 'null'}-${signal.type}-${signal.sdp?.slice(0, 50) || signal.iceCandidate?.candidate || 'no-sdp'}`;
@@ -538,11 +597,22 @@ const GroupCallActivity = () => {
     }
     receivedSignals.current.add(signalKey);
 
+    // Очередь сигналов, если localAudioRef или srcObject не готовы
+    if (!localAudioRef.current || !localAudioRef.current.srcObject) {
+      if (!['groupCallInvite', 'acceptCall', 'ready'].includes(signal.type)) {
+        console.warn(`localAudioRef or srcObject is null, queuing signal from ${from}`);
+        if (!signalQueue.current.has(from)) {
+          signalQueue.current.set(from, []);
+        }
+        signalQueue.current.get(from).push(signalMessage);
+        return;
+      }
+    }
+
     if (!signalQueue.current.has(from)) {
       signalQueue.current.set(from, []);
       isProcessingSignal.current.set(from, false);
     }
-
     signalQueue.current.get(from).push(signalMessage);
 
     if (isProcessingSignal.current.get(from)) {
@@ -572,7 +642,7 @@ const GroupCallActivity = () => {
       }
 
       const peerConnection = peerConnections.current.get(currentFrom);
-      if (!peerConnection) {
+      if (!peerConnection && !['groupCallInvite', 'acceptCall', 'ready'].includes(currentSignalData.type)) {
         console.error(`No peerConnection for user ${currentFrom} after initialization attempt`);
         continue;
       }
@@ -631,7 +701,7 @@ const GroupCallActivity = () => {
           case 'ready':
             setReadyUsers((prev) => {
               if (prev.has(currentFrom)) {
-                console.log(`Ignoring duplicate ready signal from user ${currentFrom}`);
+                console.log(`Ignoring duplicate ready signal from ${currentFrom}`);
                 return prev;
               }
               const newSet = new Set([...prev, currentFrom]);
@@ -641,12 +711,10 @@ const GroupCallActivity = () => {
               console.log(`User ${userName} is ready`);
               return newSet;
             });
-            // Запускаем startCall для неинициаторов сразу после получения ready
             if (!isInitiator && !isCallStarted) {
               startCall();
               console.log('Call started for non-initiator after receiving ready signal');
             }
-            // Для инициатора запускаем startCall, если ещё не запущен
             if (isInitiator && !isCallStarted) {
               startCall();
               console.log('Call started for initiator after receiving ready signal');
