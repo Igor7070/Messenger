@@ -344,32 +344,6 @@ const GroupCallActivity = () => {
     };
   }, [currentUserId, initiator.id, isInitiator, isCallEnded, memoizedParticipants, sendSignal, setGroupSignalHandler, navigate]);
 
-  // Периодическая проверка соединений
-  useEffect(() => {
-    if (!isCallStarted || isCallEnded || !isMounted) return;
-
-    const checkConnectionsInterval = setInterval(() => {
-      console.log('Periodic connection check triggered');
-      let hasFailedConnections = false;
-      peerConnections.current.forEach((pc, userId) => {
-        if (pc.iceConnectionState !== 'connected' && pc.iceConnectionState !== 'completed') {
-          hasFailedConnections = true;
-          console.log(`Connection with user ${userId} not established, state: ${pc.iceConnectionState}`);
-        }
-      });
-      if (hasFailedConnections) {
-        retryFailedConnections();
-      } else {
-        console.log('All connections established, no retry needed');
-      }
-    }, 10000); // Проверка каждые 10 секунд
-
-    return () => {
-      clearInterval(checkConnectionsInterval);
-      console.log('Cleared connection check interval');
-    };
-  }, [isCallStarted, isCallEnded, callParticipants]);
-
   // Обработка очереди сигналов
   useEffect(() => {
     if (localAudioRef.current && localAudioRef.current.srcObject && signalQueue.current.size > 0) {
@@ -632,75 +606,6 @@ const GroupCallActivity = () => {
     }
   };
 
-  const retryFailedConnections = async () => {
-    console.log('Checking connection states for all participants');
-    try {
-      for (const user of callParticipants) {
-        if (user.id !== Number(currentUserId)) {
-          const peerConnection = peerConnections.current.get(String(user.id));
-          if (peerConnection) {
-            if (
-              peerConnection.iceConnectionState !== 'connected' &&
-              peerConnection.iceConnectionState !== 'completed'
-            ) {
-              console.log(`Retrying connection for user ${user.id}, current iceConnectionState: ${peerConnection.iceConnectionState}`);
-              // Сбрасываем localDescription, если оно существует
-              if (peerConnection.localDescription) {
-                console.log(`Resetting localDescription for user ${user.id}`);
-                await peerConnection.setLocalDescription(null).catch((error) => {
-                  console.error(`Error resetting localDescription for ${user.id}:`, error);
-                });
-              }
-              const offer = await peerConnection.createOffer();
-              await peerConnection.setLocalDescription(offer);
-              const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
-              if (!sentSignals.current.has(signalKey)) {
-                sentSignals.current.add(signalKey);
-                sendSignal(
-                  {
-                    from: currentUserId,
-                    to: String(user.id),
-                    signal: { type: 'offer', sdp: offer.sdp },
-                  },
-                  roomId.current
-                );
-                console.log(`Sent retry offer to user ${user.id}`);
-                // Установка таймаута для ожидания answer
-                answerTimeouts.current.set(
-                  user.id,
-                  setTimeout(() => {
-                    if (peerConnection && !peerConnection.remoteDescription) {
-                      console.error(`No answer received from user ${user.id} within 10 seconds on retry`);
-                      toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`} on retry`);
-                      peerConnections.current.delete(String(user.id));
-                      setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
-                      if (callParticipants.length < 2) {
-                        console.log('Ending call: less than 2 participants remain after retry');
-                        endCall();
-                      }
-                    }
-                  }, 10000)
-                );
-              }
-            } else {
-              console.log(`Connection with user ${user.id} is already established, iceConnectionState: ${peerConnection.iceConnectionState}`);
-            }
-          } else {
-            console.warn(`No peerConnection for user ${user.id}, initializing new one`);
-            await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
-            // Повторно вызываем retry для нового peerConnection
-            if (peerConnections.current.get(String(user.id))) {
-              await retryFailedConnections();
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error retrying failed connections:', error);
-      toast.error('Failed to retry connections.');
-    }
-  };
-
   const handleQueuedSignals = () => {
     if (localAudioRef.current && localAudioRef.current.srcObject && signalQueue.current.size > 0) {
       console.log('Processing queued signals:', signalQueue.current.size);
@@ -840,11 +745,6 @@ const GroupCallActivity = () => {
               const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
               toast.success(`${userName} accepted the group call`);
             }
-            // Запускаем startCall для неинициаторов после получения acceptCall
-            //if (!isInitiator && !isCallStarted) {
-              //startCall();
-              //console.log('Call started for non-initiator after receiving acceptCall');
-            //}
             break;
 
           case 'ready':
