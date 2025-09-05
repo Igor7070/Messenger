@@ -465,18 +465,27 @@ const GroupCallActivity = () => {
           }
           const peerConnection = peerConnections.current.get(String(user.id));
           if (peerConnection) {
+            // ИЗМЕНЕНО: Пропускаем, если соединение уже установлено
             if (
-              peerConnection.iceConnectionState !== 'connected' &&
-              peerConnection.iceConnectionState !== 'completed'
+              peerConnection.iceConnectionState === 'connected' ||
+              peerConnection.iceConnectionState === 'completed'
             ) {
-              // Сбрасываем localDescription только если нет remoteDescription
+              console.log(
+                `Skipping offer for user ${user.id}: already connected, iceConnectionState=${peerConnection.iceConnectionState}`
+              );
+              continue;
+            }
+
+            // ИЗМЕНЕНО: Отправляем offer только если currentUserId < user.id
+            if (Number(currentUserId) < Number(user.id)) {
+              // Сбрасываем localDescription, если нет remoteDescription
               if (peerConnection.localDescription && !peerConnection.remoteDescription) {
                 console.log(`Resetting localDescription for user ${user.id}`);
-                await peerConnection.setLocalDescription(null).catch((error) => {
+                await peerConnection.setLocalDescription({ type: 'rollback' }).catch((error) => {
                   console.error(`Error resetting localDescription for ${user.id}:`, error);
                 });
               }
-              // Создаем offer только если нет remoteDescription или соединение не установлено
+              // Создаем offer только если нет remoteDescription
               if (!peerConnection.remoteDescription) {
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
@@ -497,7 +506,7 @@ const GroupCallActivity = () => {
                 console.log(`Skipping offer for user ${user.id}: remoteDescription exists`);
               }
             } else {
-              console.log(`Skipping offer for user ${user.id}: already connected, iceConnectionState=${peerConnection.iceConnectionState}`);
+              console.log(`Waiting for offer from user ${user.id} (currentUserId > user.id)`);
             }
           } else {
             console.warn(`No peerConnection for user ${user.id}`);
@@ -512,8 +521,10 @@ const GroupCallActivity = () => {
   };
 
   const handleSignal = async (signalMessage) => {
-    if (isCallEnded || !isMounted || !localAudioRef.current) {
-      console.log('Ignoring signal due to call ended, component unmounted, or localAudioRef null:', signalMessage);
+    console.log('Signal received:', { ...signalMessage, currentUserId });
+
+    if (isCallEnded) {
+      console.log('Ignoring signal due to call ended:', signalMessage);
       return;
     }
 
@@ -528,9 +539,8 @@ const GroupCallActivity = () => {
     }
 
     const { signal, from, to } = signalMessage;
-    console.log('Signal received:', { from, to, type: signal.type, currentUserId });
 
-    // Фильтрация дублирующихся сигналов
+    // ИЗМЕНЕНО: Фильтрация дублирующихся сигналов
     const signalKey = `${from}-${to || 'null'}-${signal.type}-${signal.sdp?.slice(0, 50) || signal.iceCandidate?.candidate || 'no-sdp'}`;
     if (receivedSignals.current.has(signalKey)) {
       console.log(`Ignoring duplicate signal: ${signalKey}`);
@@ -538,11 +548,20 @@ const GroupCallActivity = () => {
     }
     receivedSignals.current.add(signalKey);
 
+    // ДОБАВЛЕНО: Очередь сигналов, если localAudioRef не готов
+    if (!localAudioRef.current) {
+      console.warn(`localAudioRef is null, queuing signal from ${from}`);
+      if (!signalQueue.current.has(from)) {
+        signalQueue.current.set(from, []);
+      }
+      signalQueue.current.get(from).push(signalMessage);
+      return;
+    }
+
     if (!signalQueue.current.has(from)) {
       signalQueue.current.set(from, []);
       isProcessingSignal.current.set(from, false);
     }
-
     signalQueue.current.get(from).push(signalMessage);
 
     if (isProcessingSignal.current.get(from)) {
@@ -556,12 +575,14 @@ const GroupCallActivity = () => {
       const currentSignal = signalQueue.current.get(from).shift();
       const { signal: currentSignalData, from: currentFrom, to } = currentSignal;
 
-      if (to && to !== String(currentUserId) && !['acceptCall', 'ready', 'groupCallInvite'].includes(currentSignalData.type)) {
+      // ИЗМЕНЕНО: Пропускаем только сигналы rejectCall и endCall, если to не текущий пользователь
+      if (to && to !== String(currentUserId) && !['acceptCall', 'ready', 'groupCallInvite', 'offer', 'answer', 'candidate'].includes(currentSignalData.type)) {
         console.log('Ignoring signal not addressed to current user:', { from: currentFrom, to, type: currentSignalData.type, currentUserId });
         continue;
       }
 
-      if (!peerConnections.current.has(currentFrom) && currentFrom !== String(currentUserId)) {
+      // ИЗМЕНЕНО: Инициализация PeerConnection только для сигналов, требующих соединения
+      if (!peerConnections.current.has(currentFrom) && !['groupCallInvite', 'acceptCall', 'ready'].includes(currentSignalData.type)) {
         console.log('Initializing peerConnection for user:', currentFrom);
         const peerConnection = await initializePeerConnection(currentFrom, localAudioRef.current.srcObject);
         if (!peerConnection) {
@@ -572,7 +593,7 @@ const GroupCallActivity = () => {
       }
 
       const peerConnection = peerConnections.current.get(currentFrom);
-      if (!peerConnection) {
+      if (!peerConnection && !['groupCallInvite', 'acceptCall', 'ready'].includes(currentSignalData.type)) {
         console.error(`No peerConnection for user ${currentFrom} after initialization attempt`);
         continue;
       }
@@ -641,15 +662,9 @@ const GroupCallActivity = () => {
               console.log(`User ${userName} is ready`);
               return newSet;
             });
-            // Запускаем startCall для неинициаторов сразу после получения ready
-            if (!isInitiator && !isCallStarted) {
+            if (!isCallStarted) {
               startCall();
-              console.log('Call started for non-initiator after receiving ready signal');
-            }
-            // Для инициатора запускаем startCall, если ещё не запущен
-            if (isInitiator && !isCallStarted) {
-              startCall();
-              console.log('Call started for initiator after receiving ready signal');
+              console.log('Call started after receiving ready signal');
             }
             break;
 
@@ -662,7 +677,8 @@ const GroupCallActivity = () => {
                 console.log(`Ignoring duplicate offer from ${currentFrom}`);
                 continue;
               }
-              if (currentState !== 'stable') {
+              // ДОБАВЛЕНО: Откат, если оба клиента отправили offer (glare)
+              if (currentState === 'have-local-offer' && Number(currentUserId) > Number(currentFrom)) {
                 console.log(`Rolling back signaling state for user ${currentFrom} from ${currentState}`);
                 await peerConnection.setLocalDescription({ type: 'rollback' });
                 console.log(`Rollback successful for user ${currentFrom}`);
