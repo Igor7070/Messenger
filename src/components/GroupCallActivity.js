@@ -480,7 +480,7 @@ const GroupCallActivity = () => {
           toast.warn(`User ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`} disconnected`);
           setCallParticipants((prev) => prev.filter((u) => u.id !== Number(userId)));
           peerConnections.current.delete(userId);
-          if (isInitiator || callParticipants.length <= 2) {
+          if (callParticipants.length < 2) {
             console.log('Ending call: initiator or less than 2 participants remain');
             endCall();
           }
