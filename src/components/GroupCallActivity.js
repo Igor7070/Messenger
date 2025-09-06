@@ -729,7 +729,7 @@ const GroupCallActivity = () => {
                     } else {
                       console.log(`Skipping removal of user ${user.id}: connection is active, iceConnectionState: ${peerConnection?.iceConnectionState}, connectionState: ${peerConnection?.connectionState}`);
                     }
-                  }, 10000)
+                  }, 70000)
                 );
               }
             } else {
