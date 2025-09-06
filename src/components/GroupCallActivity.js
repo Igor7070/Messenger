@@ -667,7 +667,7 @@ const GroupCallActivity = () => {
     } catch (error) {
       console.error('Error starting group call:', error);
       toast.error('Failed to start group call.');
-      endCall();
+      //endCall();
     }
   };
 
