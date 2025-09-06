@@ -676,14 +676,21 @@ const GroupCallActivity = () => {
           if (peerConnection) {
             if (
               peerConnection.iceConnectionState !== 'connected' &&
-              peerConnection.iceConnectionState !== 'completed'
+              peerConnection.iceConnectionState !== 'completed' ||
+              peerConnection.connectionState === 'failed'
             ) {
-              console.log(`Retrying connection for user ${user.id}, current iceConnectionState: ${peerConnection.iceConnectionState}`);
-              // Сбрасываем localDescription, если оно существует
+              console.log(`Retrying connection for user ${user.id}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
+              // Сбрасываем localDescription и remoteDescription, если они существуют
               if (peerConnection.localDescription) {
                 console.log(`Resetting localDescription for user ${user.id}`);
                 await peerConnection.setLocalDescription(null).catch((error) => {
                   console.error(`Error resetting localDescription for ${user.id}:`, error);
+                });
+              }
+              if (peerConnection.remoteDescription) {
+                console.log(`Resetting remoteDescription for user ${user.id}`);
+                await peerConnection.setRemoteDescription(null).catch((error) => {
+                  console.error(`Error resetting remoteDescription for ${user.id}:`, error);
                 });
               }
               const offer = await peerConnection.createOffer();
@@ -718,7 +725,7 @@ const GroupCallActivity = () => {
                 );
               }
             } else {
-              console.log(`Connection with user ${user.id} is already established, iceConnectionState: ${peerConnection.iceConnectionState}`);
+              console.log(`Connection with user ${user.id} is already established, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
             }
           } else {
             console.warn(`No peerConnection for user ${user.id}, initializing new one`);
