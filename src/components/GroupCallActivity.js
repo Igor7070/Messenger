@@ -308,7 +308,7 @@ const GroupCallActivity = () => {
           console.log('Offer timeout skipped due to active connections');
         }
       }
-    }, 60000);
+    }, 90000);
 
     return () => {
       isMounted = false;
