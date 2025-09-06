@@ -34,6 +34,7 @@ const GroupCallActivity = () => {
   const hasSentInvite = useRef(false);
   const answerTimeouts = useRef(new Map()); // Таймауты для ожидания answer
   let isMounted = true;
+  const offerReceived = useRef(new Map()); // Флаг для каждого пользователя
 
   const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
   const hasProcessedInvite = useRef(new Set());
@@ -739,7 +740,7 @@ const GroupCallActivity = () => {
                         endCall();
                       }
                     }
-                  }, 10000)
+                  }, 30000)
                 );
               }
             } else {
@@ -915,6 +916,7 @@ const GroupCallActivity = () => {
 
           case 'offer':
             console.log('Processing offer from:', currentFrom, 'signal:', currentSignalData);
+            offerReceived.current.set(currentFrom, true); // Устанавливаем флаг при получении offer
             try {
               const currentState = peerConnection.signalingState;
               console.log(`Current signaling state for user ${currentFrom}: ${currentState}`);
@@ -1019,6 +1021,10 @@ const GroupCallActivity = () => {
             break;
 
           case 'endCall':
+            if (!offerReceived.current.has(currentFrom)) {
+              console.log(`Ignoring endCall from ${currentFrom} as no offer has been received yet`);
+              continue; // Игнорируем endCall, если offer не получен
+            }
             if (to && to !== String(currentUserId)) {
               console.log('Ignoring endCall signal not addressed to current user:', { from: currentFrom, to, currentUserId });
               continue;
