@@ -711,7 +711,13 @@ const GroupCallActivity = () => {
                 answerTimeouts.current.set(
                   user.id,
                   setTimeout(() => {
-                    if (peerConnection && !peerConnection.remoteDescription) {
+                    if (
+                      peerConnection &&
+                      !peerConnection.remoteDescription &&
+                      (peerConnection.iceConnectionState !== 'connected' &&
+                      peerConnection.iceConnectionState !== 'completed' ||
+                      peerConnection.connectionState !== 'connected')
+                    ) {
                       console.error(`No answer received from user ${user.id} within 10 seconds on retry`);
                       toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`} on retry`);
                       peerConnections.current.delete(String(user.id));
@@ -720,6 +726,8 @@ const GroupCallActivity = () => {
                         console.log('Ending call: less than 2 participants remain after retry');
                         endCall();
                       }
+                    } else {
+                      console.log(`Skipping removal of user ${user.id}: connection is active, iceConnectionState: ${peerConnection?.iceConnectionState}, connectionState: ${peerConnection?.connectionState}`);
                     }
                   }, 10000)
                 );
