@@ -351,13 +351,36 @@ const GroupCallActivity = () => {
     const checkConnectionsInterval = setInterval(() => {
       console.log('Periodic connection check triggered');
       let hasFailedConnections = false;
+      const checkedUsers = new Set();
+
+      // Проверяем существующие peerConnections
       peerConnections.current.forEach((pc, userId) => {
-        if (pc.iceConnectionState !== 'connected' && pc.iceConnectionState !== 'completed') {
+        checkedUsers.add(userId);
+        if (
+          pc.iceConnectionState !== 'connected' &&
+          pc.iceConnectionState !== 'completed' &&
+          pc.iceConnectionState !== 'closed' ||
+          pc.connectionState === 'new' ||
+          pc.connectionState === 'connecting' ||
+          pc.connectionState === 'failed'
+        ) {
           hasFailedConnections = true;
-          console.log(`Connection with user ${userId} not established, state: ${pc.iceConnectionState}`);
+          console.log(`Connection with user ${userId} not established, iceConnectionState: ${pc.iceConnectionState}, connectionState: ${pc.connectionState}`);
+        } else {
+          console.log(`Connection with user ${userId} established, iceConnectionState: ${pc.iceConnectionState}, connectionState: ${pc.connectionState}`);
         }
       });
+
+      // Проверяем участников без peerConnections
+      callParticipants.forEach((user) => {
+        if (user.id !== Number(currentUserId) && !checkedUsers.has(String(user.id))) {
+          hasFailedConnections = true;
+          console.log(`No peerConnection for user ${user.id}, marking as failed`);
+        }
+      });
+
       if (hasFailedConnections) {
+        console.log('Initiating retry for failed or missing connections');
         retryFailedConnections();
       } else {
         console.log('All connections established, no retry needed');
