@@ -548,7 +548,7 @@ const GroupCallActivity = () => {
             } else {
               console.log(`User ${userId} reconnected or state changed, skipping removal: iceConnectionState=${peerConnection.iceConnectionState}`);
             }
-          }, 60000);
+          }, 90000);
         }
       };
 
@@ -650,7 +650,7 @@ const GroupCallActivity = () => {
                           endCall();
                         }
                       }
-                    }, 30000)
+                    }, 90000)
                   );
                 }
               } else {
@@ -740,7 +740,7 @@ const GroupCallActivity = () => {
                         endCall();
                       }
                     }
-                  }, 30000)
+                  }, 90000)
                 );
               }
             } else {
