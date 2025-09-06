@@ -698,40 +698,20 @@ const GroupCallActivity = () => {
               peerConnection.connectionState === 'connecting' ||
               peerConnection.connectionState === 'failed'
             ) {
-              // Проверяем, не получен ли offer, но разрешаем retry при disconnected/failed
-              if (
-                offerReceived.current.has(String(user.id)) &&
-                peerConnection.iceConnectionState !== 'disconnected' &&
-                peerConnection.connectionState !== 'failed'
-              ) {
-                console.log(`Skipping retry for user ${user.id}: offer already received, waiting for answer`);
-                continue;
-              }
               console.log(`Retrying connection for user ${user.id}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
-              // Если есть конфликт сигнализации или disconnected/failed, пересоздаем RTCPeerConnection
-              if (
-                peerConnection.signalingState !== 'stable' ||
-                peerConnection.localDescription ||
-                peerConnection.remoteDescription ||
-                peerConnection.iceConnectionState === 'disconnected' ||
-                peerConnection.connectionState === 'failed'
-              ) {
-                console.log(`Closing and recreating RTCPeerConnection for user ${user.id} due to signaling conflict or disconnected/failed state`);
-                peerConnection.close();
-                peerConnections.current.delete(String(user.id));
-                // Очищаем offerReceived для этого пользователя, чтобы разрешить новый offer
-                if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
-                  offerReceived.current.delete(String(user.id));
-                  console.log(`Cleared offerReceived for user ${user.id} due to disconnected/failed state`);
-                }
-                const newPeerConnection = await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
-                if (!newPeerConnection) {
-                  console.error(`Failed to recreate PeerConnection for user ${user.id}`);
-                  toast.error(`Failed to retry connection with ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
-                  continue;
-                }
+              // Сбрасываем localDescription и remoteDescription, если они существуют
+              if (peerConnection.localDescription) {
+                console.log(`Resetting localDescription for user ${user.id}`);
+                await peerConnection.setLocalDescription(null).catch((error) => {
+                  console.error(`Error resetting localDescription for ${user.id}:`, error);
+                });
               }
-              // Отправляем новый offer
+              if (peerConnection.remoteDescription) {
+                console.log(`Resetting remoteDescription for user ${user.id}`);
+                await peerConnection.setRemoteDescription(null).catch((error) => {
+                  console.error(`Error resetting remoteDescription for ${user.id}:`, error);
+                });
+              }
               const offer = await peerConnection.createOffer();
               await peerConnection.setLocalDescription(offer);
               const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
@@ -751,7 +731,7 @@ const GroupCallActivity = () => {
                   user.id,
                   setTimeout(() => {
                     if (peerConnection && !peerConnection.remoteDescription) {
-                      console.error(`No answer received from user ${user.id} within 90 seconds on retry`);
+                      console.error(`No answer received from user ${user.id} within 10 seconds on retry`);
                       toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`} on retry`);
                       peerConnections.current.delete(String(user.id));
                       setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
@@ -760,7 +740,7 @@ const GroupCallActivity = () => {
                         endCall();
                       }
                     }
-                  }, 90000)
+                  }, 10000)
                 );
               }
             } else {
@@ -769,6 +749,10 @@ const GroupCallActivity = () => {
           } else {
             console.warn(`No peerConnection for user ${user.id}, initializing new one`);
             await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
+            // Повторно вызываем retry для нового peerConnection
+            if (peerConnections.current.get(String(user.id))) {
+              await retryFailedConnections();
+            }
           }
         }
       }
