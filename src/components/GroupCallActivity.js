@@ -698,57 +698,59 @@ const GroupCallActivity = () => {
               peerConnection.connectionState === 'connecting' ||
               peerConnection.connectionState === 'failed'
             ) {
-              // Отправляем offer только если текущий userId меньше, чем userId участника
-              if (isInitiator || Number(currentUserId) < user.id) {
-                console.log(`Retrying connection for user ${user.id}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
-                // Закрываем и пересоздаем RTCPeerConnection, если он в неконсистентном состоянии
-                if (
-                  peerConnection.localDescription ||
-                  peerConnection.remoteDescription ||
-                  peerConnection.signalingState !== 'stable'
-                ) {
-                  console.log(`Closing and recreating RTCPeerConnection for user ${user.id}`);
-                  peerConnection.close();
-                  peerConnections.current.delete(String(user.id));
-                  const newPeerConnection = await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
-                  if (!newPeerConnection) {
-                    console.error(`Failed to recreate PeerConnection for user ${user.id}`);
-                    continue;
-                  }
+              // Проверяем, не получен ли offer от этого пользователя
+              if (offerReceived.current.has(String(user.id))) {
+                console.log(`Skipping retry for user ${user.id}: offer already received, waiting for answer`);
+                continue;
+              }
+              console.log(`Retrying connection for user ${user.id}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
+              // Если есть конфликт сигнализации, пересоздаем RTCPeerConnection
+              if (
+                peerConnection.signalingState !== 'stable' ||
+                peerConnection.localDescription ||
+                peerConnection.remoteDescription
+              ) {
+                console.log(`Closing and recreating RTCPeerConnection for user ${user.id} due to signaling conflict`);
+                peerConnection.close();
+                peerConnections.current.delete(String(user.id));
+                const newPeerConnection = await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
+                if (!newPeerConnection) {
+                  console.error(`Failed to recreate PeerConnection for user ${user.id}`);
+                  toast.error(`Failed to retry connection with ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
+                  continue;
                 }
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-                const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
-                if (!sentSignals.current.has(signalKey)) {
-                  sentSignals.current.add(signalKey);
-                  sendSignal(
-                    {
-                      from: currentUserId,
-                      to: String(user.id),
-                      signal: { type: 'offer', sdp: offer.sdp },
-                    },
-                    roomId.current
-                  );
-                  console.log(`Sent retry offer to user ${user.id}`);
-                  // Установка таймаута для ожидания answer
-                  answerTimeouts.current.set(
-                    user.id,
-                    setTimeout(() => {
-                      if (peerConnection && !peerConnection.remoteDescription) {
-                        console.error(`No answer received from user ${user.id} within 90 seconds on retry`);
-                        toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`} on retry`);
-                        peerConnections.current.delete(String(user.id));
-                        setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
-                        if (callParticipants.length < 2) {
-                          console.log('Ending call: less than 2 participants remain after retry');
-                          endCall();
-                        }
+              }
+              // Отправляем новый offer
+              const offer = await peerConnection.createOffer();
+              await peerConnection.setLocalDescription(offer);
+              const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
+              if (!sentSignals.current.has(signalKey)) {
+                sentSignals.current.add(signalKey);
+                sendSignal(
+                  {
+                    from: currentUserId,
+                    to: String(user.id),
+                    signal: { type: 'offer', sdp: offer.sdp },
+                  },
+                  roomId.current
+                );
+                console.log(`Sent retry offer to user ${user.id}`);
+                // Установка таймаута для ожидания answer
+                answerTimeouts.current.set(
+                  user.id,
+                  setTimeout(() => {
+                    if (peerConnection && !peerConnection.remoteDescription) {
+                      console.error(`No answer received from user ${user.id} within 90 seconds on retry`);
+                      toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`} on retry`);
+                      peerConnections.current.delete(String(user.id));
+                      setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
+                      if (callParticipants.length < 2) {
+                        console.log('Ending call: less than 2 participants remain after retry');
+                        endCall();
                       }
-                    }, 90000)
-                  );
-                }
-              } else {
-                console.log(`Skipping retry for user ${user.id}: waiting for offer (currentUserId=${currentUserId} > user.id=${user.id})`);
+                    }
+                  }, 90000)
+                );
               }
             } else {
               console.log(`Connection with user ${user.id} is already established, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
