@@ -698,21 +698,32 @@ const GroupCallActivity = () => {
               peerConnection.connectionState === 'connecting' ||
               peerConnection.connectionState === 'failed'
             ) {
-              // Проверяем, не получен ли offer от этого пользователя
-              if (offerReceived.current.has(String(user.id))) {
+              // Проверяем, не получен ли offer, но разрешаем retry при disconnected/failed
+              if (
+                offerReceived.current.has(String(user.id)) &&
+                peerConnection.iceConnectionState !== 'disconnected' &&
+                peerConnection.connectionState !== 'failed'
+              ) {
                 console.log(`Skipping retry for user ${user.id}: offer already received, waiting for answer`);
                 continue;
               }
               console.log(`Retrying connection for user ${user.id}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
-              // Если есть конфликт сигнализации, пересоздаем RTCPeerConnection
+              // Если есть конфликт сигнализации или disconnected/failed, пересоздаем RTCPeerConnection
               if (
                 peerConnection.signalingState !== 'stable' ||
                 peerConnection.localDescription ||
-                peerConnection.remoteDescription
+                peerConnection.remoteDescription ||
+                peerConnection.iceConnectionState === 'disconnected' ||
+                peerConnection.connectionState === 'failed'
               ) {
-                console.log(`Closing and recreating RTCPeerConnection for user ${user.id} due to signaling conflict`);
+                console.log(`Closing and recreating RTCPeerConnection for user ${user.id} due to signaling conflict or disconnected/failed state`);
                 peerConnection.close();
                 peerConnections.current.delete(String(user.id));
+                // Очищаем offerReceived для этого пользователя, чтобы разрешить новый offer
+                if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+                  offerReceived.current.delete(String(user.id));
+                  console.log(`Cleared offerReceived for user ${user.id} due to disconnected/failed state`);
+                }
                 const newPeerConnection = await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
                 if (!newPeerConnection) {
                   console.error(`Failed to recreate PeerConnection for user ${user.id}`);
