@@ -506,6 +506,8 @@ const GroupCallActivity = () => {
         }
       };
 
+      let disconnectTimeout = null;
+
       peerConnection.oniceconnectionstatechange = () => {
         console.log(`ICE Connection State for ${userId}: ${peerConnection.iceConnectionState}`);
         if (peerConnection.iceConnectionState === 'connected') {
@@ -513,6 +515,11 @@ const GroupCallActivity = () => {
           if (readyTimeoutRef.current) {
             clearTimeout(readyTimeoutRef.current);
             readyTimeoutRef.current = null;
+          }
+          if (disconnectTimeout) {
+            clearTimeout(disconnectTimeout);
+            disconnectTimeout = null;
+            console.log(`Cleared disconnect timeout for user ${userId}`);
           }
           setReadyUsers((prev) => {
             if (prev.has(userId)) return prev;
@@ -527,12 +534,20 @@ const GroupCallActivity = () => {
         } else if (peerConnection.iceConnectionState === 'disconnected') {
           console.warn(`WebRTC connection disconnected for user ${userId}`);
           toast.warn(`User ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`} disconnected`);
-          setCallParticipants((prev) => prev.filter((u) => u.id !== Number(userId)));
-          peerConnections.current.delete(userId);
-          if (callParticipants.length < 2) {
-            console.log('Ending call: initiator or less than 2 participants remain');
-            endCall();
-          }
+          // Устанавливаем таймаут перед удалением участника
+          disconnectTimeout = setTimeout(() => {
+            if (peerConnection.iceConnectionState === 'disconnected') {
+              console.log(`User ${userId} still disconnected after 10 seconds, removing from call`);
+              setCallParticipants((prev) => prev.filter((u) => u.id !== Number(userId)));
+              peerConnections.current.delete(userId);
+              if (callParticipants.length < 2) {
+                console.log('Ending call: initiator or less than 2 participants remain');
+                endCall();
+              }
+            } else {
+              console.log(`User ${userId} reconnected or state changed, skipping removal: iceConnectionState=${peerConnection.iceConnectionState}`);
+            }
+          }, 20000);
         }
       };
 
