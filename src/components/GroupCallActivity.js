@@ -594,6 +594,7 @@ const GroupCallActivity = () => {
     }
     if (!localAudioRef.current || !localAudioRef.current.srcObject) {
       console.warn('Cannot start call: localAudioRef or srcObject not ready');
+      toast.error('Audio stream not ready');
       return;
     }
     setIsCallStarted(true);
@@ -615,45 +616,41 @@ const GroupCallActivity = () => {
               peerConnection.iceConnectionState !== 'connected' &&
               peerConnection.iceConnectionState !== 'completed'
             ) {
-              if (peerConnection.localDescription && !peerConnection.remoteDescription) {
-                console.log(`Resetting localDescription for user ${user.id}`);
-                await peerConnection.setLocalDescription(null).catch((error) => {
-                  console.error(`Error resetting localDescription for ${user.id}:`, error);
+              // Проверяем сигнальное состояние перед созданием offer
+              if (peerConnection.signalingState !== 'stable') {
+                console.log(`Rolling back signaling state for user ${user.id} from ${peerConnection.signalingState}`);
+                await peerConnection.setLocalDescription({ type: 'rollback' }).catch((error) => {
+                  console.error(`Error rolling back for ${user.id}:`, error);
                 });
               }
-              if (!peerConnection.remoteDescription) {
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-                const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
-                if (!sentSignals.current.has(signalKey)) {
-                  sentSignals.current.add(signalKey);
-                  sendSignal(
-                    {
-                      from: currentUserId,
-                      to: String(user.id),
-                      signal: { type: 'offer', sdp: offer.sdp },
-                    },
-                    roomId.current
-                  );
-                  console.log(`Sent offer to user ${user.id}`);
-                  // Установка таймаута для ожидания answer
-                  answerTimeouts.current.set(
-                    user.id,
-                    setTimeout(() => {
-                      if (peerConnection && !peerConnection.remoteDescription) {
-                        console.error(`No answer received from user ${user.id} within 10 seconds`);
-                        toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
-                        peerConnections.current.delete(String(user.id));
-                        setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
-                        if (isInitiator || callParticipants.length <= 2) {
-                          endCall();
-                        }
+              const offer = await createOfferWithRole(peerConnection, user.id);
+              const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
+              if (!sentSignals.current.has(signalKey)) {
+                sentSignals.current.add(signalKey);
+                sendSignal(
+                  {
+                    from: currentUserId,
+                    to: String(user.id),
+                    signal: { type: 'offer', sdp: offer.sdp },
+                  },
+                  roomId.current
+                );
+                console.log(`Sent offer with role ${isInitiator ? 'active' : 'passive'} to user ${user.id}`);
+                // Установка таймаута для ожидания answer
+                answerTimeouts.current.set(
+                  user.id,
+                  setTimeout(() => {
+                    if (peerConnection && !peerConnection.remoteDescription) {
+                      console.error(`No answer received from user ${user.id} within 30 seconds`);
+                      toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
+                      peerConnections.current.delete(String(user.id));
+                      setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
+                      if (isInitiator || callParticipants.length <= 2) {
+                        endCall();
                       }
-                    }, 30000)
-                  );
-                }
-              } else {
-                console.log(`Skipping offer for user ${user.id}: remoteDescription exists`);
+                    }
+                  }, 30000)
+                );
               }
             } else {
               console.log(`Skipping offer for user ${user.id}: already connected, iceConnectionState=${peerConnection.iceConnectionState}`);
@@ -687,77 +684,86 @@ const GroupCallActivity = () => {
     try {
       for (const user of callParticipants) {
         if (user.id !== Number(currentUserId)) {
-          const peerConnection = peerConnections.current.get(String(user.id));
-          if (peerConnection) {
-            if (
-              (peerConnection.iceConnectionState !== 'connected' &&
+          let peerConnection = peerConnections.current.get(String(user.id));
+          if (!peerConnection) {
+            console.log(`No peerConnection for user ${user.id}, initializing new one`);
+            peerConnection = await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
+            if (!peerConnection) {
+              console.error(`Failed to initialize peerConnection for user ${user.id}`);
+              continue;
+            }
+          }
+          if (
+            (peerConnection.iceConnectionState !== 'connected' &&
               peerConnection.iceConnectionState !== 'completed' &&
               peerConnection.iceConnectionState !== 'closed') ||
-              peerConnection.connectionState === 'new' ||
-              peerConnection.connectionState === 'connecting' ||
-              peerConnection.connectionState === 'failed'
-            ) {
-              console.log(`Retrying connection for user ${user.id}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
-              // Сбрасываем localDescription и remoteDescription, если они существуют
-              if (peerConnection.localDescription) {
-                console.log(`Resetting localDescription for user ${user.id}`);
-                await peerConnection.setLocalDescription(null).catch((error) => {
-                  console.error(`Error resetting localDescription for ${user.id}:`, error);
-                });
-              }
-              if (peerConnection.remoteDescription) {
-                console.log(`Resetting remoteDescription for user ${user.id}`);
-                await peerConnection.setRemoteDescription(null).catch((error) => {
-                  console.error(`Error resetting remoteDescription for ${user.id}:`, error);
-                });
-              }
-              const offer = await peerConnection.createOffer();
-              await peerConnection.setLocalDescription(offer);
-              const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
-              if (!sentSignals.current.has(signalKey)) {
-                sentSignals.current.add(signalKey);
-                sendSignal(
-                  {
-                    from: currentUserId,
-                    to: String(user.id),
-                    signal: { type: 'offer', sdp: offer.sdp },
-                  },
-                  roomId.current
-                );
-                console.log(`Sent retry offer to user ${user.id}`);
-                // Установка таймаута для ожидания answer
-                answerTimeouts.current.set(
-                  user.id,
-                  setTimeout(() => {
-                    if (peerConnection && !peerConnection.remoteDescription) {
-                      console.error(`No answer received from user ${user.id} within 10 seconds on retry`);
-                      toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`} on retry`);
-                      peerConnections.current.delete(String(user.id));
-                      setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
-                      if (callParticipants.length < 2) {
-                        console.log('Ending call: less than 2 participants remain after retry');
-                        endCall();
-                      }
+            peerConnection.connectionState === 'new' ||
+            peerConnection.connectionState === 'connecting' ||
+            peerConnection.connectionState === 'failed'
+          ) {
+            console.log(`Retrying connection for user ${user.id}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
+            // Проверяем сигнальное состояние перед созданием offer
+            if (peerConnection.signalingState !== 'stable') {
+              console.log(`Rolling back signaling state for user ${user.id} from ${peerConnection.signalingState}`);
+              await peerConnection.setLocalDescription({ type: 'rollback' }).catch((error) => {
+                console.error(`Error rolling back for ${user.id}:`, error);
+              });
+            }
+            const offer = await createOfferWithRole(peerConnection, user.id);
+            const signalKey = `${currentUserId}-${user.id}-offer-${offer.sdp.slice(0, 50)}`;
+            if (!sentSignals.current.has(signalKey)) {
+              sentSignals.current.add(signalKey);
+              sendSignal(
+                {
+                  from: currentUserId,
+                  to: String(user.id),
+                  signal: { type: 'offer', sdp: offer.sdp },
+                },
+                roomId.current
+              );
+              console.log(`Sent retry offer with role ${isInitiator ? 'active' : 'passive'} to user ${user.id}`);
+              // Установка таймаута для ожидания answer
+              answerTimeouts.current.set(
+                user.id,
+                setTimeout(() => {
+                  if (peerConnection && !peerConnection.remoteDescription) {
+                    console.error(`No answer received from user ${user.id} within 10 seconds on retry`);
+                    toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`} on retry`);
+                    peerConnections.current.delete(String(user.id));
+                    setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
+                    if (callParticipants.length < 2) {
+                      console.log('Ending call: less than 2 participants remain after retry');
+                      endCall();
                     }
-                  }, 10000)
-                );
-              }
-            } else {
-              console.log(`Connection with user ${user.id} is already established, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
+                  }
+                }, 10000)
+              );
             }
           } else {
-            console.warn(`No peerConnection for user ${user.id}, initializing new one`);
-            await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
-            // Повторно вызываем retry для нового peerConnection
-            if (peerConnections.current.get(String(user.id))) {
-              await retryFailedConnections();
-            }
+            console.log(`Connection with user ${user.id} is already established, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
           }
         }
       }
     } catch (error) {
       console.error('Error retrying failed connections:', error);
       toast.error('Failed to retry connections.');
+    }
+  };
+
+  // Вспомогательная функция для создания offer с явной DTLS-ролью
+  const createOfferWithRole = async (peerConnection, userId) => {
+    try {
+      const offer = await peerConnection.createOffer({ offerToReceiveAudio: true, iceRestart: true });
+      // Задаём DTLS-роль: active для инициатора, passive для остальных
+      const role = isInitiator ? 'active' : 'passive';
+      const modifiedSdp = offer.sdp.replace(/a=setup:[^\r\n]*/g, `a=setup:${role}`);
+      const modifiedOffer = { type: 'offer', sdp: modifiedSdp };
+      await peerConnection.setLocalDescription(modifiedOffer);
+      console.log(`Created and set offer with role ${role} for user ${userId}`);
+      return modifiedOffer;
+    } catch (error) {
+      console.error(`Error creating offer for user ${userId}:`, error);
+      throw error;
     }
   };
 
@@ -916,6 +922,17 @@ const GroupCallActivity = () => {
           case 'offer':
             console.log('Processing offer from:', currentFrom, 'signal:', currentSignalData);
             try {
+              // Проверка валидности SDP
+              if (!currentSignalData.sdp || typeof currentSignalData.sdp !== 'string') {
+                console.error(`Invalid SDP from ${currentFrom}:`, currentSignalData);
+                toast.error(`Invalid offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                continue;
+              }
+              if (!currentSignalData.sdp.includes('a=fingerprint') || !currentSignalData.sdp.includes('a=setup')) {
+                console.error(`Malformed SDP from ${currentFrom}: missing fingerprint or setup attribute`, currentSignalData.sdp);
+                toast.error(`Invalid offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                continue;
+              }
               const currentState = peerConnection.signalingState;
               console.log(`Current signaling state for user ${currentFrom}: ${currentState}`);
               if (peerConnection.remoteDescription && peerConnection.remoteDescription.sdp === currentSignalData.sdp) {
@@ -930,15 +947,18 @@ const GroupCallActivity = () => {
               await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
               console.log(`Set remoteDescription for user ${currentFrom}`);
               const answer = await peerConnection.createAnswer();
-              await peerConnection.setLocalDescription(answer);
-              const signalKey = `${currentUserId}-${currentFrom}-answer-${answer.sdp.slice(0, 50)}`;
+              // Задаём DTLS-роль для answer: passive для инициатора, active для остальных
+              const role = isInitiator ? 'passive' : 'active';
+              const modifiedAnswer = { type: 'answer', sdp: answer.sdp.replace(/a=setup:[^\r\n]*/g, `a=setup:${role}`) };
+              await peerConnection.setLocalDescription(modifiedAnswer);
+              const signalKey = `${currentUserId}-${currentFrom}-answer-${modifiedAnswer.sdp.slice(0, 50)}`;
               if (!sentSignals.current.has(signalKey)) {
                 sentSignals.current.add(signalKey);
                 sendSignal(
-                  { from: currentUserId, to: currentFrom, signal: { type: 'answer', sdp: answer.sdp } },
+                  { from: currentUserId, to: currentFrom, signal: { type: 'answer', sdp: modifiedAnswer.sdp } },
                   roomId.current
                 );
-                console.log(`Sent answer to user ${currentFrom}`);
+                console.log(`Sent answer with role ${role} to user ${currentFrom}`);
               }
               if (pendingCandidates.current.has(currentFrom)) {
                 for (const candidate of pendingCandidates.current.get(currentFrom)) {
@@ -957,7 +977,7 @@ const GroupCallActivity = () => {
                 console.log('Call started after receiving offer');
               }
             } catch (error) {
-              console.error(`Error processing offer from ${currentFrom}:`, error);
+              console.error(`Error processing offer from ${currentFrom}:`, error, 'SDP:', currentSignalData.sdp);
               toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
             }
             break;
@@ -965,6 +985,17 @@ const GroupCallActivity = () => {
           case 'answer':
             console.log('Processing answer from:', currentFrom, 'signal:', currentSignalData);
             try {
+              // Проверка валидности SDP
+              if (!currentSignalData.sdp || typeof currentSignalData.sdp !== 'string') {
+                console.error(`Invalid SDP from ${currentFrom}:`, currentSignalData);
+                toast.error(`Invalid answer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                continue;
+              }
+              if (!currentSignalData.sdp.includes('a=fingerprint') || !currentSignalData.sdp.includes('a=setup')) {
+                console.error(`Malformed SDP from ${currentFrom}: missing fingerprint or setup attribute`, currentSignalData.sdp);
+                toast.error(`Invalid answer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                continue;
+              }
               if (peerConnection.signalingState === 'have-local-offer') {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
                 console.log(`Set remoteDescription (answer) for user ${currentFrom}`);
@@ -977,7 +1008,7 @@ const GroupCallActivity = () => {
                 console.warn(`Cannot process answer from ${currentFrom} in signaling state: ${peerConnection.signalingState}`);
               }
             } catch (error) {
-              console.error(`Error processing answer from ${currentFrom}:`, error);
+              console.error(`Error processing answer from ${currentFrom}:`, error, 'SDP:', currentSignalData.sdp);
               toast.error(`Failed to process answer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
             }
             break;
