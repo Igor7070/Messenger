@@ -289,7 +289,7 @@ const GroupCallActivity = () => {
           endCall();
         }
       }
-    }, 30000);
+    }, 90000);
 
     offerTimeoutRef.current = setTimeout(() => {
       if (!isInitiator && !isCallStarted && isMounted) {
