@@ -690,8 +690,11 @@ const GroupCallActivity = () => {
           const peerConnection = peerConnections.current.get(String(user.id));
           if (peerConnection) {
             if (
-              peerConnection.iceConnectionState !== 'connected' &&
-              peerConnection.iceConnectionState !== 'completed' ||
+              (peerConnection.iceConnectionState !== 'connected' &&
+              peerConnection.iceConnectionState !== 'completed' &&
+              peerConnection.iceConnectionState !== 'closed') ||
+              peerConnection.connectionState === 'new' ||
+              peerConnection.connectionState === 'connecting' ||
               peerConnection.connectionState === 'failed'
             ) {
               console.log(`Retrying connection for user ${user.id}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
