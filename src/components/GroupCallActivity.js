@@ -685,6 +685,8 @@ const GroupCallActivity = () => {
 
   const retryFailedConnections = async () => {
     console.log('Checking connection states for all participants');
+    const retryCounts = new Map(); // Счетчик попыток для каждого пользователя
+
     try {
       for (const user of callParticipants) {
         if (user.id !== Number(currentUserId)) {
@@ -695,7 +697,26 @@ const GroupCallActivity = () => {
               peerConnection.iceConnectionState !== 'completed' ||
               peerConnection.connectionState === 'failed'
             ) {
-              console.log(`Retrying connection for user ${user.id}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
+              // Получаем текущее количество попыток или начинаем с 0
+              const retries = retryCounts.get(user.id) || 0;
+
+              // Если достигнуто 9 попыток, удаляем участника
+              if (retries >= 9) {
+                console.error(`No answer received from user ${user.id} after 9 retries`);
+                toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`} after 90 seconds`);
+                peerConnections.current.delete(String(user.id));
+                setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
+                if (callParticipants.length < 2) {
+                  console.log('Ending call: less than 2 participants remain after retry');
+                  endCall();
+                }
+                continue;
+              }
+
+              // Увеличиваем счетчик попыток
+              retryCounts.set(user.id, retries + 1);
+              console.log(`Retrying connection for user ${user.id}, attempt ${retries + 1}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
+
               // Сбрасываем localDescription и remoteDescription, если они существуют
               if (peerConnection.localDescription) {
                 console.log(`Resetting localDescription for user ${user.id}`);
@@ -728,14 +749,8 @@ const GroupCallActivity = () => {
                   user.id,
                   setTimeout(() => {
                     if (peerConnection && !peerConnection.remoteDescription) {
-                      console.error(`No answer received from user ${user.id} within 10 seconds on retry`);
-                      //toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`} on retry`);
-                      peerConnections.current.delete(String(user.id));
-                      setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
-                      if (callParticipants.length < 2) {
-                        console.log('Ending call: less than 2 participants remain after retry');
-                        endCall();
-                      }
+                      console.warn(`No answer received from user ${user.id} within 10 seconds on retry ${retries + 1}`);
+                      // Не удаляем здесь, так как удаление происходит только после 9 попыток
                     }
                   }, 10000)
                 );
