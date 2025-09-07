@@ -647,7 +647,7 @@ const GroupCallActivity = () => {
                         peerConnections.current.delete(String(user.id));
                         setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
                         if (isInitiator || callParticipants.length < 2) {
-                          endCall();
+                          //endCall();
                         }
                       }
                     }, 90000)
