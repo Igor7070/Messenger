@@ -646,7 +646,7 @@ const GroupCallActivity = () => {
                         toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
                         peerConnections.current.delete(String(user.id));
                         setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
-                        if (isInitiator || callParticipants.length <= 2) {
+                        if (isInitiator || callParticipants.length < 2) {
                           endCall();
                         }
                       }
@@ -729,7 +729,7 @@ const GroupCallActivity = () => {
                   setTimeout(() => {
                     if (peerConnection && !peerConnection.remoteDescription) {
                       console.error(`No answer received from user ${user.id} within 10 seconds on retry`);
-                      toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`} on retry`);
+                      //toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`} on retry`);
                       peerConnections.current.delete(String(user.id));
                       setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
                       if (callParticipants.length < 2) {
