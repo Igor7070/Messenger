@@ -928,7 +928,7 @@ const GroupCallActivity = () => {
 
           case 'offer':
             console.log('Processing offer from:', currentFrom, 'signal:', currentSignalData);
-            offerReceived.current.set(currentFrom, true); // Устанавливаем флаг при получении offer
+            offerReceived.current.set(currentFrom, true);
             try {
               const currentState = peerConnection.signalingState;
               console.log(`Current signaling state for user ${currentFrom}: ${currentState}`);
@@ -944,12 +944,17 @@ const GroupCallActivity = () => {
               await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
               console.log(`Set remoteDescription for user ${currentFrom}`);
               const answer = await peerConnection.createAnswer();
-              await peerConnection.setLocalDescription(answer);
-              const signalKey = `${currentUserId}-${currentFrom}-answer-${answer.sdp.slice(0, 50)}`;
+              // Явно устанавливаем a=setup:passive в SDP ответа
+              const modifiedAnswer = {
+                type: 'answer',
+                sdp: answer.sdp.replace(/a=setup:actpass|a=setup:active/, 'a=setup:passive')
+              };
+              await peerConnection.setLocalDescription(modifiedAnswer);
+              const signalKey = `${currentUserId}-${currentFrom}-answer-${modifiedAnswer.sdp.slice(0, 50)}`;
               if (!sentSignals.current.has(signalKey)) {
                 sentSignals.current.add(signalKey);
                 sendSignal(
-                  { from: currentUserId, to: currentFrom, signal: { type: 'answer', sdp: answer.sdp } },
+                  { from: currentUserId, to: currentFrom, signal: modifiedAnswer },
                   roomId.current
                 );
                 console.log(`Sent answer to user ${currentFrom}`);
