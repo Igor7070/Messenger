@@ -695,7 +695,8 @@ const GroupCallActivity = () => {
             if (
               peerConnection.iceConnectionState !== 'connected' &&
               peerConnection.iceConnectionState !== 'completed' ||
-              peerConnection.connectionState === 'failed'
+              peerConnection.connectionState === 'failed' ||
+              peerConnection.connectionState === 'connecting'
             ) {
               // Получаем текущее количество попыток или начинаем с 0
               const retries = retryCounts.get(user.id) || 0;
