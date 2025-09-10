@@ -132,21 +132,21 @@ export const CallWebSocketProvider = ({ children }) => {
       return () => {};
     }
 
-    let retries = 5;
-    const retryDelay = 1000;
+    let reconnectAttempts = 0;
+    const maxReconnectDelay = 10000; // Максимальная задержка 10 секунд
+    let hasNotifiedError = false; // Флаг для предотвращения множественных тостов
 
     const trySubscribe = () => {
       if (!stompClient.current || !stompClient.current.connected) {
-        if (retries > 0) {
-          console.warn(`CallWebSocketContext: WebSocket not connected, retrying in ${retryDelay}ms, retries left: ${retries}`);
-          retries--;
-          setTimeout(trySubscribe, retryDelay);
-          return;
-        } else {
-          console.error('CallWebSocketContext: Failed to subscribe to /topic/room/' + roomId + ': max retries reached');
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), maxReconnectDelay);
+        console.warn(`CallWebSocketContext: WebSocket not connected, retrying in ${delay}ms, attempt ${reconnectAttempts + 1}`);
+        if (!hasNotifiedError) {
+          hasNotifiedError = true;
           onError?.(new Error('WebSocket subscription failed'));
-          return;
         }
+        reconnectAttempts++;
+        setTimeout(trySubscribe, delay);
+        return;
       }
 
       subscriptionRef.current = stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
@@ -164,18 +164,24 @@ export const CallWebSocketProvider = ({ children }) => {
         } catch (error) {
           console.error('CallWebSocketContext: Error parsing WebSocket message for room ' + roomId + ':', error, 'Raw message:', message.body);
         }
+      }, (error) => {
+        console.error('CallWebSocketContext: Subscription error for /topic/room/' + roomId + ':', error);
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), maxReconnectDelay);
+        reconnectAttempts++;
+        setTimeout(trySubscribe, delay);
       });
+
       console.log('CallWebSocketContext: Subscribed to /topic/room/' + roomId);
+      hasNotifiedError = false; // Сбрасываем флаг после успешной подписки
       onSuccess?.();
 
-      // Таймаут для автоматической отписки после завершения вызова
       const unsubscribeTimeout = setTimeout(() => {
         if (subscriptionRef.current) {
           subscriptionRef.current.unsubscribe();
           console.log(`CallWebSocketContext: Unsubscribed from /topic/room/${roomId} due to timeout`);
           subscriptionRef.current = null;
         }
-      }, 90000); // Отписка через 90 секунд после завершения
+      }, 90000);
 
       return () => {
         clearTimeout(unsubscribeTimeout);

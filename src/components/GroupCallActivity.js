@@ -155,46 +155,54 @@ const GroupCallActivity = () => {
 
         // Подписка на комнату с обработкой повторного подключения
         const subscribeWithReconnect = () => {
-          unsubscribeRoomRef.current = subscribeToRoom(
-            roomId.current,
-            () => {
-              console.log(`Successfully subscribed to room ${roomId.current}`);
-              if (isInitiator && !hasSentInvite.current) {
-                hasSentInvite.current = true;
-                sendGroupCallInvite();
-              } else if (!isInitiator && !hasSentInvite.current) {
-                hasSentInvite.current = true;
-                console.log('Sending acceptCall signal');
-                const acceptCallKey = `${currentUserId}-acceptCall`;
-                if (!sentSignals.current.has(acceptCallKey)) {
-                  sentSignals.current.add(acceptCallKey);
-                  sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
+          let hasNotifiedError = false; // Флаг для предотвращения множественных тостов
+          const trySubscribe = () => {
+            unsubscribeRoomRef.current = subscribeToRoom(
+              roomId.current,
+              () => {
+                console.log(`Successfully subscribed to room ${roomId.current}`);
+                hasNotifiedError = false; // Сбрасываем флаг при успехе
+                if (isInitiator && !hasSentInvite.current) {
+                  hasSentInvite.current = true;
+                  sendGroupCallInvite();
+                } else if (!isInitiator && !hasSentInvite.current) {
+                  hasSentInvite.current = true;
+                  console.log('Sending acceptCall signal');
+                  const acceptCallKey = `${currentUserId}-acceptCall`;
+                  if (!sentSignals.current.has(acceptCallKey)) {
+                    sentSignals.current.add(acceptCallKey);
+                    sendSignal({ from: currentUserId, signal: { type: 'acceptCall' } }, roomId.current);
+                  }
+                  memoizedParticipants
+                    .filter((p) => p.id !== Number(currentUserId))
+                    .forEach((user) => {
+                      const signalKey = `${currentUserId}-${user.id}-ready`;
+                      if (!sentSignals.current.has(signalKey)) {
+                        sentSignals.current.add(signalKey);
+                        sendSignal(
+                          { from: currentUserId, to: String(user.id), signal: { type: 'ready' } },
+                          roomId.current
+                        );
+                        console.log(`Sent ready to user ${user.id}`);
+                      }
+                    });
                 }
-                memoizedParticipants
-                  .filter((p) => p.id !== Number(currentUserId))
-                  .forEach((user) => {
-                    const signalKey = `${currentUserId}-${user.id}-ready`;
-                    if (!sentSignals.current.has(signalKey)) {
-                      sentSignals.current.add(signalKey);
-                      sendSignal(
-                        { from: currentUserId, to: String(user.id), signal: { type: 'ready' } },
-                        roomId.current
-                      );
-                      console.log(`Sent ready to user ${user.id}`);
-                    }
-                  });
+                if (isCallStarted) {
+                  resendPendingSignals();
+                }
+              },
+              (error) => {
+                console.error('Subscription error:', error);
+                if (!hasNotifiedError) {
+                  hasNotifiedError = true;
+                  toast.error('Failed to connect to call server. Reconnecting...');
+                }
+                const delay = Math.min(1000 * Math.pow(2, hasNotifiedError ? 1 : 0), 10000); // Экспоненциальная задержка
+                setTimeout(trySubscribe, delay);
               }
-              // Повторная отправка offer, если соединение не установлено
-              if (isCallStarted) {
-                resendPendingSignals();
-              }
-            },
-            (error) => {
-              console.error('Subscription error:', error);
-              toast.error('Failed to connect to call server. Reconnecting...');
-              setTimeout(subscribeWithReconnect, 1000); // Повторная попытка через 1 секунду
-            }
-          );
+            );
+          };
+          trySubscribe();
         };
 
         subscribeWithReconnect();
