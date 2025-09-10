@@ -657,7 +657,7 @@ const GroupCallActivity = () => {
                           endCall();
                         }
                       }
-                    }, 10000)
+                    }, 90000)
                   );
                 }
               } else {
@@ -807,7 +807,7 @@ const GroupCallActivity = () => {
                         console.warn(`No answer received from user ${user.id} within 10 seconds after initializing new connection`);
                         toast.warn(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
                       }
-                    }, 10000)
+                    }, 90000)
                   );
                 } catch (error) {
                   console.error(`Failed to send initial offer to user ${user.id}:`, error);
