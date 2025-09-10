@@ -929,14 +929,20 @@ const GroupCallActivity = () => {
             try {
               const currentState = peerConnection.signalingState;
               console.log(`Current signaling state for user ${currentFrom}: ${currentState}`);
+              
+              // Проверяем, не является ли сигнал дубликатом
               if (peerConnection.remoteDescription && peerConnection.remoteDescription.sdp === currentSignalData.sdp) {
                 console.log(`Ignoring duplicate offer from ${currentFrom}`);
                 continue;
               }
+
+              // Проверяем коллизию офферов (glare)
               if (currentState === 'have-local-offer' && !peerConnection.isPolite) {
                 console.log(`Rude peer ignoring offer from ${currentFrom}`);
                 continue; // Rude peer игнорирует входящий оффер
               }
+
+              // Выполняем rollback, если signalingState не stable
               if (currentState !== 'stable') {
                 console.log(`Rolling back signaling state for user ${currentFrom} from ${currentState}`);
                 await peerConnection.setLocalDescription({ type: 'rollback' }).catch((error) => {
@@ -946,36 +952,56 @@ const GroupCallActivity = () => {
                 });
                 console.log(`Rollback successful for user ${currentFrom}`);
               }
+
+              // Устанавливаем remoteDescription (оффер)
               await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData)).catch((error) => {
                 console.error(`Error setting remoteDescription for ${currentFrom}:`, error);
                 toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
                 return;
               });
               console.log(`Set remoteDescription for user ${currentFrom}`);
+
+              // Создаём ответ
               const answer = await peerConnection.createAnswer().catch((error) => {
                 console.error(`Error creating answer for ${currentFrom}:`, error);
                 toast.error(`Failed to create answer for ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
                 return;
               });
               if (!answer) return; // Прерываем, если ответ не создан
-              // Модифицируем SDP только если необходимо
+
+              // Проверяем и корректируем SDP для DTLS-роли
               let modifiedSdp = answer.sdp;
-              if (!modifiedSdp.includes('a=setup:active')) {
+              const remoteSdp = currentSignalData.sdp;
+              if (remoteSdp.includes('a=setup:active')) {
+                // Если удалённый оффер уже active, устанавливаем passive в ответе
+                if (modifiedSdp.includes('a=setup:')) {
+                  modifiedSdp = modifiedSdp.replace(/a=setup:(actpass|active)/, 'a=setup:passive');
+                } else {
+                  modifiedSdp += '\na=setup:passive';
+                }
+              } else {
+                // Иначе устанавливаем active в ответе
                 if (modifiedSdp.includes('a=setup:')) {
                   modifiedSdp = modifiedSdp.replace(/a=setup:(actpass|passive)/, 'a=setup:active');
                 } else {
                   modifiedSdp += '\na=setup:active';
                 }
               }
+
               const modifiedAnswer = {
                 type: 'answer',
                 sdp: modifiedSdp
               };
+
+              // Устанавливаем localDescription (ответ)
               await peerConnection.setLocalDescription(modifiedAnswer).catch((error) => {
                 console.error(`Error setting localDescription for answer from ${currentFrom}:`, error);
                 toast.error(`Failed to set answer for ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
                 return;
               });
+              console.log(`Set localDescription for answer from ${currentFrom}`);
+
+              // Отправляем ответ
               const signalKey = `${currentUserId}-${currentFrom}-answer-${modifiedAnswer.sdp.slice(0, 50)}`;
               if (!sentSignals.current.has(signalKey)) {
                 sentSignals.current.add(signalKey);
@@ -985,6 +1011,7 @@ const GroupCallActivity = () => {
                 );
                 console.log(`Sent answer to user ${currentFrom}`);
               }
+
               // Обрабатываем отложенные ICE-кандидаты
               if (pendingCandidates.current.has(currentFrom)) {
                 for (const candidate of pendingCandidates.current.get(currentFrom)) {
@@ -995,16 +1022,22 @@ const GroupCallActivity = () => {
                 }
                 pendingCandidates.current.delete(currentFrom);
               }
+
               // Очищаем очередь сигналов для этого пользователя
               signalQueue.current.set(currentFrom, []);
+              console.log(`Cleared signal queue for user ${currentFrom}`);
+
+              // Очищаем таймаут оффера, если он существует
               if (offerTimeoutRef.current) {
                 clearTimeout(offerTimeoutRef.current);
                 offerTimeoutRef.current = null;
-                console.log('Cleared offerTimeout after receiving offer');
+                console.log('Cleared offerTimeout after processing offer');
               }
+
+              // Запускаем звонок, если он ещё не начат
               if (!isCallStarted) {
                 startCall();
-                console.log('Call started after receiving offer');
+                console.log('Call started after processing offer');
               }
             } catch (error) {
               console.error(`Error processing offer from ${currentFrom}:`, error);
