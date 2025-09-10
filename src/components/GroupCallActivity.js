@@ -926,10 +926,17 @@ const GroupCallActivity = () => {
           case 'offer':
             console.log('Processing offer from:', currentFrom, 'signal:', currentSignalData);
             offerReceived.current.set(currentFrom, true);
+            
+            // Пропускаем обработку, если звонок завершён или компонент размонтирован
+            if (isCallEnded || !isMounted.current) {
+              console.log(`Ignoring offer from ${currentFrom} due to call ended or component unmounted`);
+              continue;
+            }
+
             try {
               const currentState = peerConnection.signalingState;
               console.log(`Current signaling state for user ${currentFrom}: ${currentState}`);
-              
+
               // Проверяем, не является ли сигнал дубликатом
               if (peerConnection.remoteDescription && peerConnection.remoteDescription.sdp === currentSignalData.sdp) {
                 console.log(`Ignoring duplicate offer from ${currentFrom}`);
@@ -939,7 +946,7 @@ const GroupCallActivity = () => {
               // Проверяем коллизию офферов (glare)
               if (currentState === 'have-local-offer' && !peerConnection.isPolite) {
                 console.log(`Rude peer ignoring offer from ${currentFrom}`);
-                continue; // Rude peer игнорирует входящий оффер
+                continue;
               }
 
               // Выполняем rollback, если signalingState не stable
@@ -967,25 +974,19 @@ const GroupCallActivity = () => {
                 toast.error(`Failed to create answer for ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
                 return;
               });
-              if (!answer) return; // Прерываем, если ответ не создан
+              if (!answer) return;
 
-              // Проверяем и корректируем SDP для DTLS-роли
+              // Корректируем SDP для DTLS-роли
               let modifiedSdp = answer.sdp;
               const remoteSdp = currentSignalData.sdp;
               if (remoteSdp.includes('a=setup:active')) {
-                // Если удалённый оффер уже active, устанавливаем passive в ответе
-                if (modifiedSdp.includes('a=setup:')) {
-                  modifiedSdp = modifiedSdp.replace(/a=setup:(actpass|active)/, 'a=setup:passive');
-                } else {
-                  modifiedSdp += '\na=setup:passive';
-                }
+                modifiedSdp = modifiedSdp.includes('a=setup:') 
+                  ? modifiedSdp.replace(/a=setup:(actpass|active)/, 'a=setup:passive')
+                  : modifiedSdp + '\na=setup:passive';
               } else {
-                // Иначе устанавливаем active в ответе
-                if (modifiedSdp.includes('a=setup:')) {
-                  modifiedSdp = modifiedSdp.replace(/a=setup:(actpass|passive)/, 'a=setup:active');
-                } else {
-                  modifiedSdp += '\na=setup:active';
-                }
+                modifiedSdp = modifiedSdp.includes('a=setup:') 
+                  ? modifiedSdp.replace(/a=setup:(actpass|passive)/, 'a=setup:active')
+                  : modifiedSdp + '\na=setup:active';
               }
 
               const modifiedAnswer = {
@@ -1023,18 +1024,18 @@ const GroupCallActivity = () => {
                 pendingCandidates.current.delete(currentFrom);
               }
 
-              // Очищаем очередь сигналов для этого пользователя
+              // Очищаем очередь сигналов
               signalQueue.current.set(currentFrom, []);
               console.log(`Cleared signal queue for user ${currentFrom}`);
 
-              // Очищаем таймаут оффера, если он существует
+              // Очищаем таймаут оффера
               if (offerTimeoutRef.current) {
                 clearTimeout(offerTimeoutRef.current);
                 offerTimeoutRef.current = null;
                 console.log('Cleared offerTimeout after processing offer');
               }
 
-              // Запускаем звонок, если он ещё не начат
+              // Запускаем звонок, если ещё не начат
               if (!isCallStarted) {
                 startCall();
                 console.log('Call started after processing offer');
