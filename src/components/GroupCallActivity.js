@@ -719,16 +719,21 @@ const GroupCallActivity = () => {
                 continue;
               }
               retryCounts.set(user.id, retries + 1);
-              console.log(`Retrying connection for user ${user.id}, attempt ${retries + 1}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
+              console.log(`Retrying connection for user ${user.id}, attempt ${retries + 1}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}, isPolite: ${peerConnection.isPolite}`);
 
+              // Закрываем старое соединение
               peerConnection.close();
               peerConnections.current.delete(String(user.id));
               pendingCandidates.current.delete(String(user.id)); // Очистка кандидатов
+
+              // Инициализируем новое соединение
               const stream = localAudioRef.current.srcObject;
               await initializePeerConnection(String(user.id), stream);
               peerConnection = peerConnections.current.get(String(user.id));
 
-              if (peerConnection && !peerConnection.isPolite) {
+              if (peerConnection) {
+                // Отправляем offer независимо от isPolite
+                console.log(`Creating retry offer for user ${user.id}, attempt ${retries + 1}`);
                 const offer = await peerConnection.createOffer();
                 const modifiedOffer = {
                   type: 'offer',
@@ -738,6 +743,54 @@ const GroupCallActivity = () => {
                 const signalKey = `${currentUserId}-${user.id}-offer-${modifiedOffer.sdp.slice(0, 50)}`;
                 if (!sentSignals.current.has(signalKey)) {
                   sentSignals.current.add(signalKey);
+                  try {
+                    sendSignal(
+                      {
+                        from: currentUserId,
+                        to: String(user.id),
+                        signal: modifiedOffer,
+                      },
+                      roomId.current
+                    );
+                    console.log(`Sent retry offer to user ${user.id}, attempt ${retries + 1}`);
+                    answerTimeouts.current.set(
+                      user.id,
+                      setTimeout(() => {
+                        if (peerConnection && !peerConnection.remoteDescription) {
+                          console.warn(`No answer received from user ${user.id} within 10 seconds on retry ${retries + 1}`);
+                          toast.warn(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
+                        }
+                      }, 10000)
+                    );
+                  } catch (error) {
+                    console.error(`Failed to send retry offer to user ${user.id}:`, error);
+                    toast.error(`Failed to send offer to ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
+                  }
+                }
+              } else {
+                console.error(`Failed to initialize PeerConnection for user ${user.id} on retry ${retries + 1}`);
+                toast.error(`Failed to reconnect with ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
+              }
+            } else {
+              console.log(`Connection with user ${user.id} is already established, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
+            }
+          } else {
+            console.warn(`No peerConnection for user ${user.id}, initializing new one`);
+            const stream = localAudioRef.current.srcObject;
+            await initializePeerConnection(String(user.id), stream);
+            const newPeerConnection = peerConnections.current.get(String(user.id));
+            if (newPeerConnection) {
+              console.log(`Creating initial offer for user ${user.id} after initializing new connection`);
+              const offer = await newPeerConnection.createOffer();
+              const modifiedOffer = {
+                type: 'offer',
+                sdp: offer.sdp.replace(/a=setup:passive/, 'a=setup:actpass')
+              };
+              await newPeerConnection.setLocalDescription(modifiedOffer);
+              const signalKey = `${currentUserId}-${user.id}-offer-${modifiedOffer.sdp.slice(0, 50)}`;
+              if (!sentSignals.current.has(signalKey)) {
+                sentSignals.current.add(signalKey);
+                try {
                   sendSignal(
                     {
                       from: currentUserId,
@@ -746,23 +799,22 @@ const GroupCallActivity = () => {
                     },
                     roomId.current
                   );
-                  console.log(`Sent retry offer to user ${user.id}`);
+                  console.log(`Sent initial offer to user ${user.id} after initializing new connection`);
                   answerTimeouts.current.set(
                     user.id,
                     setTimeout(() => {
-                      if (peerConnection && !peerConnection.remoteDescription) {
-                        console.warn(`No answer received from user ${user.id} within 10 seconds on retry ${retries + 1}`);
+                      if (newPeerConnection && !newPeerConnection.remoteDescription) {
+                        console.warn(`No answer received from user ${user.id} within 10 seconds after initializing new connection`);
+                        toast.warn(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
                       }
                     }, 10000)
                   );
+                } catch (error) {
+                  console.error(`Failed to send initial offer to user ${user.id}:`, error);
+                  toast.error(`Failed to send offer to ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
                 }
               }
-            } else {
-              console.log(`Connection with user ${user.id} is already established, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
             }
-          } else {
-            console.warn(`No peerConnection for user ${user.id}, initializing new one`);
-            await initializePeerConnection(String(user.id), localAudioRef.current.srcObject);
           }
         }
       }
