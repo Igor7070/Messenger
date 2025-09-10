@@ -703,8 +703,7 @@ const GroupCallActivity = () => {
               peerConnection.iceConnectionState !== 'connected' &&
               peerConnection.iceConnectionState !== 'completed' ||
               peerConnection.connectionState === 'failed' ||
-              peerConnection.connectionState === 'connecting' ||
-              peerConnection.connectionState === 'new'
+              peerConnection.connectionState === 'connecting'
             ) {
               const retries = retryCounts.get(user.id) || 0;
               if (retries >= 3) {
@@ -925,97 +924,32 @@ const GroupCallActivity = () => {
             break;
 
           case 'offer':
-            console.log('Processing offer from:', currentFrom, 'signal:', currentSignalData, 'currentUserId:', currentUserId);
+            console.log('Processing offer from:', currentFrom, 'signal:', currentSignalData);
             offerReceived.current.set(currentFrom, true);
-
-            // Пропускаем обработку, если звонок завершён
-            if (isCallEnded) {
-              console.log(`Ignoring offer from ${currentFrom} due to call ended=${isCallEnded}`);
-              continue;
-            }
-
             try {
-              const peerConnection = peerConnections.current.get(currentFrom);
-              if (!peerConnection) {
-                console.error(`No peerConnection found for user ${currentFrom}`);
-                toast.error(`No connection found for ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
-                continue;
-              }
-
               const currentState = peerConnection.signalingState;
-              console.log(`Current signaling state for user ${currentFrom}: ${currentState}, isPolite: ${peerConnection.isPolite}`);
-
-              // Проверяем, не является ли сигнал дубликатом
+              console.log(`Current signaling state for user ${currentFrom}: ${currentState}`);
               if (peerConnection.remoteDescription && peerConnection.remoteDescription.sdp === currentSignalData.sdp) {
                 console.log(`Ignoring duplicate offer from ${currentFrom}`);
                 continue;
               }
-
-              // Проверяем коллизию офферов (glare)
               if (currentState === 'have-local-offer' && !peerConnection.isPolite) {
                 console.log(`Rude peer ignoring offer from ${currentFrom}`);
-                continue;
+                continue; // Rude peer игнорирует входящий оффер
               }
-
-              // Выполняем rollback, если signalingState не stable
               if (currentState !== 'stable') {
                 console.log(`Rolling back signaling state for user ${currentFrom} from ${currentState}`);
-                await peerConnection.setLocalDescription({ type: 'rollback' }).catch((error) => {
-                  console.error(`Rollback failed for user ${currentFrom}:`, error);
-                  toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
-                  throw error;
-                });
+                await peerConnection.setLocalDescription({ type: 'rollback' });
                 console.log(`Rollback successful for user ${currentFrom}`);
               }
-
-              // Устанавливаем remoteDescription (оффер)
-              console.log(`Setting remoteDescription for user ${currentFrom}:`, currentSignalData);
-              await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData)).catch((error) => {
-                console.error(`Error setting remoteDescription for ${currentFrom}:`, error);
-                toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
-                throw error;
-              });
+              await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
               console.log(`Set remoteDescription for user ${currentFrom}`);
-
-              // Создаём ответ
-              const answer = await peerConnection.createAnswer().catch((error) => {
-                console.error(`Error creating answer for ${currentFrom}:`, error);
-                toast.error(`Failed to create answer for ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
-                throw error;
-              });
-              if (!answer) {
-                console.error(`No answer created for ${currentFrom}`);
-                return;
-              }
-
-              // Корректируем SDP для DTLS-роли
-              let modifiedSdp = answer.sdp;
-              const remoteSdp = currentSignalData.sdp;
-              if (remoteSdp.includes('a=setup:active')) {
-                modifiedSdp = modifiedSdp.includes('a=setup:')
-                  ? modifiedSdp.replace(/a=setup:(actpass|active)/, 'a=setup:passive')
-                  : modifiedSdp + '\na=setup:passive';
-              } else {
-                modifiedSdp = modifiedSdp.includes('a=setup:')
-                  ? modifiedSdp.replace(/a=setup:(actpass|passive)/, 'a=setup:active')
-                  : modifiedSdp + '\na=setup:active';
-              }
-
+              const answer = await peerConnection.createAnswer();
               const modifiedAnswer = {
                 type: 'answer',
-                sdp: modifiedSdp
+                sdp: answer.sdp.replace(/a=setup:(actpass|passive)/, 'a=setup:active') // Ответ: active
               };
-
-              // Устанавливаем localDescription (ответ)
-              console.log(`Setting localDescription for answer from ${currentFrom}:`, modifiedAnswer);
-              await peerConnection.setLocalDescription(modifiedAnswer).catch((error) => {
-                console.error(`Error setting localDescription for answer from ${currentFrom}:`, error);
-                toast.error(`Failed to set answer for ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
-                throw error;
-              });
-              console.log(`Set localDescription for answer from ${currentFrom}`);
-
-              // Отправляем ответ
+              await peerConnection.setLocalDescription(modifiedAnswer);
               const signalKey = `${currentUserId}-${currentFrom}-answer-${modifiedAnswer.sdp.slice(0, 50)}`;
               if (!sentSignals.current.has(signalKey)) {
                 sentSignals.current.add(signalKey);
@@ -1025,34 +959,21 @@ const GroupCallActivity = () => {
                 );
                 console.log(`Sent answer to user ${currentFrom}`);
               }
-
-              // Обрабатываем отложенные ICE-кандидаты
               if (pendingCandidates.current.has(currentFrom)) {
-                console.log(`Processing ${pendingCandidates.current.get(currentFrom).length} pending ICE candidates for ${currentFrom}`);
                 for (const candidate of pendingCandidates.current.get(currentFrom)) {
-                  await peerConnection.addIceCandidate(candidate).catch((error) => {
-                    console.error(`Error adding ICE candidate for ${currentFrom}:`, error);
-                  });
-                  console.log(`Processed pending ICE candidate for ${currentFrom}:`, candidate);
+                  await peerConnection.addIceCandidate(candidate);
+                  console.log(`Processed pending ICE candidate for ${currentFrom}`);
                 }
                 pendingCandidates.current.delete(currentFrom);
               }
-
-              // Очищаем очередь сигналов
-              signalQueue.current.set(currentFrom, []);
-              console.log(`Cleared signal queue for user ${currentFrom}`);
-
-              // Очищаем таймаут оффера
               if (offerTimeoutRef.current) {
                 clearTimeout(offerTimeoutRef.current);
                 offerTimeoutRef.current = null;
-                console.log('Cleared offerTimeout after processing offer');
+                console.log('Cleared offerTimeout after receiving offer');
               }
-
-              // Запускаем звонок, если ещё не начат
               if (!isCallStarted) {
                 startCall();
-                console.log('Call started after processing offer');
+                console.log('Call started after receiving offer');
               }
             } catch (error) {
               console.error(`Error processing offer from ${currentFrom}:`, error);
