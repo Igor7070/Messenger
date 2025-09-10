@@ -928,14 +928,14 @@ const GroupCallActivity = () => {
             console.log('Processing offer from:', currentFrom, 'signal:', currentSignalData, 'currentUserId:', currentUserId);
             offerReceived.current.set(currentFrom, true);
 
-            // Пропускаем обработку, если звонок завершён или компонент размонтирован
-            if (isCallEnded || !isMounted.current) {
-              console.log(`Ignoring offer from ${currentFrom} due to call ended=${isCallEnded} or component unmounted=${!isMounted.current}`);
+            // Пропускаем обработку, если звонок завершён
+            if (isCallEnded) {
+              console.log(`Ignoring offer from ${currentFrom} due to call ended=${isCallEnded}`);
               continue;
             }
 
             try {
-              const peerConnection = peerConnections.current[currentFrom];
+              const peerConnection = peerConnections.current.get(currentFrom);
               if (!peerConnection) {
                 console.error(`No peerConnection found for user ${currentFrom}`);
                 toast.error(`No connection found for ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
@@ -943,7 +943,7 @@ const GroupCallActivity = () => {
               }
 
               const currentState = peerConnection.signalingState;
-              console.log(`Current signaling state for user ${currentFrom}: ${currentState}`);
+              console.log(`Current signaling state for user ${currentFrom}: ${currentState}, isPolite: ${peerConnection.isPolite}`);
 
               // Проверяем, не является ли сигнал дубликатом
               if (peerConnection.remoteDescription && peerConnection.remoteDescription.sdp === currentSignalData.sdp) {
@@ -963,7 +963,7 @@ const GroupCallActivity = () => {
                 await peerConnection.setLocalDescription({ type: 'rollback' }).catch((error) => {
                   console.error(`Rollback failed for user ${currentFrom}:`, error);
                   toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
-                  return;
+                  throw error;
                 });
                 console.log(`Rollback successful for user ${currentFrom}`);
               }
@@ -992,11 +992,11 @@ const GroupCallActivity = () => {
               let modifiedSdp = answer.sdp;
               const remoteSdp = currentSignalData.sdp;
               if (remoteSdp.includes('a=setup:active')) {
-                modifiedSdp = modifiedSdp.includes('a=setup:') 
+                modifiedSdp = modifiedSdp.includes('a=setup:')
                   ? modifiedSdp.replace(/a=setup:(actpass|active)/, 'a=setup:passive')
                   : modifiedSdp + '\na=setup:passive';
               } else {
-                modifiedSdp = modifiedSdp.includes('a=setup:') 
+                modifiedSdp = modifiedSdp.includes('a=setup:')
                   ? modifiedSdp.replace(/a=setup:(actpass|passive)/, 'a=setup:active')
                   : modifiedSdp + '\na=setup:active';
               }
