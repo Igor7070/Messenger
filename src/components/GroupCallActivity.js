@@ -703,7 +703,8 @@ const GroupCallActivity = () => {
               peerConnection.iceConnectionState !== 'connected' &&
               peerConnection.iceConnectionState !== 'completed' ||
               peerConnection.connectionState === 'failed' ||
-              peerConnection.connectionState === 'connecting'
+              peerConnection.connectionState === 'connecting' ||
+              peerConnection.connectionState === 'new'
             ) {
               const retries = retryCounts.get(user.id) || 0;
               if (retries >= 3) {
