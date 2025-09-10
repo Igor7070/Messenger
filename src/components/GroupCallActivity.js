@@ -1028,7 +1028,7 @@ const GroupCallActivity = () => {
                 offerTimeoutRef.current = null;
                 console.log('Cleared offerTimeout after receiving offer');
               }
-              if (!isCallStarted) {
+              if (!isCallStarted && peerConnection.signalingState === 'stable') {
                 startCall();
                 console.log('Call started after receiving offer');
               }
