@@ -939,17 +939,43 @@ const GroupCallActivity = () => {
               }
               if (currentState !== 'stable') {
                 console.log(`Rolling back signaling state for user ${currentFrom} from ${currentState}`);
-                await peerConnection.setLocalDescription({ type: 'rollback' });
+                await peerConnection.setLocalDescription({ type: 'rollback' }).catch((error) => {
+                  console.error(`Rollback failed for user ${currentFrom}:`, error);
+                  toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                  return;
+                });
                 console.log(`Rollback successful for user ${currentFrom}`);
               }
-              await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
+              await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData)).catch((error) => {
+                console.error(`Error setting remoteDescription for ${currentFrom}:`, error);
+                toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                return;
+              });
               console.log(`Set remoteDescription for user ${currentFrom}`);
-              const answer = await peerConnection.createAnswer();
+              const answer = await peerConnection.createAnswer().catch((error) => {
+                console.error(`Error creating answer for ${currentFrom}:`, error);
+                toast.error(`Failed to create answer for ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                return;
+              });
+              if (!answer) return; // Прерываем, если ответ не создан
+              // Модифицируем SDP только если необходимо
+              let modifiedSdp = answer.sdp;
+              if (!modifiedSdp.includes('a=setup:active')) {
+                if (modifiedSdp.includes('a=setup:')) {
+                  modifiedSdp = modifiedSdp.replace(/a=setup:(actpass|passive)/, 'a=setup:active');
+                } else {
+                  modifiedSdp += '\na=setup:active';
+                }
+              }
               const modifiedAnswer = {
                 type: 'answer',
-                sdp: answer.sdp.replace(/a=setup:(actpass|passive)/, 'a=setup:active') // Ответ: active
+                sdp: modifiedSdp
               };
-              await peerConnection.setLocalDescription(modifiedAnswer);
+              await peerConnection.setLocalDescription(modifiedAnswer).catch((error) => {
+                console.error(`Error setting localDescription for answer from ${currentFrom}:`, error);
+                toast.error(`Failed to set answer for ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                return;
+              });
               const signalKey = `${currentUserId}-${currentFrom}-answer-${modifiedAnswer.sdp.slice(0, 50)}`;
               if (!sentSignals.current.has(signalKey)) {
                 sentSignals.current.add(signalKey);
@@ -959,13 +985,18 @@ const GroupCallActivity = () => {
                 );
                 console.log(`Sent answer to user ${currentFrom}`);
               }
+              // Обрабатываем отложенные ICE-кандидаты
               if (pendingCandidates.current.has(currentFrom)) {
                 for (const candidate of pendingCandidates.current.get(currentFrom)) {
-                  await peerConnection.addIceCandidate(candidate);
+                  await peerConnection.addIceCandidate(candidate).catch((error) => {
+                    console.error(`Error adding ICE candidate for ${currentFrom}:`, error);
+                  });
                   console.log(`Processed pending ICE candidate for ${currentFrom}`);
                 }
                 pendingCandidates.current.delete(currentFrom);
               }
+              // Очищаем очередь сигналов для этого пользователя
+              signalQueue.current.set(currentFrom, []);
               if (offerTimeoutRef.current) {
                 clearTimeout(offerTimeoutRef.current);
                 offerTimeoutRef.current = null;
