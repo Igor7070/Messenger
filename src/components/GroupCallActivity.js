@@ -925,16 +925,23 @@ const GroupCallActivity = () => {
             break;
 
           case 'offer':
-            console.log('Processing offer from:', currentFrom, 'signal:', currentSignalData);
+            console.log('Processing offer from:', currentFrom, 'signal:', currentSignalData, 'currentUserId:', currentUserId);
             offerReceived.current.set(currentFrom, true);
-            
+
             // Пропускаем обработку, если звонок завершён или компонент размонтирован
             if (isCallEnded || !isMounted.current) {
-              console.log(`Ignoring offer from ${currentFrom} due to call ended or component unmounted`);
+              console.log(`Ignoring offer from ${currentFrom} due to call ended=${isCallEnded} or component unmounted=${!isMounted.current}`);
               continue;
             }
 
             try {
+              const peerConnection = peerConnections.current[currentFrom];
+              if (!peerConnection) {
+                console.error(`No peerConnection found for user ${currentFrom}`);
+                toast.error(`No connection found for ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                continue;
+              }
+
               const currentState = peerConnection.signalingState;
               console.log(`Current signaling state for user ${currentFrom}: ${currentState}`);
 
@@ -962,10 +969,11 @@ const GroupCallActivity = () => {
               }
 
               // Устанавливаем remoteDescription (оффер)
+              console.log(`Setting remoteDescription for user ${currentFrom}:`, currentSignalData);
               await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData)).catch((error) => {
                 console.error(`Error setting remoteDescription for ${currentFrom}:`, error);
                 toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
-                return;
+                throw error;
               });
               console.log(`Set remoteDescription for user ${currentFrom}`);
 
@@ -973,9 +981,12 @@ const GroupCallActivity = () => {
               const answer = await peerConnection.createAnswer().catch((error) => {
                 console.error(`Error creating answer for ${currentFrom}:`, error);
                 toast.error(`Failed to create answer for ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
-                return;
+                throw error;
               });
-              if (!answer) return;
+              if (!answer) {
+                console.error(`No answer created for ${currentFrom}`);
+                return;
+              }
 
               // Корректируем SDP для DTLS-роли
               let modifiedSdp = answer.sdp;
@@ -996,10 +1007,11 @@ const GroupCallActivity = () => {
               };
 
               // Устанавливаем localDescription (ответ)
+              console.log(`Setting localDescription for answer from ${currentFrom}:`, modifiedAnswer);
               await peerConnection.setLocalDescription(modifiedAnswer).catch((error) => {
                 console.error(`Error setting localDescription for answer from ${currentFrom}:`, error);
                 toast.error(`Failed to set answer for ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
-                return;
+                throw error;
               });
               console.log(`Set localDescription for answer from ${currentFrom}`);
 
@@ -1016,11 +1028,12 @@ const GroupCallActivity = () => {
 
               // Обрабатываем отложенные ICE-кандидаты
               if (pendingCandidates.current.has(currentFrom)) {
+                console.log(`Processing ${pendingCandidates.current.get(currentFrom).length} pending ICE candidates for ${currentFrom}`);
                 for (const candidate of pendingCandidates.current.get(currentFrom)) {
                   await peerConnection.addIceCandidate(candidate).catch((error) => {
                     console.error(`Error adding ICE candidate for ${currentFrom}:`, error);
                   });
-                  console.log(`Processed pending ICE candidate for ${currentFrom}`);
+                  console.log(`Processed pending ICE candidate for ${currentFrom}:`, candidate);
                 }
                 pendingCandidates.current.delete(currentFrom);
               }
