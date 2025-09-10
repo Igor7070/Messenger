@@ -1006,16 +1006,12 @@ const GroupCallActivity = () => {
               await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
               console.log(`Set remoteDescription for user ${currentFrom}`);
               const answer = await peerConnection.createAnswer();
-              const modifiedAnswer = {
-                type: 'answer',
-                sdp: answer.sdp.replace(/a=setup:(actpass|passive)/, 'a=setup:active') // Ответ: active
-              };
-              await peerConnection.setLocalDescription(modifiedAnswer);
-              const signalKey = `${currentUserId}-${currentFrom}-answer-${modifiedAnswer.sdp.slice(0, 50)}`;
+              await peerConnection.setLocalDescription(answer); // Без модификации SDP
+              const signalKey = `${currentUserId}-${currentFrom}-answer-${answer.sdp.slice(0, 50)}`;
               if (!sentSignals.current.has(signalKey)) {
                 sentSignals.current.add(signalKey);
                 sendSignal(
-                  { from: currentUserId, to: currentFrom, signal: modifiedAnswer },
+                  { from: currentUserId, to: currentFrom, signal: answer },
                   roomId.current
                 );
                 console.log(`Sent answer to user ${currentFrom}`);
