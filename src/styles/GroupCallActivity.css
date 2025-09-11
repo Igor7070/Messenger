@@ -208,3 +208,12 @@
 .group-call-camera-toggle:hover {
   background: rgba(0, 0, 0, 0.3);
 }
+
+/* [ДОБАВЛЕНО]: Стили для активной/неактивной кнопки камеры */
+.group-call-camera-toggle.active {
+  background: #4CAF50 !important; /* Зелёный для включённой камеры */
+}
+
+.group-call-camera-toggle.inactive {
+  background: red !important; /* Красный для выключенной камеры */
+}

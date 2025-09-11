@@ -47,6 +47,8 @@ const GroupCallActivity = () => {
   const isProcessingSignal = useRef(new Map());
   const [isVideoMode, setIsVideoMode] = useState(false); // Состояние для переключения между аудио- и видео-вкладками
   const videoRefs = useRef(new Map()); // Ref для хранения ссылок на видеоэлементы
+  const [isCameraOn, setIsCameraOn] = useState(false); // Состояние для отслеживания включения камеры текущего пользователя
+  const localVideoStreamRef = useRef(null); // Ref для хранения локального видеопотока
 
   const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
 
@@ -97,11 +99,14 @@ const GroupCallActivity = () => {
       }
 
       try {
+        // [ИЗМЕНЕНО]: Запрашиваем только аудио для начальной инициализации
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         console.log('Local stream tracks:', stream.getTracks());
         if (localAudioRef.current) {
           localAudioRef.current.srcObject = stream;
           console.log('Assigned stream to localAudioRef');
+          // [ДОБАВЛЕНО]: Назначаем аудиопоток в localVideoStreamRef для согласованности
+          localVideoStreamRef.current = stream;
           // Обработка очереди сигналов после установки srcObject
           handleQueuedSignals();
         } else {
@@ -511,21 +516,41 @@ const GroupCallActivity = () => {
         console.log(`ontrack event for user ${userId}:`, event);
         if (stream) {
           console.log(`Remote stream tracks for user ${userId}:`, stream.getTracks());
-          const audioElement = document.createElement('audio');
-          audioElement.id = `remote-audio-${userId}`;
-          audioElement.srcObject = stream;
-          audioElement.autoplay = true;
-          audioElement.onloadedmetadata = () => {
-            audioElement.play().then(() => {
-              console.log(`Audio playing for user ${userId}`);
-            }).catch((error) => {
-              console.error(`Error playing audio for ${userId}:`, error);
-              toast.error(`Failed to play audio for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
-            });
-          };
-          remoteAudioRefs.current.set(userId, audioElement);
-          document.body.appendChild(audioElement);
-          console.log(`Remote audio track added for user ${userId}`);
+          // [ДОБАВЛЕНО]: Обработка видеотреков
+          const videoTracks = stream.getVideoTracks();
+          if (videoTracks.length > 0) {
+            const videoElement = videoRefs.current.get(userId);
+            if (videoElement) {
+              videoElement.srcObject = stream;
+              videoElement.play().then(() => {
+                console.log(`Video playing for user ${userId}`);
+              }).catch((error) => {
+                console.error(`Error playing video for ${userId}:`, error);
+                toast.error(`Failed to play video for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
+              });
+            } else {
+              console.warn(`No video element found for user ${userId}`);
+            }
+          }
+          // [ИЗМЕНЕНО]: Обработка аудиотреков
+          const audioTracks = stream.getAudioTracks();
+          if (audioTracks.length > 0) {
+            const audioElement = document.createElement('audio');
+            audioElement.id = `remote-audio-${userId}`;
+            audioElement.srcObject = new MediaStream([audioTracks[0]]);
+            audioElement.autoplay = true;
+            audioElement.onloadedmetadata = () => {
+              audioElement.play().then(() => {
+                console.log(`Audio playing for user ${userId}`);
+              }).catch((error) => {
+                console.error(`Error playing audio for ${userId}:`, error);
+                toast.error(`Failed to play audio for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
+              });
+            };
+            remoteAudioRefs.current.set(userId, audioElement);
+            document.body.appendChild(audioElement);
+            console.log(`Remote audio track added for user ${userId}`);
+          }
         } else {
           console.error(`No stream received for user ${userId}`);
           toast.error(`No audio stream received for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
@@ -602,6 +627,13 @@ const GroupCallActivity = () => {
       };
 
       stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream));
+      // [ДОБАВЛЕНО]: Добавляем видеотреки, если камера включена
+      if (localVideoStreamRef.current && localVideoStreamRef.current.getVideoTracks().length > 0) {
+        localVideoStreamRef.current.getVideoTracks().forEach((track) => {
+          peerConnection.addTrack(track, localVideoStreamRef.current);
+          console.log(`Added video track for user ${userId}`);
+        });
+      }
       console.log(`PeerConnection initialized for user ${userId}, isPolite: ${peerConnection.isPolite}`);
       return peerConnection;
     } catch (error) {
@@ -1139,6 +1171,20 @@ const GroupCallActivity = () => {
             }
             break;
 
+          case 'cameraOn':
+            console.log(`User ${currentFrom} turned on their camera`);
+            // [ДОБАВЛЕНО]: Ожидаем видеопоток через ontrack, ничего дополнительно не делаем
+            break;
+
+          case 'cameraOff':
+            console.log(`User ${currentFrom} turned off their camera`);
+            const videoElement = videoRefs.current.get(currentFrom);
+            if (videoElement) {
+              videoElement.srcObject = null;
+              console.log(`Cleared video stream for user ${currentFrom}`);
+            }
+            break;
+
           default:
             console.warn('Unknown signal type:', currentSignalData.type);
         }
@@ -1204,6 +1250,20 @@ const GroupCallActivity = () => {
     });
     remoteAudioRefs.current.clear();
 
+    // [ДОБАВЛЕНО]: Очистка видеоэлементов
+    if (localVideoStreamRef.current) {
+      localVideoStreamRef.current.getTracks().forEach((track) => track.stop());
+      localVideoStreamRef.current = null;
+    }
+    videoRefs.current.forEach((video) => {
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach((track) => track.stop());
+        video.srcObject = null;
+      }
+      video.remove();
+    });
+    videoRefs.current.clear();
+
     ringtoneRef.current.pause();
     ringtoneRef.current.currentTime = 0;
 
@@ -1240,10 +1300,12 @@ const GroupCallActivity = () => {
               {user.id === Number(currentUserId) && (
                 <button
                   className="group-call-camera-toggle"
-                  // [КОММЕНТАРИЙ]: Функция toggleCamera будет добавлена позже
-                  style={{ background: 'red' }} // Временный стиль (красный, выключено)
+                  onClick={toggleCamera}
+                  style={{ background: isCameraOn ? '#4CAF50' : 'red' }} // [ИЗМЕНЕНО]: Зелёный если включено, красный если выключено
                 >
-                  <span role="img" aria-label="camera-off">📷</span>
+                  <span role="img" aria-label={isCameraOn ? 'camera-on' : 'camera-off'}>
+                    {isCameraOn ? '📷' : '🚫📷'}
+                  </span>
                 </button>
               )}
               {user.id !== Number(currentUserId) && !videoRefs.current.get(String(user.id))?.srcObject && (
@@ -1254,6 +1316,95 @@ const GroupCallActivity = () => {
         ))}
       </div>
     );
+  };
+
+  // [ДОБАВЛЕНО]: Функция для включения/выключения камеры
+  const toggleCamera = async () => {
+    if (!localAudioRef.current || !localAudioRef.current.srcObject) {
+      console.warn('Cannot toggle camera: localAudioRef or srcObject not ready');
+      toast.error('Audio stream not ready, cannot toggle camera');
+      return;
+    }
+
+    if (isCameraOn) {
+      // Выключаем камеру
+      if (localVideoStreamRef.current) {
+        localVideoStreamRef.current.getVideoTracks().forEach((track) => track.stop());
+        localVideoStreamRef.current = new MediaStream(localAudioRef.current.srcObject.getAudioTracks());
+        const videoElement = videoRefs.current.get(String(currentUserId));
+        if (videoElement) {
+          videoElement.srcObject = null;
+        }
+        console.log('Camera turned off');
+      }
+      setIsCameraOn(false);
+      // [ДОБАВЛЕНО]: Уведомляем других участников об отключении камеры
+      callParticipants
+        .filter((u) => u.id !== Number(currentUserId))
+        .forEach((user) => {
+          const signalKey = `${currentUserId}-${user.id}-cameraOff`;
+          if (!sentSignals.current.has(signalKey)) {
+            sentSignals.current.add(signalKey);
+            sendSignal(
+              {
+                from: currentUserId,
+                to: String(user.id),
+                signal: { type: 'cameraOff' },
+              },
+              roomId.current
+            );
+            console.log(`Sent cameraOff signal to user ${user.id}`);
+          }
+        });
+    } else {
+      // Включаем камеру
+      try {
+        const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        localVideoStreamRef.current = new MediaStream([
+          ...localAudioRef.current.srcObject.getAudioTracks(),
+          ...videoStream.getVideoTracks(),
+        ]);
+        const videoElement = videoRefs.current.get(String(currentUserId));
+        if (videoElement) {
+          videoElement.srcObject = localVideoStreamRef.current;
+          videoElement.play().catch((error) => {
+            console.error('Error playing local video:', error);
+            toast.error('Failed to display local video');
+          });
+        }
+        // [ДОБАВЛЕНО]: Добавляем видеотреки в существующие peerConnections
+        peerConnections.current.forEach((pc, userId) => {
+          if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+            videoStream.getVideoTracks().forEach((track) => {
+              pc.addTrack(track, localVideoStreamRef.current);
+              console.log(`Added video track to peerConnection for user ${userId}`);
+            });
+          }
+        });
+        setIsCameraOn(true);
+        // [ДОБАВЛЕНО]: Уведомляем других участников о включении камеры
+        callParticipants
+          .filter((u) => u.id !== Number(currentUserId))
+          .forEach((user) => {
+            const signalKey = `${currentUserId}-${user.id}-cameraOn`;
+            if (!sentSignals.current.has(signalKey)) {
+              sentSignals.current.add(signalKey);
+              sendSignal(
+                {
+                  from: currentUserId,
+                  to: String(user.id),
+                  signal: { type: 'cameraOn' },
+                },
+                roomId.current
+              );
+              console.log(`Sent cameraOn signal to user ${user.id}`);
+            }
+          });
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        toast.error('Failed to access camera');
+      }
+    }
   };
 
   return (
