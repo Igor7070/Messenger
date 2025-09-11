@@ -115,7 +115,7 @@ const GroupCallActivity = () => {
             const currentUser = {
               id: Number(currentUserId),
               username: initiator.username || `User ${currentUserId}`,
-              avatar: initiator.avatar || null,
+              avatar: null, // Аватар будет запрошен у сервера
             };
 
             // Добавляем текущего пользователя, если его нет в списке
@@ -125,15 +125,17 @@ const GroupCallActivity = () => {
 
             const updatedParticipants = await Promise.all(
               participantsWithCurrentUser.map(async (user) => {
-                if (user.id === Number(currentUserId)) {
-                  return { ...user, username: user.username || `User ${user.id}` };
-                }
+                // Запрашиваем данные для всех пользователей, включая текущего
                 const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${user.id}`, {
                   headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
                 });
                 if (!response.ok) {
                   console.error(`Failed to fetch user ${user.id}`);
-                  return { ...user, username: `User ${user.id}`, avatar: null };
+                  return {
+                    id: user.id,
+                    username: user.username || `User ${user.id}`,
+                    avatar: null, // Если запрос не удался, аватар будет null
+                  };
                 }
                 const userData = await response.json();
                 return {
