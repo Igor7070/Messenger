@@ -662,7 +662,7 @@ const GroupCallActivity = () => {
                         peerConnections.current.delete(String(user.id));
                         setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
                         if (isInitiator || callParticipants.length < 2) {
-                          endCall();
+                          //endCall();
                         }
                       }
                     }, 90000)
@@ -768,7 +768,7 @@ const GroupCallActivity = () => {
                           console.warn(`No answer received from user ${user.id} within 10 seconds on retry ${retries + 1}`);
                           //toast.warn(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
                         }
-                      }, 10000)
+                      }, 90000)
                     );
                   } catch (error) {
                     console.error(`Failed to send retry offer to user ${user.id}:`, error);
