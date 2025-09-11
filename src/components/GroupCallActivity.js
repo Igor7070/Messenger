@@ -111,8 +111,20 @@ const GroupCallActivity = () => {
 
         const fetchParticipants = async () => {
           try {
+            // Создаем объект текущего пользователя
+            const currentUser = {
+              id: Number(currentUserId),
+              username: initiator.username || `User ${currentUserId}`,
+              avatar: initiator.avatar || null,
+            };
+
+            // Добавляем текущего пользователя, если его нет в списке
+            const participantsWithCurrentUser = memoizedParticipants.find((p) => p.id === Number(currentUserId))
+              ? memoizedParticipants
+              : [...memoizedParticipants, currentUser];
+
             const updatedParticipants = await Promise.all(
-              memoizedParticipants.map(async (user) => {
+              participantsWithCurrentUser.map(async (user) => {
                 if (user.id === Number(currentUserId)) {
                   return { ...user, username: user.username || `User ${user.id}` };
                 }
