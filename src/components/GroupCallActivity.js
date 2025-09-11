@@ -45,6 +45,8 @@ const GroupCallActivity = () => {
   const receivedSignals = useRef(new Set());
   const signalQueue = useRef(new Map());
   const isProcessingSignal = useRef(new Map());
+  const [isVideoMode, setIsVideoMode] = useState(false); // Состояние для переключения между аудио- и видео-вкладками
+  const videoRefs = useRef(new Map()); // Ref для хранения ссылок на видеоэлементы
 
   const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
 
@@ -1213,6 +1215,47 @@ const GroupCallActivity = () => {
     navigate('/');
   };
 
+  // [ДОБАВЛЕНО]: Функция для переключения между аудио- и видео-режимами
+  const toggleMode = () => {
+    setIsVideoMode((prev) => !prev);
+  };
+
+  // [ДОБАВЛЕНО]: Функция для рендеринга видеоэкранов
+  const renderVideoScreens = () => {
+    return (
+      <div className="group-call-video-grid">
+        {callParticipants.map((user) => (
+          <div key={user.id} className="group-call-video-container">
+            <div className="group-call-participant-name">{user.username}</div>
+            <div className="group-call-video-wrapper">
+              <video
+                id={`remote-video-${user.id}`}
+                ref={(el) => {
+                  if (el) videoRefs.current.set(String(user.id), el);
+                }}
+                autoPlay
+                playsInline
+                className="group-call-video"
+              />
+              {user.id === Number(currentUserId) && (
+                <button
+                  className="group-call-camera-toggle"
+                  // [КОММЕНТАРИЙ]: Функция toggleCamera будет добавлена позже
+                  style={{ background: 'red' }} // Временный стиль (красный, выключено)
+                >
+                  <span role="img" aria-label="camera-off">📷</span>
+                </button>
+              )}
+              {user.id !== Number(currentUserId) && !videoRefs.current.get(String(user.id))?.srcObject && (
+                <div className="group-call-video-placeholder">No Video</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="group-call-container">
       <h1 className="group-call-title">Group Call with {initiator.username}</h1>
@@ -1222,36 +1265,49 @@ const GroupCallActivity = () => {
         <p className="call-current-time">Current: {currentTime}</p>
       </div>
       <div className="group-call-participants">
-        <h2>Participants</h2>
-        <ul className="group-call-participant-list">
-          {callParticipants.map((user) => (
-            <li key={user.id} className="group-call-participant-item">
-              {user.avatar ? (
-                <img
-                  src={`https://unlimitedpossibilities12.org${user.avatar}`}
-                  alt={`${user.username} avatar`}
-                  className="group-call-participant-avatar"
-                />
-              ) : (
-                <div className="group-call-participant-avatar">{user.username.charAt(0).toUpperCase()}</div>
-              )}
-              <span className="group-call-participant-name">{user.username}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div className="group-call-chart-container">
-        <Line
-          data={chartData}
-          options={{
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              x: { title: { display: true, text: 'Time' } },
-              y: { title: { display: true, text: 'Activity Level' } },
-            },
-          }}
-        />
+        <div className="group-call-participants-header">
+          <h2>Participants</h2>
+          <button onClick={toggleMode} className="group-call-mode-toggle">
+            <span role="img" aria-label={isVideoMode ? 'audio' : 'video'}>
+              {isVideoMode ? '🔊' : '📷'}
+            </span>
+          </button>
+        </div>
+        {isVideoMode ? (
+          renderVideoScreens()
+        ) : (
+          <>
+            <ul className="group-call-participant-list">
+              {callParticipants.map((user) => (
+                <li key={user.id} className="group-call-participant-item">
+                  {user.avatar ? (
+                    <img
+                      src={`https://unlimitedpossibilities12.org${user.avatar}`}
+                      alt={`${user.username} avatar`}
+                      className="group-call-participant-avatar"
+                    />
+                  ) : (
+                    <div className="group-call-participant-avatar">{user.username.charAt(0).toUpperCase()}</div>
+                  )}
+                  <span className="group-call-participant-name">{user.username}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="group-call-chart-container">
+              <Line
+                data={chartData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    x: { title: { display: true, text: 'Time' } },
+                    y: { title: { display: true, text: 'Activity Level' } },
+                  },
+                }}
+              />
+            </div>
+          </>
+        )}
       </div>
       <audio id="local-audio" ref={localAudioRef} autoPlay muted />
       <button className="group-call-end-button" onClick={endCall}>
