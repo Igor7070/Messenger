@@ -712,7 +712,7 @@ const GroupCallActivity = () => {
                       ) {
                         console.error(`No answer received from user ${user.id} within 90 seconds`);
                         //toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
-                        //peerConnections.current.delete(String(user.id));
+                        peerConnections.current.delete(String(user.id));
                         setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
                         if (isInitiator || callParticipants.length < 2) {
                           //endCall();
