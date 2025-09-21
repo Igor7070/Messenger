@@ -720,7 +720,7 @@ const GroupCallActivity = () => {
                       } else {
                         console.log(`Skipping answer timeout for user ${user.id}: connection state=${peerConnection?.iceConnectionState || 'no peerConnection'}`);
                       }
-                    }, 90000)
+                    }, 120000)
                   );
                 }
               } else {
@@ -823,7 +823,7 @@ const GroupCallActivity = () => {
                           console.warn(`No answer received from user ${user.id} within 10 seconds on retry ${retries + 1}`);
                           //toast.warn(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
                         }
-                      }, 90000)
+                      }, 120000)
                     );
                   } catch (error) {
                     console.error(`Failed to send retry offer to user ${user.id}:`, error);
