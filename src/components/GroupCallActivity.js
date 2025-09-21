@@ -1082,7 +1082,7 @@ const GroupCallActivity = () => {
               }
             } catch (error) {
               console.error(`Error processing offer from ${currentFrom}:`, error);
-              toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+              //toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
             }
             break;
 
