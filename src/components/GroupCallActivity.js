@@ -704,14 +704,21 @@ const GroupCallActivity = () => {
                   answerTimeouts.current.set(
                     user.id,
                     setTimeout(() => {
-                      if (peerConnection && !peerConnection.remoteDescription) {
-                        console.error(`No answer received from user ${user.id} within 10 seconds`);
+                      if (
+                        peerConnection &&
+                        !peerConnection.remoteDescription &&
+                        peerConnection.iceConnectionState !== 'connected' &&
+                        peerConnection.iceConnectionState !== 'completed'
+                      ) {
+                        console.error(`No answer received from user ${user.id} within 90 seconds`);
                         //toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
                         peerConnections.current.delete(String(user.id));
                         setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
                         if (isInitiator || callParticipants.length < 2) {
                           //endCall();
                         }
+                      } else {
+                        console.log(`Skipping answer timeout for user ${user.id}: connection state=${peerConnection?.iceConnectionState || 'no peerConnection'}`);
                       }
                     }, 90000)
                   );
