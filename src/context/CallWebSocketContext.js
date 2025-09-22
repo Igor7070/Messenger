@@ -181,7 +181,7 @@ export const CallWebSocketProvider = ({ children }) => {
           console.log(`CallWebSocketContext: Unsubscribed from /topic/room/${roomId} due to timeout`);
           subscriptionRef.current = null;
         }
-      }, 90000);
+      }, 900000);
 
       return () => {
         clearTimeout(unsubscribeTimeout);
