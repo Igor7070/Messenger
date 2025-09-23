@@ -1275,13 +1275,6 @@ const GroupCallActivity = () => {
     // NEW: Добавляем функцию saveCall для сохранения звонка
     const saveCall = async () => {
       try {
-        const authToken = localStorage.getItem('authToken');
-        if (!authToken) {
-          console.error('No authToken found in localStorage');
-          toast.error('Authentication error. Please log in again.', { toastId: 'auth-error' });
-          return;
-        }
-
         let status = 'completed';
         if (readyUsers.size === 0 && !isCallStarted) {
           status = isInitiator ? 'rejected' : 'missed';
@@ -1296,9 +1289,6 @@ const GroupCallActivity = () => {
             status: status,
             callType: 'group',
             timestamp: new Date().toISOString(),
-          },
-          {
-            headers: { Authorization: `Bearer ${authToken}` },
           }
         );
         console.log(`Group call saved to server with status: ${status}`);

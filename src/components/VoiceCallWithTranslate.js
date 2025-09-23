@@ -881,13 +881,6 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
     // NEW: Добавляем функцию saveCall для сохранения звонка
     const saveCall = async () => {
       try {
-        const authToken = localStorage.getItem('authToken');
-        if (!authToken) {
-          console.error('No authToken found in localStorage');
-          notify('Authentication error. Please log in again.', { toastId: 'auth-error' });
-          return;
-        }
-
         let status = 'completed';
         if (hasNotifiedRejectCall.current) {
           status = 'rejected';
@@ -904,9 +897,6 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
             status: status,
             callType: 'voice_with_translate',
             timestamp: new Date().toISOString(),
-          },
-          {
-            headers: { Authorization: `Bearer ${authToken}` },
           }
         );
         console.log(`Voice call with translate saved to server with status: ${status}`);
@@ -919,10 +909,10 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
     // NEW: Вызываем saveCall перед навигацией
     saveCall();
 
-    // NEW: Сброс hasNotifiedRejectCall
+    // NEW: Сброс флагов
     hasNotifiedAcceptCall.current = false;
     hasNotifiedEndCall.current = false;
-    hasNotifiedRejectCall.current = false; // NEW: Сбрасываем флаг rejectCall
+    hasNotifiedRejectCall.current = false;
 
     navigate('/');
   };

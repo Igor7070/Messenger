@@ -489,13 +489,6 @@ const VideoCall = ({ recipientId }) => {
     // NEW: Добавляем функцию saveCall для сохранения звонка
     const saveCall = async () => {
       try {
-        const authToken = localStorage.getItem('authToken');
-        if (!authToken) {
-          console.error('No authToken found in localStorage');
-          notify('Authentication error. Please log in again.', { toastId: 'auth-error' });
-          return;
-        }
-
         let status = 'completed';
         if (hasNotifiedRejectCall.current) {
           status = 'rejected';
@@ -512,9 +505,6 @@ const VideoCall = ({ recipientId }) => {
             status: status,
             callType: 'video',
             timestamp: new Date().toISOString(),
-          },
-          {
-            headers: { Authorization: `Bearer ${authToken}` },
           }
         );
         console.log(`Video call saved to server with status: ${status}`);
@@ -527,9 +517,10 @@ const VideoCall = ({ recipientId }) => {
     // NEW: Вызываем saveCall перед сбросом флагов и навигацией
     saveCall();
 
-    hasNotifiedAcceptCall.current = false; // Сброс флага
-    hasNotifiedEndCall.current = false; // Сброс флага для endCall (на случай повторного использования)
-    hasNotifiedRejectCall.current = false; // Сброс флага для rejectCall
+    hasNotifiedAcceptCall.current = false;
+    hasNotifiedEndCall.current = false;
+    hasNotifiedRejectCall.current = false;
+
     navigate('/');
   };
 
