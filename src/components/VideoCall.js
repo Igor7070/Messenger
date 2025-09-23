@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import axios from 'axios'; // NEW: Добавляем импорт axios
 import { useNotification } from '../context/NotificationContext';
 import '../styles/VideoCall.css';
 
@@ -484,6 +485,47 @@ const VideoCall = ({ recipientId }) => {
       stompClient.current.deactivate();
       console.log('WebSocket connection deactivated in endCall.');
     }
+
+    // NEW: Добавляем функцию saveCall для сохранения звонка
+    const saveCall = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+          console.error('No authToken found in localStorage');
+          notify('Authentication error. Please log in again.', { toastId: 'auth-error' });
+          return;
+        }
+
+        let status = 'completed';
+        if (hasNotifiedRejectCall.current) {
+          status = 'rejected';
+        } else if (!isCaller && !hasNotifiedAcceptCall.current && !hasNotifiedRejectCall.current) {
+          status = 'missed';
+        }
+
+        await axios.post(
+          `https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`,
+          {
+            caller: isCaller ? currentUserId : incomingCall?.callerId,
+            receiver: isCaller ? incomingCall?.recipientId : currentUserId,
+            direction: isCaller ? 'outgoing' : 'incoming',
+            status: status,
+            callType: 'video',
+            timestamp: new Date().toISOString(),
+          },
+          {
+            headers: { Authorization: `Bearer ${authToken}` },
+          }
+        );
+        console.log(`Video call saved to server with status: ${status}`);
+      } catch (error) {
+        console.error('Error saving video call:', error);
+        notify('Failed to save call', { toastId: 'save-call-error' });
+      }
+    };
+
+    // NEW: Вызываем saveCall перед сбросом флагов и навигацией
+    saveCall();
 
     hasNotifiedAcceptCall.current = false; // Сброс флага
     hasNotifiedEndCall.current = false; // Сброс флага для endCall (на случай повторного использования)

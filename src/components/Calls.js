@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
 import { toast } from 'react-toastify';
-import { FaUsers, FaPlus } from 'react-icons/fa';
+import { FaUsers, FaPlus, FaArrowUp, FaArrowDown, FaPhone } from 'react-icons/fa';
 import '../styles/Calls.css';
 
 const Calls = () => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [users, setUsers] = useState([]);
+  const [calls, setCalls] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -33,7 +34,24 @@ const Calls = () => {
       }
     };
 
+    const fetchCalls = async () => {
+      try {
+        const storedUserId = Number(localStorage.getItem('userId'));
+        const response = await fetch(`https://unlimitedpossibilities12.org/api/calls?userId=${storedUserId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setCalls(data);
+        } else {
+          toast.error('Failed to fetch calls');
+        }
+      } catch (error) {
+        console.error('Error fetching calls:', error);
+        toast.error('Error fetching calls');
+      }
+    };
+
     fetchUsers();
+    fetchCalls();
   }, []);
 
   const handleGroupCallButtonClick = () => {
@@ -69,6 +87,29 @@ const Calls = () => {
     setModalIsOpen(false);
   };
 
+  const handleRedial = (call) => {
+    toast.info(`Redialing ${call.callType} call...`);
+    console.log('Redialing call:', call);
+  };
+
+  const getUserById = (id) => users.find((user) => user.id === id) || { username: 'Unknown', avatar: null };
+
+  const formatTimestamp = (timestamp) => {
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (error) {
+      console.error('Error formatting timestamp:', error);
+      return 'Unknown';
+    }
+  };
+
   const filteredUsers = users.filter((user) =>
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -76,6 +117,68 @@ const Calls = () => {
   return (
     <div className="calls-container">
       <h1>Calls</h1>
+
+      <div className="calls-list">
+        {calls.map((call) => {
+          const isGroup = call.callType === 'group';
+          const participants = isGroup ? call.participants.map((id) => getUserById(Number(id))) : [];
+          const singleUser = !isGroup
+            ? getUserById(call.direction === 'outgoing' ? Number(call.receiver) : Number(call.caller))
+            : null;
+
+          return (
+            <div key={call.id} className="call-item">
+              <div className="call-participants">
+                {isGroup ? (
+                  participants.map((user) => (
+                    <div key={user.id} className="call-participant">
+                      {user.avatar ? (
+                        <img
+                          src={`https://unlimitedpossibilities12.org${user.avatar}`}
+                          alt={`${user.username} avatar`}
+                          className="call-avatar"
+                        />
+                      ) : (
+                        <div className="call-avatar">{user.username.charAt(0).toUpperCase()}</div>
+                      )}
+                      <span className="call-name">{user.username}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="call-participant">
+                    {singleUser.avatar ? (
+                      <img
+                        src={`https://unlimitedpossibilities12.org${singleUser.avatar}`}
+                        alt={`${singleUser.username} avatar`}
+                        className="call-avatar"
+                      />
+                    ) : (
+                      <div className="call-avatar">{singleUser.username.charAt(0).toUpperCase()}</div>
+                    )}
+                    <span className="call-name">{singleUser.username}</span>
+                  </div>
+                )}
+              </div>
+              <div className="call-direction">
+                {call.direction === 'outgoing' ? (
+                  <FaArrowUp className="call-arrow outgoing" />
+                ) : (
+                  <FaArrowDown className="call-arrow incoming" />
+                )}
+              </div>
+              <div className="call-details">
+                <span className="call-status">{call.status.charAt(0).toUpperCase() + call.status.slice(1)}</span>
+                <span className="call-type">{call.callType.charAt(0).toUpperCase() + call.callType.slice(1)} Call</span>
+                <span className="call-timestamp">{formatTimestamp(call.timestamp)}</span>
+              </div>
+              <div className="call-redial" onClick={() => handleRedial(call)}>
+                <FaPhone className="call-phone-icon" />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       <button className="calls-group-call-button" onClick={handleGroupCallButtonClick}>
         <FaUsers className="calls-group-call-icon" />
         <FaPlus className="calls-plus-icon" />

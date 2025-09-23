@@ -5,6 +5,7 @@ import SockJS from 'sockjs-client';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import { useNotification } from '../context/NotificationContext';
+import axios from 'axios'; // NEW: Добавляем импорт axios
 import '../styles/VoiceCallWithTranslate.css';
 
 Chart.register(...registerables);
@@ -33,6 +34,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
   const hasNotifiedEndCall = useRef(false);
   const hasNotifiedAcceptCall = useRef(false);
+  const hasNotifiedRejectCall = useRef(false); // NEW: Добавляем реф для rejectCall
   const transcriptionRef = useRef(null);
   const friendTranscriptionRef = useRef(null);
   const ttsAudioRef = useRef(null); // [ДОБАВЛЕНО] Реф для TTS-аудио
@@ -750,6 +752,9 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
             const answer = await peerConnectionRef.current.createAnswer();
             await peerConnectionRef.current.setLocalDescription(answer);
             sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
+            // NEW: Устанавливаем hasNotifiedAcceptCall при получении offer
+            hasNotifiedAcceptCall.current = true;
+            notify(`${recipientName} accepted the call.`, { toastId: `accept-call-${roomId}` });
           }
         } else if (signalMessage.signal.type === 'answer') {
           if (isCaller && peerConnectionRef.current) {
@@ -789,12 +794,16 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           terminationInitiator = true;
           endCall();
         } else if (signalMessage.signal.type === 'rejectCall' && isCaller) {
-          setIsWaiting(false);
-          ringtoneRef.current.pause();
-          ringtoneRef.current.currentTime = 0;
-          notify(`${recipientName} rejected the call.`, { toastId: `reject-call-${roomId}` });
-          terminationInitiator = true;
-          endCall();
+          // NEW: Обработка rejectCall
+          if (!hasNotifiedRejectCall.current) {
+            hasNotifiedRejectCall.current = true;
+            setIsWaiting(false);
+            ringtoneRef.current.pause();
+            ringtoneRef.current.currentTime = 0;
+            notify(`${recipientName} rejected the call.`, { toastId: `reject-call-${roomId}` });
+            terminationInitiator = true;
+            endCall();
+          }
         } else if (signalMessage.signal.type === 'acceptCall' && isCaller) {
           if (!hasNotifiedAcceptCall.current) {
             hasNotifiedAcceptCall.current = true;
@@ -868,6 +877,52 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
 
       stompClient.current.deactivate();
     }
+
+    // NEW: Добавляем функцию saveCall для сохранения звонка
+    const saveCall = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+          console.error('No authToken found in localStorage');
+          notify('Authentication error. Please log in again.', { toastId: 'auth-error' });
+          return;
+        }
+
+        let status = 'completed';
+        if (hasNotifiedRejectCall.current) {
+          status = 'rejected';
+        } else if (!isCaller && !hasNotifiedAcceptCall.current && !hasNotifiedRejectCall.current) {
+          status = 'missed';
+        }
+
+        await axios.post(
+          `https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`,
+          {
+            caller: isCaller ? currentUserId : incomingCall?.callerId,
+            receiver: isCaller ? incomingCall?.recipientId : currentUserId,
+            direction: isCaller ? 'outgoing' : 'incoming',
+            status: status,
+            callType: 'voice_with_translate',
+            timestamp: new Date().toISOString(),
+          },
+          {
+            headers: { Authorization: `Bearer ${authToken}` },
+          }
+        );
+        console.log(`Voice call with translate saved to server with status: ${status}`);
+      } catch (error) {
+        console.error('Error saving voice call with translate:', error);
+        notify('Failed to save call', { toastId: 'save-call-error' });
+      }
+    };
+
+    // NEW: Вызываем saveCall перед навигацией
+    saveCall();
+
+    // NEW: Сброс hasNotifiedRejectCall
+    hasNotifiedAcceptCall.current = false;
+    hasNotifiedEndCall.current = false;
+    hasNotifiedRejectCall.current = false; // NEW: Сбрасываем флаг rejectCall
 
     navigate('/');
   };

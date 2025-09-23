@@ -21,6 +21,130 @@
   margin-bottom: 20px;
 }
 
+.calls-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow-y: auto;
+  max-height: 60vh;
+  margin-bottom: 80px; /* Space for floating button */
+}
+
+.call-item {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background-color: #F1F8E9;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  border: 1px solid #A5D6A7;
+  transition: transform 0.2s;
+}
+
+.call-item:hover {
+  transform: scale(1.02);
+}
+
+.call-participants {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+}
+
+.call-participant {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 80px;
+}
+
+.call-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #757575;
+  overflow: hidden;
+  border: 2px solid #81C784;
+  margin-bottom: 5px;
+}
+
+.call-name {
+  font-size: 14px;
+  color: #424242;
+  text-align: center;
+  word-wrap: break-word;
+}
+
+.call-direction {
+  margin: 0 15px;
+}
+
+.call-arrow {
+  font-size: 24px;
+}
+
+.call-arrow.outgoing {
+  color: #1976D2; /* Blue for outgoing */
+  transform: rotate(-45deg); /* Diagonal up-right */
+}
+
+.call-arrow.incoming {
+  color: #4CAF50; /* Green for incoming */
+  transform: rotate(225deg); /* Diagonal down-left */
+}
+
+.call-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 15px;
+}
+
+.call-status {
+  font-size: 16px;
+  font-weight: 500;
+  color: #2E7D32;
+}
+
+.call-type {
+  font-size: 14px;
+  color: #757575;
+}
+
+.call-timestamp {
+  font-size: 12px;
+  color: #757575;
+  margin-top: 5px;
+}
+
+.call-redial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #1976D2;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.call-redial:hover {
+  background-color: #1565C0;
+}
+
+.call-phone-icon {
+  color: white;
+  font-size: 20px;
+}
+
 .calls-group-call-button {
   position: fixed;
   bottom: 20px;

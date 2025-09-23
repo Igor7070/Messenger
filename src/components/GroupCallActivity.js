@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
+import axios from 'axios'; // NEW: Добавляем импорт axios
 import '../styles/GroupCallActivity.css';
 
 Chart.register(...registerables);
@@ -1250,7 +1251,6 @@ const GroupCallActivity = () => {
     });
     remoteAudioRefs.current.clear();
 
-    // [ДОБАВЛЕНО]: Очистка видеоэлементов
     if (localVideoStreamRef.current) {
       localVideoStreamRef.current.getTracks().forEach((track) => track.stop());
       localVideoStreamRef.current = null;
@@ -1271,6 +1271,45 @@ const GroupCallActivity = () => {
       hasNotifiedEndCall.current = true;
       toast.info('Group call ended');
     }
+
+    // NEW: Добавляем функцию saveCall для сохранения звонка
+    const saveCall = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+          console.error('No authToken found in localStorage');
+          toast.error('Authentication error. Please log in again.', { toastId: 'auth-error' });
+          return;
+        }
+
+        let status = 'completed';
+        if (readyUsers.size === 0 && !isCallStarted) {
+          status = isInitiator ? 'rejected' : 'missed';
+        }
+
+        await axios.post(
+          `https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`,
+          {
+            caller: initiator.id,
+            participants: callParticipants.map((u) => String(u.id)),
+            direction: isInitiator ? 'outgoing' : 'incoming',
+            status: status,
+            callType: 'group',
+            timestamp: new Date().toISOString(),
+          },
+          {
+            headers: { Authorization: `Bearer ${authToken}` },
+          }
+        );
+        console.log(`Group call saved to server with status: ${status}`);
+      } catch (error) {
+        console.error('Error saving group call:', error);
+        toast.error('Failed to save call', { toastId: 'save-call-error' });
+      }
+    };
+
+    // NEW: Вызываем saveCall перед навигацией
+    saveCall();
 
     navigate('/');
   };
