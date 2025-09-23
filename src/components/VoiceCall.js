@@ -32,6 +32,7 @@ const VoiceCall = ({ recipientId }) => {
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
   const hasNotifiedEndCall = useRef(false);
   const hasNotifiedAcceptCall = useRef(false); // Новый флаг для acceptCall
+  const hasNotifiedRejectCall = useRef(false); // NEW: Добавляем реф для rejectCall
 
   useEffect(() => {
     if (isCaller) {
@@ -350,6 +351,9 @@ const VoiceCall = ({ recipientId }) => {
             await peerConnectionRef.current.setLocalDescription(answer);
             console.log('Sending answer:', answer);
             sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
+            // NEW: Устанавливаем hasNotifiedAcceptCall при получении offer
+            hasNotifiedAcceptCall.current = true;
+            notify(`${recipientName} accepted the call.`, { toastId: `accept-call-${roomId}` });
           } else {
             console.log('peerConnectionRef.current is not initialized or signal received by caller.');
           }
@@ -409,12 +413,15 @@ const VoiceCall = ({ recipientId }) => {
           endCall();
         } else if (signalMessage.signal.type === 'rejectCall' && isCaller) {
             console.log('Received rejectCall signal.');
-            setIsWaiting(false);
-            ringtoneRef.current.pause();
-            ringtoneRef.current.currentTime = 0;
-            notify(`${recipientName} rejected the call.`, { toastId: `reject-call-${roomId}` });
-            terminationInitiator = true;
-            endCall();
+            if (!hasNotifiedRejectCall.current) {
+              hasNotifiedRejectCall.current = true; // NEW: Устанавливаем флаг rejectCall
+              setIsWaiting(false);
+              ringtoneRef.current.pause();
+              ringtoneRef.current.currentTime = 0;
+              notify(`${recipientName} rejected the call.`, { toastId: `reject-call-${roomId}` });
+              terminationInitiator = true;
+              endCall();
+            }
         } else if (signalMessage.signal.type === 'acceptCall' && isCaller) {
             console.log('Received acceptCall signal.');
             if (!hasNotifiedAcceptCall.current) {
@@ -538,6 +545,11 @@ const VoiceCall = ({ recipientId }) => {
 
     // NEW: Вызываем saveCall перед navigate
     saveCall();
+
+    // NEW: Сброс флагов
+    hasNotifiedAcceptCall.current = false;
+    hasNotifiedEndCall.current = false;
+    hasNotifiedRejectCall.current = false; // NEW: Сбрасываем флаг rejectCall
 
     navigate('/');
   };
