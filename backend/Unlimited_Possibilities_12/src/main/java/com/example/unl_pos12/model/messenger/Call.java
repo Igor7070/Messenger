@@ -39,6 +39,9 @@ public class Call {
     @Column(nullable = false)
     private LocalDateTime timestamp; // Время начала звонка
 
+    @Column(name = "room_id") // NEW: Поле для хранения roomId
+    private String roomId;
+
     // Getters and Setters
     public Long getId() {
         return id;
@@ -110,5 +113,13 @@ public class Call {
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public String getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(String roomId) {
+        this.roomId = roomId;
     }
 }

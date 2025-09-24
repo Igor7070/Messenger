@@ -8,6 +8,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -21,10 +22,23 @@ public class CallService {
         this.userRepository = userRepository;
     }
 
+    // NEW: Проверка существования звонка
+    public boolean existsByUserIdAndRoomIdAndTimestamp(Long userId, String roomId, LocalDateTime timestamp) {
+        return callRepository.existsByUserIdAndRoomIdAndTimestampBetween(
+                userId, roomId, timestamp.minusSeconds(30), timestamp.plusSeconds(30));
+    }
+
     // Создать звонок
     public Call createCall(Call call, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+
+        // NEW: Проверка уникальности звонка
+        if (call.getRoomId() != null && existsByUserIdAndRoomIdAndTimestamp(userId, call.getRoomId(), call.getTimestamp())) {
+            System.out.println("Call already exists for userId: " + userId + ", roomId: " + call.getRoomId());
+            return null; // или выбросить исключение, в зависимости от требований
+        }
+
         call.setUser(user);
         return callRepository.save(call);
     }
