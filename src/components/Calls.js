@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
 import { toast } from 'react-toastify';
-import { FaUsers, FaPlus, FaArrowUp, FaArrowDown, FaPhone } from 'react-icons/fa';
+import { FaUsers, FaPlus, FaArrowUp, FaArrowDown, FaPhone, FaTimes } from 'react-icons/fa';
 import '../styles/Calls.css';
 
 const Calls = () => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [deleteModalIsOpen, setDeleteModalIsOpen] = useState(false); // NEW: Для модального окна удаления
+  const [callToDelete, setCallToDelete] = useState(null); // NEW: Для хранения ID вызова, который нужно удалить
   const [users, setUsers] = useState([]);
   const [calls, setCalls] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -92,6 +94,48 @@ const Calls = () => {
     console.log('Redialing call:', call);
   };
 
+  // NEW: Функция для открытия модального окна удаления
+  const handleDeleteCallClick = (callId) => {
+    setCallToDelete(callId);
+    setDeleteModalIsOpen(true);
+  };
+
+  // NEW: Функция для подтверждения удаления
+  const handleConfirmDelete = async () => {
+    if (!callToDelete) return;
+
+    try {
+      const response = await fetch(
+        `https://unlimitedpossibilities12.org/api/calls/${callToDelete}?userId=${currentUserId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        setCalls(calls.filter((call) => call.id !== callToDelete));
+        toast.success('Call deleted successfully');
+      } else {
+        toast.error('Failed to delete call');
+      }
+    } catch (error) {
+      console.error('Error deleting call:', error);
+      toast.error('Error deleting call');
+    }
+
+    setDeleteModalIsOpen(false);
+    setCallToDelete(null);
+  };
+
+  // NEW: Функция для отмены удаления
+  const handleCancelDelete = () => {
+    setDeleteModalIsOpen(false);
+    setCallToDelete(null);
+  };
+
   const getUserById = (id) => users.find((user) => user.id === id) || { username: 'Unknown', avatar: null };
 
   const formatTimestamp = (timestamp) => {
@@ -128,6 +172,10 @@ const Calls = () => {
 
           return (
             <div key={call.id} className="call-item">
+              {/* NEW: Кнопка удаления */}
+              <div className="call-delete" onClick={() => handleDeleteCallClick(call.id)}>
+                <FaTimes className="call-delete-icon" />
+              </div>
               <div className="call-participants">
                 {isGroup ? (
                   participants.map((user) => (
@@ -231,6 +279,24 @@ const Calls = () => {
         <button onClick={() => setModalIsOpen(false)} className="calls-modal-close-button">
           Close
         </button>
+      </Modal>
+
+      {/* NEW: Модальное окно для подтверждения удаления */}
+      <Modal
+        isOpen={deleteModalIsOpen}
+        onRequestClose={handleCancelDelete}
+        className="calls-delete-modal"
+        overlayClassName="calls-delete-modal-overlay"
+      >
+        <h2 className="calls-modal-title">Are you sure you want to delete this call?</h2>
+        <div className="calls-delete-modal-buttons">
+          <button onClick={handleCancelDelete} className="calls-modal-cancel-button">
+            Cancel
+          </button>
+          <button onClick={handleConfirmDelete} className="calls-modal-confirm-button">
+            Ok
+          </button>
+        </div>
       </Modal>
     </div>
   );
