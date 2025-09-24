@@ -29,6 +29,7 @@ const VideoCall = ({ recipientId }) => {
   const hasNotifiedEndCall = useRef(false); // Флаг для предотвращения дублирования тостов в endCall
   const hasNotifiedAcceptCall = useRef(false); // Флаг для предотвращения дублирования тостов acceptCall
   const hasNotifiedRejectCall = useRef(false); // Флаг для предотвращения дублирования тостов rejectCall
+  const hasSavedCall = useRef(false); // NEW: Флаг для предотвращения двойного сохранения звонка
 
   useEffect(() => {
     if (isCaller) {
@@ -342,6 +343,9 @@ const VideoCall = ({ recipientId }) => {
           await peerConnectionRef.current.setLocalDescription(answer);
           console.log('Sending answer SDP:', answer.sdp);
           sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
+          // NEW: Устанавливаем hasNotifiedAcceptCall для получателя, так как обработка offer означает принятие звонка
+          hasNotifiedAcceptCall.current = true;
+          notify(`${callerName} call accepted.`, { toastId: `accept-call-${roomId}` });
         } else {
           console.log('peerConnectionRef.current is not initialized or signal received by caller.');
         }
@@ -438,6 +442,12 @@ const VideoCall = ({ recipientId }) => {
   const endCall = () => {
     console.log('Ending video call...');
 
+    // NEW: Проверяем, был ли звонок уже сохранён, чтобы избежать дублирования
+    if (hasSavedCall.current) {
+      console.log('Call already saved, skipping endCall');
+      return;
+    }
+
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
@@ -508,6 +518,8 @@ const VideoCall = ({ recipientId }) => {
           }
         );
         console.log(`Video call saved to server with status: ${status}`);
+        // NEW: Устанавливаем флаг, чтобы отметить, что звонок сохранён
+        hasSavedCall.current = true;
       } catch (error) {
         console.error('Error saving video call:', error);
         notify('Failed to save call', { toastId: 'save-call-error' });
