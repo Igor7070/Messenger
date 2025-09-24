@@ -456,7 +456,7 @@ const VoiceCall = ({ recipientId }) => {
   };
 
   const endCall = () => {
-    console.log('Ending call...');
+    console.log('endCall called'); // NEW: Лог для отладки вызовов endCall
 
     // NEW: Проверяем, был ли звонок уже сохранён, чтобы избежать дублирования
     if (hasSavedCall.current) {
@@ -514,6 +514,7 @@ const VoiceCall = ({ recipientId }) => {
 
     // NEW: Добавляем функцию saveCall для сохранения звонка
     const saveCall = async () => {
+      console.log('saveCall called with hasNotifiedAcceptCall:', hasNotifiedAcceptCall.current); // NEW: Лог для отладки
       try {
         let status = 'completed';
         if (hasNotifiedRejectCall.current) {
@@ -542,10 +543,10 @@ const VoiceCall = ({ recipientId }) => {
       }
     };
 
-    // NEW: Вызываем saveCall перед navigate
+    // NEW: Вызываем saveCall перед сбросом флагов и навигацией
     saveCall();
 
-    // NEW: Сброс флагов
+    // NEW: Сброс флагов только после saveCall
     hasNotifiedAcceptCall.current = false;
     hasNotifiedEndCall.current = false;
     hasNotifiedRejectCall.current = false;
