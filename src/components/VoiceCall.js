@@ -33,6 +33,7 @@ const VoiceCall = ({ recipientId }) => {
   const hasNotifiedEndCall = useRef(false);
   const hasNotifiedAcceptCall = useRef(false); // Новый флаг для acceptCall
   const hasNotifiedRejectCall = useRef(false); // NEW: Добавляем реф для rejectCall
+  const hasSavedCall = useRef(false); // NEW: Флаг для предотвращения двойного сохранения звонка
 
   useEffect(() => {
     if (isCaller) {
@@ -457,6 +458,12 @@ const VoiceCall = ({ recipientId }) => {
   const endCall = () => {
     console.log('Ending call...');
 
+    // NEW: Проверяем, был ли звонок уже сохранён, чтобы избежать дублирования
+    if (hasSavedCall.current) {
+      console.log('Call already saved, skipping endCall');
+      return;
+    }
+
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
@@ -527,6 +534,8 @@ const VoiceCall = ({ recipientId }) => {
           }
         );
         console.log(`Voice call saved to server with status: ${status}`);
+        // NEW: Устанавливаем флаг, чтобы отметить, что звонок сохранён
+        hasSavedCall.current = true;
       } catch (error) {
         console.error('Error saving voice call:', error);
         notify('Failed to save call', { toastId: 'save-call-error' });
