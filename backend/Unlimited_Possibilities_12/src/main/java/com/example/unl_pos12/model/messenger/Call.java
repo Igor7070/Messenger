@@ -15,7 +15,7 @@ public class Call {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private User user; // Пользователь, связанный со звонком
+    private User user; // Пользователь, связанный со звонком...
 
     @Column(nullable = false)
     private String caller; // Номер или ID звонящего
