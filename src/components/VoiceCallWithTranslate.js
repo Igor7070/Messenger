@@ -35,6 +35,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const hasNotifiedEndCall = useRef(false);
   const hasNotifiedAcceptCall = useRef(false);
   const hasNotifiedRejectCall = useRef(false); // NEW: Добавляем реф для rejectCall
+  const hasSavedCall = useRef(false); // NEW: Флаг для предотвращения двойного сохранения звонка
   const transcriptionRef = useRef(null);
   const friendTranscriptionRef = useRef(null);
   const ttsAudioRef = useRef(null); // [ДОБАВЛЕНО] Реф для TTS-аудио
@@ -832,11 +833,18 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   };
 
   const endCall = () => {
-    console.log('Ending call...');
+    console.log('endCall called'); // NEW: Лог для отладки вызовов endCall
+
+    // NEW: Проверяем, был ли звонок уже сохранён, чтобы избежать дублирования
+    if (hasSavedCall.current) {
+      console.log('Call already saved, skipping endCall');
+      return;
+    }
 
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
+      console.log('Peer connection closed.');
     }
 
     if (localAudioRef.current && localAudioRef.current.srcObject) {
@@ -847,6 +855,9 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       remoteAudioRef.current.srcObject.getTracks().forEach((track) => track.stop());
       remoteAudioRef.current.srcObject = null;
     }
+
+    // NEW: Останавливаем захват аудио для транскрипции
+    stopAudioCapture();
 
     if (isCaller) {
       setIsWaiting(false);
@@ -862,12 +873,14 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         });
 
         if (isCaller && incomingCall?.recipientId) {
+          console.log('incomingCall:', incomingCall);
           const endCallMessage = {
             type: 'endCall',
             roomId,
             callerId: currentUserId,
             recipientId: incomingCall.recipientId,
           };
+          console.log('Sending endCall to /app/call/', incomingCall.recipientId, ':', endCallMessage);
           stompClient.current.publish({
             destination: `/app/call/${incomingCall.recipientId}`,
             body: JSON.stringify(endCallMessage),
@@ -876,10 +889,12 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       }
 
       stompClient.current.deactivate();
+      console.log('WebSocket connection deactivated in endCall.');
     }
 
     // NEW: Добавляем функцию saveCall для сохранения звонка
     const saveCall = async () => {
+      console.log('saveCall called with hasNotifiedAcceptCall:', hasNotifiedAcceptCall.current); // NEW: Лог для отладки
       try {
         let status = 'completed';
         if (hasNotifiedRejectCall.current) {
@@ -900,16 +915,18 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           }
         );
         console.log(`Voice call with translate saved to server with status: ${status}`);
+        // NEW: Устанавливаем флаг, чтобы отметить, что звонок сохранён
+        hasSavedCall.current = true;
       } catch (error) {
         console.error('Error saving voice call with translate:', error);
         notify('Failed to save call', { toastId: 'save-call-error' });
       }
     };
 
-    // NEW: Вызываем saveCall перед навигацией
+    // NEW: Вызываем saveCall перед сбросом флагов и навигацией
     saveCall();
 
-    // NEW: Сброс флагов
+    // NEW: Сброс флагов после saveCall
     hasNotifiedAcceptCall.current = false;
     hasNotifiedEndCall.current = false;
     hasNotifiedRejectCall.current = false;
