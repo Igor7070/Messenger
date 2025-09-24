@@ -149,13 +149,13 @@
 /* NEW: Стили для кнопки удаления */
 .call-delete {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 5px; 
+  right: 5px; 
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 24px; 
+  height: 24px; 
   background-color: #e57373;
   border-radius: 50%;
   cursor: pointer;
@@ -168,7 +168,7 @@
 
 .call-delete-icon {
   color: white;
-  font-size: 16px;
+  font-size: 14px; 
 }
 
 .calls-group-call-button {
