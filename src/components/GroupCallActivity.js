@@ -36,6 +36,7 @@ const GroupCallActivity = () => {
   const answerTimeouts = useRef(new Map()); // Таймауты для ожидания answer
   let isMounted = true;
   const offerReceived = useRef(new Map()); // Флаг для каждого пользователя
+  const hasSavedCall = useRef(false); // NEW: Флаг для предотвращения двойного сохранения звонка
 
   const memoizedParticipants = useMemo(() => participants, [JSON.stringify(participants)]);
   const hasProcessedInvite = useRef(new Set());
@@ -1198,14 +1199,19 @@ const GroupCallActivity = () => {
   };
 
   const endCall = () => {
-    if (isCallEnded) {
-      console.log('Call already ended, skipping endCall');
+    console.log('endCall called'); // NEW: Лог для отладки вызовов endCall
+
+    // NEW: Проверяем, был ли звонок уже завершён или сохранён
+    if (isCallEnded || hasSavedCall.current) {
+      console.log('Call already ended or saved, skipping endCall');
       return;
     }
+
     setIsCallEnded(true);
     setIsCallStarted(false);
     setIsWaiting(false);
 
+    // NEW: Отправляем сигнал endCall только если звонок ещё не завершён
     if (!hasNotifiedEndCall.current) {
       callParticipants
         .filter((u) => u.id !== Number(currentUserId))
@@ -1224,56 +1230,67 @@ const GroupCallActivity = () => {
             console.log(`Sent endCall to user ${user.id}`);
           }
         });
+      hasNotifiedEndCall.current = true;
+      toast.info('Group call ended');
     }
 
+    // NEW: Отписываемся от комнаты
     if (unsubscribeRoomRef.current) {
       unsubscribeRoomRef.current();
       console.log(`Unsubscribed from room ${roomId.current} in endCall`);
       unsubscribeRoomRef.current = null;
     }
 
-    peerConnections.current.forEach((pc) => {
+    // NEW: Закрываем все peerConnections
+    peerConnections.current.forEach((pc, userId) => {
       pc.close();
+      console.log(`Closed peerConnection for user ${userId}`);
     });
     peerConnections.current.clear();
 
+    // NEW: Останавливаем локальный аудиопоток
     if (localAudioRef.current && localAudioRef.current.srcObject) {
       localAudioRef.current.srcObject.getTracks().forEach((track) => track.stop());
       localAudioRef.current.srcObject = null;
+      console.log('Stopped local audio stream');
     }
 
-    remoteAudioRefs.current.forEach((audio) => {
+    // NEW: Останавливаем удалённые аудиопотоки
+    remoteAudioRefs.current.forEach((audio, userId) => {
       if (audio.srcObject) {
         audio.srcObject.getTracks().forEach((track) => track.stop());
         audio.srcObject = null;
       }
       audio.remove();
+      console.log(`Removed remote audio for user ${userId}`);
     });
     remoteAudioRefs.current.clear();
 
+    // NEW: Останавливаем локальный видеопоток
     if (localVideoStreamRef.current) {
       localVideoStreamRef.current.getTracks().forEach((track) => track.stop());
       localVideoStreamRef.current = null;
+      console.log('Stopped local video stream');
     }
-    videoRefs.current.forEach((video) => {
+
+    // NEW: Останавливаем удалённые видеопотоки
+    videoRefs.current.forEach((video, userId) => {
       if (video.srcObject) {
         video.srcObject.getTracks().forEach((track) => track.stop());
         video.srcObject = null;
       }
       video.remove();
+      console.log(`Removed remote video for user ${userId}`);
     });
     videoRefs.current.clear();
 
+    // NEW: Останавливаем рингтон
     ringtoneRef.current.pause();
     ringtoneRef.current.currentTime = 0;
 
-    if (!hasNotifiedEndCall.current) {
-      hasNotifiedEndCall.current = true;
-      toast.info('Group call ended');
-    }
-
-    // NEW: Добавляем функцию saveCall для сохранения звонка
+    // NEW: Функция сохранения звонка
     const saveCall = async () => {
+      console.log('saveCall called with readyUsers:', Array.from(readyUsers), 'isCallStarted:', isCallStarted); // NEW: Лог для отладки
       try {
         let status = 'completed';
         if (readyUsers.size === 0 && !isCallStarted) {
@@ -1287,11 +1304,13 @@ const GroupCallActivity = () => {
             participants: callParticipants.map((u) => String(u.id)),
             direction: isInitiator ? 'outgoing' : 'incoming',
             status: status,
-            callType: 'group',
+            callType: 'group', // Используем только 'group'
             timestamp: new Date().toISOString(),
           }
         );
         console.log(`Group call saved to server with status: ${status}`);
+        // NEW: Устанавливаем флаг, чтобы отметить, что звонок сохранён
+        hasSavedCall.current = true;
       } catch (error) {
         console.error('Error saving group call:', error);
         toast.error('Failed to save call', { toastId: 'save-call-error' });
