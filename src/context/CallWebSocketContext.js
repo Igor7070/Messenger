@@ -461,6 +461,48 @@ export const CallWebSocketProvider = ({ children }) => {
 
     audioRef.current.pause();
     audioRef.current.currentTime = 0;
+
+    // NEW: Сохраняем отклонённый звонок
+    const saveRejectedCall = async () => {
+      try {
+        const callData = {
+          caller: incomingCall.callerId || incomingCall.initiatorId,
+          direction: 'incoming',
+          status: 'rejected',
+          callType: incomingCall.type === 'video' ? 'video' :
+                    incomingCall.type === 'translate' ? 'voice_with_translate' :
+                    incomingCall.type === 'group' ? 'group' :
+                    'voice',
+          timestamp: new Date().toISOString(),
+        };
+
+        // Для группового звонка добавляем участников
+        if (incomingCall.type === 'group') {
+          callData.participants = [
+            incomingCall.initiatorId,
+            ...incomingCall.recipientIds.map(id => String(id)),
+          ];
+        } else {
+          callData.receiver = currentUserId;
+        }
+
+        await fetch(`https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(callData),
+        });
+        console.log('CallWebSocketContext: Rejected call saved to server with callType:', callData.callType);
+      } catch (error) {
+        console.error('CallWebSocketContext: Error saving rejected call:', error);
+        toast.error('Failed to save rejected call', { toastId: 'save-rejected-call-error' });
+      }
+    };
+
+    // NEW: Вызываем сохранение перед отправкой сигнала
+    saveRejectedCall();
+
     sendSignal(
       { from: currentUserId, signal: { type: 'rejectCall' } },
       callRequestRef.current.roomId
