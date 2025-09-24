@@ -15,7 +15,6 @@ export const CallWebSocketProvider = ({ children }) => {
   const audioRef = useRef(new Audio('https://igor7070.github.io/Messenger/melodiya_kovboy.mp3'));
   const subscriptionRef = useRef(null); // Для подписки на /topic/room/{roomId}
   const signalQueue = useRef([]); // Очередь сигналов для групповых звонков
-  const hasSavedCall = useRef(false); // NEW: Флаг для предотвращения двойного сохранения звонка
   const groupSignalHandler = useRef(null); // Для передачи сигналов в GroupCallActivity
   audioRef.current.loop = true;
   const { userInteracted } = useUserInteraction();
@@ -226,48 +225,6 @@ export const CallWebSocketProvider = ({ children }) => {
           callType === 'translate' ? 'The translate call was cancelled.' :
           callType === 'group' ? 'The group call was cancelled.' :
           'The voice call was cancelled.';
-
-        // NEW: Сохраняем пропущенный звонок, если он не был принят или отклонён
-        if (!hasSavedCall.current) {
-          const saveMissedCall = async () => {
-            try {
-              const callData = {
-                caller: incomingCall?.callerId || incomingCall?.initiatorId || callRequestRef.current?.callerId,
-                direction: 'incoming',
-                status: 'missed',
-                callType: callType === 'video' ? 'video' :
-                          callType === 'translate' ? 'voice_with_translate' :
-                          callType === 'group' ? 'group' :
-                          'voice',
-                timestamp: new Date().toISOString(),
-              };
-
-              if (callType === 'group') {
-                callData.participants = [
-                  incomingCall?.initiatorId || callRequestRef.current?.initiatorId,
-                  ...(incomingCall?.recipientIds || callRequestRef.current?.recipientIds || []).map(id => String(id)),
-                ];
-              } else {
-                callData.receiver = currentUserId;
-              }
-
-              await fetch(`https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(callData),
-              });
-              console.log('CallWebSocketContext: Missed call saved to server with callType:', callData.callType);
-              hasSavedCall.current = true; // NEW: Устанавливаем флаг
-            } catch (error) {
-              console.error('CallWebSocketContext: Error saving missed call:', error);
-              toast.error('Failed to save missed call', { toastId: 'save-missed-call-error' });
-            }
-          };
-          saveMissedCall();
-        }
-
         setIncomingCallWithLog(null);
         callRequestRef.current = null;
         audioRef.current.pause();
@@ -290,8 +247,6 @@ export const CallWebSocketProvider = ({ children }) => {
       }
     } else if (callRequest.type === 'voice' || callRequest.type === 'video' || callRequest.type === 'translate' || callRequest.type === 'group') {
       console.log('CallWebSocketContext: Получен запрос на звонок:', callRequest);
-      // NEW: Сбрасываем флаг при новом входящем звонке
-      hasSavedCall.current = false;
       handleIncomingCall(callRequest);
     } else {
       console.log('CallWebSocketContext: Получено сообщение с неизвестным типом:', callRequest);
@@ -539,7 +494,6 @@ export const CallWebSocketProvider = ({ children }) => {
           body: JSON.stringify(callData),
         });
         console.log('CallWebSocketContext: Rejected call saved to server with callType:', callData.callType);
-        hasSavedCall.current = true; // NEW: Устанавливаем флаг
       } catch (error) {
         console.error('CallWebSocketContext: Error saving rejected call:', error);
         toast.error('Failed to save rejected call', { toastId: 'save-rejected-call-error' });
