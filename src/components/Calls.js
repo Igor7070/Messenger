@@ -4,6 +4,8 @@ import Modal from 'react-modal';
 import { toast } from 'react-toastify';
 import { FaUsers, FaPlus, FaArrowUp, FaArrowDown, FaPhone, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
+import { useCallWebSocket } from '../context/CallWebSocketContext';
+import IncomingCallNotification from './IncomingCallNotification';
 import '../styles/Calls.css';
 
 const Calls = () => {
@@ -20,6 +22,8 @@ const Calls = () => {
   const [selectedCallType, setSelectedCallType] = useState(null);
   const [redialCall, setRedialCall] = useState(null);
   const navigate = useNavigate();
+
+  const { incomingCall, acceptCall, rejectCall } = useCallWebSocket();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -459,6 +463,16 @@ const Calls = () => {
               </button>
           </div>
       </Modal>
+      {incomingCall && (
+          <IncomingCallNotification
+              callerId={incomingCall.callerId}
+              callerName={incomingCall.callerName || 'Unknown'}
+              avatar={incomingCall.avatar}
+              callType={incomingCall.type}
+              onAccept={() => acceptCall(navigate)}
+              onReject={rejectCall}
+          />
+      )}
     </div>
   );
 };
