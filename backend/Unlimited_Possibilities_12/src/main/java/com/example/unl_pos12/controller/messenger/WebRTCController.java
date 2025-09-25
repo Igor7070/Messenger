@@ -92,13 +92,9 @@ public class WebRTCController {
             }
         } else if ("endCall".equals(signalType)) {
             pendingCalls.forEach((k, info) -> {
-                if (k.startsWith(roomId + "-") && !info.accepted) {
+                if (k.startsWith(roomId + "-") && !info.responded && !info.accepted) {
                     String recipientId = k.split("-")[1];
-                    // Пропускаем инициатора звонка
-                    if (!recipientId.equals(info.callerId)) {
-                        saveMissedCall(info, recipientId);
-                        System.out.println("Missed call saved for userId: " + recipientId + " due to endCall before timeout");
-                    }
+                    saveMissedCall(info, recipientId);
                 }
             });
             pendingCalls.entrySet().removeIf(entry -> entry.getKey().startsWith(roomId + "-"));
