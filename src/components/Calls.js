@@ -117,7 +117,7 @@ const Calls = () => {
                 },
             });
             toast.success(`Starting group call...`);
-        } else {
+        } else if (['voice', 'video', 'translate'].includes(call.callType)) {
             const recipientId = call.direction === 'outgoing' ? Number(call.receiver) : Number(call.caller);
             const recipient = getUserById(recipientId);
             const roomId = `room-${currentUserId}-${recipientId}`;
@@ -147,11 +147,71 @@ const Calls = () => {
             } else {
                 toast.error(`Failed to initiate ${call.callType} call`);
             }
+        } else {
+            // Открываем модальное окно для выбора типа звонка
+            setRedialCall(call);
+            setCallTypeModalIsOpen(true);
         }
     } catch (error) {
         console.error(`Error initiating ${call.callType} call:`, error);
         toast.error(`Error initiating ${call.callType} call`);
     }
+  };
+
+  // NEW: Обработчик выбора типа звонка
+  const handleCallTypeSelection = (type) => {
+      setSelectedCallType(type);
+  };
+
+  // NEW: Обработчик подтверждения выбора типа звонка
+  const handleConfirmCallType = async () => {
+      if (!selectedCallType || !redialCall) return;
+
+      try {
+          const recipientId = redialCall.direction === 'outgoing' ? Number(redialCall.receiver) : Number(redialCall.caller);
+          const recipient = getUserById(recipientId);
+          const roomId = `room-${currentUserId}-${recipientId}`;
+          const callRequest = {
+              callerId: currentUserId,
+              recipientId,
+              roomId,
+              callerName: currentUsername || 'Unknown',
+              type: selectedCallType,
+          };
+
+          const response = await axios.post('https://unlimitedpossibilities12.org/api/webrtc/call', callRequest);
+          if (response.status === 200) {
+              const route = selectedCallType === 'voice' ? `/voice-call/${roomId}` : 
+                          selectedCallType === 'video' ? `/video-call/${roomId}` : 
+                          `/voice-call-translate/${roomId}`;
+              toast.success(`Calling ${recipient.username}...`);
+              navigate(route, {
+                  state: {
+                      incomingCall: callRequest,
+                      isCaller: true,
+                      currentUserId,
+                      callerName: currentUsername,
+                      recipientName: recipient.username,
+                  },
+              });
+          } else {
+              toast.error(`Failed to initiate ${selectedCallType} call`);
+          }
+      } catch (error) {
+          console.error(`Error initiating ${selectedCallType} call:`, error);
+          toast.error(`Error initiating ${selectedCallType} call`);
+      }
+
+      setCallTypeModalIsOpen(false);
+      setSelectedCallType(null);
+      setRedialCall(null);
+  };
+
+  // NEW: Обработчик отмены выбора типа звонка
+  const handleCancelCallType = () => {
+      setCallTypeModalIsOpen(false);
+      setSelectedCallType(null);
+      setRedialCall(null);
   };
 
   // NEW: Функция для открытия модального окна удаления
@@ -362,6 +422,39 @@ const Calls = () => {
             Ok
           </button>
         </div>
+      </Modal>
+      <Modal
+          isOpen={callTypeModalIsOpen}
+          onRequestClose={handleCancelCallType}
+          className="calls-delete-modal" // Используем тот же стиль, что для удаления
+          overlayClassName="calls-delete-modal-overlay"
+      >
+          <h2 className="calls-modal-title">Select call type</h2>
+          <div className="calls-call-type-options">
+              {['voice', 'video', 'translate'].map((type) => (
+                  <label key={type} className="calls-call-type-label">
+                      <input
+                          type="checkbox"
+                          checked={selectedCallType === type}
+                          onChange={() => handleCallTypeSelection(type)}
+                          className="calls-call-type-checkbox"
+                      />
+                      {type.charAt(0).toUpperCase() + type.slice(1)} Call
+                  </label>
+              ))}
+          </div>
+          <div className="calls-delete-modal-buttons">
+              <button onClick={handleCancelCallType} className="calls-modal-cancel-button">
+                  Cancel
+              </button>
+              <button
+                  onClick={handleConfirmCallType}
+                  className="calls-modal-confirm-button"
+                  disabled={!selectedCallType}
+              >
+                  Call
+              </button>
+          </div>
       </Modal>
     </div>
   );

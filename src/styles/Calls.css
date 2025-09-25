@@ -404,3 +404,23 @@
 .calls-modal-close-button:hover {
   background-color: #d32f2f;
 }
+
+.calls-call-type-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.calls-call-type-label {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  color: #424242;
+  font-family: 'Roboto', sans-serif;
+}
+
+.calls-call-type-checkbox {
+  margin-right: 10px;
+}
