@@ -20,19 +20,25 @@ const Calls = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch('https://unlimitedpossibilities12.org/api/users');
-        if (response.ok) {
-          const data = await response.json();
           const storedUserId = Number(localStorage.getItem('userId'));
-          setCurrentUserId(storedUserId);
-          setCurrentUsername(localStorage.getItem('username') || 'Unknown');
-          setUsers(data.filter((user) => user.id !== storedUserId));
-        } else {
-          toast.error('Failed to fetch users');
-        }
+          const [usersResponse, currentUserResponse] = await Promise.all([
+              fetch('https://unlimitedpossibilities12.org/api/users'),
+              fetch(`https://unlimitedpossibilities12.org/api/users/${storedUserId}`)
+          ]);
+
+          if (usersResponse.ok && currentUserResponse.ok) {
+              const usersData = await usersResponse.json();
+              const currentUserData = await currentUserResponse.json();
+              setCurrentUserId(storedUserId);
+              setCurrentUsername(currentUserData.username || localStorage.getItem('username') || 'Unknown');
+              localStorage.setItem('avatar', currentUserData.avatar || '');
+              setUsers(usersData.filter((user) => user.id !== storedUserId));
+          } else {
+              toast.error('Failed to fetch users');
+          }
       } catch (error) {
-        console.error('Error fetching users:', error);
-        toast.error('Error fetching users');
+          console.error('Error fetching users:', error);
+          toast.error('Error fetching users');
       }
     };
 
