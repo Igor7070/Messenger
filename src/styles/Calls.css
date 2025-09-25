@@ -27,6 +27,7 @@
   flex-direction: column;
   gap: 10px;
   overflow-y: auto;
+  overflow-x: hidden; /* NEW: Запрещаем горизонтальную прокрутку */
   max-height: 60vh;
   margin-bottom: 80px; /* Space for floating button */
 }
