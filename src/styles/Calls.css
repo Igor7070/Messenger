@@ -94,7 +94,7 @@
 
 .call-arrow.outgoing {
   color: #4CAF50; /* Green for outgoing */
-  transform: rotate(-45deg); /* Diagonal up-left */
+  transform: rotate(45deg); /* Diagonal up-left */
 }
 
 .call-arrow.incoming {
