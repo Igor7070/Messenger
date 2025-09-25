@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
 import { toast } from 'react-toastify';
 import { FaUsers, FaPlus, FaArrowUp, FaArrowDown, FaPhone, FaTimes } from 'react-icons/fa';
+import axios from 'axios';
 import '../styles/Calls.css';
 
 const Calls = () => {
@@ -96,9 +97,61 @@ const Calls = () => {
     setModalIsOpen(false);
   };
 
-  const handleRedial = (call) => {
-    toast.info(`Redialing ${call.callType} call...`);
-    console.log('Redialing call:', call);
+  const handleRedial = async (call) => {
+    try {
+        if (call.callType === 'group') {
+            const participants = call.participants
+                .map((id) => getUserById(Number(id)))
+                .filter((user) => user.id !== currentUserId)
+                .map((user) => ({ id: user.id, username: user.username }));
+            
+            if (participants.length === 0) {
+                toast.warn('No valid participants for group call');
+                return;
+            }
+
+            navigate('/group-call', {
+                state: {
+                    participants,
+                    initiator: { id: currentUserId, username: currentUsername },
+                },
+            });
+            toast.success(`Starting group call...`);
+        } else {
+            const recipientId = call.direction === 'outgoing' ? Number(call.receiver) : Number(call.caller);
+            const recipient = getUserById(recipientId);
+            const roomId = `room-${currentUserId}-${recipientId}`;
+            const callRequest = {
+                callerId: currentUserId,
+                recipientId,
+                roomId,
+                callerName: currentUsername || 'Unknown',
+                type: call.callType,
+            };
+
+            const response = await axios.post('https://unlimitedpossibilities12.org/api/webrtc/call', callRequest);
+            if (response.status === 200) {
+                const route = call.callType === 'voice' ? `/voice-call/${roomId}` : 
+                             call.callType === 'video' ? `/video-call/${roomId}` : 
+                             `/voice-call-translate/${roomId}`;
+                toast.success(`Calling ${recipient.username}...`);
+                navigate(route, {
+                    state: {
+                        incomingCall: callRequest,
+                        isCaller: true,
+                        currentUserId,
+                        callerName: currentUsername,
+                        recipientName: recipient.username,
+                    },
+                });
+            } else {
+                toast.error(`Failed to initiate ${call.callType} call`);
+            }
+        }
+    } catch (error) {
+        console.error(`Error initiating ${call.callType} call:`, error);
+        toast.error(`Error initiating ${call.callType} call`);
+    }
   };
 
   // NEW: Функция для открытия модального окна удаления
