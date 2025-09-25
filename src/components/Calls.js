@@ -129,7 +129,7 @@ const Calls = () => {
                 recipientId,
                 roomId,
                 callerName: currentUsername || 'Unknown',
-                type: call.callType,
+                type: call.callType === 'voice_with_translate' ? 'translate' : call.callType,
             };
 
             const response = await axios.post('https://unlimitedpossibilities12.org/api/webrtc/call', callRequest);
