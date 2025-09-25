@@ -136,7 +136,12 @@ const Calls = () => {
     setCallToDelete(null);
   };
 
-  const getUserById = (id) => users.find((user) => user.id === id) || { username: 'Unknown', avatar: null };
+  const getUserById = (id) => {
+      if (id === currentUserId) {
+          return { id: currentUserId, username: currentUsername, avatar: localStorage.getItem('avatar') || null };
+      }
+      return users.find((user) => user.id === id) || { username: 'Unknown', avatar: null };
+  };
 
   const formatTimestamp = (timestamp) => {
     try {
