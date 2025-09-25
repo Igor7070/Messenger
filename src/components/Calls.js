@@ -257,7 +257,7 @@ const Calls = () => {
     setCallToDelete(null);
   };
 
-  // NEW: Функция для отмены удаления
+  // NEW: Функция для отмены удаления...
   const handleCancelDelete = () => {
     setDeleteModalIsOpen(false);
     setCallToDelete(null);
