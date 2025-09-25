@@ -232,8 +232,6 @@ const VoiceCall = ({ recipientId }) => {
       };
 
       sendSignal({ from: currentUserId, signal: { type: 'ready', sdp: '' } });
-      // NEW: Устанавливаем флаг после успешной инициализации и отправки ответа
-      hasNotifiedAcceptCall.current = true;
     } catch (error) {
       console.error('Error accessing audio devices:', error);
       notify('Failed to access microphone.', { toastId: 'media-access-failed' });
@@ -355,6 +353,7 @@ const VoiceCall = ({ recipientId }) => {
             console.log('Sending answer:', answer);
             sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
             // NEW: Устанавливаем hasNotifiedAcceptCall при получении offer
+            hasNotifiedAcceptCall.current = true;
             notify(`${recipientName} accepted the call.`, { toastId: `accept-call-${roomId}` });
           } else {
             console.log('peerConnectionRef.current is not initialized or signal received by caller.');
