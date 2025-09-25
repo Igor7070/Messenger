@@ -1290,12 +1290,9 @@ const GroupCallActivity = () => {
 
     // NEW: Функция сохранения звонка
     const saveCall = async () => {
-      console.log('saveCall called with readyUsers:', Array.from(readyUsers), 'isCallStarted:', isCallStarted); // NEW: Лог для отладки
+      console.log('saveCall called with readyUsers:', Array.from(readyUsers), 'isCallStarted:', isCallStarted);
       try {
-        let status = 'completed';
-        if (readyUsers.size === 0 && !isCallStarted) {
-          status = isInitiator ? 'rejected' : 'missed';
-        }
+        let status = readyUsers.size === 0 && !isCallStarted && isInitiator ? 'rejected' : 'completed';
 
         await axios.post(
           `https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`,
@@ -1304,12 +1301,12 @@ const GroupCallActivity = () => {
             participants: callParticipants.map((u) => String(u.id)),
             direction: isInitiator ? 'outgoing' : 'incoming',
             status: status,
-            callType: 'group', // Используем только 'group'
+            callType: 'group',
             timestamp: new Date().toISOString(),
+            roomId: roomId.current, // NEW: Добавляем roomId
           }
         );
         console.log(`Group call saved to server with status: ${status}`);
-        // NEW: Устанавливаем флаг, чтобы отметить, что звонок сохранён
         hasSavedCall.current = true;
       } catch (error) {
         console.error('Error saving group call:', error);

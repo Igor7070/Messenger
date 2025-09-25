@@ -894,14 +894,9 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
 
     // NEW: Добавляем функцию saveCall для сохранения звонка
     const saveCall = async () => {
-      console.log('saveCall called with hasNotifiedAcceptCall:', hasNotifiedAcceptCall.current); // NEW: Лог для отладки
+      console.log('saveCall called with hasNotifiedAcceptCall:', hasNotifiedAcceptCall.current);
       try {
-        let status = 'completed';
-        if (hasNotifiedRejectCall.current) {
-          status = 'rejected';
-        } else if (!isCaller && !hasNotifiedAcceptCall.current && !hasNotifiedRejectCall.current) {
-          status = 'missed';
-        }
+        let status = hasNotifiedRejectCall.current ? 'rejected' : 'completed';
 
         await axios.post(
           `https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`,
@@ -912,10 +907,10 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
             status: status,
             callType: 'voice_with_translate',
             timestamp: new Date().toISOString(),
+            roomId: roomId, // NEW: Добавляем roomId
           }
         );
         console.log(`Voice call with translate saved to server with status: ${status}`);
-        // NEW: Устанавливаем флаг, чтобы отметить, что звонок сохранён
         hasSavedCall.current = true;
       } catch (error) {
         console.error('Error saving voice call with translate:', error);

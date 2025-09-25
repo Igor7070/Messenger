@@ -499,12 +499,7 @@ const VideoCall = ({ recipientId }) => {
     // NEW: Добавляем функцию saveCall для сохранения звонка
     const saveCall = async () => {
       try {
-        let status = 'completed';
-        if (hasNotifiedRejectCall.current) {
-          status = 'rejected';
-        } else if (!isCaller && !hasNotifiedAcceptCall.current && !hasNotifiedRejectCall.current) {
-          status = 'missed';
-        }
+        let status = hasNotifiedRejectCall.current ? 'rejected' : 'completed';
 
         await axios.post(
           `https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`,
@@ -515,10 +510,10 @@ const VideoCall = ({ recipientId }) => {
             status: status,
             callType: 'video',
             timestamp: new Date().toISOString(),
+            roomId: roomId, // NEW: Добавляем roomId
           }
         );
         console.log(`Video call saved to server with status: ${status}`);
-        // NEW: Устанавливаем флаг, чтобы отметить, что звонок сохранён
         hasSavedCall.current = true;
       } catch (error) {
         console.error('Error saving video call:', error);
