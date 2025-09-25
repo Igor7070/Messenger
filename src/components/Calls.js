@@ -16,6 +16,9 @@ const Calls = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [currentUsername, setCurrentUsername] = useState('');
+  const [callTypeModalIsOpen, setCallTypeModalIsOpen] = useState(false);
+  const [selectedCallType, setSelectedCallType] = useState(null);
+  const [redialCall, setRedialCall] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
