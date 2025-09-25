@@ -120,7 +120,7 @@ const Calls = () => {
                 },
             });
             toast.success(`Starting group call...`);
-        } else if (['voice', 'video', 'translate', 'Voice_with_translate'].includes(call.callType)) {
+        } else if (['voice', 'video', 'translate', 'voice_with_translate'].includes(call.callType)) {
             const recipientId = call.direction === 'outgoing' ? Number(call.receiver) : Number(call.caller);
             const recipient = getUserById(recipientId);
             const roomId = `room-${currentUserId}-${recipientId}`;
