@@ -281,7 +281,7 @@ public class WebRTCController {
             call.setStatus("missed");
             call.setCallType(callInfo.callType);
             call.setTimestamp(callInfo.timestamp);
-            call.setRoomId(callInfo.roomId); // NEW: Устанавливаем roomId
+            call.setRoomId(callInfo.roomId); // NEW: Устанавливаем roomId...
 
             if ("group".equals(callInfo.callType)) {
                 call.setParticipants(new ArrayList<>(List.of(callInfo.recipientIds)));
