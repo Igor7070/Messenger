@@ -93,13 +93,13 @@
 }
 
 .call-arrow.outgoing {
-  color: #1976D2; /* Blue for outgoing */
-  transform: rotate(-45deg); /* Diagonal up-right */
+  color: #4CAF50; /* Green for outgoing */
+  transform: rotate(-45deg); /* Diagonal up-left */
 }
 
 .call-arrow.incoming {
-  color: #4CAF50; /* Green for incoming */
-  transform: rotate(225deg); /* Diagonal down-left */
+  color: #1976D2; /* Blue for incoming */
+  transform: rotate(45deg); /* Diagonal up-right */
 }
 
 .call-details {
