@@ -91,13 +91,24 @@ public class WebRTCController {
                 }
             }
         } else if ("endCall".equals(signalType)) {
+            System.out.println("Processing endCall for roomId: " + roomId + ", pendingCalls: " + pendingCalls.keySet()); // NEW: Лог для отладки
             pendingCalls.forEach((k, info) -> {
-                if (k.startsWith(roomId + "-") && !info.responded && !info.accepted) {
+                if (k.startsWith(roomId + "-") && !info.accepted) {
                     String recipientId = k.split("-")[1];
-                    saveMissedCall(info, recipientId);
+                    // Пропускаем инициатора звонка
+                    if (!recipientId.equals(info.callerId)) {
+                        saveMissedCall(info, recipientId);
+                        System.out.println("Missed call saved for userId: " + recipientId + " due to endCall");
+                        // Отменяем таймаут для этого получателя
+                        if (info.timeoutTask != null) {
+                            info.timeoutTask.cancel(false);
+                            System.out.println("Timeout cancelled for userId: " + recipientId + " due to endCall");
+                        }
+                    }
                 }
             });
             pendingCalls.entrySet().removeIf(entry -> entry.getKey().startsWith(roomId + "-"));
+            System.out.println("Pending calls cleared for roomId: " + roomId);
         }
 
         messagingTemplate.convertAndSend("/topic/room/" + roomId, signalMessage);
@@ -132,6 +143,8 @@ public class WebRTCController {
                 callRequest.getType().equals("translate") ? "translated" : callRequest.getType(),
                 timeoutTask
         ));
+
+        System.out.println("Added to pendingCalls: key=" + key + ", callInfo=" + pendingCalls.get(key));
 
         messagingTemplate.convertAndSend("/topic/calls/" + callRequest.getRecipientId(), callRequest);
         messagingTemplate.convertAndSend("/topic/room/" + callRequest.getRoomId(), callRequest);
