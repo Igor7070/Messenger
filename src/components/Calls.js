@@ -44,17 +44,18 @@ const Calls = () => {
 
     const fetchCalls = async () => {
       try {
-        const storedUserId = Number(localStorage.getItem('userId'));
-        const response = await fetch(`https://unlimitedpossibilities12.org/api/calls?userId=${storedUserId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setCalls(data);
-        } else {
-          toast.error('Failed to fetch calls');
-        }
+          const storedUserId = Number(localStorage.getItem('userId'));
+          const response = await fetch(`https://unlimitedpossibilities12.org/api/calls?userId=${storedUserId}`);
+          if (response.ok) {
+              const data = await response.json();
+              const sortedCalls = data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+              setCalls(sortedCalls);
+          } else {
+              toast.error('Failed to fetch calls');
+          }
       } catch (error) {
-        console.error('Error fetching calls:', error);
-        toast.error('Error fetching calls');
+          console.error('Error fetching calls:', error);
+          toast.error('Error fetching calls');
       }
     };
 
