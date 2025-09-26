@@ -456,8 +456,9 @@ const VoiceCall = ({ recipientId }) => {
   };
 
   const endCall = () => {
-    console.log('endCall called');
+    console.log('endCall called'); // NEW: Лог для отладки вызовов endCall
 
+    // NEW: Проверяем, был ли звонок уже сохранён, чтобы избежать дублирования
     if (hasSavedCall.current) {
       console.log('Call already saved, skipping endCall');
       return;
@@ -490,12 +491,28 @@ const VoiceCall = ({ recipientId }) => {
           from: currentUserId,
           signal: { type: 'endCall' },
         });
+
+        if (isCaller && incomingCall?.recipientId) {
+          console.log('incomingCall:', incomingCall);
+          const endCallMessage = {
+            type: 'endCall',
+            roomId,
+            callerId: currentUserId,
+            recipientId: incomingCall.recipientId,
+          };
+          console.log('Sending endCall to /app/call/', incomingCall.recipientId, ':', endCallMessage);
+          stompClient.current.publish({
+            destination: `/app/call/${incomingCall.recipientId}`,
+            body: JSON.stringify(endCallMessage),
+          });
+        }
       }
 
       stompClient.current.deactivate();
       console.log('WebSocket connection deactivated in endCall.');
     }
 
+    // NEW: Добавляем функцию saveCall для сохранения звонка
     const saveCall = async () => {
       console.log('saveCall called with hasNotifiedAcceptCall:', hasNotifiedAcceptCall.current);
       try {
@@ -510,7 +527,7 @@ const VoiceCall = ({ recipientId }) => {
             status: status,
             callType: 'voice',
             timestamp: new Date().toISOString(),
-            // Удаляем roomId для соответствия серверной логике
+            roomId: roomId, // NEW: Добавляем roomId
           }
         );
         console.log(`Voice call saved to server with status: ${status}`);
@@ -521,8 +538,10 @@ const VoiceCall = ({ recipientId }) => {
       }
     };
 
+    // NEW: Вызываем saveCall перед сбросом флагов и навигацией
     saveCall();
 
+    // NEW: Сброс флагов только после saveCall
     hasNotifiedAcceptCall.current = false;
     hasNotifiedEndCall.current = false;
     hasNotifiedRejectCall.current = false;
