@@ -93,15 +93,13 @@ public class WebRTCController {
         } else if ("endCall".equals(signalType)) {
             System.out.println("Processing endCall for roomId: " + roomId + ", pendingCalls: " + pendingCalls.keySet());
             pendingCalls.forEach((k, info) -> {
-                if (k.startsWith(roomId + "-") && !info.accepted && !info.responded) { // ИЗМЕНЕНО: Добавлено !info.responded
+                if (k.startsWith(roomId + "-") && !info.accepted && !info.responded) { // ИЗМЕНЕНО: Убрано !recipientId.equals(info.callerId)
                     String recipientId = k.split("-")[1];
-                    if (!recipientId.equals(info.callerId)) {
-                        saveMissedCall(info, recipientId);
-                        System.out.println("Missed call saved for userId: " + recipientId + " due to endCall");
-                        if (info.timeoutTask != null) {
-                            info.timeoutTask.cancel(false);
-                            System.out.println("Timeout cancelled for userId: " + recipientId + " due to endCall");
-                        }
+                    saveMissedCall(info, recipientId);
+                    System.out.println("Missed call saved for userId: " + recipientId + " due to endCall");
+                    if (info.timeoutTask != null) {
+                        info.timeoutTask.cancel(false);
+                        System.out.println("Timeout cancelled for userId: " + recipientId + " due to endCall");
                     }
                 }
             });
@@ -125,7 +123,6 @@ public class WebRTCController {
         }
 
         String key = callRequest.getRoomId() + "-" + callRequest.getRecipientId();
-        // ИЗМЕНЕНО: Удалён таймер для сохранения пропущенных звонков
         ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {}, 0, TimeUnit.SECONDS); // Пустой таймер для совместимости
         pendingCalls.put(key, new CallRequestInfo(
                 callRequest.getRoomId(),
@@ -148,14 +145,12 @@ public class WebRTCController {
     @SendTo("/topic/calls/{recipientId}")
     public CallRequest handleCallMessage(@DestinationVariable String recipientId, @Payload CallRequest callRequest) {
         System.out.println("Received message for /app/call/" + recipientId + ": " + callRequest);
-        // ДОБАВЛЕНО: Игнорирование endCall для предотвращения перезаписи pendingCalls
         if ("endCall".equals(callRequest.getType())) {
             System.out.println("Ignoring endCall message for /app/call/" + recipientId);
             return callRequest;
         }
 
         String key = callRequest.getRoomId() + "-" + recipientId;
-        // ИЗМЕНЕНО: Удалён таймер для сохранения пропущенных звонков
         ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {}, 0, TimeUnit.SECONDS); // Пустой таймер для совместимости
         pendingCalls.put(key, new CallRequestInfo(
                 callRequest.getRoomId(),
@@ -181,7 +176,6 @@ public class WebRTCController {
 
         for (String recipientId : groupCallRequest.getRecipientIds()) {
             String key = groupCallRequest.getRoomId() + "-" + recipientId;
-            // ИЗМЕНЕНО: Удалён таймер для сохранения пропущенных звонков
             ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {}, 0, TimeUnit.SECONDS); // Пустой таймер для совместимости
             pendingCalls.put(key, new CallRequestInfo(
                     groupCallRequest.getRoomId(),
@@ -205,14 +199,12 @@ public class WebRTCController {
     @SendTo("/topic/groupCalls/{recipientId}")
     public GroupCallRequest handleGroupCallMessage(@DestinationVariable String recipientId, @Payload GroupCallRequest groupCallRequest) {
         System.out.println("Received message for /app/groupCall/" + recipientId + ": " + groupCallRequest);
-        // ДОБАВЛЕНО: Игнорирование endCall для предотвращения перезаписи pendingCalls
         if ("endCall".equals(groupCallRequest.getType())) {
             System.out.println("Ignoring endCall message for /app/groupCall/" + recipientId);
             return groupCallRequest;
         }
 
         String key = groupCallRequest.getRoomId() + "-" + recipientId;
-        // ИЗМЕНЕНО: Удалён таймер для сохранения пропущенных звонков
         ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {}, 0, TimeUnit.SECONDS); // Пустой таймер для совместимости
         pendingCalls.put(key, new CallRequestInfo(
                 groupCallRequest.getRoomId(),
@@ -259,10 +251,14 @@ public class WebRTCController {
         } else if ("endCall".equals(signalType)) {
             System.out.println("Processing endCall for roomId: " + roomId + ", pendingCalls: " + pendingCalls.keySet());
             pendingCalls.forEach((k, info) -> {
-                if (k.startsWith(roomId + "-") && !info.accepted && !info.responded) { // ИЗМЕНЕНО: Добавлено !info.responded
+                if (k.startsWith(roomId + "-") && !info.accepted && !info.responded) { // ИЗМЕНЕНО: Убрано !recipientId.equals(info.callerId)
                     String recipientId = k.split("-")[1];
                     saveMissedCall(info, recipientId);
                     System.out.println("Missed call saved for userId: " + recipientId + " due to endCall");
+                    if (info.timeoutTask != null) {
+                        info.timeoutTask.cancel(false);
+                        System.out.println("Timeout cancelled for userId: " + recipientId + " due to endCall");
+                    }
                 }
             });
             pendingCalls.entrySet().removeIf(entry -> entry.getKey().startsWith(roomId + "-"));
