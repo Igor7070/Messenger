@@ -93,8 +93,9 @@ public class WebRTCController {
         } else if ("endCall".equals(signalType)) {
             System.out.println("Processing endCall for roomId: " + roomId + ", pendingCalls: " + pendingCalls.keySet());
             pendingCalls.forEach((k, info) -> {
-                if (k.startsWith(roomId + "-") && !info.accepted && !info.responded) { // ИЗМЕНЕНО: Убрано !recipientId.equals(info.callerId)
-                    String recipientId = k.split("-")[1];
+                if (k.startsWith(roomId + "-") && !info.accepted && !info.responded) {
+                    // ИЗМЕНЕНО: Используем info.recipientId вместо k.split("-")[1]
+                    String recipientId = info.recipientId != null ? info.recipientId : k.split("-")[1];
                     saveMissedCall(info, recipientId);
                     System.out.println("Missed call saved for userId: " + recipientId + " due to endCall");
                     if (info.timeoutTask != null) {
@@ -251,8 +252,9 @@ public class WebRTCController {
         } else if ("endCall".equals(signalType)) {
             System.out.println("Processing endCall for roomId: " + roomId + ", pendingCalls: " + pendingCalls.keySet());
             pendingCalls.forEach((k, info) -> {
-                if (k.startsWith(roomId + "-") && !info.accepted && !info.responded) { // ИЗМЕНЕНО: Убрано !recipientId.equals(info.callerId)
-                    String recipientId = k.split("-")[1];
+                if (k.startsWith(roomId + "-") && !info.accepted && !info.responded) {
+                    // ИЗМЕНЕНО: Используем info.recipientId вместо k.split("-")[1]
+                    String recipientId = info.recipientId != null ? info.recipientId : k.split("-")[1];
                     saveMissedCall(info, recipientId);
                     System.out.println("Missed call saved for userId: " + recipientId + " due to endCall");
                     if (info.timeoutTask != null) {
@@ -285,6 +287,8 @@ public class WebRTCController {
                 call.setReceiver(recipientId);
             }
 
+            // ДОБАВЛЕНО: Лог для отладки
+            System.out.println("Saving missed call: callerId=" + callInfo.callerId + ", recipientId=" + recipientId + ", callType=" + callInfo.callType);
             callService.createCall(call, Long.parseLong(recipientId));
             System.out.println("Missed call saved for userId: " + recipientId + ", callType: " + callInfo.callType);
         } catch (Exception e) {
