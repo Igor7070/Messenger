@@ -55,8 +55,7 @@ public class WebRTCController {
             this.recipientId = recipientId;
             this.recipientIds = recipientIds;
             this.callType = callType;
-            //this.timestamp = LocalDateTime.now();
-            this.timestamp = ZonedDateTime.now(ZoneId.of("UTC")).toLocalDateTime();
+            this.timestamp = LocalDateTime.now();
             this.responded = false;
             this.accepted = false;
             this.timeoutTask = timeoutTask;
@@ -281,7 +280,8 @@ public class WebRTCController {
             call.setDirection("incoming");
             call.setStatus("missed");
             call.setCallType(callInfo.callType);
-            call.setTimestamp(callInfo.timestamp);
+            //call.setTimestamp(callInfo.timestamp);
+            call.setTimestamp(ZonedDateTime.now(ZoneId.of("Europe/Kiev")).toLocalDateTime());
             call.setRoomId(callInfo.roomId);
 
             if ("group".equals(callInfo.callType)) {
