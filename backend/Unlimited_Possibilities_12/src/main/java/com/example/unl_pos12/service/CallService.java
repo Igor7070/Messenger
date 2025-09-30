@@ -6,9 +6,12 @@ import com.example.unl_pos12.repo.CallRepository;
 import com.example.unl_pos12.repo.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -61,5 +64,13 @@ public class CallService {
             throw new IllegalStateException("User is not authorized to delete this call");
         }
         callRepository.delete(call);
+    }
+
+    @Transactional
+    @Scheduled(cron = "0 0 2 * * ?")
+    public void deleteOldCalls() {
+        LocalDateTime threshold = LocalDateTime.now(ZoneId.of("Europe/Kiev")).minusDays(7);
+        callRepository.deleteCallsOlderThan(threshold);
+        System.out.println("Deleted calls older than: " + threshold);
     }
 }
