@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -53,7 +55,8 @@ public class WebRTCController {
             this.recipientId = recipientId;
             this.recipientIds = recipientIds;
             this.callType = callType;
-            this.timestamp = LocalDateTime.now();
+            //this.timestamp = LocalDateTime.now();
+            this.timestamp = ZonedDateTime.now(ZoneId.of("UTC")).toLocalDateTime();
             this.responded = false;
             this.accepted = false;
             this.timeoutTask = timeoutTask;
