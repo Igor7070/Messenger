@@ -540,7 +540,7 @@ const VoiceCall = ({ recipientId }) => {
               if (part.type === 'literal') return acc + part.value;
               if (part.type === 'fractionalSecond') return acc + part.value.padEnd(3, '0');
               return acc + part.value;
-            }, '') + '+03:00',
+            }, ''),
             roomId: roomId, // NEW: Добавляем roomId
           }
         );
