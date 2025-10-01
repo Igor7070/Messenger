@@ -29,8 +29,8 @@
   overflow-y: auto;
   overflow-x: hidden;
   max-height: 60vh;
-  height: fit-content; /* Контейнер подстраивается под содержимое */
   margin-bottom: 80px;
+  box-sizing: border-box;
 }
 
 .call-item {
@@ -424,4 +424,8 @@
 
 .calls-call-type-checkbox {
   margin-right: 10px;
+}
+
+.call-item {
+  box-sizing: border-box;
 }

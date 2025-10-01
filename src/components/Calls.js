@@ -67,6 +67,16 @@ const Calls = () => {
 
     fetchUsers();
     fetchCalls();
+
+    const updateScrollBar = () => {
+      const callsList = document.querySelector('.calls-list');
+      if (callsList) {
+        callsList.style.overflowY = callsList.scrollHeight <= callsList.offsetHeight ? 'hidden' : 'auto';
+      }
+    };
+    updateScrollBar();
+    window.addEventListener('resize', updateScrollBar);
+    return () => window.removeEventListener('resize', updateScrollBar);
   }, []);
 
   const handleGroupCallButtonClick = () => {
