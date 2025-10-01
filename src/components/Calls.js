@@ -67,7 +67,9 @@ const Calls = () => {
 
     fetchUsers();
     fetchCalls();
+  }, []);
 
+  useEffect(() => {
     const updateScrollBar = () => {
       const callsList = document.querySelector('.calls-list');
       if (callsList) {
@@ -77,7 +79,7 @@ const Calls = () => {
     updateScrollBar();
     window.addEventListener('resize', updateScrollBar);
     return () => window.removeEventListener('resize', updateScrollBar);
-  }, []);
+  }, [calls]);
 
   const handleGroupCallButtonClick = () => {
     setModalIsOpen(true);
