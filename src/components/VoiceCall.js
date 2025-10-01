@@ -533,12 +533,12 @@ const VoiceCall = ({ recipientId }) => {
               hour: '2-digit',
               minute: '2-digit',
               second: '2-digit',
-              fractionalSecondDigits: 3,
+              fractionalSecondDigits: 6,
               timeZone: 'Europe/Kiev',
               hour12: false,
             }).formatToParts(new Date()).reduce((acc, part) => {
               if (part.type === 'literal') return acc + part.value;
-              if (part.type === 'fractionalSecond') return acc + part.value.padEnd(3, '0');
+              if (part.type === 'fractionalSecond') return acc + part.value.padEnd(6, '0');
               return acc + part.value;
             }, ''),
             roomId: roomId, // NEW: Добавляем roomId
