@@ -305,7 +305,7 @@ const Calls = () => {
           return (
             <div key={call.id} className="call-item">
               {/* NEW: Кнопка удаления */}
-              <div className="call-delete" onClick={() => handleDeleteCallClick(call.id)}>
+              <div className="call-delete" onClick={() => handleConfirmDelete(call.id)}>
                 <FaTimes className="call-delete-icon" />
               </div>
               <div className="call-participants">
@@ -411,24 +411,6 @@ const Calls = () => {
         <button onClick={() => setModalIsOpen(false)} className="calls-modal-close-button">
           Close
         </button>
-      </Modal>
-
-      {/* NEW: Модальное окно для подтверждения удаления */}
-      <Modal
-        isOpen={deleteModalIsOpen}
-        onRequestClose={handleCancelDelete}
-        className="calls-delete-modal"
-        overlayClassName="calls-delete-modal-overlay"
-      >
-        <h2 className="calls-modal-title">Are you sure you want to delete this call?</h2>
-        <div className="calls-delete-modal-buttons">
-          <button onClick={handleCancelDelete} className="calls-modal-cancel-button">
-            Cancel
-          </button>
-          <button onClick={handleConfirmDelete} className="calls-modal-confirm-button">
-            Ok
-          </button>
-        </div>
       </Modal>
       <Modal
           isOpen={callTypeModalIsOpen}
