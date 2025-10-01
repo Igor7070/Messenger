@@ -10,8 +10,6 @@ import '../styles/Calls.css';
 
 const Calls = () => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [deleteModalIsOpen, setDeleteModalIsOpen] = useState(false); // NEW: Для модального окна удаления
-  const [callToDelete, setCallToDelete] = useState(null); // NEW: Для хранения ID вызова, который нужно удалить
   const [users, setUsers] = useState([]);
   const [calls, setCalls] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -221,19 +219,11 @@ const Calls = () => {
       setRedialCall(null);
   };
 
-  // NEW: Функция для открытия модального окна удаления
-  const handleDeleteCallClick = (callId) => {
-    setCallToDelete(callId);
-    setDeleteModalIsOpen(true);
-  };
-
   // NEW: Функция для подтверждения удаления
-  const handleConfirmDelete = async () => {
-    if (!callToDelete) return;
-
+  const handleConfirmDelete = async (callId) => {
     try {
       const response = await fetch(
-        `https://unlimitedpossibilities12.org/api/calls/${callToDelete}?userId=${currentUserId}`,
+        `https://unlimitedpossibilities12.org/api/calls/${callId}?userId=${currentUserId}`,
         {
           method: 'DELETE',
           headers: {
@@ -241,9 +231,8 @@ const Calls = () => {
           },
         }
       );
-
       if (response.ok) {
-        setCalls(calls.filter((call) => call.id !== callToDelete));
+        setCalls(calls.filter((call) => call.id !== callId));
         toast.success('Call deleted successfully');
       } else {
         toast.error('Failed to delete call');
@@ -252,15 +241,6 @@ const Calls = () => {
       console.error('Error deleting call:', error);
       toast.error('Error deleting call');
     }
-
-    setDeleteModalIsOpen(false);
-    setCallToDelete(null);
-  };
-
-  // NEW: Функция для отмены удаления
-  const handleCancelDelete = () => {
-    setDeleteModalIsOpen(false);
-    setCallToDelete(null);
   };
 
   const getUserById = (id) => {
