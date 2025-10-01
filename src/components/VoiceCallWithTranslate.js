@@ -906,7 +906,16 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
             direction: isCaller ? 'outgoing' : 'incoming',
             status: status,
             callType: 'voice_with_translate',
-            timestamp: new Date().toISOString(),
+            timestamp: new Date().toLocaleString('en-US', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              timeZone: 'Europe/Kiev',
+              hour12: false,
+            }).replace(/(\d+)\/(\d+)\/(\d+), (\d+:\d+:\d+)/, '$3-$1-$2T$4'),
             roomId: roomId, // NEW: Добавляем roomId
           }
         );
