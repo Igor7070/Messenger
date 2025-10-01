@@ -29,8 +29,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   max-height: 60vh;
-  min-height: 0; /* Позволяет контейнеру сжиматься до содержимого */
-  height: auto; /* Контейнер подстраивается под содержимое */
+  height: fit-content; /* Контейнер подстраивается под содержимое */
   margin-bottom: 80px;
 }
 
