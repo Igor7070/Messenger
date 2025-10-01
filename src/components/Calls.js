@@ -124,7 +124,7 @@ const Calls = () => {
                 },
             });
             toast.success(`Starting group call...`);
-        } else if (['voice', 'video', 'translate', 'voice_with_translate'].includes(call.callType)) {
+        } else if (['voice', 'video', 'translate', 'voice_with_translate', 'translated'].includes(call.callType)) {
             const recipientId = call.direction === 'outgoing' ? Number(call.receiver) : Number(call.caller);
             const recipient = getUserById(recipientId);
             const roomId = `room-${currentUserId}-${recipientId}`;
@@ -133,7 +133,7 @@ const Calls = () => {
                 recipientId,
                 roomId,
                 callerName: currentUsername || 'Unknown',
-                type: call.callType === 'voice_with_translate' ? 'translate' : call.callType,
+                type: call.callType === 'voice_with_translate' || call.callType === 'translated' ? 'translate' : call.callType,
             };
 
             const response = await axios.post('https://unlimitedpossibilities12.org/api/webrtc/call', callRequest);
