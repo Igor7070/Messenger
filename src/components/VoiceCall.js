@@ -526,21 +526,16 @@ const VoiceCall = ({ recipientId }) => {
             direction: isCaller ? 'outgoing' : 'incoming',
             status: status,
             callType: 'voice',
-            timestamp: new Intl.DateTimeFormat('en-US', {
+            timestamp: new Date().toLocaleString('en-US', {
               year: 'numeric',
               month: '2-digit',
               day: '2-digit',
               hour: '2-digit',
               minute: '2-digit',
               second: '2-digit',
-              fractionalSecondDigits: 3,
               timeZone: 'Europe/Kiev',
               hour12: false,
-            }).formatToParts(new Date()).reduce((acc, part) => {
-              if (part.type === 'literal') return acc + part.value;
-              if (part.type === 'fractionalSecond') return acc + part.value.padEnd(3, '0');
-              return acc + part.value;
-            }, ''),
+            }).replace(/(\d+)\/(\d+)\/(\d+), (\d+:\d+:\d+)/, '$3-$1-$2T$4'),
             roomId: roomId, // NEW: Добавляем roomId
           }
         );
