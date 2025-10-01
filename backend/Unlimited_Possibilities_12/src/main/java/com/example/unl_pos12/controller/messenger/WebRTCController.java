@@ -290,7 +290,7 @@ public class WebRTCController {
                 call.setReceiver(recipientId);
             }
 
-            // ДОБАВЛЕНО: Лог для отладки...
+            // ДОБАВЛЕНО: Лог для отладки
             System.out.println("Saving missed call: callerId=" + callInfo.callerId + ", recipientId=" + recipientId + ", callType=" + callInfo.callType);
             callService.createCall(call, Long.parseLong(recipientId));
             System.out.println("Missed call saved for userId: " + recipientId + ", callType: " + callInfo.callType);
