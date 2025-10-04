@@ -1,8 +1,10 @@
 package com.example.unl_pos12.controller.messenger;
 
+import com.example.unl_pos12.model.messenger.Chat;
 import com.example.unl_pos12.model.messenger.Message;
 import com.example.unl_pos12.model.messenger.NotificationRequest;
 import com.example.unl_pos12.model.messenger.User;
+import com.example.unl_pos12.repo.ChatRepository;
 import com.example.unl_pos12.repo.UserRepository;
 import com.example.unl_pos12.service.MessageService;
 import com.example.unl_pos12.service.WebSocketService;
@@ -22,6 +24,9 @@ public class MessageController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ChatRepository chatRepository;
 
     @Autowired
     private WebSocketService webSocketService; // Сервис для отправки уведомлений через WebSocket
@@ -88,8 +93,19 @@ public class MessageController {
         User recipient = userRepository.findById(request.getRecipientId())
                 .orElseThrow(() -> new RuntimeException("Recipient not found"));
 
-        webSocketService.sendNotification(user.getId(), recipient.getId(), request.getContent(),
-                request.getChatId(), request.getIsSecret(), request.getMessageType());
+        // Проверка, секретный ли чат
+        String notificationContent;
+        Chat chat = chatRepository.findById(request.getChatId()).orElse(null);
+        boolean isSecretChat = chat != null && chat.getIsSecret() != null && chat.getIsSecret();
+        if (isSecretChat) {
+            notificationContent = "New secret message";
+        } else if (request.getContent() == null || request.getContent().isEmpty()) {
+            notificationContent = "New audio message";
+        } else {
+            notificationContent = request.getContent();
+        }
+
+        webSocketService.sendNotification(user.getId(), recipient.getId(), notificationContent, request.getChatId());
 
         return ResponseEntity.ok("Notification sent");
     }

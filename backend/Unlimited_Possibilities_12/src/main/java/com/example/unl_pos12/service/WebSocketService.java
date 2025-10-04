@@ -16,27 +16,13 @@ public class WebSocketService {
         this.messagingTemplate = messagingTemplate;
     }
 
-    public void sendNotification(Long userId, Long recipientId, String content, Long chatId,
-                                 boolean isSecret, String messageType) {
+    public void sendNotification(Long userId, Long recipientId, String content, Long chatId) {
         try {
             User user = userService.getUserById(userId);
             String userName = user.getUsername();
             String destination = "/topic/notifications/" + recipientId;
-            // Используем заглушку только если content null или пустой, и также учитываем секретные чаты
-            String notificationContent;
-            if (isSecret && "text".equals(messageType)) {
-                notificationContent = "New secret message";
-            } else if (content == null || content.isEmpty()) {
-                if ("audio".equals(messageType)) {
-                    notificationContent = "New audio message";
-                } else if ("file".equals(messageType)) {
-                    notificationContent = "New file message";
-                } else {
-                    notificationContent = "New message";
-                }
-            } else {
-                notificationContent = content;
-            }
+            // Используем заглушку только если content null или пустой
+            String notificationContent = (content == null || content.isEmpty()) ? "New audio message" : content;
             String notificationMessage = String.format("New message: %s from:" +
                     " %s (chatId: %d)", notificationContent, userName, chatId);
             messagingTemplate.convertAndSend(destination, notificationMessage);
