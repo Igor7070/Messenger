@@ -691,7 +691,7 @@ const GroupCallActivity = () => {
                   sdp: offer.sdp.replace(/a=setup:passive/, 'a=setup:actpass') // actpass для оффера
                 };
                 await peerConnection.setLocalDescription(modifiedOffer);
-                const signalKey = `${currentUserId}-${user.id}-offer-${modifiedOffer.sdp.slice(0, 50)}`;
+                const signalKey = `${currentUserId}-${user.id}-offer`;
                 if (!sentSignals.current.has(signalKey)) {
                   sentSignals.current.add(signalKey);
                   sendSignal(
@@ -783,6 +783,8 @@ const GroupCallActivity = () => {
               peerConnection.close();
               peerConnections.current.delete(String(user.id));
               pendingCandidates.current.delete(String(user.id)); // Очистка кандидатов
+              sentSignals.current.delete(`${currentUserId}-${user.id}-offer`); // Очистка отправленного offer
+              console.log(`Cleared sent offer signal for user ${user.id}`);
 
               // Инициализируем новое соединение
               const stream = localAudioRef.current.srcObject;
@@ -798,7 +800,7 @@ const GroupCallActivity = () => {
                   sdp: offer.sdp.replace(/a=setup:passive/, 'a=setup:actpass')
                 };
                 await peerConnection.setLocalDescription(modifiedOffer);
-                const signalKey = `${currentUserId}-${user.id}-offer-${modifiedOffer.sdp.slice(0, 50)}`;
+                const signalKey = `${currentUserId}-${user.id}-offer`;
                 if (!sentSignals.current.has(signalKey)) {
                   sentSignals.current.add(signalKey);
                   try {
@@ -845,7 +847,7 @@ const GroupCallActivity = () => {
                 sdp: offer.sdp.replace(/a=setup:passive/, 'a=setup:actpass')
               };
               await newPeerConnection.setLocalDescription(modifiedOffer);
-              const signalKey = `${currentUserId}-${user.id}-offer-${modifiedOffer.sdp.slice(0, 50)}`;
+              const signalKey = `${currentUserId}-${user.id}-offer`;
               if (!sentSignals.current.has(signalKey)) {
                 sentSignals.current.add(signalKey);
                 try {
@@ -1006,8 +1008,43 @@ const GroupCallActivity = () => {
 
           case 'acceptCall':
             if (isInitiator) {
-              const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
-              toast.success(`${userName} accepted the group call`);
+                const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
+                toast.success(`${userName} accepted the group call`);
+            } else if (Number(currentFrom) !== Number(initiator.id) && !peerConnections.current.has(currentFrom)) {
+                console.log(`Non-initiator received acceptCall from ${currentFrom}, initializing and sending offer`);
+                const stream = localAudioRef.current.srcObject;
+                await initializePeerConnection(currentFrom, stream);
+                const peerConnection = peerConnections.current.get(currentFrom);
+                if (peerConnection && !peerConnection.isPolite) {
+                    const offer = await peerConnection.createOffer();
+                    const modifiedOffer = {
+                        type: 'offer',
+                        sdp: offer.sdp.replace(/a=setup:passive/, 'a=setup:actpass')
+                    };
+                    await peerConnection.setLocalDescription(modifiedOffer);
+                    const signalKey = `${currentUserId}-${currentFrom}-offer`;
+                    if (!sentSignals.current.has(signalKey)) {
+                        sentSignals.current.add(signalKey);
+                        sendSignal(
+                            {
+                                from: currentUserId,
+                                to: currentFrom,
+                                signal: modifiedOffer,
+                            },
+                            roomId.current
+                        );
+                        console.log(`Sent offer to user ${currentFrom} after acceptCall`);
+                        answerTimeouts.current.set(
+                            Number(currentFrom),
+                            setTimeout(() => {
+                                if (peerConnection && !peerConnection.remoteDescription) {
+                                    console.warn(`No answer received from user ${currentFrom} within 10 seconds`);
+                                    // toast.warn(`No response from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                                }
+                            }, 90000)
+                        );
+                    }
+                }
             }
             break;
 
@@ -1038,53 +1075,70 @@ const GroupCallActivity = () => {
             console.log('Processing offer from:', currentFrom, 'signal:', currentSignalData);
             offerReceived.current.set(currentFrom, true);
             try {
-              const currentState = peerConnection.signalingState;
-              console.log(`Current signaling state for user ${currentFrom}: ${currentState}`);
-              if (peerConnection.remoteDescription && peerConnection.remoteDescription.sdp === currentSignalData.sdp) {
-                console.log(`Ignoring duplicate offer from ${currentFrom}`);
-                continue;
-              }
-              if (currentState === 'have-local-offer' && !peerConnection.isPolite) {
-                console.log(`Rude peer ignoring offer from ${currentFrom}`);
-                continue; // Rude peer игнорирует входящий оффер
-              }
-              if (currentState !== 'stable') {
-                console.log(`Rolling back signaling state for user ${currentFrom} from ${currentState}`);
-                await peerConnection.setLocalDescription({ type: 'rollback' });
-                console.log(`Rollback successful for user ${currentFrom}`);
-              }
-              await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
-              console.log(`Set remoteDescription for user ${currentFrom}`);
-              const answer = await peerConnection.createAnswer();
-              await peerConnection.setLocalDescription(answer); // Без модификации SDP
-              const signalKey = `${currentUserId}-${currentFrom}-answer-${answer.sdp.slice(0, 50)}`;
-              if (!sentSignals.current.has(signalKey)) {
-                sentSignals.current.add(signalKey);
-                sendSignal(
-                  { from: currentUserId, to: currentFrom, signal: answer },
-                  roomId.current
-                );
-                console.log(`Sent answer to user ${currentFrom}`);
-              }
-              if (pendingCandidates.current.has(currentFrom)) {
-                for (const candidate of pendingCandidates.current.get(currentFrom)) {
-                  await peerConnection.addIceCandidate(candidate);
-                  console.log(`Processed pending ICE candidate for ${currentFrom}`);
+                let peerConnection = peerConnections.current.get(currentFrom);
+                if (peerConnection) {
+                    console.log(`Closing existing PeerConnection for user ${currentFrom} due to new offer`);
+                    peerConnection.close();
+                    peerConnections.current.delete(currentFrom);
+                    pendingCandidates.current.delete(currentFrom);
+                    sentSignals.current.delete(`${currentUserId}-${currentFrom}-offer`);
+                    sentSignals.current.delete(`${currentUserId}-${currentFrom}-answer`);
                 }
-                pendingCandidates.current.delete(currentFrom);
-              }
-              if (offerTimeoutRef.current) {
-                clearTimeout(offerTimeoutRef.current);
-                offerTimeoutRef.current = null;
-                console.log('Cleared offerTimeout after receiving offer');
-              }
-              if (!isCallStarted && peerConnection.signalingState === 'stable') {
-                startCall();
-                console.log('Call started after receiving offer');
-              }
+                const stream = localAudioRef.current.srcObject;
+                await initializePeerConnection(currentFrom, stream);
+                peerConnection = peerConnections.current.get(currentFrom);
+                if (!peerConnection) {
+                    console.error(`Failed to initialize PeerConnection for user ${currentFrom}`);
+                    toast.error(`Failed to initialize connection for user ${currentFrom}`);
+                    continue;
+                }
+                const currentState = peerConnection.signalingState;
+                console.log(`Current signaling state for user ${currentFrom}: ${currentState}`);
+                if (peerConnection.remoteDescription && peerConnection.remoteDescription.sdp === currentSignalData.sdp) {
+                    console.log(`Ignoring duplicate offer from ${currentFrom}`);
+                    continue;
+                }
+                if (currentState === 'have-local-offer' && !peerConnection.isPolite) {
+                    console.log(`Rude peer ignoring offer from ${currentFrom}`);
+                    continue;
+                }
+                if (currentState !== 'stable') {
+                    console.log(`Rolling back signaling state for user ${currentFrom} from ${currentState}`);
+                    await peerConnection.setLocalDescription({ type: 'rollback' });
+                    console.log(`Rollback successful for user ${currentFrom}`);
+                }
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
+                console.log(`Set remoteDescription for user ${currentFrom}`);
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                const signalKey = `${currentUserId}-${currentFrom}-answer`;
+                if (!sentSignals.current.has(signalKey)) {
+                    sentSignals.current.add(signalKey);
+                    sendSignal(
+                        { from: currentUserId, to: currentFrom, signal: answer },
+                        roomId.current
+                    );
+                    console.log(`Sent answer to user ${currentFrom}`);
+                }
+                if (pendingCandidates.current.has(currentFrom)) {
+                    for (const candidate of pendingCandidates.current.get(currentFrom)) {
+                        await peerConnection.addIceCandidate(candidate);
+                        console.log(`Processed pending ICE candidate for ${currentFrom}`);
+                    }
+                    pendingCandidates.current.delete(currentFrom);
+                }
+                if (offerTimeoutRef.current) {
+                    clearTimeout(offerTimeoutRef.current);
+                    offerTimeoutRef.current = null;
+                    console.log('Cleared offerTimeout after receiving offer');
+                }
+                if (!isCallStarted && peerConnection.signalingState === 'stable') {
+                    startCall();
+                    console.log('Call started after receiving offer');
+                }
             } catch (error) {
-              console.error(`Error processing offer from ${currentFrom}:`, error);
-              //toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                console.error(`Error processing offer from ${currentFrom}:`, error);
+                // toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
             }
             break;
 
