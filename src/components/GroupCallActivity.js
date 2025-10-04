@@ -417,7 +417,7 @@ const GroupCallActivity = () => {
       } else {
         console.log('All connections established, no retry needed');
       }
-    }, 10000); // Проверка каждые 10 секунд
+    }, 7000); // Проверка каждые 10 секунд
 
     return () => {
       clearInterval(checkConnectionsInterval);
