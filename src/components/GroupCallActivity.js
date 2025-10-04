@@ -1012,7 +1012,7 @@ const GroupCallActivity = () => {
                 toast.success(`${userName} accepted the group call`);
             } else if (Number(currentFrom) !== Number(initiator.id) && !peerConnections.current.has(currentFrom)) {
                 console.log(`Non-initiator received acceptCall from ${currentFrom}, initializing and sending offer`);
-                const stream = localAudioRef.current.srcObject;
+                const stream = localVideoStreamRef.current || localAudioRef.current.srcObject;
                 await initializePeerConnection(currentFrom, stream);
                 const peerConnection = peerConnections.current.get(currentFrom);
                 if (peerConnection && !peerConnection.isPolite) {
@@ -1084,7 +1084,7 @@ const GroupCallActivity = () => {
                     sentSignals.current.delete(`${currentUserId}-${currentFrom}-offer`);
                     sentSignals.current.delete(`${currentUserId}-${currentFrom}-answer`);
                 }
-                const stream = localAudioRef.current.srcObject;
+                const stream = localVideoStreamRef.current || localAudioRef.current.srcObject;
                 await initializePeerConnection(currentFrom, stream);
                 peerConnection = peerConnections.current.get(currentFrom);
                 if (!peerConnection) {
