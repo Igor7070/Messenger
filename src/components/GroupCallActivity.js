@@ -155,6 +155,18 @@ const GroupCallActivity = () => {
               })
             );
             setCallParticipants(updatedParticipants);
+            updatedParticipants.forEach(user => {
+                if (user.id !== Number(currentUserId) && !videoRefs.current.has(String(user.id))) {
+                    const videoElement = document.createElement('video');
+                    videoElement.id = `remote-video-${user.id}`;
+                    videoElement.autoplay = true;
+                    videoElement.playsInline = true;
+                    videoRefs.current.set(String(user.id), videoElement);
+                    const videoContainer = document.getElementById('video-container') || document.body;
+                    videoContainer.appendChild(videoElement);
+                    console.log(`Created video element for user ${user.id}`);
+                }
+            });
             console.log('Updated callParticipants:', updatedParticipants);
           } catch (error) {
             console.error('Error fetching participants:', error);
@@ -514,49 +526,62 @@ const GroupCallActivity = () => {
       peerConnections.current.set(userId, peerConnection);
 
       peerConnection.ontrack = (event) => {
-        const stream = event.streams[0];
-        console.log(`ontrack event for user ${userId}:`, event);
-        if (stream) {
-          console.log(`Remote stream tracks for user ${userId}:`, stream.getTracks());
-          // [ДОБАВЛЕНО]: Обработка видеотреков
-          const videoTracks = stream.getVideoTracks();
-          if (videoTracks.length > 0) {
-            const videoElement = videoRefs.current.get(userId);
-            if (videoElement) {
-              videoElement.srcObject = stream;
-              videoElement.play().then(() => {
-                console.log(`Video playing for user ${userId}`);
-              }).catch((error) => {
-                console.error(`Error playing video for ${userId}:`, error);
-                toast.error(`Failed to play video for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
-              });
-            } else {
-              console.warn(`No video element found for user ${userId}`);
-            }
+          const stream = event.streams[0];
+          console.log(`ontrack event for user ${userId}:`, event);
+          if (stream) {
+              console.log(`Remote stream tracks for user ${userId}:`, stream.getTracks());
+              const videoTracks = stream.getVideoTracks();
+              if (videoTracks.length > 0) {
+                  let videoElement = videoRefs.current.get(userId);
+                  console.log(`Processing video tracks for user ${userId}, tracks:`, videoTracks);
+                  if (!videoElement) {
+                      console.warn(`No video element found for user ${userId}, creating new one`);
+                      videoElement = document.createElement('video');
+                      videoElement.id = `remote-video-${userId}`;
+                      videoElement.autoplay = true;
+                      videoElement.playsInline = true;
+                      videoRefs.current.set(String(userId), videoElement);
+                      const videoContainer = document.getElementById('video-container') || document.body;
+                      videoContainer.appendChild(videoElement);
+                      console.log(`Created and appended video element for user ${userId} to`, videoContainer === document.body ? 'body' : 'video-container');
+                  }
+                  if (videoElement.srcObject !== stream) {
+                      videoElement.srcObject = stream;
+                      console.log(`Set srcObject for user ${userId}, stream active: ${stream.active}, tracks:`, stream.getTracks());
+                  }
+                  videoElement.play().then(() => {
+                      console.log(`Video playing for user ${userId}`);
+                  }).catch((error) => {
+                      console.error(`Error playing video for ${userId}:`, error);
+                      toast.error(`Failed to play video for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
+                  });
+              }
+              const audioTracks = stream.getAudioTracks();
+              if (audioTracks.length > 0) {
+                  let audioElement = remoteAudioRefs.current.get(userId);
+                  if (!audioElement) {
+                      audioElement = document.createElement('audio');
+                      audioElement.id = `remote-audio-${userId}`;
+                      audioElement.autoplay = true;
+                      remoteAudioRefs.current.set(userId, audioElement);
+                      document.body.appendChild(audioElement);
+                      console.log(`Created and appended audio element for user ${userId}`);
+                  }
+                  if (audioElement.srcObject !== stream) {
+                      audioElement.srcObject = new MediaStream([audioTracks[0]]);
+                      console.log(`Set audio srcObject for user ${userId}, stream active: ${stream.active}`);
+                  }
+                  audioElement.play().then(() => {
+                      console.log(`Audio playing for user ${userId}`);
+                  }).catch((error) => {
+                      console.error(`Error playing audio for ${userId}:`, error);
+                      toast.error(`Failed to play audio for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
+                  });
+              }
+          } else {
+              console.error(`No stream received for user ${userId}`);
+              toast.error(`No stream received for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
           }
-          // [ИЗМЕНЕНО]: Обработка аудиотреков
-          const audioTracks = stream.getAudioTracks();
-          if (audioTracks.length > 0) {
-            const audioElement = document.createElement('audio');
-            audioElement.id = `remote-audio-${userId}`;
-            audioElement.srcObject = new MediaStream([audioTracks[0]]);
-            audioElement.autoplay = true;
-            audioElement.onloadedmetadata = () => {
-              audioElement.play().then(() => {
-                console.log(`Audio playing for user ${userId}`);
-              }).catch((error) => {
-                console.error(`Error playing audio for ${userId}:`, error);
-                toast.error(`Failed to play audio for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
-              });
-            };
-            remoteAudioRefs.current.set(userId, audioElement);
-            document.body.appendChild(audioElement);
-            console.log(`Remote audio track added for user ${userId}`);
-          }
-        } else {
-          console.error(`No stream received for user ${userId}`);
-          toast.error(`No audio stream received for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
-        }
       };
 
       let disconnectTimeout = null;
@@ -1013,6 +1038,7 @@ const GroupCallActivity = () => {
             } else if (Number(currentFrom) !== Number(initiator.id) && !peerConnections.current.has(currentFrom)) {
                 console.log(`Non-initiator received acceptCall from ${currentFrom}, initializing and sending offer`);
                 const stream = localVideoStreamRef.current || localAudioRef.current.srcObject;
+                console.log(`Initializing PeerConnection for user ${currentFrom} with stream tracks:`, stream.getTracks());
                 await initializePeerConnection(currentFrom, stream);
                 const peerConnection = peerConnections.current.get(currentFrom);
                 if (peerConnection && !peerConnection.isPolite) {
@@ -1039,7 +1065,7 @@ const GroupCallActivity = () => {
                             setTimeout(() => {
                                 if (peerConnection && !peerConnection.remoteDescription) {
                                     console.warn(`No answer received from user ${currentFrom} within 10 seconds`);
-                                    // toast.warn(`No response from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                                    toast.warn(`No response from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
                                 }
                             }, 90000)
                         );
@@ -1085,6 +1111,7 @@ const GroupCallActivity = () => {
                     sentSignals.current.delete(`${currentUserId}-${currentFrom}-answer`);
                 }
                 const stream = localVideoStreamRef.current || localAudioRef.current.srcObject;
+                console.log(`Initializing PeerConnection for user ${currentFrom} with stream tracks:`, stream.getTracks());
                 await initializePeerConnection(currentFrom, stream);
                 peerConnection = peerConnections.current.get(currentFrom);
                 if (!peerConnection) {
@@ -1138,7 +1165,7 @@ const GroupCallActivity = () => {
                 }
             } catch (error) {
                 console.error(`Error processing offer from ${currentFrom}:`, error);
-                // toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+                toast.error(`Failed to process offer from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
             }
             break;
 
@@ -1228,8 +1255,73 @@ const GroupCallActivity = () => {
             break;
 
           case 'cameraOn':
-            console.log(`User ${currentFrom} turned on their camera`);
-            // [ДОБАВЛЕНО]: Ожидаем видеопоток через ontrack, ничего дополнительно не делаем
+            console.log(`Received cameraOn from user ${currentFrom}`);
+            try {
+                let peerConnection = peerConnections.current.get(currentFrom);
+                if (peerConnection) {
+                    console.log(`Existing PeerConnection for user ${currentFrom}, awaiting video track via ontrack`);
+                    // Проверяем, есть ли видеотреки
+                    const senders = peerConnection.getSenders();
+                    const hasVideoTrack = senders.some(sender => sender.track && sender.track.kind === 'video');
+                    if (!hasVideoTrack) {
+                        console.log(`No video track in current PeerConnection for ${currentFrom}, renegotiating`);
+                        const stream = localVideoStreamRef.current || localAudioRef.current.srcObject;
+                        peerConnection.close();
+                        peerConnections.current.delete(currentFrom);
+                        pendingCandidates.current.delete(currentFrom);
+                        sentSignals.current.delete(`${currentUserId}-${currentFrom}-offer`);
+                        sentSignals.current.delete(`${currentUserId}-${currentFrom}-answer`);
+                        await initializePeerConnection(currentFrom, stream);
+                        peerConnection = peerConnections.current.get(currentFrom);
+                        if (peerConnection && !peerConnection.isPolite) {
+                            const offer = await peerConnection.createOffer();
+                            const modifiedOffer = {
+                                type: 'offer',
+                                sdp: offer.sdp.replace(/a=setup:passive/, 'a=setup:actpass')
+                            };
+                            await peerConnection.setLocalDescription(modifiedOffer);
+                            const signalKey = `${currentUserId}-${currentFrom}-offer`;
+                            sentSignals.current.delete(signalKey);
+                            sendSignal(
+                                {
+                                    from: currentUserId,
+                                    to: currentFrom,
+                                    signal: modifiedOffer,
+                                },
+                                roomId.current
+                            );
+                            console.log(`Sent offer to user ${currentFrom} after cameraOn`);
+                        }
+                    }
+                } else {
+                    console.log(`No PeerConnection for user ${currentFrom}, initializing new one`);
+                    const stream = localVideoStreamRef.current || localAudioRef.current.srcObject;
+                    await initializePeerConnection(currentFrom, stream);
+                    peerConnection = peerConnections.current.get(currentFrom);
+                    if (peerConnection && !peerConnection.isPolite) {
+                        const offer = await peerConnection.createOffer();
+                        const modifiedOffer = {
+                            type: 'offer',
+                            sdp: offer.sdp.replace(/a=setup:passive/, 'a=setup:actpass')
+                        };
+                        await peerConnection.setLocalDescription(modifiedOffer);
+                        const signalKey = `${currentUserId}-${currentFrom}-offer`;
+                        sentSignals.current.delete(signalKey);
+                        sendSignal(
+                            {
+                                from: currentUserId,
+                                to: currentFrom,
+                                signal: modifiedOffer,
+                            },
+                            roomId.current
+                        );
+                        console.log(`Sent offer to user ${currentFrom} after cameraOn`);
+                    }
+                }
+            } catch (error) {
+                console.error(`Error processing cameraOn from ${currentFrom}:`, error);
+                toast.error(`Failed to process cameraOn from ${callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`}`);
+            }
             break;
 
           case 'cameraOff':
