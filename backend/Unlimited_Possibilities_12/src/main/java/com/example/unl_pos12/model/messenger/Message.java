@@ -14,6 +14,10 @@ public class Message {
     @Column(columnDefinition = "MEDIUMTEXT")
     private String content;
     @Column(columnDefinition = "MEDIUMTEXT")
+    private String encryptedContent; // Поле для E2EE
+    @Column(columnDefinition = "TEXT")
+    private String nonce; // Поле для E2EE
+    @Column(columnDefinition = "MEDIUMTEXT")
     private String translatedContent;
     private String translationLanguage;
     private String fileUrl; // URL файла...
@@ -149,5 +153,21 @@ public class Message {
 
     public void setTranscribedContent(String transcribedContent) {
         this.transcribedContent = transcribedContent;
+    }
+
+    public String getEncryptedContent() {
+        return encryptedContent;
+    }
+
+    public void setEncryptedContent(String encryptedContent) {
+        this.encryptedContent = encryptedContent;
+    }
+
+    public String getNonce() {
+        return nonce;
+    }
+
+    public void setNonce(String nonce) {
+        this.nonce = nonce;
     }
 }

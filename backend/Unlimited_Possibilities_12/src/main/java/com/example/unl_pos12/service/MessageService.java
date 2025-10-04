@@ -70,7 +70,33 @@ public class MessageService {
         }
 
         message.setTimestamp(ZonedDateTime.now());
-        System.out.println("Saving message: type=" + message.getMessageType() + ", content=" + message.getContent() + ", chatId=" + message.getChat().getId() + ", contentType=" + message.getContentType());
+
+        // Проверка для секретных чатов
+        if (message.getChat() != null && message.getChat().getIsSecret() != null && message.getChat().getIsSecret()) {
+            if ("text".equals(message.getMessageType())) {
+                if (message.getEncryptedContent() == null || message.getNonce() == null) {
+                    throw new RuntimeException("Encrypted content or nonce is missing for secret chat");
+                }
+                message.setContent(null);
+                message.setTranslatedContent(null);
+                message.setTranscribedContent(null);
+            } else if (!"audio".equals(message.getMessageType()) && !"file".equals(message.getMessageType())) {
+                throw new RuntimeException("Invalid message type for secret chat: " + message.getMessageType());
+            }
+        } else {
+            message.setEncryptedContent(null);
+            message.setNonce(null);
+            if (message.getContent() == null && message.getFileUrl() == null) {
+                throw new RuntimeException("Content or fileUrl is required for non-secret chat");
+            }
+        }
+
+        System.out.println("Saving message: type=" + message.getMessageType() +
+                ", content=" + message.getContent() +
+                ", encryptedContent=" + message.getEncryptedContent() +
+                ", chatId=" + message.getChat().getId() +
+                ", isSecret=" + (message.getChat() != null ? message.getChat().getIsSecret() : false) +
+                ", contentType=" + message.getContentType());
         return messageRepository.save(message);
     }
 

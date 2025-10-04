@@ -88,7 +88,8 @@ public class MessageController {
         User recipient = userRepository.findById(request.getRecipientId())
                 .orElseThrow(() -> new RuntimeException("Recipient not found"));
 
-        webSocketService.sendNotification(user.getId(), recipient.getId(), request.getContent(), request.getChatId());
+        webSocketService.sendNotification(user.getId(), recipient.getId(), request.getContent(),
+                request.getChatId(), request.getIsSecret(), request.getMessageType());
 
         return ResponseEntity.ok("Notification sent");
     }

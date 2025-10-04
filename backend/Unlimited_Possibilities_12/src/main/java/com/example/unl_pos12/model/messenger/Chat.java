@@ -14,6 +14,7 @@ public class Chat {
     private String name;
     @JsonProperty("private")
     private boolean isPrivate;
+    private Boolean isSecret = false; // Поле для секретных чатов
 
     //@OneToMany(mappedBy = "chat", cascade = CascadeType.ALL)
     @OneToMany(mappedBy = "chat", fetch = FetchType.EAGER)
@@ -50,5 +51,13 @@ public class Chat {
 
     public void setIsPrivate(boolean isPrivate) {
         this.isPrivate = isPrivate;
+    }
+
+    public Boolean getIsSecret() {
+        return isSecret;
+    }
+
+    public void setIsSecret(Boolean isSecret) {
+        this.isSecret = isSecret;
     }
 }

@@ -5,6 +5,8 @@ public class NotificationRequest {
     private Long recipientId;
     private String content;
     private Long chatId;
+    private Boolean isSecret;
+    private String messageType;
 
     // Геттеры и сеттеры
     public Long getUserId() {
@@ -37,5 +39,21 @@ public class NotificationRequest {
 
     public void setChatId(Long chatId) {
         this.chatId = chatId;
+    }
+
+    public Boolean getIsSecret() {
+        return isSecret;
+    }
+
+    public void setIsSecret(Boolean isSecret) {
+        this.isSecret = isSecret;
+    }
+
+    public String getMessageType() {
+        return messageType;
+    }
+
+    public void setMessageType(String messageType) {
+        this.messageType = messageType;
     }
 }

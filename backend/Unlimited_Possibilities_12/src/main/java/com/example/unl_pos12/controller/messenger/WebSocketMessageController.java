@@ -46,21 +46,44 @@ public class WebSocketMessageController {
         System.out.println("Working method sendMessage...");
         System.out.println("Received message object: " + message);
         System.out.println("chatId: " + chatId);
-        System.out.println("Received message: " + message.getContent() +
-                " from user: " + message.getSender().getUsername());
+        System.out.println("Received message: content=" + message.getContent() +
+                ", messageType=" + message.getMessageType() +
+                ", from user: " + (message.getSender() != null ? message.getSender().getUsername() : "null"));
         System.out.println("Message from chat: " + message.getChat());
         System.out.println("Message from chatName: " + message.getChat().getName());
         System.out.println("Message from chat id: " + (message.getChat() != null
                 ? message.getChat().getId() : "null"));
-        System.out.println("Message type: " + message.getMessageType());
 
-        // Убедитесь, что chatId установлен
+        // Проверка chatId
         if (message.getChat() != null && message.getChat().getId() != null) {
             Chat chat = chatRepository.findById(message.getChat().getId())
                     .orElseThrow(() -> new RuntimeException("Chat not found"));
             message.setChat(chat);
         } else {
             throw new RuntimeException("Chat ID is missing");
+        }
+
+        // Проверка для секретных чатов
+        if (message.getChat().getIsSecret() != null && message.getChat().getIsSecret()) {
+            // Для секретных чатов ожидаем encryptedContent и nonce для текстовых сообщений
+            if ("text".equals(message.getMessageType())) {
+                if (message.getEncryptedContent() == null || message.getNonce() == null) {
+                    throw new RuntimeException("Encrypted content or nonce is missing for secret chat");
+                }
+                // Очищаем поля, связанные с ИИ
+                message.setContent(null);
+                message.setTranslatedContent(null);
+                message.setTranscribedContent(null);
+            } else if (!"audio".equals(message.getMessageType()) && !"file".equals(message.getMessageType())) {
+                throw new RuntimeException("Invalid message type for secret chat: " + message.getMessageType());
+            }
+        } else {
+            // Для обычных чатов очищаем E2EE-поля
+            message.setEncryptedContent(null);
+            message.setNonce(null);
+            if (message.getContent() == null && message.getFileUrl() == null) {
+                throw new RuntimeException("Content or fileUrl is required for non-secret chat");
+            }
         }
 
         message.setDelivered_status(true); // Устанавливаем статус доставки
