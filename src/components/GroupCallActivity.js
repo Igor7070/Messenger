@@ -590,8 +590,8 @@ const GroupCallActivity = () => {
           disconnectTimeout = setTimeout(() => {
             if (peerConnection.iceConnectionState === 'disconnected') {
               console.log(`User ${userId} still disconnected after 10 seconds, removing from call`);
-              setCallParticipants((prev) => prev.filter((u) => u.id !== Number(userId)));
-              peerConnections.current.delete(userId);
+              //setCallParticipants((prev) => prev.filter((u) => u.id !== Number(userId)));
+              //peerConnections.current.delete(userId);
               if (callParticipants.length < 2) {
                 console.log('Ending call: initiator or less than 2 participants remain');
                 endCall();
