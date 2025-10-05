@@ -381,7 +381,7 @@ const GroupCallActivity = () => {
     if (!isCallStarted || isCallEnded || !isMounted) return;
 
     let checkCount = 0; // Счётчик для первых трёх проверок
-    const checkConnectionsInterval = setInterval(() => {
+    let intervalId = setInterval(() => {
         console.log(`Periodic connection check triggered, checkCount=${checkCount}`);
         let hasFailedConnections = false;
         const checkedUsers = new Set();
@@ -422,8 +422,8 @@ const GroupCallActivity = () => {
         // Увеличиваем счётчик и определяем следующий интервал
         checkCount++;
         if (checkCount >= 3) {
-            clearInterval(checkConnectionsInterval);
-            const longInterval = setInterval(() => {
+            clearInterval(intervalId);
+            intervalId = setInterval(() => {
                 console.log('Periodic connection check triggered (long interval)');
                 let hasFailedConnections = false;
                 const checkedUsers = new Set();
@@ -459,12 +459,11 @@ const GroupCallActivity = () => {
                     console.log('All connections established, no retry needed');
                 }
             }, 10000); // Проверка каждые 10 секунд
-            return () => clearInterval(longInterval);
         }
     }, 2000); // Первые три проверки каждые 2 секунды
 
     return () => {
-        clearInterval(checkConnectionsInterval);
+        clearInterval(intervalId);
         console.log('Cleared connection check interval');
     };
   }, [isCallStarted, isCallEnded, callParticipants]);
@@ -879,7 +878,7 @@ const GroupCallActivity = () => {
       }
     } catch (error) {
       console.error('Error retrying failed connections:', error);
-      toast.error('Failed to retry connections.');
+      //toast.error('Failed to retry connections.');
     }
   };
 
