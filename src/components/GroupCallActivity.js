@@ -878,7 +878,7 @@ const GroupCallActivity = () => {
       }
     } catch (error) {
       console.error('Error retrying failed connections:', error);
-      //toast.error('Failed to retry connections.');
+      toast.error('Failed to retry connections.');
     }
   };
 
