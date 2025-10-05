@@ -512,21 +512,29 @@ const GroupCallActivity = () => {
   const resendPendingSignals = () => {
     console.log('Resending pending signals for unconnected peers');
     peerConnections.current.forEach((pc, userId) => {
-      if (pc.iceConnectionState !== 'connected' && pc.iceConnectionState !== 'completed') {
-        if (pc.localDescription && pc.localDescription.type === 'offer' && !pc.remoteDescription) {
-          const signalKey = `${currentUserId}-${userId}-offer-${pc.localDescription.sdp.slice(0, 50)}`;
-          console.log(`Resending offer to user ${userId}`);
-          sendSignal(
-            {
-              from: currentUserId,
-              to: userId,
-              signal: { type: 'offer', sdp: pc.localDescription.sdp },
-            },
-            roomId.current
-          );
-          sentSignals.current.add(signalKey);
+        if (pc.iceConnectionState !== 'connected' && pc.iceConnectionState !== 'completed') {
+            // Проверяем, установлено ли соединение
+            if (
+                pc.iceConnectionState === 'connected' &&
+                pc.signalingState === 'stable'
+            ) {
+                console.log(`Connection with user ${userId} is already established, skipping offer resend`);
+                return;
+            }
+            if (pc.localDescription && pc.localDescription.type === 'offer' && !pc.remoteDescription) {
+                const signalKey = `${currentUserId}-${userId}-offer-${pc.localDescription.sdp.slice(0, 50)}`;
+                console.log(`Resending offer to user ${userId}`);
+                sendSignal(
+                    {
+                        from: currentUserId,
+                        to: userId,
+                        signal: { type: 'offer', sdp: pc.localDescription.sdp },
+                    },
+                    roomId.current
+                );
+                sentSignals.current.add(signalKey);
+            }
         }
-      }
     });
   };
 
