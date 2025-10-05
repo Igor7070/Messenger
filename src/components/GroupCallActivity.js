@@ -674,10 +674,7 @@ const GroupCallActivity = () => {
               peerConnection.iceConnectionState !== 'connected' &&
               peerConnection.iceConnectionState !== 'completed'
             ) {
-              if (peerConnection.isPolite) {
-                console.log(`Skipping offer for user ${user.id}: polite peer waits for offer`);
-                continue;
-              }
+              // Убрана проверка isPolite, отправляем offer всем
               if (peerConnection.localDescription && !peerConnection.remoteDescription) {
                 console.log(`Rolling back localDescription for user ${user.id}`);
                 await peerConnection.setLocalDescription({ type: 'rollback' }).catch((error) => {
@@ -685,10 +682,11 @@ const GroupCallActivity = () => {
                 });
               }
               if (!peerConnection.remoteDescription) {
+                console.log(`Creating offer for user ${user.id}`);
                 const offer = await peerConnection.createOffer();
                 const modifiedOffer = {
                   type: 'offer',
-                  sdp: offer.sdp.replace(/a=setup:passive/, 'a=setup:actpass') // actpass для оффера
+                  sdp: offer.sdp.replace(/a=setup:passive/, 'a=setup:actpass')
                 };
                 await peerConnection.setLocalDescription(modifiedOffer);
                 const signalKey = `${currentUserId}-${user.id}-offer-${modifiedOffer.sdp.slice(0, 50)}`;
@@ -707,13 +705,7 @@ const GroupCallActivity = () => {
                     user.id,
                     setTimeout(() => {
                       if (peerConnection && !peerConnection.remoteDescription) {
-                        console.error(`No answer received from user ${user.id} within 10 seconds`);
-                        //toast.error(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
-                        //peerConnections.current.delete(String(user.id));
-                        //setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
-                        if (isInitiator || callParticipants.length < 2) {
-                          //endCall();
-                        }
+                        console.warn(`No answer received from user ${user.id} within 90 seconds`);
                       }
                     }, 90000)
                   );
@@ -756,6 +748,13 @@ const GroupCallActivity = () => {
       for (const user of callParticipants) {
         if (user.id !== Number(currentUserId)) {
           let peerConnection = peerConnections.current.get(String(user.id));
+          if (!peerConnection) {
+            // Создаём PeerConnection для отсутствующих пар
+            console.log(`No peerConnection for user ${user.id}, initializing new one`);
+            const stream = localAudioRef.current.srcObject;
+            await initializePeerConnection(String(user.id), stream);
+            peerConnection = peerConnections.current.get(String(user.id));
+          }
           if (peerConnection) {
             if (
               peerConnection.iceConnectionState !== 'connected' &&
@@ -777,12 +776,12 @@ const GroupCallActivity = () => {
                 continue;
               }
               retryCounts.set(user.id, retries + 1);
-              console.log(`Retrying connection for user ${user.id}, attempt ${retries + 1}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}, isPolite: ${peerConnection.isPolite}`);
+              console.log(`Retrying connection for user ${user.id}, attempt ${retries + 1}, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
 
               // Закрываем старое соединение
               peerConnection.close();
               peerConnections.current.delete(String(user.id));
-              pendingCandidates.current.delete(String(user.id)); // Очистка кандидатов
+              pendingCandidates.current.delete(String(user.id));
 
               // Инициализируем новое соединение
               const stream = localAudioRef.current.srcObject;
@@ -815,8 +814,7 @@ const GroupCallActivity = () => {
                       user.id,
                       setTimeout(() => {
                         if (peerConnection && !peerConnection.remoteDescription) {
-                          console.warn(`No answer received from user ${user.id} within 10 seconds on retry ${retries + 1}`);
-                          //toast.warn(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
+                          console.warn(`No answer received from user ${user.id} within 90 seconds on retry ${retries + 1}`);
                         }
                       }, 90000)
                     );
@@ -831,47 +829,6 @@ const GroupCallActivity = () => {
               }
             } else {
               console.log(`Connection with user ${user.id} is already established, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
-            }
-          } else {
-            console.warn(`No peerConnection for user ${user.id}, initializing new one`);
-            const stream = localAudioRef.current.srcObject;
-            await initializePeerConnection(String(user.id), stream);
-            const newPeerConnection = peerConnections.current.get(String(user.id));
-            if (newPeerConnection) {
-              console.log(`Creating initial offer for user ${user.id} after initializing new connection`);
-              const offer = await newPeerConnection.createOffer();
-              const modifiedOffer = {
-                type: 'offer',
-                sdp: offer.sdp.replace(/a=setup:passive/, 'a=setup:actpass')
-              };
-              await newPeerConnection.setLocalDescription(modifiedOffer);
-              const signalKey = `${currentUserId}-${user.id}-offer-${modifiedOffer.sdp.slice(0, 50)}`;
-              if (!sentSignals.current.has(signalKey)) {
-                sentSignals.current.add(signalKey);
-                try {
-                  sendSignal(
-                    {
-                      from: currentUserId,
-                      to: String(user.id),
-                      signal: modifiedOffer,
-                    },
-                    roomId.current
-                  );
-                  console.log(`Sent initial offer to user ${user.id} after initializing new connection`);
-                  answerTimeouts.current.set(
-                    user.id,
-                    setTimeout(() => {
-                      if (newPeerConnection && !newPeerConnection.remoteDescription) {
-                        console.warn(`No answer received from user ${user.id} within 10 seconds after initializing new connection`);
-                        toast.warn(`No response from ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
-                      }
-                    }, 90000)
-                  );
-                } catch (error) {
-                  console.error(`Failed to send initial offer to user ${user.id}:`, error);
-                  toast.error(`Failed to send offer to ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
-                }
-              }
             }
           }
         }
