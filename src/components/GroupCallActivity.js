@@ -735,17 +735,26 @@ const GroupCallActivity = () => {
                 }
                 // Убрана проверка isPolite, отправляем offer всем
                 if (peerConnection.localDescription && !peerConnection.remoteDescription) {
-                    console.log(`Rolling back localDescription for user ${user.id}`);
-                    await peerConnection.setLocalDescription({ type: 'rollback' }).catch((error) => {
-                        console.error(`Error rolling back localDescription for ${user.id}:`, error);
-                    });
+                    console.log(`Rolling back localDescription for user ${user.id}, signalingState: ${peerConnection.signalingState}`);
+                    if (peerConnection.signalingState !== 'stable') {
+                        await peerConnection.setLocalDescription({ type: 'rollback' }).catch((error) => {
+                            console.error(`Error rolling back localDescription for ${user.id}:`, error);
+                        });
+                    } else {
+                        console.log(`Skipping rollback for user ${user.id}: signalingState is stable`);
+                    }
                 }
                 if (!peerConnection.remoteDescription) {
                     console.log(`Creating offer for user ${user.id}`);
+                    const currentMid = peerConnection.localDescription?.sdp?.match(/a=mid:(\d+)/)?.[1] || '0';
                     const offer = await peerConnection.createOffer();
+                    let modifiedSdp = offer.sdp.replace(/a=setup:passive/, 'a=setup:actpass');
+                    if (currentMid && offer.sdp) {
+                        modifiedSdp = modifiedSdp.replace(/a=mid:\d+/, `a=mid:${currentMid}`);
+                    }
                     const modifiedOffer = {
                         type: 'offer',
-                        sdp: offer.sdp.replace(/a=setup:passive/, 'a=setup:actpass')
+                        sdp: modifiedSdp
                     };
                     await peerConnection.setLocalDescription(modifiedOffer);
                     const signalKey = `${currentUserId}-${user.id}-offer-${modifiedOffer.sdp.slice(0, 50)}`;
@@ -783,7 +792,8 @@ const GroupCallActivity = () => {
     } catch (error) {
       console.error('Error starting group call:', error);
       toast.error('Failed to start group call.');
-      endCall();
+      //endCall();
+      // Продолжаем звонок с оставшимися участниками
     }
   };
 
@@ -1190,9 +1200,11 @@ const GroupCallActivity = () => {
                 peerConnection.close();
                 peerConnections.current.delete(currentFrom);
               }
-              if (isInitiator || callParticipants.length <= 2) {
-                console.log('Ending call: initiator or less than 2 participants remain');
-                endCall();
+              if (Number(currentFrom) === initiator.id || callParticipants.length <= 1) {
+                  console.log('Ending call: initiator left or no participants remain');
+                  endCall();
+              } else {
+                  console.log(`Keeping call active, remaining participants: ${callParticipants.length - 1}`);
               }
             }
             break;
