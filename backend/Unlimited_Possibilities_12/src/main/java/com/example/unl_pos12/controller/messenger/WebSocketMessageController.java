@@ -183,6 +183,6 @@ public class WebSocketMessageController {
                     }
                 }
             }
-        }, 5, 5, TimeUnit.SECONDS); // Проверяем каждые 5 секунд
+        }, 5, 5, TimeUnit.SECONDS); // Проверяем каждые 5 секунд...
     }
 }
