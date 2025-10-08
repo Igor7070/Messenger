@@ -1190,9 +1190,11 @@ const SecretPrivateChat = () => {
         <div
           className="private-context-menu"
           style={{ top: contextMenu.y, left: contextMenu.x }}
-          onMouseLeave={() => setContextMenu({ visible: false })}
+          onMouseLeave={() => setContextMenu({ visible: false, message: null })}
         >
-          {msg.messageType === 'text' && <button onClick={() => handleMenuAction('edit')}>Edit</button>}
+          {contextMenu.message?.messageType === 'text' && (
+            <button onClick={() => handleMenuAction('edit')}>Edit</button>
+          )}
           <button onClick={() => handleMenuAction('delete')}>Delete</button>
         </div>
       )}
