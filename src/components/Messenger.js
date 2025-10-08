@@ -16,6 +16,7 @@ import TranslationSettingsModal from './TranslationSettingsModal';
 import TranscriptionSettingsModal from './TranscriptionSettingsModal'; // ДОБАВЛЕНО: Импорт модального окна для транскрипции
 import { translateMessage, saveTranslation } from '../api/messages';
 import useGroupChatTranslationAndSpellCheck from '../hooks/useGroupChatTranslationAndSpellCheck';
+import sodium from 'libsodium-wrappers';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 
 const getChatName = async (chatId) => {
@@ -25,6 +26,44 @@ const getChatName = async (chatId) => {
     }
     const chat = await response.json();
     return chat.name;
+};
+
+const KEYSTORE_ALIAS = 'secret_chat_key';
+
+const generateAndSaveKeys = async (userId) => {
+  try {
+    await sodium.ready; // Инициализация libsodium
+    const alias = `${KEYSTORE_ALIAS}_${userId}`;
+    if (!localStorage.getItem(alias)) {
+      const { publicKey, privateKey } = sodium.crypto_box_keypair(); // Генерация пары ключей
+      const privateKeyBase64 = sodium.to_base64(privateKey); // Преобразование в Base64
+      localStorage.setItem(alias, privateKeyBase64); // Сохранение приватного ключа
+      await sendPublicKeyToServer(userId, sodium.to_base64(publicKey)); // Отправка публичного ключа
+      console.log(`Keys generated and saved for userId: ${userId}`);
+    }
+  } catch (error) {
+    console.error('Error generating keys:', error);
+    toast.error('Failed to initialize encryption keys');
+  }
+};
+
+const sendPublicKeyToServer = async (userId, publicKey) => {
+  try {
+    const response = await fetch(`https://unlimitedpossibilities12.org/api/public-keys?userId=${userId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(publicKey),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to upload public key: ${response.status}`);
+    }
+    console.log(`Public key uploaded successfully for userId: ${userId}`);
+  } catch (error) {
+    console.error('Error uploading public key:', error);
+    toast.error('Failed to upload public key');
+  }
 };
 
 const Messenger = () => {
@@ -704,6 +743,7 @@ const Messenger = () => {
                 setCurrentUserId(newUser.id);
                 setContextUserId(newUser.id);
                 setNotificationUserId(newUser.id);
+                await generateAndSaveKeys(newUser.id); // [ДОБАВЛЕНО] Генерация ключей
                 toast.success('User successfully created!');
             } catch (error) {
                 let errorMessage = 'Failed to create user. Please try again.';
@@ -734,6 +774,7 @@ const Messenger = () => {
                 setErrorMessage('');
                 localStorage.setItem('userId', loggedUser.id);
                 localStorage.setItem('username', loggedUser.username);
+                await generateAndSaveKeys(loggedUser.id); // [ДОБАВЛЕНО] Проверка и генерация ключей
                 initializeWebSocket(loggedUser.id, loggedUser.username);
                 sendOnlineStatus();
                 toast.success('You have successfully logged in!');
