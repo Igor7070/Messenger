@@ -15,7 +15,7 @@ import { usePrivateMessageNotification } from '../context/PrivateMessageNotifica
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import * as sodium from 'libsodium-wrappers';
 
-const generateChatName = (username1, username2) => {
+export const generateChatName = (username1, username2) => {
   const names = [username1, username2].sort(); // Сортировка имён по алфавиту
   return `${names[0]}_${names[1]}_secret`;
 };

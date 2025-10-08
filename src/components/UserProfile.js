@@ -9,6 +9,7 @@ import { useUserInteraction } from '../context/UserInteractionContext';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
+import { generateChatName } from './SecretPrivateChat';
 
 const UserProfile = () => {
     const { userId } = useParams();
@@ -384,6 +385,74 @@ const UserProfile = () => {
         }
     };
 
+    const handleSecretChat = async () => {
+        if (!currentUserId) {
+            toast.error('You need to create an account or log in');
+            return;
+        }
+        if (String(currentUserId) === userId) {
+            toast.error('You cannot start a secret chat with yourself');
+            return;
+        }
+
+        try {
+            const currentUsername = localStorage.getItem('username');
+            const targetUsername = user.username;
+            const chatName = generateChatName(currentUsername, targetUsername);
+
+            // Проверка существующих чатов
+            const chatsResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats`);
+            if (!chatsResponse.ok) {
+                throw new Error(`Failed to fetch chats: ${chatsResponse.status}`);
+            }
+            const chats = await chatsResponse.json();
+            const existingChat = chats.find(
+                (chat) => chat.isSecret && chat.name === chatName
+            );
+
+            if (existingChat) {
+                navigate(`/secret-chat/${existingChat.id}`);
+                toast.success(`Navigating to existing secret chat with ${targetUsername} (chatId: ${existingChat.id})`);
+                return;
+            }
+
+            // Создание нового секретного чата
+            const newChat = {
+                name: chatName,
+                isSecret: true,
+            };
+            const createResponse = await fetch('https://unlimitedpossibilities12.org/api/chats', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newChat),
+            });
+
+            if (!createResponse.ok) {
+                throw new Error(`Failed to create chat: ${createResponse.status}`);
+            }
+
+            const createdChat = await createResponse.json();
+            const chatId = createdChat.id;
+
+            // Привязка чата к пользователю
+            const addResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`, {
+                method: 'POST',
+            });
+
+            if (!addResponse.ok) {
+                throw new Error(`Failed to add chat to user: ${addResponse.status}`);
+            }
+
+            navigate(`/secret-chat/${chatId}`);
+            toast.success(`Navigating to secret chat with ${targetUsername}!`);
+        } catch (error) {
+            console.error('Error creating secret chat:', error);
+            toast.error('Error creating secret chat: ' + error.message);
+        }
+    };
+
     if (error) return <div className="error-message">{error}</div>;
     if (!user) return <div>Loading...</div>;
 
@@ -440,21 +509,27 @@ const UserProfile = () => {
                 )}
             </div>
 
-            {userId === String(currentUserId) && (
-                <div className="button-container">
-                    <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
-                    <button onClick={() => navigate('/calls')} className="calls-button">Calls</button>
-                    <button onClick={handlePersonalChats} className="personal-chats-button">
-                        Personal Chats
-                    </button>
-                    <FaEllipsisV className="settings-icon" onClick={toggleSettingsMenu} />
-                    {settingsMenuVisible && (
-                        <div className="settings-menu">
+            <div className="button-container">
+                {userId === String(currentUserId) && (
+                    <>
+                        <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
+                        <button onClick={() => navigate('/calls')} className="calls-button">Calls</button>
+                        <button onClick={handlePersonalChats} className="personal-chats-button">
+                            Personal Chats
+                        </button>
+                    </>
+                )}
+                <FaEllipsisV className="settings-icon" onClick={toggleSettingsMenu} />
+                {settingsMenuVisible && (
+                    <div className="settings-menu">
+                        {userId === String(currentUserId) ? (
                             <button onClick={handleDeleteAccount}>Delete account</button>
-                        </div>
-                    )}
-                </div>
-            )}
+                        ) : (
+                            <button onClick={handleSecretChat}>Open Secret Chat</button>
+                        )}
+                    </div>
+                )}
+            </div>
 
             {currentUserId && userId !== String(currentUserId) && (
                 <button onClick={handleSendMessage} className="send-message-button">Send Message</button>

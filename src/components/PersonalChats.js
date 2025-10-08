@@ -196,14 +196,21 @@ const PersonalChats = () => {
         setPrivateChats(updatedChats);
     };
 
-    const handleChatClick = (chatId) => {
+    const handleChatClick = (chat) => {
         setShouldRefreshChats(true);
-        navigate(`/private-chat/${chatId}`);
+        const route = chat.isSecret ? `/secret-chat/${chat.id}` : `/private-chat/${chat.id}`;
+        navigate(route);
     };
 
     const getChatPartnerName = (chatName) => {
-        const names = chatName.split('_');
-        return names.find(name => name !== currentUserName);
+        const parts = chatName.split('_');
+        if (parts.length === 3 && parts[2] === 'secret') {
+            return parts[0] === currentUserName ? parts[1] : parts[0];
+        } else if (parts.length === 2) {
+            return parts[0] === currentUserName ? parts[1] : parts[0];
+        }
+        console.warn('No partner name found in chatName:', chatName);
+        return '';
     };
 
     const handleContextMenu = (event, chatId) => {
@@ -266,7 +273,7 @@ const PersonalChats = () => {
                     return (
                         <li
                             key={chat.id}
-                            onClick={() => handleChatClick(chat.id)}
+                            onClick={() => handleChatClick(chat)}
                             onContextMenu={(event) => handleContextMenu(event, chat.id)}
                             className="chat-item1"
                         >
@@ -282,7 +289,10 @@ const PersonalChats = () => {
                             </div>
                             <div className="chat-info">
                                 <div className="chat-header">
-                                    <span className="chat-name-list-item">{partnerName}</span>
+                                    <span className="chat-name-list-item">
+                                        {chat.isSecret && <span className="secret-chat-icon">🔒 </span>}
+                                        {partnerName}
+                                    </span>
                                     {chat.unreadCount > 0 && (
                                         <span className="unread-indicator" aria-label={`${chat.unreadCount} unread messages`}>
                                             {chat.unreadCount}
