@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getMessages } from '../api/messages';
-import '../styles/PrivateChat.css'; // Используем те же стили, что и в обычном чате
+import '../styles/SecretPrivateChat.css';
 import { toast } from 'react-toastify';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getChatById } from '../api/chats';

@@ -6,6 +6,7 @@ import Home from './Home';
 import Messenger from './Messenger';
 import UserProfile from './UserProfile';
 import PrivateChat from './PrivateChat';
+import SecretPrivateChat from './SecretPrivateChat';
 import VoiceCall from './VoiceCall';
 import VideoCall from './VideoCall';
 import VoiceCallWithTranslate from './VoiceCallWithTranslate';
@@ -89,6 +90,7 @@ const AppContent = () => {
             <Route path="/chat/:chatId" element={<Messenger />} />
             <Route path="/user/:userId" element={<UserProfile />} />
             <Route path="/private-chat/:chatId" element={<PrivateChat />} />
+            <Route path="/secret-chat/:chatId" element={<SecretPrivateChat />} />
             <Route path="/voice-call/:roomId" element={<VoiceCall />} />
             <Route path="/video-call/:roomId" element={<VideoCall />} />
             <Route path="/user/:userId/personal-chats" element={<PersonalChats />} />
