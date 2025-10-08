@@ -782,7 +782,7 @@ const SecretPrivateChat = () => {
         ...prev[msgId],
         currentTime: seekTime,
       },
-    });
+    }));
   };
 
   const handleAudioError = (msgId, error) => {
