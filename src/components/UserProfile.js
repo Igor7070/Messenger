@@ -400,20 +400,40 @@ const UserProfile = () => {
             const targetUsername = user.username;
             const chatName = generateChatName(currentUsername, targetUsername);
 
-            // Проверка существующих чатов
-            const chatsResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats`);
-            if (!chatsResponse.ok) {
-                throw new Error(`Failed to fetch chats: ${chatsResponse.status}`);
+            // Проверка существования секретного чата
+            const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/check?name1=${currentUsername}&name2=${targetUsername}&isSecret=true`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
             }
-            const chats = await chatsResponse.json();
-            const existingChat = chats.find(
-                (chat) => chat.isSecret && chat.name === chatName
-            );
 
-            if (existingChat) {
-                navigate(`/secret-chat/${existingChat.id}`);
-                toast.success(`Navigating to existing secret chat with ${targetUsername} (chatId: ${existingChat.id})`);
-                return;
+            const data = await response.json();
+            const chatId = data.chatId;
+
+            if (chatId !== -1) {
+                // Проверка, привязан ли чат к текущему пользователю
+                const checkResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/exists`);
+                if (checkResponse.ok) {
+                    const text = await checkResponse.text();
+                    const exists = text === "Chat exists in user's private chats";
+                    if (exists) {
+                        navigate(`/secret-chat/${chatId}`);
+                        toast.success(`Navigating to existing secret chat with ${targetUsername} (chatId: ${chatId})`);
+                        return;
+                    }
+                } else if (checkResponse.status === 404) {
+                    // Привязка чата к текущему пользователю
+                    const addResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`, {
+                        method: 'POST',
+                    });
+                    if (!addResponse.ok) {
+                        throw new Error(`Failed to add chat to user: ${addResponse.status}`);
+                    }
+                    navigate(`/secret-chat/${chatId}`);
+                    toast.success(`Navigating to existing secret chat with ${targetUsername} (chatId: ${chatId})`);
+                    return;
+                } else {
+                    throw new Error(`Error checking chat existence: ${checkResponse.status}`);
+                }
             }
 
             // Создание нового секретного чата
@@ -434,18 +454,24 @@ const UserProfile = () => {
             }
 
             const createdChat = await createResponse.json();
-            const chatId = createdChat.id;
+            const newChatId = createdChat.id;
 
-            // Привязка чата к пользователю
-            const addResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${chatId}/add`, {
+            // Привязка чата к обоим пользователям
+            const addCurrentUserResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}/private-chats/${newChatId}/add`, {
                 method: 'POST',
             });
-
-            if (!addResponse.ok) {
-                throw new Error(`Failed to add chat to user: ${addResponse.status}`);
+            if (!addCurrentUserResponse.ok) {
+                throw new Error(`Failed to add chat to current user: ${addCurrentUserResponse.status}`);
             }
 
-            navigate(`/secret-chat/${chatId}`);
+            const addTargetUserResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${userId}/private-chats/${newChatId}/add`, {
+                method: 'POST',
+            });
+            if (!addTargetUserResponse.ok) {
+                throw new Error(`Failed to add chat to target user: ${addTargetUserResponse.status}`);
+            }
+
+            navigate(`/secret-chat/${newChatId}`);
             toast.success(`Navigating to secret chat with ${targetUsername}!`);
         } catch (error) {
             console.error('Error creating secret chat:', error);
