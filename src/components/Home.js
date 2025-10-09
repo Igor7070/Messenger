@@ -12,6 +12,58 @@ import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 import { format, isToday, parseISO } from 'date-fns';
+import sodium from 'libsodium-wrappers';
+
+const KEYSTORE_ALIAS = 'secret_chat_key';
+
+const generateAndSaveKeys = async (userId) => {
+  try {
+    console.log(`Starting key generation for userId: ${userId}`);
+    await sodium.ready;
+    const alias = `${KEYSTORE_ALIAS}_${userId}`;
+    const existingKey = localStorage.getItem(alias);
+    console.log(`Existing private key for ${alias}: ${existingKey ? 'found' : 'not found'}`);
+    if (!existingKey) {
+      console.log('Generating new key pair...');
+      const { publicKey, privateKey } = sodium.crypto_box_keypair();
+      const privateKeyBase64 = sodium.to_base64(privateKey);
+      const publicKeyBase64 = sodium.to_base64(publicKey);
+      console.log(`Generated keys - Public: ${publicKeyBase64}, Private: ${privateKeyBase64}`);
+      localStorage.setItem(alias, privateKeyBase64);
+      console.log(`Private key saved to localStorage for ${alias}`);
+      await sendPublicKeyToServer(userId, publicKeyBase64);
+      console.log(`Keys generated and saved for userId: ${userId}`);
+    } else {
+      console.log(`Private key already exists for userId: ${userId}, skipping generation`);
+    }
+  } catch (error) {
+    console.error('Error generating keys:', error);
+    toast.error('Failed to initialize encryption keys');
+  }
+};
+
+const sendPublicKeyToServer = async (userId, publicKey) => {
+  try {
+    console.log(`Uploading public key for userId: ${userId}, key: ${publicKey}`);
+    const response = await fetch(`https://unlimitedpossibilities12.org/api/public-keys?userId=${userId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ publicKey }),
+    });
+    console.log(`Public key upload response: status=${response.status}, statusText=${response.statusText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Failed to upload public key: ${errorText}`);
+      throw new Error(`Failed to upload public key: ${response.status}`);
+    }
+    console.log(`Public key uploaded successfully for userId: ${userId}`);
+  } catch (error) {
+    console.error('Error uploading public key:', error);
+    toast.error('Failed to upload public key');
+  }
+};
 
 const Home = () => {
   const [chatName, setChatName] = useState('');
@@ -252,6 +304,7 @@ const Home = () => {
       setLoginUsername('');
       setLoginPassword('');
       setIsLoggedIn(true);
+      await generateAndSaveKeys(userId); // Добавлено генерация ключей
       initializeWebSocket(userId, user.username);
       sendOnlineStatus();
       toast.success('Login successful!');
@@ -309,6 +362,7 @@ const Home = () => {
         setPassword('');
         setBio('');
         setAvatar(null);
+        await generateAndSaveKeys(newUser.id); // Добавлено
         toast.success('User created successfully!');
       } else {
         const errorMessage = await response.text();
