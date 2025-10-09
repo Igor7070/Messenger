@@ -268,18 +268,24 @@ const SecretPrivateChat = () => {
           const newMessage = JSON.parse(message.body);
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
             try {
+              // Очищаем возможные символы новой строки
+              const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
+              const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
+
               // Проверяем наличие ключа отправителя
-              if (!publicKeys[newMessage.sender.id]) {
+              let publicKey = publicKeys[newMessage.sender.id];
+              if (!publicKey) {
                 console.log(`Public key for senderId: ${newMessage.sender.id} not found, fetching...`);
-                const publicKey = await getPublicKey(newMessage.sender.id);
+                publicKey = await getPublicKey(newMessage.sender.id);
                 setPublicKeys((prev) => ({
                   ...prev,
                   [newMessage.sender.id]: publicKey
                 }));
               }
+
               const decryptedContent = await decryptMessage(
-                newMessage.encryptedContent,
-                newMessage.nonce,
+                cleanedEncryptedContent,
+                cleanedNonce,
                 newMessage.sender.id
               );
               updateMessages({ ...newMessage, content: decryptedContent });
@@ -480,7 +486,7 @@ const SecretPrivateChat = () => {
       const publicKeyBytes = sodium.from_base64(publicKeys[senderId]);
       const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
 
-      // Проверка длины nonce (должна быть 24 байта для crypto_box)
+      // Проверка длины nonce
       if (nonceBytes.length !== sodium.crypto_box_NONCEBYTES) {
         console.error(`Invalid nonce length for senderId: ${senderId}, length: ${nonceBytes.length}, expected: ${sodium.crypto_box_NONCEBYTES}`);
         throw new Error(`Invalid nonce length: ${nonceBytes.length}`);
