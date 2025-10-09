@@ -20,6 +20,37 @@ export const generateChatName = (username1, username2, isSecret = false) => {
   return isSecret ? `${names[0]}_${names[1]}_secret` : `${names[0]}_${names[1]}`;
 };
 
+const fetchPublicKeyWithRetry = async (recipientId, retries = 3, delay = 2000) => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`Fetching public key for userId: ${recipientId}, attempt ${attempt}/${retries}`);
+      const publicKeyResponse = await fetch(
+        `https://unlimitedpossibilities12.org/api/public_keys/${recipientId}`
+      );
+      if (publicKeyResponse.ok) {
+        const publicKeyData = await publicKeyResponse.json();
+        console.log(`Public key fetched for userId: ${recipientId}: ${publicKeyData.publicKey}`);
+        return publicKeyData.publicKey;
+      } else if (publicKeyResponse.status === 404) {
+        console.warn(`Public key not found for userId: ${recipientId}, attempt ${attempt}/${retries}`);
+        if (attempt < retries) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+        throw new Error(`Failed to fetch public key for userId: ${recipientId}, status: ${publicKeyResponse.status}`);
+      } else {
+        throw new Error(`Unexpected response: ${publicKeyResponse.status}`);
+      }
+    } catch (error) {
+      console.error(`Error fetching public key for userId: ${recipientId}, attempt ${attempt}/${retries}`, error);
+      if (attempt === retries) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+};
+
 const getPublicKey = async (userId) => {
   // Проверяем localStorage
   const cachedKey = localStorage.getItem(`public_key_${userId}`);
@@ -116,6 +147,12 @@ const SecretPrivateChat = () => {
   // Загрузка данных чата и сообщений
   useEffect(() => {
     const fetchChatData = async () => {
+      // Очистка кэша ключей для теста
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith('public_key_'))
+        .forEach((key) => localStorage.removeItem(key));
+      console.log('Cleared public key cache in localStorage');
+
       if (!chatIdParam || !username) {
         toast.error('Invalid chat ID or user is not authorized');
         navigate('/');
@@ -215,7 +252,7 @@ const SecretPrivateChat = () => {
     return () => {
       setCurrentChatId(null);
     };
-  }, [chatIdParam, username, setContextUserId, setNotificationUserId, setCurrentChatId, navigate, publicKeys]); // Добавляем publicKeys в зависимости
+  }, [chatIdParam, username, setContextUserId, setNotificationUserId, setCurrentChatId, navigate, publicKeys]);
 
   // WebSocket-подключение
   useEffect(() => {
@@ -276,7 +313,7 @@ const SecretPrivateChat = () => {
       console.log('Deactivating WebSocket in SecretPrivateChat');
       stompClientInstance.deactivate();
     };
-  }, [chatId, publicKeys]); // Добавляем publicKeys в зависимости
+  }, [chatId, publicKeys]);
 
   // Отметка сообщений как прочитанных
   useEffect(() => {
