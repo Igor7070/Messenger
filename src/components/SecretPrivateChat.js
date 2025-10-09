@@ -20,6 +20,21 @@ export const generateChatName = (username1, username2, isSecret = false) => {
   return isSecret ? `${names[0]}_${names[1]}_secret` : `${names[0]}_${names[1]}`;
 };
 
+const getPublicKey = async (userId) => {
+  // Проверяем localStorage
+  const cachedKey = localStorage.getItem(`public_key_${userId}`);
+  if (cachedKey) {
+    console.log(`Found cached public key for userId: ${userId}`);
+    return cachedKey;
+  }
+
+  // Запрашиваем ключ с сервера
+  const publicKey = await fetchPublicKeyWithRetry(userId);
+  localStorage.setItem(`public_key_${userId}`, publicKey);
+  console.log(`Cached public key for userId: ${userId} in localStorage`);
+  return publicKey;
+};
+
 const SecretPrivateChat = () => {
   const [messages, setMessages] = useState([]);
   const [content, setContent] = useState('');
@@ -109,64 +124,61 @@ const SecretPrivateChat = () => {
 
       try {
         const chatData = await getChatById(chatIdParam);
+        if (!chatData.isSecret) {
+          toast.error('This is not a secret chat');
+          navigate('/');
+          return;
+        }
         const names = chatData.name.replace('_secret', '').split('_');
         const interlocutorName = names.find((name) => name !== username);
-        const normalizedChatName = generateChatName(username, interlocutorName);
+        const normalizedChatName = generateChatName(username, interlocutorName, true);
         setChatName(normalizedChatName);
         setDisplayChatName(`Secret Chat with ${interlocutorName}`);
         setChatId(chatIdParam);
         setCurrentChatId(chatIdParam);
 
-        // Получение публичного ключа собеседника
+        // Получение ID собеседника
         const userResponse = await fetch(
           `https://unlimitedpossibilities12.org/api/users/by-username/${interlocutorName}`
         );
-        if (userResponse.ok) {
-          const recipient = await userResponse.json();
-          const recipientId = recipient.id;
-          const fetchPublicKeyWithRetry = async (recipientId, retries = 3, delay = 2000) => {
-            for (let attempt = 1; attempt <= retries; attempt++) {
-              try {
-                console.log(`Fetching public key for userId: ${recipientId}, attempt ${attempt}/${retries}`);
-                const publicKeyResponse = await fetch(
-                  `https://unlimitedpossibilities12.org/api/public_keys/${recipientId}`
-                );
-                if (publicKeyResponse.ok) {
-                  const publicKeyData = await publicKeyResponse.json();
-                  console.log(`Public key fetched for userId: ${recipientId}`, publicKeyData.publicKey);
-                  return publicKeyData.publicKey;
-                } else if (publicKeyResponse.status === 404) {
-                  console.warn(`Public key not found for userId: ${recipientId}, attempt ${attempt}/${retries}`);
-                  if (attempt < retries) {
-                    await new Promise((resolve) => setTimeout(resolve, delay));
-                    continue;
-                  }
-                  throw new Error(`Failed to fetch public key for userId: ${recipientId}, status: ${publicKeyResponse.status}`);
-                } else {
-                  throw new Error(`Unexpected response: ${publicKeyResponse.status}`);
-                }
-              } catch (error) {
-                console.error(`Error fetching public key for userId: ${recipientId}, attempt ${attempt}/${retries}`, error);
-                if (attempt === retries) {
-                  toast.error(`Failed to fetch public key: ${error.message}`);
-                  throw error;
-                }
-                await new Promise((resolve) => setTimeout(resolve, delay));
-              }
-            }
-          };
-
-          const publicKey = await fetchPublicKeyWithRetry(recipientId);
-          setPublicKeys((prev) => ({
-            ...prev,
-            [recipientId]: publicKey
-          }));
+        if (!userResponse.ok) {
+          throw new Error('Failed to fetch recipient');
         }
+        const recipient = await userResponse.json();
+        const recipientId = recipient.id;
 
+        // Запрашиваем ключ собеседника
+        const recipientPublicKey = await getPublicKey(recipientId);
+        setPublicKeys((prev) => ({
+          ...prev,
+          [recipientId]: recipientPublicKey
+        }));
+
+        // Загружаем сообщения
         const initialMessages = await getMessages(chatIdParam);
+        // Собираем все уникальные senderId из сообщений
+        const senderIds = [...new Set(initialMessages.map((msg) => msg.sender.id))];
+        // Запрашиваем ключи для всех отправителей
+        const publicKeysPromises = senderIds
+          .filter((senderId) => senderId !== userId && !publicKeys[senderId])
+          .map(async (senderId) => {
+            const publicKey = await getPublicKey(senderId);
+            return { senderId, publicKey };
+          });
+        const newPublicKeys = await Promise.all(publicKeysPromises);
+        setPublicKeys((prev) => ({
+          ...prev,
+          ...Object.fromEntries(newPublicKeys.map(({ senderId, publicKey }) => [senderId, publicKey]))
+        }));
+
+        // Расшифровываем сообщения
         const decryptedMessages = await Promise.all(
           initialMessages.map(async (msg) => {
             if (msg.messageType === 'text' && msg.encryptedContent && msg.nonce) {
+              if (msg.sender.id === userId) {
+                console.log(`Skipping decryption for own message, id: ${msg.id}`);
+                return { ...msg, content: '', delivered: msg.delivered_status, read: msg.read_status };
+              }
               try {
                 const decryptedContent = await decryptMessage(
                   msg.encryptedContent,
@@ -203,7 +215,7 @@ const SecretPrivateChat = () => {
     return () => {
       setCurrentChatId(null);
     };
-  }, [chatIdParam, username, setContextUserId, setNotificationUserId, setCurrentChatId, navigate]);
+  }, [chatIdParam, username, setContextUserId, setNotificationUserId, setCurrentChatId, navigate, publicKeys]); // Добавляем publicKeys в зависимости
 
   // WebSocket-подключение
   useEffect(() => {
@@ -219,6 +231,15 @@ const SecretPrivateChat = () => {
           const newMessage = JSON.parse(message.body);
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
             try {
+              // Проверяем наличие ключа отправителя
+              if (!publicKeys[newMessage.sender.id]) {
+                console.log(`Public key for senderId: ${newMessage.sender.id} not found, fetching...`);
+                const publicKey = await getPublicKey(newMessage.sender.id);
+                setPublicKeys((prev) => ({
+                  ...prev,
+                  [newMessage.sender.id]: publicKey
+                }));
+              }
               const decryptedContent = await decryptMessage(
                 newMessage.encryptedContent,
                 newMessage.nonce,
@@ -228,6 +249,7 @@ const SecretPrivateChat = () => {
             } catch (error) {
               console.error('Decryption failed for new message:', newMessage.id, error);
               updateMessages({ ...newMessage, content: 'Decryption failed' });
+              toast.error(`Failed to decrypt message: ${error.message}`);
             }
           } else {
             updateMessages(newMessage);
@@ -236,6 +258,7 @@ const SecretPrivateChat = () => {
       },
       onWebSocketError: (error) => {
         console.error('WebSocket error in SecretPrivateChat:', error);
+        toast.error('WebSocket connection error');
       },
       onStompError: (frame) => {
         console.error('STOMP error in SecretPrivateChat:', frame);
@@ -253,7 +276,7 @@ const SecretPrivateChat = () => {
       console.log('Deactivating WebSocket in SecretPrivateChat');
       stompClientInstance.deactivate();
     };
-  }, [chatId]);
+  }, [chatId, publicKeys]); // Добавляем publicKeys в зависимости
 
   // Отметка сообщений как прочитанных
   useEffect(() => {
@@ -392,18 +415,20 @@ const SecretPrivateChat = () => {
 
   const decryptMessage = async (encryptedContent, nonce, senderId) => {
     if (!keyPair || !publicKeys[senderId]) {
-      console.error(`Decryption keys not available for senderId: ${senderId}, keyPair: ${!!keyPair}, publicKey: ${!!publicKeys[senderId]}`);
+      console.error(`Decryption keys not available for senderId: ${senderId}, keyPair: ${!!keyPair}, publicKey: ${publicKeys[senderId] || 'not found'}`);
       throw new Error('Decryption keys not available');
     }
     try {
+      console.log(`Attempting to decrypt message from senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}`);
       const decrypted = sodium.crypto_box_open_easy(
         sodium.from_base64(encryptedContent),
         sodium.from_base64(nonce),
         sodium.from_base64(publicKeys[senderId]),
         sodium.from_base64(keyPair.privateKey)
       );
-      console.log(`Successfully decrypted message from senderId: ${senderId}`);
-      return sodium.to_string(decrypted);
+      const decryptedContent = sodium.to_string(decrypted);
+      console.log(`Successfully decrypted message from senderId: ${senderId}: ${decryptedContent}`);
+      return decryptedContent;
     } catch (error) {
       console.error(`Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}`, error);
       throw new Error(`Decryption failed: ${error.message}`);
