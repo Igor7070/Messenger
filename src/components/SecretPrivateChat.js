@@ -147,7 +147,7 @@ const SecretPrivateChat = () => {
   // Загрузка данных чата и сообщений
   useEffect(() => {
     const fetchChatData = async () => {
-      // Очистка кэша ключей для теста
+      // Очистка кэша ключей для теста (удалить после успешного тестирования)
       Object.keys(localStorage)
         .filter((key) => key.startsWith('public_key_'))
         .forEach((key) => localStorage.removeItem(key));
@@ -252,7 +252,7 @@ const SecretPrivateChat = () => {
     return () => {
       setCurrentChatId(null);
     };
-  }, [chatIdParam, username, setContextUserId, setNotificationUserId, setCurrentChatId, navigate, publicKeys]);
+  }, [chatIdParam, username, setContextUserId, setNotificationUserId, setCurrentChatId, navigate]);
 
   // WebSocket-подключение
   useEffect(() => {
@@ -295,7 +295,10 @@ const SecretPrivateChat = () => {
       },
       onWebSocketError: (error) => {
         console.error('WebSocket error in SecretPrivateChat:', error);
-        toast.error('WebSocket connection error');
+        // Добавляем проверку, чтобы не спамить тостами
+        if (error.type !== 'error') {
+          toast.error('WebSocket connection error');
+        }
       },
       onStompError: (frame) => {
         console.error('STOMP error in SecretPrivateChat:', frame);
@@ -313,7 +316,7 @@ const SecretPrivateChat = () => {
       console.log('Deactivating WebSocket in SecretPrivateChat');
       stompClientInstance.deactivate();
     };
-  }, [chatId, publicKeys]);
+  }, [chatId]);
 
   // Отметка сообщений как прочитанных
   useEffect(() => {
@@ -455,13 +458,39 @@ const SecretPrivateChat = () => {
       console.error(`Decryption keys not available for senderId: ${senderId}, keyPair: ${!!keyPair}, publicKey: ${publicKeys[senderId] || 'not found'}`);
       throw new Error('Decryption keys not available');
     }
+
+    // Валидация base64
+    const isValidBase64 = (str) => {
+      try {
+        return btoa(atob(str)) === str;
+      } catch (e) {
+        return false;
+      }
+    };
+
+    if (!isValidBase64(encryptedContent) || !isValidBase64(nonce)) {
+      console.error(`Invalid base64 format for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}`);
+      throw new Error('Invalid base64 format');
+    }
+
     try {
       console.log(`Attempting to decrypt message from senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}`);
+      const encryptedBytes = sodium.from_base64(encryptedContent);
+      const nonceBytes = sodium.from_base64(nonce);
+      const publicKeyBytes = sodium.from_base64(publicKeys[senderId]);
+      const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
+
+      // Проверка длины nonce (должна быть 24 байта для crypto_box)
+      if (nonceBytes.length !== sodium.crypto_box_NONCEBYTES) {
+        console.error(`Invalid nonce length for senderId: ${senderId}, length: ${nonceBytes.length}, expected: ${sodium.crypto_box_NONCEBYTES}`);
+        throw new Error(`Invalid nonce length: ${nonceBytes.length}`);
+      }
+
       const decrypted = sodium.crypto_box_open_easy(
-        sodium.from_base64(encryptedContent),
-        sodium.from_base64(nonce),
-        sodium.from_base64(publicKeys[senderId]),
-        sodium.from_base64(keyPair.privateKey)
+        encryptedBytes,
+        nonceBytes,
+        publicKeyBytes,
+        privateKeyBytes
       );
       const decryptedContent = sodium.to_string(decrypted);
       console.log(`Successfully decrypted message from senderId: ${senderId}: ${decryptedContent}`);
