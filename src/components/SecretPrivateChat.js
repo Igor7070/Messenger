@@ -64,15 +64,35 @@ const SecretPrivateChat = () => {
       if (storedKeyPair) {
         setKeyPair(JSON.parse(storedKeyPair));
       } else {
+        console.log(`Generating new key pair for userId: ${userId}`);
         const newKeyPair = sodium.crypto_box_keypair();
+        const publicKeyBase64 = sodium.to_base64(newKeyPair.publicKey);
+        const privateKeyBase64 = sodium.to_base64(newKeyPair.privateKey);
         localStorage.setItem(`keyPair_${userId}`, JSON.stringify({
-          publicKey: sodium.to_base64(newKeyPair.publicKey),
-          privateKey: sodium.to_base64(newKeyPair.privateKey)
+          publicKey: publicKeyBase64,
+          privateKey: privateKeyBase64
         }));
         setKeyPair({
-          publicKey: sodium.to_base64(newKeyPair.publicKey),
-          privateKey: sodium.to_base64(newKeyPair.privateKey)
+          publicKey: publicKeyBase64,
+          privateKey: privateKeyBase64
         });
+        // Отправка публичного ключа на сервер
+        try {
+          console.log(`Uploading public key for userId: ${userId}`);
+          const response = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, publicKey: publicKeyBase64 }),
+          });
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to upload public key: ${response.status} - ${errorText}`);
+          }
+          console.log(`Public key uploaded successfully for userId: ${userId}`);
+        } catch (error) {
+          console.error(`Error uploading public key for userId: ${userId}`, error);
+          toast.error(`Failed to upload public key: ${error.message}`);
+        }
       }
     };
     initializeSodium();
@@ -104,16 +124,43 @@ const SecretPrivateChat = () => {
         if (userResponse.ok) {
           const recipient = await userResponse.json();
           const recipientId = recipient.id;
-          const publicKeyResponse = await fetch(
-            `https://unlimitedpossibilities12.org/api/public-keys/${recipientId}`
-          );
-          if (publicKeyResponse.ok) {
-            const publicKeyData = await publicKeyResponse.json();
-            setPublicKeys((prev) => ({
-              ...prev,
-              [recipientId]: publicKeyData.publicKey
-            }));
-          }
+          const fetchPublicKeyWithRetry = async (recipientId, retries = 3, delay = 2000) => {
+            for (let attempt = 1; attempt <= retries; attempt++) {
+              try {
+                console.log(`Fetching public key for userId: ${recipientId}, attempt ${attempt}/${retries}`);
+                const publicKeyResponse = await fetch(
+                  `https://unlimitedpossibilities12.org/api/public_keys/${recipientId}`
+                );
+                if (publicKeyResponse.ok) {
+                  const publicKeyData = await publicKeyResponse.json();
+                  console.log(`Public key fetched for userId: ${recipientId}`, publicKeyData.publicKey);
+                  return publicKeyData.publicKey;
+                } else if (publicKeyResponse.status === 404) {
+                  console.warn(`Public key not found for userId: ${recipientId}, attempt ${attempt}/${retries}`);
+                  if (attempt < retries) {
+                    await new Promise((resolve) => setTimeout(resolve, delay));
+                    continue;
+                  }
+                  throw new Error(`Failed to fetch public key for userId: ${recipientId}, status: ${publicKeyResponse.status}`);
+                } else {
+                  throw new Error(`Unexpected response: ${publicKeyResponse.status}`);
+                }
+              } catch (error) {
+                console.error(`Error fetching public key for userId: ${recipientId}, attempt ${attempt}/${retries}`, error);
+                if (attempt === retries) {
+                  toast.error(`Failed to fetch public key: ${error.message}`);
+                  throw error;
+                }
+                await new Promise((resolve) => setTimeout(resolve, delay));
+              }
+            }
+          };
+
+          const publicKey = await fetchPublicKeyWithRetry(recipientId);
+          setPublicKeys((prev) => ({
+            ...prev,
+            [recipientId]: publicKey
+          }));
         }
 
         const initialMessages = await getMessages(chatIdParam);
@@ -345,6 +392,7 @@ const SecretPrivateChat = () => {
 
   const decryptMessage = async (encryptedContent, nonce, senderId) => {
     if (!keyPair || !publicKeys[senderId]) {
+      console.error(`Decryption keys not available for senderId: ${senderId}, keyPair: ${!!keyPair}, publicKey: ${!!publicKeys[senderId]}`);
       throw new Error('Decryption keys not available');
     }
     try {
@@ -354,10 +402,11 @@ const SecretPrivateChat = () => {
         sodium.from_base64(publicKeys[senderId]),
         sodium.from_base64(keyPair.privateKey)
       );
+      console.log(`Successfully decrypted message from senderId: ${senderId}`);
       return sodium.to_string(decrypted);
     } catch (error) {
-      console.error('Decryption error:', error);
-      throw error;
+      console.error(`Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}`, error);
+      throw new Error(`Decryption failed: ${error.message}`);
     }
   };
 

@@ -27,7 +27,7 @@ const generateAndSaveKeys = async (userId) => {
       console.log('Generating new key pair...');
       const { publicKey, privateKey } = sodium.crypto_box_keypair();
       const privateKeyBase64 = sodium.to_base64(privateKey);
-      const publicKeyBase64 = sodium.to_base64(publicKey);
+      const publicKeyBase64 = sodium.to_base64(publicKey).trim(); // Удаляем лишние пробелы
       console.log(`Generated keys - Public: ${publicKeyBase64}, Private: ${privateKeyBase64}`);
       localStorage.setItem(alias, privateKeyBase64);
       console.log(`Private key saved to localStorage for ${alias}`);
@@ -35,6 +35,19 @@ const generateAndSaveKeys = async (userId) => {
       console.log(`Keys generated and saved for userId: ${userId}`);
     } else {
       console.log(`Private key already exists for userId: ${userId}, skipping generation`);
+      // Проверяем, есть ли публичный ключ на сервере
+      try {
+        const response = await fetch(`https://unlimitedpossibilities12.org/api/public_keys/${userId}`);
+        if (!response.ok) {
+          console.log(`Public key not found for userId: ${userId}, re-uploading...`);
+          const storedKeyPair = JSON.parse(localStorage.getItem(`keyPair_${userId}`));
+          if (storedKeyPair?.publicKey) {
+            await sendPublicKeyToServer(userId, storedKeyPair.publicKey);
+          }
+        }
+      } catch (error) {
+        console.error(`Error checking public key for userId: ${userId}`, error);
+      }
     }
   } catch (error) {
     console.error('Error generating keys:', error);
