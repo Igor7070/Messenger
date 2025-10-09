@@ -45,23 +45,23 @@ const generateAndSaveKeys = async (userId) => {
 const sendPublicKeyToServer = async (userId, publicKey) => {
   try {
     console.log(`Uploading public key for userId: ${userId}, key: ${publicKey}`);
-    const response = await fetch(`https://unlimitedpossibilities12.org/api/public-keys?userId=${userId}`, {
+    const response = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ publicKey }),
+      body: JSON.stringify({ userId, publicKey }),
     });
-    console.log(`Public key upload response: status=${response.status}, statusText=${response.statusText}`);
+    const responseText = await response.text();
+    console.log(`Public key upload response: status=${response.status}, statusText=${response.statusText}, body=${responseText}`);
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Failed to upload public key: ${errorText}`);
-      throw new Error(`Failed to upload public key: ${response.status}`);
+      console.error(`Failed to upload public key: ${responseText}`);
+      throw new Error(`Failed to upload public key: ${response.status} - ${responseText}`);
     }
     console.log(`Public key uploaded successfully for userId: ${userId}`);
   } catch (error) {
     console.error('Error uploading public key:', error);
-    toast.error('Failed to upload public key');
+    toast.error(`Failed to upload public key: ${error.message}`);
   }
 };
 
