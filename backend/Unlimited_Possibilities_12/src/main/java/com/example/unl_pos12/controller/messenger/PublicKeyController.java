@@ -14,10 +14,13 @@ public class PublicKeyController {
 
     @GetMapping("/{userId}")
     public ResponseEntity<PublicKey> getPublicKey(@PathVariable Long userId) {
+        System.out.println("Received GET /api/public_keys/" + userId);
         PublicKey publicKey = publicKeyRepository.findByUserId(userId);
         if (publicKey != null) {
+            System.out.println("Found public key for userId: " + userId + ", key: " + publicKey.getPublicKey());
             return ResponseEntity.ok(publicKey);
         } else {
+            System.out.println("Public key not found for userId: " + userId);
             return ResponseEntity.notFound().build();
         }
     }
