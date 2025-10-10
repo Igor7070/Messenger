@@ -256,7 +256,10 @@ const SecretPrivateChat = () => {
 
   // WebSocket-подключение
   useEffect(() => {
-    if (!chatId) return;
+    if (!chatId || !userId) {
+      console.warn('WebSocket setup skipped: chatId or userId missing', { chatId, userId });
+      return;
+    }
 
     const stompClientInstance = new Client({
       webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
@@ -265,26 +268,53 @@ const SecretPrivateChat = () => {
       onConnect: () => {
         console.log('Connected to WebSocket for SecretPrivateChat');
         stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
-          const newMessage = JSON.parse(message.body);
-          console.log('Received WebSocket message:', newMessage);
+          let newMessage;
+          try {
+            newMessage = JSON.parse(message.body);
+            console.log('Received WebSocket message:', JSON.stringify(newMessage, null, 2));
+          } catch (error) {
+            console.error('Failed to parse WebSocket message:', error);
+            toast.error('Error parsing incoming message');
+            return;
+          }
+
+          // Проверяем структуру сообщения
+          if (!newMessage.sender || !newMessage.sender.id) {
+            console.error(`Invalid message structure, missing sender.id:`, newMessage);
+            updateMessages({ ...newMessage, content: 'Invalid message structure' });
+            return;
+          }
+
+          // Пропускаем собственные сообщения
           if (newMessage.sender.id === userId) {
             console.log(`Skipping decryption for own message, id: ${newMessage.id}`);
             updateMessages({ ...newMessage, content: newMessage.content || '' });
             return;
           }
+
+          // Проверяем, является ли сообщение текстовым и содержит ли зашифрованный контент
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
             try {
               const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
               const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
+              console.log(`Processing text message id: ${newMessage.id}, senderId: ${newMessage.sender.id}, encryptedContent: ${cleanedEncryptedContent}, nonce: ${cleanedNonce}`);
+
+              // Проверяем наличие публичного ключа
               let publicKey = publicKeys[newMessage.sender.id];
               if (!publicKey) {
                 console.log(`Public key for senderId: ${newMessage.sender.id} not found, fetching...`);
                 publicKey = await getPublicKey(newMessage.sender.id);
+                if (!publicKey) {
+                  console.error(`Failed to fetch public key for senderId: ${newMessage.sender.id}`);
+                  updateMessages({ ...newMessage, content: 'Failed to fetch public key' });
+                  return;
+                }
                 setPublicKeys((prev) => ({
                   ...prev,
                   [newMessage.sender.id]: publicKey
                 }));
               }
+
               console.log(`Attempting to decrypt message id: ${newMessage.id} from senderId: ${newMessage.sender.id}`);
               const decryptedContent = await decryptMessage(
                 cleanedEncryptedContent,
@@ -299,16 +329,18 @@ const SecretPrivateChat = () => {
               toast.error(`Failed to decrypt message: ${error.message}`);
             }
           } else {
-            console.warn(`Skipping decryption for message id: ${newMessage.id}, missing encryptedContent or nonce`);
+            console.warn(`Skipping decryption for message id: ${newMessage.id}. Reason:`, {
+              messageType: newMessage.messageType,
+              hasEncryptedContent: !!newMessage.encryptedContent,
+              hasNonce: !!newMessage.nonce
+            });
             updateMessages({ ...newMessage, content: 'Unable to decrypt message' });
           }
         });
       },
       onWebSocketError: (error) => {
         console.error('WebSocket error in SecretPrivateChat:', error);
-        if (error.type !== 'error') {
-          toast.error('WebSocket connection error');
-        }
+        toast.error('WebSocket connection error');
       },
       onStompError: (frame) => {
         console.error('STOMP error in SecretPrivateChat:', frame);
