@@ -274,11 +274,8 @@ const SecretPrivateChat = () => {
           }
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
             try {
-              // Очищаем возможные символы новой строки
               const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
               const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
-
-              // Проверяем наличие ключа отправителя
               let publicKey = publicKeys[newMessage.sender.id];
               if (!publicKey) {
                 console.log(`Public key for senderId: ${newMessage.sender.id} not found, fetching...`);
@@ -288,7 +285,7 @@ const SecretPrivateChat = () => {
                   [newMessage.sender.id]: publicKey
                 }));
               }
-
+              console.log(`Attempting to decrypt message id: ${newMessage.id} from senderId: ${newMessage.sender.id}`);
               const decryptedContent = await decryptMessage(
                 cleanedEncryptedContent,
                 cleanedNonce,
@@ -303,7 +300,7 @@ const SecretPrivateChat = () => {
             }
           } else {
             console.warn(`Skipping decryption for message id: ${newMessage.id}, missing encryptedContent or nonce`);
-            updateMessages({ ...newMessage, content: newMessage.content || 'Unable to decrypt message' });
+            updateMessages({ ...newMessage, content: 'Unable to decrypt message' });
           }
         });
       },
