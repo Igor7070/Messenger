@@ -501,7 +501,7 @@ const SecretPrivateChat = () => {
       const publicKeyBytes = sodium.from_base64(publicKeys[senderId]);
       const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
 
-      // Проверка длины входных данных
+      // Проверка длин входных данных
       console.log(`Data lengths: encryptedBytes=${encryptedBytes.length}, nonceBytes=${nonceBytes.length}, publicKeyBytes=${publicKeyBytes.length}, privateKeyBytes=${privateKeyBytes.length}`);
       if (nonceBytes.length !== sodium.crypto_box_NONCEBYTES) {
         console.error(`Invalid nonce length for senderId: ${senderId}, length: ${nonceBytes.length}, expected: ${sodium.crypto_box_NONCEBYTES}`);
