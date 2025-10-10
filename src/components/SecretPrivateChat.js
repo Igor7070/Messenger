@@ -266,6 +266,12 @@ const SecretPrivateChat = () => {
         console.log('Connected to WebSocket for SecretPrivateChat');
         stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
           const newMessage = JSON.parse(message.body);
+          console.log('Received WebSocket message:', newMessage);
+          if (newMessage.sender.id === userId) {
+            console.log(`Skipping decryption for own message, id: ${newMessage.id}`);
+            updateMessages({ ...newMessage, content: newMessage.content || '' });
+            return;
+          }
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
             try {
               // Очищаем возможные символы новой строки
@@ -288,20 +294,21 @@ const SecretPrivateChat = () => {
                 cleanedNonce,
                 newMessage.sender.id
               );
+              console.log(`Successfully decrypted message id: ${newMessage.id}, content: ${decryptedContent}`);
               updateMessages({ ...newMessage, content: decryptedContent });
             } catch (error) {
-              console.error('Decryption failed for new message:', newMessage.id, error);
+              console.error(`Decryption failed for message id: ${newMessage.id}, senderId: ${newMessage.sender.id}`, error);
               updateMessages({ ...newMessage, content: 'Decryption failed' });
               toast.error(`Failed to decrypt message: ${error.message}`);
             }
           } else {
-            updateMessages(newMessage);
+            console.warn(`Skipping decryption for message id: ${newMessage.id}, missing encryptedContent or nonce`);
+            updateMessages({ ...newMessage, content: newMessage.content || 'Unable to decrypt message' });
           }
         });
       },
       onWebSocketError: (error) => {
         console.error('WebSocket error in SecretPrivateChat:', error);
-        // Добавляем проверку, чтобы не спамить тостами
         if (error.type !== 'error') {
           toast.error('WebSocket connection error');
         }
@@ -322,7 +329,7 @@ const SecretPrivateChat = () => {
       console.log('Deactivating WebSocket in SecretPrivateChat');
       stompClientInstance.deactivate();
     };
-  }, [chatId]);
+  }, [chatId, userId, publicKeys]);
 
   // Отметка сообщений как прочитанных
   useEffect(() => {
