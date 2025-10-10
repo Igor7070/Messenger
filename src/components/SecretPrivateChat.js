@@ -267,94 +267,53 @@ const SecretPrivateChat = () => {
       reconnectDelay: 5000,
       onConnect: () => {
         console.log('Connected to WebSocket for SecretPrivateChat');
-        const subscription = stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
-          let newMessage;
-          try {
-            newMessage = JSON.parse(message.body);
-            console.log('Received WebSocket message:', JSON.stringify(newMessage, null, 2));
-            console.log('Message details for decryption:', {
-              id: newMessage.id,
-              messageType: newMessage.messageType,
-              encryptedContent: newMessage.encryptedContent,
-              nonce: newMessage.nonce,
-              senderId: newMessage.sender?.id,
-              isOwnMessage: newMessage.sender?.id === userId
-            });
-            console.log('Condition check: messageType === "text" =', newMessage.messageType === 'text');
-            console.log('Has encryptedContent =', !!newMessage.encryptedContent);
-            console.log('Has nonce =', !!newMessage.nonce);
+        stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
+          const newMessage = JSON.parse(message.body);
+          console.log('NewMessage:', newMessage);
+          // [Добавлено] Детальное логирование для диагностики
+          console.log('Message details for decryption:', {
+            id: newMessage.id,
+            messageType: newMessage.messageType,
+            encryptedContent: newMessage.encryptedContent,
+            nonce: newMessage.nonce,
+            senderId: newMessage.sender.id,
+            isOwnMessage: newMessage.sender.id === userId
+          });
+          console.log('Condition check: messageType === "text" =', newMessage.messageType === 'text');
+          console.log('Has encryptedContent =', !!newMessage.encryptedContent);
+          console.log('Has nonce =', !!newMessage.nonce);
 
-            // Проверяем структуру сообщения
-            if (!newMessage.sender || !newMessage.sender.id) {
-              console.error(`Invalid message structure, missing sender.id:`, newMessage);
-              updateMessages({ ...newMessage, content: 'Invalid message structure' });
-              return;
-            }
+          if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
+            try {
+              // Очищаем возможные символы новой строки
+              const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
+              const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
 
-            // Пропускаем собственные сообщения
-            if (newMessage.sender.id === userId) {
-              console.log(`Skipping decryption for own message, id: ${newMessage.id}`);
-              updateMessages({ ...newMessage, content: newMessage.content || '' });
-              return;
-            }
-
-            // Проверяем, является ли сообщение текстовым
-            if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
-              try {
-                const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
-                const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
-                console.log(`Processing text message id: ${newMessage.id}, senderId: ${newMessage.sender.id}, encryptedContent: ${cleanedEncryptedContent}, nonce: ${cleanedNonce}`);
-
-                // Проверяем наличие публичного ключа
-                let publicKey = publicKeys[newMessage.sender.id];
-                if (!publicKey) {
-                  console.log(`Public key for senderId: ${newMessage.sender.id} not found, fetching...`);
-                  publicKey = await getPublicKey(newMessage.sender.id);
-                  if (!publicKey) {
-                    console.error(`Failed to fetch public key for senderId: ${newMessage.sender.id}`);
-                    updateMessages({ ...newMessage, content: 'Failed to fetch public key' });
-                    return;
-                  }
-                  setPublicKeys((prev) => ({
-                    ...prev,
-                    [newMessage.sender.id]: publicKey
-                  }));
-                  console.log(`Fetched public key for senderId: ${newMessage.sender.id}: ${publicKey}`);
-                }
-
-                console.log(`Attempting to decrypt message id: ${newMessage.id} from senderId: ${newMessage.sender.id}`);
-                const decryptedContent = await decryptMessage(
-                  cleanedEncryptedContent,
-                  cleanedNonce,
-                  newMessage.sender.id
-                );
-                console.log(`Successfully decrypted message id: ${newMessage.id}, content: ${decryptedContent}`);
-                updateMessages({ ...newMessage, content: decryptedContent });
-              } catch (error) {
-                console.error(`Decryption failed for message id: ${newMessage.id}, senderId: ${newMessage.sender.id}`, error);
-                updateMessages({ ...newMessage, content: 'Decryption failed' });
-                toast.error(`Failed to decrypt message: ${error.message}`);
+              // Проверяем наличие ключа отправителя
+              let publicKey = publicKeys[newMessage.sender.id];
+              if (!publicKey) {
+                console.log(`Public key for senderId: ${newMessage.sender.id} not found, fetching...`);
+                publicKey = await getPublicKey(newMessage.sender.id);
+                setPublicKeys((prev) => ({
+                  ...prev,
+                  [newMessage.sender.id]: publicKey
+                }));
               }
-            } else {
-              console.warn(`Skipping decryption for message id: ${newMessage.id}. Reason:`, {
-                messageType: newMessage.messageType,
-                hasEncryptedContent: !!newMessage.encryptedContent,
-                hasNonce: !!newMessage.nonce
-              });
-              updateMessages({ ...newMessage, content: 'Unable to decrypt message' });
-            }
-          } catch (error) {
-            console.error('Failed to parse WebSocket message:', error);
-            toast.error('Error parsing incoming message');
-          }
-        });
 
-        // Сохраняем подписку для очистки
-        setClient((prevClient) => {
-          if (prevClient && prevClient !== stompClientInstance) {
-            prevClient.deactivate();
+              const decryptedContent = await decryptMessage(
+                cleanedEncryptedContent,
+                cleanedNonce,
+                newMessage.sender.id
+              );
+              updateMessages({ ...newMessage, content: decryptedContent });
+            } catch (error) {
+              console.error('Decryption failed for new message:', newMessage.id, error);
+              updateMessages({ ...newMessage, content: 'Decryption failed' });
+              toast.error(`Failed to decrypt message: ${error.message}`);
+            }
+          } else {
+            updateMessages(newMessage);
           }
-          return { ...stompClientInstance, subscription };
         });
       },
       onWebSocketError: (error) => {
@@ -370,15 +329,12 @@ const SecretPrivateChat = () => {
       },
     });
 
+    setClient(stompClientInstance);
     stompClientInstance.activate();
 
     return () => {
       console.log('Deactivating WebSocket in SecretPrivateChat');
-      if (stompClientInstance.subscription) {
-        stompClientInstance.subscription.unsubscribe();
-      }
       stompClientInstance.deactivate();
-      setClient(null);
     };
   }, [chatId, userId, publicKeys]);
 
