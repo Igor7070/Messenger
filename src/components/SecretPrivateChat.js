@@ -107,8 +107,17 @@ const SecretPrivateChat = () => {
     const initializeSodium = async () => {
       await sodium.ready;
       const storedKeyPair = localStorage.getItem(`keyPair_${userId}`);
+      console.log(`Checking keyPair for userId: ${userId}, exists: ${!!storedKeyPair}`);
       if (storedKeyPair) {
-        setKeyPair(JSON.parse(storedKeyPair));
+        const parsedKeyPair = JSON.parse(storedKeyPair);
+        console.log(`Private key length: ${parsedKeyPair.privateKey?.length}, Public key length: ${parsedKeyPair.publicKey?.length}`);
+        try {
+          const privateKeyBytes = sodium.from_base64(parsedKeyPair.privateKey);
+          console.log(`Private key bytes length: ${privateKeyBytes.length}`);
+        } catch (e) {
+          console.error(`Private key decode error for userId: ${userId}, error: ${e.message}`);
+        }
+        setKeyPair(parsedKeyPair);
       } else {
         console.log(`Generating new key pair for userId: ${userId}`);
         const newKeyPair = sodium.crypto_box_keypair();
@@ -122,7 +131,6 @@ const SecretPrivateChat = () => {
           publicKey: publicKeyBase64,
           privateKey: privateKeyBase64
         });
-        // Отправка публичного ключа на сервер
         try {
           console.log(`Uploading public key for userId: ${userId}`);
           const response = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
@@ -475,51 +483,68 @@ const SecretPrivateChat = () => {
 
   const decryptMessage = async (encryptedContent, nonce, senderId) => {
     console.log(`decryptMessage called: encryptedContent=${encryptedContent}, nonce=${nonce}, senderId=${senderId}`);
-    if (!keyPair || !publicKeys[senderId]) {
-      console.error(`Decryption keys not available for senderId: ${senderId}, keyPair: ${!!keyPair}, publicKey: ${publicKeys[senderId] || 'not found'}`);
-      throw new Error('Decryption keys not available');
-    }
-
-    // Валидация base64
-    const isValidBase64 = (str) => {
-      try {
-        return btoa(atob(str)) === str;
-      } catch (e) {
-        return false;
-      }
-    };
-
-    if (!isValidBase64(encryptedContent) || !isValidBase64(nonce)) {
-      console.error(`Invalid base64 format for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}`);
-      throw new Error('Invalid base64 format');
-    }
-
     try {
-      console.log(`Attempting to decrypt message from senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}`);
-      const encryptedBytes = sodium.from_base64(encryptedContent);
-      const nonceBytes = sodium.from_base64(nonce);
-      const publicKeyBytes = sodium.from_base64(publicKeys[senderId]);
-      const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
+      if (!encryptedContent || !nonce || !senderId) {
+        console.error(`Missing required fields: encryptedContent=${encryptedContent}, nonce=${nonce}, senderId=${senderId}`);
+        throw new Error('Missing required fields');
+      }
+      if (!keyPair || !publicKeys[senderId]) {
+        console.error(`Decryption keys not available: keyPair=${!!keyPair}, publicKey=${publicKeys[senderId] || 'not found'}`);
+        throw new Error('Decryption keys not available');
+      }
 
-      // Проверка длин входных данных
-      console.log(`Data lengths: encryptedBytes=${encryptedBytes.length}, nonceBytes=${nonceBytes.length}, publicKeyBytes=${publicKeyBytes.length}, privateKeyBytes=${privateKeyBytes.length}`);
+      // Проверка base64
+      const isValidBase64 = (str) => {
+        try {
+          sodium.from_base64(str);
+          return true;
+        } catch (e) {
+          console.error(`Invalid base64: ${str}, error: ${e.message}`);
+          return false;
+        }
+      };
+
+      console.log(`Validating base64: encryptedContent=${isValidBase64(encryptedContent)}, nonce=${isValidBase64(nonce)}, publicKey=${isValidBase64(publicKeys[senderId])}, privateKey=${isValidBase64(keyPair.privateKey)}`);
+      if (!isValidBase64(encryptedContent) || !isValidBase64(nonce) || !isValidBase64(publicKeys[senderId]) || !isValidBase64(keyPair.privateKey)) {
+        console.error(`Invalid base64 format: encryptedContent=${encryptedContent}, nonce=${nonce}, publicKey=${publicKeys[senderId]}, privateKey=${keyPair.privateKey}`);
+        throw new Error('Invalid base64 format');
+      }
+
+      let encryptedBytes, nonceBytes, publicKeyBytes, privateKeyBytes;
+      try {
+        console.log('Decoding encryptedContent...');
+        encryptedBytes = sodium.from_base64(encryptedContent);
+        console.log('Decoding nonce...');
+        nonceBytes = sodium.from_base64(nonce);
+        console.log('Decoding publicKey...');
+        publicKeyBytes = sodium.from_base64(publicKeys[senderId]);
+        console.log('Decoding privateKey...');
+        privateKeyBytes = sodium.from_base64(keyPair.privateKey);
+        console.log(`Data lengths: encryptedBytes=${encryptedBytes.length}, nonceBytes=${nonceBytes.length}, publicKeyBytes=${publicKeyBytes.length}, privateKeyBytes=${privateKeyBytes.length}`);
+        console.log(`Hex data: encryptedBytes=${sodium.to_hex(encryptedBytes)}, nonceBytes=${sodium.to_hex(nonceBytes)}, publicKeyBytes=${sodium.to_hex(publicKeyBytes)}, privateKeyBytes=${sodium.to_hex(privateKeyBytes)}`);
+      } catch (e) {
+        console.error(`Base64 decode error: ${e.message}, encryptedContent=${encryptedContent}, nonce=${nonce}, publicKey=${publicKeys[senderId]}, privateKey=${keyPair.privateKey}`);
+        throw new Error(`Base64 decode error: ${e.message}`);
+      }
+
       if (nonceBytes.length !== sodium.crypto_box_NONCEBYTES) {
-        console.error(`Invalid nonce length for senderId: ${senderId}, length: ${nonceBytes.length}, expected: ${sodium.crypto_box_NONCEBYTES}`);
+        console.error(`Invalid nonce length: ${nonceBytes.length}, expected ${sodium.crypto_box_NONCEBYTES}`);
         throw new Error(`Invalid nonce length: ${nonceBytes.length}`);
       }
-      if (encryptedBytes.length < sodium.crypto_box_MACBYTES) {
-        console.error(`Encrypted content too short for senderId: ${senderId}, length: ${encryptedBytes.length}, minimum: ${sodium.crypto_box_MACBYTES}`);
-        throw new Error(`Encrypted content too short: ${encryptedBytes.length}`);
-      }
       if (publicKeyBytes.length !== sodium.crypto_box_PUBLICKEYBYTES) {
-        console.error(`Invalid public key length for senderId: ${senderId}, length: ${publicKeyBytes.length}, expected: ${sodium.crypto_box_PUBLICKEYBYTES}`);
+        console.error(`Invalid public key length: ${publicKeyBytes.length}, expected ${sodium.crypto_box_PUBLICKEYBYTES}`);
         throw new Error(`Invalid public key length: ${publicKeyBytes.length}`);
       }
       if (privateKeyBytes.length !== sodium.crypto_box_SECRETKEYBYTES) {
-        console.error(`Invalid private key length for userId: ${userId}, length: ${privateKeyBytes.length}, expected: ${sodium.crypto_box_SECRETKEYBYTES}`);
+        console.error(`Invalid private key length: ${privateKeyBytes.length}, expected ${sodium.crypto_box_SECRETKEYBYTES}`);
         throw new Error(`Invalid private key length: ${privateKeyBytes.length}`);
       }
+      if (encryptedBytes.length < sodium.crypto_box_MACBYTES) {
+        console.error(`Encrypted content too short: ${encryptedBytes.length}, minimum ${sodium.crypto_box_MACBYTES}`);
+        throw new Error(`Encrypted content too short: ${encryptedBytes.length}`);
+      }
 
+      console.log(`Attempting to decrypt message from senderId: ${senderId}`);
       const decrypted = sodium.crypto_box_open_easy(
         encryptedBytes,
         nonceBytes,
@@ -530,7 +555,7 @@ const SecretPrivateChat = () => {
       console.log(`Successfully decrypted message from senderId: ${senderId}: ${decryptedContent}`);
       return decryptedContent;
     } catch (error) {
-      console.error(`Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}`, error);
+      console.error(`Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`);
       throw new Error(`Decryption failed: ${error.message}`);
     }
   };
