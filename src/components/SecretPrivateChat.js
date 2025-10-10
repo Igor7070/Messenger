@@ -52,18 +52,21 @@ const fetchPublicKeyWithRetry = async (recipientId, retries = 3, delay = 2000) =
 };
 
 const getPublicKey = async (userId) => {
-  // Проверяем localStorage
-  const cachedKey = localStorage.getItem(`public_key_${userId}`);
-  if (cachedKey) {
-    console.log(`Found cached public key for userId: ${userId}`);
-    return cachedKey;
+  console.log(`Fetching public key for userId: ${userId}`);
+  try {
+    const publicKey = await fetchPublicKeyWithRetry(userId);
+    console.log(`Fetched public key for userId: ${userId}, value: ${publicKey}`);
+    try {
+      const publicKeyBytes = sodium.from_base64(publicKey);
+      console.log(`Public key bytes length for userId: ${userId}: ${publicKeyBytes.length}, hex: ${sodium.to_hex(publicKeyBytes)}`);
+    } catch (e) {
+      console.error(`Invalid fetched public key for userId: ${userId}, error: ${e.message}`);
+    }
+    return publicKey;
+  } catch (error) {
+    console.error(`Error fetching public key for userId: ${userId}, error: ${error.message}`);
+    throw new Error(`Failed to fetch public key for userId: ${userId}`);
   }
-
-  // Запрашиваем ключ с сервера
-  const publicKey = await fetchPublicKeyWithRetry(userId);
-  localStorage.setItem(`public_key_${userId}`, publicKey);
-  console.log(`Cached public key for userId: ${userId} in localStorage`);
-  return publicKey;
 };
 
 const SecretPrivateChat = () => {
@@ -483,77 +486,42 @@ const SecretPrivateChat = () => {
 
   const decryptMessage = async (encryptedContent, nonce, senderId) => {
     console.log(`decryptMessage called: encryptedContent=${encryptedContent}, nonce=${nonce}, senderId=${senderId}`);
-    try {
-      if (!encryptedContent || !nonce || !senderId) {
-        console.error(`Missing required fields: encryptedContent=${encryptedContent}, nonce=${nonce}, senderId=${senderId}`);
-        throw new Error('Missing required fields');
-      }
-      if (!keyPair || !publicKeys[senderId]) {
-        console.error(`Decryption keys not available: keyPair=${!!keyPair}, publicKey=${publicKeys[senderId] || 'not found'}`);
-        throw new Error('Decryption keys not available');
-      }
+    await sodium.ready;
 
-      // Проверка base64
-      const isValidBase64 = (str) => {
-        try {
-          sodium.from_base64(str);
-          return true;
-        } catch (e) {
-          console.error(`Invalid base64: ${str}, error: ${e.message}`);
-          return false;
-        }
-      };
-
-      console.log(`Validating base64: encryptedContent=${isValidBase64(encryptedContent)}, nonce=${isValidBase64(nonce)}, publicKey=${isValidBase64(publicKeys[senderId])}, privateKey=${isValidBase64(keyPair.privateKey)}`);
-      if (!isValidBase64(encryptedContent) || !isValidBase64(nonce) || !isValidBase64(publicKeys[senderId]) || !isValidBase64(keyPair.privateKey)) {
-        console.error(`Invalid base64 format: encryptedContent=${encryptedContent}, nonce=${nonce}, publicKey=${publicKeys[senderId]}, privateKey=${keyPair.privateKey}`);
-        throw new Error('Invalid base64 format');
-      }
-
-      let encryptedBytes, nonceBytes, publicKeyBytes, privateKeyBytes;
+    const validateBase64 = (str, name) => {
       try {
-        console.log('Decoding encryptedContent...');
-        encryptedBytes = sodium.from_base64(encryptedContent);
-        console.log('Decoding nonce...');
-        nonceBytes = sodium.from_base64(nonce);
-        console.log('Decoding publicKey...');
-        publicKeyBytes = sodium.from_base64(publicKeys[senderId]);
-        console.log('Decoding privateKey...');
-        privateKeyBytes = sodium.from_base64(keyPair.privateKey);
-        console.log(`Data lengths: encryptedBytes=${encryptedBytes.length}, nonceBytes=${nonceBytes.length}, publicKeyBytes=${publicKeyBytes.length}, privateKeyBytes=${privateKeyBytes.length}`);
-        console.log(`Hex data: encryptedBytes=${sodium.to_hex(encryptedBytes)}, nonceBytes=${sodium.to_hex(nonceBytes)}, publicKeyBytes=${sodium.to_hex(publicKeyBytes)}, privateKeyBytes=${sodium.to_hex(privateKeyBytes)}`);
+        sodium.from_base64(str);
+        console.log(`Valid base64: ${name}=${str}`);
+        return true;
       } catch (e) {
-        console.error(`Base64 decode error: ${e.message}, encryptedContent=${encryptedContent}, nonce=${nonce}, publicKey=${publicKeys[senderId]}, privateKey=${keyPair.privateKey}`);
-        throw new Error(`Base64 decode error: ${e.message}`);
+        console.error(`Invalid base64: ${str}, error: ${e.message}`);
+        return false;
       }
+    };
 
-      if (nonceBytes.length !== sodium.crypto_box_NONCEBYTES) {
-        console.error(`Invalid nonce length: ${nonceBytes.length}, expected ${sodium.crypto_box_NONCEBYTES}`);
-        throw new Error(`Invalid nonce length: ${nonceBytes.length}`);
-      }
-      if (publicKeyBytes.length !== sodium.crypto_box_PUBLICKEYBYTES) {
-        console.error(`Invalid public key length: ${publicKeyBytes.length}, expected ${sodium.crypto_box_PUBLICKEYBYTES}`);
-        throw new Error(`Invalid public key length: ${publicKeyBytes.length}`);
-      }
-      if (privateKeyBytes.length !== sodium.crypto_box_SECRETKEYBYTES) {
-        console.error(`Invalid private key length: ${privateKeyBytes.length}, expected ${sodium.crypto_box_SECRETKEYBYTES}`);
-        throw new Error(`Invalid private key length: ${privateKeyBytes.length}`);
-      }
-      if (encryptedBytes.length < sodium.crypto_box_MACBYTES) {
-        console.error(`Encrypted content too short: ${encryptedBytes.length}, minimum ${sodium.crypto_box_MACBYTES}`);
-        throw new Error(`Encrypted content too short: ${encryptedBytes.length}`);
-      }
+    const publicKey = await getPublicKey(senderId);
+    const privateKey = keyPair?.privateKey;
 
-      console.log(`Attempting to decrypt message from senderId: ${senderId}`);
-      const decrypted = sodium.crypto_box_open_easy(
-        encryptedBytes,
-        nonceBytes,
-        publicKeyBytes,
-        privateKeyBytes
-      );
-      const decryptedContent = sodium.to_string(decrypted);
-      console.log(`Successfully decrypted message from senderId: ${senderId}: ${decryptedContent}`);
-      return decryptedContent;
+    console.log(`Validating base64: encryptedContent=${validateBase64(encryptedContent, 'encryptedContent')}, nonce=${validateBase64(nonce, 'nonce')}, publicKey=${validateBase64(publicKey, 'publicKey')}, privateKey=${validateBase64(privateKey, 'privateKey')}`);
+
+    if (!validateBase64(encryptedContent, 'encryptedContent') || !validateBase64(nonce, 'nonce') || !validateBase64(publicKey, 'publicKey') || !validateBase64(privateKey, 'privateKey')) {
+      console.error(`Invalid base64 format: encryptedContent=${encryptedContent}, nonce=${nonce}, publicKey=${publicKey}, privateKey=${privateKey}`);
+      throw new Error('Invalid base64 format');
+    }
+
+    try {
+      const encryptedBytes = sodium.from_base64(encryptedContent);
+      const nonceBytes = sodium.from_base64(nonce);
+      const publicKeyBytes = sodium.from_base64(publicKey);
+      const privateKeyBytes = sodium.from_base64(privateKey);
+
+      console.log(`Decryption input: encryptedBytesLength=${encryptedBytes.length}, nonceBytesLength=${nonceBytes.length}, publicKeyBytesLength=${publicKeyBytes.length}, privateKeyBytesLength=${privateKeyBytes.length}`);
+      console.log(`Decryption input hex: encryptedBytes=${sodium.to_hex(encryptedBytes)}, nonceBytes=${sodium.to_hex(nonceBytes)}, publicKeyBytes=${sodium.to_hex(publicKeyBytes)}`);
+
+      const decryptedBytes = sodium.crypto_box_open_easy(encryptedBytes, nonceBytes, publicKeyBytes, privateKeyBytes);
+      const decryptedMessage = sodium.to_string(decryptedBytes);
+      console.log(`Decryption successful: decryptedMessage=${decryptedMessage}`);
+      return decryptedMessage;
     } catch (error) {
       console.error(`Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`);
       throw new Error(`Decryption failed: ${error.message}`);
