@@ -267,53 +267,94 @@ const SecretPrivateChat = () => {
       reconnectDelay: 5000,
       onConnect: () => {
         console.log('Connected to WebSocket for SecretPrivateChat');
-        stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
-          const newMessage = JSON.parse(message.body);
-          console.log('NewMessage:', newMessage);
-          // [Добавлено] Детальное логирование для диагностики
-          console.log('Message details for decryption:', {
-            id: newMessage.id,
-            messageType: newMessage.messageType,
-            encryptedContent: newMessage.encryptedContent,
-            nonce: newMessage.nonce,
-            senderId: newMessage.sender.id,
-            isOwnMessage: newMessage.sender.id === userId
-          });
-          console.log('Condition check: messageType === "text" =', newMessage.messageType === 'text');
-          console.log('Has encryptedContent =', !!newMessage.encryptedContent);
-          console.log('Has nonce =', !!newMessage.nonce);
+        const subscription = stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
+          let newMessage;
+          try {
+            newMessage = JSON.parse(message.body);
+            console.log('Received WebSocket message:', JSON.stringify(newMessage, null, 2));
+            console.log('Message details for decryption:', {
+              id: newMessage.id,
+              messageType: newMessage.messageType,
+              encryptedContent: newMessage.encryptedContent,
+              nonce: newMessage.nonce,
+              senderId: newMessage.sender?.id,
+              isOwnMessage: newMessage.sender?.id === userId
+            });
+            console.log('Condition check: messageType === "text" =', newMessage.messageType === 'text');
+            console.log('Has encryptedContent =', !!newMessage.encryptedContent);
+            console.log('Has nonce =', !!newMessage.nonce);
 
-          if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
-            try {
-              // Очищаем возможные символы новой строки
-              const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
-              const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
-
-              // Проверяем наличие ключа отправителя
-              let publicKey = publicKeys[newMessage.sender.id];
-              if (!publicKey) {
-                console.log(`Public key for senderId: ${newMessage.sender.id} not found, fetching...`);
-                publicKey = await getPublicKey(newMessage.sender.id);
-                setPublicKeys((prev) => ({
-                  ...prev,
-                  [newMessage.sender.id]: publicKey
-                }));
-              }
-
-              const decryptedContent = await decryptMessage(
-                cleanedEncryptedContent,
-                cleanedNonce,
-                newMessage.sender.id
-              );
-              updateMessages({ ...newMessage, content: decryptedContent });
-            } catch (error) {
-              console.error('Decryption failed for new message:', newMessage.id, error);
-              updateMessages({ ...newMessage, content: 'Decryption failed' });
-              toast.error(`Failed to decrypt message: ${error.message}`);
+            // Проверяем структуру сообщения
+            if (!newMessage.sender || !newMessage.sender.id) {
+              console.error(`Invalid message structure, missing sender.id:`, newMessage);
+              updateMessages({ ...newMessage, content: 'Invalid message structure' });
+              return;
             }
-          } else {
-            updateMessages(newMessage);
+
+            // Пропускаем собственные сообщения
+            if (newMessage.sender.id === userId) {
+              console.log(`Skipping decryption for own message, id: ${newMessage.id}`);
+              updateMessages({ ...newMessage, content: newMessage.content || '' });
+              return;
+            }
+
+            // Проверяем, является ли сообщение текстовым
+            if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
+              try {
+                const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
+                const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
+                console.log(`Processing text message id: ${newMessage.id}, senderId: ${newMessage.sender.id}, encryptedContent: ${cleanedEncryptedContent}, nonce: ${cleanedNonce}`);
+
+                // Проверяем наличие публичного ключа
+                let publicKey = publicKeys[newMessage.sender.id];
+                if (!publicKey) {
+                  console.log(`Public key for senderId: ${newMessage.sender.id} not found, fetching...`);
+                  publicKey = await getPublicKey(newMessage.sender.id);
+                  if (!publicKey) {
+                    console.error(`Failed to fetch public key for senderId: ${newMessage.sender.id}`);
+                    updateMessages({ ...newMessage, content: 'Failed to fetch public key' });
+                    return;
+                  }
+                  setPublicKeys((prev) => ({
+                    ...prev,
+                    [newMessage.sender.id]: publicKey
+                  }));
+                  console.log(`Fetched public key for senderId: ${newMessage.sender.id}: ${publicKey}`);
+                }
+
+                console.log(`Attempting to decrypt message id: ${newMessage.id} from senderId: ${newMessage.sender.id}`);
+                const decryptedContent = await decryptMessage(
+                  cleanedEncryptedContent,
+                  cleanedNonce,
+                  newMessage.sender.id
+                );
+                console.log(`Successfully decrypted message id: ${newMessage.id}, content: ${decryptedContent}`);
+                updateMessages({ ...newMessage, content: decryptedContent });
+              } catch (error) {
+                console.error(`Decryption failed for message id: ${newMessage.id}, senderId: ${newMessage.sender.id}`, error);
+                updateMessages({ ...newMessage, content: 'Decryption failed' });
+                toast.error(`Failed to decrypt message: ${error.message}`);
+              }
+            } else {
+              console.warn(`Skipping decryption for message id: ${newMessage.id}. Reason:`, {
+                messageType: newMessage.messageType,
+                hasEncryptedContent: !!newMessage.encryptedContent,
+                hasNonce: !!newMessage.nonce
+              });
+              updateMessages({ ...newMessage, content: 'Unable to decrypt message' });
+            }
+          } catch (error) {
+            console.error('Failed to parse WebSocket message:', error);
+            toast.error('Error parsing incoming message');
           }
+        });
+
+        // Сохраняем подписку для очистки
+        setClient((prevClient) => {
+          if (prevClient && prevClient !== stompClientInstance) {
+            prevClient.deactivate();
+          }
+          return { ...stompClientInstance, subscription };
         });
       },
       onWebSocketError: (error) => {
@@ -329,12 +370,15 @@ const SecretPrivateChat = () => {
       },
     });
 
-    setClient(stompClientInstance);
     stompClientInstance.activate();
 
     return () => {
       console.log('Deactivating WebSocket in SecretPrivateChat');
+      if (stompClientInstance.subscription) {
+        stompClientInstance.subscription.unsubscribe();
+      }
       stompClientInstance.deactivate();
+      setClient(null);
     };
   }, [chatId, userId, publicKeys]);
 
@@ -474,6 +518,7 @@ const SecretPrivateChat = () => {
   };
 
   const decryptMessage = async (encryptedContent, nonce, senderId) => {
+    console.log(`decryptMessage called: encryptedContent=${encryptedContent}, nonce=${nonce}, senderId=${senderId}`);
     if (!keyPair || !publicKeys[senderId]) {
       console.error(`Decryption keys not available for senderId: ${senderId}, keyPair: ${!!keyPair}, publicKey: ${publicKeys[senderId] || 'not found'}`);
       throw new Error('Decryption keys not available');
@@ -500,10 +545,23 @@ const SecretPrivateChat = () => {
       const publicKeyBytes = sodium.from_base64(publicKeys[senderId]);
       const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
 
-      // Проверка длины nonce
+      // Проверка длины входных данных
+      console.log(`Data lengths: encryptedBytes=${encryptedBytes.length}, nonceBytes=${nonceBytes.length}, publicKeyBytes=${publicKeyBytes.length}, privateKeyBytes=${privateKeyBytes.length}`);
       if (nonceBytes.length !== sodium.crypto_box_NONCEBYTES) {
         console.error(`Invalid nonce length for senderId: ${senderId}, length: ${nonceBytes.length}, expected: ${sodium.crypto_box_NONCEBYTES}`);
         throw new Error(`Invalid nonce length: ${nonceBytes.length}`);
+      }
+      if (encryptedBytes.length < sodium.crypto_box_MACBYTES) {
+        console.error(`Encrypted content too short for senderId: ${senderId}, length: ${encryptedBytes.length}, minimum: ${sodium.crypto_box_MACBYTES}`);
+        throw new Error(`Encrypted content too short: ${encryptedBytes.length}`);
+      }
+      if (publicKeyBytes.length !== sodium.crypto_box_PUBLICKEYBYTES) {
+        console.error(`Invalid public key length for senderId: ${senderId}, length: ${publicKeyBytes.length}, expected: ${sodium.crypto_box_PUBLICKEYBYTES}`);
+        throw new Error(`Invalid public key length: ${publicKeyBytes.length}`);
+      }
+      if (privateKeyBytes.length !== sodium.crypto_box_SECRETKEYBYTES) {
+        console.error(`Invalid private key length for userId: ${userId}, length: ${privateKeyBytes.length}, expected: ${sodium.crypto_box_SECRETKEYBYTES}`);
+        throw new Error(`Invalid private key length: ${privateKeyBytes.length}`);
       }
 
       const decrypted = sodium.crypto_box_open_easy(
