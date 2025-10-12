@@ -91,6 +91,7 @@ const SecretPrivateChat = () => {
   const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
   const [publicKeys, setPublicKeys] = useState({}); // Хранит публичные ключи участников чата
   const [keyPair, setKeyPair] = useState(null); // Локальная пара ключей пользователя
+  const [localMessageContent, setLocalMessageContent] = useState({});
   const messagesEndRef = useRef(null);
   const messageListRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -104,6 +105,43 @@ const SecretPrivateChat = () => {
   const { usersStatus } = useUserStatusContext();
   const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
   const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification();
+
+  // Функции для работы с локальным контентом
+  const saveLocalMessageContent = (messageId, content) => {
+    setLocalMessageContent((prev) => ({
+      ...prev,
+      [messageId]: content,
+    }));
+    try {
+      localStorage.setItem(
+        `localMessageContent_${chatId}_${userId}`,
+        JSON.stringify({
+          ...localMessageContent,
+          [messageId]: content,
+        })
+      );
+    } catch (error) {
+      console.warn('localStorage unavailable, using in-memory storage', error);
+    }
+  };
+
+  const getLocalMessageContent = (messageId) => {
+    const content = localMessageContent[messageId] || '';
+    console.log(`Retrieving local content for message ${messageId}: ${content}`);
+    return content;
+  };
+
+  // Загрузка локального контента из localStorage при инициализации
+  useEffect(() => {
+    const storedContent = localStorage.getItem(`localMessageContent_${chatId}_${userId}`);
+    if (storedContent) {
+      try {
+        setLocalMessageContent(JSON.parse(storedContent));
+      } catch (error) {
+        console.warn('Failed to parse localMessageContent from localStorage', error);
+      }
+    }
+  }, [chatId, userId]);
 
   // Инициализация libsodium и генерация ключей
   useEffect(() => {
@@ -185,7 +223,6 @@ const SecretPrivateChat = () => {
         setChatId(chatIdParam);
         setCurrentChatId(chatIdParam);
 
-        // Получение ID собеседника
         const userResponse = await fetch(
           `https://unlimitedpossibilities12.org/api/users/by-username/${interlocutorName}`
         );
@@ -195,18 +232,14 @@ const SecretPrivateChat = () => {
         const recipient = await userResponse.json();
         const recipientId = recipient.id;
 
-        // Запрашиваем ключ собеседника
         const recipientPublicKey = await getPublicKey(recipientId);
         setPublicKeys((prev) => ({
           ...prev,
           [recipientId]: recipientPublicKey
         }));
 
-        // Загружаем сообщения
         const initialMessages = await getMessages(chatIdParam);
-        // Собираем все уникальные senderId из сообщений
         const senderIds = [...new Set(initialMessages.map((msg) => msg.sender.id))];
-        // Запрашиваем ключи для всех отправителей
         const publicKeysPromises = senderIds
           .filter((senderId) => senderId !== userId && !publicKeys[senderId])
           .map(async (senderId) => {
@@ -219,13 +252,18 @@ const SecretPrivateChat = () => {
           ...Object.fromEntries(newPublicKeys.map(({ senderId, publicKey }) => [senderId, publicKey]))
         }));
 
-        // Расшифровываем сообщения
         const decryptedMessages = await Promise.all(
           initialMessages.map(async (msg) => {
             if (msg.messageType === 'text' && msg.encryptedContent && msg.nonce) {
               if (msg.sender.id === userId) {
-                console.log(`Skipping decryption for own message, id: ${msg.id}`);
-                return { ...msg, content: '', delivered: msg.delivered_status, read: msg.read_status };
+                console.log(`Using local content for own message, id: ${msg.id}`);
+                const localContent = getLocalMessageContent(msg.id);
+                return {
+                  ...msg,
+                  content: localContent || 'Content unavailable',
+                  delivered: msg.delivered_status,
+                  read: msg.read_status,
+                };
               }
               try {
                 const decryptedContent = await decryptMessage(
@@ -233,13 +271,27 @@ const SecretPrivateChat = () => {
                   msg.nonce,
                   msg.sender.id
                 );
-                return { ...msg, content: decryptedContent, delivered: msg.delivered_status, read: msg.read_status };
+                return {
+                  ...msg,
+                  content: decryptedContent,
+                  delivered: msg.delivered_status,
+                  read: msg.read_status,
+                };
               } catch (error) {
                 console.error('Decryption failed for message:', msg.id, error);
-                return { ...msg, content: 'Decryption failed', delivered: msg.delivered_status, read: msg.read_status };
+                return {
+                  ...msg,
+                  content: 'Decryption failed',
+                  delivered: msg.delivered_status,
+                  read: msg.read_status,
+                };
               }
             }
-            return { ...msg, delivered: msg.delivered_status, read: msg.read_status };
+            return {
+              ...msg,
+              delivered: msg.delivered_status,
+              read: msg.read_status,
+            };
           })
         );
         setMessages(decryptedMessages);
@@ -281,7 +333,6 @@ const SecretPrivateChat = () => {
         stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
           const newMessage = JSON.parse(message.body);
           console.log('NewMessage:', newMessage);
-          // [Добавлено] Детальное логирование для диагностики
           console.log('Message details for decryption:', {
             id: newMessage.id,
             messageType: newMessage.messageType,
@@ -295,35 +346,58 @@ const SecretPrivateChat = () => {
           console.log('Has nonce =', !!newMessage.nonce);
 
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
-            try {
-              // Очищаем возможные символы новой строки
-              const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
-              const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
+            if (newMessage.sender.id === userId) {
+              console.log(`Using local content for own message, id: ${newMessage.id}`);
+              const localContent = getLocalMessageContent(newMessage.id);
+              updateMessages({
+                ...newMessage,
+                content: localContent || 'Content unavailable',
+                delivered: newMessage.delivered_status,
+                read: newMessage.read_status,
+              });
+            } else {
+              try {
+                const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
+                const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
 
-              // Проверяем наличие ключа отправителя
-              let publicKey = publicKeys[newMessage.sender.id];
-              if (!publicKey) {
-                console.log(`Public key for senderId: ${newMessage.sender.id} not found, fetching...`);
-                publicKey = await getPublicKey(newMessage.sender.id);
-                setPublicKeys((prev) => ({
-                  ...prev,
-                  [newMessage.sender.id]: publicKey
-                }));
+                let publicKey = publicKeys[newMessage.sender.id];
+                if (!publicKey) {
+                  console.log(`Public key for senderId: ${newMessage.sender.id} not found, fetching...`);
+                  publicKey = await getPublicKey(newMessage.sender.id);
+                  setPublicKeys((prev) => ({
+                    ...prev,
+                    [newMessage.sender.id]: publicKey
+                  }));
+                }
+
+                const decryptedContent = await decryptMessage(
+                  cleanedEncryptedContent,
+                  cleanedNonce,
+                  newMessage.sender.id
+                );
+                updateMessages({
+                  ...newMessage,
+                  content: decryptedContent,
+                  delivered: newMessage.delivered_status,
+                  read: newMessage.read_status,
+                });
+              } catch (error) {
+                console.error('Decryption failed for new message:', newMessage.id, error);
+                updateMessages({
+                  ...newMessage,
+                  content: 'Decryption failed',
+                  delivered: newMessage.delivered_status,
+                  read: newMessage.read_status,
+                });
+                toast.error(`Failed to decrypt message: ${error.message}`);
               }
-
-              const decryptedContent = await decryptMessage(
-                cleanedEncryptedContent,
-                cleanedNonce,
-                newMessage.sender.id
-              );
-              updateMessages({ ...newMessage, content: decryptedContent });
-            } catch (error) {
-              console.error('Decryption failed for new message:', newMessage.id, error);
-              updateMessages({ ...newMessage, content: 'Decryption failed' });
-              toast.error(`Failed to decrypt message: ${error.message}`);
             }
           } else {
-            updateMessages(newMessage);
+            updateMessages({
+              ...newMessage,
+              delivered: newMessage.delivered_status,
+              read: newMessage.read_status,
+            });
           }
         });
       },
@@ -555,24 +629,27 @@ const SecretPrivateChat = () => {
         const recipient = await userResponse.json();
         const recipientId = recipient.id;
 
-        const normalizedChatName = generateChatName(username, recipientName); // Нормализация имени чата
+        const normalizedChatName = generateChatName(username, recipientName);
 
         let messageData = {
           id: editingMessageId || Date.now(),
           sender: { id: userId, username },
-          chat: { id: chatId, name: normalizedChatName }, // Используем нормализованное имя
+          chat: { id: chatId, name: normalizedChatName },
           delivered: false,
           read: false,
           timestamp: new Date().toISOString(),
         };
 
         if (content) {
+          // Сохраняем оригинальный контент локально
+          saveLocalMessageContent(messageData.id, content);
           const { encryptedContent, nonce } = await encryptMessage(content, recipientId);
           messageData = {
             ...messageData,
             encryptedContent,
             nonce,
             messageType: 'text',
+            content: content, // Добавляем для локального отображения
           };
         } else if (selectedFile) {
           messageData = {
@@ -594,8 +671,13 @@ const SecretPrivateChat = () => {
         if (client && client.connected) {
           client.publish({
             destination: `/app/sendMessage/chat/${chatId}`,
-            body: JSON.stringify(messageData),
+            body: JSON.stringify({
+              ...messageData,
+              content: undefined, // Удаляем content перед отправкой на сервер
+            }),
           });
+          // Локально добавляем сообщение с контентом
+          updateMessages(messageData);
           sendNotification(messageData, content || '');
           resetForm();
         } else {
@@ -613,38 +695,67 @@ const SecretPrivateChat = () => {
 
   const sendNotification = async (message, contentForNotification) => {
     setTimeout(async () => {
-      const response = await fetch(
-        `https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(contentForNotification)}&senderId=${userId}&chatId=${chatId}`
-      );
-      if (response.ok) {
-        const updatedMessage = await response.json();
-        const messageId = updatedMessage.id;
-        const statusResponse = await fetch(
-          `https://unlimitedpossibilities12.org/api/messages/${messageId}`
+      try {
+        const response = await fetch(
+          `https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(contentForNotification)}&senderId=${userId}&chatId=${chatId}`
         );
-        if (statusResponse.ok) {
-          const messageStatus = await statusResponse.json();
-          const recipientName = chatName.split('_').find((name) => name !== username);
-          const userResponse = await fetch(
-            `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
-          );
-          if (userResponse.ok) {
-            const recipient = await userResponse.json();
-            const recipientId = recipient.id;
-            if (messageStatus.read_status === false || messageStatus.read_status === null) {
-              await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  userId,
-                  recipientId,
-                  content: contentForNotification,
-                  chatId,
-                }),
+        if (response.ok) {
+          const updatedMessage = await response.json();
+          const messageId = updatedMessage.id;
+          // Переносим локальный контент с временного ID на серверный ID
+          const tempId = message.id;
+          if (tempId !== messageId) {
+            const localContent = getLocalMessageContent(tempId);
+            if (localContent) {
+              saveLocalMessageContent(messageId, localContent);
+              setLocalMessageContent((prev) => {
+                const newContent = { ...prev };
+                delete newContent[tempId];
+                return newContent;
               });
+              try {
+                localStorage.setItem(
+                  `localMessageContent_${chatId}_${userId}`,
+                  JSON.stringify({
+                    ...localMessageContent,
+                    [messageId]: localContent,
+                    [tempId]: undefined,
+                  })
+                );
+              } catch (error) {
+                console.warn('localStorage unavailable during update', error);
+              }
+            }
+          }
+          const statusResponse = await fetch(
+            `https://unlimitedpossibilities12.org/api/messages/${messageId}`
+          );
+          if (statusResponse.ok) {
+            const messageStatus = await statusResponse.json();
+            const recipientName = chatName.split('_').find((name) => name !== username);
+            const userResponse = await fetch(
+              `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
+            );
+            if (userResponse.ok) {
+              const recipient = await userResponse.json();
+              const recipientId = recipient.id;
+              if (messageStatus.read_status === false || messageStatus.read_status === null) {
+                await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    userId,
+                    recipientId,
+                    content: contentForNotification,
+                    chatId,
+                  }),
+                });
+              }
             }
           }
         }
+      } catch (error) {
+        console.error('Error in sendNotification:', error);
       }
     }, 3000);
   };
