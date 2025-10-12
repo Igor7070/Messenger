@@ -120,6 +120,7 @@ const SecretPrivateChat = () => {
           [messageId]: content,
         })
       );
+      cleanOldMessages(); // Добавлено
     } catch (error) {
       console.warn('localStorage unavailable, using in-memory storage', error);
     }
@@ -519,24 +520,48 @@ const SecretPrivateChat = () => {
       if (newMessage.content === 'Message deleted') {
         return prevMessages.filter((msg) => msg.id !== newMessage.id);
       }
-      const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
+      // Проверяем, есть ли сообщение с таким же ID или временное сообщение от текущего пользователя
+      const existingMessageIndex = prevMessages.findIndex(
+        (msg) =>
+          msg.id === newMessage.id ||
+          (msg.sender.id === userId &&
+            newMessage.sender.id === userId &&
+            msg.timestamp === newMessage.timestamp &&
+            msg.messageType === newMessage.messageType)
+      );
       if (existingMessageIndex !== -1) {
+        const existingMessage = prevMessages[existingMessageIndex];
+        // Если это собственное сообщение, сохраняем локальный контент
+        if (newMessage.sender.id === userId && existingMessage.content) {
+          saveLocalMessageContent(newMessage.id, existingMessage.content);
+        }
         const updatedMessages = [...prevMessages];
         updatedMessages[existingMessageIndex] = {
-          ...updatedMessages[existingMessageIndex],
+          ...existingMessage,
           ...newMessage,
-          delivered: newMessage.delivered_status ?? updatedMessages[existingMessageIndex].delivered,
-          read: newMessage.read_status ?? updatedMessages[existingMessageIndex].read,
-          messageType: newMessage.messageType ?? updatedMessages[existingMessageIndex].messageType,
+          content:
+            newMessage.sender.id === userId
+              ? getLocalMessageContent(newMessage.id) || existingMessage.content || 'Content unavailable'
+              : newMessage.content,
+          delivered: newMessage.delivered_status ?? existingMessage.delivered,
+          read: newMessage.read_status ?? existingMessage.read,
+          messageType: newMessage.messageType ?? existingMessage.messageType,
         };
         return updatedMessages;
       } else {
-        return [...prevMessages, {
-          ...newMessage,
-          delivered: newMessage.delivered_status,
-          read: newMessage.read_status,
-          messageType: newMessage.messageType
-        }];
+        return [
+          ...prevMessages,
+          {
+            ...newMessage,
+            content:
+              newMessage.sender.id === userId
+                ? getLocalMessageContent(newMessage.id) || 'Content unavailable'
+                : newMessage.content,
+            delivered: newMessage.delivered_status,
+            read: newMessage.read_status,
+            messageType: newMessage.messageType,
+          },
+        ];
       }
     });
   };
@@ -631,25 +656,28 @@ const SecretPrivateChat = () => {
 
         const normalizedChatName = generateChatName(username, recipientName);
 
+        const tempId = editingMessageId || Date.now();
+        const timestamp = new Date().toISOString();
+
         let messageData = {
-          id: editingMessageId || Date.now(),
+          id: tempId,
           sender: { id: userId, username },
           chat: { id: chatId, name: normalizedChatName },
           delivered: false,
           read: false,
-          timestamp: new Date().toISOString(),
+          timestamp,
         };
 
         if (content) {
           // Сохраняем оригинальный контент локально
-          saveLocalMessageContent(messageData.id, content);
+          saveLocalMessageContent(tempId, content);
           const { encryptedContent, nonce } = await encryptMessage(content, recipientId);
           messageData = {
             ...messageData,
             encryptedContent,
             nonce,
             messageType: 'text',
-            content: content, // Добавляем для локального отображения
+            content: content, // Для локального отображения
           };
         } else if (selectedFile) {
           messageData = {
@@ -673,10 +701,10 @@ const SecretPrivateChat = () => {
             destination: `/app/sendMessage/chat/${chatId}`,
             body: JSON.stringify({
               ...messageData,
-              content: undefined, // Удаляем content перед отправкой на сервер
+              content: undefined, // Удаляем content перед отправкой
             }),
           });
-          // Локально добавляем сообщение с контентом
+          // Локально добавляем сообщение
           updateMessages(messageData);
           sendNotification(messageData, content || '');
           resetForm();
@@ -696,63 +724,34 @@ const SecretPrivateChat = () => {
   const sendNotification = async (message, contentForNotification) => {
     setTimeout(async () => {
       try {
-        const response = await fetch(
-          `https://unlimitedpossibilities12.org/api/messages/search?content=${encodeURIComponent(contentForNotification)}&senderId=${userId}&chatId=${chatId}`
+        // Проверяем статус сообщения
+        const statusResponse = await fetch(
+          `https://unlimitedpossibilities12.org/api/messages/${message.id}`
         );
-        if (response.ok) {
-          const updatedMessage = await response.json();
-          const messageId = updatedMessage.id;
-          // Переносим локальный контент с временного ID на серверный ID
-          const tempId = message.id;
-          if (tempId !== messageId) {
-            const localContent = getLocalMessageContent(tempId);
-            if (localContent) {
-              saveLocalMessageContent(messageId, localContent);
-              setLocalMessageContent((prev) => {
-                const newContent = { ...prev };
-                delete newContent[tempId];
-                return newContent;
-              });
-              try {
-                localStorage.setItem(
-                  `localMessageContent_${chatId}_${userId}`,
-                  JSON.stringify({
-                    ...localMessageContent,
-                    [messageId]: localContent,
-                    [tempId]: undefined,
-                  })
-                );
-              } catch (error) {
-                console.warn('localStorage unavailable during update', error);
-              }
-            }
-          }
-          const statusResponse = await fetch(
-            `https://unlimitedpossibilities12.org/api/messages/${messageId}`
+        if (statusResponse.ok) {
+          const messageStatus = await statusResponse.json();
+          const recipientName = chatName.split('_').find((name) => name !== username);
+          const userResponse = await fetch(
+            `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
           );
-          if (statusResponse.ok) {
-            const messageStatus = await statusResponse.json();
-            const recipientName = chatName.split('_').find((name) => name !== username);
-            const userResponse = await fetch(
-              `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
-            );
-            if (userResponse.ok) {
-              const recipient = await userResponse.json();
-              const recipientId = recipient.id;
-              if (messageStatus.read_status === false || messageStatus.read_status === null) {
-                await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    userId,
-                    recipientId,
-                    content: contentForNotification,
-                    chatId,
-                  }),
-                });
-              }
+          if (userResponse.ok) {
+            const recipient = await userResponse.json();
+            const recipientId = recipient.id;
+            if (messageStatus.read_status === false || messageStatus.read_status === null) {
+              await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId,
+                  recipientId,
+                  content: contentForNotification,
+                  chatId,
+                }),
+              });
             }
           }
+        } else {
+          console.warn(`Failed to fetch message status for ID ${message.id}`);
         }
       } catch (error) {
         console.error('Error in sendNotification:', error);
@@ -1212,6 +1211,25 @@ const SecretPrivateChat = () => {
 
   const handleDragEnd = () => {
     setIsDragging(null);
+  };
+
+  const cleanOldMessages = () => {
+    const maxMessages = 100; // Максимум записей в localStorage
+    const currentContent = { ...localMessageContent };
+    const keys = Object.keys(currentContent).sort((a, b) => Number(a) - Number(b));
+    if (keys.length > maxMessages) {
+      const toDelete = keys.slice(0, keys.length - maxMessages);
+      toDelete.forEach((key) => delete currentContent[key]);
+      setLocalMessageContent(currentContent);
+      try {
+        localStorage.setItem(
+          `localMessageContent_${chatId}_${userId}`,
+          JSON.stringify(currentContent)
+        );
+      } catch (error) {
+        console.warn('localStorage unavailable during cleanup', error);
+      }
+    }
   };
 
   return (
