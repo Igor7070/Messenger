@@ -197,10 +197,10 @@ const SecretPrivateChat = () => {
   useEffect(() => {
     const fetchChatData = async () => {
       // Очистка кэша ключей для теста (удалить после успешного тестирования)
-      /*Object.keys(localStorage)
+      Object.keys(localStorage)
         .filter((key) => key.startsWith('public_key_'))
         .forEach((key) => localStorage.removeItem(key));
-      console.log('Cleared public key cache in localStorage');*/
+      console.log('Cleared public key cache in localStorage');
 
       if (!chatIdParam || !username) {
         toast.error('Invalid chat ID or user is not authorized');
