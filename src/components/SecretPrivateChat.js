@@ -202,7 +202,11 @@ const SecretPrivateChat = () => {
         .forEach((key) => localStorage.removeItem(key));
       console.log('Cleared public key cache in localStorage');*/
 
-      if (!chatIdParam || !username) {
+      if (!chatIdParam || !username || !keyPair) {
+        if (!keyPair) {
+          console.warn('fetchChatData skipped: keyPair not ready');
+          return;
+        }
         toast.error('Invalid chat ID or user is not authorized');
         navigate('/');
         return;
@@ -235,7 +239,7 @@ const SecretPrivateChat = () => {
         const recipientPublicKey = await getPublicKey(recipientId);
         setPublicKeys((prev) => ({
           ...prev,
-          [recipientId]: recipientPublicKey
+          [recipientId]: recipientPublicKey,
         }));
 
         const initialMessages = await getMessages(chatIdParam);
@@ -249,14 +253,17 @@ const SecretPrivateChat = () => {
         const newPublicKeys = await Promise.all(publicKeysPromises);
         setPublicKeys((prev) => ({
           ...prev,
-          ...Object.fromEntries(newPublicKeys.map(({ senderId, publicKey }) => [senderId, publicKey]))
+          ...Object.fromEntries(newPublicKeys.map(({ senderId, publicKey }) => [senderId, publicKey])),
         }));
 
         const decryptedMessages = await Promise.all(
           initialMessages.map(async (msg) => {
             if (msg.messageType === 'text' && msg.encryptedContent && msg.nonce) {
               // Проверяем локальный контент для всех сообщений
-              const localContent = getLocalMessageContent(msg.sender.id, new Date(msg.timestamp).getTime());
+              const localContent = getLocalMessageContent(
+                msg.sender.id,
+                new Date(msg.timestamp).getTime()
+              );
               if (localContent) {
                 console.log(`Using local content for message id: ${msg.id}, sender: ${msg.sender.id}`);
                 return {
@@ -279,7 +286,8 @@ const SecretPrivateChat = () => {
                 const decryptedContent = await decryptMessage(
                   msg.encryptedContent,
                   msg.nonce,
-                  msg.sender.id
+                  msg.sender.id,
+                  msg.timestamp // Pass server timestamp
                 );
                 return {
                   ...msg,
@@ -325,7 +333,7 @@ const SecretPrivateChat = () => {
     return () => {
       setCurrentChatId(null);
     };
-  }, [chatIdParam, username, setContextUserId, setNotificationUserId, setCurrentChatId, navigate]);
+  }, [chatIdParam, username, setContextUserId, setNotificationUserId, setCurrentChatId, navigate, keyPair]);
 
   // WebSocket-подключение
   useEffect(() => {
@@ -349,13 +357,16 @@ const SecretPrivateChat = () => {
             encryptedContent: newMessage.encryptedContent,
             nonce: newMessage.nonce,
             senderId: newMessage.sender.id,
-            isOwnMessage: newMessage.sender.id === userId
+            isOwnMessage: newMessage.sender.id === userId,
           });
 
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
             if (newMessage.sender.id !== userId) {
               // Проверяем локальный контент
-              const localContent = getLocalMessageContent(newMessage.sender.id, new Date(newMessage.timestamp).getTime());
+              const localContent = getLocalMessageContent(
+                newMessage.sender.id,
+                new Date(newMessage.timestamp).getTime()
+              );
               if (localContent) {
                 console.log(`Using local content for new message id: ${newMessage.id}`);
                 updateMessages({
@@ -376,14 +387,15 @@ const SecretPrivateChat = () => {
                   publicKey = await getPublicKey(newMessage.sender.id);
                   setPublicKeys((prev) => ({
                     ...prev,
-                    [newMessage.sender.id]: publicKey
+                    [newMessage.sender.id]: publicKey,
                   }));
                 }
 
                 const decryptedContent = await decryptMessage(
                   cleanedEncryptedContent,
                   cleanedNonce,
-                  newMessage.sender.id
+                  newMessage.sender.id,
+                  newMessage.timestamp // Pass server timestamp
                 );
                 updateMessages({
                   ...newMessage,
@@ -403,7 +415,10 @@ const SecretPrivateChat = () => {
               }
             } else {
               // Для собственных сообщений используем локальный контент
-              const localContent = getLocalMessageContent(newMessage.sender.id, new Date(newMessage.timestamp).getTime());
+              const localContent = getLocalMessageContent(
+                newMessage.sender.id,
+                new Date(newMessage.timestamp).getTime()
+              );
               updateMessages({
                 ...newMessage,
                 content: localContent || 'Content unavailable',
@@ -545,11 +560,11 @@ const SecretPrivateChat = () => {
       // Если это собственное сообщение, ищем временное по senderId и timestamp
       if (newMessage.sender.id === userId && newMessage.messageType === 'text') {
         const newTimestamp = new Date(newMessage.timestamp).getTime();
-        // Ищем временное сообщение с близким timestamp (в пределах 5 секунд)
+        // Ищем временное сообщение с близким timestamp (в пределах 1 минуты)
         const existingMessage = prevMessages.find(
           (msg) =>
             msg.sender.id === userId &&
-            Math.abs(new Date(msg.timestamp).getTime() - newTimestamp) < 5000 &&
+            Math.abs(new Date(msg.timestamp).getTime() - newTimestamp) < 60000 &&
             msg.messageType === 'text'
         );
 
@@ -582,7 +597,11 @@ const SecretPrivateChat = () => {
       const existingMessageIndex = prevMessages.findIndex(
         (msg) =>
           msg.id === newMessage.id ||
-          (tempMessageKey && msg.sender.id === userId && Math.abs(new Date(msg.timestamp).getTime() - new Date(newMessage.timestamp).getTime()) < 5000)
+          (tempMessageKey &&
+            msg.sender.id === userId &&
+            Math.abs(
+              new Date(msg.timestamp).getTime() - new Date(newMessage.timestamp).getTime()
+            ) < 60000)
       );
 
       if (existingMessageIndex !== -1) {
@@ -591,7 +610,10 @@ const SecretPrivateChat = () => {
         updatedMessages[existingMessageIndex] = {
           ...existingMessage,
           ...newMessage,
-          content: newMessage.sender.id === userId ? (content || existingMessage.content || 'Content unavailable') : newMessage.content,
+          content:
+            newMessage.sender.id === userId
+              ? content || existingMessage.content || 'Content unavailable'
+              : newMessage.content,
           delivered: newMessage.delivered_status ?? existingMessage.delivered,
           read: newMessage.read_status ?? existingMessage.read,
           messageType: newMessage.messageType ?? existingMessage.messageType,
@@ -601,7 +623,8 @@ const SecretPrivateChat = () => {
       } else {
         const newMessageWithContent = {
           ...newMessage,
-          content: newMessage.sender.id === userId ? (content || 'Content unavailable') : newMessage.content,
+          content:
+            newMessage.sender.id === userId ? content || 'Content unavailable' : newMessage.content,
           delivered: newMessage.delivered_status,
           read: newMessage.read_status,
           messageType: newMessage.messageType,
@@ -629,8 +652,10 @@ const SecretPrivateChat = () => {
     };
   };
 
-  const decryptMessage = async (encryptedContent, nonce, senderId) => {
-    console.log(`decryptMessage called: encryptedContent=${encryptedContent}, nonce=${nonce}, senderId=${senderId}`);
+  const decryptMessage = async (encryptedContent, nonce, senderId, timestamp) => {
+    console.log(
+      `decryptMessage called: encryptedContent=${encryptedContent}, nonce=${nonce}, senderId=${senderId}, timestamp=${timestamp}`
+    );
     await sodium.ready;
 
     const validateBase64 = (str, name) => {
@@ -647,10 +672,25 @@ const SecretPrivateChat = () => {
     const publicKey = await getPublicKey(senderId);
     const privateKey = keyPair?.privateKey;
 
-    console.log(`Validating base64: encryptedContent=${validateBase64(encryptedContent, 'encryptedContent')}, nonce=${validateBase64(nonce, 'nonce')}, publicKey=${validateBase64(publicKey, 'publicKey')}, privateKey=${validateBase64(privateKey, 'privateKey')}`);
+    console.log(
+      `Validating base64: encryptedContent=${validateBase64(
+        encryptedContent,
+        'encryptedContent'
+      )}, nonce=${validateBase64(nonce, 'nonce')}, publicKey=${validateBase64(
+        publicKey,
+        'publicKey'
+      )}, privateKey=${validateBase64(privateKey, 'privateKey')}`
+    );
 
-    if (!validateBase64(encryptedContent, 'encryptedContent') || !validateBase64(nonce, 'nonce') || !validateBase64(publicKey, 'publicKey') || !validateBase64(privateKey, 'privateKey')) {
-      console.error(`Invalid base64 format: encryptedContent=${encryptedContent}, nonce=${nonce}, publicKey=${publicKey}, privateKey=${privateKey}`);
+    if (
+      !validateBase64(encryptedContent, 'encryptedContent') ||
+      !validateBase64(nonce, 'nonce') ||
+      !validateBase64(publicKey, 'publicKey') ||
+      !validateBase64(privateKey, 'privateKey')
+    ) {
+      console.error(
+        `Invalid base64 format: encryptedContent=${encryptedContent}, nonce=${nonce}, publicKey=${publicKey}, privateKey=${privateKey}`
+      );
       throw new Error('Invalid base64 format');
     }
 
@@ -660,19 +700,34 @@ const SecretPrivateChat = () => {
       const publicKeyBytes = sodium.from_base64(publicKey);
       const privateKeyBytes = sodium.from_base64(privateKey);
 
-      console.log(`Decryption input: encryptedBytesLength=${encryptedBytes.length}, nonceBytesLength=${nonceBytes.length}, publicKeyBytesLength=${publicKeyBytes.length}, privateKeyBytesLength=${privateKeyBytes.length}`);
-      console.log(`Decryption input hex: encryptedBytes=${sodium.to_hex(encryptedBytes)}, nonceBytes=${sodium.to_hex(nonceBytes)}, publicKeyBytes=${sodium.to_hex(publicKeyBytes)}`);
+      console.log(
+        `Decryption input: encryptedBytesLength=${encryptedBytes.length}, nonceBytesLength=${nonceBytes.length}, publicKeyBytesLength=${publicKeyBytes.length}, privateKeyBytesLength=${privateKeyBytes.length}`
+      );
+      console.log(
+        `Decryption input hex: encryptedBytes=${sodium.to_hex(
+          encryptedBytes
+        )}, nonceBytes=${sodium.to_hex(nonceBytes)}, publicKeyBytes=${sodium.to_hex(
+          publicKeyBytes
+        )}`
+      );
 
-      const decryptedBytes = sodium.crypto_box_open_easy(encryptedBytes, nonceBytes, publicKeyBytes, privateKeyBytes);
+      const decryptedBytes = sodium.crypto_box_open_easy(
+        encryptedBytes,
+        nonceBytes,
+        publicKeyBytes,
+        privateKeyBytes
+      );
       const decryptedMessage = sodium.to_string(decryptedBytes);
       console.log(`Decryption successful: decryptedMessage=${decryptedMessage}`);
 
-      // Сохраняем расшифрованный контент
-      saveLocalMessageContent(`${senderId}_${new Date().getTime()}`, decryptedMessage);
+      // Save decrypted content using server timestamp
+      saveLocalMessageContent(`${senderId}_${new Date(timestamp).getTime()}`, decryptedMessage);
 
       return decryptedMessage;
     } catch (error) {
-      console.error(`Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`);
+      console.error(
+        `Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`
+      );
       throw new Error(`Decryption failed: ${error.message}`);
     }
   };
