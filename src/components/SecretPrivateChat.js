@@ -555,23 +555,42 @@ const SecretPrivateChat = () => {
         return prevMessages.filter((msg) => msg.id !== newMessage.id);
       }
 
+      console.log(`Processing new message: id=${newMessage.id}, senderId=${newMessage.sender.id}, messageType=${newMessage.messageType}, clientMessageId=${newMessage.clientMessageId}`);
+
       let content = newMessage.content;
 
       // Для собственных текстовых сообщений
       if (newMessage.sender.id === userId && newMessage.messageType === 'text' && newMessage.encryptedContent) {
-        const tempEntry = Object.entries(tempMessageIds).find(
-          ([tempId, data]) => data.encryptedContent === newMessage.encryptedContent
-        );
+        let tempEntry = null;
+        if (newMessage.clientMessageId) {
+          // [ДОБАВЛЕНО] Сопоставление по clientMessageId
+          tempEntry = Object.entries(tempMessageIds).find(
+            ([clientMessageId]) => clientMessageId === newMessage.clientMessageId
+          );
+        }
+        // [ДОБАВЛЕНО] Fallback на encryptedContent для обратной совместимости
+        if (!tempEntry && newMessage.encryptedContent) {
+          const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\s/g, '');
+          tempEntry = Object.entries(tempMessageIds).find(
+            ([tempId, data]) => data.encryptedContent === cleanedEncryptedContent
+          );
+        }
+
         if (tempEntry) {
-          const [tempId, data] = tempEntry;
+          const [clientMessageId, data] = tempEntry;
           const localTimestamp = data.localTimestamp;
           const tempKey = `${userId}_${localTimestamp}`;
           content = getLocalMessageContent(userId, localTimestamp);
-          console.log(`Found temp message: tempId=${tempId}, content=${content}, tempKey=${tempKey}`);
+          console.log(`Found temp message: clientMessageId=${clientMessageId}, content=${content}, tempKey=${tempKey}`);
+
+          // [ИЗМЕНЕНО] Перенос контента в localStorage
           if (content) {
             const newTimestamp = new Date(newMessage.timestamp).getTime();
             const newKey = `${userId}_${newTimestamp}`;
             saveLocalMessageContent(newKey, content);
+            console.log(`Transferred content to newKey=${newKey}, content=${content}`);
+
+            // Удаляем старый ключ из localStorage
             setLocalMessageContent((prev) => {
               const newContent = { ...prev };
               delete newContent[tempKey];
@@ -580,24 +599,20 @@ const SecretPrivateChat = () => {
                   `localMessageContent_${chatId}_${userId}`,
                   JSON.stringify(newContent)
                 );
+                console.log(`Removed tempKey=${tempKey} from localStorage`);
               } catch (error) {
                 console.warn('localStorage unavailable during update', error);
               }
-              console.log(`Transferred content from tempKey=${tempKey} to newKey=${newKey}`);
               return newContent;
             });
+          } else {
+            console.warn(`No content found for tempKey=${tempKey}`);
           }
-          setTempMessageIds((prev) => {
-            const newTemp = { ...prev };
-            delete newTemp[tempId];
-            console.log(`Removed tempId=${tempId} from tempMessageIds`);
-            return newTemp;
-          });
 
-          // Заменяем временное сообщение на серверное
-          const tempMessageIndex = prevMessages.findIndex((msg) => msg.id === tempId);
+          // [ИЗМЕНЕНО] Заменяем временное сообщение на серверное
+          const tempMessageIndex = prevMessages.findIndex((msg) => msg.id === clientMessageId);
           if (tempMessageIndex !== -1) {
-            console.log(`Replacing temp message with ID=${tempId} with server message ID=${newMessage.id}`);
+            console.log(`Replacing temp message with ID=${clientMessageId} with server message ID=${newMessage.id}`);
             const updatedMessages = [...prevMessages];
             updatedMessages[tempMessageIndex] = {
               ...newMessage,
@@ -607,18 +622,45 @@ const SecretPrivateChat = () => {
               messageType: newMessage.messageType,
             };
             console.log(`Replaced message:`, updatedMessages[tempMessageIndex]);
+
+            // [ИЗМЕНЕНО] Очищаем tempMessageIds
+            setTempMessageIds((prev) => {
+              const newTemp = { ...prev };
+              delete newTemp[clientMessageId];
+              console.log(`Removed clientMessageId=${clientMessageId} from tempMessageIds`);
+              return newTemp;
+            });
+
+            // [ДОБАВЛЕНО] Отправляем уведомление
+            const contentForNotification = 'New message';
+            sendNotification(newMessage, contentForNotification);
+
             return updatedMessages;
           } else {
-            console.warn(`Temp message with ID=${tempId} not found in messages`);
+            console.warn(`Temp message with ID=${clientMessageId} not found in messages`);
+            // [ДОБАВЛЕНО] Добавляем сообщение, если временное не найдено
+            const newMessageWithContent = {
+              ...newMessage,
+              content: content || 'Content unavailable',
+              delivered: newMessage.delivered_status,
+              read: newMessage.read_status,
+              messageType: newMessage.messageType,
+            };
+            console.log(`Added new message (temp not found): id=${newMessage.id}, content=${newMessageWithContent.content}`);
+            return [...prevMessages, newMessageWithContent];
           }
         } else {
-          console.warn(`No temp message found for encryptedContent=${newMessage.encryptedContent}`);
+          console.warn(`No temp message found for clientMessageId=${newMessage.clientMessageId} or encryptedContent=${newMessage.encryptedContent}`);
+          // [ДОБАВЛЕНО] Проверяем localStorage по серверному timestamp
+          const newTimestamp = new Date(newMessage.timestamp).getTime();
+          const newKey = `${userId}_${newTimestamp}`;
+          content = getLocalMessageContent(userId, newTimestamp);
+          console.log(`Checked server timestamp key=${newKey}, content=${content}`);
         }
       }
 
       // Проверяем, существует ли сообщение с серверным ID
       const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
-
       if (existingMessageIndex !== -1) {
         const existingMessage = prevMessages[existingMessageIndex];
         const updatedMessages = [...prevMessages];
@@ -635,33 +677,22 @@ const SecretPrivateChat = () => {
         };
         console.log(`Updated existing message with ID=${newMessage.id}:`, updatedMessages[existingMessageIndex]);
         return updatedMessages;
-      } else {
-        // Добавляем новое сообщение, если это не собственное текстовое сообщение (или не было найдено tempId)
-        const newMessageWithContent = {
-          ...newMessage,
-          content:
-            newMessage.sender.id === userId
-              ? content || 'Content unavailable'
-              : newMessage.content,
-          delivered: newMessage.delivered_status,
-          read: newMessage.read_status,
-          messageType: newMessage.messageType,
-        };
-        console.log(`Added new message with ID=${newMessage.id}:`, newMessageWithContent);
-        return [...prevMessages, newMessageWithContent];
       }
-    });
 
-    // Отправляем уведомление после обновления messages
-    if (newMessage.sender.id === userId && newMessage.messageType === 'text' && newMessage.encryptedContent) {
-      const tempEntry = Object.entries(tempMessageIds).find(
-        ([tempId, data]) => data.encryptedContent === newMessage.encryptedContent
-      );
-      if (tempEntry) {
-        const contentForNotification = 'New message';
-        sendNotification(newMessage, contentForNotification);
-      }
-    }
+      // Добавляем новое сообщение, если это не собственное текстовое сообщение
+      const newMessageWithContent = {
+        ...newMessage,
+        content:
+          newMessage.sender.id === userId
+            ? content || 'Content unavailable'
+            : newMessage.content,
+        delivered: newMessage.delivered_status,
+        read: newMessage.read_status,
+        messageType: newMessage.messageType,
+      };
+      console.log(`Added new message: id=${newMessage.id}, content=${newMessageWithContent.content}`);
+      return [...prevMessages, newMessageWithContent];
+    });
   };
 
   const encryptMessage = async (content, recipientId) => {
@@ -788,8 +819,8 @@ const SecretPrivateChat = () => {
         const recipient = await userResponse.json();
         const recipientId = recipient.id;
 
-        const normalizedChatName = generateChatName(username, recipientName, true); // Учитываем secret
-        const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`; // Уникальный tempId
+        const normalizedChatName = generateChatName(username, recipientName, true);
+        const clientMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`; // [ИЗМЕНЕНО] Уникальный clientMessageId
         const timestamp = new Date().toISOString();
 
         let messageData = {
@@ -800,20 +831,18 @@ const SecretPrivateChat = () => {
           timestamp,
         };
 
-        let encryptedContentForMatch = null;
-
         if (content) {
-          // Сохраняем оригинальный контент локально с временным ключом
-          saveLocalMessageContent(`${userId}_${tempId}`, content);
+          // [ИЗМЕНЕНО] Сохраняем контент с clientMessageId
+          saveLocalMessageContent(`${userId}_${clientMessageId}`, content);
           const { encryptedContent, nonce } = await encryptMessage(content, recipientId);
-          encryptedContentForMatch = encryptedContent;
           messageData = {
             ...messageData,
             encryptedContent,
             nonce,
             messageType: 'text',
             content, // Для локального отображения
-            id: tempId, // Только для локального messages
+            id: clientMessageId, // [ИЗМЕНЕНО] Используем clientMessageId как tempId
+            clientMessageId, // [ДОБАВЛЕНО] Отправляем на сервер
           };
         } else if (selectedFile) {
           messageData = {
@@ -821,7 +850,7 @@ const SecretPrivateChat = () => {
             fileUrl: await uploadFile(selectedFile),
             messageType: 'file',
             contentType: selectedFile.type,
-            id: tempId,
+            id: clientMessageId, // [ИЗМЕНЕНО] Используем clientMessageId как tempId
           };
         } else if (audioBlob) {
           const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, {
@@ -832,7 +861,7 @@ const SecretPrivateChat = () => {
             fileUrl: await uploadFile(audioFile),
             messageType: 'audio',
             contentType: 'audio/mpeg',
-            id: tempId,
+            id: clientMessageId, // [ИЗМЕНЕНО] Используем clientMessageId как tempId
           };
         }
 
@@ -843,14 +872,15 @@ const SecretPrivateChat = () => {
               ...messageData,
               id: undefined, // Не отправляем id на сервер
               content: undefined, // Удаляем content
+              clientMessageId: messageData.clientMessageId || undefined, // [ДОБАВЛЕНО] Отправляем clientMessageId только для текста
             }),
           });
-          if (encryptedContentForMatch) {
-            setTempMessageIds((prev) => ({
-              ...prev,
-              [tempId]: { encryptedContent: encryptedContentForMatch, localTimestamp: tempId },
-            }));
-          }
+          // [ИЗМЕНЕНО] Сохраняем clientMessageId и localTimestamp в tempMessageIds
+          setTempMessageIds((prev) => ({
+            ...prev,
+            [clientMessageId]: { localTimestamp: clientMessageId },
+          }));
+          console.log(`Added to tempMessageIds: clientMessageId=${clientMessageId}`);
           updateMessages(messageData);
           resetForm();
         } else {
