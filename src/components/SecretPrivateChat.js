@@ -15,6 +15,36 @@ import { usePrivateMessageNotification } from '../context/PrivateMessageNotifica
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import * as sodium from 'libsodium-wrappers';
 
+const saveOwnMessageContent = (chatId, userId, clientMessageId, content) => {
+  try {
+    const key = `ownMessageContent_${chatId}_${userId}`;
+    const stored = localStorage.getItem(key);
+    const messages = stored ? JSON.parse(stored) : {};
+    messages[clientMessageId] = content;
+    localStorage.setItem(key, JSON.stringify(messages));
+    console.log(`Saved own message content to localStorage: clientMessageId=${clientMessageId}, content=${content}`);
+  } catch (error) {
+    console.error('Failed to save own message content to localStorage:', error);
+  }
+};
+
+const getOwnMessageContent = (chatId, userId, clientMessageId) => {
+  try {
+    const key = `ownMessageContent_${chatId}_${userId}`;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      const messages = JSON.parse(stored);
+      const content = messages[clientMessageId];
+      console.log(`Retrieved own message content from localStorage: clientMessageId=${clientMessageId}, content=${content || 'not found'}`);
+      return content || null;
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to get own message content from localStorage:', error);
+    return null;
+  }
+};
+
 export const generateChatName = (username1, username2, isSecret = false) => {
   const names = [username1, username2].sort();
   return isSecret ? `${names[0]}_${names[1]}_secret` : `${names[0]}_${names[1]}`;
@@ -223,12 +253,13 @@ const SecretPrivateChat = () => {
           initialMessages.map(async (msg) => {
             if (msg.messageType === 'text' && msg.encryptedContent && msg.nonce) {
               if (msg.sender.id === userId) {
-                // Для собственных сообщений контент будет взят из sentMessagesCache позже,
-                // поэтому здесь ставим временный placeholder
-                console.log(`Own message id: ${msg.id}, marking as Content unavailable until WebSocket update`);
+                // Проверяем, есть ли контент в localStorage для собственных сообщений
+                const clientMessageId = msg.clientMessageId; // Предполагаем, что сервер возвращает clientMessageId
+                const localContent = clientMessageId ? getOwnMessageContent(chatIdParam, userId, clientMessageId) : null;
+                console.log(`Own message id: ${msg.id}, clientMessageId: ${clientMessageId}, localContent: ${localContent || 'not found'}`);
                 return {
                   ...msg,
-                  content: 'Content unavailable',
+                  content: localContent || 'Content unavailable',
                   delivered: msg.delivered_status,
                   read: msg.read_status,
                 };
@@ -485,8 +516,15 @@ const SecretPrivateChat = () => {
 
       // Для собственных текстовых сообщений
       if (newMessage.sender.id === userId && newMessage.messageType === 'text' && newMessage.clientMessageId) {
-        content = sentMessagesCache[newMessage.clientMessageId] || 'Content unavailable';
-        console.log(`Retrieved content from sentMessagesCache: clientMessageId=${newMessage.clientMessageId}, content=${content}`);
+        // Сначала проверяем sentMessagesCache
+        content = sentMessagesCache[newMessage.clientMessageId];
+        if (!content) {
+          // Если в sentMessagesCache нет, пробуем получить из localStorage
+          content = getOwnMessageContent(chatId, userId, newMessage.clientMessageId) || 'Content unavailable';
+          console.log(`Retrieved content from localStorage: clientMessageId=${newMessage.clientMessageId}, content=${content}`);
+        } else {
+          console.log(`Retrieved content from sentMessagesCache: clientMessageId=${newMessage.clientMessageId}, content=${content}`);
+        }
 
         // Удаляем контент из кэша после использования
         setSentMessagesCache((prev) => {
@@ -687,6 +725,9 @@ const SecretPrivateChat = () => {
             [clientMessageId]: content,
           }));
           console.log(`Saved to sentMessagesCache: clientMessageId=${clientMessageId}, content=${content}`);
+
+          // Сохраняем контент в localStorage
+          saveOwnMessageContent(chatId, userId, clientMessageId, content);
 
           const { encryptedContent, nonce } = await encryptMessage(content, recipientId);
           messageData = {
