@@ -42,6 +42,8 @@ public class Message {
     private String contentType; // Поле для хранения contentType
     @Column(name = "transcribed_content")
     private String transcribedContent; // Поле для транскрипции
+    @Column(name = "client_message_id", nullable = true)
+    private String clientMessageId;
 
     public Long getId() {
         return id;
@@ -169,5 +171,13 @@ public class Message {
 
     public void setNonce(String nonce) {
         this.nonce = nonce;
+    }
+
+    public String getClientMessageId() {
+        return clientMessageId;
+    }
+
+    public void setClientMessageId(String clientMessageId) {
+        this.clientMessageId = clientMessageId;
     }
 }

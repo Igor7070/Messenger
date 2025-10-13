@@ -46,6 +46,7 @@ public class WebSocketMessageController {
         System.out.println("Working method sendMessage...");
         System.out.println("Received message object: " + message);
         System.out.println("chatId: " + chatId);
+        System.out.println("Received clientMessageId: " + message.getClientMessageId());
         System.out.println("Received message: content=" + message.getContent() +
                 ", messageType=" + message.getMessageType() +
                 ", from user: " + (message.getSender() != null ? message.getSender().getUsername() : "null"));
