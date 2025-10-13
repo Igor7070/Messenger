@@ -551,6 +551,7 @@ const SecretPrivateChat = () => {
   const updateMessages = (newMessage) => {
     setMessages((prevMessages) => {
       if (newMessage.content === 'Message deleted') {
+        console.log(`Deleting message with ID ${newMessage.id}`);
         return prevMessages.filter((msg) => msg.id !== newMessage.id);
       }
 
@@ -566,6 +567,7 @@ const SecretPrivateChat = () => {
           const localTimestamp = data.localTimestamp;
           const tempKey = `${userId}_${localTimestamp}`;
           content = getLocalMessageContent(userId, localTimestamp);
+          console.log(`Found temp message: tempId=${tempId}, content=${content}, tempKey=${tempKey}`);
           if (content) {
             const newTimestamp = new Date(newMessage.timestamp).getTime();
             const newKey = `${userId}_${newTimestamp}`;
@@ -581,21 +583,40 @@ const SecretPrivateChat = () => {
               } catch (error) {
                 console.warn('localStorage unavailable during update', error);
               }
+              console.log(`Transferred content from tempKey=${tempKey} to newKey=${newKey}`);
               return newContent;
             });
-            console.log(`Transferred content from tempKey ${tempKey} to newKey ${newKey}`);
           }
           setTempMessageIds((prev) => {
             const newTemp = { ...prev };
             delete newTemp[tempId];
+            console.log(`Removed tempId=${tempId} from tempMessageIds`);
             return newTemp;
           });
-          // Отправляем уведомление с серверным ID
-          sendNotification(newMessage, content || '');
+
+          // Заменяем временное сообщение на серверное
+          const tempMessageIndex = prevMessages.findIndex((msg) => msg.id === tempId);
+          if (tempMessageIndex !== -1) {
+            console.log(`Replacing temp message with ID=${tempId} with server message ID=${newMessage.id}`);
+            const updatedMessages = [...prevMessages];
+            updatedMessages[tempMessageIndex] = {
+              ...newMessage,
+              content: content || 'Content unavailable',
+              delivered: newMessage.delivered_status,
+              read: newMessage.read_status,
+              messageType: newMessage.messageType,
+            };
+            console.log(`Replaced message:`, updatedMessages[tempMessageIndex]);
+            return updatedMessages;
+          } else {
+            console.warn(`Temp message with ID=${tempId} not found in messages`);
+          }
+        } else {
+          console.warn(`No temp message found for encryptedContent=${newMessage.encryptedContent}`);
         }
       }
 
-      // Проверяем, существует ли сообщение
+      // Проверяем, существует ли сообщение с серверным ID
       const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
 
       if (existingMessageIndex !== -1) {
@@ -612,9 +633,10 @@ const SecretPrivateChat = () => {
           read: newMessage.read_status ?? existingMessage.read,
           messageType: newMessage.messageType ?? existingMessage.messageType,
         };
-        console.log(`Updated message with ID ${newMessage.id}:`, updatedMessages[existingMessageIndex]);
+        console.log(`Updated existing message with ID=${newMessage.id}:`, updatedMessages[existingMessageIndex]);
         return updatedMessages;
       } else {
+        // Добавляем новое сообщение, если это не собственное текстовое сообщение (или не было найдено tempId)
         const newMessageWithContent = {
           ...newMessage,
           content:
@@ -625,10 +647,21 @@ const SecretPrivateChat = () => {
           read: newMessage.read_status,
           messageType: newMessage.messageType,
         };
-        console.log(`Added new message with ID ${newMessage.id}:`, newMessageWithContent);
+        console.log(`Added new message with ID=${newMessage.id}:`, newMessageWithContent);
         return [...prevMessages, newMessageWithContent];
       }
     });
+
+    // Отправляем уведомление после обновления messages
+    if (newMessage.sender.id === userId && newMessage.messageType === 'text' && newMessage.encryptedContent) {
+      const tempEntry = Object.entries(tempMessageIds).find(
+        ([tempId, data]) => data.encryptedContent === newMessage.encryptedContent
+      );
+      if (tempEntry) {
+        const contentForNotification = 'New message';
+        sendNotification(newMessage, contentForNotification);
+      }
+    }
   };
 
   const encryptMessage = async (content, recipientId) => {
@@ -845,7 +878,6 @@ const SecretPrivateChat = () => {
       const recipient = await userResponse.json();
       const recipientId = recipient.id;
 
-      // Проверяем статус сообщения (message.id — серверный)
       const statusResponse = await fetch(
         `https://unlimitedpossibilities12.org/api/messages/${message.id}`
       );
@@ -858,11 +890,11 @@ const SecretPrivateChat = () => {
             body: JSON.stringify({
               userId,
               recipientId,
-              content: contentForNotification,
+              content: contentForNotification, // "New message"
               chatId,
             }),
           });
-          console.log(`Notification sent for message ${message.id}`);
+          console.log(`Notification sent for message ${message.id} with content: ${contentForNotification}`);
         }
       } else {
         console.error(`Failed to fetch message status for ID ${message.id}: ${statusResponse.status}`);
