@@ -548,142 +548,161 @@ const SecretPrivateChat = () => {
     }
   };
 
-  const updateMessages = (newMessage) => {
+  const updateMessages = (newMessage, tempMessageIdsOverride, localMessageContentOverride) => {
     setMessages((prevMessages) => {
+      // Используем переданные состояния или текущие
+      const effectiveTempMessageIds = tempMessageIdsOverride || tempMessageIds;
+      const effectiveLocalMessageContent = localMessageContentOverride || localMessageContent;
+
       if (newMessage.content === 'Message deleted') {
         console.log(`Deleting message with ID ${newMessage.id}`);
         return prevMessages.filter((msg) => msg.id !== newMessage.id);
       }
 
       console.log(`Processing new message: id=${newMessage.id}, senderId=${newMessage.sender.id}, messageType=${newMessage.messageType}, clientMessageId=${newMessage.clientMessageId}`);
-      console.log(`Current tempMessageIds:`, tempMessageIds);
+      console.log(`Effective tempMessageIds:`, effectiveTempMessageIds);
+      console.log(`Effective localMessageContent:`, effectiveLocalMessageContent);
 
       let content = newMessage.content;
 
       // Для собственных текстовых сообщений
       if (newMessage.sender.id === userId && newMessage.messageType === 'text' && newMessage.encryptedContent) {
-        let tempEntry = null;
         if (newMessage.clientMessageId) {
-          // [ИЗМЕНЕНО] Поиск по clientMessageId
-          tempEntry = Object.entries(tempMessageIds).find(
+          const tempEntry = Object.entries(effectiveTempMessageIds).find(
             ([clientMessageId]) => clientMessageId === newMessage.clientMessageId
           );
           console.log(`Searched for clientMessageId=${newMessage.clientMessageId}, found:`, tempEntry);
-        }
-        // Fallback на encryptedContent для обратной совместимости
-        if (!tempEntry && newMessage.encryptedContent) {
-          const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\s/g, '');
-          tempEntry = Object.entries(tempMessageIds).find(
-            ([tempId, data]) => data.encryptedContent === cleanedEncryptedContent
-          );
-          console.log(`Fallback search for encryptedContent=${cleanedEncryptedContent}, found:`, tempEntry);
-        }
 
-        if (tempEntry) {
-          const [clientMessageId, data] = tempEntry;
-          const localTimestamp = data.localTimestamp;
-          const tempKey = `${userId}_${localTimestamp}`;
-          content = getLocalMessageContent(userId, localTimestamp);
-          console.log(`Found temp message: clientMessageId=${clientMessageId}, tempKey=${tempKey}, content=${content}`);
+          if (tempEntry) {
+            const [clientMessageId, data] = tempEntry;
+            const tempKey = `${userId}_${data.localTimestamp}`;
+            content = effectiveLocalMessageContent[tempKey] || getLocalMessageContent(userId, data.localTimestamp);
+            console.log(`Found temp message: clientMessageId=${clientMessageId}, tempKey=${tempKey}, content=${content}`);
 
-          // Перенос контента в localStorage с серверным timestamp
-          if (content) {
+            // Перенос контента в localStorage с серверным timestamp
+            if (content && newMessage.id !== clientMessageId) { // Проверяем, что это серверное сообщение
+              const newTimestamp = new Date(newMessage.timestamp).getTime();
+              const newKey = `${userId}_${newTimestamp}`;
+              setLocalMessageContent((prev) => {
+                const newContent = { ...prev, [newKey]: content };
+                try {
+                  localStorage.setItem(
+                    `localMessageContent_${chatId}_${userId}`,
+                    JSON.stringify(newContent)
+                  );
+                  console.log(`Saved content to newKey=${newKey}, content=${content}`);
+                } catch (error) {
+                  console.warn('localStorage unavailable during update', error);
+                }
+                return newContent;
+              });
+
+              // Удаляем старый ключ
+              setLocalMessageContent((prev) => {
+                const newContent = { ...prev };
+                delete newContent[tempKey];
+                try {
+                  localStorage.setItem(
+                    `localMessageContent_${chatId}_${userId}`,
+                    JSON.stringify(newContent)
+                  );
+                  console.log(`Removed tempKey=${tempKey} from localStorage`);
+                } catch (error) {
+                  console.warn('localStorage unavailable during update', error);
+                }
+                return newContent;
+              });
+
+              // Очищаем tempMessageIds
+              setTempMessageIds((prev) => {
+                const newTemp = { ...prev };
+                delete newTemp[clientMessageId];
+                console.log(`Removed clientMessageId=${clientMessageId} from tempMessageIds`);
+                return newTemp;
+              });
+            }
+
+            // Проверяем, существует ли временное сообщение
+            const tempMessageIndex = prevMessages.findIndex((msg) => msg.id === clientMessageId);
+            if (tempMessageIndex !== -1) {
+              console.log(`Replacing temp message with ID=${clientMessageId} with server message ID=${newMessage.id}`);
+              const updatedMessages = [...prevMessages];
+              updatedMessages[tempMessageIndex] = {
+                ...newMessage,
+                content: content || 'Content unavailable',
+                delivered: newMessage.delivered_status,
+                read: newMessage.read_status,
+                messageType: newMessage.messageType,
+              };
+              console.log(`Replaced message:`, updatedMessages[tempMessageIndex]);
+
+              // Отправляем уведомление
+              if (newMessage.id !== clientMessageId) {
+                const contentForNotification = 'New message';
+                sendNotification(newMessage, contentForNotification);
+              }
+
+              return updatedMessages;
+            } else {
+              console.warn(`Temp message with ID=${clientMessageId} not found in messages`);
+              // Проверяем, не добавлено ли сообщение уже
+              const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
+              if (existingMessageIndex !== -1) {
+                console.log(`Message with ID=${newMessage.id} already exists, updating`);
+                const updatedMessages = [...prevMessages];
+                updatedMessages[existingMessageIndex] = {
+                  ...prevMessages[existingMessageIndex],
+                  ...newMessage,
+                  content: content || prevMessages[existingMessageIndex].content || 'Content unavailable',
+                  delivered: newMessage.delivered_status ?? prevMessages[existingMessageIndex].delivered,
+                  read: newMessage.read_status ?? prevMessages[existingMessageIndex].read,
+                  messageType: newMessage.messageType ?? prevMessages[existingMessageIndex].messageType,
+                };
+                return updatedMessages;
+              }
+              // Добавляем новое сообщение
+              console.log(`Adding new message (temp not found): id=${newMessage.id}, content=${content || 'Content unavailable'}`);
+              return [...prevMessages, {
+                ...newMessage,
+                content: content || 'Content unavailable',
+                delivered: newMessage.delivered_status,
+                read: newMessage.read_status,
+                messageType: newMessage.messageType,
+              }];
+            }
+          } else {
+            console.warn(`No temp message found for clientMessageId=${newMessage.clientMessageId}`);
+            // Проверяем localStorage по серверному timestamp
             const newTimestamp = new Date(newMessage.timestamp).getTime();
             const newKey = `${userId}_${newTimestamp}`;
-            saveLocalMessageContent(newKey, content);
-            console.log(`Transferred content to newKey=${newKey}, content=${content}`);
-
-            // Удаляем старый ключ из localStorage
-            setLocalMessageContent((prev) => {
-              const newContent = { ...prev };
-              delete newContent[tempKey];
-              try {
-                localStorage.setItem(
-                  `localMessageContent_${chatId}_${userId}`,
-                  JSON.stringify(newContent)
-                );
-                console.log(`Removed tempKey=${tempKey} from localStorage`);
-              } catch (error) {
-                console.warn('localStorage unavailable during update', error);
-              }
-              return newContent;
-            });
-          } else {
-            console.warn(`No content found for tempKey=${tempKey}`);
+            content = effectiveLocalMessageContent[newKey] || getLocalMessageContent(userId, newTimestamp);
+            console.log(`Checked server timestamp key=${newKey}, content=${content}`);
           }
-
-          // Заменяем временное сообщение на серверное
-          const tempMessageIndex = prevMessages.findIndex((msg) => msg.id === clientMessageId);
-          if (tempMessageIndex !== -1) {
-            console.log(`Replacing temp message with ID=${clientMessageId} with server message ID=${newMessage.id}`);
-            const updatedMessages = [...prevMessages];
-            updatedMessages[tempMessageIndex] = {
-              ...newMessage,
-              content: content || 'Content unavailable',
-              delivered: newMessage.delivered_status,
-              read: newMessage.read_status,
-              messageType: newMessage.messageType,
-            };
-            console.log(`Replaced message:`, updatedMessages[tempMessageIndex]);
-
-            // Очищаем tempMessageIds
-            setTempMessageIds((prev) => {
-              const newTemp = { ...prev };
-              delete newTemp[clientMessageId];
-              console.log(`Removed clientMessageId=${clientMessageId} from tempMessageIds`);
-              return newTemp;
-            });
-
-            // Отправляем уведомление
-            const contentForNotification = 'New message';
-            sendNotification(newMessage, contentForNotification);
-
-            return updatedMessages;
-          } else {
-            console.warn(`Temp message with ID=${clientMessageId} not found in messages`);
-            // Добавляем сообщение, если временное не найдено
-            const newMessageWithContent = {
-              ...newMessage,
-              content: content || 'Content unavailable',
-              delivered: newMessage.delivered_status,
-              read: newMessage.read_status,
-              messageType: newMessage.messageType,
-            };
-            console.log(`Added new message (temp not found): id=${newMessage.id}, content=${newMessageWithContent.content}`);
-            return [...prevMessages, newMessageWithContent];
-          }
-        } else {
-          console.warn(`No temp message found for clientMessageId=${newMessage.clientMessageId} or encryptedContent=${newMessage.encryptedContent}`);
-          // Проверяем localStorage по серверному timestamp
-          const newTimestamp = new Date(newMessage.timestamp).getTime();
-          const newKey = `${userId}_${newTimestamp}`;
-          content = getLocalMessageContent(userId, newTimestamp);
-          console.log(`Checked server timestamp key=${newKey}, content=${content}`);
         }
       }
 
-      // Проверяем, существует ли сообщение с серверным ID
+      // Для входящих сообщений или других случаев
       const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
       if (existingMessageIndex !== -1) {
-        const existingMessage = prevMessages[existingMessageIndex];
+        console.log(`Updating existing message with ID=${newMessage.id}`);
         const updatedMessages = [...prevMessages];
         updatedMessages[existingMessageIndex] = {
-          ...existingMessage,
+          ...prevMessages[existingMessageIndex],
           ...newMessage,
           content:
             newMessage.sender.id === userId
-              ? content || existingMessage.content || 'Content unavailable'
+              ? content || prevMessages[existingMessageIndex].content || 'Content unavailable'
               : newMessage.content,
-          delivered: newMessage.delivered_status ?? existingMessage.delivered,
-          read: newMessage.read_status ?? existingMessage.read,
-          messageType: newMessage.messageType ?? existingMessage.messageType,
+          delivered: newMessage.delivered_status ?? prevMessages[existingMessageIndex].delivered,
+          read: newMessage.read_status ?? prevMessages[existingMessageIndex].read,
+          messageType: newMessage.messageType ?? prevMessages[existingMessageIndex].messageType,
         };
-        console.log(`Updated existing message with ID=${newMessage.id}:`, updatedMessages[existingMessageIndex]);
         return updatedMessages;
       }
 
-      // Добавляем новое сообщение, если это не собственное текстовое сообщение
-      const newMessageWithContent = {
+      // Добавляем новое сообщение
+      console.log(`Adding new message: id=${newMessage.id}, content=${content || newMessage.content || 'Content unavailable'}`);
+      return [...prevMessages, {
         ...newMessage,
         content:
           newMessage.sender.id === userId
@@ -692,9 +711,7 @@ const SecretPrivateChat = () => {
         delivered: newMessage.delivered_status,
         read: newMessage.read_status,
         messageType: newMessage.messageType,
-      };
-      console.log(`Added new message: id=${newMessage.id}, content=${newMessageWithContent.content}`);
-      return [...prevMessages, newMessageWithContent];
+      }];
     });
   };
 
@@ -834,11 +851,25 @@ const SecretPrivateChat = () => {
           timestamp,
         };
 
+        // Локальные копии состояний
+        let newLocalMessageContent = { ...localMessageContent };
+        let newTempMessageIds = { ...tempMessageIds };
+
         if (content) {
-          // [ИЗМЕНЕНО] Сохраняем контент с правильным ключом
+          // Сохраняем контент синхронно
           const tempKey = `${userId}_${clientMessageId}`;
-          saveLocalMessageContent(tempKey, content);
-          console.log(`Saved local content: key=${tempKey}, content=${content}`);
+          newLocalMessageContent = { ...newLocalMessageContent, [tempKey]: content };
+          try {
+            localStorage.setItem(
+              `localMessageContent_${chatId}_${userId}`,
+              JSON.stringify(newLocalMessageContent)
+            );
+            console.log(`Saved local content: key=${tempKey}, content=${content}`);
+          } catch (error) {
+            console.warn('localStorage unavailable, using in-memory storage', error);
+          }
+          setLocalMessageContent(newLocalMessageContent);
+
           const { encryptedContent, nonce } = await encryptMessage(content, recipientId);
           messageData = {
             ...messageData,
@@ -849,6 +880,14 @@ const SecretPrivateChat = () => {
             id: clientMessageId,
             clientMessageId,
           };
+
+          // Сохраняем clientMessageId
+          newTempMessageIds = {
+            ...newTempMessageIds,
+            [clientMessageId]: { localTimestamp: clientMessageId, encryptedContent },
+          };
+          setTempMessageIds(newTempMessageIds);
+          console.log(`Synchronously added to tempMessageIds: clientMessageId=${clientMessageId}, tempMessageIds=`, newTempMessageIds);
         } else if (selectedFile) {
           messageData = {
             ...messageData,
@@ -871,14 +910,6 @@ const SecretPrivateChat = () => {
         }
 
         if (client && client.connected) {
-          // [ДОБАВЛЕНО] Синхронное обновление tempMessageIds
-          const newTempMessageIds = {
-            ...tempMessageIds,
-            [clientMessageId]: { localTimestamp: clientMessageId },
-          };
-          setTempMessageIds(newTempMessageIds);
-          console.log(`Synchronously added to tempMessageIds: clientMessageId=${clientMessageId}, tempMessageIds=`, newTempMessageIds);
-
           client.publish({
             destination: `/app/sendMessage/chat/${chatId}`,
             body: JSON.stringify({
@@ -888,7 +919,10 @@ const SecretPrivateChat = () => {
               clientMessageId: messageData.clientMessageId || undefined,
             }),
           });
-          updateMessages(messageData);
+
+          // Передаём локальные копии в updateMessages
+          console.log(`Calling updateMessages with content=${messageData.content}, tempMessageIds=`, newTempMessageIds);
+          updateMessages(messageData, newTempMessageIds, newLocalMessageContent);
           resetForm();
         } else {
           console.error('STOMP client is not connected');
