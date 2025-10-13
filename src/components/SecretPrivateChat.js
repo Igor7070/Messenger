@@ -374,7 +374,6 @@ const SecretPrivateChat = () => {
                   content: localContent,
                   delivered: newMessage.delivered_status,
                   read: newMessage.read_status,
-                  isTemp: false,
                 });
                 return;
               }
@@ -396,14 +395,13 @@ const SecretPrivateChat = () => {
                   cleanedEncryptedContent,
                   cleanedNonce,
                   newMessage.sender.id,
-                  newMessage.timestamp // Pass server timestamp
+                  newMessage.timestamp
                 );
                 updateMessages({
                   ...newMessage,
                   content: decryptedContent,
                   delivered: newMessage.delivered_status,
                   read: newMessage.read_status,
-                  isTemp: false,
                 });
               } catch (error) {
                 console.error('Decryption failed for new message:', newMessage.id, error);
@@ -412,7 +410,6 @@ const SecretPrivateChat = () => {
                   content: 'Decryption failed',
                   delivered: newMessage.delivered_status,
                   read: newMessage.read_status,
-                  isTemp: false,
                 });
                 toast.error(`Failed to decrypt message: ${error.message}`);
               }
@@ -427,7 +424,6 @@ const SecretPrivateChat = () => {
                 content: localContent || 'Content unavailable',
                 delivered: newMessage.delivered_status,
                 read: newMessage.read_status,
-                isTemp: false,
               });
             }
           } else {
@@ -435,7 +431,6 @@ const SecretPrivateChat = () => {
               ...newMessage,
               delivered: newMessage.delivered_status,
               read: newMessage.read_status,
-              isTemp: false,
             });
           }
         });
@@ -561,30 +556,20 @@ const SecretPrivateChat = () => {
 
       let content = newMessage.content;
 
-      // Если это ответ от сервера для собственного сообщения
-      if (newMessage.sender.id === userId && newMessage.messageType === 'text') {
-        const existingMessageIndex = prevMessages.findIndex(
-          (msg) =>
-            (msg.isTemp && tempMessageIds[msg.id]) ||
-            (msg.sender.id === userId &&
-              Math.abs(
-                new Date(msg.timestamp).getTime() - new Date(newMessage.timestamp).getTime()
-              ) < 60000 &&
-              msg.messageType === 'text')
+      // Для собственных текстовых сообщений
+      if (newMessage.sender.id === userId && newMessage.messageType === 'text' && newMessage.encryptedContent) {
+        const tempEntry = Object.entries(tempMessageIds).find(
+          ([tempId, data]) => data.encryptedContent === newMessage.encryptedContent
         );
-
-        if (existingMessageIndex !== -1) {
-          const existingMessage = prevMessages[existingMessageIndex];
-          const tempTimestamp = new Date(existingMessage.timestamp).getTime();
-          const newTimestamp = new Date(newMessage.timestamp).getTime();
-          const tempKey = `${userId}_${tempTimestamp}`;
-          content = getLocalMessageContent(userId, tempTimestamp);
-
+        if (tempEntry) {
+          const [tempId, data] = tempEntry;
+          const localTimestamp = data.localTimestamp;
+          const tempKey = `${userId}_${localTimestamp}`;
+          content = getLocalMessageContent(userId, localTimestamp);
           if (content) {
-            // Переносим контент на новый ключ с серверным timestamp
+            const newTimestamp = new Date(newMessage.timestamp).getTime();
             const newKey = `${userId}_${newTimestamp}`;
             saveLocalMessageContent(newKey, content);
-            // Удаляем старый контент
             setLocalMessageContent((prev) => {
               const newContent = { ...prev };
               delete newContent[tempKey];
@@ -598,34 +583,19 @@ const SecretPrivateChat = () => {
               }
               return newContent;
             });
+            console.log(`Transferred content from tempKey ${tempKey} to newKey ${newKey}`);
           }
-
-          // Обновляем tempMessageIds, убирая временный ID
           setTempMessageIds((prev) => {
-            const newTempIds = { ...prev };
-            delete newTempIds[existingMessage.id];
-            return newTempIds;
+            const newTemp = { ...prev };
+            delete newTemp[tempId];
+            return newTemp;
           });
-
-          const updatedMessages = [...prevMessages];
-          updatedMessages[existingMessageIndex] = {
-            ...existingMessage,
-            ...newMessage,
-            content: content || existingMessage.content || 'Content unavailable',
-            delivered: newMessage.delivered_status ?? existingMessage.delivered,
-            read: newMessage.read_status ?? existingMessage.read,
-            messageType: newMessage.messageType ?? existingMessage.messageType,
-            isTemp: false,
-          };
-          console.log(
-            `Updated message with ID ${newMessage.id}:`,
-            updatedMessages[existingMessageIndex]
-          );
-          return updatedMessages;
+          // Отправляем уведомление с серверным ID
+          sendNotification(newMessage, content || '');
         }
       }
 
-      // Для сообщений от других пользователей или новых собственных сообщений
+      // Проверяем, существует ли сообщение
       const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
 
       if (existingMessageIndex !== -1) {
@@ -641,12 +611,8 @@ const SecretPrivateChat = () => {
           delivered: newMessage.delivered_status ?? existingMessage.delivered,
           read: newMessage.read_status ?? existingMessage.read,
           messageType: newMessage.messageType ?? existingMessage.messageType,
-          isTemp: false,
         };
-        console.log(
-          `Updated message with ID ${newMessage.id}:`,
-          updatedMessages[existingMessageIndex]
-        );
+        console.log(`Updated message with ID ${newMessage.id}:`, updatedMessages[existingMessageIndex]);
         return updatedMessages;
       } else {
         const newMessageWithContent = {
@@ -658,7 +624,6 @@ const SecretPrivateChat = () => {
           delivered: newMessage.delivered_status,
           read: newMessage.read_status,
           messageType: newMessage.messageType,
-          isTemp: false,
         };
         console.log(`Added new message with ID ${newMessage.id}:`, newMessageWithContent);
         return [...prevMessages, newMessageWithContent];
@@ -790,30 +755,32 @@ const SecretPrivateChat = () => {
         const recipient = await userResponse.json();
         const recipientId = recipient.id;
 
-        const normalizedChatName = generateChatName(username, recipientName);
+        const normalizedChatName = generateChatName(username, recipientName, true); // Учитываем secret
         const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`; // Уникальный tempId
-        const timestamp = new Date().toISOString(); // Используем ISO строку для консистентности
+        const timestamp = new Date().toISOString();
 
         let messageData = {
-          id: tempId,
           sender: { id: userId, username },
           chat: { id: chatId, name: normalizedChatName },
           delivered: false,
           read: false,
           timestamp,
-          isTemp: true, // Флаг для временного сообщения
         };
 
+        let encryptedContentForMatch = null;
+
         if (content) {
-          // Сохраняем оригинальный контент локально с ключом senderId_timestamp
-          saveLocalMessageContent(`${userId}_${new Date(timestamp).getTime()}`, content);
+          // Сохраняем оригинальный контент локально с временным ключом
+          saveLocalMessageContent(`${userId}_${tempId}`, content);
           const { encryptedContent, nonce } = await encryptMessage(content, recipientId);
+          encryptedContentForMatch = encryptedContent;
           messageData = {
             ...messageData,
             encryptedContent,
             nonce,
             messageType: 'text',
-            content, // Добавляем для локального отображения
+            content, // Для локального отображения
+            id: tempId, // Только для локального messages
           };
         } else if (selectedFile) {
           messageData = {
@@ -821,6 +788,7 @@ const SecretPrivateChat = () => {
             fileUrl: await uploadFile(selectedFile),
             messageType: 'file',
             contentType: selectedFile.type,
+            id: tempId,
           };
         } else if (audioBlob) {
           const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, {
@@ -831,6 +799,7 @@ const SecretPrivateChat = () => {
             fileUrl: await uploadFile(audioFile),
             messageType: 'audio',
             contentType: 'audio/mpeg',
+            id: tempId,
           };
         }
 
@@ -839,14 +808,17 @@ const SecretPrivateChat = () => {
             destination: `/app/sendMessage/chat/${chatId}`,
             body: JSON.stringify({
               ...messageData,
-              content: undefined, // Удаляем content перед отправкой на сервер
+              id: undefined, // Не отправляем id на сервер
+              content: undefined, // Удаляем content
             }),
           });
-          // Сохраняем tempId для сопоставления
-          setTempMessageIds((prev) => ({ ...prev, [tempId]: true }));
-          // Локально добавляем сообщение с контентом
+          if (encryptedContentForMatch) {
+            setTempMessageIds((prev) => ({
+              ...prev,
+              [tempId]: { encryptedContent: encryptedContentForMatch, localTimestamp: tempId },
+            }));
+          }
           updateMessages(messageData);
-          sendNotification(messageData, content || '');
           resetForm();
         } else {
           console.error('STOMP client is not connected');
@@ -862,70 +834,42 @@ const SecretPrivateChat = () => {
   };
 
   const sendNotification = async (message, contentForNotification) => {
-    setTimeout(async () => {
-      try {
-        const recipientName = chatName.split('_').find((name) => name !== username);
-        const userResponse = await fetch(
-          `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
-        );
-        if (!userResponse.ok) {
-          throw new Error('Failed to fetch recipient');
-        }
-        const recipient = await userResponse.json();
-        const recipientId = recipient.id;
-
-        // Ждем, пока временное сообщение не будет заменено серверным
-        let messageId = message.id;
-        if (tempMessageIds[message.id]) {
-          // Даем время WebSocket для получения серверного ID (до 5 секунд)
-          let attempts = 5;
-          while (tempMessageIds[message.id] && attempts > 0) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            const updatedMessage = messages.find(
-              (msg) =>
-                msg.sender.id === userId &&
-                Math.abs(
-                  new Date(msg.timestamp).getTime() - new Date(message.timestamp).getTime()
-                ) < 60000 &&
-                msg.messageType === message.messageType
-            );
-            if (updatedMessage && !updatedMessage.isTemp) {
-              messageId = updatedMessage.id;
-              break;
-            }
-            attempts--;
-          }
-          if (tempMessageIds[message.id]) {
-            console.warn(`Server ID not received for tempId: ${message.id}, skipping notification`);
-            return;
-          }
-        }
-
-        // Проверяем статус сообщения
-        const statusResponse = await fetch(
-          `https://unlimitedpossibilities12.org/api/messages/${messageId}`
-        );
-        if (statusResponse.ok) {
-          const messageStatus = await statusResponse.json();
-          if (messageStatus.read_status === false || messageStatus.read_status === null) {
-            await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                userId,
-                recipientId,
-                content: contentForNotification,
-                chatId,
-              }),
-            });
-          }
-        } else {
-          console.error(`Failed to fetch message status for ID ${messageId}: ${statusResponse.status}`);
-        }
-      } catch (error) {
-        console.error('Error in sendNotification:', error);
+    try {
+      const recipientName = chatName.split('_').find((name) => name !== username);
+      const userResponse = await fetch(
+        `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
+      );
+      if (!userResponse.ok) {
+        throw new Error('Failed to fetch recipient');
       }
-    }, 3000);
+      const recipient = await userResponse.json();
+      const recipientId = recipient.id;
+
+      // Проверяем статус сообщения (message.id — серверный)
+      const statusResponse = await fetch(
+        `https://unlimitedpossibilities12.org/api/messages/${message.id}`
+      );
+      if (statusResponse.ok) {
+        const messageStatus = await statusResponse.json();
+        if (messageStatus.read_status === false || messageStatus.read_status === null) {
+          await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId,
+              recipientId,
+              content: contentForNotification,
+              chatId,
+            }),
+          });
+          console.log(`Notification sent for message ${message.id}`);
+        }
+      } else {
+        console.error(`Failed to fetch message status for ID ${message.id}: ${statusResponse.status}`);
+      }
+    } catch (error) {
+      console.error('Error in sendNotification:', error);
+    }
   };
 
   const handleKeyDown = (e) => {
