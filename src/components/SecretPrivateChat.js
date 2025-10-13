@@ -53,23 +53,12 @@ const fetchPublicKeyWithRetry = async (recipientId, retries = 3, delay = 2000) =
 
 const getPublicKey = async (userId) => {
   console.log(`Fetching public key for userId: ${userId}`);
-  const cachedKey = localStorage.getItem(`public_key_${userId}`);
-  if (cachedKey) {
-    console.log(`Using cached public key for userId: ${userId}`);
-    try {
-      sodium.from_base64(cachedKey); // Проверяем валидность
-      return cachedKey;
-    } catch (e) {
-      console.warn(`Invalid cached public key for userId: ${userId}, fetching new one`);
-    }
-  }
   try {
     const publicKey = await fetchPublicKeyWithRetry(userId);
     console.log(`Fetched public key for userId: ${userId}, value: ${publicKey}`);
     try {
       const publicKeyBytes = sodium.from_base64(publicKey);
       console.log(`Public key bytes length for userId: ${userId}: ${publicKeyBytes.length}, hex: ${sodium.to_hex(publicKeyBytes)}`);
-      localStorage.setItem(`public_key_${userId}`, publicKey); // Кэшируем ключ
     } catch (e) {
       console.error(`Invalid fetched public key for userId: ${userId}, error: ${e.message}`);
     }
@@ -147,7 +136,15 @@ const SecretPrivateChat = () => {
     if (storedContent) {
       try {
         const parsedContent = JSON.parse(storedContent);
-        setLocalMessageContent(parsedContent); // Без фильтрации по времени
+        // Фильтруем устаревшие записи (старше 5 минут)
+        const now = Date.now();
+        const filteredContent = Object.fromEntries(
+          Object.entries(parsedContent).filter(([key]) => {
+            const timestamp = parseInt(key.split('_')[1], 10);
+            return now - timestamp <= 5 * 60 * 1000; // 5 минут
+          })
+        );
+        setLocalMessageContent(filteredContent);
       } catch (error) {
         console.warn('Failed to parse localMessageContent from localStorage', error);
       }
@@ -207,6 +204,12 @@ const SecretPrivateChat = () => {
   // Загрузка данных чата и сообщений
   useEffect(() => {
     const fetchChatData = async () => {
+      // Очистка кэша ключей для теста (удалить после успешного тестирования)
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith('public_key_'))
+        .forEach((key) => localStorage.removeItem(key));
+      console.log('Cleared public key cache in localStorage');
+
       if (!chatIdParam || !username) {
         toast.error('Invalid chat ID or user is not authorized');
         navigate('/');
@@ -260,22 +263,12 @@ const SecretPrivateChat = () => {
         const decryptedMessages = await Promise.all(
           initialMessages.map(async (msg) => {
             if (msg.messageType === 'text' && msg.encryptedContent && msg.nonce) {
-              // Проверяем локальный контент для всех сообщений
-              const localContent = getLocalMessageContent(msg.sender.id, new Date(msg.timestamp).getTime());
-              if (localContent) {
-                console.log(`Using cached content for message id: ${msg.id}, sender: ${msg.sender.id}`);
-                return {
-                  ...msg,
-                  content: localContent,
-                  delivered: msg.delivered_status,
-                  read: msg.read_status,
-                };
-              }
               if (msg.sender.id === userId) {
-                console.log(`No local content for own message, id: ${msg.id}`);
+                console.log(`Using local content for own message, id: ${msg.id}`);
+                const localContent = getLocalMessageContent(msg.sender.id, new Date(msg.timestamp).getTime());
                 return {
                   ...msg,
-                  content: 'Content unavailable',
+                  content: localContent || 'Content unavailable',
                   delivered: msg.delivered_status,
                   read: msg.read_status,
                 };
@@ -348,21 +341,17 @@ const SecretPrivateChat = () => {
         stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
           const newMessage = JSON.parse(message.body);
           console.log('NewMessage:', newMessage);
+          console.log('Message details for decryption:', {
+            id: newMessage.id,
+            messageType: newMessage.messageType,
+            encryptedContent: newMessage.encryptedContent,
+            nonce: newMessage.nonce,
+            senderId: newMessage.sender.id,
+            isOwnMessage: newMessage.sender.id === userId
+          });
 
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
             if (newMessage.sender.id !== userId) {
-              // Проверяем локальный контент
-              const localContent = getLocalMessageContent(newMessage.sender.id, new Date(newMessage.timestamp).getTime());
-              if (localContent) {
-                console.log(`Using cached content for new message id: ${newMessage.id}`);
-                updateMessages({
-                  ...newMessage,
-                  content: localContent,
-                  delivered: newMessage.delivered_status,
-                  read: newMessage.read_status,
-                });
-                return;
-              }
               try {
                 const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
                 const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
@@ -399,11 +388,9 @@ const SecretPrivateChat = () => {
                 toast.error(`Failed to decrypt message: ${error.message}`);
               }
             } else {
-              // Для собственных сообщений используем локальный контент
-              const localContent = getLocalMessageContent(newMessage.sender.id, new Date(newMessage.timestamp).getTime());
+              // Для собственных сообщений передаём в updateMessages без content
               updateMessages({
                 ...newMessage,
-                content: localContent || 'Content unavailable',
                 delivered: newMessage.delivered_status,
                 read: newMessage.read_status,
               });
@@ -417,7 +404,17 @@ const SecretPrivateChat = () => {
           }
         });
       },
-      // ... остальной код ...
+      onWebSocketError: (error) => {
+        console.error('WebSocket error in SecretPrivateChat:', error);
+        toast.error('WebSocket connection error');
+      },
+      onStompError: (frame) => {
+        console.error('STOMP error in SecretPrivateChat:', frame);
+        toast.error('STOMP protocol error');
+      },
+      onDisconnect: () => {
+        console.log('WebSocket disconnected in SecretPrivateChat');
+      },
     });
 
     setClient(stompClientInstance);
@@ -620,9 +617,6 @@ const SecretPrivateChat = () => {
     console.log(`decryptMessage called: encryptedContent=${encryptedContent}, nonce=${nonce}, senderId=${senderId}`);
     await sodium.ready;
 
-    const cleanedEncryptedContent = encryptedContent.trim().replace(/\n/g, '');
-    const cleanedNonce = nonce.trim().replace(/\n/g, '');
-
     const validateBase64 = (str, name) => {
       try {
         sodium.from_base64(str);
@@ -634,23 +628,21 @@ const SecretPrivateChat = () => {
       }
     };
 
-    if (!keyPair || !keyPair.privateKey) {
-      console.error('Private key not available for decryption');
-      throw new Error('Private key not available');
-    }
-
     const publicKey = await getPublicKey(senderId);
+    const privateKey = keyPair?.privateKey;
 
-    if (!validateBase64(cleanedEncryptedContent, 'encryptedContent') || !validateBase64(cleanedNonce, 'nonce') || !validateBase64(publicKey, 'publicKey') || !validateBase64(keyPair.privateKey, 'privateKey')) {
-      console.error(`Invalid base64 format: encryptedContent=${cleanedEncryptedContent}, nonce=${cleanedNonce}, publicKey=${publicKey}, privateKey=${keyPair.privateKey}`);
+    console.log(`Validating base64: encryptedContent=${validateBase64(encryptedContent, 'encryptedContent')}, nonce=${validateBase64(nonce, 'nonce')}, publicKey=${validateBase64(publicKey, 'publicKey')}, privateKey=${validateBase64(privateKey, 'privateKey')}`);
+
+    if (!validateBase64(encryptedContent, 'encryptedContent') || !validateBase64(nonce, 'nonce') || !validateBase64(publicKey, 'publicKey') || !validateBase64(privateKey, 'privateKey')) {
+      console.error(`Invalid base64 format: encryptedContent=${encryptedContent}, nonce=${nonce}, publicKey=${publicKey}, privateKey=${privateKey}`);
       throw new Error('Invalid base64 format');
     }
 
     try {
-      const encryptedBytes = sodium.from_base64(cleanedEncryptedContent);
-      const nonceBytes = sodium.from_base64(cleanedNonce);
+      const encryptedBytes = sodium.from_base64(encryptedContent);
+      const nonceBytes = sodium.from_base64(nonce);
       const publicKeyBytes = sodium.from_base64(publicKey);
-      const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
+      const privateKeyBytes = sodium.from_base64(privateKey);
 
       console.log(`Decryption input: encryptedBytesLength=${encryptedBytes.length}, nonceBytesLength=${nonceBytes.length}, publicKeyBytesLength=${publicKeyBytes.length}, privateKeyBytesLength=${privateKeyBytes.length}`);
       console.log(`Decryption input hex: encryptedBytes=${sodium.to_hex(encryptedBytes)}, nonceBytes=${sodium.to_hex(nonceBytes)}, publicKeyBytes=${sodium.to_hex(publicKeyBytes)}`);
@@ -658,13 +650,9 @@ const SecretPrivateChat = () => {
       const decryptedBytes = sodium.crypto_box_open_easy(encryptedBytes, nonceBytes, publicKeyBytes, privateKeyBytes);
       const decryptedMessage = sodium.to_string(decryptedBytes);
       console.log(`Decryption successful: decryptedMessage=${decryptedMessage}`);
-
-      // Сохраняем расшифрованный контент
-      saveLocalMessageContent(`${senderId}_${new Date().getTime()}`, decryptedMessage);
-
       return decryptedMessage;
     } catch (error) {
-      console.error(`Decryption error for senderId: ${senderId}, error: ${error.message}`);
+      console.error(`Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`);
       throw new Error(`Decryption failed: ${error.message}`);
     }
   };
