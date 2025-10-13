@@ -136,18 +136,13 @@ const SecretPrivateChat = () => {
     if (storedContent) {
       try {
         const parsedContent = JSON.parse(storedContent);
-        // Фильтруем устаревшие записи (старше 5 минут)
-        const now = Date.now();
-        const filteredContent = Object.fromEntries(
-          Object.entries(parsedContent).filter(([key]) => {
-            const timestamp = parseInt(key.split('_')[1], 10);
-            return now - timestamp <= 5 * 60 * 1000; // 5 минут
-          })
-        );
-        setLocalMessageContent(filteredContent);
+        console.log(`Loaded localMessageContent for chatId: ${chatId}, userId: ${userId}`, parsedContent);
+        setLocalMessageContent(parsedContent);
       } catch (error) {
-        console.warn('Failed to parse localMessageContent from localStorage', error);
+        console.error('Failed to parse localMessageContent from localStorage:', error);
       }
+    } else {
+      console.log(`No localMessageContent found in localStorage for chatId: ${chatId}, userId: ${userId}`);
     }
   }, [chatId, userId]);
 
@@ -216,6 +211,19 @@ const SecretPrivateChat = () => {
         return;
       }
 
+      if (!keyPair) {
+        console.log('Waiting for keyPair to load...');
+        await new Promise((resolve) => {
+          const interval = setInterval(() => {
+            if (keyPair) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 100);
+        });
+      }
+      console.log('keyPair loaded:', keyPair);
+
       try {
         const chatData = await getChatById(chatIdParam);
         if (!chatData.isSecret) {
@@ -263,22 +271,53 @@ const SecretPrivateChat = () => {
         const decryptedMessages = await Promise.all(
           initialMessages.map(async (msg) => {
             if (msg.messageType === 'text' && msg.encryptedContent && msg.nonce) {
-              if (msg.sender.id === userId) {
-                console.log(`Using local content for own message, id: ${msg.id}`);
-                const localContent = getLocalMessageContent(msg.sender.id, new Date(msg.timestamp).getTime());
+              const serverTimestamp = new Date(msg.timestamp).getTime();
+              // Проверяем ближайшие ключи в пределах ±5 секунд
+              let localContent = '';
+              for (let offset = -5000; offset <= 5000; offset += 1000) {
+                const tryKey = `${msg.sender.id}_${serverTimestamp + offset}`;
+                localContent = getLocalMessageContent(msg.sender.id, serverTimestamp + offset);
+                if (localContent) {
+                  console.log(`Found cached content for message id: ${msg.id}, key: ${tryKey}`);
+                  break;
+                }
+              }
+              if (localContent) {
                 return {
                   ...msg,
-                  content: localContent || 'Content unavailable',
+                  content: localContent,
+                  delivered: msg.delivered_status,
+                  read: msg.read_status,
+                };
+              }
+              if (msg.sender.id === userId) {
+                console.log(`No cached content for own message, id: ${msg.id}`);
+                return {
+                  ...msg,
+                  content: 'Content unavailable',
+                  delivered: msg.delivered_status,
+                  read: msg.read_status,
+                };
+              }
+              if (!keyPair) {
+                console.error(`keyPair is not available for decrypting message id: ${msg.id}`);
+                return {
+                  ...msg,
+                  content: 'Decryption failed',
                   delivered: msg.delivered_status,
                   read: msg.read_status,
                 };
               }
               try {
+                const cleanedEncryptedContent = msg.encryptedContent.replace(/\n/g, '');
+                const cleanedNonce = msg.nonce.replace(/\n/g, '');
                 const decryptedContent = await decryptMessage(
-                  msg.encryptedContent,
-                  msg.nonce,
+                  cleanedEncryptedContent,
+                  cleanedNonce,
                   msg.sender.id
                 );
+                // Сохраняем расшифрованный контент
+                saveLocalMessageContent(`${msg.sender.id}_${serverTimestamp}`, decryptedContent);
                 return {
                   ...msg,
                   content: decryptedContent,
@@ -351,11 +390,34 @@ const SecretPrivateChat = () => {
           });
 
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
+            const serverTimestamp = new Date(newMessage.timestamp).getTime();
+            // Проверяем кэш
+            let localContent = getLocalMessageContent(newMessage.sender.id, serverTimestamp);
+            if (localContent) {
+              console.log(`Using cached content for message id: ${newMessage.id}, sender: ${newMessage.sender.id}`);
+              updateMessages({
+                ...newMessage,
+                content: localContent,
+                delivered: newMessage.delivered_status,
+                read: newMessage.read_status,
+              });
+              return;
+            }
             if (newMessage.sender.id !== userId) {
+              if (!keyPair) {
+                console.error(`keyPair is not available for decrypting message id: ${newMessage.id}`);
+                updateMessages({
+                  ...newMessage,
+                  content: 'Decryption failed',
+                  delivered: newMessage.delivered_status,
+                  read: newMessage.read_status,
+                });
+                toast.error('Failed to decrypt message: keyPair unavailable');
+                return;
+              }
               try {
                 const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
                 const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
-
                 let publicKey = publicKeys[newMessage.sender.id];
                 if (!publicKey) {
                   console.log(`Public key for senderId: ${newMessage.sender.id} not found, fetching...`);
@@ -365,12 +427,13 @@ const SecretPrivateChat = () => {
                     [newMessage.sender.id]: publicKey
                   }));
                 }
-
                 const decryptedContent = await decryptMessage(
                   cleanedEncryptedContent,
                   cleanedNonce,
                   newMessage.sender.id
                 );
+                // Сохраняем расшифрованный контент
+                saveLocalMessageContent(`${newMessage.sender.id}_${serverTimestamp}`, decryptedContent);
                 updateMessages({
                   ...newMessage,
                   content: decryptedContent,
@@ -529,23 +592,23 @@ const SecretPrivateChat = () => {
       // Если это собственное сообщение, ищем временное по senderId и timestamp
       if (newMessage.sender.id === userId && newMessage.messageType === 'text') {
         const newTimestamp = new Date(newMessage.timestamp).getTime();
-        // Ищем временное сообщение с близким timestamp (в пределах 5 секунд)
-        const existingMessage = prevMessages.find(
-          (msg) =>
-            msg.sender.id === userId &&
-            Math.abs(new Date(msg.timestamp).getTime() - newTimestamp) < 5000 &&
-            msg.messageType === 'text'
+        const tempId = Object.keys(tempMessageIds).find((id) =>
+          prevMessages.some(
+            (msg) =>
+              msg.id === parseInt(id) &&
+              msg.sender.id === userId &&
+              Math.abs(new Date(msg.timestamp).getTime() - newTimestamp) < 5000
+          )
         );
 
-        if (existingMessage) {
-          // Формируем ключ для временного сообщения
-          tempMessageKey = `${userId}_${new Date(existingMessage.timestamp).getTime()}`;
-          content = getLocalMessageContent(userId, new Date(existingMessage.timestamp).getTime());
+        if (tempId) {
+          tempMessageKey = `${userId}_${tempMessageIds[tempId]}`;
+          content = getLocalMessageContent(userId, tempMessageIds[tempId]);
           if (content) {
-            // Переносим контент на новый ID
+            // Переносим контент на новый ключ
             const newKey = `${userId}_${newTimestamp}`;
             saveLocalMessageContent(newKey, content);
-            // Удаляем старый контент
+            // Удаляем старый контент и временный ID
             setLocalMessageContent((prev) => {
               const newContent = { ...prev };
               delete newContent[tempMessageKey];
@@ -554,10 +617,16 @@ const SecretPrivateChat = () => {
                   `localMessageContent_${chatId}_${userId}`,
                   JSON.stringify(newContent)
                 );
+                console.log(`Updated localMessageContent: removed key ${tempMessageKey}, added key ${newKey}`);
               } catch (error) {
-                console.warn('localStorage unavailable during update', error);
+                console.error('Failed to update localMessageContent in localStorage:', error);
               }
               return newContent;
+            });
+            setTempMessageIds((prev) => {
+              const newTempIds = { ...prev };
+              delete newTempIds[tempId];
+              return newTempIds;
             });
           }
         }
@@ -566,7 +635,9 @@ const SecretPrivateChat = () => {
       const existingMessageIndex = prevMessages.findIndex(
         (msg) =>
           msg.id === newMessage.id ||
-          (tempMessageKey && msg.sender.id === userId && Math.abs(new Date(msg.timestamp).getTime() - new Date(newMessage.timestamp).getTime()) < 5000)
+          (tempMessageKey &&
+            msg.sender.id === userId &&
+            Math.abs(new Date(msg.timestamp).getTime() - new Date(newMessage.timestamp).getTime()) < 5000)
       );
 
       if (existingMessageIndex !== -1) {
@@ -617,6 +688,11 @@ const SecretPrivateChat = () => {
     console.log(`decryptMessage called: encryptedContent=${encryptedContent}, nonce=${nonce}, senderId=${senderId}`);
     await sodium.ready;
 
+    if (!keyPair || !keyPair.privateKey) {
+      console.error(`keyPair or privateKey is not available for senderId: ${senderId}`);
+      throw new Error('Decryption failed: keyPair unavailable');
+    }
+
     const validateBase64 = (str, name) => {
       try {
         sodium.from_base64(str);
@@ -629,7 +705,7 @@ const SecretPrivateChat = () => {
     };
 
     const publicKey = await getPublicKey(senderId);
-    const privateKey = keyPair?.privateKey;
+    const privateKey = keyPair.privateKey;
 
     console.log(`Validating base64: encryptedContent=${validateBase64(encryptedContent, 'encryptedContent')}, nonce=${validateBase64(nonce, 'nonce')}, publicKey=${validateBase64(publicKey, 'publicKey')}, privateKey=${validateBase64(privateKey, 'privateKey')}`);
 
@@ -684,9 +760,9 @@ const SecretPrivateChat = () => {
         const recipient = await userResponse.json();
         const recipientId = recipient.id;
 
-        const normalizedChatName = generateChatName(username, recipientName);
+        const normalizedChatName = generateChatName(username, recipientName, true); // Добавляем isSecret=true
         const tempId = editingMessageId || Date.now();
-        const timestamp = Date.now(); // Используем timestamp для ключа
+        const tempTimestamp = Date.now(); // Временный timestamp
 
         let messageData = {
           id: tempId,
@@ -698,15 +774,17 @@ const SecretPrivateChat = () => {
         };
 
         if (content) {
-          // Сохраняем оригинальный контент локально с ключом senderId_timestamp
-          saveLocalMessageContent(`${userId}_${timestamp}`, content);
+          // Сохраняем оригинальный контент локально с временным ключом
+          saveLocalMessageContent(`${userId}_${tempTimestamp}`, content);
+          // Сохраняем временный ID
+          setTempMessageIds((prev) => ({ ...prev, [tempId]: tempTimestamp }));
           const { encryptedContent, nonce } = await encryptMessage(content, recipientId);
           messageData = {
             ...messageData,
             encryptedContent,
             nonce,
             messageType: 'text',
-            content: content, // Добавляем для локального отображения
+            content: content, // Для локального отображения
           };
         } else if (selectedFile) {
           messageData = {
