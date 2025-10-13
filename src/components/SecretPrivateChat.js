@@ -136,15 +136,7 @@ const SecretPrivateChat = () => {
     if (storedContent) {
       try {
         const parsedContent = JSON.parse(storedContent);
-        // Фильтруем устаревшие записи (старше 5 минут)
-        const now = Date.now();
-        const filteredContent = Object.fromEntries(
-          Object.entries(parsedContent).filter(([key]) => {
-            const timestamp = parseInt(key.split('_')[1], 10);
-            return now - timestamp <= 5 * 60 * 1000; // 5 минут
-          })
-        );
-        setLocalMessageContent(filteredContent);
+        setLocalMessageContent(parsedContent); // Убираем фильтрацию по времени
       } catch (error) {
         console.warn('Failed to parse localMessageContent from localStorage', error);
       }
@@ -263,12 +255,22 @@ const SecretPrivateChat = () => {
         const decryptedMessages = await Promise.all(
           initialMessages.map(async (msg) => {
             if (msg.messageType === 'text' && msg.encryptedContent && msg.nonce) {
-              if (msg.sender.id === userId) {
-                console.log(`Using local content for own message, id: ${msg.id}`);
-                const localContent = getLocalMessageContent(msg.sender.id, new Date(msg.timestamp).getTime());
+              // Проверяем локальный контент для всех сообщений
+              const localContent = getLocalMessageContent(msg.sender.id, new Date(msg.timestamp).getTime());
+              if (localContent) {
+                console.log(`Using local content for message id: ${msg.id}, sender: ${msg.sender.id}`);
                 return {
                   ...msg,
-                  content: localContent || 'Content unavailable',
+                  content: localContent,
+                  delivered: msg.delivered_status,
+                  read: msg.read_status,
+                };
+              }
+              if (msg.sender.id === userId) {
+                console.log(`No local content for own message, id: ${msg.id}`);
+                return {
+                  ...msg,
+                  content: 'Content unavailable',
                   delivered: msg.delivered_status,
                   read: msg.read_status,
                 };
@@ -352,6 +354,18 @@ const SecretPrivateChat = () => {
 
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
             if (newMessage.sender.id !== userId) {
+              // Проверяем локальный контент
+              const localContent = getLocalMessageContent(newMessage.sender.id, new Date(newMessage.timestamp).getTime());
+              if (localContent) {
+                console.log(`Using local content for new message id: ${newMessage.id}`);
+                updateMessages({
+                  ...newMessage,
+                  content: localContent,
+                  delivered: newMessage.delivered_status,
+                  read: newMessage.read_status,
+                });
+                return;
+              }
               try {
                 const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
                 const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
@@ -388,9 +402,11 @@ const SecretPrivateChat = () => {
                 toast.error(`Failed to decrypt message: ${error.message}`);
               }
             } else {
-              // Для собственных сообщений передаём в updateMessages без content
+              // Для собственных сообщений используем локальный контент
+              const localContent = getLocalMessageContent(newMessage.sender.id, new Date(newMessage.timestamp).getTime());
               updateMessages({
                 ...newMessage,
+                content: localContent || 'Content unavailable',
                 delivered: newMessage.delivered_status,
                 read: newMessage.read_status,
               });
@@ -650,6 +666,10 @@ const SecretPrivateChat = () => {
       const decryptedBytes = sodium.crypto_box_open_easy(encryptedBytes, nonceBytes, publicKeyBytes, privateKeyBytes);
       const decryptedMessage = sodium.to_string(decryptedBytes);
       console.log(`Decryption successful: decryptedMessage=${decryptedMessage}`);
+
+      // Сохраняем расшифрованный контент
+      saveLocalMessageContent(`${senderId}_${new Date().getTime()}`, decryptedMessage);
+
       return decryptedMessage;
     } catch (error) {
       console.error(`Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`);
