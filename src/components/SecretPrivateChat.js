@@ -222,22 +222,10 @@ const SecretPrivateChat = () => {
         const decryptedMessages = await Promise.all(
           initialMessages.map(async (msg) => {
             if (msg.messageType === 'text' && msg.encryptedContent && msg.nonce) {
-              // Проверяем локальный контент для всех сообщений
-              const localContent = getLocalMessageContent(
-                msg.sender.id,
-                new Date(msg.timestamp).getTime()
-              );
-              if (localContent) {
-                console.log(`Using local content for message id: ${msg.id}, sender: ${msg.sender.id}`);
-                return {
-                  ...msg,
-                  content: localContent,
-                  delivered: msg.delivered_status,
-                  read: msg.read_status,
-                };
-              }
               if (msg.sender.id === userId) {
-                console.log(`No local content for own message, id: ${msg.id}`);
+                // Для собственных сообщений контент будет взят из sentMessagesCache позже,
+                // поэтому здесь ставим временный placeholder
+                console.log(`Own message id: ${msg.id}, marking as Content unavailable until WebSocket update`);
                 return {
                   ...msg,
                   content: 'Content unavailable',
@@ -250,7 +238,7 @@ const SecretPrivateChat = () => {
                   msg.encryptedContent,
                   msg.nonce,
                   msg.sender.id,
-                  msg.timestamp // Pass server timestamp
+                  msg.timestamp
                 );
                 return {
                   ...msg,
@@ -644,15 +632,11 @@ const SecretPrivateChat = () => {
       );
       const decryptedMessage = sodium.to_string(decryptedBytes);
       console.log(`Decryption successful: decryptedMessage=${decryptedMessage}`);
-
-      // Save decrypted content using server timestamp
-      saveLocalMessageContent(`${senderId}_${new Date(timestamp).getTime()}`, decryptedMessage);
-
       return decryptedMessage;
     } catch (error) {
-      console.error(
-        `Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`
-      );
+        console.error(
+          `Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`
+        );
       throw new Error(`Decryption failed: ${error.message}`);
     }
   };
