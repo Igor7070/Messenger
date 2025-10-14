@@ -329,7 +329,8 @@ const SecretPrivateChat = () => {
       connectTimeout: 30000,
       reconnectDelay: 5000,
       onConnect: () => {
-        console.log('Connected to WebSocket for SecretPrivateChat');
+        console.log('Connected to WebSocket for SecretPrivateChat at:', new Date().toISOString()); // [ADD] Добавлено логирование времени подключения
+        setClient(stompClientInstance); // [CHANGE] Установка client перенесена в onConnect для синхронизации
         // Подписка на новые сообщения
         stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
           const newMessage = JSON.parse(message.body);
@@ -409,7 +410,7 @@ const SecretPrivateChat = () => {
         });
       },
       onWebSocketError: (error) => {
-        console.error('WebSocket error in SecretPrivateChat:', error);
+        console.error('WebSocket error in SecretPrivateChat at:', new Date().toISOString(), error); // [CHANGE] Добавлено логирование времени ошибки
         toast.error('WebSocket connection error');
       },
       onStompError: (frame) => {
@@ -418,15 +419,18 @@ const SecretPrivateChat = () => {
       },
       onDisconnect: () => {
         console.log('WebSocket disconnected in SecretPrivateChat');
+        setClient(null); // [ADD] Очистка client при отключении для корректной повторной инициализации
       },
     });
 
-    setClient(stompClientInstance);
+    // [CHANGE] Убрано setClient(stompClientInstance) до подключения, чтобы избежать установки неподключённого клиента
     stompClientInstance.activate();
 
     return () => {
       console.log('Deactivating WebSocket in SecretPrivateChat');
-      stompClientInstance.deactivate();
+      if (stompClientInstance.active) { // [CHANGE] Добавлена проверка активности перед деактивацией
+        stompClientInstance.deactivate();
+      }
     };
   }, [chatId, userId, publicKeys]);
   
@@ -442,34 +446,45 @@ const SecretPrivateChat = () => {
       return;
     }
 
-    const recipientName = chatName.split('_').find((name) => name !== username);
+    const recipientName = chatName.replace('_secret', '').split('_').find((name) => name !== username); // [CHANGE] Улучшена обработка chatName для надёжности
     if (!recipientName) {
       console.warn('Recipient name not available, skipping public key subscription');
       return;
     }
 
     let subscription;
-    fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`)
-      .then((response) => {
-        if (!response.ok) throw new Error(`Failed to fetch recipient: ${response.status}`);
-        return response.json();
-      })
-      .then((recipient) => {
+    const subscribeToPublicKey = async () => {
+      try {
+        const response = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch recipient: ${response.status}`);
+        }
+        const recipient = await response.json();
         const recipientId = recipient.id;
+
         subscription = client.subscribe(`/topic/publicKey/${recipientId}`, (message) => {
-          const updatedPublicKey = JSON.parse(message.body);
-          console.log(`Received updated public key for recipientId=${recipientId}: ${updatedPublicKey.publicKey}`);
-          setPublicKeys((prev) => ({
-            ...prev,
-            [recipientId]: updatedPublicKey.publicKey,
-          }));
+          try {
+            const updatedPublicKey = JSON.parse(message.body);
+            console.log(`Received updated public key for recipientId=${recipientId}: ${updatedPublicKey.publicKey}`);
+            setPublicKeys((prev) => ({
+              ...prev,
+              [recipientId]: updatedPublicKey.publicKey,
+            }));
+            localStorage.setItem(`public_key_${recipientId}`, updatedPublicKey.publicKey); // [ADD] Сохранение ключа в localStorage
+            toast.info(`Public key updated for user ${recipientName}`); // [ADD] Уведомление об обновлении ключа
+          } catch (error) {
+            console.error(`Error processing public key update for recipientId=${recipientId}:`, error);
+            toast.error('Failed to process public key update');
+          }
         });
         console.log(`Subscribed to public key updates for recipientId=${recipientId}`);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Failed to fetch recipientId for public key subscription:', error);
         toast.error('Failed to subscribe to public key updates');
-      });
+      }
+    };
+
+    subscribeToPublicKey();
 
     return () => {
       if (subscription) {
@@ -477,7 +492,7 @@ const SecretPrivateChat = () => {
         subscription.unsubscribe();
       }
     };
-  }, [client, chatName, username, publicKeys]);
+  }, [client, chatName, username]);
 
   // Отметка сообщений как прочитанных
   useEffect(() => {
