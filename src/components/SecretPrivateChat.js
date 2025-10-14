@@ -256,7 +256,7 @@ const SecretPrivateChat = () => {
                 // Проверяем, есть ли контент в localStorage для собственных сообщений
                 const clientMessageId = msg.clientMessageId; // Предполагаем, что сервер возвращает clientMessageId
                 const localContent = clientMessageId ? getOwnMessageContent(chatIdParam, userId, clientMessageId) : null;
-                console.log(`Own message id: ${msg.id}, clientMessageId: ${clientMessageId}, localContent: ${localContent || 'not found'}`);
+                console.log(`Own message id: ${msg.id}, clientMessageId: ${clientMessageId}, localContent: ${localContent || 'not found'}, delivered: ${msg.delivered_status}, read: ${msg.read_status}`);
                 return {
                   ...msg,
                   content: localContent || 'Content unavailable',
@@ -330,6 +330,7 @@ const SecretPrivateChat = () => {
       reconnectDelay: 5000,
       onConnect: () => {
         console.log('Connected to WebSocket for SecretPrivateChat');
+        // Подписка на новые сообщения
         stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
           const newMessage = JSON.parse(message.body);
           console.log('NewMessage:', newMessage);
@@ -373,10 +374,10 @@ const SecretPrivateChat = () => {
                 toast.error(`Failed to decrypt message: ${error.message}`);
               }
             } else {
-              // Для собственных сообщений контент берётся из sentMessagesCache
+              // Для собственных сообщений контент берётся из sentMessagesCache или localStorage
               updateMessages({
                 ...newMessage,
-                content: sentMessagesCache[newMessage.clientMessageId] || 'Content unavailable',
+                content: sentMessagesCache[newMessage.clientMessageId] || getOwnMessageContent(chatId, userId, newMessage.clientMessageId) || 'Content unavailable',
                 delivered: newMessage.delivered_status,
                 read: newMessage.read_status,
               });
@@ -388,6 +389,23 @@ const SecretPrivateChat = () => {
               read: newMessage.read_status,
             });
           }
+        });
+
+        // Подписка на обновления статуса сообщений
+        stompClientInstance.subscribe(`/topic/messageStatus/${chatId}`, (statusMessage) => {
+          const statusUpdate = JSON.parse(statusMessage.body);
+          console.log('Received status update:', statusUpdate);
+          setMessages((prevMessages) =>
+            prevMessages.map((msg) =>
+              msg.id === statusUpdate.messageId
+                ? {
+                    ...msg,
+                    delivered: statusUpdate.delivered_status ?? msg.delivered,
+                    read: statusUpdate.read_status ?? msg.read,
+                  }
+                : msg
+            )
+          );
         });
       },
       onWebSocketError: (error) => {
@@ -510,7 +528,7 @@ const SecretPrivateChat = () => {
         return prevMessages.filter((msg) => msg.id !== newMessage.id);
       }
 
-      console.log(`Processing new message: id=${newMessage.id}, senderId=${newMessage.sender.id}, messageType=${newMessage.messageType}, clientMessageId=${newMessage.clientMessageId}`);
+      console.log(`Processing new message: id=${newMessage.id}, senderId=${newMessage.sender.id}, messageType=${newMessage.messageType}, clientMessageId=${newMessage.clientMessageId}, timestamp=${newMessage.timestamp}`);
 
       let content = newMessage.content;
 
@@ -542,8 +560,8 @@ const SecretPrivateChat = () => {
           updatedMessages[tempMessageIndex] = {
             ...newMessage,
             content,
-            delivered: newMessage.delivered_status,
-            read: newMessage.read_status,
+            delivered: newMessage.delivered_status ?? false,
+            read: newMessage.read_status ?? false,
             messageType: newMessage.messageType,
           };
           console.log(`Replaced message:`, updatedMessages[tempMessageIndex]);
@@ -558,7 +576,7 @@ const SecretPrivateChat = () => {
         }
       }
 
-      // Для входящих сообщений или если нет clientMessageId
+      // Проверяем, существует ли сообщение с таким же id
       const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
       if (existingMessageIndex !== -1) {
         console.log(`Updating existing message with ID=${newMessage.id}`);
@@ -571,18 +589,46 @@ const SecretPrivateChat = () => {
           read: newMessage.read_status ?? prevMessages[existingMessageIndex].read,
           messageType: newMessage.messageType ?? prevMessages[existingMessageIndex].messageType,
         };
+        console.log(`Updated message:`, updatedMessages[existingMessageIndex]);
         return updatedMessages;
+      }
+
+      // Если сообщение не найдено по clientMessageId, проверяем по timestamp и sender.id для собственных сообщений
+      if (newMessage.sender.id === userId && newMessage.messageType === 'text' && !newMessage.clientMessageId) {
+        const tempMessageIndex = prevMessages.findIndex(
+          (msg) =>
+            msg.sender.id === userId &&
+            msg.messageType === 'text' &&
+            Math.abs(new Date(msg.timestamp).getTime() - new Date(newMessage.timestamp).getTime()) < 1000
+        );
+        if (tempMessageIndex !== -1) {
+          console.log(`Replacing temp message by timestamp: tempId=${prevMessages[tempMessageIndex].id}, serverId=${newMessage.id}`);
+          const content = getOwnMessageContent(chatId, userId, prevMessages[tempMessageIndex].clientMessageId) || 'Content unavailable';
+          const updatedMessages = [...prevMessages];
+          updatedMessages[tempMessageIndex] = {
+            ...newMessage,
+            content,
+            delivered: newMessage.delivered_status ?? false,
+            read: newMessage.read_status ?? false,
+            messageType: newMessage.messageType,
+          };
+          console.log(`Replaced message by timestamp:`, updatedMessages[tempMessageIndex]);
+          return updatedMessages;
+        }
       }
 
       // Добавляем новое сообщение
       console.log(`Adding new message: id=${newMessage.id}, content=${content || newMessage.content}`);
-      return [...prevMessages, {
-        ...newMessage,
-        content: newMessage.sender.id === userId ? content : newMessage.content,
-        delivered: newMessage.delivered_status,
-        read: newMessage.read_status,
-        messageType: newMessage.messageType,
-      }];
+      return [
+        ...prevMessages,
+        {
+          ...newMessage,
+          content: newMessage.sender.id === userId ? content : newMessage.content,
+          delivered: newMessage.delivered_status ?? false,
+          read: newMessage.read_status ?? false,
+          messageType: newMessage.messageType,
+        },
+      ];
     });
   };
 
@@ -771,8 +817,18 @@ const SecretPrivateChat = () => {
             }),
           });
 
-          // Добавляем временное сообщение сразу
-          setMessages((prevMessages) => [...prevMessages, messageData]);
+          // Добавляем временное сообщение с небольшой задержкой
+          setTimeout(() => {
+            setMessages((prevMessages) => {
+              // Проверяем, не было ли уже добавлено сообщение с этим clientMessageId
+              if (prevMessages.some((msg) => msg.id === clientMessageId)) {
+                console.log(`Temporary message with clientMessageId=${clientMessageId} already exists, skipping`);
+                return prevMessages;
+              }
+              console.log(`Adding temporary message: clientMessageId=${clientMessageId}`);
+              return [...prevMessages, messageData];
+            });
+          }, 100); // Задержка 100 мс для синхронизации с WebSocket
           resetForm();
         } else {
           console.error('STOMP client is not connected');
