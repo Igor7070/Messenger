@@ -142,35 +142,17 @@ const SecretPrivateChat = () => {
       await sodium.ready;
       const storedKeyPair = localStorage.getItem(`keyPair_${userId}`);
       console.log(`Checking keyPair for userId: ${userId}, exists: ${!!storedKeyPair}`);
-      let publicKeyToSend = null;
-
       if (storedKeyPair) {
         const parsedKeyPair = JSON.parse(storedKeyPair);
         console.log(`Private key length: ${parsedKeyPair.privateKey?.length}, Public key length: ${parsedKeyPair.publicKey?.length}`);
         try {
           const privateKeyBytes = sodium.from_base64(parsedKeyPair.privateKey);
           console.log(`Private key bytes length: ${privateKeyBytes.length}`);
-          setKeyPair(parsedKeyPair);
-          // [ADD] Проверяем, совпадает ли сохранённый ключ с серверным
-          try {
-            const serverPublicKey = await fetchPublicKeyWithRetry(userId);
-            if (serverPublicKey !== parsedKeyPair.publicKey) {
-              console.log(`Local public key differs from server for userId: ${userId}, uploading local key`);
-              publicKeyToSend = parsedKeyPair.publicKey;
-            } else {
-              console.log(`Public key for userId: ${userId} is up-to-date on server`);
-            }
-          } catch (error) {
-            console.error(`Failed to check server public key for userId: ${userId}, will upload local key`, error);
-            publicKeyToSend = parsedKeyPair.publicKey;
-          }
         } catch (e) {
           console.error(`Private key decode error for userId: ${userId}, error: ${e.message}`);
-          // Если ключ повреждён, сгенерируем новый
         }
-      }
-
-      if (!storedKeyPair || publicKeyToSend === null) {
+        setKeyPair(parsedKeyPair);
+      } else {
         console.log(`Generating new key pair for userId: ${userId}`);
         const newKeyPair = sodium.crypto_box_keypair();
         const publicKeyBase64 = sodium.to_base64(newKeyPair.publicKey);
@@ -183,22 +165,18 @@ const SecretPrivateChat = () => {
           publicKey: publicKeyBase64,
           privateKey: privateKeyBase64
         });
-        publicKeyToSend = publicKeyBase64;
-      }
-
-      if (publicKeyToSend) {
         try {
           console.log(`Uploading public key for userId: ${userId}`);
           const response = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, publicKey: publicKeyToSend }),
+            body: JSON.stringify({ userId, publicKey: publicKeyBase64 }),
           });
           if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`Failed to upload public key: ${response.status} - ${errorText}`);
           }
-          console.log(`Public key uploaded successfully for userId: ${userId}, key: ${publicKeyToSend}`);
+          console.log(`Public key uploaded successfully for userId: ${userId}`);
         } catch (error) {
           console.error(`Error uploading public key for userId: ${userId}`, error);
           toast.error(`Failed to upload public key: ${error.message}`);
