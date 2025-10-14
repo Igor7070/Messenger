@@ -428,7 +428,7 @@ const SecretPrivateChat = () => {
       console.log('Deactivating WebSocket in SecretPrivateChat');
       stompClientInstance.deactivate();
     };
-  }, [chatId, userId, publicKeys, sentMessagesCache]);
+  }, [chatId, userId, publicKeys]); 
 
   // Отметка сообщений как прочитанных
   useEffect(() => {
