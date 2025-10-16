@@ -1,10 +1,8 @@
 package com.example.unl_pos12.controller.messenger;
 
-import com.example.unl_pos12.model.messenger.Chat;
-import com.example.unl_pos12.model.messenger.HeartbeatMessage;
-import com.example.unl_pos12.model.messenger.Message;
-import com.example.unl_pos12.model.messenger.User;
+import com.example.unl_pos12.model.messenger.*;
 import com.example.unl_pos12.repo.ChatRepository;
+import com.example.unl_pos12.repo.PublicKeyHistoryRepository;
 import com.example.unl_pos12.service.MessageService;
 import com.example.unl_pos12.service.UserService;
 import com.example.unl_pos12.service.WebSocketService;
@@ -16,6 +14,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -32,6 +31,8 @@ public class WebSocketMessageController {
     private UserService userService;
     @Autowired
     private WebSocketService webSocketService;
+    @Autowired
+    private PublicKeyHistoryRepository publicKeyHistoryRepository; // [ADD]
 
     private static final long OFFLINE_TIMEOUT = 20_000; // 20 секунд
 
@@ -75,6 +76,15 @@ public class WebSocketMessageController {
                 message.setContent(null);
                 message.setTranslatedContent(null);
                 message.setTranscribedContent(null);
+
+                // [ADD] Установка publicKeyId для секретных текстовых сообщений
+                PublicKeyHistory publicKeyHistory = publicKeyHistoryRepository.findByUserIdAndValidUntilIsNull(message.getSender().getId());
+                if (publicKeyHistory != null) {
+                    message.setPublicKeyId(publicKeyHistory.getId());
+                    System.out.println("Set publicKeyId: " + publicKeyHistory.getId() + " for message from userId: " + message.getSender().getId());
+                } else {
+                    System.out.println("No active public key found for senderId: " + message.getSender().getId());
+                }
             } else if (!"audio".equals(message.getMessageType()) && !"file".equals(message.getMessageType())) {
                 throw new RuntimeException("Invalid message type for secret chat: " + message.getMessageType());
             }
@@ -88,6 +98,7 @@ public class WebSocketMessageController {
         }
 
         message.setDelivered_status(true); // Устанавливаем статус доставки
+        message.setTimestamp(ZonedDateTime.now()); // [ADD] Установка timestamp для нового сообщения
         return messageService.saveMessage(message, null); // file = null, так как клиент отправляет fileUrl
     }
 

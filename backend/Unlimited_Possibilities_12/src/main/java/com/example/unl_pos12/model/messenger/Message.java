@@ -44,6 +44,8 @@ public class Message {
     private String transcribedContent; // Поле для транскрипции
     @Column(name = "client_message_id", nullable = true)
     private String clientMessageId;
+    @Column(name = "public_key_id") // [ADD]
+    private Long publicKeyId;
 
     public Long getId() {
         return id;
@@ -180,4 +182,8 @@ public class Message {
     public void setClientMessageId(String clientMessageId) {
         this.clientMessageId = clientMessageId;
     }
+
+    public Long getPublicKeyId() { return publicKeyId; }
+
+    public void setPublicKeyId(Long publicKeyId) { this.publicKeyId = publicKeyId; }
 }
