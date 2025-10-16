@@ -81,20 +81,27 @@ const fetchPublicKeyWithRetry = async (recipientId, retries = 3, delay = 2000) =
   }
 };
 
-const getPublicKey = async (userId) => {
-  console.log(`Fetching public key for userId: ${userId}`);
+const getPublicKey = async (userId, publicKeyId = null) => { // [CHANGE] Добавлен параметр publicKeyId
+  console.log(`Fetching public key for userId: ${userId}, publicKeyId: ${publicKeyId}`);
   try {
-    const publicKey = await fetchPublicKeyWithRetry(userId);
-    console.log(`Fetched public key for userId: ${userId}, value: ${publicKey}`);
+    const url = publicKeyId
+      ? `https://unlimitedpossibilities12.org/api/public_keys/history/${publicKeyId}` // [ADD] Новый эндпоинт для получения ключа по publicKeyId
+      : `https://unlimitedpossibilities12.org/api/public_keys/${userId}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch public key: ${response.status}`);
+    }
+    const publicKeyData = await response.json();
+    console.log(`Fetched public key for userId: ${userId}, publicKeyId: ${publicKeyId}, value: ${publicKeyData.publicKey}`);
     try {
-      const publicKeyBytes = sodium.from_base64(publicKey);
+      const publicKeyBytes = sodium.from_base64(publicKeyData.publicKey);
       console.log(`Public key bytes length for userId: ${userId}: ${publicKeyBytes.length}, hex: ${sodium.to_hex(publicKeyBytes)}`);
     } catch (e) {
-      console.error(`Invalid fetched public key for userId: ${userId}, error: ${e.message}`);
+      console.error(`Invalid fetched public key for userId: ${userId}, publicKeyId: ${publicKeyId}, error: ${e.message}`);
     }
-    return publicKey;
+    return publicKeyData.publicKey;
   } catch (error) {
-    console.error(`Error fetching public key for userId: ${userId}, error: ${error.message}`);
+    console.error(`Error fetching public key for userId: ${userId}, publicKeyId: ${publicKeyId}, error: ${error.message}`);
     throw new Error(`Failed to fetch public key for userId: ${userId}`);
   }
 };
@@ -229,7 +236,7 @@ const SecretPrivateChat = () => {
         const recipient = await userResponse.json();
         const recipientId = recipient.id;
 
-        const recipientPublicKey = await getPublicKey(recipientId);
+        const recipientPublicKey = await getPublicKey(recipientId); // [CHANGE] Без изменений, использует getPublicKey без publicKeyId
         setPublicKeys((prev) => ({
           ...prev,
           [recipientId]: recipientPublicKey,
@@ -240,7 +247,7 @@ const SecretPrivateChat = () => {
         const publicKeysPromises = senderIds
           .filter((senderId) => senderId !== userId && !publicKeys[senderId])
           .map(async (senderId) => {
-            const publicKey = await getPublicKey(senderId);
+            const publicKey = await getPublicKey(senderId); // [CHANGE] Без изменений, использует getPublicKey без publicKeyId
             return { senderId, publicKey };
           });
         const newPublicKeys = await Promise.all(publicKeysPromises);
@@ -253,8 +260,7 @@ const SecretPrivateChat = () => {
           initialMessages.map(async (msg) => {
             if (msg.messageType === 'text' && msg.encryptedContent && msg.nonce) {
               if (msg.sender.id === userId) {
-                // Проверяем, есть ли контент в localStorage для собственных сообщений
-                const clientMessageId = msg.clientMessageId; // Предполагаем, что сервер возвращает clientMessageId
+                const clientMessageId = msg.clientMessageId;
                 const localContent = clientMessageId ? getOwnMessageContent(chatIdParam, userId, clientMessageId) : null;
                 console.log(`Own message id: ${msg.id}, clientMessageId: ${clientMessageId}, localContent: ${localContent || 'not found'}, delivered: ${msg.delivered_status}, read: ${msg.read_status}`);
                 return {
@@ -265,11 +271,13 @@ const SecretPrivateChat = () => {
                 };
               }
               try {
+                const publicKey = await getPublicKey(msg.sender.id, msg.publicKeyId); // [CHANGE] Добавлен msg.publicKeyId
                 const decryptedContent = await decryptMessage(
                   msg.encryptedContent,
                   msg.nonce,
                   msg.sender.id,
-                  msg.timestamp
+                  msg.timestamp,
+                  publicKey // [ADD] Передаём publicKey в decryptMessage
                 );
                 return {
                   ...msg,
@@ -343,9 +351,9 @@ const SecretPrivateChat = () => {
                 const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
 
                 let publicKey = publicKeys[newMessage.sender.id];
-                if (!publicKey) {
-                  console.log(`Public key for senderId: ${newMessage.sender.id} not found, fetching...`);
-                  publicKey = await getPublicKey(newMessage.sender.id);
+                if (!publicKey || newMessage.publicKeyId) { // [CHANGE] Проверка newMessage.publicKeyId
+                  console.log(`Public key for senderId: ${newMessage.sender.id} not found or publicKeyId present, fetching...`);
+                  publicKey = await getPublicKey(newMessage.sender.id, newMessage.publicKeyId); // [CHANGE] Добавлен newMessage.publicKeyId
                   setPublicKeys((prev) => ({
                     ...prev,
                     [newMessage.sender.id]: publicKey,
@@ -356,7 +364,8 @@ const SecretPrivateChat = () => {
                   cleanedEncryptedContent,
                   cleanedNonce,
                   newMessage.sender.id,
-                  newMessage.timestamp
+                  newMessage.timestamp,
+                  publicKey // [ADD] Передаём publicKey
                 );
                 updateMessages({
                   ...newMessage,
@@ -375,7 +384,6 @@ const SecretPrivateChat = () => {
                 toast.error(`Failed to decrypt message: ${error.message}`);
               }
             } else {
-              // Для собственных сообщений контент берётся из sentMessagesCache или localStorage
               updateMessages({
                 ...newMessage,
                 content: sentMessagesCache[newMessage.clientMessageId] || getOwnMessageContent(chatId, userId, newMessage.clientMessageId) || 'Content unavailable',
@@ -713,11 +721,15 @@ const SecretPrivateChat = () => {
     };
   };
 
-  const decryptMessage = async (encryptedContent, nonce, senderId, timestamp) => {
+  const decryptMessage = async (encryptedContent, nonce, senderId, timestamp, publicKey) => { // [CHANGE] Добавлен параметр publicKey
     console.log(
-      `decryptMessage called: encryptedContent=${encryptedContent}, nonce=${nonce}, senderId=${senderId}, timestamp=${timestamp}`
+      `decryptMessage called: senderId=${senderId}, timestamp=${timestamp}`
     );
     await sodium.ready;
+
+    if (!publicKey || !keyPair?.privateKey) {
+      throw new Error('Encryption keys not available');
+    }
 
     const validateBase64 = (str, name) => {
       try {
@@ -730,9 +742,6 @@ const SecretPrivateChat = () => {
       }
     };
 
-    const publicKey = await getPublicKey(senderId);
-    const privateKey = keyPair?.privateKey;
-
     console.log(
       `Validating base64: encryptedContent=${validateBase64(
         encryptedContent,
@@ -740,17 +749,17 @@ const SecretPrivateChat = () => {
       )}, nonce=${validateBase64(nonce, 'nonce')}, publicKey=${validateBase64(
         publicKey,
         'publicKey'
-      )}, privateKey=${validateBase64(privateKey, 'privateKey')}`
+      )}, privateKey=${validateBase64(keyPair.privateKey, 'privateKey')}`
     );
 
     if (
       !validateBase64(encryptedContent, 'encryptedContent') ||
       !validateBase64(nonce, 'nonce') ||
       !validateBase64(publicKey, 'publicKey') ||
-      !validateBase64(privateKey, 'privateKey')
+      !validateBase64(keyPair.privateKey, 'privateKey')
     ) {
       console.error(
-        `Invalid base64 format: encryptedContent=${encryptedContent}, nonce=${nonce}, publicKey=${publicKey}, privateKey=${privateKey}`
+        `Invalid base64 format: encryptedContent=${encryptedContent}, nonce=${nonce}, publicKey=${publicKey}, privateKey=${keyPair.privateKey}`
       );
       throw new Error('Invalid base64 format');
     }
@@ -759,7 +768,7 @@ const SecretPrivateChat = () => {
       const encryptedBytes = sodium.from_base64(encryptedContent);
       const nonceBytes = sodium.from_base64(nonce);
       const publicKeyBytes = sodium.from_base64(publicKey);
-      const privateKeyBytes = sodium.from_base64(privateKey);
+      const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
 
       console.log(
         `Decryption input: encryptedBytesLength=${encryptedBytes.length}, nonceBytesLength=${nonceBytes.length}, publicKeyBytesLength=${publicKeyBytes.length}, privateKeyBytesLength=${privateKeyBytes.length}`
@@ -782,9 +791,9 @@ const SecretPrivateChat = () => {
       console.log(`Decryption successful: decryptedMessage=${decryptedMessage}`);
       return decryptedMessage;
     } catch (error) {
-        console.error(
-          `Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`
-        );
+      console.error(
+        `Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`
+      );
       throw new Error(`Decryption failed: ${error.message}`);
     }
   };
