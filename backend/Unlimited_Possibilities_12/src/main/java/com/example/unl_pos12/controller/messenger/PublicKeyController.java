@@ -38,6 +38,6 @@ public class PublicKeyController {
         messagingTemplate.convertAndSend("/topic/publicKey/" + savedPublicKey.getUserId(), savedPublicKey);
         System.out.println("Sent WebSocket notification to /topic/publicKey/" + savedPublicKey.getUserId() + ": " + savedPublicKey.getPublicKey());
 
-        return ResponseEntity.ok(savedPublicKey); // [CHANGE] Возвращаем ResponseEntity
+        return ResponseEntity.ok(savedPublicKey); // [CHANGE] Возвращаем ResponseEntity...
     }
 }
