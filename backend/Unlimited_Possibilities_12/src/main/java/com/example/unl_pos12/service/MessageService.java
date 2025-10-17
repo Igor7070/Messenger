@@ -26,6 +26,8 @@ public class MessageService {
     private FileMetadataRepository fileMetadataRepository; // [ADD] Внедряем FileMetadataRepository
     @Autowired
     private PublicKeyHistoryRepository publicKeyHistoryRepository; // [CHANGE]
+    @Autowired
+    private WebSocketService webSocketService; // Добавляем зависимость для WebSocket
 
     public List<Message> getAllMessages() {
         return messageRepository.findAll();
@@ -109,47 +111,81 @@ public class MessageService {
     }
 
     // [ADD] Новый метод для сообщений с зашифрованными файлами
-    public Message saveEncryptedFileMessage(Message message, MultipartFile encryptedFile, String fileNonce) { // [CHANGE] Убрали filePublicKeyId
-        if (encryptedFile != null && !encryptedFile.isEmpty()) {
-            String fileUrl = uploadEncryptedFile(encryptedFile, fileNonce, message); // [CHANGE] Убрали filePublicKeyId
-            message.setFileUrl(null);
-            if (message.getMessageType() == null) {
-                String contentType = encryptedFile.getContentType();
-                if (encryptedFile.getOriginalFilename().endsWith(".webm")) {
-                    contentType = "audio/webm;codecs=opus";
-                }
-                message.setContentType(contentType);
-                if (contentType != null && (contentType.equals("audio/mpeg") ||
-                        contentType.equals("audio/wav") ||
-                        contentType.equals("audio/webm") ||
-                        contentType.equals("audio/webm;codecs=opus"))) {
-                    message.setMessageType("audio");
-                } else {
-                    message.setMessageType("file");
-                }
-            }
+    public Message saveEncryptedFileMessage(Message message, MultipartFile encryptedFile, String fileNonce) {
+        if (encryptedFile == null || encryptedFile.isEmpty()) {
+            throw new RuntimeException("Uploaded encrypted file is empty");
+        }
+        if (encryptedFile.getOriginalFilename() == null) {
+            throw new RuntimeException("Filename is null");
+        }
+        if (fileNonce == null) {
+            throw new RuntimeException("Nonce is missing for encrypted file");
         }
 
-        message.setTimestamp(ZonedDateTime.now());
-
-        if (message.getChat() != null && message.getChat().getIsSecret() != null && message.getChat().getIsSecret()) {
-            if (message.getEncryptedContent() == null || message.getNonce() == null) {
-                throw new RuntimeException("Encrypted content or nonce is missing for secret chat file message");
-            }
-            message.setContent(null);
-            message.setTranslatedContent(null);
-            message.setTranscribedContent(null);
-            message.setFileUrl(null);
-        } else {
+        // Проверка для секретных чатов
+        if (message.getChat() == null || message.getChat().getIsSecret() == null || !message.getChat().getIsSecret()) {
             throw new RuntimeException("Encrypted file messages are only allowed in secret chats");
         }
+        if (message.getEncryptedContent() == null || message.getNonce() == null) {
+            throw new RuntimeException("Encrypted content or nonce is missing for secret chat file message");
+        }
 
-        System.out.println("Saving encrypted file message: type=" + message.getMessageType() +
-                ", encryptedContent=" + message.getEncryptedContent() +
-                ", chatId=" + message.getChat().getId() +
-                ", isSecret=" + (message.getChat() != null ? message.getChat().getIsSecret() : false) +
-                ", contentType=" + message.getContentType());
-        return messageRepository.save(message);
+        // Проверка наличия активного публичного ключа
+        PublicKeyHistory publicKeyHistory = publicKeyHistoryRepository.findByUserIdAndValidUntilIsNull(message.getSender().getId());
+        if (publicKeyHistory == null) {
+            System.out.println("No active public key found for user: " + message.getSender().getId());
+            throw new RuntimeException("No active public key found for user: " + message.getSender().getId());
+        }
+
+        // Загрузка файла
+        String fileName = System.currentTimeMillis() + "_encrypted_" + transliterate(encryptedFile.getOriginalFilename());
+        String filePath = "Uploads/encrypted/" + fileName;
+        String fullFileUrl = "https://unlimitedpossibilities12.org/api/files/download/encrypted/" + fileName;
+        System.out.println("Uploading encrypted file: original name=" + encryptedFile.getOriginalFilename() + ", contentType=" + encryptedFile.getContentType());
+
+        try {
+            File dest = new File(System.getProperty("user.dir") + "/" + filePath);
+            dest.getParentFile().mkdirs();
+            encryptedFile.transferTo(dest);
+            System.out.println("Encrypted file uploaded successfully: path=" + filePath);
+        } catch (IOException e) {
+            System.out.println("Failed to upload encrypted file: " + e.getMessage());
+            throw new RuntimeException("Failed to upload encrypted file: " + e.getMessage());
+        }
+
+        // Установка fileUrl и других полей в сообщении
+        message.setFileUrl(fullFileUrl);
+        if (message.getMessageType() == null) {
+            String contentType = encryptedFile.getContentType();
+            if (encryptedFile.getOriginalFilename().endsWith(".webm")) {
+                contentType = "audio/webm;codecs=opus";
+            }
+            message.setContentType(contentType);
+            message.setMessageType(contentType != null && contentType.startsWith("audio/") ? "audio" : "file");
+        }
+        message.setContent(null);
+        message.setTranslatedContent(null);
+        message.setTranscribedContent(null);
+        message.setTimestamp(ZonedDateTime.now());
+
+        // Сохранение сообщения
+        Message savedMessage = messageRepository.save(message);
+        System.out.println("Saved message with fileUrl: " + savedMessage.getFileUrl() + ", messageId: " + savedMessage.getId());
+
+        // Сохранение метаданных файла
+        FileMetadata fileMetadata = new FileMetadata();
+        fileMetadata.setFileUrl(fullFileUrl);
+        fileMetadata.setNonce(fileNonce);
+        fileMetadata.setMessage(savedMessage);
+        fileMetadata.setPublicKeyId(publicKeyHistory.getId()); // Оставляем publicKeyId, как указано
+        fileMetadataRepository.save(fileMetadata);
+        System.out.println("Saved file metadata: fileUrl=" + fullFileUrl + ", messageId=" + savedMessage.getId() + ", nonce=" + fileNonce + ", publicKeyId=" + publicKeyHistory.getId());
+
+        // Отправка обновлённого сообщения через WebSocket
+        //webSocketService.sendMessageUpdate(savedMessage.getChat().getId(), savedMessage);
+        System.out.println("Sent WebSocket update for messageId: " + savedMessage.getId() + ", chatId: " + savedMessage.getChat().getId());
+
+        return savedMessage;
     }
 
     public Message markAsRead(Long messageId) {
@@ -205,7 +241,7 @@ public class MessageService {
     }
 
     // [ADD] Новый метод для загрузки зашифрованных файлов
-    public String uploadEncryptedFile(MultipartFile encryptedFile, String fileNonce, Message message) { // [CHANGE] Убрали filePublicKeyId
+    /*public String uploadEncryptedFile(MultipartFile encryptedFile, String fileNonce, Message message) { // [CHANGE] Убрали filePublicKeyId
         if (encryptedFile.isEmpty()) {
             throw new RuntimeException("Uploaded encrypted file is empty");
         }
@@ -264,7 +300,7 @@ public class MessageService {
         System.out.println("Saved file metadata: fileUrl=" + fileUrl + ", nonce=" + fileNonce);
 
         return fileUrl;
-    }
+    }*/
 
     private String transliterate(String input) {
         String[][] mapping = {

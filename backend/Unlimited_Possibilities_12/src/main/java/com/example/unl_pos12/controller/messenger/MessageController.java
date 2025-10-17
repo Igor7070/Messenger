@@ -116,17 +116,23 @@ public class MessageController {
 
     // [ADD] Новый endpoint для загрузки зашифрованных файлов
     @PostMapping("/upload_encrypted_file")
-    public ResponseEntity<String> uploadEncryptedFile(
+    public ResponseEntity<FileUploadResponse> uploadEncryptedFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("nonce") String nonce,
-            @RequestParam("messageId") Long messageId) { // [CHANGE] Без publicKeyId
-        Message message = messageService.getMessageById(messageId);
-        if (message == null) {
-            throw new RuntimeException("Message not found for id: " + messageId);
+            @RequestParam("messageId") Long messageId) {
+        try {
+            Message message = messageService.getMessageById(messageId);
+            if (message == null) {
+                return ResponseEntity.badRequest().body(new FileUploadResponse(null, "Message not found for id: " + messageId));
+            }
+            message = messageService.saveEncryptedFileMessage(message, file, nonce);
+            if (message.getFileUrl() == null) {
+                return ResponseEntity.internalServerError().body(new FileUploadResponse(null, "Failed to save encrypted file"));
+            }
+            return ResponseEntity.ok(new FileUploadResponse(message.getFileUrl(), null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new FileUploadResponse(null, "Error uploading file: " + e.getMessage()));
         }
-        // [CHANGE] Вызываем saveEncryptedFileMessage вместо uploadEncryptedFile
-        message = messageService.saveEncryptedFileMessage(message, file, nonce);
-        return ResponseEntity.ok(message.getFileUrl());
     }
 
     // [ADD] Endpoint для получения метаданных файла
