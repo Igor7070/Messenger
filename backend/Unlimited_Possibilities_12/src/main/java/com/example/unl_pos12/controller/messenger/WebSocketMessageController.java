@@ -67,29 +67,41 @@ public class WebSocketMessageController {
 
         // Проверка для секретных чатов
         if (message.getChat().getIsSecret() != null && message.getChat().getIsSecret()) {
-            // Для секретных чатов ожидаем encryptedContent и nonce для текстовых сообщений
             if ("text".equals(message.getMessageType())) {
                 if (message.getEncryptedContent() == null || message.getNonce() == null) {
-                    throw new RuntimeException("Encrypted content or nonce is missing for secret chat");
+                    throw new RuntimeException("Encrypted content or nonce is missing for secret chat text message");
                 }
-                // Очищаем поля, связанные с ИИ
-                message.setContent(null);
-                message.setTranslatedContent(null);
-                message.setTranscribedContent(null);
-
-                // [ADD] Установка publicKeyId для секретных текстовых сообщений
+                // Установка publicKeyId для текстовых сообщений
                 PublicKeyHistory publicKeyHistory = publicKeyHistoryRepository.findByUserIdAndValidUntilIsNull(message.getSender().getId());
                 if (publicKeyHistory != null) {
                     message.setPublicKeyId(publicKeyHistory.getId());
-                    System.out.println("Set publicKeyId: " + publicKeyHistory.getId() + " for message from userId: " + message.getSender().getId());
+                    System.out.println("Set publicKeyId: " + publicKeyHistory.getId() + " for text message from userId: " + message.getSender().getId());
                 } else {
                     System.out.println("No active public key found for senderId: " + message.getSender().getId());
                 }
-            } else if (!"audio".equals(message.getMessageType()) && !"file".equals(message.getMessageType())) {
+                message.setContent(null);
+                message.setTranslatedContent(null);
+                message.setTranscribedContent(null);
+            } else if ("file".equals(message.getMessageType()) || "audio".equals(message.getMessageType())) {
+                // [ADD] Проверяем наличие encryptedContent и nonce для файловых сообщений
+                if (message.getEncryptedContent() == null || message.getNonce() == null) {
+                    throw new RuntimeException("Encrypted content or nonce is missing for secret chat file/audio message");
+                }
+                PublicKeyHistory publicKeyHistory = publicKeyHistoryRepository.findByUserIdAndValidUntilIsNull(message.getSender().getId());
+                if (publicKeyHistory != null) {
+                    message.setPublicKeyId(publicKeyHistory.getId());
+                    System.out.println("Set publicKeyId: " + publicKeyHistory.getId() + " for file/audio message from userId: " + message.getSender().getId());
+                } else {
+                    System.out.println("No active public key found for senderId: " + message.getSender().getId());
+                }
+                message.setContent(null);
+                message.setTranslatedContent(null);
+                message.setTranscribedContent(null);
+                message.setFileUrl(null); // Очищаем fileUrl, так как он зашифрован в encryptedContent
+            } else {
                 throw new RuntimeException("Invalid message type for secret chat: " + message.getMessageType());
             }
         } else {
-            // Для обычных чатов очищаем E2EE-поля
             message.setEncryptedContent(null);
             message.setNonce(null);
             if (message.getContent() == null && message.getFileUrl() == null) {

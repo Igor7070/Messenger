@@ -1,9 +1,6 @@
 package com.example.unl_pos12.controller.messenger;
 
-import com.example.unl_pos12.model.messenger.Chat;
-import com.example.unl_pos12.model.messenger.Message;
-import com.example.unl_pos12.model.messenger.NotificationRequest;
-import com.example.unl_pos12.model.messenger.User;
+import com.example.unl_pos12.model.messenger.*;
 import com.example.unl_pos12.repo.ChatRepository;
 import com.example.unl_pos12.repo.UserRepository;
 import com.example.unl_pos12.service.MessageService;
@@ -11,6 +8,7 @@ import com.example.unl_pos12.service.WebSocketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.ZonedDateTime;
 import java.util.Comparator;
@@ -114,5 +112,31 @@ public class MessageController {
     public ResponseEntity<List<Message>> getMessagesByChatId(@PathVariable Long chatId) {
         List<Message> messages = messageService.findByChatId(chatId);
         return ResponseEntity.ok(messages);
+    }
+
+    // [ADD] Новый endpoint для загрузки зашифрованных файлов
+    @PostMapping("/upload_encrypted_file")
+    public ResponseEntity<String> uploadEncryptedFile(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("nonce") String nonce,
+            @RequestParam("publicKeyId") Long publicKeyId,
+            @RequestParam("messageId") Long messageId) {
+        Message message = messageService.getMessageById(messageId);
+        if (message == null) {
+            throw new RuntimeException("Message not found for id: " + messageId);
+        }
+        String fileUrl = messageService.uploadEncryptedFile(file, nonce, publicKeyId, message);
+        return ResponseEntity.ok(fileUrl);
+    }
+
+    // [ADD] Endpoint для получения метаданных файла
+    @GetMapping("/file_metadata/{messageId}")
+    public ResponseEntity<FileMetadata> getFileMetadata(@PathVariable Long messageId) {
+        FileMetadata fileMetadata = messageService.getFileMetadataByMessageId(messageId);
+        if (fileMetadata != null) {
+            return ResponseEntity.ok(fileMetadata);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
