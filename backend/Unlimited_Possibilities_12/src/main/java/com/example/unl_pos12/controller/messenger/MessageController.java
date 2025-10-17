@@ -119,14 +119,14 @@ public class MessageController {
     public ResponseEntity<String> uploadEncryptedFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("nonce") String nonce,
-            @RequestParam("publicKeyId") Long publicKeyId,
-            @RequestParam("messageId") Long messageId) {
+            @RequestParam("messageId") Long messageId) { // [CHANGE] Без publicKeyId
         Message message = messageService.getMessageById(messageId);
         if (message == null) {
             throw new RuntimeException("Message not found for id: " + messageId);
         }
-        String fileUrl = messageService.uploadEncryptedFile(file, nonce, publicKeyId, message);
-        return ResponseEntity.ok(fileUrl);
+        // [CHANGE] Вызываем saveEncryptedFileMessage вместо uploadEncryptedFile
+        message = messageService.saveEncryptedFileMessage(message, file, nonce);
+        return ResponseEntity.ok(message.getFileUrl());
     }
 
     // [ADD] Endpoint для получения метаданных файла

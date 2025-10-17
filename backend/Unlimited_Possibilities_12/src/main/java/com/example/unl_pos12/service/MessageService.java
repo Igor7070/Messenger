@@ -2,8 +2,10 @@ package com.example.unl_pos12.service;
 
 import com.example.unl_pos12.model.messenger.FileMetadata;
 import com.example.unl_pos12.model.messenger.Message;
+import com.example.unl_pos12.model.messenger.PublicKeyHistory;
 import com.example.unl_pos12.repo.FileMetadataRepository;
 import com.example.unl_pos12.repo.MessageRepository;
+import com.example.unl_pos12.repo.PublicKeyHistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,6 +24,8 @@ public class MessageService {
     private MessageRepository messageRepository;
     @Autowired
     private FileMetadataRepository fileMetadataRepository; // [ADD] Внедряем FileMetadataRepository
+    @Autowired
+    private PublicKeyHistoryRepository publicKeyHistoryRepository; // [CHANGE]
 
     public List<Message> getAllMessages() {
         return messageRepository.findAll();
@@ -105,10 +109,10 @@ public class MessageService {
     }
 
     // [ADD] Новый метод для сообщений с зашифрованными файлами
-    public Message saveEncryptedFileMessage(Message message, MultipartFile encryptedFile, String fileNonce, Long filePublicKeyId) {
+    public Message saveEncryptedFileMessage(Message message, MultipartFile encryptedFile, String fileNonce) { // [CHANGE] Убрали filePublicKeyId
         if (encryptedFile != null && !encryptedFile.isEmpty()) {
-            String fileUrl = uploadEncryptedFile(encryptedFile, fileNonce, filePublicKeyId, message); // Используем новый метод
-            message.setFileUrl(null); // Очищаем fileUrl, так как он зашифрован в encryptedContent
+            String fileUrl = uploadEncryptedFile(encryptedFile, fileNonce, message); // [CHANGE] Убрали filePublicKeyId
+            message.setFileUrl(null);
             if (message.getMessageType() == null) {
                 String contentType = encryptedFile.getContentType();
                 if (encryptedFile.getOriginalFilename().endsWith(".webm")) {
@@ -128,7 +132,6 @@ public class MessageService {
 
         message.setTimestamp(ZonedDateTime.now());
 
-        // Проверка для секретных чатов
         if (message.getChat() != null && message.getChat().getIsSecret() != null && message.getChat().getIsSecret()) {
             if (message.getEncryptedContent() == null || message.getNonce() == null) {
                 throw new RuntimeException("Encrypted content or nonce is missing for secret chat file message");
@@ -136,7 +139,7 @@ public class MessageService {
             message.setContent(null);
             message.setTranslatedContent(null);
             message.setTranscribedContent(null);
-            message.setFileUrl(null); // Убедимся, что fileUrl очищен
+            message.setFileUrl(null);
         } else {
             throw new RuntimeException("Encrypted file messages are only allowed in secret chats");
         }
@@ -202,15 +205,21 @@ public class MessageService {
     }
 
     // [ADD] Новый метод для загрузки зашифрованных файлов
-    public String uploadEncryptedFile(MultipartFile encryptedFile, String fileNonce, Long filePublicKeyId, Message message) {
+    public String uploadEncryptedFile(MultipartFile encryptedFile, String fileNonce, Message message) { // [CHANGE] Убрали filePublicKeyId
         if (encryptedFile.isEmpty()) {
             throw new RuntimeException("Uploaded encrypted file is empty");
         }
         if (encryptedFile.getOriginalFilename() == null) {
             throw new RuntimeException("Filename is null");
         }
-        if (fileNonce == null || filePublicKeyId == null) {
-            throw new RuntimeException("Nonce or publicKeyId is missing for encrypted file");
+        if (fileNonce == null) {
+            throw new RuntimeException("Nonce is missing for encrypted file");
+        }
+
+        // [CHANGE] Проверяем наличие активного публичного ключа
+        PublicKeyHistory publicKeyHistory = publicKeyHistoryRepository.findByUserIdAndValidUntilIsNull(message.getSender().getId());
+        if (publicKeyHistory == null) {
+            throw new RuntimeException("No active public key found for user: " + message.getSender().getId());
         }
 
         long maxFileSize = 100 * 1024 * 1024;
@@ -246,14 +255,13 @@ public class MessageService {
         String serverUrl = "https://unlimitedpossibilities12.org";
         String fileUrl = serverUrl + "/api/files/download/encrypted/" + filename;
 
-        // Сохраняем метаданные файла
+        // [CHANGE] Сохраняем метаданные без publicKeyId
         FileMetadata fileMetadata = new FileMetadata();
         fileMetadata.setFileUrl(fileUrl);
         fileMetadata.setNonce(fileNonce);
-        fileMetadata.setPublicKeyId(filePublicKeyId);
         fileMetadata.setMessage(message);
         fileMetadataRepository.save(fileMetadata);
-        System.out.println("Saved file metadata: fileUrl=" + fileUrl + ", nonce=" + fileNonce + ", publicKeyId=" + filePublicKeyId);
+        System.out.println("Saved file metadata: fileUrl=" + fileUrl + ", nonce=" + fileNonce);
 
         return fileUrl;
     }
