@@ -75,6 +75,50 @@ public class FileDownloadController {
         }
     }
 
+    @GetMapping("/download/encrypted/{filename:.+}") // Для секретных чатов: /api/files/download/encrypted/<filename>
+    public ResponseEntity<Resource> downloadEncryptedFile(@PathVariable String filename) {
+        try {
+            // Декодируем имя файла
+            String decodedFilename = URLDecoder.decode(filename, StandardCharsets.UTF_8.toString());
+            Path filePath = Paths.get("uploads/encrypted").resolve(decodedFilename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                // Проверяем messageType и contentType для файла
+                String mimeType = "application/octet-stream"; // Зашифрованные файлы как octet-stream
+                String fileUrl = "https://unlimitedpossibilities12.org/api/files/download/encrypted/" + decodedFilename;
+                Message message = messageService.findByFileUrl(fileUrl);
+                if (message != null && message.getContentType() != null) {
+                    mimeType = message.getContentType();
+                    System.out.println("Serving encrypted file: " + decodedFilename + " with Content-Type: " + mimeType + " (messageType=" + message.getMessageType() + ")");
+                }
+
+                // Проверка Content-Length
+                long contentLength = resource.contentLength();
+                System.out.println("Serving encrypted file: " + decodedFilename + ", Content-Length: " + contentLength);
+                if (contentLength <= 0) {
+                    System.err.println("Warning: Content-Length is 0 or negative for encrypted file: " + decodedFilename);
+                }
+
+                // Устанавливаем заголовки
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(mimeType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(contentLength))
+                        .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                        .header(HttpHeaders.CONNECTION, "keep-alive")
+                        .body(resource);
+            } else {
+                System.out.println("Encrypted file not found: " + decodedFilename);
+                return ResponseEntity.status(404).body(null);
+            }
+        } catch (Exception e) {
+            System.err.println("Error downloading encrypted file: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
     private String determineMimeType(String fileName) {
         String extension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
         switch (extension) {
