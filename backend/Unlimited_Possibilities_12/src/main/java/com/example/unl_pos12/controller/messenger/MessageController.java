@@ -126,10 +126,12 @@ public class MessageController {
                 return ResponseEntity.badRequest().body(new FileUploadResponse(null, "Message not found for id: " + messageId));
             }
             message = messageService.saveEncryptedFileMessage(message, file, nonce);
-            if (message.getFileUrl() == null) {
-                return ResponseEntity.internalServerError().body(new FileUploadResponse(null, "Failed to save encrypted file"));
+            // Получаем метаданные файла
+            FileMetadata fileMetadata = messageService.getFileMetadataByMessageId(message.getId());
+            if (fileMetadata == null || fileMetadata.getFileUrl() == null) {
+                return ResponseEntity.internalServerError().body(new FileUploadResponse(null, "Failed to save encrypted file metadata"));
             }
-            return ResponseEntity.ok(new FileUploadResponse(message.getFileUrl(), null));
+            return ResponseEntity.ok(new FileUploadResponse(fileMetadata.getFileUrl(), null));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new FileUploadResponse(null, "Error uploading file: " + e.getMessage()));
         }
