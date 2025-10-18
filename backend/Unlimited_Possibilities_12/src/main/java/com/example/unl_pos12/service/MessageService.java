@@ -139,7 +139,7 @@ public class MessageService {
 
         // Загрузка файла
         String fileName = System.currentTimeMillis() + "_encrypted_" + transliterate(encryptedFile.getOriginalFilename());
-        String filePath = "Uploads/encrypted/" + fileName;
+        String filePath = "uploads/encrypted/" + fileName;
         String fullFileUrl = "https://unlimitedpossibilities12.org/api/files/download/encrypted/" + fileName;
         System.out.println("Uploading encrypted file: original name=" + encryptedFile.getOriginalFilename() + ", contentType=" + encryptedFile.getContentType());
 
