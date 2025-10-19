@@ -493,28 +493,7 @@ const SecretPrivateChat = () => {
               });
             }
           } else if (newMessage.messageType === 'file') {
-            if (newMessage.sender.id !== userId) {
-              processFileMessage(newMessage, messages).then((updatedMessages) => {
-                if (updatedMessages) {
-                  setMessages(updatedMessages);
-                }
-              });
-            } else {
-              const fileContentKey = `fileContent_${chatId}_${userId}_${newMessage.clientMessageId}`;
-              const storedFileData = localStorage.getItem(fileContentKey);
-              let fileData = {};
-              if (storedFileData) {
-                fileData = JSON.parse(storedFileData);
-              }
-              updateMessages({
-                ...newMessage,
-                fileUrl: newMessage.fileUrl,
-                fileName: fileData.fileName || 'File unavailable',
-                contentType: fileData.contentType,
-                delivered: newMessage.delivered_status,
-                read: newMessage.read_status,
-              });
-            }
+            updateMessages(newMessage);
           } else {
             updateMessages({
               ...newMessage,
