@@ -699,6 +699,53 @@ const SecretPrivateChat = () => {
   };
 
   const updateMessages = (newMessage) => {
+    // Вспомогательная асинхронная функция для обработки файловых сообщений
+    const processFileMessage = async (message, prevMessages) => {
+      if (message.messageType === 'file' && message.sender.id !== userId && message.encryptedFile && message.nonce && message.encryptedMetadata && message.metadataNonce) {
+        try {
+          const { file, fileName, contentType } = await decryptFile(
+            message.encryptedFile,
+            message.nonce,
+            message.encryptedMetadata,
+            message.metadataNonce,
+            message.sender.id,
+            publicKeys,
+            keyPair
+          );
+          const fileUrl = URL.createObjectURL(file);
+          console.log(`Decrypted file for message ID=${message.id}, fileName=${fileName}, contentType=${contentType}`);
+          return [
+            ...prevMessages,
+            {
+              ...message,
+              fileUrl,
+              fileName,
+              contentType,
+              delivered: message.delivered_status ?? false,
+              read: message.read_status ?? false,
+              messageType: message.messageType,
+            },
+          ];
+        } catch (error) {
+          console.error(`Decryption failed for file message ID=${message.id}:`, error);
+          toast.error('Failed to decrypt file');
+          return [
+            ...prevMessages,
+            {
+              ...message,
+              fileName: 'Decryption failed',
+              contentType: message.contentType,
+              delivered: message.delivered_status ?? false,
+              read: message.read_status ?? false,
+              messageType: message.messageType,
+            },
+          ];
+        }
+      }
+      // Если сообщение не файловое, возвращаем исходное состояние
+      return null;
+    };
+
     setMessages((prevMessages) => {
       if (newMessage.content === 'Message deleted') {
         console.log(`Deleting message with ID ${newMessage.id}`);
@@ -807,45 +854,13 @@ const SecretPrivateChat = () => {
 
       // Обработка входящих файловых сообщений
       if (newMessage.messageType === 'file' && newMessage.sender.id !== userId && newMessage.encryptedFile && newMessage.nonce && newMessage.encryptedMetadata && newMessage.metadataNonce) {
-        try {
-          const { file, fileName, contentType } = await decryptFile(
-            newMessage.encryptedFile,
-            newMessage.nonce,
-            newMessage.encryptedMetadata,
-            newMessage.metadataNonce,
-            newMessage.sender.id,
-            publicKeys,
-            keyPair
-          );
-          const fileUrl = URL.createObjectURL(file);
-          console.log(`Decrypted file for message ID=${newMessage.id}, fileName=${fileName}, contentType=${contentType}`);
-          return [
-            ...prevMessages,
-            {
-              ...newMessage,
-              fileUrl,
-              fileName,
-              contentType,
-              delivered: newMessage.delivered_status ?? false,
-              read: newMessage.read_status ?? false,
-              messageType: newMessage.messageType,
-            },
-          ];
-        } catch (error) {
-          console.error(`Decryption failed for file message ID=${newMessage.id}:`, error);
-          toast.error('Failed to decrypt file');
-          return [
-            ...prevMessages,
-            {
-              ...newMessage,
-              fileName: 'Decryption failed',
-              contentType: newMessage.contentType,
-              delivered: newMessage.delivered_status ?? false,
-              read: newMessage.read_status ?? false,
-              messageType: newMessage.messageType,
-            },
-          ];
-        }
+        // Вызываем асинхронную функцию и возвращаем текущие сообщения до завершения обработки
+        processFileMessage(newMessage, prevMessages).then((updatedMessages) => {
+          if (updatedMessages) {
+            setMessages(updatedMessages);
+          }
+        });
+        return prevMessages; // Возвращаем текущее состояние, пока обработка не завершена
       }
 
       // Добавляем новое сообщение
