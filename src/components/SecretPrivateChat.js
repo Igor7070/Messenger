@@ -930,7 +930,7 @@ const SecretPrivateChat = () => {
     });
   };
 
-  const fetchFileMetadata = async (messageId) => {
+  /*const fetchFileMetadata = async (messageId) => {
     try {
       const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/file_metadata/${messageId}`);
       if (!response.ok) {
@@ -942,6 +942,35 @@ const SecretPrivateChat = () => {
     } catch (error) {
       console.error(`Error fetching file metadata for messageId=${messageId}:`, error);
       throw error;
+    }
+  };*/
+
+  const fetchFileMetadata = async (messageId, retries = 3, delay = 1000) => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        console.log(`Fetching file metadata for messageId=${messageId}, attempt=${attempt}`);
+        const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/file_metadata/${messageId}`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to fetch file metadata: ${response.status} - ${errorText}`);
+        }
+        const data = await response.json();
+        console.log(`Fetched FileMetadata for messageId=${messageId}:`, data);
+        if (!data.fileUrl || !data.nonce) {
+          throw new Error('Invalid file metadata: missing fileUrl or nonce');
+        }
+        return data; // { fileUrl, nonce, publicKeyId }
+      } catch (error) {
+        console.error(`Error fetching file metadata for messageId=${messageId}, attempt=${attempt}:`, error);
+        if (attempt === retries) {
+          throw error;
+        }
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
     }
   };
 
