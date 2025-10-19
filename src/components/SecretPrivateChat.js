@@ -1124,6 +1124,7 @@ const SecretPrivateChat = () => {
   };
 
   const uploadFile = async (file, nonce, messageId) => {
+    console.log('Uploading file with messageId:', messageId, 'Type:', typeof messageId);
     const formData = new FormData();
     formData.append('file', new Blob([sodium.from_base64(file)], { type: 'application/octet-stream' }));
     formData.append('nonce', nonce);
@@ -1139,6 +1140,7 @@ const SecretPrivateChat = () => {
       throw new Error(`File upload failed: ${response.status} - ${errorText}`);
     }
     const data = await response.json();
+    console.log('File upload response:', data);
     return data.fileUrl;
   };
 
@@ -1167,24 +1169,21 @@ const SecretPrivateChat = () => {
           timestamp,
         };
 
+        let fileUrl;
         if (content) {
-          // Сохраняем контент в кэш
           setSentMessagesCache((prev) => ({
             ...prev,
             [clientMessageId]: content,
           }));
           console.log(`Saved to sentMessagesCache: clientMessageId=${clientMessageId}, content=${content}`);
-
-          // Сохраняем контент в localStorage
           saveOwnMessageContent(chatId, userId, clientMessageId, content);
-
           const { encryptedContent, nonce } = await encryptMessage(content, recipientId);
           messageData = {
             ...messageData,
             encryptedContent,
             nonce,
             messageType: 'text',
-            content, // Для локального отображения
+            content,
             id: clientMessageId,
             clientMessageId,
           };
@@ -1196,7 +1195,6 @@ const SecretPrivateChat = () => {
             keyPair,
             publicKeys
           );
-
           messageData = {
             ...messageData,
             messageType: 'file',
@@ -1205,30 +1203,76 @@ const SecretPrivateChat = () => {
             clientMessageId,
             encryptedContent,
             nonce,
-            fileName: selectedFile.name, // Для локального отображения
+            fileName: selectedFile.name,
           };
-
-          // Сохраняем локальную копию файла
           const fileContentKey = `fileContent_${chatId}_${userId}_${clientMessageId}`;
           localStorage.setItem(fileContentKey, JSON.stringify({
             fileName: selectedFile.name,
             contentType: selectedFile.type,
           }));
-
-          // Загружаем файл и получаем fileUrl
-          const fileUrl = await uploadFile(encryptedFile, nonce, clientMessageId);
-          messageData.fileUrl = fileUrl;
         } else if (audioBlob) {
           const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, {
             type: 'audio/mpeg',
           });
           messageData = {
             ...messageData,
-            fileUrl: await uploadFile(audioFile),
             messageType: 'audio',
             contentType: 'audio/mpeg',
             id: clientMessageId,
+            clientMessageId,
           };
+        }
+
+        // Отправка сообщения на сервер
+        const response = await fetch('https://unlimitedpossibilities12.org/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...messageData,
+            id: undefined,
+            content: undefined,
+            fileName: undefined,
+            fileUrl: undefined,
+          }),
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to send message: ${response.status} - ${errorText}`);
+        }
+        const savedMessage = await response.json();
+        console.log('Saved message:', savedMessage);
+
+        // Загрузка файла после получения messageId
+        if (selectedFile) {
+          const { encryptedFile, nonce } = await encryptFile(
+            selectedFile,
+            recipientId,
+            userId,
+            keyPair,
+            publicKeys
+          );
+          fileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
+          messageData.fileUrl = fileUrl;
+
+          // Обновление сообщения с fileUrl
+          await fetch(`https://unlimitedpossibilities12.org/api/messages/${savedMessage.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileUrl }),
+          });
+        } else if (audioBlob) {
+          const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, {
+            type: 'audio/mpeg',
+          });
+          fileUrl = await uploadFile(audioFile, null, savedMessage.id);
+          messageData.fileUrl = fileUrl;
+
+          // Обновление сообщения с fileUrl
+          await fetch(`https://unlimitedpossibilities12.org/api/messages/${savedMessage.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileUrl }),
+          });
         }
 
         if (client && client.connected) {
@@ -1236,19 +1280,18 @@ const SecretPrivateChat = () => {
             destination: `/app/sendMessage/chat/${chatId}`,
             body: JSON.stringify({
               ...messageData,
-              id: undefined,
+              id: savedMessage.id,
               content: undefined,
-              clientMessageId: messageData.clientMessageId || undefined,
               fileName: undefined,
-              contentType: messageData.contentType,
+              clientMessageId: messageData.clientMessageId || undefined,
               fileUrl: messageData.fileUrl,
+              contentType: messageData.contentType,
             }),
           });
 
-          // Добавляем временное сообщение с небольшой задержкой
+          // Добавляем временное сообщение
           setTimeout(() => {
             setMessages((prevMessages) => {
-              // Проверяем, не было ли уже добавлено сообщение с этим clientMessageId
               if (prevMessages.some((msg) => msg.id === clientMessageId)) {
                 console.log(`Temporary message with clientMessageId=${clientMessageId} already exists, skipping`);
                 return prevMessages;
@@ -1256,7 +1299,7 @@ const SecretPrivateChat = () => {
               console.log(`Adding temporary message: clientMessageId=${clientMessageId}`);
               return [...prevMessages, messageData];
             });
-          }, 100); // Задержка 100 мс для синхронизации с WebSocket
+          }, 100);
           resetForm();
         } else {
           console.error('STOMP client is not connected');
