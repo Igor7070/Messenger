@@ -1163,7 +1163,7 @@ const SecretPrivateChat = () => {
 
         let messageData = {
           sender: { id: userId, username },
-          chat: { id: chatId, name: normalizedChatName, isSecret: true }, // Добавляем isSecret: true
+          chat: { id: chatId, name: normalizedChatName, isSecret: true },
           delivered: false,
           read: false,
           timestamp,
@@ -1243,6 +1243,7 @@ const SecretPrivateChat = () => {
               content: undefined,
               fileName: undefined,
               fileUrl: undefined,
+              file_url: undefined, // Добавляем для консистентности
             }),
           });
           if (!response.ok) {
@@ -1254,24 +1255,38 @@ const SecretPrivateChat = () => {
 
           // Загрузка файла с messageId
           fileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
+          console.log('Received fileUrl:', fileUrl);
+          if (!fileUrl) {
+            throw new Error('File upload returned no fileUrl');
+          }
           messageData.fileUrl = fileUrl;
+          messageData.file_url = fileUrl; // Добавляем file_url
 
-          // Обновление сообщения с fileUrl
+          // Обновление сообщения с fileUrl и file_url
+          const putBody = {
+            ...messageData,
+            id: savedMessage.id,
+            fileUrl: fileUrl,
+            file_url: fileUrl, // Добавляем snake_case для соответствия серверной модели
+            content: undefined,
+            fileName: undefined,
+          };
+          console.log('Sending PUT request:', JSON.stringify(putBody));
           const putResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/${savedMessage.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...messageData,
-              id: savedMessage.id,
-              fileUrl,
-              content: undefined,
-              fileName: undefined,
-            }),
+            body: JSON.stringify(putBody),
           });
           if (!putResponse.ok) {
             const errorText = await putResponse.text();
             throw new Error(`Failed to update message with fileUrl: ${putResponse.status} - ${errorText}`);
           }
+          const updatedMessage = await putResponse.json();
+          console.log('PUT response:', updatedMessage);
+          if (!updatedMessage.fileUrl && !updatedMessage.file_url) {
+            console.warn('Server did not return fileUrl/file_url in PUT response, using local fileUrl:', fileUrl);
+          }
+          messageData = { ...messageData, id: savedMessage.id, fileUrl: updatedMessage.fileUrl || updatedMessage.file_url || fileUrl, file_url: updatedMessage.file_url || fileUrl };
         } else if (audioBlob) {
           const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, {
             type: 'audio/mpeg',
@@ -1294,6 +1309,7 @@ const SecretPrivateChat = () => {
               content: undefined,
               fileName: undefined,
               fileUrl: undefined,
+              file_url: undefined, // Добавляем для консистентности
             }),
           });
           if (!response.ok) {
@@ -1305,39 +1321,56 @@ const SecretPrivateChat = () => {
 
           // Загрузка аудио с messageId
           fileUrl = await uploadFile(audioFile, null, savedMessage.id);
+          console.log('Received fileUrl:', fileUrl);
+          if (!fileUrl) {
+            throw new Error('File upload returned no fileUrl');
+          }
           messageData.fileUrl = fileUrl;
+          messageData.file_url = fileUrl; // Добавляем file_url
 
-          // Обновление сообщения с fileUrl
+          // Обновление сообщения с fileUrl и file_url
+          const putBody = {
+            ...messageData,
+            id: savedMessage.id,
+            fileUrl: fileUrl,
+            file_url: fileUrl, // Добавляем snake_case для соответствия серверной модели
+            content: undefined,
+            fileName: undefined,
+          };
+          console.log('Sending PUT request:', JSON.stringify(putBody));
           const putResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/${savedMessage.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...messageData,
-              id: savedMessage.id,
-              fileUrl,
-              content: undefined,
-              fileName: undefined,
-            }),
+            body: JSON.stringify(putBody),
           });
           if (!putResponse.ok) {
             const errorText = await putResponse.text();
             throw new Error(`Failed to update message with fileUrl: ${putResponse.status} - ${errorText}`);
           }
+          const updatedMessage = await putResponse.json();
+          console.log('PUT response:', updatedMessage);
+          if (!updatedMessage.fileUrl && !updatedMessage.file_url) {
+            console.warn('Server did not return fileUrl/file_url in PUT response, using local fileUrl:', fileUrl);
+          }
+          messageData = { ...messageData, id: savedMessage.id, fileUrl: updatedMessage.fileUrl || updatedMessage.file_url || fileUrl, file_url: updatedMessage.file_url || fileUrl };
         }
 
         // Отправка WebSocket-сообщения ПОСЛЕ всех операций
         if (client && client.connected) {
+          const websocketMessage = {
+            ...messageData,
+            id: savedMessage.id,
+            content: undefined,
+            fileName: undefined,
+            clientMessageId: messageData.clientMessageId || undefined,
+            fileUrl: messageData.fileUrl,
+            file_url: messageData.file_url, // Добавляем file_url для WebSocket
+            contentType: messageData.contentType,
+          };
+          console.log('Sending WebSocket message:', JSON.stringify(websocketMessage));
           client.publish({
             destination: `/app/sendMessage/chat/${chatId}`,
-            body: JSON.stringify({
-              ...messageData,
-              id: savedMessage.id,
-              content: undefined,
-              fileName: undefined,
-              clientMessageId: messageData.clientMessageId || undefined,
-              fileUrl: messageData.fileUrl, // Теперь fileUrl включён
-              contentType: messageData.contentType,
-            }),
+            body: JSON.stringify(websocketMessage),
           });
 
           // Добавляем временное сообщение
