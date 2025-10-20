@@ -1163,12 +1163,13 @@ const SecretPrivateChat = () => {
 
         let messageData = {
           sender: { id: userId, username },
-          chat: { id: chatId, name: normalizedChatName, isSecret: true },
+          chat: { id: chatId, name: normalizedChatName, isSecret: true }, // Добавляем isSecret: true
           delivered: false,
           read: false,
           timestamp,
         };
 
+        let fileUrl;
         let savedMessage;
         if (content) {
           setSentMessagesCache((prev) => ({
@@ -1232,41 +1233,45 @@ const SecretPrivateChat = () => {
             })
           );
 
-          // Создаём FormData для отправки сообщения и файла
-          const formData = new FormData();
-          formData.append('file', new Blob([sodium.from_base64(encryptedFile)], { type: 'application/octet-stream' }));
-          formData.append('nonce', nonce);
-          formData.append(
-            'message',
-            JSON.stringify({
+          // Отправка сообщения
+          const response = await fetch('https://unlimitedpossibilities12.org/api/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
               ...messageData,
               id: undefined,
               content: undefined,
               fileName: undefined,
               fileUrl: undefined,
-            })
-          );
-
-          // Отправка сообщения и файла
-          const response = await fetch('https://unlimitedpossibilities12.org/api/messages/upload_encrypted_file', {
-            method: 'POST',
-            body: formData,
+            }),
           });
           if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Failed to send message with file: ${response.status} - ${errorText}`);
+            throw new Error(`Failed to send message: ${response.status} - ${errorText}`);
           }
-          const responseData = await response.json();
-          if (responseData.error) {
-            throw new Error(`Server error: ${responseData.error}`);
+          savedMessage = await response.json();
+          console.log('Saved message:', savedMessage);
+
+          // Загрузка файла с messageId
+          fileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
+          messageData.fileUrl = fileUrl;
+
+          // Обновление сообщения с fileUrl
+          const putResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/${savedMessage.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...messageData,
+              id: savedMessage.id,
+              fileUrl,
+              content: undefined,
+              fileName: undefined,
+            }),
+          });
+          if (!putResponse.ok) {
+            const errorText = await putResponse.text();
+            throw new Error(`Failed to update message with fileUrl: ${putResponse.status} - ${errorText}`);
           }
-          // Поскольку сервер не возвращает message.id, используем clientMessageId временно
-          savedMessage = {
-            ...messageData,
-            id: clientMessageId, // Временный ID, пока сервер не вернёт message.id
-            fileUrl: responseData.fileUrl,
-          };
-          messageData.fileUrl = responseData.fileUrl;
         } else if (audioBlob) {
           const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, {
             type: 'audio/mpeg',
@@ -1279,44 +1284,48 @@ const SecretPrivateChat = () => {
             clientMessageId,
           };
 
-          // Создаём FormData для аудио
-          const formData = new FormData();
-          formData.append('file', audioFile);
-          formData.append('nonce', ''); // Для аудио nonce не нужен
-          formData.append(
-            'message',
-            JSON.stringify({
+          // Отправка сообщения
+          const response = await fetch('https://unlimitedpossibilities12.org/api/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
               ...messageData,
               id: undefined,
               content: undefined,
               fileName: undefined,
               fileUrl: undefined,
-            })
-          );
-
-          // Отправка аудио
-          const response = await fetch('https://unlimitedpossibilities12.org/api/messages/upload_encrypted_file', {
-            method: 'POST',
-            body: formData,
+            }),
           });
           if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Failed to send audio message: ${response.status} - ${errorText}`);
+            throw new Error(`Failed to send message: ${response.status} - ${errorText}`);
           }
-          const responseData = await response.json();
-          if (responseData.error) {
-            throw new Error(`Server error: ${responseData.error}`);
+          savedMessage = await response.json();
+          console.log('Saved message:', savedMessage);
+
+          // Загрузка аудио с messageId
+          fileUrl = await uploadFile(audioFile, null, savedMessage.id);
+          messageData.fileUrl = fileUrl;
+
+          // Обновление сообщения с fileUrl
+          const putResponse = await fetch(`https://unlimitedpossibilities12.org/api/messages/${savedMessage.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...messageData,
+              id: savedMessage.id,
+              fileUrl,
+              content: undefined,
+              fileName: undefined,
+            }),
+          });
+          if (!putResponse.ok) {
+            const errorText = await putResponse.text();
+            throw new Error(`Failed to update message with fileUrl: ${putResponse.status} - ${errorText}`);
           }
-          // Поскольку сервер не возвращает message.id, используем clientMessageId временно
-          savedMessage = {
-            ...messageData,
-            id: clientMessageId, // Временный ID, пока сервер не вернёт message.id
-            fileUrl: responseData.fileUrl,
-          };
-          messageData.fileUrl = responseData.fileUrl;
         }
 
-        // Отправка WebSocket-сообщения после всех операций
+        // Отправка WebSocket-сообщения ПОСЛЕ всех операций
         if (client && client.connected) {
           client.publish({
             destination: `/app/sendMessage/chat/${chatId}`,
@@ -1338,7 +1347,7 @@ const SecretPrivateChat = () => {
               return prevMessages;
             }
             console.log(`Adding temporary message: clientMessageId=${clientMessageId}`);
-            return [...prevMessages, savedMessage];
+            return [...prevMessages, { ...messageData, id: savedMessage.id }];
           });
           resetForm();
         } else {
