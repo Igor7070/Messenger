@@ -154,7 +154,7 @@ public class MessageService {
         }
 
         // Установка fileUrl и других полей в сообщении
-        //message.setFileUrl(fullFileUrl);
+        message.setFileUrl(fullFileUrl);
         if (message.getMessageType() == null) {
             String contentType = encryptedFile.getContentType();
             if (encryptedFile.getOriginalFilename().endsWith(".webm")) {
