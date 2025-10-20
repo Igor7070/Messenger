@@ -1126,11 +1126,15 @@ const SecretPrivateChat = () => {
   const uploadFile = async (file, nonce, messageId) => {
     console.log('Uploading file with messageId:', messageId, 'Type:', typeof messageId);
     const formData = new FormData();
-    formData.append('file', new Blob([sodium.from_base64(file)], { type: selectedFile?.type || 'audio/mpeg' }));
-    const response = await fetch('https://unlimitedpossibilities12.org/api/messages/upload_file', {
+    formData.append('file', new Blob([sodium.from_base64(file)], { type: 'application/octet-stream' }));
+    formData.append('nonce', nonce);
+    formData.append('messageId', messageId);
+
+    const response = await fetch('https://unlimitedpossibilities12.org/api/messages/upload_encrypted_file', {
       method: 'POST',
       body: formData,
     });
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`File upload failed: ${response.status} - ${errorText}`);
