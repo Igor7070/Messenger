@@ -302,9 +302,11 @@ const SecretPrivateChat = () => {
                 if (storedFileData) {
                   fileData = JSON.parse(storedFileData);
                 }
+                // [ADD] Извлекаем fileUrl из кэша
+                const cachedFile = getFileFromCache(chatIdParam, userId, msg.id);
                 return {
                   ...msg,
-                  fileUrl: fileData.fileUrl || msg.fileUrl || 'File unavailable', // [CHANGE] Используем fileUrl из localStorage, если доступен
+                  fileUrl: cachedFile?.fileUrl || fileData.fileUrl || msg.fileUrl || 'File unavailable', // [CHANGE] Предпочитаем fileUrl из кэша
                   fileName: fileData.fileName || 'File unavailable',
                   contentType: fileData.contentType,
                   delivered: msg.delivered_status,
@@ -829,9 +831,11 @@ const SecretPrivateChat = () => {
             fileData = {
               fileName: 'File unavailable',
               contentType: null,
-              fileUrl: null, // [ADD] Устанавливаем fileUrl как null, если данные отсутствуют
+              fileUrl: null,
             };
           }
+          // [ADD] Извлекаем fileUrl из кэша
+          const cachedFile = getFileFromCache(chatId, userId, newMessage.id);
         }
 
         // Удаляем контент из кэша после использования
@@ -852,7 +856,7 @@ const SecretPrivateChat = () => {
             content: newMessage.messageType === 'text' ? content : undefined,
             fileName: newMessage.messageType === 'file' ? fileData.fileName : undefined,
             contentType: newMessage.messageType === 'file' ? fileData.contentType : undefined,
-            fileUrl: newMessage.messageType === 'file' ? fileData.fileUrl || newMessage.fileUrl : undefined, // [CHANGE] Используем fileUrl из localStorage, если доступен
+            fileUrl: newMessage.messageType === 'file' ? cachedFile?.fileUrl || fileData.fileUrl || newMessage.fileUrl : undefined, // [CHANGE] Предпочитаем fileUrl из кэша
             delivered: newMessage.delivered_status ?? false,
             read: newMessage.read_status ?? false,
             messageType: newMessage.messageType,
@@ -1276,6 +1280,13 @@ const SecretPrivateChat = () => {
               fileUrl: fileUrl, // Сохраняем серверный fileUrl
             })
           );
+          // [ADD] Сохраняем расшифрованный файл в кэш
+          const decryptedFileUrl = URL.createObjectURL(selectedFile); // Используем исходный файл
+          saveFileToCache(chatId, userId, savedMessage.id, {
+            fileName: selectedFile.name,
+            contentType: selectedFile.type,
+            fileUrl: decryptedFileUrl,
+          });
         } else if (audioBlob) {
           const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, {
             type: 'audio/mpeg',
