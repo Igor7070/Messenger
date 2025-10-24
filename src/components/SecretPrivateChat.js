@@ -304,7 +304,7 @@ const SecretPrivateChat = () => {
                 }
                 return {
                   ...msg,
-                  fileUrl: msg.fileUrl,
+                  fileUrl: fileData.fileUrl || msg.fileUrl || 'File unavailable', // [CHANGE] Используем fileUrl из localStorage, если доступен
                   fileName: fileData.fileName || 'File unavailable',
                   contentType: fileData.contentType,
                   delivered: msg.delivered_status,
@@ -824,7 +824,13 @@ const SecretPrivateChat = () => {
           const storedFileData = localStorage.getItem(fileContentKey);
           if (storedFileData) {
             fileData = JSON.parse(storedFileData);
-            console.log(`Retrieved file data from localStorage: clientMessageId=${newMessage.clientMessageId}, fileName=${fileData.fileName}`);
+            console.log(`Retrieved file data from localStorage: clientMessageId=${newMessage.clientMessageId}, fileName=${fileData.fileName}, fileUrl=${fileData.fileUrl || 'not found'}`);
+          } else {
+            fileData = {
+              fileName: 'File unavailable',
+              contentType: null,
+              fileUrl: null, // [ADD] Устанавливаем fileUrl как null, если данные отсутствуют
+            };
           }
         }
 
@@ -846,7 +852,7 @@ const SecretPrivateChat = () => {
             content: newMessage.messageType === 'text' ? content : undefined,
             fileName: newMessage.messageType === 'file' ? fileData.fileName : undefined,
             contentType: newMessage.messageType === 'file' ? fileData.contentType : undefined,
-            fileUrl: newMessage.fileUrl,
+            fileUrl: newMessage.messageType === 'file' ? fileData.fileUrl || newMessage.fileUrl : undefined, // [CHANGE] Используем fileUrl из localStorage, если доступен
             delivered: newMessage.delivered_status ?? false,
             read: newMessage.read_status ?? false,
             messageType: newMessage.messageType,
@@ -1261,6 +1267,15 @@ const SecretPrivateChat = () => {
           }
           messageData.fileUrl = fileUrl;
           messageData.file_url = fileUrl;
+          // [ADD] Сохраняем fileUrl в localStorage
+          localStorage.setItem(
+            fileContentKey,
+            JSON.stringify({
+              fileName: selectedFile.name,
+              contentType: selectedFile.type,
+              fileUrl: fileUrl, // Сохраняем серверный fileUrl
+            })
+          );
         } else if (audioBlob) {
           const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, {
             type: 'audio/mpeg',
