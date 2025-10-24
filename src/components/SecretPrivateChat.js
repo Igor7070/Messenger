@@ -834,8 +834,6 @@ const SecretPrivateChat = () => {
               fileUrl: null,
             };
           }
-          // [ADD] Извлекаем fileUrl из кэша
-          const cachedFile = getFileFromCache(chatId, userId, newMessage.id);
         }
 
         // Удаляем контент из кэша после использования
@@ -850,6 +848,8 @@ const SecretPrivateChat = () => {
         const tempMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.clientMessageId);
         if (tempMessageIndex !== -1) {
           console.log(`Replacing temp message with ID=${newMessage.clientMessageId} with server message ID=${newMessage.id}`);
+          // [ADD] Извлекаем fileUrl из кэша для файловых сообщений
+          const cachedFile = newMessage.messageType === 'file' ? getFileFromCache(chatId, userId, newMessage.id) : null;
           const updatedMessages = [...prevMessages];
           updatedMessages[tempMessageIndex] = {
             ...newMessage,
