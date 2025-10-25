@@ -862,14 +862,15 @@ const SecretPrivateChat = () => {
             const fileBytes = sodium.from_base64(cachedFile.fileData);
             const blob = new Blob([fileBytes], { type: cachedFile.contentType });
             fileUrl = URL.createObjectURL(blob);
+            console.log(`Generated blob-URL for file message: ${fileUrl}, fileName: ${fileData.fileName}`);
           }
           const updatedMessages = [...prevMessages];
           updatedMessages[tempMessageIndex] = {
             ...newMessage,
             content: newMessage.messageType === 'text' ? content : undefined,
-            fileName: newMessage.messageType === 'file' ? fileData.fileName : undefined,
-            contentType: newMessage.messageType === 'file' ? fileData.contentType : undefined,
-            fileUrl, // [CHANGE] Используем blob-URL из кэша или fallback
+            fileName: newMessage.messageType === 'file' ? fileData.fileName || newMessage.fileName : undefined,
+            contentType: newMessage.messageType === 'file' ? fileData.contentType || newMessage.contentType : undefined,
+            fileUrl: newMessage.messageType === 'file' ? fileUrl : undefined, // [CHANGE] Используем blob-URL из кэша
             delivered: newMessage.delivered_status ?? false,
             read: newMessage.read_status ?? false,
             messageType: newMessage.messageType,
@@ -880,6 +881,12 @@ const SecretPrivateChat = () => {
           if (newMessage.id !== newMessage.clientMessageId) {
             const contentForNotification = newMessage.messageType === 'file' ? 'New file' : 'New message';
             sendNotification(newMessage, contentForNotification);
+          }
+
+          // [ADD] Освобождаем старый blob-URL, если он был
+          if (prevMessages[tempMessageIndex].fileUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(prevMessages[tempMessageIndex].fileUrl);
+            console.log(`Revoked old blob-URL: ${prevMessages[tempMessageIndex].fileUrl}`);
           }
 
           return updatedMessages;
@@ -1362,13 +1369,31 @@ const SecretPrivateChat = () => {
           });
 
           // Добавляем временное сообщение
+          let tempFileUrl = null;
+          if (selectedFile) {
+            tempFileUrl = URL.createObjectURL(selectedFile);
+            console.log(`Created temporary blob URL for file: ${tempFileUrl}`);
+          }
+
+          // Добавляем временное сообщение
           setMessages((prevMessages) => {
             if (prevMessages.some((msg) => msg.id === clientMessageId)) {
               console.log(`Temporary message with clientMessageId=${clientMessageId} already exists, skipping`);
               return prevMessages;
             }
             console.log(`Adding temporary message: clientMessageId=${clientMessageId}`);
-            return [...prevMessages, { ...messageData, id: savedMessage.id }];
+            const tempMessage = {
+              ...messageData,
+              id: savedMessage.id,
+              fileUrl: selectedFile ? tempFileUrl : messageData.fileUrl, // [ADD] Временный blob-URL для файла
+              fileName: selectedFile ? selectedFile.name : messageData.fileName, // [ADD] Имя файла
+              contentType: selectedFile ? selectedFile.type : messageData.contentType, // [ADD] Тип файла
+              delivered: false,
+              read: false,
+              messageType: messageData.messageType,
+            };
+            console.log('Temporary message data:', tempMessage);
+            return [...prevMessages, tempMessage];
           });
           resetForm();
         } else {
