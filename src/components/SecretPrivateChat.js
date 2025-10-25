@@ -1888,6 +1888,30 @@ const SecretPrivateChat = () => {
     }
   };
 
+  // [ADD] Функция для скачивания собственного файла из кэша
+  const downloadOwnFile = (msg) => {
+    try {
+      const cachedFile = getFileFromCache(chatId, userId, msg.id);
+      if (!cachedFile || !cachedFile.fileUrl) {
+        toast.error('File not available for download');
+        return;
+      }
+      // Создаём свежий blob-URL из кэша (cachedFile.fileUrl — это blob-URL, но для надёжности регенерируем)
+      // Если cachedFile содержит Blob, используем его; иначе fallback на серверный URL
+      const blobUrl = cachedFile.fileUrl.startsWith('blob:') ? cachedFile.fileUrl : msg.fileUrl;
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = msg.fileName || 'file';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      console.log(`Downloaded own file: messageId=${msg.id}, fileName=${msg.fileName}`);
+    } catch (error) {
+      console.error('Error downloading own file:', error);
+      toast.error('Failed to download file');
+    }
+  };
+
   return (
     <div className="private-chat secret-chat">
       <div className="private-chat-name">
@@ -2029,6 +2053,20 @@ const SecretPrivateChat = () => {
                             href={msg.fileUrl}
                             download={msg.fileName || 'file'}
                             className="private-file-link"
+                            onClick={(e) => {
+                              e.preventDefault(); // [ADD] Предотвращаем стандартное скачивание для собственных файлов
+                              if (msg.sender.id === userId) {
+                                downloadOwnFile(msg); // [ADD] Используем локальную функцию для собственных файлов
+                              } else {
+                                // Для входящих файлов используем стандартное скачивание
+                                const link = document.createElement('a');
+                                link.href = msg.fileUrl;
+                                link.download = msg.fileName || 'file';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }
+                            }}
                           >
                             📥 {msg.fileName || 'Download file'}
                           </a>
