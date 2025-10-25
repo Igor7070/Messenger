@@ -855,7 +855,7 @@ const SecretPrivateChat = () => {
         const tempMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.clientMessageId);
         if (tempMessageIndex !== -1) {
           console.log(`Replacing temp message with ID=${newMessage.clientMessageId} with server message ID=${newMessage.id}`);
-          // [ADD] Извлекаем данные из кэша для файловых сообщений
+          // Извлекаем данные из кэша для файловых сообщений
           const cachedFile = newMessage.messageType === 'file' ? getFileFromCache(chatId, userId, newMessage.clientMessageId) : null;
           let fileUrl = newMessage.messageType === 'file' ? fileData.fileUrl || newMessage.fileUrl : undefined;
           let fileName = newMessage.messageType === 'file' ? fileData.fileName || newMessage.fileName : undefined;
@@ -867,7 +867,7 @@ const SecretPrivateChat = () => {
             fileName = cachedFile.fileName;
             contentType = cachedFile.contentType;
             console.log(`Generated blob-URL for file message: ${fileUrl}, fileName: ${fileName}`);
-            // [ADD] Обновляем кэш с новым messageId
+            // Обновляем кэш с новым messageId
             saveFileToCache(chatId, userId, newMessage.id, {
               fileName: cachedFile.fileName,
               contentType: cachedFile.contentType,
@@ -894,7 +894,7 @@ const SecretPrivateChat = () => {
             sendNotification(newMessage, contentForNotification);
           }
 
-          // [ADD] Освобождаем старый blob-URL, если он был
+          // Освобождаем старый blob-URL, если он был
           if (prevMessages[tempMessageIndex].fileUrl?.startsWith('blob:')) {
             URL.revokeObjectURL(prevMessages[tempMessageIndex].fileUrl);
             console.log(`Revoked old blob-URL: ${prevMessages[tempMessageIndex].fileUrl}`);
@@ -908,11 +908,33 @@ const SecretPrivateChat = () => {
       const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
       if (existingMessageIndex !== -1) {
         console.log(`Updating existing message with ID=${newMessage.id}`);
+        // [ADD] Сохраняем данные файла из предыдущего состояния или кэша
+        let fileName = prevMessages[existingMessageIndex].fileName;
+        let fileUrl = prevMessages[existingMessageIndex].fileUrl;
+        let contentType = prevMessages[existingMessageIndex].contentType;
+
+        if (newMessage.messageType === 'file' && newMessage.sender.id === userId) {
+          const cachedFile = getFileFromCache(chatId, userId, newMessage.id) || getFileFromCache(chatId, userId, newMessage.clientMessageId);
+          if (cachedFile?.fileData) {
+            const fileBytes = sodium.from_base64(cachedFile.fileData);
+            const blob = new Blob([fileBytes], { type: cachedFile.contentType });
+            fileUrl = URL.createObjectURL(blob);
+            fileName = cachedFile.fileName;
+            contentType = cachedFile.contentType;
+            console.log(`Restored file data from cache for ID=${newMessage.id}: fileUrl=${fileUrl}, fileName=${fileName}`);
+          } else {
+            console.warn(`No cached file data found for ID=${newMessage.id} or clientMessageId=${newMessage.clientMessageId}`);
+          }
+        }
+
         const updatedMessages = [...prevMessages];
         updatedMessages[existingMessageIndex] = {
           ...prevMessages[existingMessageIndex],
           ...newMessage,
           content: newMessage.sender.id === userId ? content : newMessage.content,
+          fileName: newMessage.messageType === 'file' ? fileName : newMessage.fileName,
+          fileUrl: newMessage.messageType === 'file' ? fileUrl : newMessage.fileUrl,
+          contentType: newMessage.messageType === 'file' ? contentType : newMessage.contentType,
           delivered: newMessage.delivered_status ?? prevMessages[existingMessageIndex].delivered,
           read: newMessage.read_status ?? prevMessages[existingMessageIndex].read,
           messageType: newMessage.messageType ?? prevMessages[existingMessageIndex].messageType,
@@ -947,7 +969,7 @@ const SecretPrivateChat = () => {
 
       // Обработка входящих файловых сообщений
       if (newMessage.messageType === 'file' && newMessage.sender.id !== userId) {
-        // Вызываем асинхронную функцию и возвращаем текущие сообщения до завершения обработки
+        // Вызываем асинхронную функцию и возвращаем текущее состояние, пока обработка не завершена
         processFileMessage(newMessage, prevMessages).then((updatedMessages) => {
           if (updatedMessages) {
             setMessages(updatedMessages);
