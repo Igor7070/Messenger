@@ -1317,8 +1317,14 @@ const SecretPrivateChat = () => {
           saveFileToCache(chatId, userId, savedMessage.id, {
             fileName: selectedFile.name,
             contentType: selectedFile.type,
-            fileData: base64File, // Сохраняем base64 данные вместо blob-URL
+            fileData: base64File, // Сохраняем base64 данные
           });
+          saveFileToCache(chatId, userId, clientMessageId, {
+            fileName: selectedFile.name,
+            contentType: selectedFile.type,
+            fileData: base64File, // Сохраняем base64 данные для clientMessageId
+          });
+          console.log(`Saved file cache for both messageId=${savedMessage.id} and clientMessageId=${clientMessageId}`);
         } else if (audioBlob) {
           const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, {
             type: 'audio/mpeg',
