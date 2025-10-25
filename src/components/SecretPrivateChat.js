@@ -856,21 +856,32 @@ const SecretPrivateChat = () => {
         if (tempMessageIndex !== -1) {
           console.log(`Replacing temp message with ID=${newMessage.clientMessageId} with server message ID=${newMessage.id}`);
           // [ADD] Извлекаем данные из кэша для файловых сообщений
-          const cachedFile = newMessage.messageType === 'file' ? getFileFromCache(chatId, userId, newMessage.id) : null;
+          const cachedFile = newMessage.messageType === 'file' ? getFileFromCache(chatId, userId, newMessage.clientMessageId) : null;
           let fileUrl = newMessage.messageType === 'file' ? fileData.fileUrl || newMessage.fileUrl : undefined;
+          let fileName = newMessage.messageType === 'file' ? fileData.fileName || newMessage.fileName : undefined;
+          let contentType = newMessage.messageType === 'file' ? fileData.contentType || newMessage.contentType : undefined;
           if (newMessage.messageType === 'file' && cachedFile?.fileData) {
             const fileBytes = sodium.from_base64(cachedFile.fileData);
             const blob = new Blob([fileBytes], { type: cachedFile.contentType });
             fileUrl = URL.createObjectURL(blob);
-            console.log(`Generated blob-URL for file message: ${fileUrl}, fileName: ${fileData.fileName}`);
+            fileName = cachedFile.fileName;
+            contentType = cachedFile.contentType;
+            console.log(`Generated blob-URL for file message: ${fileUrl}, fileName: ${fileName}`);
+            // [ADD] Обновляем кэш с новым messageId
+            saveFileToCache(chatId, userId, newMessage.id, {
+              fileName: cachedFile.fileName,
+              contentType: cachedFile.contentType,
+              fileData: cachedFile.fileData,
+            });
+            console.log(`Updated cache for new messageId=${newMessage.id}, fileName=${fileName}`);
           }
           const updatedMessages = [...prevMessages];
           updatedMessages[tempMessageIndex] = {
             ...newMessage,
             content: newMessage.messageType === 'text' ? content : undefined,
-            fileName: newMessage.messageType === 'file' ? fileData.fileName || newMessage.fileName : undefined,
-            contentType: newMessage.messageType === 'file' ? fileData.contentType || newMessage.contentType : undefined,
-            fileUrl: newMessage.messageType === 'file' ? fileUrl : undefined, // [CHANGE] Используем blob-URL из кэша
+            fileName: newMessage.messageType === 'file' ? fileName : undefined,
+            contentType: newMessage.messageType === 'file' ? contentType : undefined,
+            fileUrl: newMessage.messageType === 'file' ? fileUrl : undefined,
             delivered: newMessage.delivered_status ?? false,
             read: newMessage.read_status ?? false,
             messageType: newMessage.messageType,
@@ -1384,17 +1395,33 @@ const SecretPrivateChat = () => {
             console.log(`Adding temporary message: clientMessageId=${clientMessageId}`);
             const tempMessage = {
               ...messageData,
-              id: savedMessage.id,
-              fileUrl: selectedFile ? tempFileUrl : messageData.fileUrl, // [ADD] Временный blob-URL для файла
-              fileName: selectedFile ? selectedFile.name : messageData.fileName, // [ADD] Имя файла
-              contentType: selectedFile ? selectedFile.type : messageData.contentType, // [ADD] Тип файла
+              id: clientMessageId, // [CHANGE] Используем clientMessageId для временного сообщения
+              fileUrl: selectedFile ? tempFileUrl : messageData.fileUrl, // Временный blob-URL для файла
+              fileName: selectedFile ? selectedFile.name : messageData.fileName, // Имя файла
+              contentType: selectedFile ? selectedFile.type : messageData.contentType, // Тип файла
               delivered: false,
               read: false,
               messageType: messageData.messageType,
+              timestamp: messageData.timestamp,
+              sender: messageData.sender,
+              chat: messageData.chat,
             };
             console.log('Temporary message data:', tempMessage);
             return [...prevMessages, tempMessage];
           });
+
+          // Сохраняем данные файла в кэш сразу для временного сообщения
+          if (selectedFile) {
+            const arrayBuffer = await selectedFile.arrayBuffer();
+            const base64File = sodium.to_base64(new Uint8Array(arrayBuffer));
+            saveFileToCache(chatId, userId, clientMessageId, {
+              fileName: selectedFile.name,
+              contentType: selectedFile.type,
+              fileData: base64File,
+            });
+            console.log(`Saved temporary file to cache: clientMessageId=${clientMessageId}, fileName=${selectedFile.name}`);
+          }
+
           resetForm();
         } else {
           console.error('STOMP client is not connected');
