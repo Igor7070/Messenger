@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/messages")
@@ -141,6 +142,17 @@ public class MessageController {
     @GetMapping("/file_metadata/{messageId}")
     public ResponseEntity<FileMetadata> getFileMetadata(@PathVariable Long messageId) {
         FileMetadata fileMetadata = messageService.getFileMetadataByMessageId(messageId);
+        if (fileMetadata != null) {
+            return ResponseEntity.ok(fileMetadata);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // [ADD] Новый эндпоинт для расширенных метаданных
+    @GetMapping("/extended_file_metadata/{messageId}")
+    public ResponseEntity<Map<String, Object>> getExtendedFileMetadata(@PathVariable Long messageId) {
+        Map<String, Object> fileMetadata = messageService.getExtendedFileMetadataByMessageId(messageId);
         if (fileMetadata != null) {
             return ResponseEntity.ok(fileMetadata);
         } else {
