@@ -117,27 +117,23 @@ public class MessageController {
     // [ADD] Новый endpoint для загрузки зашифрованных файлов
     @PostMapping("/upload_encrypted_file")
     public ResponseEntity<FileUploadResponse> uploadEncryptedFile(
-            @RequestParam("file") MultipartFile file, // Для обратной совместимости
-            @RequestParam(value = "fileRecipient", required = false) MultipartFile fileRecipient, // Новый параметр
-            @RequestParam(value = "fileSelf", required = false) MultipartFile fileSelf, // Опционально
+            @RequestParam("file") MultipartFile file,
             @RequestParam("nonce") String nonce,
-            @RequestParam("messageId") Long messageId,
-            @RequestParam(value = "fileName", required = false) String fileName) {
+            @RequestParam("messageId") Long messageId) {
         try {
             Message message = messageService.getMessageById(messageId);
             if (message == null) {
                 return ResponseEntity.badRequest().body(new FileUploadResponse(null, "Message not found for id: " + messageId));
             }
-            // Используем fileRecipient, если предоставлен, иначе file (для Android)
-            MultipartFile targetFile = (fileRecipient != null && !fileRecipient.isEmpty()) ? fileRecipient : file;
-            message = messageService.saveEncryptedFileMessage(message, targetFile, fileSelf, nonce, fileName);
+            message = messageService.saveEncryptedFileMessage(message, file, nonce);
+            // Получаем метаданные файла
             FileMetadata fileMetadata = messageService.getFileMetadataByMessageId(message.getId());
             if (fileMetadata == null || fileMetadata.getFileUrl() == null) {
-                return ResponseEntity.internalServerError().body(new FileUploadResponse(null, null, null, "Failed to save encrypted file metadata"));
+                return ResponseEntity.internalServerError().body(new FileUploadResponse(null, "Failed to save encrypted file metadata"));
             }
-            return ResponseEntity.ok(new FileUploadResponse(fileMetadata.getFileUrl(), fileMetadata.getFileUrlSelf(), fileMetadata.getFileName(), null));
+            return ResponseEntity.ok(new FileUploadResponse(fileMetadata.getFileUrl(), null));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new FileUploadResponse(null, null, null, "Error uploading file: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(new FileUploadResponse(null, "Error uploading file: " + e.getMessage()));
         }
     }
 

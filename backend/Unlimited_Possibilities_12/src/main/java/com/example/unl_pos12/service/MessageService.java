@@ -111,17 +111,18 @@ public class MessageService {
     }
 
     // [ADD] Новый метод для сообщений с зашифрованными файлами
-    public Message saveEncryptedFileMessage(Message message, MultipartFile fileRecipient, MultipartFile fileSelf, String fileNonce, String fileName) {
-        if (fileRecipient == null || fileRecipient.isEmpty()) {
-            throw new RuntimeException("Uploaded encrypted fileRecipient is empty");
+    public Message saveEncryptedFileMessage(Message message, MultipartFile encryptedFile, String fileNonce) {
+        if (encryptedFile == null || encryptedFile.isEmpty()) {
+            throw new RuntimeException("Uploaded encrypted file is empty");
         }
-        if (fileRecipient.getOriginalFilename() == null) {
-            throw new RuntimeException("fileRecipient filename is null");
+        if (encryptedFile.getOriginalFilename() == null) {
+            throw new RuntimeException("Filename is null");
         }
         if (fileNonce == null) {
             throw new RuntimeException("Nonce is missing for encrypted file");
         }
 
+        // Проверка для секретных чатов
         if (message.getChat() == null || message.getChat().getIsSecret() == null || !message.getChat().getIsSecret()) {
             throw new RuntimeException("Encrypted file messages are only allowed in secret chats");
         }
@@ -129,55 +130,34 @@ public class MessageService {
             throw new RuntimeException("Encrypted content or nonce is missing for secret chat file message");
         }
 
+        // Проверка наличия активного публичного ключа
         PublicKeyHistory publicKeyHistory = publicKeyHistoryRepository.findByUserIdAndValidUntilIsNull(message.getSender().getId());
         if (publicKeyHistory == null) {
             System.out.println("No active public key found for user: " + message.getSender().getId());
             throw new RuntimeException("No active public key found for user: " + message.getSender().getId());
         }
 
-        // Загрузка fileRecipient
-        String recipientFileName = System.currentTimeMillis() + "_encrypted_recipient_" + transliterate(fileRecipient.getOriginalFilename());
-        String recipientFilePath = "Uploads/encrypted/" + recipientFileName;
-        String recipientFileUrl = "https://unlimitedpossibilities12.org/api/files/download/encrypted/" + recipientFileName;
-        System.out.println("Uploading fileRecipient: original name=" + fileRecipient.getOriginalFilename() + ", contentType=" + fileRecipient.getContentType());
+        // Загрузка файла
+        String fileName = System.currentTimeMillis() + "_encrypted_" + transliterate(encryptedFile.getOriginalFilename());
+        String filePath = "uploads/encrypted/" + fileName;
+        String fullFileUrl = "https://unlimitedpossibilities12.org/api/files/download/encrypted/" + fileName;
+        System.out.println("Uploading encrypted file: original name=" + encryptedFile.getOriginalFilename() + ", contentType=" + encryptedFile.getContentType());
 
         try {
-            File dest = new File(System.getProperty("user.dir") + "/" + recipientFilePath);
+            File dest = new File(System.getProperty("user.dir") + "/" + filePath);
             dest.getParentFile().mkdirs();
-            fileRecipient.transferTo(dest);
-            System.out.println("fileRecipient uploaded successfully: path=" + recipientFilePath);
+            encryptedFile.transferTo(dest);
+            System.out.println("Encrypted file uploaded successfully: path=" + filePath);
         } catch (IOException e) {
-            System.out.println("Failed to upload fileRecipient: " + e.getMessage());
-            throw new RuntimeException("Failed to upload fileRecipient: " + e.getMessage());
-        }
-
-        // Загрузка fileSelf (если предоставлен)
-        String fileUrlSelf = null;
-        if (fileSelf != null && !fileSelf.isEmpty()) {
-            if (fileSelf.getOriginalFilename() == null) {
-                throw new RuntimeException("fileSelf filename is null");
-            }
-            String selfFileName = System.currentTimeMillis() + "_encrypted_self_" + transliterate(fileSelf.getOriginalFilename());
-            String selfFilePath = "Uploads/encrypted/" + selfFileName;
-            fileUrlSelf = "https://unlimitedpossibilities12.org/api/files/download/encrypted/" + selfFileName;
-            System.out.println("Uploading fileSelf: original name=" + fileSelf.getOriginalFilename() + ", contentType=" + fileSelf.getContentType());
-
-            try {
-                File dest = new File(System.getProperty("user.dir") + "/" + selfFilePath);
-                dest.getParentFile().mkdirs();
-                fileSelf.transferTo(dest);
-                System.out.println("fileSelf uploaded successfully: path=" + selfFilePath);
-            } catch (IOException e) {
-                System.out.println("Failed to upload fileSelf: " + e.getMessage());
-                throw new RuntimeException("Failed to upload fileSelf: " + e.getMessage());
-            }
+            System.out.println("Failed to upload encrypted file: " + e.getMessage());
+            throw new RuntimeException("Failed to upload encrypted file: " + e.getMessage());
         }
 
         // Установка fileUrl и других полей в сообщении
-        message.setFileUrl(recipientFileUrl);
+        message.setFileUrl(fullFileUrl);
         if (message.getMessageType() == null) {
-            String contentType = fileRecipient.getContentType();
-            if (fileRecipient.getOriginalFilename().endsWith(".webm")) {
+            String contentType = encryptedFile.getContentType();
+            if (encryptedFile.getOriginalFilename().endsWith(".webm")) {
                 contentType = "audio/webm;codecs=opus";
             }
             message.setContentType(contentType);
@@ -194,14 +174,12 @@ public class MessageService {
 
         // Сохранение метаданных файла
         FileMetadata fileMetadata = new FileMetadata();
-        fileMetadata.setFileUrl(recipientFileUrl);
-        fileMetadata.setFileUrlSelf(fileUrlSelf);
+        fileMetadata.setFileUrl(fullFileUrl);
         fileMetadata.setNonce(fileNonce);
         fileMetadata.setMessage(savedMessage);
-        fileMetadata.setPublicKeyId(publicKeyHistory.getId());
-        fileMetadata.setFileName(fileName != null ? fileName : fileRecipient.getOriginalFilename());
+        fileMetadata.setPublicKeyId(publicKeyHistory.getId()); // Оставляем publicKeyId, как указано
         fileMetadataRepository.save(fileMetadata);
-        System.out.println("Saved file metadata: fileUrl=" + recipientFileUrl + ", fileUrlSelf=" + fileUrlSelf + ", messageId=" + savedMessage.getId() + ", nonce=" + fileNonce + ", publicKeyId=" + publicKeyHistory.getId() + ", fileName=" + fileMetadata.getFileName());
+        System.out.println("Saved file metadata: fileUrl=" + fullFileUrl + ", messageId=" + savedMessage.getId() + ", nonce=" + fileNonce + ", publicKeyId=" + publicKeyHistory.getId());
 
         // Отправка обновлённого сообщения через WebSocket
         //webSocketService.sendMessageUpdate(savedMessage.getChat().getId(), savedMessage);
