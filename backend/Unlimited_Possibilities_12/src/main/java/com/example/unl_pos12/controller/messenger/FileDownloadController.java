@@ -119,6 +119,46 @@ public class FileDownloadController {
         }
     }
 
+    @GetMapping("/download/encrypted_self/{filename:.+}")
+    public ResponseEntity<Resource> downloadEncryptedSelfFile(@PathVariable String filename) {
+        try {
+            String decodedFilename = URLDecoder.decode(filename, StandardCharsets.UTF_8.toString());
+            Path filePath = Paths.get("uploads/encrypted_self").resolve(decodedFilename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                String mimeType = "application/octet-stream";
+                String fileUrl = "https://unlimitedpossibilities12.org/api/files/download/encrypted_self/" + decodedFilename;
+                Message message = messageService.findByFileUrl(fileUrl); // Предполагается, что fileUrlSelf хранится в базе
+                if (message != null && message.getContentType() != null) {
+                    mimeType = message.getContentType();
+                    System.out.println("Serving encrypted_self file: " + decodedFilename + " with Content-Type: " + mimeType + " (messageType=" + message.getMessageType() + ")");
+                }
+
+                long contentLength = resource.contentLength();
+                System.out.println("Serving encrypted_self file: " + decodedFilename + ", Content-Length: " + contentLength);
+                if (contentLength <= 0) {
+                    System.err.println("Warning: Content-Length is 0 or negative for encrypted_self file: " + decodedFilename);
+                }
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(mimeType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(contentLength))
+                        .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                        .header(HttpHeaders.CONNECTION, "keep-alive")
+                        .body(resource);
+            } else {
+                System.out.println("Encrypted self file not found: " + decodedFilename);
+                return ResponseEntity.status(404).body(null);
+            }
+        } catch (Exception e) {
+            System.err.println("Error downloading encrypted_self file: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
     private String determineMimeType(String fileName) {
         String extension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
         switch (extension) {
