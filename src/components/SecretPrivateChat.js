@@ -442,13 +442,15 @@ const SecretPrivateChat = () => {
       return;
     }
 
+    let reconnectTimeout;
     const stompClientInstance = new Client({
       webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
       connectTimeout: 30000,
-      reconnectDelay: 5000,
-      onConnect: () => {
-        console.log('Connected to WebSocket for SecretPrivateChat at:', new Date().toISOString()); // [ADD] Добавлено логирование времени подключения
-        setClient(stompClientInstance); // [CHANGE] Установка client перенесена в onConnect для синхронизации
+      reconnectDelay: 0, // Отключаем встроенное повторное подключение
+      onConnect: async () => {
+        console.log('Connected to WebSocket for SecretPrivateChat at:', new Date().toISOString());
+        setClient(stompClientInstance);
+
         // Подписка на новые сообщения
         stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
           const newMessage = JSON.parse(message.body);
@@ -528,9 +530,44 @@ const SecretPrivateChat = () => {
             )
           );
         });
+
+        // Подписка на обновления публичного ключа
+        if (chatName) {
+          const recipientName = chatName.replace('_secret', '').split('_').find((name) => name !== username);
+          if (recipientName) {
+            try {
+              const response = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
+              if (!response.ok) {
+                throw new Error(`Failed to fetch recipient: ${response.status}`);
+              }
+              const recipient = await response.json();
+              const recipientId = recipient.id;
+
+              stompClientInstance.subscribe(`/topic/publicKey/${recipientId}`, (message) => {
+                try {
+                  const updatedPublicKey = JSON.parse(message.body);
+                  console.log(`Received updated public key for recipientId=${recipientId}: ${updatedPublicKey.publicKey}`);
+                  setPublicKeys((prev) => ({
+                    ...prev,
+                    [recipientId]: updatedPublicKey.publicKey,
+                  }));
+                  localStorage.setItem(`public_key_${recipientId}`, updatedPublicKey.publicKey);
+                  toast.info(`Public key updated for user ${recipientName}`);
+                } catch (error) {
+                  console.error(`Error processing public key update for recipientId=${recipientId}:`, error);
+                  toast.error('Failed to process public key update');
+                }
+              });
+              console.log(`Subscribed to public key updates for recipientId=${recipientId}`);
+            } catch (error) {
+              console.error('Failed to fetch recipientId for public key subscription:', error);
+              toast.error('Failed to subscribe to public key updates');
+            }
+          }
+        }
       },
       onWebSocketError: (error) => {
-        console.error('WebSocket error in SecretPrivateChat at:', new Date().toISOString(), error); // [CHANGE] Добавлено логирование времени ошибки
+        console.error('WebSocket error in SecretPrivateChat at:', new Date().toISOString(), error);
         toast.error('WebSocket connection error');
       },
       onStompError: (frame) => {
@@ -539,20 +576,27 @@ const SecretPrivateChat = () => {
       },
       onDisconnect: () => {
         console.log('WebSocket disconnected in SecretPrivateChat');
-        setClient(null); // [ADD] Очистка client при отключении для корректной повторной инициализации
+        setClient(null);
+        // Планируем повторное подключение
+        reconnectTimeout = setTimeout(() => {
+          console.log('Reconnecting WebSocket for SecretPrivateChat');
+          stompClientInstance.activate();
+        }, 2000); // Задержка 2 сек перед повторным подключением
       },
     });
 
-    // [CHANGE] Убрано setClient(stompClientInstance) до подключения, чтобы избежать установки неподключённого клиента
     stompClientInstance.activate();
 
     return () => {
       console.log('Deactivating WebSocket in SecretPrivateChat');
-      if (stompClientInstance.active) { // [CHANGE] Добавлена проверка активности перед деактивацией
+      if (stompClientInstance.active) {
         stompClientInstance.deactivate();
       }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
     };
-  }, [chatId, userId, publicKeys]);
+  }, [chatId, userId, publicKeys, chatName, username]);
   
   // [ADD] Подписка на обновления публичного ключа собеседника
   useEffect(() => {
@@ -1008,7 +1052,7 @@ const SecretPrivateChat = () => {
     }
   };*/
 
-  const fetchFileMetadata = async (messageId, retries = 3, delay = 1000) => {
+  const fetchFileMetadata = async (messageId, retries = 5, delay = 2000) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         console.log(`Fetching file metadata for messageId=${messageId}, attempt=${attempt}`);
@@ -1030,9 +1074,10 @@ const SecretPrivateChat = () => {
       } catch (error) {
         console.error(`Error fetching file metadata for messageId=${messageId}, attempt=${attempt}:`, error);
         if (attempt === retries) {
+          toast.error(`Failed to load file metadata after ${retries} attempts`);
           throw error;
         }
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay * attempt));
       }
     }
   };
