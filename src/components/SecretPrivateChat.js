@@ -1063,19 +1063,29 @@ const SecretPrivateChat = () => {
   const decryptFileContent = async (encryptedFileBytes, nonce, senderId, publicKeyId, publicKeys, keyPair) => {
     await sodium.ready;
 
-    if (!publicKeys[senderId] || !keyPair?.privateKey) {
+    let publicKey = publicKeys[senderId];
+    if (!publicKey && publicKeyId) {
+      console.log(`Public key for senderId=${senderId} not found, fetching with publicKeyId=${publicKeyId}`);
+      publicKey = await getPublicKey(senderId, publicKeyId);
+      setPublicKeys((prev) => ({
+        ...prev,
+        [senderId]: publicKey,
+      }));
+    }
+    if (!publicKey || !keyPair?.privateKey) {
+      console.error(`Decryption keys not available: publicKey=${!!publicKey}, privateKey=${!!keyPair?.privateKey}, senderId=${senderId}`);
       throw new Error('Decryption keys not available for file');
     }
 
     try {
-      const publicKey = sodium.from_base64(publicKeys[senderId]);
-      const privateKey = sodium.from_base64(keyPair.privateKey);
+      const publicKeyBytes = sodium.from_base64(publicKey);
+      const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
       const nonceBytes = sodium.from_base64(nonce);
       const decryptedBytes = sodium.crypto_box_open_easy(
         encryptedFileBytes,
         nonceBytes,
-        publicKey,
-        privateKey
+        publicKeyBytes,
+        privateKeyBytes
       );
       console.log(`File decryption successful for senderId=${senderId}`);
       return decryptedBytes;
