@@ -851,7 +851,7 @@ const SecretPrivateChat = () => {
         };
         console.log(`Updated message:`, updatedMessages[existingMessageIndex]);
 
-        // Сохраняем метаданные в кэш, если они корректны
+        // Сохраняем метаданные в кэш только если они корректны
         if (newMessage.messageType === 'file' && cachedFile && cachedFile.fileName !== 'File unavailable') {
           saveFileToCache(chatId, userId, newMessage.id, {
             fileName: cachedFile.fileName,
@@ -873,7 +873,7 @@ const SecretPrivateChat = () => {
           const updatedMessages = [...prevMessages];
           updatedMessages[tempMessageIndex] = {
             ...newMessage,
-            content: newMessage.content,
+            content: newMessage.content || cachedFile?.content || 'Content unavailable',
             fileName: cachedFile?.fileName || newMessage.fileName || 'File unavailable',
             fileUrl: cachedFile?.fileUrl || newMessage.fileUrl || 'File unavailable',
             contentType: cachedFile?.contentType || newMessage.contentType || null,
@@ -883,7 +883,7 @@ const SecretPrivateChat = () => {
           };
           console.log(`Replaced message:`, updatedMessages[tempMessageIndex]);
 
-          // Освобождаем старый blob-URL, если он был
+          // Освобождаем старый blob-URL
           if (prevMessages[tempMessageIndex].fileUrl?.startsWith('blob:')) {
             URL.revokeObjectURL(prevMessages[tempMessageIndex].fileUrl);
             console.log(`Revoked old blob-URL: ${prevMessages[tempMessageIndex].fileUrl}`);
@@ -897,7 +897,7 @@ const SecretPrivateChat = () => {
             return newCache;
           });
 
-          // Сохраняем метаданные в кэш для нового messageId
+          // Сохраняем метаданные в кэш
           if (newMessage.messageType === 'file' && cachedFile && cachedFile.fileName !== 'File unavailable') {
             saveFileToCache(chatId, userId, newMessage.id, {
               fileName: cachedFile.fileName,
@@ -914,19 +914,31 @@ const SecretPrivateChat = () => {
       // Для входящих файловых сообщений
       if (newMessage.messageType === 'file' && newMessage.sender.id !== userId) {
         console.log(`Processing incoming file message: id=${newMessage.id}`);
-        // ... (оставьте существующий код для входящих файлов без изменений)
+        const cachedFile = getFileFromCache(chatId, userId, newMessage.id);
+        return [
+          ...prevMessages,
+          {
+            ...newMessage,
+            fileName: cachedFile?.fileName || newMessage.fileName || 'File unavailable',
+            fileUrl: cachedFile?.fileUrl || newMessage.fileUrl || 'File unavailable',
+            contentType: cachedFile?.contentType || newMessage.contentType || null,
+            delivered: newMessage.delivered_status ?? false,
+            read: newMessage.read_status ?? false,
+          },
+        ];
       }
 
       // Добавляем новое сообщение
       console.log(`Adding new message: id=${newMessage.id}, content=${newMessage.content || newMessage.fileName}`);
+      const cachedFile = getFileFromCache(chatId, userId, newMessage.id) || getFileFromCache(chatId, userId, newMessage.clientMessageId);
       return [
         ...prevMessages,
         {
           ...newMessage,
           content: newMessage.content,
-          fileName: newMessage.fileName,
-          fileUrl: newMessage.fileUrl,
-          contentType: newMessage.contentType,
+          fileName: cachedFile?.fileName || newMessage.fileName || 'File unavailable',
+          fileUrl: cachedFile?.fileUrl || newMessage.fileUrl || 'File unavailable',
+          contentType: cachedFile?.contentType || newMessage.contentType || null,
           delivered: newMessage.delivered_status ?? false,
           read: newMessage.read_status ?? false,
           messageType: newMessage.messageType,
@@ -973,15 +985,17 @@ const SecretPrivateChat = () => {
           throw new Error('Invalid file metadata: missing nonce');
         }
 
-        // Если fileUrlSelf отсутствует, создаём его из fileUrl
-        const fileUrlSelf = data.fileUrlSelf || data.fileUrl.replace('/encrypted/', '/encrypted_self/').replace('_encrypted_blob', '_encrypted_self_' + (data.fileName || 'file'));
+        // Используем fileName из кэша, если сервер возвращает 'file'
+        const cachedFile = getFileFromCache(chatId, userId, messageId);
+        const fileName = cachedFile?.fileName || data.fileName || 'file';
+        const fileUrlSelf = data.fileUrlSelf || data.fileUrl.replace('/encrypted/', '/encrypted_self/').replace('_encrypted_blob', `_encrypted_self_${fileName}`);
         return {
-          fileUrl: data.fileUrl, // Для получателя
-          fileUrlSelf: fileUrlSelf, // Для отправителя
+          fileUrl: data.fileUrl,
+          fileUrlSelf: fileUrlSelf,
           nonce: data.nonce,
-          fileName: data.fileName || 'file',
+          fileName: fileName,
           publicKeyId: data.publicKeyId,
-          contentType: data.contentType || null, // Если сервер возвращает contentType
+          contentType: data.contentType || cachedFile?.contentType || null,
         };
       } catch (error) {
         console.error(`Error fetching file metadata for messageId=${messageId}, attempt=${attempt}:`, error);
