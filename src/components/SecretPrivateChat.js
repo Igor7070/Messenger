@@ -1047,27 +1047,27 @@ const SecretPrivateChat = () => {
     const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
 
     // Шифруем файл для получателя
-    const encryptedFileRecipient = sodium.crypto_box_easy(fileBytes, nonce, publicKeyRecipient, privateKey);
+    const fileRecipient = sodium.crypto_box_easy(fileBytes, nonce, publicKeyRecipient, privateKey);
     // Шифруем файл для отправителя
-    const encryptedFileSelf = sodium.crypto_box_easy(fileBytes, nonce, publicKeySelf, privateKey);
+    const fileSelf = sodium.crypto_box_easy(fileBytes, nonce, publicKeySelf, privateKey);
 
-    // Шифруем метаданные (имя файла и MIME-тип)
+    // Шифруем метаданные
     const metadata = {
       fileName: file.name,
-      contentType: file.type || 'application/octet-stream',
+      contentType: file.type,
     };
     const metadataBytes = sodium.from_string(JSON.stringify(metadata));
     const encryptedMetadataRecipient = sodium.crypto_box_easy(metadataBytes, nonce, publicKeyRecipient, privateKey);
     const encryptedMetadataSelf = sodium.crypto_box_easy(metadataBytes, nonce, publicKeySelf, privateKey);
 
     return {
-      fileRecipient: sodium.to_base64(encryptedFileRecipient),
-      fileSelf: sodium.to_base64(encryptedFileSelf),
+      fileRecipient: sodium.to_base64(fileRecipient),
+      fileSelf: sodium.to_base64(fileSelf),
       nonce: sodium.to_base64(nonce),
       encryptedMetadataRecipient: sodium.to_base64(encryptedMetadataRecipient),
       encryptedMetadataSelf: sodium.to_base64(encryptedMetadataSelf),
-      originalFileName: file.name, // Сохраняем оригинальное имя файла
-      contentType: file.type || 'application/octet-stream',
+      originalFileName: file.name,
+      contentType: file.type,
     };
   };
 
@@ -1106,14 +1106,15 @@ const SecretPrivateChat = () => {
     }
   };
 
-  const uploadFile = async (fileRecipient, fileSelf, nonce, messageId) => {
+  const uploadFile = async (fileRecipient, fileSelf, nonce, messageId, fileName) => {
     console.log('Uploading files with messageId:', messageId, 'Type:', typeof messageId);
-    
+
     // Загрузка файла для получателя
     const formDataRecipient = new FormData();
     formDataRecipient.append('file', new Blob([sodium.from_base64(fileRecipient)], { type: 'application/octet-stream' }));
     formDataRecipient.append('nonce', nonce);
     formDataRecipient.append('messageId', messageId);
+    formDataRecipient.append('fileName', fileName); // Добавляем fileName
 
     const responseRecipient = await fetch('https://unlimitedpossibilities12.org/api/messages/upload_encrypted_file', {
       method: 'POST',
@@ -1132,6 +1133,7 @@ const SecretPrivateChat = () => {
     formDataSelf.append('file', new Blob([sodium.from_base64(fileSelf)], { type: 'application/octet-stream' }));
     formDataSelf.append('nonce', nonce);
     formDataSelf.append('messageId', messageId);
+    formDataSelf.append('fileName', fileName); // Добавляем fileName
 
     const responseSelf = await fetch('https://unlimitedpossibilities12.org/api/messages/upload_encrypted_file_self', {
       method: 'POST',
@@ -1242,7 +1244,6 @@ const SecretPrivateChat = () => {
               fileName: undefined,
               fileUrl: undefined,
               file_url: undefined,
-              publicKeyId: keyPair.publicKeyId, // Используем числовой publicKeyId
             }),
           });
           if (!response.ok) {
@@ -1253,7 +1254,7 @@ const SecretPrivateChat = () => {
           console.log('Saved message:', savedMessage);
 
           // Загрузка файлов
-          const { fileUrlRecipient, fileUrlSelf } = await uploadFile(fileRecipient, fileSelf, nonce, savedMessage.id);
+          const { fileUrlRecipient, fileUrlSelf } = await uploadFile(fileRecipient, fileSelf, nonce, savedMessage.id, originalFileName);
           console.log('Received file URLs:', { fileUrlRecipient, fileUrlSelf });
           if (!fileUrlRecipient || !fileUrlSelf) {
             throw new Error('File upload returned no fileUrl');
