@@ -211,6 +211,13 @@ const SecretPrivateChat = () => {
         .filter((key) => key.startsWith('public_key_'))
         .forEach((key) => localStorage.removeItem(key));
       console.log('Cleared public key cache in localStorage');*/
+      // Очистка старых данных file_ в localStorage
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith(`file_${chatIdParam}_${userId}_`))
+        .forEach((key) => {
+          console.log(`Removing old cache key: ${key}`);
+          localStorage.removeItem(key);
+        });
 
       if (!chatIdParam || !username || !keyPair) {
         if (!keyPair) {
@@ -817,8 +824,9 @@ const SecretPrivateChat = () => {
 
       console.log(`Processing new message: id=${newMessage.id}, senderId=${newMessage.sender.id}, messageType=${newMessage.messageType}, clientMessageId=${newMessage.clientMessageId}, timestamp=${newMessage.timestamp}`);
 
-      // Пропускаем повторную обработку, если сообщение уже обработано
-      if (prevMessages.some((msg) => msg.id === newMessage.id && msg.fileName !== 'File unavailable' && msg.fileUrl !== 'File unavailable')) {
+      // Пропускаем дубликат, если сообщение уже обработано с корректными метаданными
+      const existingMessage = prevMessages.find((msg) => msg.id === newMessage.id);
+      if (existingMessage && existingMessage.fileName !== 'File unavailable' && existingMessage.fileUrl !== 'File unavailable') {
         console.log(`Skipping duplicate message processing for id=${newMessage.id}`);
         return prevMessages;
       }
@@ -828,6 +836,7 @@ const SecretPrivateChat = () => {
       if (existingMessageIndex !== -1) {
         console.log(`Updating existing message with ID=${newMessage.id}`);
         const cachedFile = getFileFromCache(chatId, userId, newMessage.id) || getFileFromCache(chatId, userId, newMessage.clientMessageId);
+        console.log(`Cached file for messageId=${newMessage.id}:`, cachedFile);
         const updatedMessages = [...prevMessages];
         updatedMessages[existingMessageIndex] = {
           ...prevMessages[existingMessageIndex],
@@ -841,6 +850,16 @@ const SecretPrivateChat = () => {
           messageType: newMessage.messageType ?? prevMessages[existingMessageIndex].messageType,
         };
         console.log(`Updated message:`, updatedMessages[existingMessageIndex]);
+
+        // Сохраняем метаданные в кэш, если они корректны
+        if (newMessage.messageType === 'file' && cachedFile && cachedFile.fileName !== 'File unavailable') {
+          saveFileToCache(chatId, userId, newMessage.id, {
+            fileName: cachedFile.fileName,
+            contentType: cachedFile.contentType,
+            fileUrl: cachedFile.fileUrl,
+          });
+          console.log(`Saved file metadata to cache: messageId=${newMessage.id}, fileName=${cachedFile.fileName}`);
+        }
         return updatedMessages;
       }
 
@@ -879,7 +898,7 @@ const SecretPrivateChat = () => {
           });
 
           // Сохраняем метаданные в кэш для нового messageId
-          if (newMessage.messageType === 'file' && cachedFile) {
+          if (newMessage.messageType === 'file' && cachedFile && cachedFile.fileName !== 'File unavailable') {
             saveFileToCache(chatId, userId, newMessage.id, {
               fileName: cachedFile.fileName,
               contentType: cachedFile.contentType,
@@ -946,10 +965,23 @@ const SecretPrivateChat = () => {
         }
         const data = await response.json();
         console.log(`Fetched FileMetadata for messageId=${messageId}:`, data);
-        if (!data.fileUrl || !data.nonce) {
-          throw new Error('Invalid file metadata: missing fileUrl or nonce');
+
+        if (!data.fileUrl && !data.fileUrlSelf) {
+          throw new Error('Invalid file metadata: missing fileUrl or fileUrlSelf');
         }
-        return data; // { fileUrl, nonce, publicKeyId }
+        if (!data.nonce) {
+          throw new Error('Invalid file metadata: missing nonce');
+        }
+
+        // Создаём fileUrlSelf из fileUrl, заменяя /encrypted/ на /encrypted_self/
+        const fileUrlSelf = data.fileUrlSelf || data.fileUrl.replace('/encrypted/', '/encrypted_self/').replace('_encrypted_blob', '_encrypted_self_' + (data.fileName || 'file'));
+        return {
+          fileUrl: data.fileUrl, // Для получателя
+          fileUrlSelf: fileUrlSelf, // Для отправителя
+          nonce: data.nonce,
+          fileName: data.fileName || 'file',
+          publicKeyId: data.publicKeyId,
+        };
       } catch (error) {
         console.error(`Error fetching file metadata for messageId=${messageId}, attempt=${attempt}:`, error);
         if (attempt === retries) {
@@ -1949,6 +1981,7 @@ const SecretPrivateChat = () => {
       }
 
       // Загружаем зашифрованный файл
+      console.log(`Fetching file from: ${fileMetadata.fileUrlSelf}`);
       const response = await fetch(fileMetadata.fileUrlSelf);
       if (!response.ok) {
         throw new Error(`Failed to fetch file from server: ${response.status}`);
@@ -1966,8 +1999,9 @@ const SecretPrivateChat = () => {
       );
 
       // Создаем Blob и скачиваем
-      const contentType = cachedFile?.contentType || msg.contentType || 'application/octet-stream';
-      const fileName = cachedFile?.fileName || msg.fileName || 'file';
+      const contentType = cachedFile?.contentType || msg.contentType || fileMetadata.contentType || 'application/octet-stream';
+      const fileName = cachedFile?.fileName || msg.fileName || fileMetadata.fileName || 'file';
+      console.log(`Creating Blob with contentType=${contentType}, fileName=${fileName}`);
       const blob = new Blob([decryptedFileBytes], { type: contentType });
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -1978,6 +2012,16 @@ const SecretPrivateChat = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
       console.log(`Downloaded own file from server: messageId=${msg.id}, fileName=${fileName}`);
+
+      // Сохраняем метаданные в кэш, если они отсутствуют или некорректны
+      if (!cachedFile || cachedFile.fileName === 'File unavailable') {
+        saveFileToCache(chatId, userId, msg.id, {
+          fileName: fileName,
+          contentType: contentType,
+          fileUrl: fileMetadata.fileUrlSelf,
+        });
+        console.log(`Saved file metadata to cache after download: messageId=${msg.id}, fileName=${fileName}`);
+      }
     } catch (error) {
       console.error('Error downloading own file:', error);
       toast.error(`Failed to download file: ${error.message}`);
