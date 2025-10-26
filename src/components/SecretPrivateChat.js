@@ -322,7 +322,6 @@ const SecretPrivateChat = () => {
                 };
               }
               try {
-                let metadata = null; // Объявляем metadata в начале try
                 let publicKey = publicKeys[msg.sender.id];
                 if (!publicKey || msg.publicKeyId) {
                   publicKey = await getPublicKey(msg.sender.id, msg.publicKeyId);
@@ -342,9 +341,9 @@ const SecretPrivateChat = () => {
                     msg.timestamp,
                     publicKey
                   );
-                  const parsedMetadata = JSON.parse(decryptedMetadata);
-                  fileName = parsedMetadata.fileName;
-                  contentType = parsedMetadata.contentType;
+                  const metadata = JSON.parse(decryptedMetadata);
+                  fileName = metadata.fileName;
+                  contentType = metadata.contentType;
                 } else {
                   throw new Error('Missing encryptedContent or nonce for file metadata');
                 }
@@ -358,22 +357,22 @@ const SecretPrivateChat = () => {
                   fileUrl = cachedFile.fileUrl;
                 } else {
                   // Запрос FileMetadata
-                  metadata = await fetchFileMetadata(msg.id);
-                  if (!metadata.fileUrl || !metadata.nonce) {
+                  const fileMetadata = await fetchFileMetadata(msg.id);
+                  if (!fileMetadata.fileUrl || !fileMetadata.nonce) {
                     throw new Error('Missing fileUrl or nonce in FileMetadata');
                   }
 
                   // Загрузка и расшифровка файла
-                  const response = await fetch(metadata.fileUrl);
+                  const response = await fetch(fileMetadata.fileUrl);
                   if (!response.ok) {
                     throw new Error(`Failed to fetch file: ${response.status}`);
                   }
                   const encryptedFileBytes = new Uint8Array(await response.arrayBuffer());
                   const decryptedFileBytes = await decryptFileContent(
                     encryptedFileBytes,
-                    metadata.nonce,
+                    fileMetadata.nonce,
                     msg.sender.id,
-                    metadata.publicKeyId,
+                    fileMetadata.publicKeyId,
                     publicKeys,
                     keyPair
                   );
@@ -382,7 +381,7 @@ const SecretPrivateChat = () => {
 
                   // Сохранение в кэш
                   saveFileToCache(chatIdParam, userId, msg.id, {
-                    fileName: metadata.fileName || fileName,
+                    fileName,
                     contentType,
                     fileUrl,
                   });
@@ -391,7 +390,7 @@ const SecretPrivateChat = () => {
                 return {
                   ...msg,
                   fileUrl,
-                  fileName: metadata && metadata.fileName ? metadata.fileName : fileName, // Безопасно используем metadata
+                  fileName,
                   contentType,
                   delivered: msg.delivered_status,
                   read: msg.read_status,
@@ -506,9 +505,9 @@ const SecretPrivateChat = () => {
               });
             }
           } else if (newMessage.messageType === 'file') {
+            // [CHANGE] Обрабатываем файловое сообщение
             if (newMessage.sender.id !== userId) {
               try {
-                let metadata = null; // Объявляем metadata в начале try
                 let publicKey = publicKeys[newMessage.sender.id];
                 if (!publicKey || newMessage.publicKeyId) {
                   console.log(`Public key for senderId: ${newMessage.sender.id} not found or publicKeyId present, fetching...`);
@@ -529,9 +528,9 @@ const SecretPrivateChat = () => {
                     newMessage.timestamp,
                     publicKey
                   );
-                  const parsedMetadata = JSON.parse(decryptedMetadata);
-                  fileName = parsedMetadata.fileName;
-                  contentType = parsedMetadata.mimeType || parsedMetadata.contentType;
+                  const metadata = JSON.parse(decryptedMetadata);
+                  fileName = metadata.fileName;
+                  contentType = metadata.mimeType || metadata.contentType;
                   console.log(`Decrypted file metadata: fileName=${fileName}, contentType=${contentType}`);
                 } else {
                   throw new Error('Missing encryptedContent or nonce for file metadata');
@@ -547,22 +546,22 @@ const SecretPrivateChat = () => {
                   console.log(`Using cached file: messageId=${newMessage.id}, fileName=${fileName}, fileUrl=${fileUrl}`);
                 } else {
                   // Запрос FileMetadata
-                  metadata = await fetchFileMetadata(newMessage.id);
-                  if (!metadata.fileUrl || !metadata.nonce) {
+                  const fileMetadata = await fetchFileMetadata(newMessage.id);
+                  if (!fileMetadata.fileUrl || !fileMetadata.nonce) {
                     throw new Error('Missing fileUrl or nonce in FileMetadata');
                   }
 
                   // Загрузка и расшифровка файла
-                  const response = await fetch(metadata.fileUrl);
+                  const response = await fetch(fileMetadata.fileUrl);
                   if (!response.ok) {
                     throw new Error(`Failed to fetch file: ${response.status}`);
                   }
                   const encryptedFileBytes = new Uint8Array(await response.arrayBuffer());
                   const decryptedFileBytes = await decryptFileContent(
                     encryptedFileBytes,
-                    metadata.nonce,
+                    fileMetadata.nonce,
                     newMessage.sender.id,
-                    metadata.publicKeyId,
+                    fileMetadata.publicKeyId,
                     publicKeys,
                     keyPair
                   );
@@ -571,17 +570,17 @@ const SecretPrivateChat = () => {
 
                   // Сохранение в кэш
                   saveFileToCache(chatId, userId, newMessage.id, {
-                    fileName: metadata.fileName || fileName,
+                    fileName,
                     contentType,
                     fileUrl,
                   });
-                  console.log(`Saved file to cache: messageId=${newMessage.id}, fileName=${metadata.fileName || fileName}, fileUrl=${fileUrl}`);
+                  console.log(`Saved file to cache: messageId=${newMessage.id}, fileName=${fileName}, fileUrl=${fileUrl}`);
                 }
 
                 updateMessages({
                   ...newMessage,
                   fileUrl,
-                  fileName: metadata && metadata.fileName ? metadata.fileName : fileName, // Безопасно используем metadata
+                  fileName,
                   contentType,
                   delivered: newMessage.delivered_status ?? false,
                   read: newMessage.read_status ?? false,
@@ -606,48 +605,25 @@ const SecretPrivateChat = () => {
                 fileData = JSON.parse(storedFileData);
                 console.log(`Retrieved file data for own message: clientMessageId=${newMessage.clientMessageId}, fileName=${fileData.fileName}`);
               }
-              let fileUrl = fileData.fileUrl || newMessage.fileUrl || 'File unavailable';
-              let fileName = fileData.fileName || newMessage.fileName || 'File unavailable';
+              let fileUrl = newMessage.fileUrl || fileData.fileUrl || 'File unavailable';
+              let fileName = fileData.fileName || 'File unavailable';
               let contentType = fileData.contentType || null;
 
-              // Запрос FileMetadata для получения fileName
-              try {
-                const metadata = await fetchFileMetadata(newMessage.id);
-                if (metadata) {
-                  fileName = metadata.fileName || fileName;
-                  fileUrl = metadata.fileUrlSelf || metadata.fileUrl || fileUrl;
-                }
-                // Сохраняем метаданные в кэш для нового messageId
-                saveFileToCache(chatId, userId, newMessage.id, {
-                  fileName,
-                  contentType,
-                  fileUrl,
-                });
-                updateMessages({
-                  ...newMessage,
-                  fileUrl,
-                  fileName,
-                  contentType,
-                  delivered: newMessage.delivered_status ?? false,
-                  read: newMessage.read_status ?? false,
-                });
-              } catch (error) {
-                console.error(`Failed to fetch file metadata for own message ID=${newMessage.id}:`, error);
-                // Сохраняем метаданные в кэш даже при ошибке
-                saveFileToCache(chatId, userId, newMessage.id, {
-                  fileName,
-                  contentType,
-                  fileUrl,
-                });
-                updateMessages({
-                  ...newMessage,
-                  fileUrl,
-                  fileName,
-                  contentType,
-                  delivered: newMessage.delivered_status ?? false,
-                  read: newMessage.read_status ?? false,
-                });
-              }
+              // Сохраняем метаданные в кэш для нового messageId
+              saveFileToCache(chatId, userId, newMessage.id, {
+                fileName,
+                contentType,
+                fileUrl,
+              });
+
+              updateMessages({
+                ...newMessage,
+                fileUrl,
+                fileName,
+                contentType,
+                delivered: newMessage.delivered_status ?? false,
+                read: newMessage.read_status ?? false,
+              });
             }
           } else {
             updateMessages({
@@ -1057,23 +1033,17 @@ const SecretPrivateChat = () => {
   const encryptFile = async (file, recipientId, userId, keyPair, publicKeys) => {
     await sodium.ready;
 
-    if (!keyPair || !publicKeys[recipientId] || !publicKeys[userId]) {
+    if (!keyPair || !publicKeys[recipientId]) {
       throw new Error('Encryption keys not available for file');
     }
 
     const privateKey = sodium.from_base64(keyPair.privateKey);
-    const recipientPublicKey = sodium.from_base64(publicKeys[recipientId]);
-    const senderPublicKey = sodium.from_base64(publicKeys[userId]);
+    const publicKey = sodium.from_base64(publicKeys[recipientId]);
 
     // Читаем файл как массив байтов
     const fileBytes = new Uint8Array(await file.arrayBuffer());
     const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
-
-    // Шифруем файл для получателя
-    const encryptedFileRecipient = sodium.crypto_box_easy(fileBytes, nonce, recipientPublicKey, privateKey);
-
-    // Шифруем файл для отправителя
-    const encryptedFileSelf = sodium.crypto_box_easy(fileBytes, nonce, senderPublicKey, privateKey);
+    const encryptedFile = sodium.crypto_box_easy(fileBytes, nonce, publicKey, privateKey);
 
     // Шифруем метаданные (имя файла и MIME-тип)
     const metadata = {
@@ -1081,11 +1051,10 @@ const SecretPrivateChat = () => {
       contentType: file.type,
     };
     const metadataBytes = sodium.from_string(JSON.stringify(metadata));
-    const encryptedContent = sodium.crypto_box_easy(metadataBytes, nonce, recipientPublicKey, privateKey);
+    const encryptedContent = sodium.crypto_box_easy(metadataBytes, nonce, publicKey, privateKey);
 
     return {
-      encryptedFileRecipient: sodium.to_base64(encryptedFileRecipient),
-      encryptedFileSelf: sodium.to_base64(encryptedFileSelf),
+      encryptedFile: sodium.to_base64(encryptedFile),
       nonce: sodium.to_base64(nonce),
       encryptedContent: sodium.to_base64(encryptedContent),
     };
@@ -1126,40 +1095,25 @@ const SecretPrivateChat = () => {
     }
   };
 
-  const uploadFile = async (encryptedFileRecipient, encryptedFileSelf, nonce, messageId, fileName) => {
+  const uploadFile = async (file, nonce, messageId) => {
     console.log('Uploading file with messageId:', messageId, 'Type:', typeof messageId);
-    try {
-      const formData = new FormData();
-      // Для нового клиента отправляем fileRecipient, для старого — file
-      formData.append('fileRecipient', new Blob([sodium.from_base64(encryptedFileRecipient)], { type: 'application/octet-stream' }));
-      formData.append('file', new Blob([sodium.from_base64(encryptedFileRecipient)], { type: 'application/octet-stream' })); // Для Android
-      if (encryptedFileSelf) {
-        formData.append('fileSelf', new Blob([sodium.from_base64(encryptedFileSelf)], { type: 'application/octet-stream' }));
-      }
-      formData.append('nonce', nonce);
-      formData.append('messageId', messageId);
-      formData.append('fileName', fileName);
+    const formData = new FormData();
+    formData.append('file', new Blob([sodium.from_base64(file)], { type: 'application/octet-stream' }));
+    formData.append('nonce', nonce);
+    formData.append('messageId', messageId);
 
-      const response = await fetch('https://unlimitedpossibilities12.org/api/messages/upload_encrypted_file', {
-        method: 'POST',
-        body: formData,
-      });
+    const response = await fetch('https://unlimitedpossibilities12.org/api/messages/upload_encrypted_file', {
+      method: 'POST',
+      body: formData,
+    });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`File upload failed: ${response.status} - ${errorText}`);
-      }
-      const data = await response.json();
-      console.log('File upload response:', data);
-      return {
-        fileUrlRecipient: data.fileUrl,
-        fileUrlSelf: data.fileUrlSelf || data.fileUrl, // Для Android
-        fileName: data.fileName || fileName,
-      };
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      throw error;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`File upload failed: ${response.status} - ${errorText}`);
     }
+    const data = await response.json();
+    console.log('File upload response:', data);
+    return data.fileUrl;
   };
 
   const sendMessage = async () => {
@@ -1225,7 +1179,7 @@ const SecretPrivateChat = () => {
           console.log('Saved message:', savedMessage);
           messageData = { ...messageData, id: savedMessage.id };
         } else if (selectedFile) {
-          const { encryptedFileRecipient, encryptedFileSelf, nonce, encryptedContent } = await encryptFile(
+          const { encryptedFile, nonce, encryptedContent } = await encryptFile(
             selectedFile,
             recipientId,
             userId,
@@ -1272,41 +1226,34 @@ const SecretPrivateChat = () => {
           console.log('Saved message:', savedMessage);
 
           // Загрузка файла
-          const { fileUrlRecipient, fileUrlSelf, fileName } = await uploadFile(
-            encryptedFileRecipient,
-            encryptedFileSelf,
-            nonce,
-            savedMessage.id,
-            selectedFile.name
-          );
-          console.log('Received file URLs:', { fileUrlRecipient, fileUrlSelf, fileName });
-          if (!fileUrlRecipient) {
+          fileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
+          console.log('Received fileUrl:', fileUrl);
+          if (!fileUrl) {
             throw new Error('File upload returned no fileUrl');
           }
-          messageData.fileUrl = fileUrlRecipient;
-          messageData.file_url = fileUrlRecipient;
-          messageData.fileName = fileName;
+          messageData.fileUrl = fileUrl;
+          messageData.file_url = fileUrl;
 
           // Обновляем localStorage с fileUrl
           localStorage.setItem(
             fileContentKey,
             JSON.stringify({
-              fileName: fileName,
+              fileName: selectedFile.name,
               contentType: selectedFile.type,
-              fileUrl: fileUrlSelf || fileUrlRecipient, // Используем fileUrlSelf, если доступно
+              fileUrl: fileUrl, // Сохраняем серверный fileUrl
             })
           );
 
           // Сохраняем метаданные в кэш для обоих ID
           saveFileToCache(chatId, userId, savedMessage.id, {
-            fileName: fileName,
+            fileName: selectedFile.name,
             contentType: selectedFile.type,
-            fileUrl: fileUrlSelf || fileUrlRecipient,
+            fileUrl: fileUrl,
           });
           saveFileToCache(chatId, userId, clientMessageId, {
-            fileName: fileName,
+            fileName: selectedFile.name,
             contentType: selectedFile.type,
-            fileUrl: fileUrlSelf || fileUrlRecipient,
+            fileUrl: fileUrl,
           });
           console.log(`Saved file metadata to cache for messageId=${savedMessage.id} and clientMessageId=${clientMessageId}`);
         } else if (audioBlob) {
@@ -1952,7 +1899,6 @@ const SecretPrivateChat = () => {
   // [ADD] Функция для скачивания собственного файла из кэша
   const downloadOwnFile = async (msg) => {
     try {
-      let metadata = null; // Объявляем metadata в начале try
       const fileContentKey = `fileContent_${chatId}_${userId}_${msg.clientMessageId}`;
       const storedFileData = localStorage.getItem(fileContentKey);
       let fileData = {};
@@ -1960,23 +1906,22 @@ const SecretPrivateChat = () => {
         fileData = JSON.parse(storedFileData);
       }
 
-      // Запрашиваем метаданные файла
-      metadata = await fetchFileMetadata(msg.id);
-      if (!metadata.fileUrl && !metadata.fileUrlSelf) {
-        throw new Error('Missing fileUrl or fileUrlSelf in FileMetadata');
-      }
-
-      // Используем fileUrlSelf, если доступно, иначе fileUrl
-      const fileUrl = metadata.fileUrlSelf || metadata.fileUrl;
+      const fileUrl = fileData.fileUrl || msg.fileUrl;
       if (!fileUrl) {
         throw new Error('File URL not available for download');
       }
 
+      // Запрашиваем метаданные файла
+      const fileMetadata = await fetchFileMetadata(msg.id);
+      if (!fileMetadata.fileUrl || !fileMetadata.nonce) {
+        throw new Error('Missing fileUrl or nonce in FileMetadata');
+      }
+
       // Проверяем наличие ключей
       let publicKey = publicKeys[userId];
-      if (!publicKey && metadata.publicKeyId) {
-        console.log(`Public key for userId=${userId} not found, fetching with publicKeyId=${metadata.publicKeyId}`);
-        publicKey = await getPublicKey(userId, metadata.publicKeyId);
+      if (!publicKey && fileMetadata.publicKeyId) {
+        console.log(`Public key for userId=${userId} not found, fetching with publicKeyId=${fileMetadata.publicKeyId}`);
+        publicKey = await getPublicKey(userId, fileMetadata.publicKeyId);
         setPublicKeys((prev) => ({
           ...prev,
           [userId]: publicKey,
@@ -1996,9 +1941,9 @@ const SecretPrivateChat = () => {
       // Расшифровываем файл
       const decryptedFileBytes = await decryptFileContent(
         encryptedFileBytes,
-        metadata.nonce,
-        userId,
-        metadata.publicKeyId,
+        fileMetadata.nonce,
+        userId, // Для собственных файлов используем userId как senderId
+        fileMetadata.publicKeyId,
         publicKeys,
         keyPair
       );
@@ -2008,12 +1953,12 @@ const SecretPrivateChat = () => {
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = metadata && metadata.fileName ? metadata.fileName : fileData.fileName || msg.fileName || 'file';
+      link.download = msg.fileName || 'file';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
-      console.log(`Downloaded own file: messageId=${msg.id}, fileName=${metadata && metadata.fileName ? metadata.fileName : fileData.fileName || msg.fileName}`);
+      console.log(`Downloaded own file from server: messageId=${msg.id}, fileName=${msg.fileName}`);
     } catch (error) {
       console.error('Error downloading own file:', error);
       toast.error(`Failed to download file: ${error.message}`);
