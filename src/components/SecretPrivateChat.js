@@ -610,9 +610,11 @@ const SecretPrivateChat = () => {
 
               // Запрос FileMetadata для получения fileName
               try {
-                const fileMetadata = await fetchFileMetadata(newMessage.id);
-                fileName = fileMetadata.fileName || fileName;
-                fileUrl = fileMetadata.fileUrlSelf || fileMetadata.fileUrl || fileUrl;
+                const metadata = await fetchFileMetadata(newMessage.id); // Изменено на metadata для избежания конфликта имен
+                if (metadata) {
+                  fileName = metadata.fileName || fileName;
+                  fileUrl = metadata.fileUrlSelf || metadata.fileUrl || fileUrl;
+                }
                 // Сохраняем метаданные в кэш для нового messageId
                 saveFileToCache(chatId, userId, newMessage.id, {
                   fileName,
@@ -629,7 +631,7 @@ const SecretPrivateChat = () => {
                 });
               } catch (error) {
                 console.error(`Failed to fetch file metadata for own message ID=${newMessage.id}:`, error);
-                // Сохраняем метаданные в кэш даже при ошибке, используя существующие данные
+                // Сохраняем метаданные в кэш даже при ошибке
                 saveFileToCache(chatId, userId, newMessage.id, {
                   fileName,
                   contentType,
@@ -1956,22 +1958,22 @@ const SecretPrivateChat = () => {
       }
 
       // Запрашиваем метаданные файла
-      const fileMetadata = await fetchFileMetadata(msg.id);
-      if (!fileMetadata.fileUrl && !fileMetadata.fileUrlSelf) {
+      const metadata = await fetchFileMetadata(msg.id); // Изменено на metadata
+      if (!metadata.fileUrl && !metadata.fileUrlSelf) {
         throw new Error('Missing fileUrl or fileUrlSelf in FileMetadata');
       }
 
       // Используем fileUrlSelf, если доступно, иначе fileUrl
-      const fileUrl = fileMetadata.fileUrlSelf || fileMetadata.fileUrl;
+      const fileUrl = metadata.fileUrlSelf || metadata.fileUrl;
       if (!fileUrl) {
         throw new Error('File URL not available for download');
       }
 
       // Проверяем наличие ключей
       let publicKey = publicKeys[userId];
-      if (!publicKey && fileMetadata.publicKeyId) {
-        console.log(`Public key for userId=${userId} not found, fetching with publicKeyId=${fileMetadata.publicKeyId}`);
-        publicKey = await getPublicKey(userId, fileMetadata.publicKeyId);
+      if (!publicKey && metadata.publicKeyId) {
+        console.log(`Public key for userId=${userId} not found, fetching with publicKeyId=${metadata.publicKeyId}`);
+        publicKey = await getPublicKey(userId, metadata.publicKeyId);
         setPublicKeys((prev) => ({
           ...prev,
           [userId]: publicKey,
@@ -1991,9 +1993,9 @@ const SecretPrivateChat = () => {
       // Расшифровываем файл
       const decryptedFileBytes = await decryptFileContent(
         encryptedFileBytes,
-        fileMetadata.nonce,
+        metadata.nonce,
         userId, // Для собственных файлов используем userId как senderId
-        fileMetadata.publicKeyId,
+        metadata.publicKeyId,
         publicKeys,
         keyPair
       );
@@ -2003,12 +2005,12 @@ const SecretPrivateChat = () => {
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = fileMetadata.fileName || fileData.fileName || msg.fileName || 'file';
+      link.download = metadata.fileName || fileData.fileName || msg.fileName || 'file';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
-      console.log(`Downloaded own file: messageId=${msg.id}, fileName=${fileMetadata.fileName || fileData.fileName || msg.fileName}`);
+      console.log(`Downloaded own file: messageId=${msg.id}, fileName=${metadata.fileName || fileData.fileName || msg.fileName}`);
     } catch (error) {
       console.error('Error downloading own file:', error);
       toast.error(`Failed to download file: ${error.message}`);
