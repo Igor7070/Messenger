@@ -357,22 +357,22 @@ const SecretPrivateChat = () => {
                   fileUrl = cachedFile.fileUrl;
                 } else {
                   // Запрос FileMetadata
-                  const fileMetadata = await fetchFileMetadata(msg.id);
-                  if (!fileMetadata.fileUrl || !fileMetadata.nonce) {
+                  const metadata = await fetchFileMetadata(msg.id); // Используем metadata вместо fileMetadata
+                  if (!metadata.fileUrl || !metadata.nonce) {
                     throw new Error('Missing fileUrl or nonce in FileMetadata');
                   }
 
                   // Загрузка и расшифровка файла
-                  const response = await fetch(fileMetadata.fileUrl);
+                  const response = await fetch(metadata.fileUrl);
                   if (!response.ok) {
                     throw new Error(`Failed to fetch file: ${response.status}`);
                   }
                   const encryptedFileBytes = new Uint8Array(await response.arrayBuffer());
                   const decryptedFileBytes = await decryptFileContent(
                     encryptedFileBytes,
-                    fileMetadata.nonce,
+                    metadata.nonce,
                     msg.sender.id,
-                    fileMetadata.publicKeyId,
+                    metadata.publicKeyId,
                     publicKeys,
                     keyPair
                   );
@@ -381,7 +381,7 @@ const SecretPrivateChat = () => {
 
                   // Сохранение в кэш
                   saveFileToCache(chatIdParam, userId, msg.id, {
-                    fileName: fileMetadata.fileName || fileName,
+                    fileName: metadata.fileName || fileName,
                     contentType,
                     fileUrl,
                   });
@@ -390,7 +390,7 @@ const SecretPrivateChat = () => {
                 return {
                   ...msg,
                   fileUrl,
-                  fileName: fileMetadata.fileName || fileName,
+                  fileName: metadata.fileName || fileName, // Используем metadata вместо fileMetadata
                   contentType,
                   delivered: msg.delivered_status,
                   read: msg.read_status,
@@ -1958,7 +1958,7 @@ const SecretPrivateChat = () => {
       }
 
       // Запрашиваем метаданные файла
-      const metadata = await fetchFileMetadata(msg.id); // Изменено на metadata
+      const metadata = await fetchFileMetadata(msg.id); // Используем metadata вместо fileMetadata
       if (!metadata.fileUrl && !metadata.fileUrlSelf) {
         throw new Error('Missing fileUrl or fileUrlSelf in FileMetadata');
       }
@@ -2005,7 +2005,7 @@ const SecretPrivateChat = () => {
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = metadata.fileName || fileData.fileName || msg.fileName || 'file';
+      link.download = metadata.fileName || fileData.fileName || msg.fileName || 'file'; // Используем metadata вместо fileMetadata
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
