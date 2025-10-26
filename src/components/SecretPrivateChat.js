@@ -609,30 +609,41 @@ const SecretPrivateChat = () => {
               let contentType = fileData.contentType || null;
 
               // Запрос FileMetadata для получения fileName
-              let fileMetadata = null;
               try {
-                fileMetadata = await fetchFileMetadata(newMessage.id);
+                const fileMetadata = await fetchFileMetadata(newMessage.id);
                 fileName = fileMetadata.fileName || fileName;
                 fileUrl = fileMetadata.fileUrlSelf || fileMetadata.fileUrl || fileUrl;
+                // Сохраняем метаданные в кэш для нового messageId
+                saveFileToCache(chatId, userId, newMessage.id, {
+                  fileName,
+                  contentType,
+                  fileUrl,
+                });
+                updateMessages({
+                  ...newMessage,
+                  fileUrl,
+                  fileName,
+                  contentType,
+                  delivered: newMessage.delivered_status ?? false,
+                  read: newMessage.read_status ?? false,
+                });
               } catch (error) {
                 console.error(`Failed to fetch file metadata for own message ID=${newMessage.id}:`, error);
+                // Сохраняем метаданные в кэш даже при ошибке, используя существующие данные
+                saveFileToCache(chatId, userId, newMessage.id, {
+                  fileName,
+                  contentType,
+                  fileUrl,
+                });
+                updateMessages({
+                  ...newMessage,
+                  fileUrl,
+                  fileName,
+                  contentType,
+                  delivered: newMessage.delivered_status ?? false,
+                  read: newMessage.read_status ?? false,
+                });
               }
-
-              // Сохраняем метаданные в кэш для нового messageId
-              saveFileToCache(chatId, userId, newMessage.id, {
-                fileName,
-                contentType,
-                fileUrl,
-              });
-
-              updateMessages({
-                ...newMessage,
-                fileUrl,
-                fileName,
-                contentType,
-                delivered: newMessage.delivered_status ?? false,
-                read: newMessage.read_status ?? false,
-              });
             }
           } else {
             updateMessages({
@@ -1945,16 +1956,9 @@ const SecretPrivateChat = () => {
       }
 
       // Запрашиваем метаданные файла
-      let fileMetadata = null;
-      try {
-        fileMetadata = await fetchFileMetadata(msg.id);
-        if (!fileMetadata.fileUrl && !fileMetadata.fileUrlSelf) {
-          throw new Error('Missing fileUrl or fileUrlSelf in FileMetadata');
-        }
-      } catch (error) {
-        console.error(`Failed to fetch file metadata for message ID=${msg.id}:`, error);
-        toast.error(`Failed to load file metadata: ${error.message}`);
-        return;
+      const fileMetadata = await fetchFileMetadata(msg.id);
+      if (!fileMetadata.fileUrl && !fileMetadata.fileUrlSelf) {
+        throw new Error('Missing fileUrl or fileUrlSelf in FileMetadata');
       }
 
       // Используем fileUrlSelf, если доступно, иначе fileUrl
@@ -1999,12 +2003,12 @@ const SecretPrivateChat = () => {
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = fileMetadata?.fileName || fileData.fileName || msg.fileName || 'file';
+      link.download = fileMetadata.fileName || fileData.fileName || msg.fileName || 'file';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
-      console.log(`Downloaded own file: messageId=${msg.id}, fileName=${fileMetadata?.fileName || fileData.fileName || msg.fileName}`);
+      console.log(`Downloaded own file: messageId=${msg.id}, fileName=${fileMetadata.fileName || fileData.fileName || msg.fileName}`);
     } catch (error) {
       console.error('Error downloading own file:', error);
       toast.error(`Failed to download file: ${error.message}`);
