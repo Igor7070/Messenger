@@ -1229,7 +1229,6 @@ const SecretPrivateChat = () => {
             encryptedContent: encryptedMetadataRecipient,
             nonce,
             fileName: originalFileName,
-            publicKeyId: keyPair.publicKey, // Добавляем publicKeyId для отправителя
           };
 
           // Отправка сообщения
@@ -1243,7 +1242,7 @@ const SecretPrivateChat = () => {
               fileName: undefined,
               fileUrl: undefined,
               file_url: undefined,
-              publicKeyId: keyPair.publicKey,
+              publicKeyId: keyPair.publicKeyId, // Используем числовой publicKeyId
             }),
           });
           if (!response.ok) {
