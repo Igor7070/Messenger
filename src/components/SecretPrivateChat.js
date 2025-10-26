@@ -159,6 +159,11 @@ const SecretPrivateChat = () => {
           console.error(`Private key decode error for userId: ${userId}, error: ${e.message}`);
         }
         setKeyPair(parsedKeyPair);
+        // Добавляем собственный публичный ключ в publicKeys
+        setPublicKeys((prev) => ({
+          ...prev,
+          [userId]: parsedKeyPair.publicKey,
+        }));
       } else {
         console.log(`Generating new key pair for userId: ${userId}`);
         const newKeyPair = sodium.crypto_box_keypair();
@@ -172,6 +177,11 @@ const SecretPrivateChat = () => {
           publicKey: publicKeyBase64,
           privateKey: privateKeyBase64
         });
+        // Добавляем собственный публичный ключ в publicKeys
+        setPublicKeys((prev) => ({
+          ...prev,
+          [userId]: publicKeyBase64,
+        }));
         try {
           console.log(`Uploading public key for userId: ${userId}`);
           const response = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
@@ -1888,14 +1898,27 @@ const SecretPrivateChat = () => {
 
       const fileUrl = fileData.fileUrl || msg.fileUrl;
       if (!fileUrl) {
-        toast.error('File URL not available for download');
-        return;
+        throw new Error('File URL not available for download');
       }
 
       // Запрашиваем метаданные файла
       const fileMetadata = await fetchFileMetadata(msg.id);
       if (!fileMetadata.fileUrl || !fileMetadata.nonce) {
         throw new Error('Missing fileUrl or nonce in FileMetadata');
+      }
+
+      // Проверяем наличие ключей
+      let publicKey = publicKeys[userId];
+      if (!publicKey && fileMetadata.publicKeyId) {
+        console.log(`Public key for userId=${userId} not found, fetching with publicKeyId=${fileMetadata.publicKeyId}`);
+        publicKey = await getPublicKey(userId, fileMetadata.publicKeyId);
+        setPublicKeys((prev) => ({
+          ...prev,
+          [userId]: publicKey,
+        }));
+      }
+      if (!publicKey || !keyPair?.privateKey) {
+        throw new Error('Decryption keys not available for file');
       }
 
       // Загружаем зашифрованный файл
@@ -1928,7 +1951,7 @@ const SecretPrivateChat = () => {
       console.log(`Downloaded own file from server: messageId=${msg.id}, fileName=${msg.fileName}`);
     } catch (error) {
       console.error('Error downloading own file:', error);
-      toast.error('Failed to download file');
+      toast.error(`Failed to download file: ${error.message}`);
     }
   };
 
