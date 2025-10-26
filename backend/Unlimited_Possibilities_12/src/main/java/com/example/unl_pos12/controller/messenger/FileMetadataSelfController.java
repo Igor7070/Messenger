@@ -6,6 +6,7 @@ import com.example.unl_pos12.model.messenger.Message;
 import com.example.unl_pos12.service.FileMetadataSelfService;
 import com.example.unl_pos12.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,6 +41,8 @@ public class FileMetadataSelfController {
                 return ResponseEntity.status(500).body(new FileUploadResponse(null, "Failed to save encrypted self file metadata"));
             }
             return ResponseEntity.ok(new FileUploadResponse((String) fileMetadata.get("fileUrlSelf"), null));
+        }catch (IncorrectResultSizeDataAccessException e) {
+            return ResponseEntity.status(500).body(new FileUploadResponse(null, "Error uploading file for self: Duplicate records found for messageId=" + messageId));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(new FileUploadResponse(null, "Error uploading file for self: " + e.getMessage()));
         }

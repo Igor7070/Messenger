@@ -447,6 +447,13 @@ public class MessageService {
         fileMetadataRepository.save(fileMetadata);
         System.out.println("Saved file metadata: fileUrl=" + savedMessage.getFileUrl() + ", messageId=" + savedMessage.getId() + ", nonce=" + fileNonce + ", publicKeyId=" + publicKeyHistory.getId());
 
+        // Проверка и удаление существующих записей в file_metadata_self
+        FileMetadataSelf existingFileMetadataSelf = fileMetadataSelfRepository.findByMessageId(savedMessage.getId());
+        if (existingFileMetadataSelf != null) {
+            System.out.println("FileMetadataSelf already exists for messageId=" + savedMessage.getId() + ", deleting...");
+            fileMetadataSelfRepository.deleteByMessageId(savedMessage.getId());
+        }
+
         // Сохранение метаданных для отправителя
         FileMetadataSelf fileMetadataSelf = new FileMetadataSelf();
         fileMetadataSelf.setFileUrlSelf(fullFileUrlSelf);
