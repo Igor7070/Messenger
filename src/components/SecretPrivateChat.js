@@ -302,20 +302,11 @@ const SecretPrivateChat = () => {
                 if (storedFileData) {
                   fileData = JSON.parse(storedFileData);
                 }
-                // [ADD] Извлекаем данные из кэша
-                const cachedFile = getFileFromCache(chatIdParam, userId, msg.id);
-                // Создаём blob-URL из base64, если данные есть
-                let fileUrl = 'File unavailable';
-                if (cachedFile?.fileData) {
-                  const fileBytes = sodium.from_base64(cachedFile.fileData);
-                  const blob = new Blob([fileBytes], { type: cachedFile.contentType });
-                  fileUrl = URL.createObjectURL(blob);
-                }
                 return {
                   ...msg,
-                  fileUrl: fileUrl, // [CHANGE] Используем blob-URL из кэша
+                  fileUrl: fileData.fileUrl || 'File unavailable',
                   fileName: fileData.fileName || 'File unavailable',
-                  contentType: fileData.contentType,
+                  contentType: fileData.contentType || null,
                   delivered: msg.delivered_status,
                   read: msg.read_status,
                 };
@@ -604,24 +595,17 @@ const SecretPrivateChat = () => {
                 fileData = JSON.parse(storedFileData);
                 console.log(`Retrieved file data for own message: clientMessageId=${newMessage.clientMessageId}, fileName=${fileData.fileName}`);
               }
-              const cachedFile = getFileFromCache(chatId, userId, newMessage.clientMessageId) || getFileFromCache(chatId, userId, newMessage.id);
-              let fileUrl = newMessage.fileUrl;
+              let fileUrl = newMessage.fileUrl || fileData.fileUrl || 'File unavailable';
               let fileName = fileData.fileName || 'File unavailable';
               let contentType = fileData.contentType || null;
-              if (cachedFile?.fileData) {
-                const fileBytes = sodium.from_base64(cachedFile.fileData);
-                const blob = new Blob([fileBytes], { type: cachedFile.contentType });
-                fileUrl = URL.createObjectURL(blob);
-                fileName = cachedFile.fileName;
-                contentType = cachedFile.contentType;
-                console.log(`Generated blob-URL for own file message: messageId=${newMessage.id}, fileName=${fileName}`);
-                // Обновляем кэш для нового messageId
-                saveFileToCache(chatId, userId, newMessage.id, {
-                  fileName,
-                  contentType,
-                  fileData: cachedFile.fileData,
-                });
-              }
+
+              // Сохраняем метаданные в кэш для нового messageId
+              saveFileToCache(chatId, userId, newMessage.id, {
+                fileName,
+                contentType,
+                fileUrl,
+              });
+
               updateMessages({
                 ...newMessage,
                 fileUrl,
@@ -1221,7 +1205,7 @@ const SecretPrivateChat = () => {
           savedMessage = await response.json();
           console.log('Saved message:', savedMessage);
 
-          // Загрузка файла с messageId
+          // Загрузка файла
           fileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
           console.log('Received fileUrl:', fileUrl);
           if (!fileUrl) {
@@ -1229,7 +1213,8 @@ const SecretPrivateChat = () => {
           }
           messageData.fileUrl = fileUrl;
           messageData.file_url = fileUrl;
-          // [ADD] Сохраняем fileUrl в localStorage
+
+          // Обновляем localStorage с fileUrl
           localStorage.setItem(
             fileContentKey,
             JSON.stringify({
@@ -1238,20 +1223,19 @@ const SecretPrivateChat = () => {
               fileUrl: fileUrl, // Сохраняем серверный fileUrl
             })
           );
-          // [ADD] Сохраняем расшифрованный файл в кэш
-          const arrayBuffer = await selectedFile.arrayBuffer();
-          const base64File = sodium.to_base64(new Uint8Array(arrayBuffer));
+
+          // Сохраняем метаданные в кэш для обоих ID
           saveFileToCache(chatId, userId, savedMessage.id, {
             fileName: selectedFile.name,
             contentType: selectedFile.type,
-            fileData: base64File, // Сохраняем base64 данные
+            fileUrl: fileUrl,
           });
           saveFileToCache(chatId, userId, clientMessageId, {
             fileName: selectedFile.name,
             contentType: selectedFile.type,
-            fileData: base64File, // Сохраняем base64 данные для clientMessageId
+            fileUrl: fileUrl,
           });
-          console.log(`Saved file cache for both messageId=${savedMessage.id} and clientMessageId=${clientMessageId}`);
+          console.log(`Saved file metadata to cache for messageId=${savedMessage.id} and clientMessageId=${clientMessageId}`);
         } else if (audioBlob) {
           const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, {
             type: 'audio/mpeg',
@@ -1864,14 +1848,15 @@ const SecretPrivateChat = () => {
   const saveFileToCache = (chatId, userId, messageId, fileData) => {
     try {
       const key = `fileCache_${chatId}_${userId}_${messageId}`;
-      const existingData = localStorage.getItem(key);
-      if (existingData) {
-        console.warn(`Cache entry already exists for messageId=${messageId}, overwriting`);
-      }
-      localStorage.setItem(key, JSON.stringify(fileData));
-      console.log(`Saved file to cache: messageId=${messageId}, fileName=${fileData.fileName}`);
+      const cacheData = {
+        fileName: fileData.fileName,
+        contentType: fileData.contentType,
+        fileUrl: fileData.fileUrl || null, // Сохраняем серверный fileUrl
+      };
+      localStorage.setItem(key, JSON.stringify(cacheData));
+      console.log(`Saved file metadata to cache: messageId=${messageId}, fileName=${fileData.fileName}`);
     } catch (error) {
-      console.error(`Failed to save file to cache for messageId=${messageId}:`, error);
+      console.error(`Failed to save file metadata to cache for messageId=${messageId}:`, error);
     }
   };
 
@@ -1881,12 +1866,12 @@ const SecretPrivateChat = () => {
       const stored = localStorage.getItem(key);
       if (stored) {
         const fileData = JSON.parse(stored);
-        console.log(`Retrieved file from cache: messageId=${messageId}, fileName=${fileData.fileName}`);
+        console.log(`Retrieved file metadata from cache: messageId=${messageId}, fileName=${fileData.fileName}`);
         return fileData;
       }
       return null;
     } catch (error) {
-      console.error(`Failed to get file from cache for messageId=${messageId}:`, error);
+      console.error(`Failed to get file metadata from cache for messageId=${messageId}:`, error);
       return null;
     }
   };
@@ -1894,14 +1879,44 @@ const SecretPrivateChat = () => {
   // [ADD] Функция для скачивания собственного файла из кэша
   const downloadOwnFile = async (msg) => {
     try {
-      const cachedFile = getFileFromCache(chatId, userId, msg.id);
-      if (!cachedFile || !cachedFile.fileData) {
-        toast.error('File not available for download');
+      const fileContentKey = `fileContent_${chatId}_${userId}_${msg.clientMessageId}`;
+      const storedFileData = localStorage.getItem(fileContentKey);
+      let fileData = {};
+      if (storedFileData) {
+        fileData = JSON.parse(storedFileData);
+      }
+
+      const fileUrl = fileData.fileUrl || msg.fileUrl;
+      if (!fileUrl) {
+        toast.error('File URL not available for download');
         return;
       }
-      // Восстанавливаем файл из base64
-      const fileBytes = sodium.from_base64(cachedFile.fileData);
-      const blob = new Blob([fileBytes], { type: cachedFile.contentType });
+
+      // Запрашиваем метаданные файла
+      const fileMetadata = await fetchFileMetadata(msg.id);
+      if (!fileMetadata.fileUrl || !fileMetadata.nonce) {
+        throw new Error('Missing fileUrl or nonce in FileMetadata');
+      }
+
+      // Загружаем зашифрованный файл
+      const response = await fetch(fileUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file from server: ${response.status}`);
+      }
+      const encryptedFileBytes = new Uint8Array(await response.arrayBuffer());
+
+      // Расшифровываем файл
+      const decryptedFileBytes = await decryptFileContent(
+        encryptedFileBytes,
+        fileMetadata.nonce,
+        userId, // Для собственных файлов используем userId как senderId
+        fileMetadata.publicKeyId,
+        publicKeys,
+        keyPair
+      );
+
+      // Создаем Blob и скачиваем
+      const blob = new Blob([decryptedFileBytes], { type: fileData.contentType || msg.contentType });
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
@@ -1909,8 +1924,8 @@ const SecretPrivateChat = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl); // [ADD] Очищаем blob-URL после скачивания
-      console.log(`Downloaded own file: messageId=${msg.id}, fileName=${msg.fileName}`);
+      URL.revokeObjectURL(blobUrl);
+      console.log(`Downloaded own file from server: messageId=${msg.id}, fileName=${msg.fileName}`);
     } catch (error) {
       console.error('Error downloading own file:', error);
       toast.error('Failed to download file');
