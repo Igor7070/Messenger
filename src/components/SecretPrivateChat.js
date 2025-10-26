@@ -973,7 +973,7 @@ const SecretPrivateChat = () => {
           throw new Error('Invalid file metadata: missing nonce');
         }
 
-        // Создаём fileUrlSelf из fileUrl, заменяя /encrypted/ на /encrypted_self/
+        // Если fileUrlSelf отсутствует, создаём его из fileUrl
         const fileUrlSelf = data.fileUrlSelf || data.fileUrl.replace('/encrypted/', '/encrypted_self/').replace('_encrypted_blob', '_encrypted_self_' + (data.fileName || 'file'));
         return {
           fileUrl: data.fileUrl, // Для получателя
@@ -981,6 +981,7 @@ const SecretPrivateChat = () => {
           nonce: data.nonce,
           fileName: data.fileName || 'file',
           publicKeyId: data.publicKeyId,
+          contentType: data.contentType || null, // Если сервер возвращает contentType
         };
       } catch (error) {
         console.error(`Error fetching file metadata for messageId=${messageId}, attempt=${attempt}:`, error);
