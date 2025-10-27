@@ -1996,6 +1996,78 @@ const SecretPrivateChat = () => {
     }
   };
 
+  const downloadFile = async (msg) => {
+    try {
+      const fileContentKey = `fileCache_${chatId}_${userId}_${msg.id}`;
+      const storedFileData = localStorage.getItem(fileContentKey);
+      let fileData = {};
+      if (storedFileData) {
+        fileData = JSON.parse(storedFileData);
+        console.log(`Retrieved file metadata from cache: messageId=${msg.id}, fileName=${fileData.fileName}`);
+      }
+
+      const fileUrl = fileData.fileUrl || msg.fileUrl;
+      if (!fileUrl || fileUrl.startsWith('blob:')) {
+        // Если fileUrl отсутствует или это blob URL, запрашиваем метаданные
+        const fileMetadata = await fetchFileMetadata(msg.id);
+        if (!fileMetadata.fileUrl || !fileMetadata.nonce) {
+          throw new Error('Missing fileUrl or nonce in FileMetadata');
+        }
+
+        // Загружаем зашифрованный файл
+        const response = await fetch(fileMetadata.fileUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch file from server: ${response.status}`);
+        }
+        const encryptedFileBytes = new Uint8Array(await response.arrayBuffer());
+
+        // Расшифровываем файл
+        const decryptedFileBytes = await decryptFileContent(
+          encryptedFileBytes,
+          fileMetadata.nonce,
+          msg.sender.id, // senderId
+          fileMetadata.publicKeyId,
+          publicKeys,
+          keyPair,
+          userId // recipientId для входящих файлов
+        );
+
+        // Создаем новый blob URL
+        const blob = new Blob([decryptedFileBytes], { type: fileData.contentType || msg.contentType });
+        const blobUrl = URL.createObjectURL(blob);
+
+        // Обновляем кэш с новым blob URL
+        saveFileToCache(chatId, userId, msg.id, {
+          fileName: fileData.fileName || msg.fileName,
+          contentType: fileData.contentType || msg.contentType,
+          fileUrl: blobUrl,
+        });
+
+        // Скачиваем файл
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = fileData.fileName || msg.fileName || 'file';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+        console.log(`Downloaded file from server: messageId=${msg.id}, fileName=${fileData.fileName || msg.fileName}`);
+      } else {
+        // Если fileUrl валиден (не blob), пробуем скачать напрямую
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.download = fileData.fileName || msg.fileName || 'file';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        console.log(`Downloaded file using cached URL: messageId=${msg.id}, fileName=${fileData.fileName || msg.fileName}`);
+      }
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast.error(`Failed to download file: ${error.message}`);
+    }
+  };
+
   return (
     <div className="private-chat secret-chat">
       <div className="private-chat-name">
@@ -2134,21 +2206,14 @@ const SecretPrivateChat = () => {
                         </span>
                         {msg.messageType === 'file' && msg.fileUrl && (
                           <a
-                            href={msg.fileUrl}
-                            download={msg.fileName || 'file'}
+                            href="#"
                             className="private-file-link"
                             onClick={async (e) => {
-                              e.preventDefault(); // Предотвращаем стандартное скачивание
+                              e.preventDefault();
                               if (msg.sender.id === userId) {
-                                await downloadOwnFile(msg); // Используем асинхронную функцию для собственных файлов
+                                await downloadOwnFile(msg);
                               } else {
-                                // Для входящих файлов используем стандартное скачивание
-                                const link = document.createElement('a');
-                                link.href = msg.fileUrl;
-                                link.download = msg.fileName || 'file';
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
+                                await downloadFile(msg); // Используем новую функцию для входящих файлов
                               }
                             }}
                           >
