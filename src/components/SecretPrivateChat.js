@@ -1060,20 +1060,36 @@ const SecretPrivateChat = () => {
     };
   };
 
-  const decryptFileContent = async (encryptedFileBytes, nonce, senderId, publicKeyId, publicKeys, keyPair) => {
+  const decryptFileContent = async (encryptedFileBytes, nonce, senderId, publicKeyId, publicKeys, keyPair, recipientId) => {
     await sodium.ready;
 
-    let publicKey = publicKeys[senderId];
-    if (!publicKey && publicKeyId) {
-      console.log(`Public key for senderId=${senderId} not found, fetching with publicKeyId=${publicKeyId}`);
-      publicKey = await getPublicKey(senderId, publicKeyId);
-      setPublicKeys((prev) => ({
-        ...prev,
-        [senderId]: publicKey,
-      }));
+    let publicKey;
+    if (senderId === userId) {
+      // Для собственных файлов используем публичный ключ получателя
+      publicKey = publicKeys[recipientId];
+      if (!publicKey && publicKeyId) {
+        console.log(`Public key for recipientId=${recipientId} not found, fetching with publicKeyId=${publicKeyId}`);
+        publicKey = await getPublicKey(recipientId, publicKeyId);
+        setPublicKeys((prev) => ({
+          ...prev,
+          [recipientId]: publicKey,
+        }));
+      }
+    } else {
+      // Для чужих файлов используем публичный ключ отправителя
+      publicKey = publicKeys[senderId];
+      if (!publicKey && publicKeyId) {
+        console.log(`Public key for senderId=${senderId} not found, fetching with publicKeyId=${publicKeyId}`);
+        publicKey = await getPublicKey(senderId, publicKeyId);
+        setPublicKeys((prev) => ({
+          ...prev,
+          [senderId]: publicKey,
+        }));
+      }
     }
+
     if (!publicKey || !keyPair?.privateKey) {
-      console.error(`Decryption keys not available: publicKey=${!!publicKey}, privateKey=${!!keyPair?.privateKey}, senderId=${senderId}`);
+      console.error(`Decryption keys not available: publicKey=${!!publicKey}, privateKey=${!!keyPair?.privateKey}, senderId=${senderId}, recipientId=${recipientId}`);
       throw new Error('Decryption keys not available for file');
     }
 
@@ -1084,13 +1100,13 @@ const SecretPrivateChat = () => {
       const decryptedBytes = sodium.crypto_box_open_easy(
         encryptedFileBytes,
         nonceBytes,
-        publicKeyBytes,
-        privateKeyBytes
+        publicKeyBytes, // Публичный ключ получателя для собственных файлов
+        privateKeyBytes // Приватный ключ отправителя
       );
-      console.log(`File decryption successful for senderId=${senderId}`);
+      console.log(`File decryption successful for senderId=${senderId}, recipientId=${recipientId}`);
       return decryptedBytes;
     } catch (error) {
-      console.error(`File decryption failed for senderId=${senderId}:`, error);
+      console.error(`File decryption failed for senderId=${senderId}, recipientId=${recipientId}:`, error);
       throw new Error(`File decryption failed: ${error.message}`);
     }
   };
@@ -1906,6 +1922,23 @@ const SecretPrivateChat = () => {
         fileData = JSON.parse(storedFileData);
       }
 
+      // Проверяем наличие кэшированного расшифрованного файла
+      if (fileData.fileData) {
+        console.log(`Using cached decrypted file for messageId=${msg.id}`);
+        const decryptedFileBytes = sodium.from_base64(fileData.fileData);
+        const blob = new Blob([decryptedFileBytes], { type: fileData.contentType || msg.contentType });
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = msg.fileName || 'file';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+        console.log(`Downloaded own file from cache: messageId=${msg.id}, fileName=${msg.fileName}`);
+        return;
+      }
+
       const fileUrl = fileData.fileUrl || msg.fileUrl;
       if (!fileUrl) {
         throw new Error('File URL not available for download');
@@ -1917,19 +1950,16 @@ const SecretPrivateChat = () => {
         throw new Error('Missing fileUrl or nonce in FileMetadata');
       }
 
-      // Проверяем наличие ключей
-      let publicKey = publicKeys[userId];
-      if (!publicKey && fileMetadata.publicKeyId) {
-        console.log(`Public key for userId=${userId} not found, fetching with publicKeyId=${fileMetadata.publicKeyId}`);
-        publicKey = await getPublicKey(userId, fileMetadata.publicKeyId);
-        setPublicKeys((prev) => ({
-          ...prev,
-          [userId]: publicKey,
-        }));
+      // Получаем recipientId
+      const recipientName = chatName.split('_').find((name) => name !== username);
+      const userResponse = await fetch(
+        `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
+      );
+      if (!userResponse.ok) {
+        throw new Error('Failed to fetch recipient');
       }
-      if (!publicKey || !keyPair?.privateKey) {
-        throw new Error('Decryption keys not available for file');
-      }
+      const recipient = await userResponse.json();
+      const recipientId = recipient.id;
 
       // Загружаем зашифрованный файл
       const response = await fetch(fileUrl);
@@ -1942,10 +1972,11 @@ const SecretPrivateChat = () => {
       const decryptedFileBytes = await decryptFileContent(
         encryptedFileBytes,
         fileMetadata.nonce,
-        userId, // Для собственных файлов используем userId как senderId
+        userId, // senderId
         fileMetadata.publicKeyId,
         publicKeys,
-        keyPair
+        keyPair,
+        recipientId // Передаем recipientId
       );
 
       // Создаем Blob и скачиваем
