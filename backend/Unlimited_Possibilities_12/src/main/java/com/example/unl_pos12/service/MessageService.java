@@ -1,16 +1,12 @@
 package com.example.unl_pos12.service;
 
 import com.example.unl_pos12.model.messenger.FileMetadata;
-import com.example.unl_pos12.model.messenger.FileMetadataSelf;
 import com.example.unl_pos12.model.messenger.Message;
 import com.example.unl_pos12.model.messenger.PublicKeyHistory;
 import com.example.unl_pos12.repo.FileMetadataRepository;
-import com.example.unl_pos12.repo.FileMetadataSelfRepository;
 import com.example.unl_pos12.repo.MessageRepository;
 import com.example.unl_pos12.repo.PublicKeyHistoryRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,9 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class MessageService {
@@ -34,8 +28,6 @@ public class MessageService {
     private PublicKeyHistoryRepository publicKeyHistoryRepository; // [CHANGE]
     @Autowired
     private WebSocketService webSocketService; // Добавляем зависимость для WebSocket
-    @Autowired
-    private FileMetadataSelfRepository fileMetadataSelfRepository;
 
     public List<Message> getAllMessages() {
         return messageRepository.findAll();
@@ -347,145 +339,5 @@ public class MessageService {
     // [ADD] Метод для получения метаданных файла
     public FileMetadata getFileMetadataByMessageId(Long messageId) {
         return fileMetadataRepository.findByMessageId(messageId);
-    }
-
-    // [ADD] Новый метод для получения расширенных метаданных файла
-    public Map<String, Object> getExtendedFileMetadataByMessageId(Long messageId) {
-        System.out.println("Fetching extended file metadata for messageId=" + messageId);
-        FileMetadata fileMetadata = fileMetadataRepository.findByMessageId(messageId);
-        Message message = messageRepository.findById(messageId).orElse(null);
-
-        if (fileMetadata == null || message == null) {
-            System.out.println("No file metadata or message found for messageId=" + messageId);
-            return null;
-        }
-
-        // Проверка и очистка дублирующих записей в file_metadata_self
-        FileMetadataSelf fileMetadataSelf = null;
-        try {
-            fileMetadataSelf = fileMetadataSelfRepository.findByMessageId(messageId);
-            System.out.println("Found FileMetadataSelf for messageId=" + messageId + (fileMetadataSelf != null ? ", id=" + fileMetadataSelf.getId() : ", none found"));
-        } catch (IncorrectResultSizeDataAccessException e) {
-            System.out.println("Multiple FileMetadataSelf records found for messageId=" + messageId + ", cleaning up...");
-            fileMetadataSelfRepository.deleteByMessageId(messageId);
-            System.out.println("Deleted duplicate FileMetadataSelf records for messageId=" + messageId);
-        }
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", fileMetadata.getId());
-        response.put("fileUrl", fileMetadata.getFileUrl());
-        response.put("nonce", fileMetadata.getNonce());
-        response.put("publicKeyId", fileMetadata.getPublicKeyId());
-        response.put("message", message);
-        response.put("contentType", message.getContentType());
-        if (fileMetadataSelf != null) {
-            response.put("fileUrlSelf", fileMetadataSelf.getFileUrlSelf());
-            response.put("fileName", fileMetadataSelf.getFileName());
-        } else {
-            String fileName = "file";
-            response.put("fileName", fileName);
-            response.put("fileUrlSelf", fileMetadata.getFileUrl() != null
-                    ? fileMetadata.getFileUrl().replace("/encrypted/", "/encrypted_self/").replace("_encrypted_blob", "_encrypted_self_" + fileName)
-                    : null);
-            System.out.println("No FileMetadataSelf found, using fallback fileName=" + fileName + " for messageId=" + messageId);
-        }
-        System.out.println("Returning extended file metadata for messageId=" + messageId + ", fileUrlSelf=" + response.get("fileUrlSelf"));
-        return response;
-    }
-
-    // [ADD] Метод для сохранения собственных зашифрованных файлов (без изменений от предыдущего ответа)
-    @Transactional
-    public synchronized Message saveEncryptedFileSelfMessage(Message message, MultipartFile encryptedFile, String fileNonce, String originalFileName) {
-        System.out.println("Starting saveEncryptedFileSelfMessage for messageId=" + (message.getId() != null ? message.getId() : "new") + ", fileName=" + originalFileName);
-        if (encryptedFile == null || encryptedFile.isEmpty()) {
-            throw new RuntimeException("Uploaded encrypted file is empty");
-        }
-        if (originalFileName == null) {
-            throw new RuntimeException("Filename is null");
-        }
-        if (fileNonce == null) {
-            throw new RuntimeException("Nonce is missing for encrypted file");
-        }
-
-        // Проверка для секретных чатов
-        if (message.getChat() == null || message.getChat().getIsSecret() == null || !message.getChat().getIsSecret()) {
-            throw new RuntimeException("Encrypted file messages are only allowed in secret chats");
-        }
-        if (message.getEncryptedContent() == null || message.getNonce() == null) {
-            throw new RuntimeException("Encrypted content or nonce is missing for secret chat file message");
-        }
-
-        // Проверка наличия активного публичного ключа
-        PublicKeyHistory publicKeyHistory = publicKeyHistoryRepository.findByUserIdAndValidUntilIsNull(message.getSender().getId());
-        if (publicKeyHistory == null) {
-            System.out.println("No active public key found for user: " + message.getSender().getId());
-            throw new RuntimeException("No active public key found for user: " + message.getSender().getId());
-        }
-
-        // Проверка и удаление всех существующих записей в file_metadata_self
-        if (message.getId() != null) {
-            FileMetadataSelf existingFileMetadataSelf = fileMetadataSelfRepository.findByMessageId(message.getId());
-            if (existingFileMetadataSelf != null) {
-                System.out.println("Found existing FileMetadataSelf for messageId=" + message.getId() + ", deleting...");
-                fileMetadataSelfRepository.deleteByMessageId(message.getId());
-            } else {
-                System.out.println("No existing FileMetadataSelf found for messageId=" + message.getId());
-            }
-        }
-
-        // Загрузка файла
-        String transliteratedFilename = transliterate(originalFileName);
-        String safeFilename = transliteratedFilename.replaceAll("[^\\w.-]", "_");
-        String fileName = (message.getId() != null ? message.getId() : System.currentTimeMillis()) + "_encrypted_self_" + safeFilename;
-        String filePath = "Uploads/encrypted_self/" + fileName;
-        String fullFileUrlSelf = "https://unlimitedpossibilities12.org/api/files/download/encrypted_self/" + fileName;
-        System.out.println("Uploading encrypted self file: original name=" + originalFileName + ", contentType=" + encryptedFile.getContentType());
-
-        try {
-            File dest = new File(System.getProperty("user.dir") + "/" + filePath);
-            dest.getParentFile().mkdirs();
-            encryptedFile.transferTo(dest);
-            System.out.println("Encrypted self file uploaded successfully: path=" + filePath);
-        } catch (IOException e) {
-            System.out.println("Failed to upload encrypted self file: " + e.getMessage());
-            throw new RuntimeException("Failed to upload encrypted self file: " + e.getMessage());
-        }
-
-        // Установка полей в сообщении
-        String contentType = encryptedFile.getContentType();
-        if (originalFileName.endsWith(".webm")) {
-            contentType = "audio/webm;codecs=opus";
-        }
-        message.setContentType(contentType);
-        message.setMessageType(contentType != null && contentType.startsWith("audio/") ? "audio" : "file");
-        message.setContent(null);
-        message.setTranslatedContent(null);
-        message.setTranscribedContent(null);
-        message.setTimestamp(ZonedDateTime.now());
-
-        // Сохранение сообщения
-        Message savedMessage = messageRepository.save(message);
-        System.out.println("Saved message with fileUrl: " + savedMessage.getFileUrl() + ", messageId=" + savedMessage.getId());
-
-        // Сохранение метаданных для получателя
-        FileMetadata fileMetadata = new FileMetadata();
-        fileMetadata.setFileUrl(savedMessage.getFileUrl());
-        fileMetadata.setNonce(fileNonce);
-        fileMetadata.setMessage(savedMessage);
-        fileMetadata.setPublicKeyId(publicKeyHistory.getId());
-        fileMetadataRepository.save(fileMetadata);
-        System.out.println("Saved file metadata: fileUrl=" + savedMessage.getFileUrl() + ", messageId=" + savedMessage.getId() + ", nonce=" + fileNonce + ", publicKeyId=" + publicKeyHistory.getId());
-
-        // Сохранение метаданных для отправителя
-        FileMetadataSelf fileMetadataSelf = new FileMetadataSelf();
-        fileMetadataSelf.setFileUrlSelf(fullFileUrlSelf);
-        fileMetadataSelf.setFileName(safeFilename);
-        fileMetadataSelf.setNonce(fileNonce);
-        fileMetadataSelf.setMessage(savedMessage);
-        fileMetadataSelf.setPublicKeyId(publicKeyHistory.getId());
-        fileMetadataSelfRepository.save(fileMetadataSelf);
-        System.out.println("Saved self file metadata: fileUrlSelf=" + fullFileUrlSelf + ", fileName=" + safeFilename + ", messageId=" + savedMessage.getId());
-
-        return savedMessage;
     }
 }
