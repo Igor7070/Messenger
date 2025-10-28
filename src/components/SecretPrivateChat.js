@@ -447,7 +447,7 @@ const SecretPrivateChat = () => {
                 );
                 updateMessages({
                   ...newMessage,
-                  content: sentMessagesCache[newMessage.clientMessageId] || 'Content unavailable',
+                  content: decryptedContent,
                   delivered: newMessage.delivered_status,
                   read: newMessage.read_status,
                 });
@@ -462,9 +462,10 @@ const SecretPrivateChat = () => {
                 toast.error(`Failed to decrypt message: ${error.message}`);
               }
             } else {
+              // === СОБСТВЕННОЕ ТЕКСТОВОЕ СООБЩЕНИЕ ===
               updateMessages({
                 ...newMessage,
-                content: sentMessagesCache[newMessage.clientMessageId] || getOwnMessageContent(chatId, userId, newMessage.clientMessageId) || 'Content unavailable',
+                content: sentMessagesCache[newMessage.clientMessageId] || 'Content unavailable',
                 delivered: newMessage.delivered_status,
                 read: newMessage.read_status,
               });
@@ -552,7 +553,7 @@ const SecretPrivateChat = () => {
                 toast.error(`Failed to process file: ${error.message}`);
               }
             } else {
-              // Собственное файловое сообщение
+              // === СОБСТВЕННОЕ ФАЙЛОВОЕ СООБЩЕНИЕ ===
               const cached = getFileFromCache(chatId, userId, newMessage.id) ||
                             getFileFromCache(chatId, userId, newMessage.clientMessageId);
               const fileName = cached?.fileName || 'File';
