@@ -1797,24 +1797,31 @@ const SecretPrivateChat = () => {
 
   const downloadFile = async (msg) => {
     try {
-      const fileCacheKey = `fileCache_${chatId}_${userId}_${msg.id}`;
-      const cached = localStorage.getItem(fileCacheKey);
-      let fileData = cached ? JSON.parse(cached) : {};
-
-      const fileUrl = fileData.fileUrl || msg.fileUrl;
-
-      if (fileUrl && !fileUrl.startsWith('blob:')) {
-        // [OPTIMIZE] Прямое скачивание по кэшированному URL
+      // 1. Попытка взять готовый blob-URL из кэша
+      const cached = getFileFromCache(chatId, userId, msg.id);
+      if (cached?.fileUrl && cached.fileUrl.startsWith('blob:')) {
         const link = document.createElement('a');
-        link.href = fileUrl;
-        link.download = fileData.fileName || msg.fileName || 'file';
+        link.href = cached.fileUrl;
+        link.download = cached.fileName || msg.fileName || 'file';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         return;
       }
 
-      // Иначе — расшифровка с сервера
+      // 2. Если в кэше есть серверный URL — скачиваем напрямую (без расшифровки)
+      const serverUrl = cached?.fileUrl || msg.fileUrl;
+      if (serverUrl && !serverUrl.startsWith('blob:')) {
+        const link = document.createElement('a');
+        link.href = serverUrl;
+        link.download = cached?.fileName || msg.fileName || 'file';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+      }
+
+      // 3. Файл ещё не расшифрован — загружаем и расшифровываем
       const fileMetadata = await fetchFileMetadata(msg.id);
       const response = await fetch(fileMetadata.fileUrl);
       if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`);
@@ -1823,31 +1830,32 @@ const SecretPrivateChat = () => {
       const decryptedFileBytes = await decryptFileContent(
         encryptedFileBytes,
         fileMetadata.nonce,
-        msg.sender.id,
+        msg.sender.id,          // отправитель
         fileMetadata.publicKeyId,
         publicKeys,
         keyPair,
-        userId
+        userId                  // получатель
       );
 
-      const blob = new Blob([decryptedFileBytes], { type: fileData.contentType || msg.contentType });
+      const blob = new Blob([decryptedFileBytes], { type: cached?.contentType || msg.contentType });
       const blobUrl = URL.createObjectURL(blob);
 
+      // Сохраняем blob-URL в кэш для будущего скачивания
       saveFileToCache(chatId, userId, msg.id, {
-        fileName: fileData.fileName || msg.fileName,
-        contentType: fileData.contentType || msg.contentType,
+        fileName: cached?.fileName || msg.fileName,
+        contentType: cached?.contentType || msg.contentType,
         fileUrl: blobUrl,
       });
 
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = fileData.fileName || msg.fileName || 'file';
+      link.download = cached?.fileName || msg.fileName || 'file';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error('Error downloading file:', error);
+      console.error('Error downloading received file:', error);
       toast.error(`Failed to download file: ${error.message}`);
     }
   };
