@@ -249,11 +249,9 @@ const SecretPrivateChat = () => {
           initialMessages.map(async (msg) => {
             if (msg.messageType === 'text' && msg.encryptedContent && msg.nonce) {
               if (msg.sender.id === userId) {
-                const clientMessageId = msg.clientMessageId;
-                const localContent = clientMessageId ? getOwnMessageContent(chatIdParam, userId, clientMessageId) : null;
                 return {
                   ...msg,
-                  content: localContent || 'Content unavailable',
+                  content: sentMessagesCache[msg.clientMessageId] || 'Content unavailable',
                   delivered: msg.delivered_status,
                   read: msg.read_status,
                 };
@@ -449,7 +447,7 @@ const SecretPrivateChat = () => {
                 );
                 updateMessages({
                   ...newMessage,
-                  content: decryptedContent,
+                  content: sentMessagesCache[newMessage.clientMessageId] || 'Content unavailable',
                   delivered: newMessage.delivered_status,
                   read: newMessage.read_status,
                 });
@@ -1082,7 +1080,6 @@ const SecretPrivateChat = () => {
             [clientMessageId]: content,
           }));
           console.log(`Saved to sentMessagesCache: clientMessageId=${clientMessageId}, content=${content}`);
-          saveOwnMessageContent(chatId, userId, clientMessageId, content);
           const { encryptedContent, nonce } = await encryptMessage(content, recipientId);
           messageData = {
             ...messageData,
