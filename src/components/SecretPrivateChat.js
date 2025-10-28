@@ -203,6 +203,21 @@ const SecretPrivateChat = () => {
     initializeSodium();
   }, [userId]);
 
+  useEffect(() => {
+    // Очистка старого кэша с blob: URL
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('fileCache_')) {
+        try {
+          const data = JSON.parse(localStorage.getItem(key) || '{}');
+          if (data.fileUrl && data.fileUrl.startsWith('blob:')) {
+            localStorage.removeItem(key);
+            console.log('[CLEANUP] Removed old blob cache:', key);
+          }
+        } catch {}
+      }
+    });
+  }, []);
+
   // Загрузка данных чата и сообщений
   useEffect(() => {
     const fetchChatData = async () => {
@@ -811,83 +826,57 @@ const SecretPrivateChat = () => {
   const updateMessages = (newMessage) => {
     setMessages((prevMessages) => {
       if (newMessage.content === 'Message deleted') {
-        console.log(`Deleting message with ID ${newMessage.id}`);
         return prevMessages.filter((msg) => msg.id !== newMessage.id);
       }
 
-      console.log(`Processing new message: id=${newMessage.id}, senderId=${newMessage.sender.id}, messageType=${newMessage.messageType}, clientMessageId=${newMessage.clientMessageId}, timestamp=${newMessage.timestamp}`);
-
-      // Проверяем, существует ли сообщение с таким же id
       const existingMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.id);
       if (existingMessageIndex !== -1) {
-        console.log(`Updating existing message with ID=${newMessage.id}`);
-        const updatedMessages = [...prevMessages];
-        updatedMessages[existingMessageIndex] = {
-          ...prevMessages[existingMessageIndex],
-          ...newMessage,
-          content: newMessage.content || prevMessages[existingMessageIndex].content,
-          fileName: newMessage.fileName || prevMessages[existingMessageIndex].fileName,
-          fileUrl: newMessage.fileUrl || prevMessages[existingMessageIndex].fileUrl,
-          contentType: newMessage.contentType || prevMessages[existingMessageIndex].contentType,
-          delivered: newMessage.delivered_status ?? prevMessages[existingMessageIndex].delivered,
-          read: newMessage.read_status ?? prevMessages[existingMessageIndex].read,
-          messageType: newMessage.messageType ?? prevMessages[existingMessageIndex].messageType,
-        };
-        console.log(`Updated message:`, updatedMessages[existingMessageIndex]);
-        return updatedMessages;
+        const updated = [...prevMessages];
+        updated[existingMessageIndex] = { ...updated[existingMessageIndex], ...newMessage };
+        return updated;
       }
 
-      // Для собственных сообщений с clientMessageId
+      // === КЛЮЧЕВОЙ БЛОК: ЗАМЕНА temp_ → id ===
       if (newMessage.sender.id === userId && newMessage.clientMessageId) {
-        const tempMessageIndex = prevMessages.findIndex((msg) => msg.id === newMessage.clientMessageId);
-        if (tempMessageIndex !== -1) {
-          console.log(`Replacing temp message with ID=${newMessage.clientMessageId} with server message ID=${newMessage.id}`);
-          const updatedMessages = [...prevMessages];
-          updatedMessages[tempMessageIndex] = {
-            ...newMessage,
-            content: newMessage.content || prevMessages[tempMessageIndex].content,
-            fileName: newMessage.fileName || prevMessages[tempMessageIndex].fileName,
-            fileUrl: newMessage.fileUrl || prevMessages[tempMessageIndex].fileUrl,
-            contentType: newMessage.contentType || prevMessages[tempMessageIndex].contentType,
-            delivered: newMessage.delivered_status ?? false,
-            read: newMessage.read_status ?? false,
-            messageType: newMessage.messageType,
-          };
-          console.log(`Replaced message:`, updatedMessages[tempMessageIndex]);
+        const tempIndex = prevMessages.findIndex((msg) => msg.id === newMessage.clientMessageId);
+        if (tempIndex !== -1) {
+          // Удаляем старый кэш по clientMessageId
+          const oldKey = `fileCache_${chatId}_${userId}_${newMessage.clientMessageId}`;
+          localStorage.removeItem(oldKey);
+          console.log(`[CACHE] REMOVED old temp cache: ${oldKey}`);
 
-          // Освобождаем старый blob-URL, если он был
-          if (prevMessages[tempMessageIndex].fileUrl?.startsWith('blob:')) {
-            URL.revokeObjectURL(prevMessages[tempMessageIndex].fileUrl);
-            console.log(`Revoked old blob-URL: ${prevMessages[tempMessageIndex].fileUrl}`);
+          // Освобождаем blob URL
+          const oldFileUrl = prevMessages[tempIndex].fileUrl;
+          if (oldFileUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(oldFileUrl);
+            console.log(`[BLOB] Revoked: ${oldFileUrl}`);
           }
 
-          // Удаляем из кэша
-          setSentMessagesCache((prev) => {
-            const newCache = { ...prev };
-            delete newCache[newMessage.clientMessageId];
-            console.log(`Removed clientMessageId=${newMessage.clientMessageId} from sentMessagesCache`);
-            return newCache;
-          });
+          const updated = [...prevMessages];
+          updated[tempIndex] = {
+            ...newMessage,
+            id: newMessage.id,
+            fileUrl: newMessage.fileUrl || prevMessages[tempIndex].fileUrl,
+            fileName: newMessage.fileName || prevMessages[tempIndex].fileName,
+            contentType: newMessage.contentType || prevMessages[tempIndex].contentType,
+            delivered: newMessage.delivered_status ?? false,
+            read: newMessage.read_status ?? false,
+          };
 
-          return updatedMessages;
+          // Сохраняем кэш уже по настоящему messageId
+          if (updated[tempIndex].messageType === 'file') {
+            saveFileToCache(chatId, userId, newMessage.id, {
+              fileName: updated[tempIndex].fileName,
+              contentType: updated[tempIndex].contentType,
+              serverFileUrl: updated[tempIndex].fileUrl,
+            });
+          }
+
+          return updated;
         }
       }
 
-      // Добавляем новое сообщение
-      console.log(`Adding new message: id=${newMessage.id}, content=${newMessage.content || newMessage.fileName}`);
-      return [
-        ...prevMessages,
-        {
-          ...newMessage,
-          content: newMessage.content,
-          fileName: newMessage.fileName,
-          fileUrl: newMessage.fileUrl,
-          contentType: newMessage.contentType,
-          delivered: newMessage.delivered_status ?? false,
-          read: newMessage.read_status ?? false,
-          messageType: newMessage.messageType,
-        },
-      ];
+      return [...prevMessages, { ...newMessage, delivered: false, read: false }];
     });
   };
 
@@ -1887,12 +1876,12 @@ const SecretPrivateChat = () => {
       const cacheData = {
         fileName: fileData.fileName,
         contentType: fileData.contentType,
-        fileUrl: fileData.fileUrl || null, // Сохраняем серверный fileUrl
+        serverFileUrl: fileData.serverFileUrl, // ← Только серверный URL!
       };
       localStorage.setItem(key, JSON.stringify(cacheData));
-      console.log(`Saved file metadata to cache: messageId=${messageId}, fileName=${fileData.fileName}`);
+      console.log(`[CACHE] Saved: messageId=${messageId}, fileName=${fileData.fileName}`);
     } catch (error) {
-      console.error(`Failed to save file metadata to cache for messageId=${messageId}:`, error);
+      console.error(`[CACHE] Save failed:`, error);
     }
   };
 
@@ -1901,13 +1890,14 @@ const SecretPrivateChat = () => {
       const key = `fileCache_${chatId}_${userId}_${messageId}`;
       const stored = localStorage.getItem(key);
       if (stored) {
-        const fileData = JSON.parse(stored);
-        console.log(`Retrieved file metadata from cache: messageId=${messageId}, fileName=${fileData.fileName}`);
-        return fileData;
+        const data = JSON.parse(stored);
+        console.log(`[CACHE] HIT: messageId=${messageId}, fileName=${data.fileName}`);
+        return data;
       }
+      console.log(`[CACHE] MISS: messageId=${messageId}`);
       return null;
     } catch (error) {
-      console.error(`Failed to get file metadata from cache for messageId=${messageId}:`, error);
+      console.error(`[CACHE] Read error:`, error);
       return null;
     }
   };
@@ -1915,156 +1905,141 @@ const SecretPrivateChat = () => {
   // [ADD] Функция для скачивания собственного файла из кэша
   const downloadOwnFile = async (msg) => {
     try {
-      const fileContentKey = `fileContent_${chatId}_${userId}_${msg.clientMessageId}`;
-      const storedFileData = localStorage.getItem(fileContentKey);
-      let fileData = {};
-      if (storedFileData) {
-        fileData = JSON.parse(storedFileData);
-      }
+      const cache = getFileFromCache(chatId, userId, msg.id);
+      const fileName = cache?.fileName || msg.fileName;
+      const contentType = cache?.contentType || msg.contentType;
 
-      // Проверяем наличие кэшированного расшифрованного файла
-      if (fileData.fileData) {
-        console.log(`Using cached decrypted file for messageId=${msg.id}`);
-        const decryptedFileBytes = sodium.from_base64(fileData.fileData);
-        const blob = new Blob([decryptedFileBytes], { type: fileData.contentType || msg.contentType });
-        const blobUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = msg.fileName || 'file';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(blobUrl);
-        console.log(`Downloaded own file from cache: messageId=${msg.id}, fileName=${msg.fileName}`);
-        return;
-      }
-
-      const fileUrl = fileData.fileUrl || msg.fileUrl;
-      if (!fileUrl) {
-        throw new Error('File URL not available for download');
-      }
-
-      // Запрашиваем метаданные файла
       const fileMetadata = await fetchFileMetadata(msg.id);
-      if (!fileMetadata.fileUrl || !fileMetadata.nonce) {
-        throw new Error('Missing fileUrl or nonce in FileMetadata');
-      }
+      if (!fileMetadata.fileUrl || !fileMetadata.nonce) throw new Error('No metadata');
 
-      // Получаем recipientId
       const recipientName = chatName.split('_').find((name) => name !== username);
-      const userResponse = await fetch(
-        `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
-      );
-      if (!userResponse.ok) {
-        throw new Error('Failed to fetch recipient');
-      }
+      const userResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
+      if (!userResponse.ok) throw new Error('Recipient not found');
       const recipient = await userResponse.json();
-      const recipientId = recipient.id;
 
-      // Загружаем зашифрованный файл
-      const response = await fetch(fileUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file from server: ${response.status}`);
-      }
+      const response = await fetch(fileMetadata.fileUrl);
+      if (!response.ok) throw new Error('File fetch failed');
+
       const encryptedFileBytes = new Uint8Array(await response.arrayBuffer());
-
-      // Расшифровываем файл
       const decryptedFileBytes = await decryptFileContent(
         encryptedFileBytes,
         fileMetadata.nonce,
-        userId, // senderId
+        userId,
         fileMetadata.publicKeyId,
         publicKeys,
         keyPair,
-        recipientId // Передаем recipientId
+        recipient.id
       );
 
-      // Создаем Blob и скачиваем
-      const blob = new Blob([decryptedFileBytes], { type: fileData.contentType || msg.contentType });
+      const blob = new Blob([decryptedFileBytes], { type: contentType });
       const blobUrl = URL.createObjectURL(blob);
+
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = msg.fileName || 'file';
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
-      console.log(`Downloaded own file from server: messageId=${msg.id}, fileName=${msg.fileName}`);
+
+      saveFileToCache(chatId, userId, msg.id, {
+        fileName,
+        contentType,
+        serverFileUrl: fileMetadata.fileUrl,
+      });
+
     } catch (error) {
-      console.error('Error downloading own file:', error);
-      toast.error(`Failed to download file: ${error.message}`);
+      console.error('[OWN FILE] Download failed:', error);
+      toast.error(`Download failed: ${error.message}`);
     }
   };
 
   const downloadFile = async (msg) => {
     try {
-      const fileContentKey = `fileCache_${chatId}_${userId}_${msg.id}`;
-      const storedFileData = localStorage.getItem(fileContentKey);
-      let fileData = {};
-      if (storedFileData) {
-        fileData = JSON.parse(storedFileData);
-        console.log(`Retrieved file metadata from cache: messageId=${msg.id}, fileName=${fileData.fileName}`);
-      }
+      const cache = getFileFromCache(chatId, userId, msg.id);
+      const fileName = cache?.fileName || msg.fileName;
+      const contentType = cache?.contentType || msg.contentType;
+      const serverFileUrl = cache?.serverFileUrl;
 
-      const fileUrl = fileData.fileUrl || msg.fileUrl;
-      if (!fileUrl || fileUrl.startsWith('blob:')) {
-        // Если fileUrl отсутствует или это blob URL, запрашиваем метаданные
+      // Если в кэше есть serverFileUrl — используем его
+      if (serverFileUrl) {
         const fileMetadata = await fetchFileMetadata(msg.id);
-        if (!fileMetadata.fileUrl || !fileMetadata.nonce) {
-          throw new Error('Missing fileUrl or nonce in FileMetadata');
-        }
+        if (!fileMetadata.fileUrl || !fileMetadata.nonce) throw new Error('Invalid metadata');
 
-        // Загружаем зашифрованный файл
         const response = await fetch(fileMetadata.fileUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch file from server: ${response.status}`);
-        }
-        const encryptedFileBytes = new Uint8Array(await response.arrayBuffer());
+        if (!response.ok) throw new Error('Failed to fetch file');
 
-        // Расшифровываем файл
+        const encryptedFileBytes = new Uint8Array(await response.arrayBuffer());
         const decryptedFileBytes = await decryptFileContent(
           encryptedFileBytes,
           fileMetadata.nonce,
-          msg.sender.id, // senderId
+          msg.sender.id,
           fileMetadata.publicKeyId,
           publicKeys,
           keyPair,
-          userId // recipientId для входящих файлов
+          userId
         );
 
-        // Создаем новый blob URL
-        const blob = new Blob([decryptedFileBytes], { type: fileData.contentType || msg.contentType });
+        const blob = new Blob([decryptedFileBytes], { type: contentType });
         const blobUrl = URL.createObjectURL(blob);
 
-        // Обновляем кэш с новым blob URL
-        saveFileToCache(chatId, userId, msg.id, {
-          fileName: fileData.fileName || msg.fileName,
-          contentType: fileData.contentType || msg.contentType,
-          fileUrl: blobUrl,
-        });
-
-        // Скачиваем файл
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = fileData.fileName || msg.fileName || 'file';
+        link.download = fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(blobUrl);
-        console.log(`Downloaded file from server: messageId=${msg.id}, fileName=${fileData.fileName || msg.fileName}`);
-      } else {
-        // Если fileUrl валиден (не blob), пробуем скачать напрямую
-        const link = document.createElement('a');
-        link.href = fileUrl;
-        link.download = fileData.fileName || msg.fileName || 'file';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        console.log(`Downloaded file using cached URL: messageId=${msg.id}, fileName=${fileData.fileName || msg.fileName}`);
+
+        // Обновляем кэш
+        saveFileToCache(chatId, userId, msg.id, {
+          fileName,
+          contentType,
+          serverFileUrl: fileMetadata.fileUrl,
+        });
+
+        return;
       }
+
+      // Если кэша нет — скачиваем с нуля
+      const fileMetadata = await fetchFileMetadata(msg.id);
+      if (!fileMetadata.fileUrl || !fileMetadata.nonce) throw new Error('No file metadata');
+
+      const response = await fetch(fileMetadata.fileUrl);
+      if (!response.ok) throw new Error('File fetch failed');
+
+      const encryptedFileBytes = new Uint8Array(await response.arrayBuffer());
+      const decryptedFileBytes = await decryptFileContent(
+        encryptedFileBytes,
+        fileMetadata.nonce,
+        msg.sender.id,
+        fileMetadata.publicKeyId,
+        publicKeys,
+        keyPair,
+        userId
+      );
+
+      const blob = new Blob([decryptedFileBytes], { type: contentType });
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+
+      // Сохраняем в кэш
+      saveFileToCache(chatId, userId, msg.id, {
+        fileName,
+        contentType,
+        serverFileUrl: fileMetadata.fileUrl,
+      });
+
     } catch (error) {
-      console.error('Error downloading file:', error);
-      toast.error(`Failed to download file: ${error.message}`);
+      console.error('[DOWNLOAD] Failed:', error);
+      toast.error(`Download failed: ${error.message}`);
     }
   };
 
