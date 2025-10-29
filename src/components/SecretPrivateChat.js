@@ -852,26 +852,26 @@ const SecretPrivateChat = () => {
     await sodium.ready;
 
     let publicKey;
+
     if (senderId === userId) {
-      // [FIX] Для собственных файлов — используем публичный ключ получателя
+      // === СВОЙ ФАЙЛ — ключ получателя ===
       publicKey = publicKeys[recipientId];
       if (!publicKey && publicKeyId) {
-        console.log(`Public key for recipientId=${recipientId} not found, fetching with publicKeyId=${publicKeyId}`);
+        console.log(`[OWN FILE] Fetching public key for recipientId=${recipientId}, publicKeyId=${publicKeyId}`);
         publicKey = await getPublicKey(recipientId, publicKeyId);
         setPublicKeys((prev) => ({ ...prev, [recipientId]: publicKey }));
       }
     } else {
-      // Для чужих — публичный ключ отправителя
+      // === ВХОДЯЩИЙ ФАЙЛ — ключ отправителя ===
       publicKey = publicKeys[senderId];
-      if (!publicKey && publicKeyId) {
-        console.log(`Public key for senderId=${senderId} not found, fetching with publicKeyId=${publicKeyId}`);
+      if (!publicKey) {
+        console.log(`[INCOMING FILE] Public key missing for senderId=${senderId}, fetching...`);
         publicKey = await getPublicKey(senderId, publicKeyId);
         setPublicKeys((prev) => ({ ...prev, [senderId]: publicKey }));
       }
     }
 
     if (!publicKey || !keyPair?.privateKey) {
-      console.error(`Decryption keys not available: publicKey=${!!publicKey}, privateKey=${!!keyPair?.privateKey}`);
       throw new Error('Decryption keys not available for file');
     }
 
@@ -879,13 +879,15 @@ const SecretPrivateChat = () => {
       const publicKeyBytes = sodium.from_base64(publicKey);
       const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
       const nonceBytes = sodium.from_base64(nonce);
+
       const decryptedBytes = sodium.crypto_box_open_easy(
         encryptedFileBytes,
         nonceBytes,
         publicKeyBytes,
         privateKeyBytes
       );
-      console.log(`File decryption successful for senderId=${senderId}, recipientId=${recipientId}`);
+
+      console.log(`File decryption successful for senderId=${senderId}`);
       return decryptedBytes;
     } catch (error) {
       console.error(`File decryption failed:`, error);
@@ -1762,8 +1764,15 @@ const SecretPrivateChat = () => {
       let fileName = 'file';
       let contentType = 'application/octet-stream';
 
+      // === Расшифровка метаданных ===
       if (msg.encryptedContent && msg.nonce) {
-        const senderPublicKey = await getPublicKey(msg.sender.id, msg.publicKeyId);
+        let senderPublicKey = publicKeys[msg.sender.id];
+        if (!senderPublicKey) {
+          console.log(`[downloadFile] Public key missing for senderId=${msg.sender.id}, fetching...`);
+          senderPublicKey = await getPublicKey(msg.sender.id, msg.publicKeyId);
+          setPublicKeys((prev) => ({ ...prev, [msg.sender.id]: senderPublicKey }));
+        }
+
         const decryptedMeta = await decryptMessage(
           msg.encryptedContent,
           msg.nonce,
@@ -1776,9 +1785,18 @@ const SecretPrivateChat = () => {
         contentType = meta.contentType || meta.mimeType || 'application/octet-stream';
       }
 
+      // === Скачивание и расшифровка файла ===
       const res = await fetch(fileUrl);
       if (!res.ok) throw new Error(`Failed to download file: ${res.status}`);
       const encrypted = new Uint8Array(await res.arrayBuffer());
+
+      // === ГАРАНТИРОВАННАЯ ЗАГРУЗКА КЛЮЧА ПЕРЕД РАСШИФРОВКОЙ ===
+      let senderPublicKey = publicKeys[msg.sender.id];
+      if (!senderPublicKey) {
+        console.log(`[downloadFile] Forcing public key fetch for senderId=${msg.sender.id}`);
+        senderPublicKey = await getPublicKey(msg.sender.id, publicKeyId);
+        setPublicKeys((prev) => ({ ...prev, [msg.sender.id]: senderPublicKey }));
+      }
 
       const decrypted = await decryptFileContent(
         encrypted,
