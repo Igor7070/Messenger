@@ -260,34 +260,45 @@ const SecretPrivateChat = () => {
                 return { ...msg, ...fileData, delivered: msg.delivered_status, read: msg.read_status };
               }
 
+              // === ВХОДЯЩИЕ ФАЙЛЫ — без кэша, только имя и тип ===
               try {
-                let publicKey = publicKeys[msg.sender.id];
-                if (!publicKey || msg.publicKeyId) {
-                  publicKey = await getPublicKey(msg.sender.id, msg.publicKeyId);
-                  setPublicKeys(p => ({ ...p, [msg.sender.id]: publicKey }));
-                }
+                let fileName = 'Unknown file';
+                let contentType = 'application/octet-stream';
 
-                let fileName, contentType;
                 if (msg.encryptedContent && msg.nonce) {
-                  const meta = JSON.parse(await decryptMessage(msg.encryptedContent, msg.nonce, msg.sender.id, msg.timestamp, publicKey));
-                  fileName = meta.fileName; contentType = meta.contentType;
+                  let publicKey = publicKeys[msg.sender.id];
+                  if (!publicKey || msg.publicKeyId) {
+                    publicKey = await getPublicKey(msg.sender.id, msg.publicKeyId);
+                    setPublicKeys(p => ({ ...p, [msg.sender.id]: publicKey }));
+                  }
+
+                  const decryptedMeta = await decryptMessage(
+                    msg.encryptedContent,
+                    msg.nonce,
+                    msg.sender.id,
+                    msg.timestamp,
+                    publicKey
+                  );
+                  const meta = JSON.parse(decryptedMeta);
+                  fileName = meta.fileName;
+                  contentType = meta.contentType || meta.mimeType || 'application/octet-stream';
                 }
 
-                const cached = getFileFromCache(chatIdParam, userId, msg.id);
-                if (cached) return { ...msg, ...cached, delivered: msg.delivered_status, read: msg.read_status };
-
-                const metadata = await fetchFileMetadata(msg.id);
-                const res = await fetch(metadata.fileUrl);
-                const encrypted = new Uint8Array(await res.arrayBuffer());
-                const decrypted = await decryptFileContent(encrypted, metadata.nonce, msg.sender.id, metadata.publicKeyId, publicKeys, keyPair, userId);
-                const blob = new Blob([decrypted], { type: contentType });
-                const fileUrl = URL.createObjectURL(blob);
-
-                saveFileToCache(chatIdParam, userId, msg.id, { fileName, contentType, fileUrl });
-                return { ...msg, fileUrl, fileName, contentType, delivered: msg.delivered_status, read: msg.read_status };
+                return {
+                  ...msg,
+                  fileName,
+                  contentType,
+                  delivered: msg.delivered_status,
+                  read: msg.read_status
+                };
               } catch (e) {
-                console.error('File decryption failed:', e);
-                return { ...msg, fileName: 'Decryption failed', delivered: msg.delivered_status, read: msg.read_status };
+                console.error('File metadata decryption failed on load:', e);
+                return {
+                  ...msg,
+                  fileName: 'Decryption failed',
+                  delivered: msg.delivered_status,
+                  read: msg.read_status
+                };
               }
             }
 
@@ -390,7 +401,7 @@ const SecretPrivateChat = () => {
           // === ФАЙЛОВЫЕ СООБЩЕНИЯ ===
           } else if (newMessage.messageType === 'file') {
             if (newMessage.sender.id === userId) {
-              // === СВОИ ФАЙЛЫ — как было (localStorage) ===
+              // === СВОИ ФАЙЛЫ — из localStorage (как было) ===
               const fileContentKey = `fileContent_${chatId}_${userId}_${newMessage.clientMessageId}`;
               const storedFileData = localStorage.getItem(fileContentKey);
               let fileData = {};
@@ -408,7 +419,7 @@ const SecretPrivateChat = () => {
                 read: newMessage.read_status ?? false,
               });
             } else {
-              // === ВХОДЯЩИЕ ФАЙЛЫ — ТОЛЬКО имя и тип, скачивание по клику ===
+              // === ВХОДЯЩИЕ ФАЙЛЫ — БЕЗ КЭША, ТОЛЬКО ИМЯ И ТИП ===
               try {
                 let fileName = 'Unknown file';
                 let contentType = 'application/octet-stream';
@@ -445,7 +456,7 @@ const SecretPrivateChat = () => {
                   read: newMessage.read_status ?? false,
                 });
               } catch (error) {
-                console.error(`Failed to process incoming file metadata ID=${newMessage.id}:`, error);
+                console.error(`Failed to decrypt file metadata ID=${newMessage.id}:`, error);
                 updateMessages({
                   ...newMessage,
                   fileName: 'Decryption failed',
@@ -453,7 +464,7 @@ const SecretPrivateChat = () => {
                   delivered: newMessage.delivered_status ?? false,
                   read: newMessage.read_status ?? false,
                 });
-                toast.error(`Failed to decrypt file name: ${error.message}`);
+                toast.error('Failed to decrypt file name');
               }
             }
 
@@ -467,7 +478,7 @@ const SecretPrivateChat = () => {
           }
         });
 
-        // === ПОДПИСКИ НА СТАТУСЫ И КЛЮЧИ (остальное без изменений) ===
+        // === ПОДПИСКИ НА СТАТУСЫ И КЛЮЧИ ===
         stompClientInstance.subscribe(`/topic/messageStatus/${chatId}`, (statusMessage) => {
           const statusUpdate = JSON.parse(statusMessage.body);
           console.log('Received status update:', statusUpdate);
@@ -701,7 +712,7 @@ const SecretPrivateChat = () => {
         if (!data.fileUrl || !data.nonce) {
           throw new Error('Invalid file metadata: missing fileUrl or nonce');
         }
-        return data; // { fileUrl, nonce, publicKeyId }
+        return data;
       } catch (error) {
         console.error(`Error fetching file metadata for messageId=${messageId}, attempt=${attempt}:`, error);
         if (attempt === retries) {
@@ -1745,11 +1756,9 @@ const SecretPrivateChat = () => {
 
   const downloadFile = async (msg) => {
     try {
-      // 1. Получаем метаданные: fileUrl, nonce, publicKeyId
       const metadata = await fetchFileMetadata(msg.id);
       const { fileUrl, nonce, publicKeyId } = metadata;
 
-      // 2. Расшифровываем метаданные (имя и тип)
       let fileName = 'file';
       let contentType = 'application/octet-stream';
 
@@ -1767,12 +1776,10 @@ const SecretPrivateChat = () => {
         contentType = meta.contentType || meta.mimeType || 'application/octet-stream';
       }
 
-      // 3. Скачиваем зашифрованный файл с сервера
       const res = await fetch(fileUrl);
       if (!res.ok) throw new Error(`Failed to download file: ${res.status}`);
       const encrypted = new Uint8Array(await res.arrayBuffer());
 
-      // 4. Расшифровываем содержимое
       const decrypted = await decryptFileContent(
         encrypted,
         nonce,
@@ -1783,7 +1790,6 @@ const SecretPrivateChat = () => {
         userId
       );
 
-      // 5. Создаём Blob и запускаем скачивание
       const blob = new Blob([decrypted], { type: contentType });
       const blobUrl = URL.createObjectURL(blob);
 
