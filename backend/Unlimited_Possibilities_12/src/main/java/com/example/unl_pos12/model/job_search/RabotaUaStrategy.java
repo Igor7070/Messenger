@@ -77,7 +77,7 @@ public class RabotaUaStrategy implements Strategy {
 
         try {
             //Для Railway
-            String remoteUrl = "https://standalone-chrome-production-4953.up.railway.app/wd/hub";
+            String remoteUrl = "https://standalone-chrome-production-19d7.up.railway.app/wd/hub";
             ChromeOptions options = new ChromeOptions();
             //options.addArguments("--headless"); // Запуск без графического интерфейса
             options.addArguments("--disable-gpu");
