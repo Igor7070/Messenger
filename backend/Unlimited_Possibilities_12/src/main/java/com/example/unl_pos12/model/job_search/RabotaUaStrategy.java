@@ -78,11 +78,40 @@ public class RabotaUaStrategy implements Strategy {
         try {
             //Для Railway
             String remoteUrl = "https://standalone-chrome-production-19d7.up.railway.app/wd/hub";
+
             ChromeOptions options = new ChromeOptions();
-            //options.addArguments("--headless"); // Запуск без графического интерфейса
-            options.addArguments("--disable-gpu");
-            options.addArguments("--lang=" + "ru"); // Установка языка в зависимости от параметра, например, "ru" или "en"
-            driver = new RemoteWebDriver(new URL(remoteUrl), options);
+
+            // КРИТИЧНО ДЛЯ СЕРВЕРА (Railway, Docker и т.п.)
+            options.addArguments("--headless=new");           // Новый, быстрый headless-режим
+            options.addArguments("--no-sandbox");             // Обязательно в контейнерах
+            options.addArguments("--disable-dev-shm-usage");  // Предотвращает краши из-за памяти
+            options.addArguments("--disable-gpu");            // Отключаем GPU (не нужен в headless)
+            options.addArguments("--disable-extensions");     // Ускоряет запуск
+            options.addArguments("--disable-infobars");       // Убирает предупреждения
+            options.addArguments("--window-size=1920,1080");  // Фиксированный размер окна
+            options.addArguments("--lang=ru");                // Язык интерфейса
+            options.addArguments("--remote-debugging-port=9222"); // На случай отладки
+
+            // Опционально: если знаешь версию Chrome в контейнере — укажи
+            // options.setBrowserVersion("129");
+
+            // Создаём драйвер с таймаутами и логами
+            try {
+                System.out.println("Подключение к Selenium Grid: " + remoteUrl);
+                driver = new RemoteWebDriver(new URL(remoteUrl), options);
+
+                // Устанавливаем таймауты
+                driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30));
+                driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
+
+                System.out.println("WebDriver успешно запущен! Session ID: " +
+                        ((RemoteWebDriver) driver).getSessionId());
+
+            } catch (Exception e) {
+                System.err.println("ОШИБКА: Не удалось запустить WebDriver: " + e.getMessage());
+                e.printStackTrace();
+                throw new RuntimeException("Сессия Selenium не создана", e);
+            }
 
             //Для локальной работы
             //driver = new ChromeDriver();
