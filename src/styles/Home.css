@@ -396,6 +396,10 @@ h2 {
     padding: 10px;
   }
 
+  .login-container-home {
+    margin-top: 20px !important;
+  }
+
   .users-container,
   .chats-container {
     max-height: 400px;
