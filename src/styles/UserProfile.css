@@ -372,9 +372,9 @@
   background-color: #d32f2f; /* Темнее при наведении */
 }
 
-@media (max-width: 800px) {
+@media (max-width: 480px) {
     .user-profile-container {
-        padding: 12px !important;
+        padding: 16px !important;
         margin: 8px !important;
         max-width: none !important;
         border-radius: 0 !important;
@@ -385,21 +385,21 @@
 
     .button-container {
         display: flex !important;
-        flex-direction: row !important;
-        gap: 10px !important;
+        flex-direction: column !important;
+        gap: 12px !important;
         width: 100% !important;
         margin-top: 16px !important;
-        justify-content: stretch !important;
-        align-items: stretch !important;
+        align-items: center !important;
     }
 
     .update-button,
     .calls-button,
     .personal-chats-button {
-        flex: 1 !important;
+        width: 100% !important;
+        max-width: 100% !important;
         min-height: 48px !important;
-        padding: 10px 8px !important;
-        font-size: 13px !important;
+        padding: 12px 16px !important;
+        font-size: 16px !important;
         font-weight: 600 !important;
         border-radius: 8px !important;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
@@ -407,36 +407,63 @@
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        text-align: center !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+        margin: 0 !important;
     }
 
-    /* ЦВЕТА */
     .update-button {
         background-color: #007bff !important;
     }
+
     .update-button:hover {
-        background-color: #0062cc !important;
+        background-color: #0069d9 !important;
+        transform: translateY(-1px) !important;
     }
 
     .calls-button {
         background-color: #e57373 !important;
     }
+
     .calls-button:hover {
         background-color: #d32f2f !important;
+        transform: translateY(-1px) !important;
     }
 
     .personal-chats-button {
         background-color: #6f00ff !important;
     }
+
     .personal-chats-button:hover {
         background-color: #5a00d4 !important;
+        transform: translateY(-1px) !important;
     }
 
-    /* УБИРАЕМ ВЫХОД ЗА ПРЕДЕЛЫ */
-    .button-container > * {
-        max-width: 33.33% !important;
+    /* Убираем лишние отступы */
+    .user-info,
+    .call-buttons-container,
+    .send-message-button {
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    .send-message-button {
+        margin-top: 16px !important;
+        padding: 12px !important;
+        font-size: 16px !important;
+    }
+
+    .standard-call-buttons,
+    .translate-call-container {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+
+    .voice-call-button,
+    .video-call-button,
+    .translate-call-button {
+        flex: 1 !important;
+        min-height: 48px !important;
+        font-size: 15px !important;
+        padding: 10px !important;
     }
 }
