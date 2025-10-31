@@ -488,7 +488,9 @@ const UserProfile = () => {
                     <span className="userprofile-status-indicator-online"></span>
                 )}
             </div>
-            {userId === String(currentUserId) && (
+
+            {/* === КНОПКИ ДЛЯ СВОЕЙ СТРАНИЦЫ — ТОЛЬКО ЕСЛИ АВТОРИЗОВАН === */}
+            {currentUserId && userId === String(currentUserId) && (
                 <div className="userprofile-avatar-input-container">
                     <label className="userprofile-file-label">
                         <input type="file" onChange={handleAvatarChange} className="userprofile-avatar-input" />
@@ -496,6 +498,7 @@ const UserProfile = () => {
                     </label>
                 </div>
             )}
+
             <div className="user-info">
                 <h2 className="user-info-title">About me:</h2>
                 {isEditing ? (
@@ -509,57 +512,80 @@ const UserProfile = () => {
                 ) : (
                     <div className="user-info-text">
                         <p className="user-info-description">{info}</p>
-                        {userId === String(currentUserId) && (
+                        {currentUserId && userId === String(currentUserId) && (
                             <FaEdit className="edit-icon" onClick={() => setIsEditing(true)} />
                         )}
                     </div>
                 )}
             </div>
 
-            <div className="button-container">
-                {userId === String(currentUserId) && (
-                    <>
-                        <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
-                        <button onClick={() => navigate('/calls')} className="calls-button">Calls</button>
-                        <button onClick={handlePersonalChats} className="personal-chats-button">
-                            Personal Chats
-                        </button>
-                    </>
-                )}
-                <FaEllipsisV className="settings-icon" onClick={toggleSettingsMenu} />
-                {settingsMenuVisible && (
-                    <div className="settings-menu">
-                        {userId === String(currentUserId) ? (
+            {/* === КНОПКИ ДЛЯ СВОЕЙ СТРАНИЦЫ — ВИДНЫ ТОЛЬКО АВТОРИЗОВАННЫМ === */}
+            {currentUserId && userId === String(currentUserId) && (
+                <div className="button-container">
+                    <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
+                    <button onClick={() => navigate('/calls')} className="calls-button">Calls</button>
+                    <button onClick={handlePersonalChats} className="personal-chats-button">
+                        Personal Chats
+                    </button>
+                    <FaEllipsisV className="settings-icon" onClick={toggleSettingsMenu} />
+                    {settingsMenuVisible && (
+                        <div className="settings-menu">
                             <button onClick={handleDeleteAccount}>Delete account</button>
-                        ) : (
-                            <button onClick={handleSecretChat}>Open Secret Chat</button>
-                        )}
-                    </div>
-                )}
-            </div>
-
-            {currentUserId && userId !== String(currentUserId) && (
-                <button onClick={handleSendMessage} className="send-message-button">Send Message</button>
-            )}
-
-            {currentUserId && userId !== String(currentUserId) && (
-                <div className="call-buttons-container">
-                    <div className="standard-call-buttons">
-                        <button onClick={handleCall} className="voice-call-button">
-                            <FaPhone /> Voice Call
-                        </button>
-                        <button onClick={handleVideoCall} className="video-call-button">
-                            <FaVideo /> Video Call
-                        </button>
-                    </div>
-                    <div className="translate-call-container">
-                        <button onClick={handleTranslateCall} className="translate-call-button">
-                            <FaLanguage /> Translate Call
-                        </button>
-                    </div>
+                        </div>
+                    )}
                 </div>
             )}
 
+            {/* === КНОПКИ ДЛЯ ЧУЖОЙ СТРАНИЦЫ — ВИДНЫ ВСЕМ, НО С ТОАСТОМ === */}
+            {(!currentUserId || userId !== String(currentUserId)) && (
+                <>
+                    <button
+                        onClick={currentUserId ? handleSendMessage : () => toast.warn("You need to log in to send a message.")}
+                        className="send-message-button"
+                    >
+                        Send Message
+                    </button>
+
+                    <div className="call-buttons-container">
+                        <div className="standard-call-buttons">
+                            <button
+                                onClick={currentUserId ? handleCall : () => toast.warn("You need to log in to make a voice call.")}
+                                className="voice-call-button"
+                            >
+                                <FaPhone /> Voice Call
+                            </button>
+                            <button
+                                onClick={currentUserId ? handleVideoCall : () => toast.warn("You need to log in to make a video call.")}
+                                className="video-call-button"
+                            >
+                                <FaVideo /> Video Call
+                            </button>
+                        </div>
+                        <div className="translate-call-container">
+                            <button
+                                onClick={currentUserId ? handleTranslateCall : () => toast.warn("You need to log in to use translation.")}
+                                className="translate-call-button"
+                            >
+                                <FaLanguage /> Translate Call
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Меню "..." для чужого профиля — только если авторизован */}
+                    {currentUserId && (
+                        <>
+                            <FaEllipsisV className="settings-icon" onClick={toggleSettingsMenu} />
+                            {settingsMenuVisible && (
+                                <div className="settings-menu">
+                                    <button onClick={handleSecretChat}>Open Secret Chat</button>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </>
+            )}
+
+            {/* === МОДАЛКА АВАТАРА === */}
             <Modal isOpen={isModalOpen} onRequestClose={closeModal} className="user-profile-modal" overlayClassName="user-profile-modal-overlay">
                 <img
                     src={`https://unlimitedpossibilities12.org/avatars/${avatarFileName}`}
@@ -571,7 +597,8 @@ const UserProfile = () => {
                 <button onClick={closeModal} className="user-profile-modal-close-button">Close</button>
             </Modal>
 
-            {incomingCall && (
+            {/* === ВХОДЯЩИЙ ЗВОНОК === */}
+            {incomingCall && currentUserId && (
                 <IncomingCallNotification
                     callerId={incomingCall.callerId}
                     callerName={incomingCall.callerName || 'Unknown'}
