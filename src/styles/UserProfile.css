@@ -447,9 +447,24 @@
     }
 
     .send-message-button {
-        margin-top: 16px !important;
-        padding: 12px !important;
+        min-height: 48px !important;
+        padding: 12px 16px !important;
         font-size: 16px !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+        transition: all 0.3s ease !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 16px 0 0 0 !important;
+        width: 100% !important;
+        background-color: #4CAF50 !important;
+    }
+
+    .send-message-button:hover {
+        background-color: #45a049 !important;
+        transform: translateY(-1px) !important;
     }
 
     .standard-call-buttons,
