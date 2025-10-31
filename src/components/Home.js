@@ -93,6 +93,7 @@ const Home = () => {
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [activeTab, setActiveTab] = useState('users'); // 'users' или 'chats'
   const messageClient = useRef(null);
   const navigate = useNavigate();
   const { userInteracted, handleInteraction } = useUserInteraction();
