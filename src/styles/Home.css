@@ -414,11 +414,17 @@ h2 {
     width: 100%;
   }
 
+  /* === УВЕЛИЧЕН ОТСТУП ОТ Login/Logout ДО ВЕРХА === */
+  .login-container-home {
+    margin: 20px 10px 20px !important; /* сверху: 20px, как у вкладок */
+    padding-top: 8px !important;
+  }
+
   /* === ВКЛАДКИ: ТОЛЬКО НА ТЕЛЕФОНЕ === */
   .tab-buttons-mobile {
     display: flex !important;
     width: 100% !important;
-    margin-bottom: 16px !important;
+    margin: 20px 0 16px 0 !important; /* сверху: 20px */
     border-bottom: 1px solid #ccc !important;
   }
 
