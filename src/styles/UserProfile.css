@@ -483,4 +483,18 @@
         justify-content: center !important;
         gap: 8px !important;
     }
+
+    /* === СТИЛЬНАЯ ОБВОДКА + ЗАКРУГЛЁННЫЕ УГЛЫ ДЛЯ ПРОФИЛЯ НА ТЕЛЕФОНЕ === */
+    .user-profile-container {
+        border: 1px solid rgba(165, 214, 167, 0.4) !important;
+        box-shadow: 
+            0 6px 16px rgba(0, 0, 0, 0.12),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.5) !important;
+        border-radius: 16px !important;
+        background-color: rgba(218, 247, 169, 0.92) !important;
+        backdrop-filter: blur(6px) !important;
+        -webkit-backdrop-filter: blur(6px) !important;
+        padding: 16px !important;
+        margin: 12px !important;
+    }
 }
