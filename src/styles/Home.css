@@ -478,4 +478,16 @@ h2 {
   .home-group-chats-h1 {
     display: none !important;
   }
+
+  /* === СТИЛЬНАЯ ОБВОДКА*/
+  .home-container {
+    border: 1px solid rgba(100, 100, 150, 0.2) !important;
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.1),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
+    border-radius: 14px !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+    background-color: rgba(230, 230, 250, 0.9) !important;
+  }
 }
