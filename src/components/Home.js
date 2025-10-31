@@ -452,9 +452,26 @@ const Home = () => {
         />
       )}
 
+      {/* === ВКЛАДКИ НА ТЕЛЕФОНЕ === */}
+      <div className="tab-buttons">
+        <button
+          className={`tab-button ${activeTab === 'users' ? 'active' : ''}`}
+          onClick={() => setActiveTab('users')}
+        >
+          Users
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'chats' ? 'active' : ''}`}
+          onClick={() => setActiveTab('chats')}
+        >
+          Group Chats
+        </button>
+      </div>
+
+      {/* === КОНТЕНТ ВКЛАДОК === */}
       <div className="line-divider-container">
-        <div className="users-container">
-          <h2 className="home-users-h2">Users</h2>
+        {/* === ВКЛАДКА: USERS === */}
+        <div className={`users-container ${activeTab === 'users' ? 'tab-active' : ''}`}>
           <button type="button" onClick={openModal} className="create-user-button-main">
             Create a new user
           </button>
@@ -472,7 +489,6 @@ const Home = () => {
                 : null;
               const initials = user.username ? user.username.charAt(0).toUpperCase() : '';
               const userStatus = usersStatus[user.id] || { online: false };
-              console.log(`User ${user.id}: online=${userStatus.online}`);
 
               return (
                 <li
@@ -491,10 +507,7 @@ const Home = () => {
                   )}
                   <span className="user-name">{user.username}</span>
                   {userStatus.online && (
-                    <span
-                      className="status-indicator-online-home"
-                      style={{ backgroundColor: '#4CAF50' }}
-                    ></span>
+                    <span className="status-indicator-online-home"></span>
                   )}
                 </li>
               );
@@ -504,8 +517,8 @@ const Home = () => {
 
         <div className="line-divider"></div>
 
-        <div className="chats-container">
-          <h1 className="home-group-chats-h1">Group chats</h1>
+        {/* === ВКЛАДКА: GROUP CHATS === */}
+        <div className={`chats-container ${activeTab === 'chats' ? 'tab-active' : ''}`}>
           <div className="chat-input-container">
             <input
               type="text"
@@ -546,6 +559,7 @@ const Home = () => {
         </div>
       </div>
 
+      {/* === МОДАЛКА СОЗДАНИЯ ПОЛЬЗОВАТЕЛЯ === */}
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={() => setModalIsOpen(false)}
