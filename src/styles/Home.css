@@ -397,7 +397,8 @@ h2 {
   }
 
   .login-container-home {
-    margin-top: 20px !important;
+    margin: 20px 10px 20px !important; /* сверху: 20px, как у вкладок */
+    padding-top: 8px !important;
   }
 
   .users-container,
