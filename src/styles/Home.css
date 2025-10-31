@@ -397,7 +397,7 @@ h2 {
   }
 
   .login-container-home {
-    margin: 10px 10px 10px !important; /* сверху: 10px — как просил */
+    margin: 10px 10px 20px !important; /* сверху: 10px — как просил */
   }
 
   .users-container,
