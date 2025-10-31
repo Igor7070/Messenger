@@ -388,11 +388,11 @@ const Home = () => {
   };
 
   const goToChat = (chatId) => {
-    if (!isLoggedIn || currentUserId === null) {
+    /*if (!isLoggedIn || currentUserId === null) {
       toast.error('You need to create an account or log in');
       console.log(`Unauthorized user attempted to access group chat: ${chatId}`);
       return;
-    }
+    }*/
     navigate(`/chat/${chatId}`);
   };
 
