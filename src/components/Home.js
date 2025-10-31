@@ -405,8 +405,11 @@ const Home = () => {
   };
 
   const filteredChats = chats
-    .filter((chat) => !chat.private)
-    .filter((chat) => chat.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  .filter((chat) => !chat.private && !chat.isSecret) // Только публичные групповые
+  .filter((chat) => 
+    typeof chat.name === 'string' && 
+    chat.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const filteredUsers = users.filter((user) =>
     user.username.toLowerCase().includes(userSearchTerm.toLowerCase())
