@@ -287,9 +287,11 @@ const Messenger = () => {
                   setIsTranscriptionEnabled(localStorage.getItem(`transcription_enabled_${chatId}`) === 'true');
                   setTranscriptionMode(localStorage.getItem(`transcription_mode_${chatId}`) || 'selective');
               } else {
-                  toast.error('User is not authorized');
+                  /*toast.error('User is not authorized');
                   navigate('/');
-                  return;
+                  return;*/
+                  toast.info('Guest mode: reading group chat allowed');
+                  console.log('Guest mode: reading group chat allowed');
               }
 
               // Загружаем сообщения
