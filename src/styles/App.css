@@ -88,7 +88,7 @@ body {
 
 /* Медиа-запрос для мобильных устройств (ширина до 768px) */
 @media (max-width: 800px) {
-  html, body {
+    html, body {
         margin: 0 !important;
         padding: 0 !important;
         width: 100% !important;
@@ -123,11 +123,13 @@ body {
         flex-direction: column !important;
     }
 
+    /* === ЗАГОЛОВОК + КОНТЕЙНЕР === */
     .header-container {
         position: relative !important;
         text-align: center !important;
-        margin-bottom: 20px !important;
-        padding: 8px 0 !important;
+        margin-bottom: 48px !important; /* БОЛЬШОЙ ОТСТУП ПОД ССЫЛКИ */
+        padding: 12px 0 !important;
+        z-index: 10 !important;
     }
 
     .app-title {
@@ -137,55 +139,59 @@ body {
         text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
         margin: 0 !important;
         letter-spacing: 0.5px !important;
+        display: block !important;
+        position: relative !important;
+        z-index: 11 !important;
     }
 
-    /* ССЫЛКИ — КРУПНЫЕ, КРАСИВЫЕ, В ТОН */
+    /* === ССЫЛКИ — ПОД ЗАГОЛОВКОМ, ПО КРАЯМ === */
     .nav-link {
         font-size: 1rem !important;
         font-weight: 600 !important;
         text-decoration: none !important;
-        padding: 6px 12px !important;
-        border-radius: 20px !important;
-        backdrop-filter: blur(4px) !important;
-        -webkit-backdrop-filter: blur(4px) !important;
+        padding: 8px 16px !important;
+        border-radius: 24px !important;
+        backdrop-filter: blur(6px) !important;
+        -webkit-backdrop-filter: blur(6px) !important;
         transition: all 0.3s ease !important;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
         position: absolute !important;
-        top: 50% !important;
-        transform: translateY(-50%) !important;
-        z-index: 10 !important;
+        top: 56px !important; /* ПОД ЗАГОЛОВКОМ */
+        transform: none !important;
+        z-index: 9 !important;
     }
 
     .nav-link-home {
         right: 12px !important;
-        background: rgba(33, 150, 243, 0.25) !important;
+        background: rgba(33, 150, 243, 0.3) !important;
         color: #e3f2fd !important;
-        border: 1px solid rgba(33, 150, 243, 0.4) !important;
+        border: 1px solid rgba(33, 150, 243, 0.5) !important;
     }
 
     .nav-link-home:hover {
-        background: rgba(25, 118, 210, 0.4) !important;
+        background: rgba(25, 118, 210, 0.5) !important;
         color: #ffffff !important;
-        transform: translateY(-50%) scale(1.05) !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        transform: scale(1.05) !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
     }
 
     .nav-link-main {
         left: 12px !important;
-        background: rgba(126, 87, 194, 0.25) !important;
+        background: rgba(126, 87, 194, 0.3) !important;
         color: #f3e5f5 !important;
-        border: 1px solid rgba(126, 87, 194, 0.4) !important;
+        border: 1px solid rgba(126, 87, 194, 0.5) !important;
     }
 
     .nav-link-main:hover {
-        background: rgba(94, 53, 177, 0.4) !important;
+        background: rgba(94, 53, 177, 0.5) !important;
         color: #ffffff !important;
-        transform: translateY(-50%) scale(1.05) !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        transform: scale(1.05) !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
     }
 
-    /* Контент ниже — с отступом */
+    /* === КОНТЕНТ НИЖЕ — С ОТСТУПОМ === */
     .app > *:not(.header-container):not(.nav-link) {
-        margin-top: 12px !important;
+        margin-top: 16px !important;
+        z-index: 5 !important;
     }
 }
