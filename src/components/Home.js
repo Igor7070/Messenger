@@ -453,8 +453,8 @@ const Home = () => {
         />
       )}
 
-      {/* === ВКЛАДКИ НА ТЕЛЕФОНЕ === */}
-      <div className="tab-buttons">
+      {/* === ВКЛАДКИ ТОЛЬКО НА ТЕЛЕФОНЕ === */}
+      <div className="tab-buttons-mobile">
         <button
           className={`tab-button ${activeTab === 'users' ? 'active' : ''}`}
           onClick={() => setActiveTab('users')}
@@ -469,10 +469,13 @@ const Home = () => {
         </button>
       </div>
 
-      {/* === КОНТЕНТ ВКЛАДОК === */}
+      {/* === ОСНОВНОЙ КОНТЕНТ === */}
       <div className="line-divider-container">
-        {/* === ВКЛАДКА: USERS === */}
+        {/* === USERS === */}
         <div className={`users-container ${activeTab === 'users' ? 'tab-active' : ''}`}>
+          {/* Заголовок — только на ПК */}
+          <h2 className="home-users-h2 desktop-only">Users</h2>
+
           <button type="button" onClick={openModal} className="create-user-button-main">
             Create a new user
           </button>
@@ -518,8 +521,11 @@ const Home = () => {
 
         <div className="line-divider"></div>
 
-        {/* === ВКЛАДКА: GROUP CHATS === */}
+        {/* === GROUP CHATS === */}
         <div className={`chats-container ${activeTab === 'chats' ? 'tab-active' : ''}`}>
+          {/* Заголовок — только на ПК */}
+          <h1 className="home-group-chats-h1 desktop-only">Group chats</h1>
+
           <div className="chat-input-container">
             <input
               type="text"
@@ -560,7 +566,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* === МОДАЛКА СОЗДАНИЯ ПОЛЬЗОВАТЕЛЯ === */}
+      {/* === МОДАЛКА === */}
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={() => setModalIsOpen(false)}
