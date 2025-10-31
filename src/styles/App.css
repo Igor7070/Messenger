@@ -87,12 +87,105 @@ body {
 }
 
 /* Медиа-запрос для мобильных устройств (ширина до 768px) */
-@media (max-width: 768px) {
-  .nav-link {
-    top: -10px; /* Поднимаем ссылки выше на мобильных устройствах */
-  }
+@media (max-width: 800px) {
+  html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important;
+        background-image: url('https://igor7070.github.io/Messenger/Background_messenger_1.png') !important;
+        background-size: cover !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        font-family: 'Roboto', sans-serif !important;
+    }
 
-  .app-title {
-    font-size: 1.7rem; /* Уменьшаем заголовок для лучшей читаемости */
-  }
+    .app {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 16px !important;
+        max-width: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: linear-gradient(135deg, rgba(30, 136, 229, 0.15), rgba(13, 71, 161, 0.15)) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .header-container {
+        position: relative !important;
+        text-align: center !important;
+        margin-bottom: 20px !important;
+        padding: 8px 0 !important;
+    }
+
+    .app-title {
+        color: #ffffff !important;
+        font-size: 1.9rem !important;
+        font-weight: 700 !important;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+        margin: 0 !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    /* ССЫЛКИ — КРУПНЫЕ, КРАСИВЫЕ, В ТОН */
+    .nav-link {
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+        text-decoration: none !important;
+        padding: 6px 12px !important;
+        border-radius: 20px !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+        position: absolute !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        z-index: 10 !important;
+    }
+
+    .nav-link-home {
+        right: 12px !important;
+        background: rgba(33, 150, 243, 0.25) !important;
+        color: #e3f2fd !important;
+        border: 1px solid rgba(33, 150, 243, 0.4) !important;
+    }
+
+    .nav-link-home:hover {
+        background: rgba(25, 118, 210, 0.4) !important;
+        color: #ffffff !important;
+        transform: translateY(-50%) scale(1.05) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .nav-link-main {
+        left: 12px !important;
+        background: rgba(126, 87, 194, 0.25) !important;
+        color: #f3e5f5 !important;
+        border: 1px solid rgba(126, 87, 194, 0.4) !important;
+    }
+
+    .nav-link-main:hover {
+        background: rgba(94, 53, 177, 0.4) !important;
+        color: #ffffff !important;
+        transform: translateY(-50%) scale(1.05) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* Контент ниже — с отступом */
+    .app > *:not(.header-container):not(.nav-link) {
+        margin-top: 12px !important;
+    }
 }
