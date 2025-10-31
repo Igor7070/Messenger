@@ -127,7 +127,7 @@ body {
     .header-container {
         position: relative !important;
         text-align: center !important;
-        margin-bottom: 48px !important; /* БОЛЬШОЙ ОТСТУП ПОД ССЫЛКИ */
+        margin-bottom: 24px !important; /* БОЛЬШОЙ ОТСТУП ПОД ССЫЛКИ */
         padding: 12px 0 !important;
         z-index: 10 !important;
     }
