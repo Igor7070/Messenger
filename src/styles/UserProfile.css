@@ -465,5 +465,7 @@
         min-height: 48px !important;
         font-size: 15px !important;
         padding: 10px !important;
+        justify-content: center !important;
+        gap: 8px !important;
     }
 }
