@@ -1247,14 +1247,29 @@
 
 @media (max-width: 800px) {
     .private-chat {
-        margin: 10px;
-        padding: 15px;
-        max-width: 100%;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 8px !important;
+        max-width: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        display: flex !important;
+        flex-direction: column !important;
+        background-color: #D7E0E6 !important;
+        z-index: 1;
     }
 
     .private-chat-name {
-        font-size: 18px;
-        padding: 10px;
+        flex-shrink: 0;
+        margin-bottom: 8px !important;
+        padding: 10px !important;
+        border-radius: 8px !important;
+        font-size: 18px !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .private-message {
@@ -1290,10 +1305,10 @@
     }
 
     .private-input-message {
-        font-size: 14px;
-        padding: 10px 40px 10px 40px; /* Изменено: padding-right увеличен для учета иконки отправки */
-        min-height: 40px;
-        overflow-y: hidden;
+        padding: 10px 44px 10px 44px !important;
+        font-size: 15px !important;
+        min-height: 40px !important;
+        border-radius: 8px !important;
     }
 
     .private-input-message.scroll-enabled {
@@ -1313,6 +1328,11 @@
         font-size: 12px;
         padding: 6px;
         height: 32px;
+    }
+
+    .private-send-button {
+        height: 40px !important;
+        font-size: 14px !important;
     }
 
     .private-translation-controls {
@@ -1397,13 +1417,12 @@
     }
 
     .private-audio-player-wrapper {
-        width: 240px; /* Фиксированная ширина для мобильных */
-        max-width: 240px;
+        width: 100% !important;
+        max-width: 100% !important;
     }
 
     .private-audio-controls {
-        padding: 6px;
-        width: 100%; /* Полная ширина */
+        padding: 8px !important;
     }
 
     .private-audio-play-pause {
@@ -1435,11 +1454,8 @@
         right: -5px;
     }
 
-    .private-textarea-inner { /* ДОБАВЛЕНО */
-        position: relative; /* Для абсолютного позиционирования иконок */
-        display: flex;
-        align-items: center; /* Выравнивание иконок и текстового поля по центру */
-        width: 100%;
+    .private-textarea-inner {
+        position: relative;
     }
 
     /* ДОБАВЛЕНО: Адаптивные стили для attached-file */
@@ -1506,11 +1522,12 @@
     }
 
     .private-message-content-container {
-        padding: 3px;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
     }
 
     .private-message-content-container.no-avatar {
-        margin-left: 30px !important;
+        margin-left: 45px !important;
     }
 
     .private-message-content {
@@ -1673,4 +1690,37 @@
     border: 2px solid transparent;
     border-bottom-color: #333333;
   }
+
+  html, body, #root {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important;
+        background-color: #D7E0E6 !important;
+  }
+
+  .private-message-list {
+        flex: 1 !important;
+        min-height: 0 !important;
+        margin: 0 0 8px 0 !important;
+        padding: 8px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 8px !important;
+        background-color: #E8ECEF !important;
+        height: auto !important;
+        border: none !important;
+        gap: 8px;
+  }
+
+  .private-input-container {
+        flex-shrink: 0;
+        padding: 8px !important;
+        border-radius: 8px !important;
+        box-shadow: none !important;
+        gap: 8px;
+  }
+
+  
 }
