@@ -1335,74 +1335,44 @@ const PrivateChat = () => {
   }, [isTranscriptionEnabled, transcriptionMode, messages, transcribeExistingMessages]);
 
   const showTooltip = (event, tooltipText) => {
-    // Удаляем старые тултипы
+    // Удаляем существующие подсказки, если есть
     const existingTooltip = document.querySelector('.tooltip-dynamic');
     const existingArrow = document.querySelector('.tooltip-dynamic-arrow');
     if (existingTooltip) existingTooltip.remove();
     if (existingArrow) existingArrow.remove();
 
-    const button = event.currentTarget;
-    const rect = button.getBoundingClientRect();
-    const isMobile = window.innerWidth <= 800;
-
-    // Создаём тултип
+    // Создаем элемент подсказки
     const tooltip = document.createElement('div');
     tooltip.className = 'tooltip-dynamic';
     tooltip.textContent = tooltipText;
 
-    // Создаём стрелку
+    // Создаем элемент стрелки
     const arrow = document.createElement('div');
     arrow.className = 'tooltip-dynamic-arrow';
 
-    // Добавляем в body
+    // Добавляем элементы в body
     document.body.appendChild(tooltip);
     document.body.appendChild(arrow);
 
-    // Размеры
-    const tooltipHeight = isMobile ? 28 : 36;
-    const arrowSize = isMobile ? 6 : 8;
+    // Получаем координаты кнопки
+    const button = event.currentTarget;
+    const rect = button.getBoundingClientRect();
+    const isMobile = window.innerWidth <= 800;
 
-    let top, arrowTop;
-    if (isMobile) {
-      // На мобильных — СНИЗУ
-      top = rect.bottom + arrowSize;
-      arrowTop = rect.bottom;
-    } else {
-      // На ПК — СВЕРХУ
-      top = rect.top - tooltipHeight - arrowSize;
-      arrowTop = rect.top - arrowSize;
-    }
+    // Позиционируем подсказку
+    const tooltipHeight = isMobile ? 20 : 24; // Примерная высота (font-size + padding)
+    tooltip.style.top = `${rect.top - tooltipHeight - (isMobile ? 4 : 8)}px`; // top: -28px/-30px + стрелка
+    tooltip.style.left = `${rect.left + rect.width / 2}px`; // Центрируем по кнопке
+    tooltip.style.transform = 'translateX(-50%)'; // Смещаем на 50% влево
 
-    // Центрируем по кнопке
-    const left = rect.left + rect.width / 2;
-
-    tooltip.style.position = 'fixed';
-    tooltip.style.top = `${top}px`;
-    tooltip.style.left = `${left}px`;
-    tooltip.style.transform = 'translateX(-50%)';
-    tooltip.style.zIndex = '2147483647';
-
-    arrow.style.position = 'fixed';
-    arrow.style.top = `${arrowTop}px`;
-    arrow.style.left = `${left}px`;
+    // Позиционируем стрелку
+    arrow.style.top = `${rect.top - (isMobile ? 4 : 8)}px`; // top: -6px/-8px
+    arrow.style.left = `${rect.left + rect.width / 2}px`;
     arrow.style.transform = 'translateX(-50%)';
-    arrow.style.zIndex = '2147483647';
-
-    // Стрелка вниз (на мобильных) или вверх (на ПК)
-    if (isMobile) {
-      arrow.style.borderLeft = `${arrowSize}px solid transparent`;
-      arrow.style.borderRight = `${arrowSize}px solid transparent`;
-      arrow.style.borderTop = `${arrowSize}px solid #333333`;
-      arrow.style.borderBottom = 'none';
-    } else {
-      arrow.style.borderLeft = `${arrowSize}px solid transparent`;
-      arrow.style.borderRight = `${arrowSize}px solid transparent`;
-      arrow.style.borderBottom = `${arrowSize}px solid #333333`;
-      arrow.style.borderTop = 'none';
-    }
   };
 
   const hideTooltip = () => {
+    // Удаляем подсказку и стрелку
     const tooltip = document.querySelector('.tooltip-dynamic');
     const arrow = document.querySelector('.tooltip-dynamic-arrow');
     if (tooltip) tooltip.remove();
