@@ -6,178 +6,221 @@
     box-sizing: border-box;
 }
 
+/* === ПРЕМИУМ ФОН: GLASSMORPHISM === */
 .home-container {
     display: flex;
     flex-direction: column;
     max-width: 100%;
     margin: 0 auto;
-    padding: 20px;
-    background-color: #E6E6FA;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s ease;
 }
 
+/* === ЛОГИН БЛОК === */
 .login-container-home {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 0 10px 20px;
-    gap: 10px;
+    margin: 0 10px 24px;
+    gap: 12px;
     width: calc(100% - 20px);
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .login-input-home {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 12px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 15px;
     width: 80%;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
 }
 
-.login-button-home {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
-    background-color: #007bff;
-    color: white;
-    cursor: pointer;
-    width: 20%;
+.login-input-home::placeholder {
+    color: rgba(255, 255, 255, 0.7);
 }
 
+.login-input-home:focus {
+    outline: none;
+    border-color: #42a5f5;
+    background: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.2);
+}
+
+.login-button-home,
 .logout-button-home {
-    padding: 10px 15px;
+    padding: 12px 18px;
     border: none;
-    border-radius: 4px;
-    background-color: #007bff;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #42a5f5, #1e88e5);
     color: white;
     cursor: pointer;
     width: 20%;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(66, 165, 245, 0.3);
 }
 
 .login-button-home:hover,
 .logout-button-home:hover {
-    background-color: #0056b3;
+    background: linear-gradient(135deg, #1e88e5, #1565c0);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(66, 165, 245, 0.4);
 }
 
-.users-container {
-    flex: 1;
-    padding: 10px;
-    overflow-y: auto;
-    max-height: 600px;
-}
-
+/* === КОНТЕЙНЕРЫ СПИСКОВ === */
+.users-container,
 .chats-container {
     flex: 1;
-    padding: 10px;
+    padding: 16px;
     overflow-y: auto;
     max-height: 600px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    margin-top: 16px;
 }
 
+/* === ЗАГОЛОВКИ === */
 .home-group-chats-h1,
 .home-users-h2 {
     text-align: center;
-    color: #585858;
-    font-size: 2rem;
-    font-weight: bold;
-    margin: 0;
+    color: #ffffff;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0 0 16px 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    letter-spacing: -0.5px;
 }
 
-h1,
-h2 {
+h1, h2 {
     text-align: center;
-    color: #2E8B57;
+    color: #ffffff;
     font-size: 2rem;
-    font-weight: bold;
+    font-weight: 700;
     margin: 0;
-    font-family: sans-serif;
+    font-family: 'Inter', sans-serif;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* === ПОЛЯ ВВОДА === */
 .chat-input-container {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 16px;
+    gap: 12px;
 }
 
 .chat-input {
     flex: 1;
-    padding: 10px;
-    margin-top: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 5px;
-    margin-right: 10px;
-    font-size: 16px;
-    box-sizing: border-box;
-    max-width: 100%;
+    padding: 12px 16px;
+    margin-top: 0;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+    min-width: 200px;
+}
+
+.chat-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.chat-input:focus {
+    outline: none;
+    border-color: #42a5f5;
+    background: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.2);
+}
+
+/* === КНОПКИ === */
+.create-user-button-main,
+.create-chat-button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    min-width: 160px;
+    margin-top: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .create-user-button-main {
-    padding: 10px 10px;
-    border: none;
-    border-radius: 5px;
-    background-color: #26a69a;
-    color: white;
-    cursor: pointer;
-    font-size: 16px;
-    min-width: 150px;
-    margin-top: 10px;
-    margin-bottom: 15px;
-    box-sizing: border-box;
+    background: linear-gradient(135deg, #26a69a, #00796b);
 }
 
 .create-user-button-main:hover {
-    background-color: #00796b;
+    background: linear-gradient(135deg, #00796b, #004d40);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(38, 166, 154, 0.4);
 }
 
 .create-chat-button {
-    padding: 10px 10px;
-    border: none;
-    border-radius: 5px;
-    background-color: #8A4AF3;
-    color: white;
-    cursor: pointer;
-    font-size: 16px;
-    min-width: 150px;
-    margin-top: 10px;
-    box-sizing: border-box;
-    max-width: 100%;
+    background: linear-gradient(135deg, #8A4AF3, #6639BA);
 }
 
 .create-chat-button:hover {
-    background-color: #6639BA;
+    background: linear-gradient(135deg, #6639BA, #4a2a8f);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(138, 74, 243, 0.4);
 }
 
+/* === СПИСКИ === */
 .chat-list,
 .user-list {
     list-style-type: none;
     padding: 0;
     max-height: 400px;
     overflow-y: auto;
-    border: 1px solid #A9A9A9;
-    border-radius: 5px;
-    background-color: #DCDCDC;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(6px);
 }
 
-.chat-item {
-    display: flex;
-    align-items: center;
-    padding: 8px;
-    border-bottom: 1px solid #e9ecef;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
+.chat-item,
 .user-item {
-    padding: 10px;
-    border-bottom: 1px solid #e9ecef;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
+    color: #fff;
 }
 
 .chat-item:hover,
 .user-item:hover {
-    background-color: #f1f1f1;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(4px);
 }
 
 .chat-item:last-child,
@@ -185,15 +228,30 @@ h2 {
     border-bottom: none;
 }
 
+/* === ПОИСК === */
 .search-input {
     width: 100%;
-    padding: 10px;
-    margin-bottom: 0px;
-    border: 1px solid #ced4da;
-    border-radius: 5px;
-    box-sizing: border-box;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 15px;
+    backdrop-filter: blur(4px);
 }
 
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #42a5f5;
+    box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.2);
+}
+
+/* === ДЕЛИТЕЛЬ === */
 .line-divider-container {
     display: flex;
     width: 100%;
@@ -202,193 +260,94 @@ h2 {
 
 .line-divider {
     width: 1px;
-    background-color: #ccc;
-    margin: 0 20px;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.3), transparent);
+    margin: 0 24px;
 }
 
-.ReactModal__Overlay {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000 !important; /* Явно ниже тостов */
-}
-
-.ReactModal__Content {
-    background: #E4EFAB;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    width: 400px;
-    max-width: 90%;
-}
-
-.modal-title {
-    margin-bottom: 20px;
-    font-size: 24px;
-    color: #00796b;
-    text-align: center;
-}
-
-.modal-input,
-.modal-textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 5px;
-    margin-bottom: 15px;
-    font-size: 16px;
-    box-sizing: border-box;
-}
-
-.modal-textarea {
-    resize: vertical;
-}
-
-.modal-file-input {
-    margin-bottom: 15px;
-}
-
-.modal-create-button {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    background-color: #26a69a;
-    color: white;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s;
-    width: 100%;
-}
-
-.modal-create-button:hover {
-    background-color: #00796b;
-}
-
-.modal-close-button {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    background-color: #f44336;
-    color: white;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s;
-    width: 100%;
-    margin-top: 10px;
-}
-
-.modal-close-button:hover {
-    background-color: #d32f2f;
-}
-
-.user-name {
-    margin-left: 10px;
-}
-
+/* === АВАТАРЫ === */
 .user-avatar {
-    width: 35px;
-    height: 35px;
-    max-width: 35px;
-    max-height: 35px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background-color: #e0e0e0;
+    background: rgba(255, 255, 255, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 16px;
-    color: #757575;
+    color: #fff;
+    font-weight: 600;
+    border: 2px solid rgba(255, 255, 255, 0.3);
     overflow: hidden;
+    flex-shrink: 0;
 }
 
-.home-container .chat-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.home-container .chat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    line-height: 1.2;
-}
-
-.home-container .chat-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 4px; /* Увеличено с 2px до 4px */
-    line-height: 1.2;
-}
-
+/* === ЧАТЫ: ТЕКСТ === */
 .home-container .chat-name-group {
     font-size: 16px;
-    font-weight: 500;
-    color: #000000;
-    line-height: 1.2;
-    font-family: 'Inter', 'Arial', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1.3;
 }
 
 .home-container .chat-timestamp {
     font-size: 12px;
-    color: #757575;
-    line-height: 1.2;
+    color: rgba(255, 255, 255, 0.7);
 }
 
 .home-container .chat-last-message {
     font-size: 14px;
-    color: #757575;
+    color: rgba(255, 255, 255, 0.8);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 70%;
-    line-height: 1.2;
 }
 
 .home-container .unread-count {
-    font-size: 12px;
-    color: #FFFFFF;
-    background-color: #FF5722;
-    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #FF5722, #E64A19);
+    padding: 3px 8px;
     border-radius: 12px;
     min-width: 20px;
     text-align: center;
-    line-height: 1.2;
+    box-shadow: 0 2px 6px rgba(255, 87, 33, 0.3);
 }
 
+/* === СТАТУС === */
 .status-indicator-online-home {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    display: inline-block;
+    background: #4CAF50;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
     margin-left: 8px;
-    vertical-align: middle;
+    animation: pulse 2s infinite;
 }
 
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.6); }
+    70% { box-shadow: 0 0 0 6px rgba(76, 175, 80, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+}
+
+/* === ТОСТЫ === */
 .Toastify__toast-container {
-    z-index: 9999 !important; /* Выше всех элементов, включая модал */
-    position: fixed !important; /* Гарантирует правильное позиционирование */
-    top: 10px !important; /* Отступ сверху */
-    right: 10px !important; /* Отступ справа */
+    z-index: 9999 !important;
+    position: fixed !important;
+    top: 16px !important;
+    right: 16px !important;
 }
 
-/* === НА ПК — ВКЛАДКИ СКРЫТЫ, ЗАГОЛОВКИ ВИДНЫ === */
+/* === СКРЫТЫЕ ВКЛАДКИ НА ПК === */
 .tab-buttons-mobile {
-  display: none;
+    display: none;
 }
 
-/* ЗАГОЛОВКИ ВИДНЫ НА ПК */
 .home-users-h2,
 .home-group-chats-h1 {
-  display: block;
+    display: block;
 }
 
 @media (max-width: 768px) {
