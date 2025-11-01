@@ -151,7 +151,7 @@ body {
         margin-top: 24px !important;
         margin-bottom: 24px !important; /* БОЛЬШОЙ ОТСТУП ПОД ССЫЛКИ */
         padding-bottom: 12px !important;
-        padding-top: 0 !important;
+        padding-top: 12px !important;
         z-index: 10 !important;
     }
 
