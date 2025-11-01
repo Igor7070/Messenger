@@ -1274,20 +1274,48 @@
         width: 24px;
     }
 
+    /* ПЕРЕОПРЕДЕЛЕНИЕ: тултипы СНИЗУ на мобильных */
     .translation-button[data-tooltip]::after,
     .spellcheck-button[data-tooltip]::after,
     .tts-button[data-tooltip]::after,
     .transcription-button[data-tooltip]::after {
-        font-size: 11px;
-        padding: 5px 10px;
-        top: -32px;
+        top: auto !important;
+        bottom: -32px !important;
+        right: 50% !important;
+        transform: translateX(50%) !important;
+        font-size: 11px !important;
+        padding: 5px 10px !important;
+        border-radius: 5px !important;
     }
 
+    .translation-button[data-tooltip]:hover::after,
+    .spellcheck-button[data-tooltip]:hover::after,
+    .tts-button[data-tooltip]:hover::after,
+    .transcription-button[data-tooltip]:hover::after {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Стрелка теперь направлена вверх (к иконке) */
     .translation-button[data-tooltip]::before,
     .spellcheck-button[data-tooltip]::before,
     .tts-button[data-tooltip]::before,
     .transcription-button[data-tooltip]::before {
-        top: -6px;
+        top: auto !important;
+        bottom: -6px !important;
+        right: 50% !important;
+        transform: translateX(50%) !important;
+        border: 4px solid transparent !important;
+        border-top-color: #333333 !important; /* стрелка вверх */
+        border-bottom-color: transparent !important;
+    }
+
+    .translation-button[data-tooltip]:hover::before,
+    .spellcheck-button[data-tooltip]:hover::before,
+    .tts-button[data-tooltip]:hover::before,
+    .transcription-button[data-tooltip]:hover::before {
+        opacity: 1;
+        visibility: visible;
     }
 
     .translation-indicator,
