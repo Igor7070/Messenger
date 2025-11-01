@@ -288,11 +288,11 @@ body {
       display: flex !important;
       position: absolute !important;
       left: 50% !important;
-      top: 84px !important;                     /* ← ЧУТЬ НИЖЕ 58px → 60px */
+      top: 45px !important;                     /* ← ЧУТЬ НИЖЕ 58px → 60px */
       transform: translateX(-50%) !important;
-      width: 48px !important;                   /* ← 72px × 2/3 ≈ 48px */
+      width: 58px !important;                   /* ← 72px × 2/3 ≈ 48px */
       height: 48px !important;
-      font-size: 1.9rem !important;             /* ← 2.8rem × 2/3 ≈ 1.9rem */
+      font-size: 2.3rem !important;             /* ← 2.8rem × 2/3 ≈ 1.9rem */
       color: #555 !important;
       cursor: pointer !important;
       align-items: center !important;
