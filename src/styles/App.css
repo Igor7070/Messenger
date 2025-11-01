@@ -288,7 +288,7 @@ body {
       display: flex !important;
       position: absolute !important;
       left: 50% !important;
-      top: 45px !important;                     /* ← ЧУТЬ НИЖЕ 58px → 60px */
+      top: 48px !important;                     /* ← ЧУТЬ НИЖЕ 58px → 60px */
       transform: translateX(-50%) !important;
       width: 58px !important;                   /* ← 72px × 2/3 ≈ 48px */
       height: 48px !important;
