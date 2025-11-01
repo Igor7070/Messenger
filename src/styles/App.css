@@ -53,46 +53,51 @@ body {
   font-size: 1rem !important;
   font-weight: 600 !important;
   text-decoration: none !important;
-  padding: 8px 16px !important;
+  padding: 12px 20px !important;
   border-radius: 24px !important;
   backdrop-filter: blur(6px) !important;
   -webkit-backdrop-filter: blur(6px) !important;
-  transition: all 0.3s ease !important;
+  transition: all 0.2s ease !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
   position: absolute !important;
   top: -10px !important;
-  transform: none !important;
-  z-index: 9 !important;
+  z-index: 999 !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  min-width: 80px !important;
+  text-align: center !important;
 }
 
 /* Ссылка "To Home" (слева) */
 .nav-link-home {
   right: 12px !important;
-  background: rgba(33, 150, 243, 0.3) !important;
+  background: rgba(33, 150, 243, 0.35) !important;
   color: #e3f2fd !important;
-  border: 1px solid rgba(33, 150, 243, 0.5) !important;
+  border: 1.5px solid rgba(33, 150, 243, 0.6) !important;
 }
 
-.nav-link-home:hover {
-  background: rgba(25, 118, 210, 0.5) !important;
+.nav-link-home:hover,
+.nav-link-home:active {
+  background: rgba(25, 118, 210, 0.7) !important;
   color: #ffffff !important;
-  transform: scale(1.05) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* Ссылка "To Main" (справа) */
 .nav-link-main {
   left: 12px !important;
-  background: rgba(126, 87, 194, 0.3) !important;
+  background: rgba(126, 87, 194, 0.35) !important;
   color: #f3e5f5 !important;
-  border: 1px solid rgba(126, 87, 194, 0.5) !important;
+  border: 1.5px solid rgba(126, 87, 194, 0.6) !important;
 }
 
-.nav-link-main:hover {
-  background: rgba(94, 53, 177, 0.5) !important;
+.nav-link-main:hover,
+.nav-link-main:active {
+  background: rgba(94, 53, 177, 0.7) !important;
   color: #ffffff !important;
-  transform: scale(1.05) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* Убедимся, что контент ниже не перекрывается */
