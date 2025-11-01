@@ -401,55 +401,6 @@
   position: relative;
 }
 
-.private-translation-button[data-tooltip]::after,
-.private-spellcheck-button[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: -36px;
-  right: 50%;
-  transform: translateX(50%);
-  background-color: #333333;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 6px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 100000;
-}
-
-.private-translation-button[data-tooltip]:hover::after,
-.private-spellcheck-button[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Стрелка для tooltip */
-.private-translation-button[data-tooltip]::before,
-.private-spellcheck-button[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  right: 50%;
-  transform: translateX(50%);
-  border: 4px solid transparent;
-  border-top-color: #333333;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-}
-
-.private-translation-button[data-tooltip]:hover::before,
-.private-spellcheck-button[data-tooltip]:hover::before {
-  opacity: 1;
-  visibility: visible;
-}
-
 .private-translation-indicator,
 .private-spellcheck-indicator { /* Новые стили */
   font-size: 14px;
@@ -468,51 +419,6 @@
 /* ДОБАВЛЕНО: Стили для всплывающей подсказки кнопки озвучивания */
 .private-tts-button[data-tooltip] {
   position: relative;
-}
-
-.private-tts-button[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: -36px;
-  right: 50%;
-  transform: translateX(50%);
-  background-color: #333333;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 6px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 100000;
-}
-
-.private-tts-button[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* ДОБАВЛЕНО: Стрелка для tooltip кнопки озвучивания */
-.private-tts-button[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  right: 50%;
-  transform: translateX(50%);
-  border: 4px solid transparent;
-  border-top-color: #333333;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-}
-
-.private-tts-button[data-tooltip]:hover::before {
-  opacity: 1;
-  visibility: visible;
 }
 
 /* ДОБАВЛЕНО: Стили для индикатора озвучивания */
@@ -875,30 +781,29 @@
 
 /* Добавляем класс для динамических подсказок, чтобы сохранить стили */
 .tooltip-dynamic {
-  position: fixed; /* Изменено на fixed для позиционирования в body */
+  position: fixed;
   background-color: #333333;
   color: #FFFFFF;
   font-family: 'Inter', sans-serif;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
   white-space: nowrap;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 100000; /* Очень высокий z-index */
-  min-width: 80px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 2147483647;
+  pointer-events: none;
+  max-width: 200px;
   text-align: center;
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  line-height: 1.3;
 }
 
-/* Стрелка для динамической подсказки */
 .tooltip-dynamic-arrow {
   position: fixed;
-  border: 4px solid transparent;
-  border-bottom-color: #333333;
-  z-index: 100000;
+  width: 0;
+  height: 0;
+  z-index: 2147483647;
+  pointer-events: none;
 }
 
 /* Обновление стилей для private-message-body */
@@ -1107,50 +1012,6 @@
   position: relative;
 }
 
-.private-transcription-button[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: -36px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #333333;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 6px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 100000;
-}
-
-.private-transcription-button[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-.private-transcription-button[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: #333333;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-}
-
-.private-transcription-button[data-tooltip]:hover::before {
-  opacity: 1;
-  visibility: visible;
-}
-
 .private-transcription-indicator {
   font-size: 14px;
   color: #42a5f5;
@@ -1353,32 +1214,10 @@
         line-height: 1; /* Добавлено: Нормализация высоты строки */
     }
 
-    .private-translation-button[data-tooltip]::after,
-    .private-spellcheck-button[data-tooltip]::after {
-        font-size: 11px;
-        padding: 5px 10px;
-        top: -32px;
-    }
-
-    .private-translation-button[data-tooltip]::before,
-    .private-spellcheck-button[data-tooltip]::before {
-        top: -6px;
-    }
-
     .private-translation-indicator,
     .private-spellcheck-indicator {
         font-size: 12px;
         padding: 2px 5px;
-    }
-
-    .private-tts-button[data-tooltip]::after {
-        font-size: 11px;
-        padding: 5px 10px;
-        top: -32px;
-    }
-
-    .private-tts-button[data-tooltip]::before {
-        top: -6px;
     }
 
     .private-tts-indicator {
@@ -1624,16 +1463,6 @@
     width: 24px;
   }
 
-  .private-transcription-button[data-tooltip]::after {
-    font-size: 11px;
-    padding: 5px 10px;
-    top: -32px;
-  }
-
-  .private-transcription-button[data-tooltip]::before {
-    top: -6px;
-  }
-
   .private-transcription-indicator {
     font-size: 12px;
     padding: 2px 5px;
@@ -1682,13 +1511,16 @@
   }
 
   .tooltip-dynamic {
-    font-size: 9px;
-    padding: 2px 5px;
-    min-width: 80px;
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 5px;
   }
+
   .tooltip-dynamic-arrow {
-    border: 2px solid transparent;
-    border-bottom-color: #333333;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid #333333;
+    border-bottom: none;
   }
 
   html, body, #root {
@@ -1720,77 +1552,5 @@
         border-radius: 8px !important;
         box-shadow: none !important;
         gap: 8px;
-  }
-
-  /* === ТУЛТИПЫ СНИЗУ НА МОБИЛЬНЫХ (private-chat) === */
-  .private-translation-button[data-tooltip]::after,
-  .private-spellcheck-button[data-tooltip]::after,
-  .private-tts-button[data-tooltip]::after,
-  .private-transcription-button[data-tooltip]::after {
-      top: auto !important;
-      bottom: -32px !important;
-      left: 50% !important;
-      right: auto !important;
-      transform: translateX(-50%) !important;
-      font-size: 11px !important;
-      padding: 5px 10px !important;
-      border-radius: 5px !important;
-      white-space: nowrap;
-  }
-
-  .private-translation-button[data-tooltip]:hover::after,
-  .private-spellcheck-button[data-tooltip]:hover::after,
-  .private-tts-button[data-tooltip]:hover::after,
-  .private-transcription-button[data-tooltip]:hover::after {
-      opacity: 1;
-      visibility: visible;
-  }
-
-  .private-translation-button[data-tooltip]::before,
-  .private-spellcheck-button[data-tooltip]::before,
-  .private-tts-button[data-tooltip]::before,
-  .private-transcription-button[data-tooltip]::before {
-      top: auto !important;
-      bottom: -6px !important;
-      left: 50% !important;
-      right: auto !important;
-      transform: translateX(-50%) !important;
-      border: 4px solid transparent !important;
-      border-top-color: #333333 !important;
-      border-bottom-color: transparent !important;
-  }
-
-  .private-translation-button[data-tooltip]:hover::before,
-  .private-spellcheck-button[data-tooltip]:hover::before,
-  .private-tts-button[data-tooltip]:hover::before,
-  .private-transcription-button[data-tooltip]:hover::before {
-      opacity: 1;
-      visibility: visible;
-  }
-
-  /* Гарантированно убираем старое "сверху" */
-  .private-translation-button[data-tooltip]::after,
-  .private-spellcheck-button[data-tooltip]::after,
-  .private-tts-button[data-tooltip]::after,
-  .private-transcription-button[data-tooltip]::after {
-      top: auto !important;
-  }
-
-  .private-translation-button[data-tooltip]::before,
-  .private-spellcheck-button[data-tooltip]::before,
-  .private-tts-button[data-tooltip]::before,
-  .private-transcription-button[data-tooltip]::before {
-      top: auto !important;
-  }
-
-  .private-translation-button[data-tooltip]::after,
-  .private-spellcheck-button[data-tooltip]::after,
-  .private-tts-button[data-tooltip]::after,
-  .private-transcription-button[data-tooltip]::after,
-  .private-translation-button[data-tooltip]::before,
-  .private-spellcheck-button[data-tooltip]::before,
-  .private-tts-button[data-tooltip]::before,
-  .private-transcription-button[data-tooltip]::before {
-      z-index: 10000000 !important; /* Выше всех */
   }
 }
