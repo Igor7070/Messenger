@@ -1782,4 +1782,15 @@
   .private-transcription-button[data-tooltip]::before {
       top: auto !important;
   }
+
+  .private-translation-button[data-tooltip]::after,
+  .private-spellcheck-button[data-tooltip]::after,
+  .private-tts-button[data-tooltip]::after,
+  .private-transcription-button[data-tooltip]::after,
+  .private-translation-button[data-tooltip]::before,
+  .private-spellcheck-button[data-tooltip]::before,
+  .private-tts-button[data-tooltip]::before,
+  .private-transcription-button[data-tooltip]::before {
+      z-index: 10000000 !important; /* Выше всех */
+  }
 }
