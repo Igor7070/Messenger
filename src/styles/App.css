@@ -288,12 +288,12 @@ body {
       display: flex !important;
       position: absolute !important;
       left: 50% !important;
-      top: 52px !important;                 /* ← ЧУТЬ ВЫШЕ (было 64px) */
+      top: 84px !important;                     /* ← ЧУТЬ НИЖЕ 58px → 60px */
       transform: translateX(-50%) !important;
-      width: 72px !important;               /* ← В 2 РАЗА БОЛЬШЕ (36 → 72) */
-      height: 72px !important;
-      font-size: 2.8rem !important;         /* ← ИКОНКА В 2 РАЗА БОЛЬШЕ (1.4 → 2.8) */
-      color: #555 !important;               /* ← СЕРО-ЧЁРНЫЙ */
+      width: 48px !important;                   /* ← 72px × 2/3 ≈ 48px */
+      height: 48px !important;
+      font-size: 1.9rem !important;             /* ← 2.8rem × 2/3 ≈ 1.9rem */
+      color: #555 !important;
       cursor: pointer !important;
       align-items: center !important;
       justify-content: center !important;
@@ -305,7 +305,7 @@ body {
     .refresh-icon:hover,
     .refresh-icon:active {
       color: #000 !important;
-      transform: translateX(-50%) rotate(360deg) scale(1.1) !important;
+      transform: translateX(-50%) rotate(360deg) scale(1.15) !important;
       transition: transform 0.5s ease !important;
     }
 }
