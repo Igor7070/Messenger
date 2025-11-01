@@ -247,5 +247,5 @@ body {
     /* Убираем скролл у .app, если он остался 
     .app {
       overflow: hidden !important;
-    }*/
+    } */
 }
