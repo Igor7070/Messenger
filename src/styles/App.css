@@ -150,7 +150,8 @@ body {
         text-align: center !important;
         margin-top: 24px !important;
         margin-bottom: 24px !important; /* БОЛЬШОЙ ОТСТУП ПОД ССЫЛКИ */
-        padding: 0px 0 !important;
+        padding-bottom: 12px !important;
+        padding-top: 0 !important;
         z-index: 10 !important;
     }
 
