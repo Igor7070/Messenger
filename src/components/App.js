@@ -56,14 +56,21 @@ const AppContent = () => {
   return (
     <div className="app">
       <div className="header-container">
-        <a
-          href="https://unlimitedpossibilities12.org"
-          className="nav-link nav-link-main"
-          rel="noopener noreferrer"
-        >
+        <a href="https://unlimitedpossibilities12.org" className="nav-link nav-link-main" rel="noopener noreferrer">
           To Main
         </a>
+
         <h1 className="app-title">Messenger UP12</h1>
+
+        {/* ← НОВАЯ КНОПКА ПОСЕРЕДИНЕ */}
+        <button
+          onClick={() => window.location.reload()}
+          className="refresh-btn-center"
+          title="Обновить"
+        >
+          Обновить
+        </button>
+
         <Link to="/" className="nav-link nav-link-home">
           To Home
         </Link>

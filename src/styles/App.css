@@ -107,6 +107,11 @@ body {
   margin-top: 10px;
 }
 
+/* === КНОПКА ОБНОВЛЕНИЯ — ТОЛЬКО НА ТЕЛЕФОНЕ === */
+.refresh-btn-center {
+  display: none !important; /* ← СКРЫТА ПО УМОЛЧАНИЮ (на ПК) */
+}
+
 /* Медиа-запрос для мобильных устройств (ширина до 768px) */
 @media (max-width: 800px) {
     html, body {
@@ -277,5 +282,36 @@ body {
     .app:has(.voice-call-container) {
       overflow-y: auto !important;
       -webkit-overflow-scrolling: touch !important;
+    }
+
+    .refresh-btn-center {
+      display: flex !important; /* ← ВИДНА ТОЛЬКО НА ТЕЛЕФОНЕ */
+      position: absolute !important;
+      left: 50% !important;
+      top: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      background: rgba(255, 255, 255, 0.2) !important;
+      color: #ffffff !important;
+      border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+      border-radius: 20px !important;
+      padding: 5px 12px !important;
+      font-size: 0.85rem !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      backdrop-filter: blur(6px) !important;
+      -webkit-backdrop-filter: blur(6px) !important;
+      transition: all 0.2s ease !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+      z-index: 999 !important;
+      white-space: nowrap !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    .refresh-btn-center:hover,
+    .refresh-btn-center:active {
+      background: rgba(255, 255, 255, 0.4) !important;
+      transform: translate(-50%, -50%) scale(1.05) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
     }
 }
