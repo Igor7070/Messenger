@@ -31,6 +31,7 @@ body {
 .header-container {
   position: relative;
   text-align: center;
+  margin-top: 5px;
   margin-bottom: 15px;
   z-index: 10;
 }
@@ -61,7 +62,7 @@ body {
   transition: all 0.2s ease !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
   position: absolute !important;
-  top: 0px !important;
+  top: 10px !important;
   z-index: 999 !important;
   cursor: pointer !important;
   user-select: none !important;
