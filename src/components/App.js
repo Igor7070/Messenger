@@ -65,10 +65,10 @@ const AppContent = () => {
         {/* ← НОВАЯ КНОПКА ПОСЕРЕДИНЕ */}
         <button
           onClick={() => window.location.reload()}
-          className="refresh-btn-center"
+          className="refresh-btn-circle"
           title="Обновить"
         >
-          Обновить
+          ⟳
         </button>
 
         <Link to="/" className="nav-link nav-link-home">
