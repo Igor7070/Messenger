@@ -46,7 +46,7 @@ body {
   letter-spacing: 0.5px !important;
   display: inline-block !important;
   position: relative !important;
-  top: -3px !important;         /* ПОДНЯЛИ НА 8px */
+  top: -6px !important;         /* ПОДНЯЛИ НА 8px */
   z-index: 11 !important;
 }
 
