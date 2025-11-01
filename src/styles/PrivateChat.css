@@ -362,14 +362,21 @@
     right: 10px !important;
 }
 
-.private-translation-controls {
+.private-translation-controls,
+.private-transcription-controls {
   display: flex;
   align-items: center;
-  justify-content: flex-end; /* Добавлено для явного выравнивания вправо */
   gap: 8px;
-  position: absolute;
-  right: 12px;
-  height: 100%; /* Убедимся, что контейнер занимает всю высоту родителя */
+  flex-shrink: 0;
+  pointer-events: auto !important;
+}
+
+.private-translation-controls {
+  margin-left: auto; /* Выравнивает вправо */
+}
+
+.private-transcription-controls {
+  margin-right: auto; /* Выравнивает влево */
 }
 
 .private-tts-button,
