@@ -108,8 +108,8 @@ body {
 }
 
 /* === КНОПКА ОБНОВЛЕНИЯ — ТОЛЬКО НА ТЕЛЕФОНЕ === */
-.refresh-btn-center {
-  display: none !important; /* ← СКРЫТА ПО УМОЛЧАНИЮ (на ПК) */
+.refresh-icon {
+  display: none !important;
 }
 
 /* Медиа-запрос для мобильных устройств (ширина до 768px) */
@@ -284,34 +284,28 @@ body {
       -webkit-overflow-scrolling: touch !important;
     }
 
-    .refresh-btn-circle {
+    .refresh-icon {
       display: flex !important;
       position: absolute !important;
       left: 50% !important;
-      top: 76px !important; /* ← НИЖЕ ЗАГОЛОВКА, НА УРОВНЕ ССЫЛОК */
+      top: 64px !important; /* ← ТОЧНО НА УРОВНЕ ССЫЛОК (top: 56px + padding) */
       transform: translateX(-50%) !important;
-      width: 40px !important;
-      height: 40px !important;
-      background: rgba(255, 255, 255, 0.25) !important;
-      color: #ffffff !important;
-      border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
-      border-radius: 50% !important;
-      font-size: 1.2rem !important;
-      font-weight: 600 !important;
+      width: 36px !important;
+      height: 36px !important;
+      font-size: 1.4rem !important;
+      color: #555 !important; /* ← СЕРО-ЧЁРНЫЙ */
       cursor: pointer !important;
       align-items: center !important;
       justify-content: center !important;
-      backdrop-filter: blur(6px) !important;
-      -webkit-backdrop-filter: blur(6px) !important;
-      transition: all 0.2s ease !important;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
       z-index: 999 !important;
+      user-select: none !important;
+      transition: all 0.2s ease !important;
     }
 
-    .refresh-btn-circle:hover,
-    .refresh-btn-circle:active {
-      background: rgba(255, 255, 255, 0.4) !important;
-      transform: translateX(-50%) scale(1.1) !important;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
+    .refresh-icon:hover,
+    .refresh-icon:active {
+      color: #000 !important;
+      transform: translateX(-50%) rotate(360deg) !important;
+      transition: transform 0.4s ease !important;
     }
 }

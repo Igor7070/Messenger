@@ -63,13 +63,13 @@ const AppContent = () => {
         <h1 className="app-title">Messenger UP12</h1>
 
         {/* ← НОВАЯ КНОПКА ПОСЕРЕДИНЕ */}
-        <button
+        <div
           onClick={() => window.location.reload()}
-          className="refresh-btn-circle"
+          className="refresh-icon"
           title="Обновить"
         >
           ⟳
-        </button>
+        </div>
 
         <Link to="/" className="nav-link nav-link-home">
           To Home
