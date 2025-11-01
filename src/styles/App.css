@@ -14,71 +14,86 @@ body {
 
 .app {
   max-width: 1000px;
-  margin: 20px auto; 
+  margin: 20px auto;
   padding: 20px;
-  background: linear-gradient(135deg, #e1f5fe, #bbdefb); /* Градиентный фон */
+  background: linear-gradient(135deg, rgba(30, 136, 229, 0.15), rgba(13, 71, 161, 0.15)) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
   border-radius: 10px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  font-family: 'Roboto', sans-serif; 
+  font-family: 'Roboto', sans-serif;
   height: 100%;
-  overflow: auto; 
+  overflow: auto;
 }
 
 /* Контейнер для заголовка и ссылок */
 .header-container {
   position: relative;
-  text-align: center; /* Центрируем заголовок */
-  margin-bottom: 15px; /* Увеличиваем отступ снизу для отделения от контента */
+  text-align: center;
+  margin-bottom: 24px !important; /* как на телефоне */
+  padding: 12px 0 !important;
+  z-index: 10;
 }
 
 /* Заголовок */
 .app-title {
-  color: #0d47a1; /* Тёмно-синий цвет для заголовка */
-  margin: 0; /* Убираем отступы */
-  font-weight: 700; 
-  font-family: sans-serif;
-  font-size: 2rem;
-  line-height: 1.2;
-  display: inline-block; /* Делаем заголовок блочно-строчным для центрирования */
+  color: #ffffff !important;
+  font-size: 1.9rem !important;
+  font-weight: 700 !important;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  margin: 0 !important;
+  letter-spacing: 0.5px !important;
+  display: block !important;
+  position: relative !important;
+  z-index: 11 !important;
 }
 
 /* Общие стили для ссылок */
 .nav-link {
-  font-size: 0.9rem; /* Мелкий шрифт */
-  font-weight: 500;
-  font-family: 'Roboto', sans-serif;
-  text-decoration: underline; /* Добавляем подчёркивание */
-  text-decoration-thickness: 2px; /* Толщина подчёркивания */
-  text-underline-offset: 3px; /* Отступ подчёркивания от текста */
-  position: absolute;
-  top: -10px; /* Поднимаем ссылки выше заголовка */
-  transition: color 0.3s ease, transform 0.2s ease; /* Плавные эффекты */
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  padding: 8px 16px !important;
+  border-radius: 24px !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+  position: absolute !important;
+  top: 56px !important;
+  transform: none !important;
+  z-index: 9 !important;
 }
 
 /* Ссылка "To Home" (слева) */
 .nav-link-home {
-  right: 0;
-  color: #42a5f5; /* Голубой */
-  text-decoration-color: #42a5f5; /* Цвет подчёркивания совпадает с текстом */
+  right: 12px !important;
+  background: rgba(33, 150, 243, 0.3) !important;
+  color: #e3f2fd !important;
+  border: 1px solid rgba(33, 150, 243, 0.5) !important;
 }
 
 .nav-link-home:hover {
-  color: #1976d2; /* Темнее при наведении */
-  text-decoration-color: #1976d2; /* Подчёркивание тоже темнеет */
-  transform: translateY(-2px); /* Лёгкий подъём вверх */
+  background: rgba(25, 118, 210, 0.5) !important;
+  color: #ffffff !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
 }
 
 /* Ссылка "To Main" (справа) */
 .nav-link-main {
-  left: 0;
-  color: #7e57c2;
-  text-decoration-color: #7e57c2; /* Цвет подчёркивания */
+  left: 12px !important;
+  background: rgba(126, 87, 194, 0.3) !important;
+  color: #f3e5f5 !important;
+  border: 1px solid rgba(126, 87, 194, 0.5) !important;
 }
 
 .nav-link-main:hover {
-  color: #5e35b1; /* Темнее при наведении */
-  text-decoration-color: #5e35b1; /* Подчёркивание тоже меняется */
-  transform: translateY(-2px); /* Лёгкий подъём вверх */
+  background: rgba(94, 53, 177, 0.5) !important;
+  color: #ffffff !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
 }
 
 /* Убедимся, что контент ниже не перекрывается */
