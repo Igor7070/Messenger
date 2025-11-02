@@ -1189,6 +1189,10 @@
   display: none !important;
 }
 
+.icons-row {
+  display: contents;
+}
+
 @media (max-width: 800px) {
     .messenger {
         position: fixed !important;
@@ -1680,5 +1684,12 @@
 
     .chat-name {
         display: none !important;
+    }
+
+    .icons-row {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
     }
 }
