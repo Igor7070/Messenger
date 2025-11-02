@@ -1785,7 +1785,7 @@
   .private-spellcheck-button[data-tooltip]::after,
   .private-tts-button[data-tooltip]::after,
   .private-transcription-button[data-tooltip]::after {
-      top: -36px !important;
+      top: -45px !important; /* Выше, чтобы не перекрывать иконки */
       bottom: auto !important;
       left: 50% !important;
       right: auto !important;
@@ -1794,36 +1794,38 @@
       padding: 5px 10px !important;
       border-radius: 5px !important;
       white-space: nowrap;
+      z-index: 100001 !important; /* Высокий z-index, чтобы над всем */
   }
 
   .private-translation-button[data-tooltip]:hover::after,
   .private-spellcheck-button[data-tooltip]:hover::after,
   .private-tts-button[data-tooltip]:hover::after,
   .private-transcription-button[data-tooltip]:hover::after {
-      opacity: 1;
-      visibility: visible;
+      opacity: 1 !important;
+      visibility: visible !important;
   }
 
   .private-translation-button[data-tooltip]::before,
   .private-spellcheck-button[data-tooltip]::before,
   .private-tts-button[data-tooltip]::before,
   .private-transcription-button[data-tooltip]::before {
-      top: -8px !important;
+      top: -10px !important; /* Стрелка выше */
       bottom: auto !important;
       left: 50% !important;
       right: auto !important;
       transform: translateX(-50%) !important;
       border: 4px solid transparent !important;
-      border-bottom-color: #333333 !important;
+      border-bottom-color: #333333 !important; /* Стрелка вниз к иконке */
       border-top-color: transparent !important;
+      z-index: 100001 !important;
   }
 
   .private-translation-button[data-tooltip]:hover::before,
   .private-spellcheck-button[data-tooltip]:hover::before,
   .private-tts-button[data-tooltip]:hover::before,
   .private-transcription-button[data-tooltip]:hover::before {
-      opacity: 1;
-      visibility: visible;
+      opacity: 1 !important;
+      visibility: visible !important;
   }
 
   /* Гарантированно убираем старое "сверху" */
