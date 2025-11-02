@@ -1184,6 +1184,11 @@
     z-index: 100000;
 }
 
+/* Скрываем мобильное имя на ПК */
+.chat-name-mobile {
+  display: none !important;
+}
+
 @media (max-width: 800px) {
     .messenger {
         position: fixed !important;
