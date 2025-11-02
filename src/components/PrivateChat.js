@@ -1382,51 +1382,54 @@ const PrivateChat = () => {
   return (
     <div className="private-chat">
       <div className="private-chat-name">
-        <div className="private-transcription-controls">
-          <button
-            className="private-transcription-button"
-            onClick={() => setShowTranscriptionModal(true)}
-            data-tooltip={isTranscriptionEnabled ? 'Transcription is ON' : 'Transcription is OFF'}
-            style={{ color: isTranscriptionEnabled ? '#42a5f5' : '#B0BEC5' }}
-          >
-            🎤
-          </button>
-          {isTranscriptionEnabled && <span className="private-transcription-indicator">ON</span>}
-          <button
-            className="private-tts-button"
-            onClick={handleTTSToggle}
-            data-tooltip={isTTSEnabled ? 'Text-to-Speech is ON' : 'Text-to-Speech is OFF'}
-            style={{ color: isTTSEnabled ? '#42a5f5' : '#B0BEC5' }}
-          >
-            🔊
-          </button>
-          {isTTSEnabled && <span className="private-tts-indicator">ON</span>}
+        <div className="private-chat-name-mobile">{displayChatName}</div>
+        <div className="private-icons-row">
+          <div className="private-transcription-controls">
+            <button
+              className="private-transcription-button"
+              onClick={() => setShowTranscriptionModal(true)}
+              data-tooltip={isTranscriptionEnabled ? 'Transcription is ON' : 'Transcription is OFF'}
+              style={{ color: isTranscriptionEnabled ? '#42a5f5' : '#B0BEC5' }}
+            >
+              🎤
+            </button>
+            {isTranscriptionEnabled && <span className="private-transcription-indicator">ON</span>}
+            <button
+              className="private-tts-button"
+              onClick={handleTTSToggle}
+              data-tooltip={isTTSEnabled ? 'Text-to-Speech is ON' : 'Text-to-Speech is OFF'}
+              style={{ color: isTTSEnabled ? '#42a5f5' : '#B0BEC5' }}
+            >
+              🔊
+            </button>
+            {isTTSEnabled && <span className="private-tts-indicator">ON</span>}
+          </div>
+          <div className="private-translation-controls"> 
+            <button
+              className="private-spellcheck-button" 
+              onClick={handleSpellCheckToggle}
+              data-tooltip={isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF'}
+              style={{ color: isSpellCheckEnabled ? '#42a5f5' : '#B0BEC5' }}
+            >
+              ✍️
+            </button>
+            {isSpellCheckEnabled && <span className="private-spellcheck-indicator">SC</span>} 
+            <button
+              className="private-translation-button" 
+              onClick={() => setShowTranslationModal(true)}
+              data-tooltip="Toggle translation for messages"
+              style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
+            >
+              🌐
+            </button>
+            {isTranslationEnabled && (
+              <span className="private-translation-indicator"> 
+                {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
+              </span>
+            )}
+          </div>
         </div>
-        {displayChatName}
-        <div className="private-translation-controls"> 
-          <button
-            className="private-spellcheck-button" 
-            onClick={handleSpellCheckToggle}
-            data-tooltip={isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF'}
-            style={{ color: isSpellCheckEnabled ? '#42a5f5' : '#B0BEC5' }}
-          >
-            ✍️
-          </button>
-          {isSpellCheckEnabled && <span className="private-spellcheck-indicator">SC</span>} 
-          <button
-            className="private-translation-button" 
-            onClick={() => setShowTranslationModal(true)}
-            data-tooltip="Toggle translation for messages"
-            style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
-          >
-            🌐
-          </button>
-          {isTranslationEnabled && (
-            <span className="private-translation-indicator"> 
-              {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
-            </span>
-          )}
-        </div>
+        <div className="private-display-name">{displayChatName}</div>
       </div>
       {showTranscriptionModal && (
         <TranscriptionSettingsModal

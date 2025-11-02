@@ -1245,6 +1245,15 @@
     overflow: visible; /* Позволяем иконкам отображаться */
 }
 
+/* Скрываем мобильное имя на ПК */
+.private-chat-name-mobile {
+  display: none !important;
+}
+
+.private-icons-row {
+  display: contents;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         position: fixed !important;
@@ -1264,12 +1273,62 @@
     }
 
     .private-chat-name {
-        flex-shrink: 0;
-        margin-bottom: 8px !important;
-        padding: 10px !important;
-        border-radius: 8px !important;
-        font-size: 18px !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      padding: 2px 16px 16px 16px !important;
+      gap: 16px !important;
+      position: relative !important;
+      background-color: #FFFFFF !important;
+      border-radius: 8px !important;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+      margin-bottom: 8px !important;
+    }
+
+    .private-chat-name-mobile {
+      display: block !important;
+      font-size: 20px !important;
+      font-weight: 600 !important;
+      text-align: center !important;
+      color: #333333 !important;
+      font-family: 'Inter', sans-serif !important;
+    }
+
+    .private-display-name {
+      display: none !important;
+    }
+
+    .private-icons-row {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      width: 100% !important;
+      gap: 0 !important;
+    }
+
+    .private-transcription-controls,
+    .private-translation-controls {
+      display: flex !important;
+      gap: 8px !important;
+      flex-shrink: 0 !important;
+    }
+
+    .private-transcription-button,
+    .private-tts-button,
+    .private-spellcheck-button,
+    .private-translation-button {
+      font-size: 18px !important;
+      padding: 3px !important;
+      height: 24px !important;
+      width: 24px !important;
+    }
+
+    .private-transcription-indicator,
+    .private-tts-indicator,
+    .private-spellcheck-indicator,
+    .private-translation-indicator {
+      font-size: 12px !important;
+      padding: 2px 5px !important;
     }
 
     .private-message {
