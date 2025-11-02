@@ -1271,21 +1271,22 @@
         gap: 6px;
     }
 
+    .chat-header-controls-wrapper {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 16px !important;
+        order: 2 !important;
+        width: 100% !important;
+    }
+
     .transcription-controls,
     .translation-controls {
         position: static !important;
         display: flex !important;
-        justify-content: center !important;
         gap: 12px !important;
-        width: auto !important;
-    }
-
-    .transcription-controls {
-        order: 2 !important;
-    }
-
-    .translation-controls {
-        order: 3 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
     .translation-button,
