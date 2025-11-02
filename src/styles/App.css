@@ -308,4 +308,8 @@ body {
       transform: translateX(-50%) rotate(360deg) scale(1.15) !important;
       transition: transform 0.5s ease !important;
     }
+
+    .Toastify__toast-container {
+      display: none !important;
+    }
 }
