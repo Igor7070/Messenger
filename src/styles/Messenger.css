@@ -1207,11 +1207,13 @@
     }
 
     .chat-header-group {
-        flex-shrink: 0;
-        margin-bottom: 8px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
         padding: 10px !important;
-        border-radius: 8px !important;
-        font-size: 18px !important;
+        gap: 8px !important;
+        position: relative !important;
     }
 
     .chat-name {
@@ -1267,6 +1269,23 @@
     .transcription-controls {
         left: 8px;
         gap: 6px;
+    }
+
+    .transcription-controls,
+    .translation-controls {
+        position: static !important;
+        display: flex !important;
+        justify-content: center !important;
+        gap: 12px !important;
+        width: auto !important;
+    }
+
+    .transcription-controls {
+        order: 2 !important;
+    }
+
+    .translation-controls {
+        order: 3 !important;
     }
 
     .translation-button,
