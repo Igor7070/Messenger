@@ -1785,8 +1785,8 @@
   .private-spellcheck-button[data-tooltip]::after,
   .private-tts-button[data-tooltip]::after,
   .private-transcription-button[data-tooltip]::after {
-      top: auto !important;
-      bottom: -32px !important;
+      top: -36px !important;
+      bottom: auto !important;
       left: 50% !important;
       right: auto !important;
       transform: translateX(-50%) !important;
@@ -1808,14 +1808,14 @@
   .private-spellcheck-button[data-tooltip]::before,
   .private-tts-button[data-tooltip]::before,
   .private-transcription-button[data-tooltip]::before {
-      top: auto !important;
-      bottom: -6px !important;
+      top: -8px !important;
+      bottom: auto !important;
       left: 50% !important;
       right: auto !important;
       transform: translateX(-50%) !important;
       border: 4px solid transparent !important;
-      border-top-color: #333333 !important;
-      border-bottom-color: transparent !important;
+      border-bottom-color: #333333 !important;
+      border-top-color: transparent !important;
   }
 
   .private-translation-button[data-tooltip]:hover::before,
