@@ -1385,62 +1385,64 @@ const Messenger = () => {
     return (
     <div className="messenger">
       <div className="chat-header-group">
-        <div className="transcription-controls">
-          <button
-            className="transcription-button"
-            onClick={() => setShowTranscriptionModal(true)}
-            data-tooltip={isTranscriptionEnabled ? 'Transcription is ON' : 'Transcription is OFF'}
-            style={{ color: isTranscriptionEnabled ? '#42a5f5' : '#B0BEC5' }}
-          >
-            🎤
-          </button>
-          {isTranscriptionEnabled && <span className="transcription-indicator">ON</span>}
-          <button
-            className="tts-button"
-            onClick={() => {
-              setIsTTSEnabled((prev) => {
-                const newState = !prev;
-                localStorage.setItem(`tts_enabled_${chatId}`, newState);
-                if (!newState) {
-                  if (ttsAudioRef.current) {
-                    ttsAudioRef.current.pause();
-                    ttsAudioRef.current = null;
+        <div className="chat-name-mobile">Group Chat: {chatName}</div>
+        <div className="mobile-controls-row">
+          <div className="transcription-controls">
+            <button
+              className="transcription-button"
+              onClick={() => setShowTranscriptionModal(true)}
+              data-tooltip={isTranscriptionEnabled ? 'Transcription is ON' : 'Transcription is OFF'}
+              style={{ color: isTranscriptionEnabled ? '#42a5f5' : '#B0BEC5' }}
+            >
+              Mic
+            </button>
+            {isTranscriptionEnabled && <span className="transcription-indicator">ON</span>}
+            <button
+              className="tts-button"
+              onClick={() => {
+                setIsTTSEnabled((prev) => {
+                  const newState = !prev;
+                  localStorage.setItem(`tts_enabled_${chatId}`, newState);
+                  if (!newState) {
+                    if (ttsAudioRef.current) {
+                      ttsAudioRef.current.pause();
+                      ttsAudioRef.current = null;
+                    }
                   }
-                }
-                return newState;
-              });
-            }}
-            data-tooltip={isTTSEnabled ? 'Text-to-speech is ON' : 'Text-to-speech is OFF'}
-            style={{ color: isTTSEnabled ? '#42a5f5' : '#B0BEC5' }}
-          >
-            🔊
-          </button>
-          {isTTSEnabled && <span className="tts-indicator">ON</span>}
-        </div>
-        <div className="chat-name">Group Chat: {chatName}</div>
-        <div className="translation-controls">
-          <button
-            className="spellcheck-button"
-            onClick={handleSpellCheckToggle}
-            data-tooltip={isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF'}
-            style={{ color: isSpellCheckEnabled ? '#42a5f5' : '#B0BEC5' }}
-          >
-            ✍️
-          </button>
-          {isSpellCheckEnabled && <span className="spellcheck-indicator">SC</span>}
-          <button
-            className="translation-button"
-            onClick={() => setShowTranslationModal(true)}
-            data-tooltip="Toggle translation for messages"
-            style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
-          >
-            🌐
-          </button>
-          {isTranslationEnabled && (
-            <span className="translation-indicator">
-              {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
-            </span>
-          )}
+                  return newState;
+                });
+              }}
+              data-tooltip={isTTSEnabled ? 'Text-to-speech is ON' : 'Text-to-speech is OFF'}
+              style={{ color: isTTSEnabled ? '#42a5f5' : '#B0BEC5' }}
+            >
+              Speaker
+            </button>
+            {isTTSEnabled && <span className="tts-indicator">ON</span>}
+          </div>
+          <div className="translation-controls">
+            <button
+              className="spellcheck-button"
+              onClick={handleSpellCheckToggle}
+              data-tooltip={isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF'}
+              style={{ color: isSpellCheckEnabled ? '#42a5f5' : '#B0BEC5' }}
+            >
+              Pen
+            </button>
+            {isSpellCheckEnabled && <span className="spellcheck-indicator">SC</span>}
+            <button
+              className="translation-button"
+              onClick={() => setShowTranslationModal(true)}
+              data-tooltip="Toggle translation for messages"
+              style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
+            >
+              Globe
+            </button>
+            {isTranslationEnabled && (
+              <span className="translation-indicator">
+                {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
       {showTranslationModal && (

@@ -1641,4 +1641,26 @@
     .user-creation {
         margin-bottom: 10px !important;
     }
+
+    .chat-name-mobile {
+        display: block !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        text-align: center !important;
+        margin-bottom: 6px !important;
+        color: #333333 !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    .mobile-controls-row {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+        gap: 8px !important;
+    }
+
+    .chat-name {
+        display: none !important;
+    }
 }
