@@ -1214,8 +1214,8 @@
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
-        padding: 8px 16px 12px 16px !important; /* ↑8px, ↓12px */
-        gap: 16px !important; /* Между именем и иконками */
+        padding: 10px 16px 10px 16px !important; /* ↑10px, ↓10px — РАВНЫЕ ОТСТУПЫ */
+        gap: 16px !important; /* Между именем и иконками — оставляем */
         position: relative !important;
     }
 
