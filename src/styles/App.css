@@ -284,6 +284,11 @@ body {
       -webkit-overflow-scrolling: touch !important;
     }
 
+    .app:has(.group-call-container) {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+
     .refresh-icon {
       display: flex !important;
       position: absolute !important;
