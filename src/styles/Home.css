@@ -491,4 +491,16 @@ h2 {
     -webkit-backdrop-filter: blur(6px) !important;
     background-color: rgba(230, 230, 250, 0.9) !important;
   }
+
+  .user-list,
+  .chat-list {
+    max-height: 40vh !important;                   /* Ограничиваем высоту списка */
+    overflow-y: auto !important;                   /* Скролл только в списке */
+    -webkit-overflow-scrolling: touch !important;  /* Плавный скролл */
+    border: 1px solid #A9A9A9 !important;
+    border-radius: 5px !important;
+    background-color: #DCDCDC !important;
+    padding: 8px !important;
+    margin-top: 10px !important;
+  }
 }
