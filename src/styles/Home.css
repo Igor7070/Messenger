@@ -61,14 +61,14 @@
 .users-container {
     flex: 1;
     padding: 10px;
-    overflow-y: auto;
+    /*overflow-y: auto;*/
     max-height: 600px;
 }
 
 .chats-container {
     flex: 1;
     padding: 10px;
-    overflow-y: auto;
+    /*overflow-y: auto;*/
     max-height: 600px;
 }
 
@@ -465,7 +465,7 @@ h2 {
     width: 100% !important;
     padding: 10px 0 !important;
     max-height: 50vh !important;           /* Ограничиваем высоту */
-    /*overflow-y: auto !important;           Включаем скролл */
+    overflow-y: auto !important;           /*Включаем скролл */
     -webkit-overflow-scrolling: touch !important; /* Плавный скролл на iOS */
     display: none !important;
   }
