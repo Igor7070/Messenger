@@ -220,7 +220,7 @@
 
 @media (max-width: 768px) {
   .group-call-container {
-    padding-bottom: 80px !important;  /* Резервируем место для кнопки внутри */
+    padding-bottom: 30px !important;  /* Резервируем место для кнопки внутри */
     min-height: 100vh !important;     /* Растягиваем на весь экран */
   }
 
