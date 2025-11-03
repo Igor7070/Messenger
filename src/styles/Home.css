@@ -490,12 +490,6 @@ h2 {
     backdrop-filter: blur(6px) !important;
     -webkit-backdrop-filter: blur(6px) !important;
     background-color: rgba(230, 230, 250, 0.9) !important;
-  }
-
-  .home-container {
-    max-height: 80vh !important;           /* Ограничиваем высоту */
-    overflow: hidden !important;           /* Скрываем переполнение */
-    display: flex !important;
-    flex-direction: column !important;
+    overflow: hidden !important; 
   }
 }
