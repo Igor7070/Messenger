@@ -220,15 +220,14 @@
 
 @media (max-width: 768px) {
   .group-call-container {
-    height: 100vh !important;        /* Растягиваем на весь экран */
-    padding-bottom: 60px !important; /* Отступ снизу для кнопки внутри контейнера */
-    justify-content: flex-start !important;
+    padding-bottom: 80px !important;  /* Резервируем место для кнопки внутри */
+    min-height: 100vh !important;     /* Растягиваем на весь экран */
   }
 
   .group-call-end-button {
-    margin-top: auto !important;     /* Прижимает кнопку к низу контейнера */
-    margin-bottom: 20px !important;  /* Отступ от нижнего края */
-    width: 100%;                     /* Полная ширина для удобства на телефоне */
-    max-width: 300px;                /* Не слишком широкая */
+    margin-top: auto !important;      /* Прижимает к низу */
+    margin-bottom: 10px !important;   /* Минимальный отступ от края */
+    width: 100%;                      /* Полная ширина */
+    max-width: 300px;                 /* Не слишком широкая */
   }
 }
