@@ -464,9 +464,9 @@ h2 {
   .chats-container {
     width: 100% !important;
     padding: 10px 0 !important;
-    max-height: 50vh !important;           /* Ограничиваем высоту */
-    overflow-y: auto !important;           /*Включаем скролл */
-    -webkit-overflow-scrolling: touch !important; /* Плавный скролл на iOS */
+    max-height: 50vh !important;                    /* Ограничиваем высоту */
+    /*overflow-y: auto !important;*/                /*Включаем скролл */
+    /*-webkit-overflow-scrolling: touch !important;*/   /* Плавный скролл на iOS */
     display: none !important;
   }
 
