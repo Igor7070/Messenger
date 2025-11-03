@@ -465,7 +465,7 @@ h2 {
     width: 100% !important;
     padding: 10px 0 !important;
     max-height: 50vh !important;           /* Ограничиваем высоту */
-    overflow-y: auto !important;          /* Включаем скролл */
+    /*overflow-y: auto !important;           Включаем скролл */
     -webkit-overflow-scrolling: touch !important; /* Плавный скролл на iOS */
     display: none !important;
   }
@@ -490,6 +490,5 @@ h2 {
     backdrop-filter: blur(6px) !important;
     -webkit-backdrop-filter: blur(6px) !important;
     background-color: rgba(230, 230, 250, 0.9) !important;
-    overflow: hidden !important; 
   }
 }
