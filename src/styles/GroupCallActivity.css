@@ -217,3 +217,12 @@
 .group-call-camera-toggle.inactive {
   background: red !important; /* Красный для выключенной камеры */
 }
+
+@media (max-width: 768px) {
+  .group-call-end-button {
+    margin-top: auto !important;     /* Прижимает кнопку к низу контейнера */
+    margin-bottom: 20px !important;  /* Отступ от нижнего края */
+    width: 100%;                     /* Полная ширина для удобства на телефоне */
+    max-width: 300px;                /* Не слишком широкая */
+  }
+}
