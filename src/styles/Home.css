@@ -503,4 +503,10 @@ h2 {
     padding: 8px !important;
     margin-top: 10px !important;
   }
+
+  .chat-list {
+    max-height: 25vh !important;  /* Ограничиваем высоту чат-списка до 25% экрана */
+    overflow-y: auto !important;  /* Включаем скролл внутри */
+    -webkit-overflow-scrolling: touch !important;
+  }
 }
