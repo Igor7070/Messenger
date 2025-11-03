@@ -505,7 +505,7 @@ h2 {
   }
 
   .chat-list {
-    max-height: 27vh !important;  /* Ограничиваем высоту чат-списка до 25% экрана */
+    max-height: 29vh !important;  /* Ограничиваем высоту чат-списка до 25% экрана */
     overflow-y: auto !important;  /* Включаем скролл внутри */
     -webkit-overflow-scrolling: touch !important;
   }
