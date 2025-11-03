@@ -494,7 +494,7 @@ h2 {
 
   .user-list,
   .chat-list {
-    max-height: 40vh !important;                   /* Ограничиваем высоту списка */
+    max-height: 35vh !important;                   /* Ограничиваем высоту списка */
     overflow-y: auto !important;                   /* Скролл только в списке */
     -webkit-overflow-scrolling: touch !important;  /* Плавный скролл */
     border: 1px solid #A9A9A9 !important;
