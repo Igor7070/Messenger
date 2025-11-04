@@ -301,7 +301,7 @@ const Calls = () => {
                 <FaTimes className="call-delete-icon" />
               </div>
 
-              {/* ВЕРХ: Аватары (остаются как есть) */}
+              {/* Аватары — как было */}
               <div className="call-participants">
                 {isGroup ? (
                   participants.map((user) => (
@@ -326,7 +326,26 @@ const Calls = () => {
                 )}
               </div>
 
-              {/* НИЗ: стрелка + инфа + кнопка — в один ряд */}
+              {/* === НА ПК: старое расположение === */}
+              <div className="call-direction">
+                {call.direction === 'outgoing' ? (
+                  <FaArrowUp className="call-arrow outgoing" />
+                ) : (
+                  <FaArrowDown className="call-arrow incoming" />
+                )}
+              </div>
+
+              <div className="call-details">
+                <span className="call-status">{call.status.charAt(0).toUpperCase() + call.status.slice(1)}</span>
+                <span className="call-type">{call.callType.charAt(0).toUpperCase() + call.callType.slice(1)} Call</span>
+                <span className="call-timestamp">{formatTimestamp(call.timestamp)}</span>
+              </div>
+
+              <div className="call-redial" onClick={() => handleRedial(call)}>
+                <FaPhone className="call-phone-icon" />
+              </div>
+
+              {/* === НА ТЕЛЕФОНЕ: нижний ряд === */}
               <div className="call-bottom-row">
                 <div className="call-direction">
                   {call.direction === 'outgoing' ? (
