@@ -230,4 +230,16 @@
     width: 100%;                      /* Полная ширина */
     max-width: 300px;                 /* Не слишком широкая */
   }
+
+  /* === ФИКС ДЛЯ ВИДЕО-РЕЖИМА === */
+  .group-call-participants {
+    flex: 1 !important;              /* Толкает кнопку вниз */
+    overflow-y: auto !important;     /* Скролл в участниках, если видео много */
+    max-height: 70vh !important;     /* Ограничиваем высоту блока участников */
+  }
+
+  .group-call-video-grid {
+    max-height: 60vh !important;     /* Ограничиваем видео-сетку */
+    overflow-y: auto !important;     /* Скролл в видео, если нужно */
+  }
 }
