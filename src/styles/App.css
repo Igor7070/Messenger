@@ -289,6 +289,11 @@ body {
       -webkit-overflow-scrolling: touch !important;
     }
 
+    .app:has(.calls-container) {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+
     .refresh-icon {
       display: flex !important;
       position: absolute !important;

@@ -446,7 +446,7 @@
 
   .calls-list {
     max-height: 70vh !important;     /* Больше места для списка */
-    margin-bottom: 50px !important;  /* Место для фиксированной кнопки */
+    margin-bottom: 80px !important;  /* Место для фиксированной кнопки */
     gap: 8px !important;             /* Меньший зазор между элементами */
   }
 
