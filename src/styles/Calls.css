@@ -506,8 +506,8 @@
 
   .call-redial {
     align-self: flex-end !important; /* Кнопка в правый нижний угол */
-    width: 35px !important;
-    height: 35px !important;
+    width: 50px !important;
+    height: 50px !important;
   }
 
   .call-phone-icon {
