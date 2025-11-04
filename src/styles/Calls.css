@@ -429,3 +429,127 @@
 .call-item {
   box-sizing: border-box;
 }
+
+@media (max-width: 768px) {
+  .calls-container {
+    padding: 10px !important;        /* Уменьшили отступы для вписывания */
+    min-height: 100vh !important;    /* Растягиваем на весь экран */
+    margin: 0 !important;            /* Убираем внешние отступы */
+    border-radius: 0 !important;     /* Без скругления на мобильном */
+    max-width: 100% !important;      /* Полная ширина */
+  }
+
+  .calls-container h1 {
+    font-size: 24px !important;      /* Уменьшили заголовок */
+    margin-bottom: 10px !important;
+  }
+
+  .calls-list {
+    max-height: 70vh !important;     /* Больше места для списка */
+    margin-bottom: 80px !important;  /* Место для фиксированной кнопки */
+    gap: 8px !important;             /* Меньший зазор между элементами */
+  }
+
+  .call-item {
+    padding: 12px !important;        /* Компактнее */
+    flex-direction: column !important; /* Столбец для вписывания по ширине */
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .call-participants {
+    width: 100% !important;          /* Полная ширина */
+    flex-direction: row !important;  /* Горизонталь для участников */
+    flex-wrap: wrap !important;      /* Перенос, если много */
+    justify-content: flex-start !important;
+    gap: 5px !important;
+  }
+
+  .call-participant {
+    max-width: 60px !important;      /* Уменьшили размер для группы */
+    flex: none !important;           /* Не растягивать */
+  }
+
+  .call-avatar {
+    width: 40px !important;          /* Меньше аватар */
+    height: 40px !important;
+    font-size: 16px !important;
+  }
+
+  .call-name {
+    font-size: 12px !important;      /* Меньше текст */
+    max-width: 60px !important;
+  }
+
+  .call-direction {
+    margin: 0 10px !important;       /* Меньше отступ */
+    align-self: center !important;   /* По центру в столбце */
+  }
+
+  .call-details {
+    width: 100% !important;          /* Полная ширина */
+    margin-right: 0 !important;
+    align-items: flex-start !important;
+  }
+
+  .call-status {
+    font-size: 14px !important;
+  }
+
+  .call-type {
+    font-size: 12px !important;
+  }
+
+  .call-timestamp {
+    font-size: 11px !important;
+  }
+
+  .call-redial {
+    align-self: flex-end !important; /* Кнопка в правый нижний угол */
+    width: 35px !important;
+    height: 35px !important;
+  }
+
+  .call-phone-icon {
+    font-size: 16px !important;
+  }
+
+  /* Кнопка группы — фиксированная, но адаптивная */
+  .calls-group-call-button {
+    bottom: 10px !important;
+    right: 10px !important;
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  .calls-group-call-icon,
+  .calls-plus-icon {
+    font-size: 16px !important;
+  }
+
+  /* Модалки — уже адаптивны, но уточним */
+  .calls-group-call-modal,
+  .calls-delete-modal {
+    width: 95% !important;
+    max-height: 80vh !important;
+    padding: 15px !important;
+  }
+
+  .calls-search-input,
+  .calls-user-list {
+    max-height: 200px !important;    /* Скролл в модалке */
+  }
+
+  .calls-user-item {
+    padding: 8px !important;
+  }
+
+  .calls-user-avatar {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .calls-user-name {
+    font-size: 14px !important;
+  }
+}
