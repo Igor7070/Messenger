@@ -433,7 +433,7 @@
 @media (max-width: 768px) {
   .calls-container {
     padding: 10px !important;        /* Уменьшили отступы для вписывания */
-    min-height: 65vh !important;    /* Растягиваем на весь экран */
+    min-height: 60vh !important;    /* Растягиваем на весь экран */
     margin: 0 !important;            /* Убираем внешние отступы */
     border-radius: 0 !important;     /* Без скругления на мобильном */
     max-width: 100% !important;      /* Полная ширина */
