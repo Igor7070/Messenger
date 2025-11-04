@@ -296,20 +296,18 @@ const Calls = () => {
 
           return (
             <div key={call.id} className="call-item">
-              {/* NEW: Кнопка удаления */}
+              {/* Кнопка удаления */}
               <div className="call-delete" onClick={() => handleConfirmDelete(call.id)}>
                 <FaTimes className="call-delete-icon" />
               </div>
+
+              {/* ВЕРХ: Аватары (остаются как есть) */}
               <div className="call-participants">
                 {isGroup ? (
                   participants.map((user) => (
                     <div key={user.id} className="call-participant">
                       {user.avatar ? (
-                        <img
-                          src={`https://unlimitedpossibilities12.org${user.avatar}`}
-                          alt={`${user.username} avatar`}
-                          className="call-avatar"
-                        />
+                        <img src={`https://unlimitedpossibilities12.org${user.avatar}`} alt={`${user.username} avatar`} className="call-avatar" />
                       ) : (
                         <div className="call-avatar">{user.username.charAt(0).toUpperCase()}</div>
                       )}
@@ -319,11 +317,7 @@ const Calls = () => {
                 ) : (
                   <div className="call-participant">
                     {singleUser.avatar ? (
-                      <img
-                        src={`https://unlimitedpossibilities12.org${singleUser.avatar}`}
-                        alt={`${singleUser.username} avatar`}
-                        className="call-avatar"
-                      />
+                      <img src={`https://unlimitedpossibilities12.org${singleUser.avatar}`} alt={`${singleUser.username} avatar`} className="call-avatar" />
                     ) : (
                       <div className="call-avatar">{singleUser.username.charAt(0).toUpperCase()}</div>
                     )}
@@ -331,20 +325,26 @@ const Calls = () => {
                   </div>
                 )}
               </div>
-              <div className="call-direction">
-                {call.direction === 'outgoing' ? (
-                  <FaArrowUp className="call-arrow outgoing" />
-                ) : (
-                  <FaArrowDown className="call-arrow incoming" />
-                )}
-              </div>
-              <div className="call-details">
-                <span className="call-status">{call.status.charAt(0).toUpperCase() + call.status.slice(1)}</span>
-                <span className="call-type">{call.callType.charAt(0).toUpperCase() + call.callType.slice(1)} Call</span>
-                <span className="call-timestamp">{formatTimestamp(call.timestamp)}</span>
-              </div>
-              <div className="call-redial" onClick={() => handleRedial(call)}>
-                <FaPhone className="call-phone-icon" />
+
+              {/* НИЗ: стрелка + инфа + кнопка — в один ряд */}
+              <div className="call-bottom-row">
+                <div className="call-direction">
+                  {call.direction === 'outgoing' ? (
+                    <FaArrowUp className="call-arrow outgoing" />
+                  ) : (
+                    <FaArrowDown className="call-arrow incoming" />
+                  )}
+                </div>
+
+                <div className="call-details">
+                  <span className="call-status">{call.status.charAt(0).toUpperCase() + call.status.slice(1)}</span>
+                  <span className="call-type">{call.callType.charAt(0).toUpperCase() + call.callType.slice(1)} Call</span>
+                  <span className="call-timestamp">{formatTimestamp(call.timestamp)}</span>
+                </div>
+
+                <div className="call-redial" onClick={() => handleRedial(call)}>
+                  <FaPhone className="call-phone-icon" />
+                </div>
               </div>
             </div>
           );
