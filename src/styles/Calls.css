@@ -436,7 +436,7 @@
     min-height: 100vh !important;    /* Растягиваем на весь экран */
     margin: 0 !important;            /* Убираем внешние отступы */
     border-radius: 0 !important;     /* Без скругления на мобильном */
-    max-width: 100% !important;      /* Полная ширина */
+    max-width: 80% !important;      /* Полная ширина */
   }
 
   .calls-container h1 {
