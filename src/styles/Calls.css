@@ -430,6 +430,11 @@
   box-sizing: border-box;
 }
 
+/* Скрываем мобильную версию на ПК */
+.call-bottom-row {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .calls-container {
     padding: 10px !important;
@@ -570,10 +575,5 @@
 
   .calls-user-name {
     font-size: 14px !important;
-  }
-
-  /* Скрываем мобильную версию на ПК */
-  .call-bottom-row {
-    display: none;
   }
 }
