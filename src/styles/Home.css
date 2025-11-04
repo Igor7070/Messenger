@@ -391,6 +391,40 @@ h2 {
   display: block;
 }
 
+/* === СКРОЛЛ В СПИСКАХ ТОЛЬКО ПРИ ХОВЕРЕ (ПК) === */
+.user-list,
+.chat-list {
+  overflow-y: hidden;           /* По умолчанию — без скролла */
+  transition: overflow-y 0.3s ease;
+}
+
+.user-list:hover,
+.chat-list:hover {
+  overflow-y: auto;             /* При наведении — появляется скролл */
+}
+
+/* Убираем стандартный скроллбар, оставляем только при ховере */
+.user-list::-webkit-scrollbar,
+.chat-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.user-list::-webkit-scrollbar-track,
+.chat-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.user-list::-webkit-scrollbar-thumb,
+.chat-list::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.user-list:hover::-webkit-scrollbar-thumb,
+.chat-list:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
 @media (max-width: 768px) {
   .home-container {
     padding: 10px;
