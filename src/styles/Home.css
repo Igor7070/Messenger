@@ -547,38 +547,35 @@ h2 {
   /* === СКРОЛЛ ТОЛЬКО ПРИ НАВЕДЕНИИ / КАСАНИИ (ТЕЛЕФОН) === */
   .user-list,
   .chat-list {
-    overflow-y: hidden !important;
-    transition: overflow-y 0.3s ease !important;
-  }
-
-  .user-list:hover,
-  .chat-list:hover,
-  .user-list:active,
-  .chat-list:active {
     overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none;           /* Firefox */
+    -ms-overflow-style: none;        /* IE/Edge */
   }
 
-  /* Скрываем скроллбар по умолчанию */
   .user-list::-webkit-scrollbar,
   .chat-list::-webkit-scrollbar {
-    width: 6px !important;
+    width: 0 !important;
+    background: transparent !important;
   }
 
-  .user-list::-webkit-scrollbar-track,
-  .chat-list::-webkit-scrollbar-track {
-    background: transparent !important;
+  .user-list:active::-webkit-scrollbar,
+  .chat-list:active::-webkit-scrollbar,
+  .user-list:hover::-webkit-scrollbar,
+  .chat-list:hover::-webkit-scrollbar {
+    width: 6px !important;
   }
 
   .user-list::-webkit-scrollbar-thumb,
   .chat-list::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2) !important;
+    background-color: transparent !important;
     border-radius: 3px !important;
   }
 
-  .user-list:hover::-webkit-scrollbar-thumb,
-  .chat-list:hover::-webkit-scrollbar-thumb,
   .user-list:active::-webkit-scrollbar-thumb,
-  .chat-list:active::-webkit-scrollbar-thumb {
+  .chat-list:active::-webkit-scrollbar-thumb,
+  .user-list:hover::-webkit-scrollbar-thumb,
+  .chat-list:hover::-webkit-scrollbar-thumb {
     background-color: rgba(0, 0, 0, 0.4) !important;
   }
 }
