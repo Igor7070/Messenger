@@ -155,7 +155,7 @@ body {
         position: relative !important;
         text-align: center !important;
         margin-top: 6px !important;
-        margin-bottom: 36px !important; /* БОЛЬШОЙ ОТСТУП ПОД ССЫЛКИ */
+        margin-bottom: 24px !important; /* БОЛЬШОЙ ОТСТУП ПОД ССЫЛКИ */
         padding-bottom: 12px !important;
         padding-top: 12px !important;
         z-index: 10 !important;
@@ -293,7 +293,7 @@ body {
       display: flex !important;
       position: absolute !important;
       left: 50% !important;
-      top: 47px !important;                     /* ← ЧУТЬ НИЖЕ 58px → 60px */
+      top: 39px !important;                     /* ← ЧУТЬ НИЖЕ 58px → 60px */
       transform: translateX(-50%) !important;
       width: 58px !important;                   /* ← 72px × 2/3 ≈ 48px */
       height: 48px !important;
