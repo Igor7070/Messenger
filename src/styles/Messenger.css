@@ -1680,7 +1680,17 @@
         gap: 0 !important; /* Убираем gap — он не нужен, space-between сам распределяет */
     }
 
-    .messenger {
-        z-index: 1 !important; /* Ниже тостов */
+    /* === ТОСТЫ НАД ВСЕМ ЧАТОМ === */
+    #toast-root,
+    .Toastify__toast-container {
+        z-index: 99999999 !important;
+        position: fixed !important;
+        pointer-events: auto !important;
+    }
+
+    .messenger,
+    .messenger * {
+        z-index: 1 !important;
+        pointer-events: auto !important;
     }
 }
