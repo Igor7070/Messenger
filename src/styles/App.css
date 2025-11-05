@@ -314,13 +314,11 @@ body {
       transition: transform 0.5s ease !important;
     }
 
-    .Toastify__toast-container {
+    /*.Toastify__toast-container {
       display: none !important;
-    }
+    }*/
 
-    /* НО! ОСТАВЛЯЕМ КОНТЕЙНЕР — ЧТОБЫ НЕ СЛОМАТЬ РЕНДЕР */
     .Toastify__toast-container {
-      display: block !important;
-      pointer-events: none !important;
+      z-index: 99999 !important; /* ВЫШЕ ВСЕГО */
     }
 }
