@@ -1679,4 +1679,8 @@
         width: 100% !important;
         gap: 0 !important; /* Убираем gap — он не нужен, space-between сам распределяет */
     }
+
+    .messenger {
+        z-index: 1 !important; /* Ниже тостов */
+    }
 }
