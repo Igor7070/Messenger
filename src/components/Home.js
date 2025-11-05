@@ -100,8 +100,6 @@ const Home = () => {
   const { usersStatus, initializeWebSocket, disconnectWebSocket, sendOnlineStatus } = useUserStatusContext();
   const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
   const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification();
-  const userListRef = useRef(null);
-  const chatListRef = useRef(null);
 
   console.log('Rendering Home, usersStatus:', usersStatus);
 
@@ -417,49 +415,6 @@ const Home = () => {
     user.username.toLowerCase().includes(userSearchTerm.toLowerCase())
   );
 
-  useEffect(() => {
-    const handleScrollEffect = (ref) => {
-      if (!ref.current) return;
-
-      let timeoutId = null;
-      const element = ref.current;
-
-      const addScrolling = () => {
-        element.classList.add('scrolling');
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          element.classList.remove('scrolling');
-        }, 1500);
-      };
-
-      const removeScrolling = () => {
-        clearTimeout(timeoutId);
-        element.classList.remove('scrolling');
-      };
-
-      element.addEventListener('scroll', addScrolling);
-      element.addEventListener('touchstart', addScrolling);
-      element.addEventListener('touchend', removeScrolling);
-      element.addEventListener('touchcancel', removeScrolling);
-
-      return () => {
-        element.removeEventListener('scroll', addScrolling);
-        element.removeEventListener('touchstart', addScrolling);
-        element.removeEventListener('touchend', removeScrolling);
-        element.removeEventListener('touchcancel', removeScrolling);
-        clearTimeout(timeoutId);
-      };
-    };
-
-    const cleanup1 = handleScrollEffect(userListRef);
-    const cleanup2 = handleScrollEffect(chatListRef);
-
-    return () => {
-      cleanup1?.();
-      cleanup2?.();
-    };
-  }, []);
-
   return (
     <div className="home-container">
       <div className="login-container-home">
@@ -534,7 +489,7 @@ const Home = () => {
             placeholder="Search user"
             className="search-input"
           />
-          <ul className="user-list" ref={userListRef}>
+          <ul className="user-list">
             {filteredUsers.map((user) => {
               const avatarSrc = user.avatar
                 ? `https://unlimitedpossibilities12.org${user.avatar}`
@@ -593,7 +548,7 @@ const Home = () => {
             placeholder="Search chats..."
             className="search-input"
           />
-          <ul className="chat-list" ref={chatListRef}>
+          <ul className="chat-list">
             {filteredChats.map((chat) => (
               <li key={chat.id} onClick={() => goToChat(chat.id)} className="chat-item">
                 <div className="chat-info">

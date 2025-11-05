@@ -526,47 +526,21 @@ h2 {
     background-color: rgba(230, 230, 250, 0.9) !important;
   }
 
-  /* === СКРОЛЛ ТОЛЬКО ПРИ НАВЕДЕНИИ / КАСАНИИ (ТЕЛЕФОН) === */
   .user-list,
   .chat-list {
-    max-height: 35vh !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+    max-height: 35vh !important;                   /* Ограничиваем высоту списка */
+    overflow-y: auto !important;                   /* Скролл только в списке */
+    -webkit-overflow-scrolling: touch !important;  /* Плавный скролл */
     border: 1px solid #A9A9A9 !important;
     border-radius: 5px !important;
     background-color: #DCDCDC !important;
     padding: 8px !important;
     margin-top: 10px !important;
-
-    /* Скрываем скроллбар по умолчанию */
-    scrollbar-width: none;
-    -ms-overflow-style: none;
   }
 
   .chat-list {
-    max-height: 29vh !important;
-  }
-
-  .user-list::-webkit-scrollbar,
-  .chat-list::-webkit-scrollbar {
-    width: 0 !important;
-    background: transparent !important;
-  }
-
-  .user-list::-webkit-scrollbar-thumb,
-  .chat-list::-webkit-scrollbar-thumb {
-    background: transparent !important;
-    border-radius: 4px !important;
-  }
-
-  /* Показываем только при .scrolling */
-  .user-list.scrolling::-webkit-scrollbar,
-  .chat-list.scrolling::-webkit-scrollbar {
-    width: 8px !important;
-  }
-
-  .user-list.scrolling::-webkit-scrollbar-thumb,
-  .chat-list.scrolling::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.5) !important;
+    max-height: 29vh !important;  /* Ограничиваем высоту чат-списка до 25% экрана */
+    overflow-y: auto !important;  /* Включаем скролл внутри */
+    -webkit-overflow-scrolling: touch !important;
   }
 }
