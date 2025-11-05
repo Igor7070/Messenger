@@ -1208,8 +1208,6 @@
         display: flex !important;
         flex-direction: column !important;
         background-color: #D7E0E6 !important;
-        overflow: visible !important; /* ← ВОТ ЭТО КЛЮЧЕВОЕ */
-        z-index: 1 !important;
     }
 
     .chat-header-group {
