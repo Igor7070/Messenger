@@ -318,20 +318,32 @@ body {
       display: none !important;
     }*/
 
-    .Toastify__toast-container {
+    #toast-root {
       position: fixed !important;
-      top: 80px !important;  /* Ниже шапки */
-      left: 50% !important;
-      transform: translateX(-50%) !important;
-      z-index: 99999999 !important;  /* Максимум */
-      width: 90% !important;
-      max-width: 400px !important;
-      margin: 0 !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      pointer-events: none !important;
+      z-index: 99999999 !important;
+    }
+
+    #toast-root > * {
       pointer-events: auto !important;
     }
 
-    /* Разрешаем тостам выходить за границы */
-    body {
+    /* На телефоне — центр, ниже шапки */
+    .Toastify__toast-container {
+      top: 80px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      width: 90% !important;
+      max-width: 400px !important;
+      z-index: inherit !important;
+    }
+
+    /* Убираем обрезку */
+    html, body {
       overflow: visible !important;
     }
 }
