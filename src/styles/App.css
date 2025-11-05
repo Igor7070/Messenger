@@ -144,7 +144,7 @@ body {
         -webkit-backdrop-filter: blur(8px) !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
         overflow-y: auto !important;
-        /*overflow-x: hidden !important;*/
+        overflow-x: hidden !important;
         -webkit-overflow-scrolling: touch !important;
         display: flex !important;
         flex-direction: column !important;
@@ -273,10 +273,10 @@ body {
       overflow: hidden !important;
     }
 
-    /* Убираем скролл у .app, если он остался 
+    /* Убираем скролл у .app, если он остался */
     .app {
       overflow: hidden !important;
-    } */
+    } 
 
     /* === СКРОЛЛ ТОЛЬКО В VoiceCallWithTranslate === */
     .app:has(.voice-call-container) {
