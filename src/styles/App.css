@@ -185,7 +185,7 @@ body {
         transition: all 0.3s ease !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
         position: absolute !important;
-        top: 48px !important; /* ПОД ЗАГОЛОВКОМ */
+        top: 46px !important; /* ПОД ЗАГОЛОВКОМ */
         transform: none !important;
         z-index: 9 !important;
     }
@@ -293,7 +293,7 @@ body {
       display: flex !important;
       position: absolute !important;
       left: 50% !important;
-      top: 39px !important;                     /* ← ЧУТЬ НИЖЕ 58px → 60px */
+      top: 37px !important;                     /* ← ЧУТЬ НИЖЕ 58px → 60px */
       transform: translateX(-50%) !important;
       width: 58px !important;                   /* ← 72px × 2/3 ≈ 48px */
       height: 48px !important;
