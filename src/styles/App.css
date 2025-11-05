@@ -317,4 +317,10 @@ body {
     .Toastify__toast-container {
       display: none !important;
     }
+
+    /* НО! ОСТАВЛЯЕМ КОНТЕЙНЕР — ЧТОБЫ НЕ СЛОМАТЬ РЕНДЕР */
+    .Toastify__toast-container {
+      display: block !important;
+      pointer-events: none !important;
+    }
 }
