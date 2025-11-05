@@ -112,6 +112,21 @@ body {
   display: none !important;
 }
 
+/* ТОСТЫ — НАД ВСЕМ */
+#toast-root {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 99999999 !important;
+}
+
+#toast-root > * {
+  pointer-events: auto !important;
+}
+
 /* Медиа-запрос для мобильных устройств (ширина до 768px) */
 @media (max-width: 800px) {
     html, body {
@@ -319,19 +334,14 @@ body {
     }*/
 
     .Toastify__toast-container {
-      position: fixed !important;
-      top: 80px !important;                    /* Ниже шапки */
+      top: 80px !important;
       left: 50% !important;
       transform: translateX(-50%) !important;
-      z-index: 9999999 !important;             /* ВЫШЕ .private-chat (9999) */
       width: 90% !important;
       max-width: 400px !important;
-      pointer-events: auto !important;
       margin: 0 auto !important;
-      padding: 0 !important;
     }
 
-    /* УБИРАЕМ ОБРЕЗКУ У html И body */
     html, body {
       overflow: visible !important;
     }

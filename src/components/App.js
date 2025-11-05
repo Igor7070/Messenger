@@ -54,60 +54,66 @@ const AppContent = () => {
   }, [initializeWebSocket, location.pathname]);
 
   return (
-    <div className="app">
-      <div className="header-container">
-        <a href="https://unlimitedpossibilities12.org" className="nav-link nav-link-main" rel="noopener noreferrer">
-          To Main
-        </a>
+    <>
+      {/* ТОСТЫ — НАД ВСЕМ, ВНЕ .app */}
+      <div id="toast-root">
+        <ToastContainer
+          position="top-center"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick={false}
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          limit={3}
+          containerId="global-toast"
+          toastStyle={{ zIndex: 99999999 }}
+        />
+      </div>
 
-        <h1 className="app-title">Messenger UP12</h1>
+      {/* ОСНОВНОЙ КОНТЕНТ */}
+      <div className="app">
+        <div className="header-container">
+          <a href="https://unlimitedpossibilities12.org" className="nav-link nav-link-main" rel="noopener noreferrer">
+            To Main
+          </a>
 
-        {/* ← НОВАЯ КНОПКА ПОСЕРЕДИНЕ */}
-        <div
-          onClick={() => window.location.reload()}
-          className="refresh-icon"
-          title="Обновить"
-        >
-          ⟳
+          <h1 className="app-title">Messenger UP12</h1>
+
+          <div
+            onClick={() => window.location.reload()}
+            className="refresh-icon"
+            title="Обновить"
+          >
+            ⟳
+          </div>
+
+          <Link to="/" className="nav-link nav-link-home">
+            To Home
+          </Link>
         </div>
 
-        <Link to="/" className="nav-link nav-link-home">
-          To Home
-        </Link>
+        <ErrorBoundary>
+          <PrivateMessageNotificationProvider>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/chat/:chatId" element={<Messenger />} />
+              <Route path="/user/:userId" element={<UserProfile />} />
+              <Route path="/private-chat/:chatId" element={<PrivateChat />} />
+              <Route path="/secret-chat/:chatId" element={<SecretPrivateChat />} />
+              <Route path="/voice-call/:roomId" element={<VoiceCall />} />
+              <Route path="/video-call/:roomId" element={<VideoCall />} />
+              <Route path="/user/:userId/personal-chats" element={<PersonalChats />} />
+              <Route path="/voice-call-translate/:roomId" element={<VoiceCallWithTranslate />} />
+              <Route path="/calls" element={<Calls />} />
+              <Route path="/group-call" element={<GroupCallActivity />} />
+            </Routes>
+          </PrivateMessageNotificationProvider>
+        </ErrorBoundary>
       </div>
-      <ToastContainer
-        //key={location.pathname} // Принудительный ререндер при смене маршрута
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        limit={3}
-        enableMultiContainer={false}
-        toastStyle={{ zIndex: 9999 }}
-      />
-      <ErrorBoundary>
-        <PrivateMessageNotificationProvider>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/chat/:chatId" element={<Messenger />} />
-            <Route path="/user/:userId" element={<UserProfile />} />
-            <Route path="/private-chat/:chatId" element={<PrivateChat />} />
-            <Route path="/secret-chat/:chatId" element={<SecretPrivateChat />} />
-            <Route path="/voice-call/:roomId" element={<VoiceCall />} />
-            <Route path="/video-call/:roomId" element={<VideoCall />} />
-            <Route path="/user/:userId/personal-chats" element={<PersonalChats />} />
-            <Route path="/voice-call-translate/:roomId" element={<VoiceCallWithTranslate />} />
-            <Route path="/calls" element={<Calls />} />
-            <Route path="/group-call" element={<GroupCallActivity />} />
-          </Routes>
-        </PrivateMessageNotificationProvider>
-      </ErrorBoundary>
-    </div>
+    </>
   );
 };
 
