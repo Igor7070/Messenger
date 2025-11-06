@@ -269,7 +269,7 @@ body {
       background-color: #D7E0E6 !important;
       display: flex !important;
       flex-direction: column !important;
-      z-index: 9999 !important;
+      z-index: 1 !important;
       overflow: hidden !important;
     }
 
