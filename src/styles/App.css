@@ -270,7 +270,8 @@ body {
       display: flex !important;
       flex-direction: column !important;
       z-index: 1 !important;
-      overflow: hidden !important;
+      /*overflow: hidden !important;*/
+      overflow: visible !important;
     }
 
     /* Убираем скролл у .app, если он остался */
