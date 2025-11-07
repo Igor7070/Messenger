@@ -694,10 +694,18 @@ const Messenger = () => {
 
     const handleRightClick = (e, message) => {
         e.preventDefault();
+
+        const messageElement = e.currentTarget; // Это .message
+        const rect = messageElement.getBoundingClientRect();
+
+        // Левый нижний угол сообщения
+        const x = rect.left + window.scrollX;
+        const y = rect.bottom + window.scrollY;
+
         setContextMenu({
             visible: true,
-            x: e.pageX,
-            y: e.pageY,
+            x,
+            y,
             message,
         });
     };
