@@ -704,11 +704,18 @@ const PrivateChat = () => {
 
   const handleRightClick = (e, message) => {
     e.preventDefault();
+
+    const messageElement = e.currentTarget; // .private-message
+    const rect = messageElement.getBoundingClientRect();
+
+    const x = rect.left + window.scrollX;
+    const y = rect.bottom + window.scrollY - 18; // ← -18px = padding кнопки + отступ
+
     setContextMenu({
-      visible: true,
-      x: e.pageX,
-      y: e.pageY,
-      message,
+        visible: true,
+        x,
+        y,
+        message,
     });
   };
 
@@ -1833,8 +1840,8 @@ const PrivateChat = () => {
           ref={contextMenuRef}
           className="private-context-menu"
           style={{
-            top: `${contextMenu.y}px`,
-            left: `${contextMenu.x}px`,
+              top: contextMenu.y + 'px',   // ← верх меню = низ сообщения
+              left: contextMenu.x + 'px',  // ← левый край = левый край сообщения
           }}
           onMouseLeave={() => setContextMenu({ visible: false })}
         >
