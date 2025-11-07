@@ -695,17 +695,17 @@ const Messenger = () => {
     const handleRightClick = (e, message) => {
         e.preventDefault();
 
-        const messageElement = e.currentTarget; // .message
+        const messageElement = e.currentTarget;
         const rect = messageElement.getBoundingClientRect();
 
-        // ЛЕВЫЙ НИЖНИЙ УГОЛ СООБЩЕНИЯ
-        const x = rect.left - window.scrollX;
-        const y = rect.bottom - window.scrollY;
+        // ЛЕВЫЙ НИЖНИЙ УГОЛ — ТОЧНО
+        const x = rect.left + window.scrollX;
+        const y = rect.bottom + window.scrollY; // ← ВПЛОТНУЮ К НИЗУ СООБЩЕНИЯ
 
         setContextMenu({
             visible: true,
-            x,  // теперь — координата левого угла
-            y,  // теперь — координата нижнего края
+            x,
+            y,
             message,
         });
     };
