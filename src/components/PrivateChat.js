@@ -708,7 +708,7 @@ const PrivateChat = () => {
     const messageElement = e.currentTarget; // .private-message
     const rect = messageElement.getBoundingClientRect();
 
-    const x = rect.left + window.scrollX;
+    const x = rect.left + window.scrollX - 16;
     const y = rect.bottom + window.scrollY - 18; // ← -18px = padding кнопки + отступ
 
     setContextMenu({
