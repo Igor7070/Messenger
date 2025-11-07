@@ -700,7 +700,7 @@ const Messenger = () => {
 
         // ЛЕВЫЙ НИЖНИЙ УГОЛ — ТОЧНО
         const x = rect.left + window.scrollX;
-        const y = rect.bottom + window.scrollY; // ← ВПЛОТНУЮ К НИЗУ СООБЩЕНИЯ
+        const y = rect.bottom + window.scrollY - 8; // ← ВПЛОТНУЮ К НИЗУ СООБЩЕНИЯ
 
         setContextMenu({
             visible: true,
