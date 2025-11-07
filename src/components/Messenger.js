@@ -694,10 +694,18 @@ const Messenger = () => {
 
     const handleRightClick = (e, message) => {
         e.preventDefault();
+
+        const messageElement = e.currentTarget; // .message
+        const rect = messageElement.getBoundingClientRect();
+
+        // ЛЕВЫЙ НИЖНИЙ УГОЛ СООБЩЕНИЯ
+        const x = rect.left + window.scrollX;
+        const y = rect.bottom + window.scrollY;
+
         setContextMenu({
             visible: true,
-            x: e.pageX,
-            y: e.pageY,
+            x,  // теперь — координата левого угла
+            y,  // теперь — координата нижнего края
             message,
         });
     };
@@ -1845,14 +1853,14 @@ const Messenger = () => {
         </div>
       </div>
       {contextMenu.visible && (
-        <div
-          className="context-menu"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
-          onMouseLeave={() => setContextMenu({ visible: false })}
-        >
-          <button onClick={() => handleMenuAction('edit')}>Edit</button>
-          <button onClick={() => handleMenuAction('delete')}>Delete</button>
-        </div>
+          <div
+              className="context-menu"
+              style={{ top: contextMenu.y, left: contextMenu.x }}
+              onMouseLeave={() => setContextMenu({ visible: false })}
+          >
+              <button onClick={() => handleMenuAction('edit')}>Edit</button>
+              <button onClick={() => handleMenuAction('delete')}>Delete</button>
+          </div>
       )}
       {incomingCall && (
         <IncomingCallNotification
