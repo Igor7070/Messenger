@@ -88,6 +88,7 @@ const Messenger = () => {
     const messageListRef = useRef(null);
     const fileInputRef = useRef(null);
     const mediaRecorderRef = useRef(null);
+    const contextMenuRef = useRef(null);
     const { chatId } = useParams();
     const navigate = useNavigate();
     const { userInteracted, handleInteraction } = useUserInteraction();
@@ -491,6 +492,24 @@ const Messenger = () => {
             }
         });
     }, [memoizedAudioMessages]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (contextMenuRef.current && !contextMenuRef.current.contains(event.target)) {
+                setContextMenu({ visible: false });
+            }
+        };
+
+        if (contextMenu.visible) {
+            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('touchstart', handleClickOutside); // ← для мобильных
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+        };
+    }, [contextMenu.visible]);
 
     const updateMessages = (newMessage) => {
         setMessages((prevMessages) => {
@@ -1854,6 +1873,7 @@ const Messenger = () => {
       </div>
       {contextMenu.visible && (
           <div
+              ref={contextMenuRef}
               className="context-menu"
               style={{
                   top: contextMenu.y + 'px',   // ← верх меню = низ сообщения
