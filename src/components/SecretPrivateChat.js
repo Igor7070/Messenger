@@ -1258,7 +1258,7 @@ const SecretPrivateChat = () => {
     const messageEl = e.currentTarget;
     const rect = messageEl.getBoundingClientRect();
 
-    const x = rect.left + window.scrollX - 16;
+    const x = rect.left + window.scrollX - 12;
     const y = rect.bottom + window.scrollY - 18;
 
     setContextMenu({ visible: true, x, y, message });
