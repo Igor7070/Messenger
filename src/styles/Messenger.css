@@ -116,6 +116,7 @@
 }
 
 .message {
+    position: relative; /* КЛЮЧЕВОЙ СТРОК */
     max-width: 80%;
     margin-bottom: 5px;
     display: flex;
@@ -311,14 +312,17 @@
 
 .context-menu {
     position: absolute;
+    left: 0;
+    bottom: 0;
+    transform: translateY(100%); /* меню под сообщением */
     background: #FFFFFF;
     border: 1px solid #ccc;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
     z-index: 1000;
-    min-width: 80px;
+    min-width: 90px;
     border-radius: 6px;
     overflow: hidden;
-    /* Убираем фиксированные координаты — теперь позиционируем по x/y */
+    font-family: 'Inter', sans-serif;
 }
 
 .context-menu button {

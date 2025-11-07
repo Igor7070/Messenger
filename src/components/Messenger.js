@@ -695,18 +695,9 @@ const Messenger = () => {
     const handleRightClick = (e, message) => {
         e.preventDefault();
 
-        const messageElement = e.currentTarget; // Это .message
-        const rect = messageElement.getBoundingClientRect();
-
-        // Левый нижний угол сообщения
-        const x = rect.left + window.scrollX;
-        const y = rect.bottom + window.scrollY;
-
         setContextMenu({
             visible: true,
-            x,
-            y,
-            message,
+            message, // только сообщение
         });
     };
 
@@ -1855,7 +1846,7 @@ const Messenger = () => {
       {contextMenu.visible && (
         <div
           className="context-menu"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
+          /*style={{ top: contextMenu.y, left: contextMenu.x }}*/
           onMouseLeave={() => setContextMenu({ visible: false })}
         >
           <button onClick={() => handleMenuAction('edit')}>Edit</button>
