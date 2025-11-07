@@ -117,12 +117,8 @@ const SecretPrivateChat = () => {
   const [chatName, setChatName] = useState('');
   const [displayChatName, setDisplayChatName] = useState('');
   const [editingMessageId, setEditingMessageId] = useState(null);
-  const [contextMenu, setContextMenu] = useState({
-    visible: false,
-    x: 0,
-    y: 0,
-    message: null,
-  });
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
+  const contextMenuRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [micIconState, setMicIconState] = useState('mic');
@@ -628,28 +624,21 @@ const SecretPrivateChat = () => {
     });
   }, [messages]);
 
-  // === ЗАКРЫТИЕ КОНТЕКСТНОГО МЕНЮ ПРИ КЛИКЕ ВНЕ ===
   useEffect(() => {
-    const handleClickOutside = () => {
-      if (contextMenu.visible) {
-        setContextMenu({ visible: false, x: 0, y: 0, message: null });
-      }
-    };
-
-    const handleEscape = (e) => {
-      if (e.key === 'Escape' && contextMenu.visible) {
+    const handleClickOutside = (e) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target)) {
         setContextMenu({ visible: false });
       }
     };
 
-    document.addEventListener('click', handleClickOutside);
-    document.addEventListener('contextmenu', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
+    if (contextMenu.visible) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
 
     return () => {
-      document.removeEventListener('click', handleClickOutside);
-      document.removeEventListener('contextmenu', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [contextMenu.visible]);
 
@@ -1266,24 +1255,13 @@ const SecretPrivateChat = () => {
 
     if (message.sender.id !== userId) return;
 
-    const menuWidth = 140;
-    const menuHeight = 80;
-    let x = e.pageX;
-    let y = e.pageY;
+    const messageEl = e.currentTarget;
+    const rect = messageEl.getBoundingClientRect();
 
-    if (x + menuWidth > window.innerWidth) {
-      x = window.innerWidth - menuWidth - 10;
-    }
-    if (y + menuHeight > window.innerHeight) {
-      y = window.innerHeight - menuHeight - 10;
-    }
+    const x = rect.left + window.scrollX - 16;
+    const y = rect.bottom + window.scrollY - 18;
 
-    setContextMenu({
-      visible: true,
-      x,
-      y,
-      message,
-    });
+    setContextMenu({ visible: true, x, y, message });
   };
 
   const handleMenuAction = (action) => {
@@ -1291,7 +1269,7 @@ const SecretPrivateChat = () => {
     if (!msg || msg.sender.id !== userId) return;
 
     if (action === 'edit' && msg.messageType === 'text') {
-      setContent(msg.content || '');
+      setContent(msg.content);
       setEditingMessageId(msg.id);
       textAreaRef.current?.focus();
     } else if (action === 'delete') {
@@ -2133,59 +2111,19 @@ const SecretPrivateChat = () => {
       </div>
       {contextMenu.visible && contextMenu.message && (
         <div
+          ref={contextMenuRef}
           className="private-context-menu"
           style={{
             position: 'fixed',
-            top: contextMenu.y,
-            left: contextMenu.x,
+            top: contextMenu.y + 'px',
+            left: contextMenu.x + 'px',
             zIndex: 10000,
-            backgroundColor: '#fff',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            padding: '4px 0',
-            fontSize: '14px',
-            minWidth: '120px',
           }}
-          onClick={(e) => e.stopPropagation()}
         >
           {contextMenu.message.messageType === 'text' && (
-            <button
-              onClick={() => handleMenuAction('edit')}
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '8px 16px',
-                textAlign: 'left',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '14px',
-              }}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-              onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-            >
-              Edit
-            </button>
+            <button onClick={() => handleMenuAction('edit')}>Edit</button>
           )}
-          <button
-            onClick={() => handleMenuAction('delete')}
-            style={{
-              display: 'block',
-              width: '100%',
-              padding: '8px 16px',
-              textAlign: 'left',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '14px',
-              color: '#d32f2f',
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#ffebee'}
-            onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            Delete
-          </button>
+          <button onClick={() => handleMenuAction('delete')}>Delete</button>
         </div>
       )}
       {incomingCall && (
