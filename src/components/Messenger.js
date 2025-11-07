@@ -1855,7 +1855,10 @@ const Messenger = () => {
       {contextMenu.visible && (
           <div
               className="context-menu"
-              style={{ top: contextMenu.y, left: contextMenu.x }}
+              style={{
+                  top: contextMenu.y + 'px',   // ← верх меню = низ сообщения
+                  left: contextMenu.x + 'px',  // ← левый край = левый край сообщения
+              }}
               onMouseLeave={() => setContextMenu({ visible: false })}
           >
               <button onClick={() => handleMenuAction('edit')}>Edit</button>
