@@ -699,8 +699,8 @@ const Messenger = () => {
         const rect = messageElement.getBoundingClientRect();
 
         // ЛЕВЫЙ НИЖНИЙ УГОЛ СООБЩЕНИЯ
-        const x = rect.left + window.scrollX;
-        const y = rect.bottom + window.scrollY;
+        const x = rect.left;
+        const y = rect.bottom;
 
         setContextMenu({
             visible: true,
