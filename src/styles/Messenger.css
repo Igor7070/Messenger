@@ -116,7 +116,6 @@
 }
 
 .message {
-    position: relative; /* КЛЮЧЕВОЙ СТРОК */
     max-width: 80%;
     margin-bottom: 5px;
     display: flex;
@@ -312,17 +311,10 @@
 
 .context-menu {
     position: absolute;
-    left: 0;
-    bottom: 0;
-    transform: translateY(100%); /* меню под сообщением */
     background: #FFFFFF;
     border: 1px solid #ccc;
-    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
     z-index: 1000;
-    min-width: 90px;
-    border-radius: 6px;
-    overflow: hidden;
-    font-family: 'Inter', sans-serif;
 }
 
 .context-menu button {
@@ -334,12 +326,10 @@
     width: 100%;
     text-align: left;
     font-size: 14px;
-    color: #333;
-    transition: background-color 0.2s;
 }
 
 .context-menu button:hover {
-    background-color: #f0f0f0;
+    background-color: #F0F0F0;
 }
 
 .error-message {

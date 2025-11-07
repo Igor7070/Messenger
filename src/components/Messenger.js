@@ -694,10 +694,11 @@ const Messenger = () => {
 
     const handleRightClick = (e, message) => {
         e.preventDefault();
-
         setContextMenu({
             visible: true,
-            message, // только сообщение
+            x: e.pageX,
+            y: e.pageY,
+            message,
         });
     };
 
@@ -1846,7 +1847,7 @@ const Messenger = () => {
       {contextMenu.visible && (
         <div
           className="context-menu"
-          /*style={{ top: contextMenu.y, left: contextMenu.x }}*/
+          style={{ top: contextMenu.y, left: contextMenu.x }}
           onMouseLeave={() => setContextMenu({ visible: false })}
         >
           <button onClick={() => handleMenuAction('edit')}>Edit</button>
