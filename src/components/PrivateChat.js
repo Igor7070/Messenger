@@ -34,6 +34,7 @@ const PrivateChat = () => {
   const messageListRef = useRef(null);
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null); // ДОБАВЛЕНО: Референция для MediaRecorder
+  const contextMenuRef = useRef(null);
   const { chatId: chatIdParam } = useParams();
   const navigate = useNavigate();
   const { userInteracted, handleInteraction } = useUserInteraction();
@@ -413,6 +414,24 @@ const PrivateChat = () => {
       }
     });
   }, [memoizedAudioMessages]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+        if (contextMenuRef.current && !contextMenuRef.current.contains(event.target)) {
+            setContextMenu({ visible: false });
+        }
+    };
+
+    if (contextMenu.visible) {
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [contextMenu.visible]);
 
   const markAllMessagesAsRead = (updatedMessages) => {
     console.log('markAllMessagesAsRead is working...');
@@ -1811,8 +1830,12 @@ const PrivateChat = () => {
       </div>
       {contextMenu.visible && (
         <div
+          ref={contextMenuRef}
           className="private-context-menu"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
+          style={{
+            top: `${contextMenu.y}px`,
+            left: `${contextMenu.x}px`,
+          }}
           onMouseLeave={() => setContextMenu({ visible: false })}
         >
           <button onClick={() => handleMenuAction('edit')}>Edit</button>
