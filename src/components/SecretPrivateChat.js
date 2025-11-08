@@ -1168,6 +1168,9 @@ const SecretPrivateChat = () => {
             fileUrl: serverFileUrl || messageData.fileUrl,
             file_url: serverFileUrl || messageData.file_url,
             contentType: messageData.contentType,
+            // [FIX] Добавляем fileUrl в ОСНОВНОЕ сообщение
+            fileUrl: serverFileUrl,
+            file_url: serverFileUrl,
           };
 
           client.publish({
