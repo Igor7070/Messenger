@@ -1060,6 +1060,24 @@ const SecretPrivateChat = () => {
           messageData.fileUrl = fileUrl;
           messageData.file_url = fileUrl;
 
+          // === ОТПРАВЛЯЕМ fileUrl ЧЕРЕЗ WebSocket СРАЗУ ===
+          if (client && client.connected) {
+            const fileUpdate = {
+              id: savedMessage.id,
+              fileUrl: fileUrl,
+              file_url: fileUrl,
+              messageType: 'file',
+              chat: { id: chatId },
+            };
+            console.log('Sending fileUrl via WebSocket:', fileUpdate);
+            client.publish({
+              destination: `/app/sendMessage/chat/${chatId}`,
+              body: JSON.stringify(fileUpdate),
+            });
+          } else {
+            console.error('Client not connected, cannot send fileUrl');
+          }
+
           // [OPTIMIZE] Обновляем localStorage с fileUrl
           localStorage.setItem(fileContentKey, JSON.stringify({
             fileName: selectedFile.name,
