@@ -181,7 +181,7 @@ const SecretPrivateChat = () => {
           [userId]: parsedKeyPair.publicKey,
         }));
         // Force-sync key всегда при reload/update (уведомление партнёра)
-        const currentPublicKey = parsedKeyPair.publicKey;  // Или publicKeyBase64 в else
+        const currentPublicKey = parsedKeyPair.publicKey;
         try {
           console.log(`Syncing public key for userId: ${userId}`);
           const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
@@ -225,7 +225,7 @@ const SecretPrivateChat = () => {
           [userId]: publicKeyBase64,
         }));
         // Force-sync key всегда при reload/update (уведомление партнёра)
-        const currentPublicKey = parsedKeyPair.publicKey;  // Или publicKeyBase64 в else
+        const currentPublicKey = publicKeyBase64;
         try {
           console.log(`Syncing public key for userId: ${userId}`);
           const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
@@ -249,22 +249,6 @@ const SecretPrivateChat = () => {
         } catch (syncError) {
           console.error('Sync error:', syncError);
           toast.error('Key sync failed — retry chat');
-        }
-        try {
-          console.log(`Uploading public key for userId: ${userId}`);
-          const response = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, publicKey: publicKeyBase64 }),
-          });
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to upload public key: ${response.status} - ${errorText}`);
-          }
-          console.log(`Public key uploaded successfully for userId: ${userId}`);
-        } catch (error) {
-          console.error(`Error uploading public key for userId: ${userId}`, error);
-          toast.error(`Failed to upload public key: ${error.message}`);
         }
       }
     };
