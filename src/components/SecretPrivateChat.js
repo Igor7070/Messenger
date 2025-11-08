@@ -84,34 +84,36 @@ const fetchPublicKeyWithRetry = async (recipientId, retries = 3, delay = 2000) =
 const getPublicKey = async (userId, publicKeyId = null) => {
   console.log(`Fetching public key for userId: ${userId}, publicKeyId: ${publicKeyId}`);
   try {
-    let url;
-    if (publicKeyId) {
-      // Кэш для history
-      const cached = localStorage.getItem(`history_key_${publicKeyId}`);
-      if (cached) {
-        console.log(`Using cached history key for publicKeyId=${publicKeyId}: ${cached}`);
-        return cached;
-      }
-      url = `https://unlimitedpossibilities12.org/api/public_keys/history/${publicKeyId}`;
-    } else {
-      url = `https://unlimitedpossibilities12.org/api/public_keys/${userId}`;
-    }
+    const url = publicKeyId
+      ? `https://unlimitedpossibilities12.org/api/public_keys/history/${publicKeyId}` // [ADD] Новый эндпоинт
+      : `https://unlimitedpossibilities12.org/api/public_keys/${userId}`;
     const response = await fetch(url);
     if (!response.ok) {
-      // Fallback to current if history fail
       if (publicKeyId) {
-        console.warn(`History fetch failed for publicKeyId=${publicKeyId}, falling back to current key for userId=${userId}`);
-        return await getPublicKey(userId);  // Рекурсия на current
+        console.warn(`History fetch failed for publicKeyId=${publicKeyId}, fallback to current for userId=${userId}`);
+        const fallbackUrl = `https://unlimitedpossibilities12.org/api/public_keys/${userId}`;  // Current key
+        const fallbackResponse = await fetch(fallbackUrl);
+        if (!fallbackResponse.ok) throw new Error(`Fallback failed: ${fallbackResponse.status}`);
+        const fallbackData = await fallbackResponse.json();
+        const fallbackKey = fallbackData.publicKey;
+        console.log(`Fallback to current key for userId=${userId}: ${fallbackKey}`);
+        // Кэш fallback as history
+        localStorage.setItem(`history_key_${publicKeyId}`, fallbackKey);
+        return fallbackKey;
       }
       throw new Error(`Failed to fetch public key: ${response.status}`);
     }
     const publicKeyData = await response.json();
     const key = publicKeyData.publicKey;
-    console.log(`Fetched public key for userId: ${userId}, publicKeyId: ${publicKeyId}, value: ${key}`);
-    // Кэш history
-    if (publicKeyId) localStorage.setItem(`history_key_${publicKeyId}`, key);
-    // ... (остальной код с bytes/log)
-    return key;
+    if (publicKeyId) localStorage.setItem(`history_key_${publicKeyId}`, key);  // Кэш history
+    console.log(`Fetched public key for userId: ${userId}, publicKeyId: ${publicKeyId}, value: ${publicKeyData.publicKey}`);
+    try {
+      const publicKeyBytes = sodium.from_base64(publicKeyData.publicKey);
+      console.log(`Public key bytes length for userId: ${userId}: ${publicKeyBytes.length}, hex: ${sodium.to_hex(publicKeyBytes)}`);
+    } catch (e) {
+      console.error(`Invalid fetched public key for userId: ${userId}, publicKeyId: ${publicKeyId}, error: ${e.message}`);
+    }
+    return publicKeyData.publicKey;
   } catch (error) {
     console.error(`Error fetching public key for userId: ${userId}, publicKeyId: ${publicKeyId}, error: ${error.message}`);
     throw new Error(`Failed to fetch public key for userId: ${userId}`);
@@ -178,6 +180,32 @@ const SecretPrivateChat = () => {
           ...prev,
           [userId]: parsedKeyPair.publicKey,
         }));
+        // Force-sync key всегда при reload/update (уведомление партнёра)
+        const currentPublicKey = parsedKeyPair.publicKey;  // Или publicKeyBase64 в else
+        try {
+          console.log(`Syncing public key for userId: ${userId}`);
+          const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, publicKey: currentPublicKey }),
+          });
+          if (!syncResponse.ok) throw new Error(`Sync failed: ${syncResponse.status}`);
+          console.log(`Key synced for userId: ${userId}`);
+
+          // WS-broadcast для партнёра (он получит в /topic/publicKey/{recipientId})
+          if (client && client.connected) {
+            client.publish({
+              destination: `/app/publicKey/${userId}`,
+              body: JSON.stringify({ userId, publicKey: currentPublicKey }),
+            });
+            console.log('WS broadcast sent to partner');
+          }
+
+          toast.info('Key updated and synced with partner');  // Уведомление юзеру
+        } catch (syncError) {
+          console.error('Sync error:', syncError);
+          toast.error('Key sync failed — retry chat');
+        }
       } else {
         console.log(`Generating new key pair for userId: ${userId}`);
         const newKeyPair = sodium.crypto_box_keypair();
@@ -196,6 +224,32 @@ const SecretPrivateChat = () => {
           ...prev,
           [userId]: publicKeyBase64,
         }));
+        // Force-sync key всегда при reload/update (уведомление партнёра)
+        const currentPublicKey = parsedKeyPair.publicKey;  // Или publicKeyBase64 в else
+        try {
+          console.log(`Syncing public key for userId: ${userId}`);
+          const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, publicKey: currentPublicKey }),
+          });
+          if (!syncResponse.ok) throw new Error(`Sync failed: ${syncResponse.status}`);
+          console.log(`Key synced for userId: ${userId}`);
+
+          // WS-broadcast для партнёра (он получит в /topic/publicKey/{recipientId})
+          if (client && client.connected) {
+            client.publish({
+              destination: `/app/publicKey/${userId}`,
+              body: JSON.stringify({ userId, publicKey: currentPublicKey }),
+            });
+            console.log('WS broadcast sent to partner');
+          }
+
+          toast.info('Key updated and synced with partner');  // Уведомление юзеру
+        } catch (syncError) {
+          console.error('Sync error:', syncError);
+          toast.error('Key sync failed — retry chat');
+        }
         try {
           console.log(`Uploading public key for userId: ${userId}`);
           const response = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
@@ -360,14 +414,6 @@ const SecretPrivateChat = () => {
         stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
           const newMessage = JSON.parse(message.body);
           console.log('NewMessage:', newMessage);
-
-          // [ДОБАВЛЕНИЕ ЗДЕСЬ]
-          if (processedMessages.has(newMessage.id)) {
-            console.log(`Duplicate ID=${newMessage.id} ignored`);
-            return;
-          }
-          setProcessedMessages(prev => new Set([...prev, newMessage.id]));
-          // [КОНЕЦ ДОБАВКИ]
 
           // === ТЕКСТОВЫЕ СООБЩЕНИЯ ===
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
@@ -865,9 +911,17 @@ const SecretPrivateChat = () => {
       console.log(`Decryption successful: decryptedMessage=${decryptedMessage}`);
       return decryptedMessage;
     } catch (error) {
-      console.error(
-        `Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`
-      );
+      console.error(`Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`);
+      // Retry with current key if history fail
+      if (originalPublicKeyId && error.message.includes('incorrect key pair')) {
+        console.log(`Retry with current key for senderId=${senderId}`);
+        const currentKey = await getPublicKey(senderId);  // No ID = current
+        const currentBytes = sodium.from_base64(currentKey);
+        const decryptedBytes = sodium.crypto_box_open_easy(encryptedBytes, nonceBytes, currentBytes, privateKeyBytes);
+        const decryptedMessage = sodium.to_string(decryptedBytes);
+        console.log(`Retry success: ${decryptedMessage}`);
+        return decryptedMessage;
+      }
       throw new Error(`Decryption failed: ${error.message}`);
     }
   };
