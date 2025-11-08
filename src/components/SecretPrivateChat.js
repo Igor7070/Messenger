@@ -1147,10 +1147,11 @@ const SecretPrivateChat = () => {
             id: savedMessage.id,
             content: undefined,
             clientMessageId: messageData.clientMessageId || undefined,
-            fileUrl: serverFileUrl,
-            file_url: serverFileUrl,
-            fileName: selectedFile?.name,
-            contentType: selectedFile?.type || messageData.contentType,
+            // ← ВСЕГДА БЕРЁМ fileUrl ИЗ messageData (обновлён после uploadFile)
+            fileUrl: messageData.fileUrl || serverFileUrl,
+            file_url: messageData.fileUrl || serverFileUrl,
+            fileName: messageData.fileName || (selectedFile?.name),
+            contentType: messageData.contentType || (selectedFile?.type),
           };
 
           console.log('Sending via WebSocket:', websocketMessage);
