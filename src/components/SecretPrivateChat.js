@@ -84,22 +84,34 @@ const fetchPublicKeyWithRetry = async (recipientId, retries = 3, delay = 2000) =
 const getPublicKey = async (userId, publicKeyId = null) => {
   console.log(`Fetching public key for userId: ${userId}, publicKeyId: ${publicKeyId}`);
   try {
-    const url = publicKeyId
-      ? `https://unlimitedpossibilities12.org/api/public_keys/history/${publicKeyId}` // [ADD] Новый эндпоинт
-      : `https://unlimitedpossibilities12.org/api/public_keys/${userId}`;
+    let url;
+    if (publicKeyId) {
+      // Кэш для history
+      const cached = localStorage.getItem(`history_key_${publicKeyId}`);
+      if (cached) {
+        console.log(`Using cached history key for publicKeyId=${publicKeyId}: ${cached}`);
+        return cached;
+      }
+      url = `https://unlimitedpossibilities12.org/api/public_keys/history/${publicKeyId}`;
+    } else {
+      url = `https://unlimitedpossibilities12.org/api/public_keys/${userId}`;
+    }
     const response = await fetch(url);
     if (!response.ok) {
+      // Fallback to current if history fail
+      if (publicKeyId) {
+        console.warn(`History fetch failed for publicKeyId=${publicKeyId}, falling back to current key for userId=${userId}`);
+        return await getPublicKey(userId);  // Рекурсия на current
+      }
       throw new Error(`Failed to fetch public key: ${response.status}`);
     }
     const publicKeyData = await response.json();
-    console.log(`Fetched public key for userId: ${userId}, publicKeyId: ${publicKeyId}, value: ${publicKeyData.publicKey}`);
-    try {
-      const publicKeyBytes = sodium.from_base64(publicKeyData.publicKey);
-      console.log(`Public key bytes length for userId: ${userId}: ${publicKeyBytes.length}, hex: ${sodium.to_hex(publicKeyBytes)}`);
-    } catch (e) {
-      console.error(`Invalid fetched public key for userId: ${userId}, publicKeyId: ${publicKeyId}, error: ${e.message}`);
-    }
-    return publicKeyData.publicKey;
+    const key = publicKeyData.publicKey;
+    console.log(`Fetched public key for userId: ${userId}, publicKeyId: ${publicKeyId}, value: ${key}`);
+    // Кэш history
+    if (publicKeyId) localStorage.setItem(`history_key_${publicKeyId}`, key);
+    // ... (остальной код с bytes/log)
+    return key;
   } catch (error) {
     console.error(`Error fetching public key for userId: ${userId}, publicKeyId: ${publicKeyId}, error: ${error.message}`);
     throw new Error(`Failed to fetch public key for userId: ${userId}`);
@@ -130,6 +142,7 @@ const SecretPrivateChat = () => {
   const [publicKeys, setPublicKeys] = useState({}); // Хранит публичные ключи участников чата
   const [keyPair, setKeyPair] = useState(null); // Локальная пара ключей пользователя
   const [sentMessagesCache, setSentMessagesCache] = useState({}); // Кэш отправленных сообщений: { clientMessageId: content }
+  const [processedMessages, setProcessedMessages] = useState(new Set());
   const messagesEndRef = useRef(null);
   const messageListRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -347,6 +360,14 @@ const SecretPrivateChat = () => {
         stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
           const newMessage = JSON.parse(message.body);
           console.log('NewMessage:', newMessage);
+
+          // [ДОБАВЛЕНИЕ ЗДЕСЬ]
+          if (processedMessages.has(newMessage.id)) {
+            console.log(`Duplicate ID=${newMessage.id} ignored`);
+            return;
+          }
+          setProcessedMessages(prev => new Set([...prev, newMessage.id]));
+          // [КОНЕЦ ДОБАВКИ]
 
           // === ТЕКСТОВЫЕ СООБЩЕНИЯ ===
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
