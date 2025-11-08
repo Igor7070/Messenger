@@ -420,10 +420,11 @@ const SecretPrivateChat = () => {
                 read: newMessage.read_status ?? false,
               });
             } else {
-              // === ВХОДЯЩИЕ ФАЙЛЫ — ДОБАВЛЯЕМ fileUrl! ===
+              // === ВХОДЯЩИЕ ФАЙЛЫ ===
               try {
                 let fileName = 'Unknown file';
                 let contentType = 'application/octet-stream';
+                let fileUrl = newMessage.fileUrl || newMessage.file_url || null; // ← Сначала из сообщения
 
                 if (newMessage.encryptedContent && newMessage.nonce) {
                   let publicKey = publicKeys[newMessage.sender.id];
@@ -449,11 +450,22 @@ const SecretPrivateChat = () => {
                   console.log(`Decrypted file metadata: fileName=${fileName}, contentType=${contentType}`);
                 }
 
+                // ← ДОБАВЬ: если fileUrl нет — подгружаем из API
+                if (!fileUrl && newMessage.id) {
+                  try {
+                    const meta = await fetchFileMetadata(newMessage.id);
+                    fileUrl = meta.fileUrl;
+                    console.log(`Fetched fileUrl from API for message ${newMessage.id}: ${fileUrl}`);
+                  } catch (e) {
+                    console.error('Failed to fetch fileUrl:', e);
+                  }
+                }
+
                 updateMessages({
                   ...newMessage,
                   fileName,
                   contentType,
-                  fileUrl: newMessage.fileUrl || newMessage.file_url, // ← ЭТО НОВОЕ! ОСТАЛЬНОЕ — КАК БЫЛО
+                  fileUrl, // ← Теперь fileUrl из API (если не было)
                   delivered: newMessage.delivered_status ?? false,
                   read: newMessage.read_status ?? false,
                 });
@@ -463,7 +475,7 @@ const SecretPrivateChat = () => {
                   ...newMessage,
                   fileName: 'Decryption failed',
                   contentType: null,
-                  fileUrl: null, // ← Явно null, чтобы не было undefined
+                  fileUrl: null,
                   delivered: newMessage.delivered_status ?? false,
                   read: newMessage.read_status ?? false,
                 });
@@ -1066,6 +1078,12 @@ const SecretPrivateChat = () => {
           serverFileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
           if (!serverFileUrl) throw new Error('File upload failed');
 
+          // ← ДОБАВЬ: обнови messageData
+          messageData.fileUrl = serverFileUrl;
+          messageData.file_url = serverFileUrl;
+          messageData.fileName = selectedFile.name;
+          messageData.contentType = selectedFile.type;
+
           localStorage.setItem(fileContentKey, JSON.stringify({
             fileName: selectedFile.name,
             contentType: selectedFile.type,
@@ -1147,11 +1165,10 @@ const SecretPrivateChat = () => {
             id: savedMessage.id,
             content: undefined,
             clientMessageId: messageData.clientMessageId || undefined,
-            // ← ВСЕГДА БЕРЁМ fileUrl ИЗ messageData (обновлён после uploadFile)
-            fileUrl: messageData.fileUrl || serverFileUrl,
-            file_url: messageData.fileUrl || serverFileUrl,
-            fileName: messageData.fileName || (selectedFile?.name),
-            contentType: messageData.contentType || (selectedFile?.type),
+            fileUrl: messageData.fileUrl,
+            file_url: messageData.file_url,
+            fileName: messageData.fileName,
+            contentType: messageData.contentType,
           };
 
           console.log('Sending via WebSocket:', websocketMessage);
