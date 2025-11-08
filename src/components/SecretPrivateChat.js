@@ -420,7 +420,7 @@ const SecretPrivateChat = () => {
                 read: newMessage.read_status ?? false,
               });
             } else {
-              // === ВХОДЯЩИЕ ФАЙЛЫ — БЕЗ КЭША, ТОЛЬКО ИМЯ И ТИП ===
+              // === ВХОДЯЩИЕ ФАЙЛЫ — ДОБАВЛЯЕМ fileUrl! ===
               try {
                 let fileName = 'Unknown file';
                 let contentType = 'application/octet-stream';
@@ -453,6 +453,7 @@ const SecretPrivateChat = () => {
                   ...newMessage,
                   fileName,
                   contentType,
+                  fileUrl: newMessage.fileUrl || newMessage.file_url, // ← ЭТО НОВОЕ! ОСТАЛЬНОЕ — КАК БЫЛО
                   delivered: newMessage.delivered_status ?? false,
                   read: newMessage.read_status ?? false,
                 });
@@ -462,6 +463,7 @@ const SecretPrivateChat = () => {
                   ...newMessage,
                   fileName: 'Decryption failed',
                   contentType: null,
+                  fileUrl: null, // ← Явно null, чтобы не было undefined
                   delivered: newMessage.delivered_status ?? false,
                   read: newMessage.read_status ?? false,
                 });
