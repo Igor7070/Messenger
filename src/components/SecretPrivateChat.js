@@ -967,6 +967,7 @@ const SecretPrivateChat = () => {
 
         // === ТЕКСТОВОЕ СООБЩЕНИЕ ===
         if (content) {
+          // [OPTIMIZE] Сохраняем в кэш для отображения при возврате
           setSentMessagesCache((prev) => ({
             ...prev,
             [clientMessageId]: content,
@@ -979,7 +980,7 @@ const SecretPrivateChat = () => {
             encryptedContent,
             nonce,
             messageType: 'text',
-            content,
+            content, // Только для локального отображения
             id: clientMessageId,
             clientMessageId,
           };
@@ -1000,30 +1001,6 @@ const SecretPrivateChat = () => {
           savedMessage = await response.json();
           console.log('Saved text message:', savedMessage);
           messageData = { ...messageData, id: savedMessage.id };
-
-          // === ОТПРАВКА ТЕКСТА ЧЕРЕЗ WebSocket ===
-          if (client && client.connected) {
-            const websocketMessage = {
-              ...messageData,
-              id: savedMessage.id,
-              content: undefined,
-              clientMessageId: undefined,
-            };
-            console.log('Sending text via WebSocket:', JSON.stringify(websocketMessage));
-            client.publish({
-              destination: `/app/sendMessage/chat/${chatId}`,
-              body: JSON.stringify(websocketMessage),
-            });
-
-            setMessages((prevMessages) => {
-              if (prevMessages.some((msg) => msg.id === clientMessageId)) return prevMessages;
-              return [...prevMessages, { ...messageData, id: clientMessageId, delivered: false, read: false }];
-            });
-
-            resetForm();
-          } else {
-            toast.error('No connection');
-          }
 
         // === ФАЙЛОВОЕ СООБЩЕНИЕ ===
         } else if (selectedFile) {
@@ -1046,12 +1023,14 @@ const SecretPrivateChat = () => {
             fileName: selectedFile.name,
           };
 
+          // [ADD] Сохраняем метаданные в localStorage
           const fileContentKey = `fileContent_${chatId}_${userId}_${clientMessageId}`;
           localStorage.setItem(fileContentKey, JSON.stringify({
             fileName: selectedFile.name,
             contentType: selectedFile.type,
           }));
 
+          // [ADD] Отправляем сообщение (без файла)
           const response = await fetch('https://unlimitedpossibilities12.org/api/messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1071,71 +1050,47 @@ const SecretPrivateChat = () => {
           savedMessage = await response.json();
           console.log('Saved file message:', savedMessage);
 
-          // === ЗАГРУЗКА ФАЙЛА ===
+          // [ADD] Загружаем зашифрованный файл
           fileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
-          if (!fileUrl) throw new Error('File upload failed');
-
+          if (!fileUrl) {
+            throw new Error('File upload returned no fileUrl');
+          }
           messageData.fileUrl = fileUrl;
           messageData.file_url = fileUrl;
 
-          // Обновляем localStorage
+          // [OPTIMIZE] Обновляем localStorage с fileUrl
           localStorage.setItem(fileContentKey, JSON.stringify({
             fileName: selectedFile.name,
             contentType: selectedFile.type,
             fileUrl,
           }));
 
-          saveFileToCache(chatId, userId, savedMessage.id, { fileName: selectedFile.name, contentType: selectedFile.type, fileUrl });
-          saveFileToCache(chatId, userId, clientMessageId, { fileName: selectedFile.name, contentType: selectedFile.type, fileUrl });
+          // [ADD] Сохраняем в кэш (для обоих ID)
+          saveFileToCache(chatId, userId, savedMessage.id, {
+            fileName: selectedFile.name,
+            contentType: selectedFile.type,
+            fileUrl,
+          });
+          saveFileToCache(chatId, userId, clientMessageId, {
+            fileName: selectedFile.name,
+            contentType: selectedFile.type,
+            fileUrl,
+          });
 
+          // [OPTIMIZE] Сохраняем расшифрованные данные (для скачивания)
           const arrayBuffer = await selectedFile.arrayBuffer();
           const base64File = sodium.to_base64(new Uint8Array(arrayBuffer));
-          saveFileToCache(chatId, userId, clientMessageId, { fileName: selectedFile.name, contentType: selectedFile.type, fileData: base64File });
-
-          // === ОТПРАВКА ФАЙЛА ЧЕРЕЗ WebSocket ПОСЛЕ uploadFile ===
-          if (client && client.connected) {
-            const websocketMessage = {
-              ...messageData,
-              id: savedMessage.id,
-              content: undefined,
-              fileName: undefined,
-              clientMessageId: messageData.clientMessageId || undefined,
-              fileUrl: fileUrl,
-              file_url: fileUrl,
-              contentType: messageData.contentType,
-            };
-            console.log('Sending file via WebSocket (with fileUrl):', JSON.stringify(websocketMessage));
-            client.publish({
-              destination: `/app/sendMessage/chat/${chatId}`,
-              body: JSON.stringify(websocketMessage),
-            });
-
-            const tempFileUrl = URL.createObjectURL(selectedFile);
-            setMessages((prevMessages) => {
-              if (prevMessages.some((msg) => msg.id === clientMessageId)) return prevMessages;
-              return [...prevMessages, {
-                ...messageData,
-                id: clientMessageId,
-                fileUrl: tempFileUrl,
-                fileName: selectedFile.name,
-                contentType: selectedFile.type,
-                delivered: false,
-                read: false,
-                messageType: 'file',
-                timestamp: messageData.timestamp,
-                sender: messageData.sender,
-                chat: messageData.chat,
-              }];
-            });
-
-            resetForm();
-          } else {
-            toast.error('No connection');
-          }
+          saveFileToCache(chatId, userId, clientMessageId, {
+            fileName: selectedFile.name,
+            contentType: selectedFile.type,
+            fileData: base64File, // [ADD] Для downloadOwnFile
+          });
 
         // === АУДИО СООБЩЕНИЕ ===
         } else if (audioBlob) {
-          const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
+          const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, {
+            type: 'audio/mpeg',
+          });
 
           messageData = {
             ...messageData,
@@ -1159,57 +1114,75 @@ const SecretPrivateChat = () => {
           });
           if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Failed to send audio: ${response.status} - ${errorText}`);
+            throw new Error(`Failed to send audio message: ${response.status} - ${errorText}`);
           }
           savedMessage = await response.json();
           console.log('Saved audio message:', savedMessage);
 
-          // === ЗАГРУЗКА АУДИО ===
           fileUrl = await uploadFile(audioFile, null, savedMessage.id);
-          if (!fileUrl) throw new Error('Audio upload failed');
-
+          if (!fileUrl) {
+            throw new Error('Audio upload returned no fileUrl');
+          }
           messageData.fileUrl = fileUrl;
           messageData.file_url = fileUrl;
-
-          // === ОТПРАВКА АУДИО ЧЕРЕЗ WebSocket ===
-          if (client && client.connected) {
-            const websocketMessage = {
-              ...messageData,
-              id: savedMessage.id,
-              content: undefined,
-              fileName: undefined,
-              clientMessageId: messageData.clientMessageId || undefined,
-              fileUrl: fileUrl,
-              file_url: fileUrl,
-              contentType: 'audio/mpeg',
-            };
-            console.log('Sending audio via WebSocket:', JSON.stringify(websocketMessage));
-            client.publish({
-              destination: `/app/sendMessage/chat/${chatId}`,
-              body: JSON.stringify(websocketMessage),
-            });
-
-            setMessages((prevMessages) => {
-              if (prevMessages.some((msg) => msg.id === clientMessageId)) return prevMessages;
-              return [...prevMessages, {
-                ...messageData,
-                id: clientMessageId,
-                fileUrl: fileUrl,
-                messageType: 'audio',
-                delivered: false,
-                read: false,
-              }];
-            });
-
-            resetForm();
-          } else {
-            toast.error('No connection');
-          }
         }
 
+        // === ОТПРАВКА ЧЕРЕЗ WebSocket ===
+        if (client && client.connected) {
+          const websocketMessage = {
+            ...messageData,
+            id: savedMessage.id,
+            content: undefined,
+            fileName: undefined,
+            clientMessageId: messageData.clientMessageId || undefined,
+            fileUrl: messageData.fileUrl,
+            file_url: messageData.file_url,
+            contentType: messageData.contentType,
+          };
+          console.log('Sending via WebSocket:', JSON.stringify(websocketMessage));
+          client.publish({
+            destination: `/app/sendMessage/chat/${chatId}`,
+            body: JSON.stringify(websocketMessage),
+          });
+
+          // [ADD] Создаём временное сообщение
+          let tempFileUrl = null;
+          if (selectedFile) {
+            tempFileUrl = URL.createObjectURL(selectedFile);
+          }
+
+          setMessages((prevMessages) => {
+            if (prevMessages.some((msg) => msg.id === clientMessageId)) {
+              console.log(`Temp message ${clientMessageId} already exists`);
+              return prevMessages;
+            }
+
+            const tempMessage = {
+              ...messageData,
+              id: clientMessageId,
+              fileUrl: selectedFile ? tempFileUrl : messageData.fileUrl,
+              fileName: selectedFile ? selectedFile.name : messageData.fileName,
+              contentType: selectedFile ? selectedFile.type : messageData.contentType,
+              delivered: false,
+              read: false,
+              messageType: messageData.messageType,
+              timestamp: messageData.timestamp,
+              sender: messageData.sender,
+              chat: messageData.chat,
+            };
+
+            return [...prevMessages, tempMessage];
+          });
+
+          // [ADD] Очистка формы
+          resetForm();
+        } else {
+          console.error('STOMP client is not connected');
+          toast.error('Failed to send message: no connection');
+        }
       } catch (error) {
         console.error('Error sending message:', error);
-        toast.error(`Failed to send: ${error.message}`);
+        toast.error(`Failed to send message: ${error.message}`);
       }
     } else {
       toast.warn('Enter a message or select a file');
