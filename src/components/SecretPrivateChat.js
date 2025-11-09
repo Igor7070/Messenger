@@ -825,7 +825,7 @@ const SecretPrivateChat = () => {
     };
   };
 
-  const decryptMessage = async (encryptedContent, nonce, senderId, timestamp, publicKey) => { // [CHANGE] Добавлен параметр publicKey
+  const decryptMessage = async (encryptedContent, nonce, senderId, timestamp, publicKey, originalPublicKeyId = null) => { // [CHANGE] Добавлен параметр publicKey, originalPublicKeyId = null
     console.log(
       `decryptMessage called: senderId=${senderId}, timestamp=${timestamp}`
     );
@@ -868,23 +868,24 @@ const SecretPrivateChat = () => {
       throw new Error('Invalid base64 format');
     }
 
+    // [FIX] Вынести vars из try, чтобы они были доступны в catch
+    const encryptedBytes = sodium.from_base64(encryptedContent);
+    const nonceBytes = sodium.from_base64(nonce);
+    const publicKeyBytes = sodium.from_base64(publicKey);
+    const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
+
+    console.log(
+      `Decryption input: encryptedBytesLength=${encryptedBytes.length}, nonceBytesLength=${nonceBytes.length}, publicKeyBytesLength=${publicKeyBytes.length}, privateKeyBytesLength=${privateKeyBytes.length}`
+    );
+    console.log(
+      `Decryption input hex: encryptedBytes=${sodium.to_hex(
+        encryptedBytes
+      )}, nonceBytes=${sodium.to_hex(nonceBytes)}, publicKeyBytes=${sodium.to_hex(
+        publicKeyBytes
+      )}`
+    );
+
     try {
-      const encryptedBytes = sodium.from_base64(encryptedContent);
-      const nonceBytes = sodium.from_base64(nonce);
-      const publicKeyBytes = sodium.from_base64(publicKey);
-      const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
-
-      console.log(
-        `Decryption input: encryptedBytesLength=${encryptedBytes.length}, nonceBytesLength=${nonceBytes.length}, publicKeyBytesLength=${publicKeyBytes.length}, privateKeyBytesLength=${privateKeyBytes.length}`
-      );
-      console.log(
-        `Decryption input hex: encryptedBytes=${sodium.to_hex(
-          encryptedBytes
-        )}, nonceBytes=${sodium.to_hex(nonceBytes)}, publicKeyBytes=${sodium.to_hex(
-          publicKeyBytes
-        )}`
-      );
-
       const decryptedBytes = sodium.crypto_box_open_easy(
         encryptedBytes,
         nonceBytes,
@@ -896,7 +897,7 @@ const SecretPrivateChat = () => {
       return decryptedMessage;
     } catch (error) {
       console.error(`Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`);
-      // Retry with current key if history fail
+      // [FIX] Retry with current key if history fail (vars теперь доступны)
       if (originalPublicKeyId && error.message.includes('incorrect key pair')) {
         console.log(`Retry with current key for senderId=${senderId}`);
         const currentKey = await getPublicKey(senderId);  // No ID = current
