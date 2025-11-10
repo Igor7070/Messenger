@@ -152,6 +152,7 @@ const SecretPrivateChat = () => {
   const audioRefs = useRef({});
   const textAreaRef = useRef(null);
   const ffmpeg = useRef(new FFmpeg());
+  const audioBlobRef = useRef(null);  // ← Добавление в начало компонента
   const { chatId: chatIdParam } = useParams();
   const navigate = useNavigate();
   const { userInteracted, handleInteraction } = useUserInteraction();
@@ -1279,9 +1280,12 @@ const SecretPrivateChat = () => {
       return;
     }
 
-    console.log('Starting audio message send...');  // ← Лог 1: Начало отправки
+    console.log('Starting audio message send...');  // ← Лог 1
 
-    // === ПОЛУЧАЕМ recipientId (как в sendMessage) ===
+    // Сохраняем blob в ref для стабильности
+    audioBlobRef.current = audioBlob;
+
+    // === ПОЛУЧАЕМ recipientId ===
     const recipientName = chatName.split('_').find((name) => name !== username);
     if (!recipientName) {
       console.error('Recipient name not found');
@@ -1296,25 +1300,23 @@ const SecretPrivateChat = () => {
       const recipient = await userResponse.json();
       const recipientId = recipient.id;
 
-      console.log(`Recipient ID: ${recipientId}`);  // ← Лог 2: Получен recipientId
+      console.log(`Recipient ID: ${recipientId}`);  // ← Лог 2
 
-      // === ШИФРУЕМ АУДИО КАК ОБЫЧНЫЙ ФАЙЛ ===
+      // === ШИФРУЕМ ===
       const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
       const { encryptedFile, nonce, encryptedContent } = await encryptFile(
         audioFile,
-        recipientId,  // ← Теперь доступен
+        recipientId,
         userId,
         keyPair,
         publicKeys
       );
 
-      console.log('Audio encrypted successfully');  // ← Лог 3: Шифрование OK
+      console.log('Audio encrypted successfully');  // ← Лог 3
 
-      // Генерируем clientMessageId и timestamp (как в sendMessage)
       const clientMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const timestamp = new Date().toISOString();
 
-      // === СОЗДАЁМ СООБЩЕНИЕ ===
       const messageData = {
         sender: { id: userId, username },
         chat: { id: chatId, name: chatName, isSecret: true },
@@ -1327,8 +1329,8 @@ const SecretPrivateChat = () => {
         fileName: audioFile.name,
       };
 
-      // Временный UI (как для файлов)
-      const tempFileUrl = URL.createObjectURL(audioBlob);  // Для предпросмотра
+      // === ВРЕМЕННЫЙ UI ===
+      const tempFileUrl = URL.createObjectURL(audioBlob);
       const fileContentKey = `fileContent_${chatId}_${userId}_${clientMessageId}`;
       localStorage.setItem(fileContentKey, JSON.stringify({
         fileName: audioFile.name,
@@ -1341,7 +1343,7 @@ const SecretPrivateChat = () => {
         return [...prev, { ...messageData, fileUrl: tempFileUrl, delivered: false, read: false }];
       });
 
-      console.log('Temporary message added to UI');  // ← Лог 4: Временное сообщение добавлено
+      console.log('Temporary message added to UI');  // ← Лог 4
 
       // === СОХРАНЯЕМ В БД ===
       const response = await fetch('https://unlimitedpossibilities12.org/api/messages', {
@@ -1363,18 +1365,29 @@ const SecretPrivateChat = () => {
       }
 
       const savedMessage = await response.json();
-      console.log('Audio message saved to DB:', savedMessage.id);  // ← Лог 5: Сохранено в БД
+      console.log('Audio message saved to DB:', savedMessage.id);  // ← Лог 5 (исправь "waisted" на "saved")
 
-      // === ЗАГРУЖАЕМ ЗАШИФРОВАННЫЙ ФАЙЛ ===
+      // === ЗАГРУЖАЕМ ФАЙЛ ===
       const serverFileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
       if (!serverFileUrl) throw new Error('Audio upload failed');
 
-      console.log('Audio file uploaded:', serverFileUrl);  // ← Лог 6: Загружен на сервер
+      console.log('Audio file uploaded:', serverFileUrl);  // ← Лог 6
 
-      // === ОБНОВЛЯЕМ messageData ===
-      messageData.fileUrl = serverFileUrl;
-      messageData.file_url = serverFileUrl;
-      messageData.id = savedMessage.id;
+      // === ОБНОВЛЯЕМ ВРЕМЕННОЕ СООБЩЕНИЕ НА СЕРВЕРНОЕ ===
+      setMessages((prev) => {
+        return prev.map((msg) => {
+          if (msg.id === clientMessageId) {
+            return {
+              ...msg,
+              id: savedMessage.id,
+              fileUrl: serverFileUrl,
+              file_url: serverFileUrl,
+              clientMessageId: undefined,  // Убираем temp ID
+            };
+          }
+          return msg;
+        });
+      });
 
       // Кэш с серверным URL
       localStorage.setItem(fileContentKey, JSON.stringify({
@@ -1383,11 +1396,13 @@ const SecretPrivateChat = () => {
         fileUrl: serverFileUrl,
       }));
 
-      // === ОТПРАВЛЯЕМ ПО WEBSOCKET ===
+      // === WEBSOCKET ===
       if (client && client.connected) {
         const websocketMessage = {
           ...messageData,
           id: savedMessage.id,
+          fileUrl: serverFileUrl,
+          file_url: serverFileUrl,
           content: undefined,
           clientMessageId: undefined,
         };
@@ -1395,16 +1410,16 @@ const SecretPrivateChat = () => {
           destination: `/app/sendMessage/chat/${chatId}`,
           body: JSON.stringify(websocketMessage),
         });
-        console.log('Audio message sent via WebSocket');  // ← Лог 7: Отправлено по WS
+        console.log('Audio message sent via WebSocket');  // ← Лог 7
       }
 
-      // Очистка
+      // === ОЧИСТКА ===
       setAudioBlob(null);
       setMicIconState('mic');
-      URL.revokeObjectURL(tempFileUrl);
-      toast.success('Audio message sent!');
+      URL.revokeObjectURL(tempFileUrl);  // ← Теперь revoke после обновления UI
+      toast.success('Audio message sent!');  // ← Этот toast теперь сработает
     } catch (error) {
-      console.error('Error in sendAudioMessage:', error);  // ← Лог для любой ошибки
+      console.error('Error in sendAudioMessage:', error);
       toast.error(`Failed to send audio: ${error.message}`);
       setMicIconState('mic');
     }
