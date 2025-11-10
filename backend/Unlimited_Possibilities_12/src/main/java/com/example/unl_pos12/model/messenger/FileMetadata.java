@@ -1,6 +1,8 @@
 package com.example.unl_pos12.model.messenger;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "file_metadata")
@@ -20,6 +22,7 @@ public class FileMetadata {
 
     @ManyToOne
     @JoinColumn(name = "message_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Message message;
 
     // Геттеры и сеттеры

@@ -77,41 +77,12 @@ public class RabotaUaStrategy implements Strategy {
 
         try {
             //Для Railway
-            String remoteUrl = "https://standalone-chrome-production-19d7.up.railway.app/wd/hub";
-
+            String remoteUrl = "https://standalone-chrome-production-4953.up.railway.app/wd/hub";
             ChromeOptions options = new ChromeOptions();
-
-            // КРИТИЧНО ДЛЯ СЕРВЕРА (Railway, Docker и т.п.)
-            options.addArguments("--headless=new");           // Новый, быстрый headless-режим
-            options.addArguments("--no-sandbox");             // Обязательно в контейнерах
-            options.addArguments("--disable-dev-shm-usage");  // Предотвращает краши из-за памяти
-            options.addArguments("--disable-gpu");            // Отключаем GPU (не нужен в headless)
-            options.addArguments("--disable-extensions");     // Ускоряет запуск
-            options.addArguments("--disable-infobars");       // Убирает предупреждения
-            options.addArguments("--window-size=1920,1080");  // Фиксированный размер окна
-            options.addArguments("--lang=ru");                // Язык интерфейса
-            options.addArguments("--remote-debugging-port=9222"); // На случай отладки
-
-            // Опционально: если знаешь версию Chrome в контейнере — укажи
-            // options.setBrowserVersion("129");
-
-            // Создаём драйвер с таймаутами и логами
-            try {
-                System.out.println("Подключение к Selenium Grid: " + remoteUrl);
-                driver = new RemoteWebDriver(new URL(remoteUrl), options);
-
-                // Устанавливаем таймауты
-                driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30));
-                driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
-
-                System.out.println("WebDriver успешно запущен! Session ID: " +
-                        ((RemoteWebDriver) driver).getSessionId());
-
-            } catch (Exception e) {
-                System.err.println("ОШИБКА: Не удалось запустить WebDriver: " + e.getMessage());
-                e.printStackTrace();
-                throw new RuntimeException("Сессия Selenium не создана", e);
-            }
+            //options.addArguments("--headless"); // Запуск без графического интерфейса
+            options.addArguments("--disable-gpu");
+            options.addArguments("--lang=" + "ru"); // Установка языка в зависимости от параметра, например, "ru" или "en"
+            driver = new RemoteWebDriver(new URL(remoteUrl), options);
 
             //Для локальной работы
             //driver = new ChromeDriver();
@@ -199,14 +170,14 @@ public class RabotaUaStrategy implements Strategy {
                     Vacancy vacancy = new Vacancy();
                     vacancy.setTitle(elementVacancy.findElement(By.tagName("h2")).getText().trim());
 
-                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c101]"));
+                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c99]"));
                     int spansSize = spans.size();
 
                     if (spansSize == 3) {
                         vacancy.setCompanyName(spans.get(0).getText().trim());
                         vacancy.setSalary("");
                         vacancy.setCity(spans.get(1).getText().trim());
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c101]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     } else if (spansSize == 4) {
                         String salaryOrCompanyName = spans.get(0).getText().trim();
@@ -227,7 +198,7 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(1).getText().trim());
                             }
                         }
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c101]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     } else if (spansSize == 5) {
                         String salaryOrCompanyName = spans.get(0).getText().trim();
@@ -247,13 +218,13 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(3).getText().trim());
                             }
                         }
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c101]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     } else if (spansSize == 6) {
                         vacancy.setCompanyName(spans.get(2).getText().trim());
                         vacancy.setSalary(spans.get(0).getText().trim());
                         vacancy.setCity(spans.get(3).getText().trim());
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c101]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     }
 
@@ -424,14 +395,14 @@ public class RabotaUaStrategy implements Strategy {
                     Vacancy vacancy = new Vacancy();
                     vacancy.setTitle(elementVacancy.findElement(By.tagName("h2")).getText().trim());
 
-                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c101]"));
+                    List<WebElement> spans = elementVacancy.findElements(By.cssSelector("span[_ngcontent-app-desktop-c99]"));
                     int spansSize = spans.size();
 
                     if (spansSize == 3) {
                         vacancy.setCompanyName(spans.get(0).getText().trim());
                         vacancy.setSalary("");
                         vacancy.setCity(spans.get(1).getText().trim());
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c101]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     } else if (spansSize == 4) {
                         String salaryOrCompanyName = spans.get(0).getText().trim();
@@ -452,7 +423,7 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(1).getText().trim());
                             }
                         }
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c101]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     } else if (spansSize == 5) {
                         String salaryOrCompanyName = spans.get(0).getText().trim();
@@ -472,13 +443,13 @@ public class RabotaUaStrategy implements Strategy {
                                 vacancy.setCity(spans.get(3).getText().trim());
                             }
                         }
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c101]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     } else if (spansSize == 6) {
                         vacancy.setCompanyName(spans.get(2).getText().trim());
                         vacancy.setSalary(spans.get(0).getText().trim());
                         vacancy.setCity(spans.get(3).getText().trim());
-                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c101]")).getAttribute("href").trim();
+                        String urlHref = elementVacancy.findElement(By.cssSelector("a[_ngcontent-app-desktop-c99]")).getAttribute("href").trim();
                         vacancy.setUrl(urlHref);
                     }
 
