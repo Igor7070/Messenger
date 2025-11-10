@@ -1173,14 +1173,28 @@ const SecretPrivateChat = () => {
         } else if (audioBlob) {
           const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
 
+          // === ШИФРУЕМ АУДИО КАК ОБЫЧНЫЙ ФАЙЛ ===
+          const { encryptedFile, nonce, encryptedContent } = await encryptFile(
+            audioFile,
+            recipientId,
+            userId,
+            keyPair,
+            publicKeys
+          );
+
+          // === СОЗДАЁМ СООБЩЕНИЕ ===
           messageData = {
             ...messageData,
             messageType: 'audio',
             contentType: 'audio/mpeg',
             id: clientMessageId,
             clientMessageId,
+            encryptedContent,
+            nonce,
+            fileName: audioFile.name,
           };
 
+          // === СОХРАНЯЕМ В БД ===
           const response = await fetch('https://unlimitedpossibilities12.org/api/messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1193,28 +1207,35 @@ const SecretPrivateChat = () => {
               file_url: undefined,
             }),
           });
+
           if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`Failed to send audio message: ${response.status} - ${errorText}`);
           }
-          savedMessage = await response.json();
 
-          serverFileUrl = await uploadFile(audioFile, null, savedMessage.id);
+          const savedMessage = await response.json();
+
+          // === ЗАГРУЖАЕМ ЗАШИФРОВАННЫЙ ФАЙЛ ===
+          serverFileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
           if (!serverFileUrl) throw new Error('Audio upload failed');
 
+          // === ОБНОВЛЯЕМ messageData ===
           messageData.fileUrl = serverFileUrl;
           messageData.file_url = serverFileUrl;
+          messageData.fileName = audioFile.name;
 
+          // === КЭШИРУЕМ (для своих сообщений) ===
+          const fileContentKey = `fileContent_${chatId}_${userId}_${clientMessageId}`;
+          localStorage.setItem(fileContentKey, JSON.stringify({
+            fileName: audioFile.name,
+            contentType: 'audio/mpeg',
+            fileUrl: serverFileUrl,
+          }));
+
+          // === ДОБАВЛЯЕМ В UI ===
           setMessages((prev) => {
             if (prev.some(m => m.id === clientMessageId)) return prev;
-            return [...prev, {
-              ...messageData,
-              delivered: false,
-              read: false,
-              timestamp,
-              sender: messageData.sender,
-              chat: messageData.chat,
-            }];
+            return [...prev, { ...messageData, delivered: false, read: false }];
           });
         }
 
