@@ -159,6 +159,9 @@ const SecretPrivateChat = () => {
   const { usersStatus } = useUserStatusContext();
   const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
   const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification();
+  // Для decrypted audio blobs в плеере
+  const [audioBlobUrls, setAudioBlobUrls] = useState({});
+  const audioBlobCache = useRef({});  // Кэш blobs по msg.id
 
   // Инициализация libsodium и генерация ключей
   useEffect(() => {
@@ -355,6 +358,46 @@ const SecretPrivateChat = () => {
               }
             }
 
+            if (msg.messageType === 'audio') {
+              if (msg.sender.id === userId) {
+                const stored = localStorage.getItem(`fileContent_${chatIdParam}_${userId}_${msg.clientMessageId}`);
+                const fileData = stored ? JSON.parse(stored) : {};
+                return { ...msg, ...fileData, delivered: msg.delivered_status, read: msg.read_status };
+              }
+              // Incoming audio: decrypt meta like file
+              try {
+                let fileName = 'Audio message';
+                let contentType = 'audio/mpeg';
+                if (msg.encryptedContent && msg.nonce) {
+                  let publicKey = publicKeys[msg.sender.id];
+                  if (!publicKey || msg.publicKeyId) {
+                    publicKey = await getPublicKey(msg.sender.id, msg.publicKeyId);
+                    setPublicKeys(p => ({ ...p, [msg.sender.id]: publicKey }));
+                  }
+                  const decryptedMeta = await decryptMessage(
+                    msg.encryptedContent,
+                    msg.nonce,
+                    msg.sender.id,
+                    msg.timestamp,
+                    publicKey
+                  );
+                  const meta = JSON.parse(decryptedMeta);
+                  fileName = meta.fileName;
+                  contentType = meta.contentType || 'audio/mpeg';
+                }
+                return {
+                  ...msg,
+                  fileName,
+                  contentType,
+                  delivered: msg.delivered_status,
+                  read: msg.read_status
+                };
+              } catch (e) {
+                console.error('Audio metadata decryption failed on load:', e);
+                return { ...msg, fileName: 'Decryption failed', delivered: msg.delivered_status, read: msg.read_status };
+              }
+            }
+
             return { ...msg, delivered: msg.delivered_status, read: msg.read_status };
           })
         );
@@ -535,6 +578,83 @@ const SecretPrivateChat = () => {
               }
             }
 
+          // === АУДИО СООБЩЕНИЯ ===
+          } else if (newMessage.messageType === 'audio') {
+            if (newMessage.sender.id === userId) {
+              // Own: Из localStorage
+              const fileContentKey = `fileContent_${chatId}_${userId}_${newMessage.clientMessageId}`;
+              const storedFileData = localStorage.getItem(fileContentKey);
+              let fileData = {};
+              if (storedFileData) {
+                fileData = JSON.parse(storedFileData);
+                console.log(`Retrieved audio data for own message: clientMessageId=${newMessage.clientMessageId}, fileName=${fileData.fileName}`);
+              }
+              updateMessages({
+                ...newMessage,
+                fileUrl: fileData.fileUrl || 'Audio unavailable',
+                fileName: fileData.fileName || 'Audio unavailable',
+                contentType: fileData.contentType || 'audio/mpeg',
+                delivered: newMessage.delivered_status ?? false,
+                read: newMessage.read_status ?? false,
+              });
+            } else {
+              // Incoming: Decrypt meta, fileUrl from msg or API
+              try {
+                let fileName = 'Audio message';
+                let contentType = 'audio/mpeg';
+                let fileUrl = newMessage.fileUrl || newMessage.file_url || null;
+
+                if (newMessage.encryptedContent && newMessage.nonce) {
+                  let publicKey = publicKeys[newMessage.sender.id];
+                  if (!publicKey || newMessage.publicKeyId) {
+                    publicKey = await getPublicKey(newMessage.sender.id, newMessage.publicKeyId);
+                    setPublicKeys(prev => ({ ...prev, [newMessage.sender.id]: publicKey }));
+                  }
+                  const decryptedMetadata = await decryptMessage(
+                    newMessage.encryptedContent,
+                    newMessage.nonce,
+                    newMessage.sender.id,
+                    newMessage.timestamp,
+                    publicKey
+                  );
+                  const metadata = JSON.parse(decryptedMetadata);
+                  fileName = metadata.fileName;
+                  contentType = metadata.contentType || 'audio/mpeg';
+                  console.log(`Decrypted audio metadata: fileName=${fileName}, contentType=${contentType}`);
+                }
+
+                if (!fileUrl && newMessage.id) {
+                  try {
+                    const meta = await fetchFileMetadata(newMessage.id);
+                    fileUrl = meta.fileUrl;
+                    console.log(`Fetched audio fileUrl from API for message ${newMessage.id}: ${fileUrl}`);
+                  } catch (e) {
+                    console.error('Failed to fetch audio fileUrl:', e);
+                  }
+                }
+
+                updateMessages({
+                  ...newMessage,
+                  fileName,
+                  contentType,
+                  fileUrl,
+                  delivered: newMessage.delivered_status ?? false,
+                  read: newMessage.read_status ?? false,
+                });
+              } catch (error) {
+                console.error(`Failed to decrypt audio metadata ID=${newMessage.id}:`, error);
+                updateMessages({
+                  ...newMessage,
+                  fileName: 'Decryption failed',
+                  contentType: null,
+                  fileUrl: null,
+                  delivered: newMessage.delivered_status ?? false,
+                  read: newMessage.read_status ?? false,
+                });
+                toast.error('Failed to decrypt audio name');
+              }
+            }
+
           // === ДРУГИЕ ТИПЫ СООБЩЕНИЙ ===
           } else {
             updateMessages({
@@ -689,6 +809,25 @@ const SecretPrivateChat = () => {
       }
     });
   }, [messages]);
+
+  // Cleanup blob URLs on unmount или delete
+  useEffect(() => {
+    return () => {
+      Object.values(audioBlobUrls).forEach(url => {
+        if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+      });
+      audioBlobCache.current = {};
+    };
+  }, [audioBlobUrls]);
+
+  // В updateMessages, при delete: revoke audio blob
+  useEffect(() => {
+    if (messages.length === 0) {
+      // Clear all on empty messages
+      Object.values(audioBlobUrls).forEach(url => URL.revokeObjectURL(url));
+      setAudioBlobUrls({});
+    }
+  }, [messages.length]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -1396,6 +1535,11 @@ const SecretPrivateChat = () => {
         fileUrl: serverFileUrl,
       }));
 
+      // Кэш decrypted base64 для быстрого playback
+      const arrayBuffer = await audioFile.arrayBuffer();
+      const base64File = sodium.to_base64(new Uint8Array(arrayBuffer));
+      localStorage.setItem(`${fileContentKey}_decrypted`, base64File);
+
       // === WEBSOCKET ===
       if (client && client.connected) {
         const websocketMessage = {
@@ -2087,6 +2231,84 @@ const SecretPrivateChat = () => {
     }
   };
 
+  // Функция для decrypt аудио и создания blob URL для плеера
+  const decryptAndCreateAudioBlob = async (msg) => {
+    const cacheKey = `audio_decrypted_${msg.id}`;
+    if (audioBlobUrls[msg.id]) {
+      return audioBlobUrls[msg.id];  // Уже есть blob URL
+    }
+    if (audioBlobCache.current[cacheKey]) {
+      const blobUrl = URL.createObjectURL(audioBlobCache.current[cacheKey]);
+      setAudioBlobUrls(prev => ({ ...prev, [msg.id]: blobUrl }));
+      return blobUrl;
+    }
+
+    try {
+      let decryptedBytes;
+      if (msg.sender.id === userId) {
+        // Own: Из localStorage (base64 decrypted)
+        const fileContentKey = `fileContent_${chatId}_${userId}_${msg.clientMessageId || msg.id}`;
+        const stored = localStorage.getItem(fileContentKey);
+        if (stored) {
+          const data = JSON.parse(stored);
+          if (data.fileData) {
+            decryptedBytes = sodium.from_base64(data.fileData);
+          } else {
+            // Fallback to new _decrypted key
+            const decryptedKey = localStorage.getItem(`${fileContentKey}_decrypted`);
+            if (decryptedKey) {
+              decryptedBytes = sodium.from_base64(decryptedKey);
+            }
+          }
+        }
+        // Fallback: Decrypt from server
+        if (!decryptedBytes) {
+          const metadata = await fetchFileMetadata(msg.id);
+          const res = await fetch(msg.fileUrl);
+          const encrypted = new Uint8Array(await res.arrayBuffer());
+          // Decrypt с recipient key (как downloadOwnFile)
+          const recipientName = chatName.split('_').find(name => name !== username);
+          const recipientRes = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
+          const recipient = await recipientRes.json();
+          const recipientId = recipient.id;
+          decryptedBytes = await decryptFileContent(
+            encrypted,
+            metadata.nonce,
+            userId,
+            metadata.publicKeyId,
+            publicKeys,
+            keyPair,
+            recipientId
+          );
+        }
+      } else {
+        // Incoming: Decrypt from server
+        const metadata = await fetchFileMetadata(msg.id);
+        const res = await fetch(msg.fileUrl);
+        const encrypted = new Uint8Array(await res.arrayBuffer());
+        decryptedBytes = await decryptFileContent(
+          encrypted,
+          metadata.nonce,
+          msg.sender.id,
+          metadata.publicKeyId,
+          publicKeys,
+          keyPair,
+          userId
+        );
+      }
+
+      const blob = new Blob([decryptedBytes], { type: 'audio/mpeg' });
+      audioBlobCache.current[cacheKey] = blob;
+      const blobUrl = URL.createObjectURL(blob);
+      setAudioBlobUrls(prev => ({ ...prev, [msg.id]: blobUrl }));
+      return blobUrl;
+    } catch (e) {
+      console.error('Audio decrypt failed for msg', msg.id, e);
+      toast.error('Failed to prepare audio message');
+      return null;
+    }
+  };
+
   return (
     <div className="private-chat secret-chat">
       <div className="private-chat-name">
@@ -2147,9 +2369,16 @@ const SecretPrivateChat = () => {
                       <div className="private-audio-message-container">
                         <div className="private-audio-player-wrapper">
                           <audio
-                            ref={(el) => {
+                             ref={(el) => {
                               if (el && audioRefs.current[msg.id] !== el) {
                                 audioRefs.current[msg.id] = el;
+                                // Decrypt и set src blob URL
+                                decryptAndCreateAudioBlob(msg).then(blobUrl => {
+                                  if (blobUrl && el) {
+                                    el.src = blobUrl;
+                                    el.load();  // Reload для нового src
+                                  }
+                                });
                               }
                             }}
                             onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
@@ -2160,7 +2389,7 @@ const SecretPrivateChat = () => {
                             className="private-audio-player"
                             preload="auto"
                           >
-                            <source src={msg.fileUrl} type={msg.fileUrl.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'} />
+                            <source src="" type="audio/mpeg" />  // Пустой src изначально
                             Your browser does not support the audio element.
                           </audio>
                           {audioProgress[msg.id]?.error ? (
