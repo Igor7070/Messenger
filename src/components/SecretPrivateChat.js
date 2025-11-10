@@ -1271,6 +1271,121 @@ const SecretPrivateChat = () => {
     }
   };
 
+  const sendAudioMessage = async (audioBlob) => {
+    if (!audioBlob || !userId || !keyPair) {
+      console.warn('Audio, userId, or keyPair is missing');
+      toast.error('Failed to send audio message');
+      setMicIconState('mic');
+      return;
+    }
+
+    console.log('Starting audio message send...');  // ← Лог для отладки
+
+    // === ШИФРУЕМ АУДИО КАК ОБЫЧНЫЙ ФАЙЛ ===
+    const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
+    const { encryptedFile, nonce, encryptedContent } = await encryptFile(
+      audioFile,
+      recipientId,  // ← Убедись, что recipientId доступен (он в sendMessage, так что вынеси или передай)
+      userId,
+      keyPair,
+      publicKeys
+    );
+
+    console.log('Audio encrypted successfully');  // ← Лог
+
+    // Генерируем clientMessageId и timestamp (как в sendMessage)
+    const clientMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const timestamp = new Date().toISOString();
+
+    // === СОЗДАЁМ СООБЩЕНИЕ ===
+    const messageData = {
+      sender: { id: userId, username },
+      chat: { id: chatId, name: chatName, isSecret: true },
+      messageType: 'audio',
+      contentType: 'audio/mpeg',
+      id: clientMessageId,
+      clientMessageId,
+      encryptedContent,
+      nonce,
+      fileName: audioFile.name,
+    };
+
+    // Временный UI (как для файлов)
+    const tempFileUrl = URL.createObjectURL(audioBlob);  // Для предпросмотра
+    const fileContentKey = `fileContent_${chatId}_${userId}_${clientMessageId}`;
+    localStorage.setItem(fileContentKey, JSON.stringify({
+      fileName: audioFile.name,
+      contentType: 'audio/mpeg',
+      fileUrl: tempFileUrl,
+    }));
+
+    setMessages((prev) => {
+      if (prev.some(m => m.id === clientMessageId)) return prev;
+      return [...prev, { ...messageData, fileUrl: tempFileUrl, delivered: false, read: false }];
+    });
+
+    // === СОХРАНЯЕМ В БД ===
+    const response = await fetch('https://unlimitedpossibilities12.org/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...messageData,
+        id: undefined,
+        content: undefined,
+        fileName: undefined,
+        fileUrl: undefined,
+        file_url: undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to save audio message: ${response.status} - ${errorText}`);
+    }
+
+    const savedMessage = await response.json();
+    console.log('Audio message saved to DB:', savedMessage.id);  // ← Лог
+
+    // === ЗАГРУЖАЕМ ЗАШИФРОВАННЫЙ ФАЙЛ ===
+    const serverFileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
+    if (!serverFileUrl) throw new Error('Audio upload failed');
+
+    console.log('Audio file uploaded:', serverFileUrl);  // ← Лог
+
+    // === ОБНОВЛЯЕМ messageData ===
+    messageData.fileUrl = serverFileUrl;
+    messageData.file_url = serverFileUrl;
+    messageData.id = savedMessage.id;
+
+    // Кэш с серверным URL
+    localStorage.setItem(fileContentKey, JSON.stringify({
+      fileName: audioFile.name,
+      contentType: 'audio/mpeg',
+      fileUrl: serverFileUrl,
+    }));
+
+    // === ОТПРАВЛЯЕМ ПО WEBSOCKET ===
+    if (client && client.connected) {
+      const websocketMessage = {
+        ...messageData,
+        id: savedMessage.id,
+        content: undefined,
+        clientMessageId: undefined,
+      };
+      client.publish({
+        destination: `/app/sendMessage/chat/${chatId}`,
+        body: JSON.stringify(websocketMessage),
+      });
+      console.log('Audio message sent via WebSocket');  // ← Лог
+    }
+
+    // Очистка
+    setAudioBlob(null);
+    setMicIconState('mic');
+    URL.revokeObjectURL(tempFileUrl);
+    toast.success('Audio message sent!');
+  };
+
   const sendNotification = async (message, contentForNotification) => {
     try {
       const recipientName = chatName.split('_').find((name) => name !== username);
@@ -1430,6 +1545,7 @@ const SecretPrivateChat = () => {
 
       mediaRecorder.onstop = async () => {
         const webmBlob = new Blob(chunks, { type: mimeType });
+        console.log(`Recorded audio: size=${webmBlob.size}, type=${webmBlob.type}`);  // ← Добавь лог для отладки
         try {
           const inputName = 'input.webm';
           const outputName = 'output.mp3';
@@ -1438,12 +1554,14 @@ const SecretPrivateChat = () => {
           await ffmpeg.current.exec(['-i', inputName, '-c:a', 'libmp3lame', '-b:a', '128k', outputName]);
           const mp3Data = await ffmpeg.current.readFile(outputName);
           const mp3Blob = new Blob([mp3Data.buffer], { type: 'audio/mpeg' });
-          setAudioBlob(mp3Blob);
+          console.log(`Converted audio: size=${mp3Blob.size}, type=${mp3Blob.type}`);  // ← Добавь лог
           stream.getTracks().forEach(track => track.stop());
           setMicIconState('sending');
-          sendMessage();
+          
+          // ← ИЗМЕНИ: Не sendMessage(), а sendAudioMessage(mp3Blob)
+          await sendAudioMessage(mp3Blob);
         } catch (error) {
-          console.error('Error converting to mp3:', error);
+          console.error('Error converting to mp3:', error);  // ← Этот лог должен появиться, если ошибка
           toast.error('Failed to convert audio');
           stream.getTracks().forEach(track => track.stop());
           setMicIconState('mic');
