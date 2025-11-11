@@ -400,19 +400,24 @@ const SecretPrivateChat = () => {
           const newMessage = JSON.parse(message.body);
           console.log('NewMessage:', newMessage);
 
-          // ← ИГНОРИРУЕМ СВОИ СООБЩЕНИЯ
-          if (newMessage.sender?.id === userId) {
-            console.log('Ignoring own message from WebSocket (id:', newMessage.id, ')');
-            return;
-          }
-
-          // ← УДАЛЕНИЕ СООБЩЕНИЯ
+          // ← ОБРАБАТЫВАЕМ УДАЛЕНИЕ
           if (newMessage.content === 'Message deleted') {
             setMessages(prev => prev.filter(m => m.id !== newMessage.id));
             return;
           }
 
-          // ТЕКСТ
+          // ← ЕСЛИ СООБЩЕНИЕ ОТ НАС — обновляем статусы (галочки)
+          if (newMessage.sender?.id === userId) {
+            console.log('Updating own message status (delivered/read):', newMessage.id);
+            setMessages(prev => prev.map(m =>
+              m.id === newMessage.id
+                ? { ...m, delivered: newMessage.delivered_status ?? m.delivered, read: newMessage.read_status ?? m.read }
+                : m
+            ));
+            return;
+          }
+
+          // ← ТЕКСТ
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
             try {
               const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
@@ -431,24 +436,25 @@ const SecretPrivateChat = () => {
                 newMessage.timestamp,
                 publicKey
               );
+
               updateMessages({
                 ...newMessage,
                 content: decryptedContent,
-                delivered: newMessage.delivered_status,
-                read: newMessage.read_status,
+                delivered: newMessage.delivered_status ?? false,
+                read: newMessage.read_status ?? false,
               });
             } catch (error) {
               console.error('Decryption failed for new message:', newMessage.id, error);
               updateMessages({
                 ...newMessage,
                 content: 'Decryption failed',
-                delivered: newMessage.delivered_status,
-                read: newMessage.read_status,
+                delivered: newMessage.delivered_status ?? false,
+                read: newMessage.read_status ?? false,
               });
               toast.error(`Failed to decrypt message: ${error.message}`);
             }
 
-          // ФАЙЛЫ И АУДИО
+          // ← ФАЙЛЫ И АУДИО
           } else if (newMessage.messageType === 'file' || newMessage.messageType === 'audio') {
             try {
               let fileName = 'Unknown file';
@@ -504,20 +510,21 @@ const SecretPrivateChat = () => {
               toast.error('Failed to decrypt file name');
             }
 
-          // ДРУГИЕ ТИПЫ
+          // ← ДРУГИЕ ТИПЫ (например, системные)
           } else {
             updateMessages({
               ...newMessage,
-              delivered: newMessage.delivered_status,
-              read: newMessage.read_status,
+              delivered: newMessage.delivered_status ?? false,
+              read: newMessage.read_status ?? false,
             });
           }
         });
 
-        // ПОДПИСКИ НА СТАТУСЫ
+        // ← ПОДПИСКА НА СТАТУСЫ ДОСТАВКИ/ПРОЧТЕНИЯ
         stompClientInstance.subscribe(`/topic/messageStatus/${chatId}`, (statusMessage) => {
           const statusUpdate = JSON.parse(statusMessage.body);
           console.log('Received status update:', statusUpdate);
+
           setMessages((prevMessages) =>
             prevMessages.map((msg) =>
               msg.id === statusUpdate.messageId
@@ -531,7 +538,7 @@ const SecretPrivateChat = () => {
           );
         });
 
-        // ПОДПИСКА НА ОБНОВЛЕНИЕ КЛЮЧЕЙ
+        // ← ПОДПИСКА НА ОБНОВЛЕНИЕ КЛЮЧЕЙ
         if (chatName) {
           const recipientName = chatName.replace('_secret', '').split('_').find((name) => name !== username);
           if (recipientName) {
