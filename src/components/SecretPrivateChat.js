@@ -396,22 +396,9 @@ const SecretPrivateChat = () => {
         console.log('Connected to WebSocket for SecretPrivateChat at:', new Date().toISOString());
         setClient(stompClientInstance);
 
-        // --------------------------------------------------------------
-        // ← ИСПРАВЛЕНИЕ: игнорируем собственные сообщения
-        // --------------------------------------------------------------
         stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, async (message) => {
           const newMessage = JSON.parse(message.body);
           console.log('NewMessage:', newMessage);
-
-          // *** КРИТИЧНО: НЕ ОБРАБАТЫВАЕМ СВОИ СООБЩЕНИЯ ***
-          if (newMessage.sender.id === userId) {
-            console.log('Ignoring own message from WebSocket (id:', newMessage.id, ')');
-            return;                     // ← полностью выходим из обработчика
-          }
-
-          // ----------------------------------------------------------
-          // ДАЛЬНЕЙШИЙ КОД ОСТАЁТСЯ БЕЗ ИЗМЕНЕНИЙ (обработка входящих)
-          // ----------------------------------------------------------
 
           // ТЕКСТ
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
@@ -452,8 +439,8 @@ const SecretPrivateChat = () => {
             } else {
               updateMessages({
                 ...newMessage,
-                content: sentMessagesCache[newMessage.clientMessageId] ||
-                        getOwnMessageContent(chatId, userId, newMessage.clientMessageId) ||
+                content: sentMessagesCache[newMessage.clientMessageId] || 
+                        getOwnMessageContent(chatId, userId, newMessage.clientMessageId) || 
                         'Content unavailable',
                 delivered: newMessage.delivered_status,
                 read: newMessage.read_status,
