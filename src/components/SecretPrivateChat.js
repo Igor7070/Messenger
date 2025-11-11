@@ -456,88 +456,33 @@ const SecretPrivateChat = () => {
               });
             }
 
-          // === ФАЙЛОВЫЕ СООБЩЕНИЯ ===
-          } else if (newMessage.messageType === 'file') {
+          // === ФАЙЛЫ И АУДИО — ПРОСТО ОБНОВЛЯЕМ ===
+          } else if (newMessage.messageType === 'file' || newMessage.messageType === 'audio') {
             if (newMessage.sender.id === userId) {
               const fileContentKey = `fileContent_${chatId}_${userId}_${newMessage.clientMessageId}`;
               const storedFileData = localStorage.getItem(fileContentKey);
               let fileData = {};
               if (storedFileData) {
                 fileData = JSON.parse(storedFileData);
-                console.log(`Retrieved file data for own message: clientMessageId=${newMessage.clientMessageId}, fileName=${fileData.fileName}`);
               }
 
               updateMessages({
                 ...newMessage,
-                fileUrl: fileData.fileUrl || 'File unavailable',
+                fileUrl: newMessage.fileUrl || fileData.fileUrl || 'File unavailable',
                 fileName: fileData.fileName || 'File unavailable',
                 contentType: fileData.contentType || null,
                 delivered: newMessage.delivered_status ?? false,
                 read: newMessage.read_status ?? false,
               });
             } else {
-              try {
-                let fileName = 'Unknown file';
-                let contentType = 'application/octet-stream';
-                let fileUrl = newMessage.fileUrl || newMessage.file_url || null;
-
-                if (newMessage.encryptedContent && newMessage.nonce) {
-                  let publicKey = publicKeys[newMessage.sender.id];
-                  if (!publicKey || newMessage.publicKeyId) {
-                    console.log(`Public key for senderId: ${newMessage.sender.id} not found or publicKeyId present, fetching...`);
-                    publicKey = await getPublicKey(newMessage.sender.id, newMessage.publicKeyId);
-                    setPublicKeys((prev) => ({
-                      ...prev,
-                      [newMessage.sender.id]: publicKey,
-                    }));
-                  }
-
-                  const decryptedMetadata = await decryptMessage(
-                    newMessage.encryptedContent,
-                    newMessage.nonce,
-                    newMessage.sender.id,
-                    newMessage.timestamp,
-                    publicKey
-                  );
-                  const metadata = JSON.parse(decryptedMetadata);
-                  fileName = metadata.fileName;
-                  contentType = metadata.mimeType || metadata.contentType || 'application/octet-stream';
-                  console.log(`Decrypted file metadata: fileName=${fileName}, contentType=${contentType}`);
-                }
-
-                if (!fileUrl && newMessage.id) {
-                  try {
-                    const meta = await fetchFileMetadata(newMessage.id);
-                    fileUrl = meta.fileUrl;
-                    console.log(`Fetched fileUrl from API for message ${newMessage.id}: ${fileUrl}`);
-                  } catch (e) {
-                    console.error('Failed to fetch fileUrl:', e);
-                  }
-                }
-
-                updateMessages({
-                  ...newMessage,
-                  fileName,
-                  contentType,
-                  fileUrl,
-                  delivered: newMessage.delivered_status ?? false,
-                  read: newMessage.read_status ?? false,
-                });
-              } catch (error) {
-                console.error(`Failed to decrypt file metadata ID=${newMessage.id}:`, error);
-                updateMessages({
-                  ...newMessage,
-                  fileName: 'Decryption failed',
-                  contentType: null,
-                  fileUrl: null,
-                  delivered: newMessage.delivered_status ?? false,
-                  read: newMessage.read_status ?? false,
-                });
-                toast.error('Failed to decrypt file name');
-              }
+              updateMessages({
+                ...newMessage,
+                delivered: newMessage.delivered_status ?? false,
+                read: newMessage.read_status ?? false,
+              });
             }
 
-          // === ДРУГИЕ ТИПЫ (включая audio) ===
+          // === ДРУГИЕ ТИПЫ ===
           } else {
             updateMessages({
               ...newMessage,
@@ -547,7 +492,6 @@ const SecretPrivateChat = () => {
           }
         });
 
-        // === ПОДПИСКИ НА СТАТУСЫ И КЛЮЧИ ===
         stompClientInstance.subscribe(`/topic/messageStatus/${chatId}`, (statusMessage) => {
           const statusUpdate = JSON.parse(statusMessage.body);
           console.log('Received status update:', statusUpdate);
@@ -739,12 +683,7 @@ const SecretPrivateChat = () => {
 
   const updateMessages = (newMessage) => {
     setMessages(prev => {
-      // 1. УДАЛЕНИЕ
-      if (newMessage.content === 'Message deleted') {
-        return prev.filter(m => m.id !== newMessage.id);
-      }
-
-      // 2. СВОЁ СООБЩЕНИЕ С clientMessageId — ищем по clientMessageId
+      // 1. СВОЁ СООБЩЕНИЕ — ищем по clientMessageId
       if (newMessage.sender.id === userId && newMessage.clientMessageId) {
         const tempIdx = prev.findIndex(m => m.clientMessageId === newMessage.clientMessageId);
         if (tempIdx !== -1) {
@@ -762,6 +701,11 @@ const SecretPrivateChat = () => {
           setSentMessagesCache(p => { const c = { ...p }; delete c[newMessage.clientMessageId]; return c; });
           return updated;
         }
+      }
+
+      // 2. УДАЛЕНИЕ
+      if (newMessage.content === 'Message deleted' && newMessage.id) {
+        return prev.filter(m => m.id !== newMessage.id);
       }
 
       // 3. ОБНОВЛЕНИЕ ПО id
@@ -1410,7 +1354,7 @@ const SecretPrivateChat = () => {
             fileUrl: serverFileUrl,
             file_url: serverFileUrl,
             content: undefined,
-            clientMessageId: messageData.clientMessageId  // ← КЛЮЧЕВОЙ МОМЕНТ
+            clientMessageId: messageData.clientMessageId
           }),
         });
         console.log('Audio message sent via WebSocket');
