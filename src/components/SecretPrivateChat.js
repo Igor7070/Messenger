@@ -422,14 +422,12 @@ const SecretPrivateChat = () => {
                 ? { ...m, delivered: newMessage.delivered_status ?? m.delivered, read: newMessage.read_status ?? m.read }
                 : m
             ));
-            // Trigger preload if audio (after status update, next tick)
-            if (newMessage.messageType === 'audio') {
+            // Trigger preload if audio (after status update)
+            if (newMessage.messageType === 'audio' && audioRefs.current[newMessage.id]) {
               setTimeout(() => {
                 const updatedMsg = { ...newMessage, sender: { id: userId } };  // Ensure sender
-                if (audioRefs.current[newMessage.id]) {
-                  preloadAudio(newMessage.id, newMessage.fileUrl, updatedMsg);
-                }
-              }, 0);
+                preloadAudio(newMessage.id, newMessage.fileUrl, updatedMsg);
+              }, 100);
             }
             return;
           }
@@ -440,16 +438,16 @@ const SecretPrivateChat = () => {
               const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
               const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
 
-              let publicKey = publicKeys[newMessage.sender?.id];
+              let publicKey = publicKeys[newMessage.sender.id];
               if (!publicKey || newMessage.publicKeyId) {
-                publicKey = await getPublicKey(newMessage.sender?.id, newMessage.publicKeyId);
-                setPublicKeys((prev) => ({ ...prev, [newMessage.sender?.id]: publicKey }));
+                publicKey = await getPublicKey(newMessage.sender.id, newMessage.publicKeyId);
+                setPublicKeys((prev) => ({ ...prev, [newMessage.sender.id]: publicKey }));
               }
 
               const decryptedContent = await decryptMessage(
                 cleanedEncryptedContent,
                 cleanedNonce,
-                newMessage.sender?.id,
+                newMessage.sender.id,
                 newMessage.timestamp,
                 publicKey
               );
@@ -457,7 +455,6 @@ const SecretPrivateChat = () => {
               updateMessages({
                 ...newMessage,
                 content: decryptedContent,
-                sender: newMessage.sender || { id: newMessage.senderId },  // Ensure
                 delivered: newMessage.delivered_status ?? false,
                 read: newMessage.read_status ?? false,
               });
@@ -466,31 +463,30 @@ const SecretPrivateChat = () => {
               updateMessages({
                 ...newMessage,
                 content: 'Decryption failed',
-                sender: newMessage.sender || { id: newMessage.senderId },
                 delivered: newMessage.delivered_status ?? false,
                 read: newMessage.read_status ?? false,
               });
               toast.error(`Failed to decrypt message: ${error.message}`);
             }
 
-          // ← ФАЙЛЫ И АУДИО
+          // ← ФАЙЛЫ И АУДИО (add trigger preload)
           } else if (newMessage.messageType === 'file' || newMessage.messageType === 'audio') {
             try {
               let fileName = 'Unknown file';
               let contentType = 'application/octet-stream';
               let fileUrl = newMessage.fileUrl || newMessage.file_url || null;
 
-              if (newMessage.encryptedContent && newMessage.nonce) {
-                let publicKey = publicKeys[newMessage.sender?.id];
+              if (newMessage.encryptedContent && newMessage.nonce) {  // Now has for audio
+                let publicKey = publicKeys[newMessage.sender.id];
                 if (!publicKey || newMessage.publicKeyId) {
-                  publicKey = await getPublicKey(newMessage.sender?.id, newMessage.publicKeyId);
-                  setPublicKeys((prev) => ({ ...prev, [newMessage.sender?.id]: publicKey }));
+                  publicKey = await getPublicKey(newMessage.sender.id, newMessage.publicKeyId);
+                  setPublicKeys((prev) => ({ ...prev, [newMessage.sender.id]: publicKey }));
                 }
 
                 const decryptedMetadata = await decryptMessage(
                   newMessage.encryptedContent,
                   newMessage.nonce,
-                  newMessage.sender?.id,
+                  newMessage.sender.id,
                   newMessage.timestamp,
                   publicKey
                 );
@@ -520,13 +516,9 @@ const SecretPrivateChat = () => {
               };
               updateMessages(updatedNewMessage);
 
-              // Trigger preload/decrypt after update for audio (next tick)
-              if (newMessage.messageType === 'audio') {
-                setTimeout(() => {
-                  if (audioRefs.current[newMessage.id]) {
-                    preloadAudio(newMessage.id, fileUrl, updatedNewMessage);
-                  }
-                }, 0);
+              // Trigger preload/decrypt after update for audio
+              if (newMessage.messageType === 'audio' && audioRefs.current[newMessage.id]) {
+                setTimeout(() => preloadAudio(newMessage.id, fileUrl, updatedNewMessage), 100);
               }
             } catch (error) {
               console.error(`Failed to decrypt file/audio metadata ID=${newMessage.id}:`, error);
@@ -535,7 +527,6 @@ const SecretPrivateChat = () => {
                 fileName: 'Decryption failed',
                 contentType: null,
                 fileUrl: null,
-                sender: newMessage.sender || { id: newMessage.senderId },
                 delivered: newMessage.delivered_status ?? false,
                 read: newMessage.read_status ?? false,
               });
@@ -546,7 +537,6 @@ const SecretPrivateChat = () => {
           } else {
             updateMessages({
               ...newMessage,
-              sender: newMessage.sender || { id: newMessage.senderId },
               delivered: newMessage.delivered_status ?? false,
               read: newMessage.read_status ?? false,
             });
@@ -700,21 +690,6 @@ const SecretPrivateChat = () => {
     });
   }, [messages]);
 
-  // Auto-update audio src when blob ready (for receiver lag)
-  useEffect(() => {
-    if (Object.keys(decryptedAudioBlobs).length > 0) {
-      Object.entries(decryptedAudioBlobs).forEach(([msgId, { blobUrl }]) => {
-        const audio = audioRefs.current[msgId];
-        if (audio && audio.src !== blobUrl && audio.src.includes('encrypted')) {
-          console.log(`Auto-updating src for ${msgId} to decrypted blob`);
-          audio.src = blobUrl;
-          audio.load();
-          setAudioProgress(prev => ({ ...prev, [msgId]: { ...prev[msgId], error: null, isReady: false } }));  // Re-trigger metadata
-        }
-      });
-    }
-  }, [decryptedAudioBlobs]);
-
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (contextMenuRef.current && !contextMenuRef.current.contains(e.target)) {
@@ -774,7 +749,7 @@ const SecretPrivateChat = () => {
         const oldFileUrl = oldMsg.fileUrl;
 
         // ← НЕ ПЕРЕЗАПИСЫВАЕМ fileUrl, ЕСЛИ ЭТО НАШЕ СООБЩЕНИЕ И УЖЕ blob:
-        if (newMessage.sender?.id === userId && oldFileUrl?.startsWith('blob:')) {
+        if (newMessage.sender.id === userId && oldFileUrl?.startsWith('blob:')) {
           return prev.map((m, i) =>
             i === existingIdx
               ? { ...m, delivered: newMessage.delivered_status, read: newMessage.read_status }
@@ -792,7 +767,7 @@ const SecretPrivateChat = () => {
       }
 
       // ЗАМЕНА ВРЕМЕННОГО СООБЩЕНИЯ
-      if (newMessage.sender?.id === userId && newMessage.clientMessageId) {
+      if (newMessage.sender.id === userId && newMessage.clientMessageId) {
         const tempIdx = prev.findIndex(m => m.id === newMessage.clientMessageId);
         if (tempIdx !== -1) {
           const tempMsg = prev[tempIdx];
@@ -816,17 +791,10 @@ const SecretPrivateChat = () => {
       return [...prev, { ...newMessage, delivered: false, read: false }];
     });
 
-    // Trigger preload for audio after any update (next tick for ref)
-    if (newMessage.messageType === 'audio') {
-      setTimeout(() => {
-        const fullMsg = { 
-          ...newMessage, 
-          sender: { id: newMessage.sender?.id || (newMessage.senderId ? { id: newMessage.senderId } : { id: userId }) }  // Fallback sender
-        };
-        if (audioRefs.current[newMessage.id]) {
-          preloadAudio(newMessage.id, newMessage.fileUrl || newMessage.file_url, fullMsg);
-        }
-      }, 0);  // Next tick
+    // Trigger preload for audio after any update
+    if (newMessage.messageType === 'audio' && audioRefs.current[newMessage.id]) {
+      const fullMsg = { ...newMessage, sender: { id: newMessage.sender?.id || userId } };
+      setTimeout(() => preloadAudio(newMessage.id, newMessage.fileUrl || newMessage.file_url, fullMsg), 100);
     }
   };
 
