@@ -1301,6 +1301,7 @@ const SecretPrivateChat = () => {
       const clientMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const tempFileUrl = URL.createObjectURL(audioBlob);
 
+      // ← КЭШИРУЕМ blob URL до полной замены
       const fileContentKey = `fileContent_${chatId}_${userId}_${clientMessageId}`;
       localStorage.setItem(fileContentKey, JSON.stringify({
         fileName: audioFile.name,
@@ -1308,6 +1309,7 @@ const SecretPrivateChat = () => {
         fileUrl: tempFileUrl,
       }));
 
+      // ← ДОБАВЛЯЕМ В UI С blob URL
       setMessages((prev) => {
         if (prev.some(m => m.id === clientMessageId)) return prev;
         return [...prev, {
@@ -1325,6 +1327,7 @@ const SecretPrivateChat = () => {
         }];
       });
 
+      // ← СОХРАНЯЕМ СООБЩЕНИЕ
       const response = await fetch('https://unlimitedpossibilities12.org/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1346,18 +1349,21 @@ const SecretPrivateChat = () => {
       const savedMessage = await response.json();
       const serverFileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
 
+      // ← ЗАМЕНЯЕМ В UI: blob → server URL
       setMessages((prev) => prev.map((msg) =>
         msg.id === clientMessageId
           ? { ...msg, id: savedMessage.id, fileUrl: serverFileUrl, file_url: serverFileUrl, clientMessageId: undefined }
           : msg
       ));
 
+      // ← ОБНОВЛЯЕМ КЭШ
       localStorage.setItem(fileContentKey, JSON.stringify({
         fileName: audioFile.name,
         contentType: 'audio/mpeg',
         fileUrl: serverFileUrl,
       }));
 
+      // ← ОТПРАВЛЯЕМ ЧЕРЕЗ WebSocket
       if (client && client.connected) {
         client.publish({
           destination: `/app/sendMessage/chat/${chatId}`,
@@ -1370,6 +1376,7 @@ const SecretPrivateChat = () => {
         });
       }
 
+      // ← revoke blob URL ПОСЛЕ полной замены
       setTimeout(() => {
         if (tempFileUrl.startsWith('blob:')) {
           URL.revokeObjectURL(tempFileUrl);
