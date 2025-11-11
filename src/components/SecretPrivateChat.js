@@ -737,31 +737,39 @@ const SecretPrivateChat = () => {
 
   const updateMessages = (newMessage) => {
     setMessages(prev => {
-      if (newMessage.content === 'Message deleted') {
-        return prev.filter(m => m.id !== newMessage.id);
-      }
-
-      const existingIdx = prev.findIndex(m => m.id === newMessage.id);
-      if (existingIdx !== -1) {
-        const updated = [...prev];
-        updated[existingIdx] = { ...updated[existingIdx], ...newMessage };
-        return updated;
-      }
-
-      // Замена временного сообщения
+      // 1. Ищем по clientMessageId (своё временное)
       if (newMessage.sender.id === userId && newMessage.clientMessageId) {
-        const tempIdx = prev.findIndex(m => m.id === newMessage.clientMessageId);
+        const tempIdx = prev.findIndex(m => m.clientMessageId === newMessage.clientMessageId);
         if (tempIdx !== -1) {
-          const oldFileUrl = prev[tempIdx].fileUrl;
-          if (oldFileUrl?.startsWith('blob:')) URL.revokeObjectURL(oldFileUrl);
-
+          const oldUrl = prev[tempIdx].fileUrl;
           const updated = [...prev];
-          updated[tempIdx] = { ...newMessage, delivered: false, read: false };
-          setSentMessagesCache(p => { const c = { ...p }; delete c[newMessage.clientMessageId]; return c; });
+          updated[tempIdx] = {
+            ...newMessage,
+            fileUrl: newMessage.fileUrl || prev[tempIdx].fileUrl,
+            delivered: false,
+            read: false
+          };
+          // Отзываем blob ТОЛЬКО если есть server URL
+          if (oldUrl?.startsWith('blob:') && newMessage.fileUrl) {
+            setTimeout(() => URL.revokeObjectURL(oldUrl), 100);
+          }
           return updated;
         }
       }
 
+      // 2. Ищем по id
+      const existingIdx = prev.findIndex(m => m.id === newMessage.id);
+      if (existingIdx !== -1) {
+        const oldUrl = prev[existingIdx].fileUrl;
+        const updated = [...prev];
+        updated[existingIdx] = { ...updated[existingIdx], ...newMessage };
+        if (oldUrl?.startsWith('blob:') && newMessage.fileUrl) {
+          setTimeout(() => URL.revokeObjectURL(oldUrl), 100);
+        }
+        return updated;
+      }
+
+      // 3. Новое сообщение
       return [...prev, { ...newMessage, delivered: false, read: false }];
     });
   };
@@ -1408,7 +1416,14 @@ const SecretPrivateChat = () => {
         };
         client.publish({
           destination: `/app/sendMessage/chat/${chatId}`,
-          body: JSON.stringify(websocketMessage),
+          body: JSON.stringify({
+            ...messageData,
+            id: savedMessage.id,
+            fileUrl: serverFileUrl,
+            file_url: serverFileUrl,
+            content: undefined,
+            clientMessageId: messageData.clientMessageId  // ← ЭТО ДОЛЖНО БЫТЬ
+          }),
         });
         console.log('Audio message sent via WebSocket');  // ← Лог 7
       }
@@ -1416,7 +1431,7 @@ const SecretPrivateChat = () => {
       // === ОЧИСТКА ===
       setAudioBlob(null);
       setMicIconState('mic');
-      URL.revokeObjectURL(tempFileUrl);  // ← Теперь revoke после обновления UI
+      //URL.revokeObjectURL(tempFileUrl);  // ← Теперь revoke после обновления UI
       toast.success('Audio message sent!');  // ← Этот toast теперь сработает
     } catch (error) {
       console.error('Error in sendAudioMessage:', error);
