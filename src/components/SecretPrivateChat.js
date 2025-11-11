@@ -400,13 +400,19 @@ const SecretPrivateChat = () => {
           const newMessage = JSON.parse(message.body);
           console.log('NewMessage:', newMessage);
 
-          // ← КРИТИЧНО: ИГНОРИРУЕМ СВОИ СООБЩЕНИЯ
-          if (newMessage.sender.id === userId) {
+          // ← ИГНОРИРУЕМ СВОИ СООБЩЕНИЯ
+          if (newMessage.sender?.id === userId) {
             console.log('Ignoring own message from WebSocket (id:', newMessage.id, ')');
-            return; // ← ВЫХОДИМ ПОЛНОСТЬЮ
+            return;
           }
 
-          // ← ВХОДЯЩИЕ СООБЩЕНИЯ — РАСШИФРОВЫВАЕМ
+          // ← УДАЛЕНИЕ СООБЩЕНИЯ
+          if (newMessage.content === 'Message deleted') {
+            setMessages(prev => prev.filter(m => m.id !== newMessage.id));
+            return;
+          }
+
+          // ТЕКСТ
           if (newMessage.messageType === 'text' && newMessage.encryptedContent && newMessage.nonce) {
             try {
               const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
@@ -442,6 +448,7 @@ const SecretPrivateChat = () => {
               toast.error(`Failed to decrypt message: ${error.message}`);
             }
 
+          // ФАЙЛЫ И АУДИО
           } else if (newMessage.messageType === 'file' || newMessage.messageType === 'audio') {
             try {
               let fileName = 'Unknown file';
@@ -496,6 +503,8 @@ const SecretPrivateChat = () => {
               });
               toast.error('Failed to decrypt file name');
             }
+
+          // ДРУГИЕ ТИПЫ
           } else {
             updateMessages({
               ...newMessage,
@@ -505,7 +514,7 @@ const SecretPrivateChat = () => {
           }
         });
 
-        // ← Статусы и ключи — без изменений
+        // ПОДПИСКИ НА СТАТУСЫ
         stompClientInstance.subscribe(`/topic/messageStatus/${chatId}`, (statusMessage) => {
           const statusUpdate = JSON.parse(statusMessage.body);
           console.log('Received status update:', statusUpdate);
@@ -522,6 +531,7 @@ const SecretPrivateChat = () => {
           );
         });
 
+        // ПОДПИСКА НА ОБНОВЛЕНИЕ КЛЮЧЕЙ
         if (chatName) {
           const recipientName = chatName.replace('_secret', '').split('_').find((name) => name !== username);
           if (recipientName) {
@@ -1282,7 +1292,7 @@ const SecretPrivateChat = () => {
       );
 
       const clientMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const tempFileUrl = URL.createObjectURL(audioBlob); // ← ОСТАЁТСЯ ЖИВЫМ
+      const tempFileUrl = URL.createObjectURL(audioBlob);
 
       const fileContentKey = `fileContent_${chatId}_${userId}_${clientMessageId}`;
       localStorage.setItem(fileContentKey, JSON.stringify({
@@ -1297,6 +1307,7 @@ const SecretPrivateChat = () => {
           id: clientMessageId,
           clientMessageId,
           sender: { id: userId, username },
+          chat: { id: chatId },
           messageType: 'audio',
           fileUrl: tempFileUrl,
           fileName: audioFile.name,
@@ -1312,6 +1323,7 @@ const SecretPrivateChat = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat: { id: chatId },
+          sender: { id: userId },
           messageType: 'audio',
           encryptedContent,
           nonce,
@@ -1327,21 +1339,11 @@ const SecretPrivateChat = () => {
       const savedMessage = await response.json();
       const serverFileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
 
-      // ← ОБНОВЛЯЕМ С СЕРВЕРНЫМ URL, НО НЕ revoke blob: пока
-      setMessages((prev) => {
-        return prev.map((msg) => {
-          if (msg.id === clientMessageId) {
-            return {
-              ...msg,
-              id: savedMessage.id,
-              fileUrl: serverFileUrl,
-              file_url: serverFileUrl,
-              clientMessageId: undefined,
-            };
-          }
-          return msg;
-        });
-      });
+      setMessages((prev) => prev.map((msg) =>
+        msg.id === clientMessageId
+          ? { ...msg, id: savedMessage.id, fileUrl: serverFileUrl, file_url: serverFileUrl, clientMessageId: undefined }
+          : msg
+      ));
 
       localStorage.setItem(fileContentKey, JSON.stringify({
         fileName: audioFile.name,
@@ -1361,13 +1363,12 @@ const SecretPrivateChat = () => {
         });
       }
 
-      // ← revoke ТОЛЬКО ПОСЛЕ ТОГО, КАК СЕРВЕРНЫЙ URL ЗАГРУЖЕН
       setTimeout(() => {
         if (tempFileUrl.startsWith('blob:')) {
           URL.revokeObjectURL(tempFileUrl);
           console.log('revoke blob URL after server URL loaded');
         }
-      }, 3000); // ← Даём плееру время загрузиться
+      }, 5000);
 
       setAudioBlob(null);
       setMicIconState('mic');
