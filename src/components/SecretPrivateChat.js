@@ -624,7 +624,7 @@ const SecretPrivateChat = () => {
         clearTimeout(reconnectTimeout);
       }
     };
-  }, [chatId, userId, publicKeys, chatName, username, keyPair]);
+  }, [chatId, userId, chatName, username]);
 
   // Отметка сообщений как прочитанных
   useEffect(() => {
