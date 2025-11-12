@@ -678,26 +678,17 @@ const SecretPrivateChat = () => {
 
   // Предзагрузка аудио
   useEffect(() => {
-    const audioMessages = messages
-      .filter(m => m.messageType === 'audio' && m.fileUrl)
-      .slice(-15);
-
-    audioMessages.forEach(msg => {
-      const audioEl = audioRefs.current[msg.id];
-      const progress = audioProgress[msg.id];
-
+    const audioMessages = messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
+    audioMessages.slice(-10).forEach(async (msg) => {  // async для preloadAudio
       if (
-        audioEl &&
-        !progress?.isReady &&
-        !progress?.isPreloading &&
-        !progress?.decrypted
+        audioRefs.current[msg.id] &&
+        !audioProgress[msg.id]?.isReady &&
+        !audioProgress[msg.id]?.isPreloading
       ) {
-        preloadAudio(msg.id, msg.fileUrl, msg).catch(err => {
-          console.error(`Preload failed for ${msg.id}:`, err);
-        });
+        await preloadAudio(msg.id, msg.fileUrl, msg);  // + msg param
       }
     });
-  }, [messages, audioProgress, audioRefs]);
+  }, [messages]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -1868,45 +1859,57 @@ const SecretPrivateChat = () => {
     }
   };
 
-  const preloadAudio = async (msgId, url, msg) => {
+  const preloadAudio = async (msgId, url, msg) => {  // Добавлен msg param
     const audio = audioRefs.current[msgId];
-    if (!audio) return;
-
-    if (audioProgress[msgId]?.isReady || audioProgress[msgId]?.isPreloading || audioProgress[msgId]?.decrypted) {
+    if (!audio || audioProgress[msgId]?.isReady || audioProgress[msgId]?.decrypted) {
+      console.log(`Preload skipped for ${msgId}: already ready/decrypted`);
       return;
     }
+    if (audioProgress[msgId]?.isPreloading) return;  // Avoid duplicate
 
-    setAudioProgress(prev => ({
-      ...prev,
-      [msgId]: { ...prev[msgId], isPreloading: true }
-    }));
+    setAudioProgress(prev => ({ ...prev, [msgId]: { ...prev[msgId], isPreloading: true } }));
 
-    let finalUrl = url;
+    let playableUrl = url;
 
-    // === СВОЁ СООБЩЕНИЕ: temp blob — НЕ расшифровывать ===
-    if (url.startsWith('blob:') && msg.sender?.id === userId) {
-      finalUrl = url;
-    }
-    // === ВХОДЯЩЕЕ: зашифровано — расшифровать ===
-    else if (msg.nonce) {
+    // Ensure msg has sender for own/incoming logic
+    if (!msg.sender) msg.sender = { id: userId };  // Fallback for WS
+
+    // Если зашифровано (nonce есть) — decrypt в blob
+    if (msg.nonce && (url.includes('encrypted') || !url.startsWith('blob:'))) {
       try {
-        finalUrl = await decryptAudioForPlayback(msgId, url, msg.nonce, msg.publicKeyId || null, msg.sender.id);
+        playableUrl = await decryptAudioForPlayback(msgId, url, msg.nonce, msg.publicKeyId || null, msg.sender.id);
       } catch (e) {
-        setAudioProgress(prev => ({
-          ...prev,
-          [msgId]: { ...prev[msgId], isPreloading: false, error: 'Decrypt failed' }
-        }));
+        setAudioProgress(prev => ({ ...prev, [msgId]: { ...prev[msgId], isPreloading: false, error: 'Decrypt failed during preload' } }));
         return;
       }
     }
 
-    // === УСТАНАВЛИВАЕМ src ТОЛЬКО ПОСЛЕ РАСШИФРОВКИ ===
-    const cacheBuster = finalUrl.startsWith('http') ? `${finalUrl}?t=${Date.now()}` : finalUrl;
-    audio.src = cacheBuster;
-    audio.type = finalUrl.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm';
+    // Если temp blob у отправителя — используем как есть (уже decrypted)
+    if (url.startsWith('blob:') && msg.sender.id === userId) {
+      console.log(`Using temp blob for own audio ${msgId}`);
+    }
+
+    if (audio.src === playableUrl && audio.readyState >= 2) {
+      setAudioProgress(prev => ({
+        ...prev,
+        [msgId]: {
+          ...prev[msgId],
+          isPreloading: false,
+          isReady: true,
+          decrypted: true,  // Mark as processed
+          error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
+        },
+      }));
+      return;
+    }
+
+    const cacheBusterUrl = playableUrl.startsWith('http') ? `${playableUrl}?t=${Date.now()}` : playableUrl;
+    audio.src = cacheBusterUrl;
+    audio.type = playableUrl.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm';
     audio.load();
 
-    const onLoadedMetadata = () => {
+    audio.addEventListener('loadedmetadata', () => {
+      console.log(`Loaded metadata for msg ${msgId}: duration=${audio.duration}, readyState=${audio.readyState}`);
       const duration = isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 0;
       setAudioProgress(prev => ({
         ...prev,
@@ -1916,29 +1919,44 @@ const SecretPrivateChat = () => {
           isReady: audio.readyState >= 2,
           decrypted: true,
           duration,
-          error: duration === 0 ? 'Duration unavailable' : null,
+          error: duration === 0 ? 'Duration unavailable: server issue' : null,
         },
       }));
-      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
-    };
+    }, { once: true });
 
-    const onCanPlay = () => {
+    audio.addEventListener('canplay', () => {
+      console.log(`Can play msg ${msgId}: readyState=${audio.readyState}`);
       setAudioProgress(prev => ({
         ...prev,
-        [msgId]: { ...prev[msgId], isPreloading: false, isReady: true, decrypted: true }
+        [msgId]: {
+          ...prev[msgId],
+          isPreloading: false,
+          isReady: true,
+          decrypted: true,
+        },
       }));
-      audio.removeEventListener('canplay', onCanPlay);
-    };
+    }, { once: true });
 
-    const onError = (e) => {
-      const errorMsg = e.target.error?.message || 'Unknown error';
-      console.error(`Preload error for ${msgId}:`, errorMsg);
-
+    audio.addEventListener('error', (e) => {
+      const errorMsg = e.target.error ? `Error code: ${e.target.error.code}, message: ${e.target.error.message}` : 'Unknown error';
+      console.error(`Preload error for msg ${msgId}: ${errorMsg}, URL: ${playableUrl}, readyState: ${audio.readyState}`);
       setAudioProgress(prev => {
         const prevData = prev[msgId] || {};
         if (!prevData.retryCount || prevData.retryCount < 2) {
-          setTimeout(() => {
-            preloadAudio(msgId, url, msg); // Полный retry
+          setTimeout(async () => {
+            console.log(`Retrying preload for msg ${msgId}, attempt ${prevData.retryCount + 1}`);
+            let retryUrl = playableUrl;
+            if (msg.nonce && !decryptedAudioBlobs[msgId]) {
+              // Retry decrypt on error
+              try {
+                retryUrl = await decryptAudioForPlayback(msgId, url, msg.nonce, msg.publicKeyId || null, msg.sender.id);
+              } catch (retryErr) {
+                console.error(`Decrypt retry failed:`, retryErr);
+                return;  // Don't load
+              }
+            }
+            audio.src = retryUrl.startsWith('http') ? `${retryUrl}?t=${Date.now()}` : retryUrl;
+            audio.load();
           }, 2000);
           return {
             ...prev,
@@ -1946,11 +1964,12 @@ const SecretPrivateChat = () => {
               ...prevData,
               isPreloading: false,
               isReady: false,
-              error: 'Retrying...',
+              error: 'Retrying to preload audio...',
               retryCount: (prevData.retryCount || 0) + 1,
             },
           };
         }
+        toast.error('Failed to preload audio message');
         return {
           ...prev,
           [msgId]: {
@@ -1958,17 +1977,11 @@ const SecretPrivateChat = () => {
             isPreloading: false,
             isReady: false,
             decrypted: false,
-            error: `Failed: ${errorMsg}`,
+            error: `Failed to preload audio: ${errorMsg}`,
           },
         };
       });
-
-      audio.removeEventListener('error', onError);
-    };
-
-    audio.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
-    audio.addEventListener('canplay', onCanPlay, { once: true });
-    audio.addEventListener('error', onError, { once: true });
+    }, { once: true });
   };
 
   const handleDragStart = (msgId, e) => {
@@ -2267,16 +2280,32 @@ const SecretPrivateChat = () => {
                                 console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
                               }
                             }}
-                            src={decryptedAudioBlobs[msg.id]?.blobUrl}  // ТОЛЬКО расшифрованный blob
+                            src={decryptedAudioBlobs[msg.id]?.blobUrl || msg.fileUrl}  // Fallback: decrypted или original (encrypted/temp)
                             onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
                             onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
                             onCanPlay={() => handleCanPlay(msg.id)}
-                            onError={(e) => handleAudioError(msg.id, e)}  // Обычная обработка ошибки
+                            onError={async (e) => {
+                              const audio = audioRefs.current[msg.id];
+                              if (!decryptedAudioBlobs[msg.id] && msg.nonce && msg.fileUrl) {  // Retry decrypt on error, if encrypted
+                                console.log(`Audio error ${msg.id}: retrying decrypt`);
+                                try {
+                                  const newUrl = await decryptAudioForPlayback(msg.id, msg.fileUrl, msg.nonce, msg.publicKeyId || null, msg.sender.id);
+                                  audio.src = newUrl;
+                                  audio.load();
+                                  setAudioProgress(prev => ({ ...prev, [msg.id]: { ...prev[msg.id], error: null } }));
+                                } catch (retryErr) {
+                                  console.error(`Decrypt retry on error failed:`, retryErr);
+                                  handleAudioError(msg.id, e);
+                                }
+                              } else {
+                                handleAudioError(msg.id, e);
+                              }
+                            }}
                             onEnded={() => handleAudioEnded(msg.id)}
                             className="private-audio-player"
                             preload="auto"
                           >
-                            <source src={decryptedAudioBlobs[msg.id]?.blobUrl} type="audio/mpeg" />
+                            <source src={decryptedAudioBlobs[msg.id]?.blobUrl || msg.fileUrl} type={msg.fileUrl?.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'} />
                             Your browser does not support the audio element.
                           </audio>
                           {audioProgress[msg.id]?.error ? (
