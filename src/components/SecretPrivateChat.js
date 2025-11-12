@@ -1409,24 +1409,24 @@ const SecretPrivateChat = () => {
       const clientMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const tempFileUrl = URL.createObjectURL(audioBlob);
 
-      // ← КЭШИРУЕМ blob URL до полной замены + metadata
+      // ← КЭШИРУЕМ blob + metadata
       const fileContentKey = `fileContent_${chatId}_${userId}_${clientMessageId}`;
       localStorage.setItem(fileContentKey, JSON.stringify({
         fileName: audioFile.name,
         contentType: 'audio/mpeg',
         fileUrl: tempFileUrl,
-        nonce,  // ← ADD: Store nonce for later decrypt
-        encryptedContent,  // ← ADD
+        nonce,
+        encryptedContent,
       }));
 
-      // ← ДОБАВЛЯЕМ В UI С blob URL + metadata
+      // ← ДОБАВЛЯЕМ В UI С blob URL
       setMessages((prev) => {
         if (prev.some(m => m.id === clientMessageId)) return prev;
         return [...prev, {
           id: clientMessageId,
           clientMessageId,
           sender: { id: userId, username },
-          chat: { id: chatId },
+          chat: { id: chatId, name: chatName, isSecret: true },
           messageType: 'audio',
           fileUrl: tempFileUrl,
           fileName: audioFile.name,
@@ -1434,23 +1434,32 @@ const SecretPrivateChat = () => {
           delivered: false,
           read: false,
           timestamp: new Date().toISOString(),
-          nonce,  // ← ADD: For decrypt after replace
-          encryptedContent,  // ← ADD: For metadata
+          nonce,
+          encryptedContent,
         }];
       });
 
-      // ← СОХРАНЯЕМ СООБЩЕНИЕ
+      // ← 1. СОХРАНЯЕМ СООБЩЕНИЕ (полный объект!)
+      const postPayload = {
+        chat: { id: chatId, name: chatName, isSecret: true },
+        sender: { id: userId, username },
+        messageType: 'audio',
+        encryptedContent,
+        nonce,
+        clientMessageId,
+        contentType: 'audio/mpeg',
+        fileUrl: null, // будет заполнено после upload
+        delivered: false,
+        read: false,
+        timestamp: new Date().toISOString(),
+      };
+
+      console.log('POST /api/messages payload:', postPayload);
+
       const response = await fetch('https://unlimitedpossibilities12.org/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat: { id: chatId },
-          sender: { id: userId },
-          messageType: 'audio',
-          encryptedContent,
-          nonce,
-          clientMessageId,
-        }),
+        body: JSON.stringify(postPayload),
       });
 
       if (!response.ok) {
@@ -1459,23 +1468,29 @@ const SecretPrivateChat = () => {
       }
 
       const savedMessage = await response.json();
-      const serverFileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
+      console.log('Saved message from server:', savedMessage);
 
-      // ← ЗАМЕНЯЕМ В UI: blob → server URL, carry metadata
+      // ← 2. ЗАГРУЖАЕМ ЗАШИФРОВАННЫЙ ФАЙЛ
+      const serverFileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
+      console.log('Encrypted file uploaded, serverFileUrl:', serverFileUrl);
+
+      // ← 3. ЗАМЕНЯЕМ В UI: blob → server URL
       setMessages((prev) => prev.map((msg) =>
         msg.id === clientMessageId
-          ? { 
-              ...msg, 
-              id: savedMessage.id, 
-              fileUrl: serverFileUrl, 
-              file_url: serverFileUrl, 
+          ? {
+              ...msg,
+              id: savedMessage.id,
+              fileUrl: serverFileUrl,
+              file_url: serverFileUrl,
               clientMessageId: undefined,
-              // Keep nonce/encryptedContent for decrypt
+              delivered: savedMessage.delivered_status ?? false,
+              read: savedMessage.read_status ?? false,
+              timestamp: savedMessage.timestamp,
             }
           : msg
       ));
 
-      // ← ОБНОВЛЯЕМ КЭШ (add nonce)
+      // ← ОБНОВЛЯЕМ КЭШ
       localStorage.setItem(fileContentKey, JSON.stringify({
         fileName: audioFile.name,
         contentType: 'audio/mpeg',
@@ -1484,35 +1499,54 @@ const SecretPrivateChat = () => {
         encryptedContent,
       }));
 
-      // ← ОТПРАВЛЯЕМ ЧЕРЕЗ WebSocket + metadata
+      // ← 4. ОТПРАВЛЯЕМ ПОЛНОЕ СООБЩЕНИЕ ЧЕРЕЗ WebSocket
       if (client && client.connected) {
+        const wsPayload = {
+          id: savedMessage.id,
+          messageType: 'audio',
+          fileUrl: serverFileUrl,
+          file_url: serverFileUrl,
+          fileName: audioFile.name,
+          contentType: 'audio/mpeg',
+          encryptedContent,
+          nonce,
+          sender: { id: userId, username },
+          chat: { id: chatId, name: chatName, isSecret: true },
+          delivered: savedMessage.delivered_status ?? false,
+          read: savedMessage.read_status ?? false,
+          timestamp: savedMessage.timestamp,
+        };
+
+        console.log('SENDING AUDIO VIA WS (FULL PAYLOAD):', wsPayload);
+
         client.publish({
           destination: `/app/sendMessage/chat/${chatId}`,
-          body: JSON.stringify({
-            id: savedMessage.id,
-            fileUrl: serverFileUrl,
-            file_url: serverFileUrl,
-            clientMessageId,
-            nonce,  // ← ADD: For receiver decrypt
-            encryptedContent,  // ← ADD: For metadata decrypt
-          }),
+          body: JSON.stringify(wsPayload),
         });
-        console.log('WS publish with metadata for audio');
+        console.log('WS publish sent for audio message ID:', savedMessage.id);
       }
 
-      // ← revoke temp blob сразу после замены на server URL
+      // ← ОЧИЩАЕМ temp blob
       if (tempFileUrl.startsWith('blob:')) {
         URL.revokeObjectURL(tempFileUrl);
-        console.log(`Revoked temp blob for own audio ${clientMessageId} after upload`);
+        console.log(`Revoked temp blob for audio ${clientMessageId}`);
       }
+
+      // ← УДАЛЯЕМ КЭШ после отправки
+      localStorage.removeItem(fileContentKey);
 
       setAudioBlob(null);
       setMicIconState('mic');
       toast.success('Audio message sent!');
+
     } catch (error) {
       console.error('Error in sendAudioMessage:', error);
       toast.error(`Failed to send audio: ${error.message}`);
       setMicIconState('mic');
+
+      // ← ОШИБКА: удаляем temp сообщение
+      setMessages((prev) => prev.filter(m => m.id !== clientMessageId));
+      localStorage.removeItem(`fileContent_${chatId}_${userId}_${clientMessageId}`);
     }
   };
 
