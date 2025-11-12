@@ -678,17 +678,26 @@ const SecretPrivateChat = () => {
 
   // Предзагрузка аудио
   useEffect(() => {
-    const audioMessages = messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
-    audioMessages.slice(-10).forEach(async (msg) => {  // async для preloadAudio
+    const audioMessages = messages
+      .filter(m => m.messageType === 'audio' && m.fileUrl)
+      .slice(-15);
+
+    audioMessages.forEach(msg => {
+      const audioEl = audioRefs.current[msg.id];
+      const progress = audioProgress[msg.id];
+
       if (
-        audioRefs.current[msg.id] &&
-        !audioProgress[msg.id]?.isReady &&
-        !audioProgress[msg.id]?.isPreloading
+        audioEl &&
+        !progress?.isReady &&
+        !progress?.isPreloading &&
+        !progress?.decrypted
       ) {
-        await preloadAudio(msg.id, msg.fileUrl, msg);  // + msg param
+        preloadAudio(msg.id, msg.fileUrl, msg).catch(err => {
+          console.error(`Preload failed for ${msg.id}:`, err);
+        });
       }
     });
-  }, [messages]);
+  }, [messages, audioProgress]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
