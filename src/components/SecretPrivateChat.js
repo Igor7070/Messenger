@@ -282,7 +282,6 @@ const SecretPrivateChat = () => {
         const recipient = await recipientResponse.json();
         const recipientId = recipient.id;
 
-        // Загружаем ключи
         const recipientPublicKey = await getPublicKey(recipientId);
         setPublicKeys(prev => ({ ...prev, [recipientId]: recipientPublicKey }));
 
@@ -294,7 +293,6 @@ const SecretPrivateChat = () => {
         const newKeys = await Promise.all(keyPromises);
         setPublicKeys(prev => ({ ...prev, ...Object.fromEntries(newKeys.map(k => [k.senderId, k.publicKey])) }));
 
-        // === РАСШИФРОВКА СООБЩЕНИЙ ===
         const decryptedMessages = await Promise.all(
           initialMessages.map(async (msg) => {
             // === ТЕКСТ ===
@@ -361,13 +359,13 @@ const SecretPrivateChat = () => {
               }
             }
 
-            // === АУДИО — РАСШИФРОВКА ПРИ ЗАГРУЗКЕ ===
+            // === АУДИО — РАСШИФРОВКА ПРИ ЗАГРУЗКЕ (БЕЗ fetchFileMetadata) ===
             if (msg.messageType === 'audio') {
               let fileName = 'audio.mp3';
               let contentType = 'audio/mpeg';
               let fileUrl = msg.fileUrl || msg.file_url;
 
-              // --- МЕТАДАННЫЕ (имя, тип) ---
+              // --- МЕТАДАННЫЕ ---
               if (msg.encryptedContent && msg.nonce) {
                 try {
                   let publicKey = publicKeys[msg.sender.id];
@@ -392,21 +390,18 @@ const SecretPrivateChat = () => {
                 }
               }
 
-              // --- РАСШИФРОВКА АУДИО ФАЙЛА ПРИ ЗАГРУЗКЕ ---
+              // --- РАСШИФРОВКА АУДИО: ИСПОЛЬЗУЕМ msg.fileUrl + msg.nonce НАПРЯМУЮ ---
               if (fileUrl && msg.nonce && !fileUrl.startsWith('blob:')) {
                 try {
-                  const fileMetadata = await fetchFileMetadata(msg.id);
-                  if (fileMetadata.fileUrl && fileMetadata.nonce) {
-                    const decryptedBlobUrl = await decryptAudioForPlayback(
-                      msg.id,
-                      fileMetadata.fileUrl,
-                      fileMetadata.nonce,
-                      fileMetadata.publicKeyId || msg.publicKeyId,
-                      msg.sender.id
-                    );
-                    fileUrl = decryptedBlobUrl;
-                    console.log(`[LOAD] Audio decrypted: ${msg.id} → ${decryptedBlobUrl}`);
-                  }
+                  const decryptedBlobUrl = await decryptAudioForPlayback(
+                    msg.id,
+                    fileUrl,           // ← ИСПОЛЬЗУЕМ msg.fileUrl
+                    msg.nonce,         // ← ИСПОЛЬЗУЕМ msg.nonce
+                    msg.publicKeyId,   // ← из сообщения
+                    msg.sender.id
+                  );
+                  fileUrl = decryptedBlobUrl;
+                  console.log(`[LOAD] Audio decrypted: ${msg.id} → ${decryptedBlobUrl}`);
                 } catch (e) {
                   console.error('Failed to decrypt audio on load:', msg.id, e);
                 }
@@ -424,7 +419,6 @@ const SecretPrivateChat = () => {
               };
             }
 
-            // === ДРУГИЕ ТИПЫ ===
             return { ...msg, delivered: msg.delivered_status, read: msg.read_status };
           })
         );
