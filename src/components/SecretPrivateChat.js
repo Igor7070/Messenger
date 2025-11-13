@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useLayoutEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getMessages } from '../api/messages';
@@ -677,22 +677,15 @@ const SecretPrivateChat = () => {
   }, [isDragging]);
 
   // Предзагрузка аудио
-  useLayoutEffect(() => {
-    const audioMessages = messages
-      .filter(msg => msg.messageType === 'audio' && msg.fileUrl)
-      .slice(-10);
-
-    audioMessages.forEach(msg => {
-      const audioEl = audioRefs.current[msg.id];
+  useEffect(() => {
+    const audioMessages = messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
+    audioMessages.slice(-10).forEach(async (msg) => {  // async для preloadAudio
       if (
-        audioEl &&
+        audioRefs.current[msg.id] &&
         !audioProgress[msg.id]?.isReady &&
         !audioProgress[msg.id]?.isPreloading
       ) {
-        console.log(`[PRELOAD] Starting for ${msg.id}`);
-        preloadAudio(msg.id, msg.fileUrl, msg).catch(err => {
-          console.error(`Preload failed for ${msg.id}:`, err);
-        });
+        await preloadAudio(msg.id, msg.fileUrl, msg);  // + msg param
       }
     });
   }, [messages]);
