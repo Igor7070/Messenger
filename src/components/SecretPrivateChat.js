@@ -361,6 +361,16 @@ const SecretPrivateChat = () => {
 
             // === АУДИО — РАСШИФРОВКА ПРИ ЗАГРУЗКЕ (БЕЗ fetchFileMetadata) ===
             if (msg.messageType === 'audio') {
+              console.log('[AUDIO] Raw message:', {
+                id: msg.id,
+                fileUrl: msg.fileUrl,
+                file_url: msg.file_url,
+                nonce: msg.nonce,
+                encryptedContent: msg.encryptedContent,
+                publicKeyId: msg.publicKeyId,
+                senderId: msg.sender.id
+              });
+
               let fileName = 'audio.mp3';
               let contentType = 'audio/mpeg';
               let fileUrl = msg.fileUrl || msg.file_url;
@@ -383,28 +393,44 @@ const SecretPrivateChat = () => {
                   );
                   const meta = JSON.parse(decryptedMeta);
                   fileName = meta.fileName || 'audio.mp3';
-                  contentType = 'audio/mpeg';
+                  console.log('[AUDIO] Decrypted meta:', meta);
                 } catch (e) {
-                  console.error('Audio metadata decryption failed:', e);
+                  console.error('[AUDIO] Meta decrypt failed:', e);
                   fileName = 'decryption_failed.mp3';
                 }
               }
 
-              // --- РАСШИФРОВКА АУДИО: ИСПОЛЬЗУЕМ msg.fileUrl + msg.nonce НАПРЯМУЮ ---
+              // --- ЕСЛИ fileUrl НЕТ — БЕРЁМ ИЗ fetchFileMetadata ---
+              if (!fileUrl && msg.nonce) {
+                console.log(`[AUDIO] fileUrl missing → fetching metadata for ${msg.id}`);
+                try {
+                  const metadata = await fetchFileMetadata(msg.id);
+                  fileUrl = metadata.fileUrl;
+                  console.log(`[AUDIO] Got fileUrl from metadata: ${fileUrl}`);
+                } catch (e) {
+                  console.error(`[AUDIO] Failed to get fileUrl from metadata:`, e);
+                  fileUrl = null;
+                }
+              }
+
+              // --- РАСШИФРОВКА АУДИО ---
               if (fileUrl && msg.nonce && !fileUrl.startsWith('blob:')) {
+                console.log(`[AUDIO] Decrypting: ${msg.id}`);
                 try {
                   const decryptedBlobUrl = await decryptAudioForPlayback(
                     msg.id,
-                    fileUrl,           // ← ИСПОЛЬЗУЕМ msg.fileUrl
-                    msg.nonce,         // ← ИСПОЛЬЗУЕМ msg.nonce
-                    msg.publicKeyId,   // ← из сообщения
+                    fileUrl,
+                    msg.nonce,
+                    msg.publicKeyId,
                     msg.sender.id
                   );
                   fileUrl = decryptedBlobUrl;
-                  console.log(`[LOAD] Audio decrypted: ${msg.id} → ${decryptedBlobUrl}`);
+                  console.log(`[AUDIO] SUCCESS: ${msg.id} → ${decryptedBlobUrl}`);
                 } catch (e) {
-                  console.error('Failed to decrypt audio on load:', msg.id, e);
+                  console.error(`[AUDIO] decryptAudioForPlayback failed:`, e);
                 }
+              } else if (!fileUrl) {
+                console.warn(`[AUDIO] NO fileUrl for ${msg.id} — cannot decrypt`);
               }
 
               return {
@@ -879,27 +905,22 @@ const SecretPrivateChat = () => {
   const fetchFileMetadata = async (messageId, retries = 5, delay = 2000) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        console.log(`Fetching file metadata for messageId=${messageId}, attempt=${attempt}`);
-        const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/file_metadata/${messageId}`, {
-          headers: { 'Content-Type': 'application/json' },
-        });
+        console.log(`[METADATA] Fetching for messageId=${messageId}, attempt=${attempt}`);
+        const response = await fetch(`https://unlimitedpossibilities12.org/api/messages/file_metadata/${messageId}`);
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`Failed to fetch file metadata: ${response.status} - ${errorText}`);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
         const data = await response.json();
-        console.log(`Fetched FileMetadata for messageId=${messageId}:`, data);
+        console.log(`[METADATA] SUCCESS for ${messageId}:`, data);
         if (!data.fileUrl || !data.nonce) {
-          throw new Error('Invalid file metadata: missing fileUrl or nonce');
+          throw new Error(`Invalid metadata: ${JSON.stringify(data)}`);
         }
         return data;
       } catch (error) {
-        console.error(`Error fetching file metadata for messageId=${messageId}, attempt=${attempt}:`, error);
-        if (attempt === retries) {
-          toast.error(`Failed to load file metadata after ${retries} attempts`);
-          throw error;
-        }
-        await new Promise((resolve) => setTimeout(resolve, delay * attempt));
+        console.error(`[METADATA] FAIL attempt ${attempt}:`, error.message);
+        if (attempt === retries) throw error;
+        await new Promise(r => setTimeout(r, delay * attempt));
       }
     }
   };
