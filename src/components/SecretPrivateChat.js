@@ -361,18 +361,6 @@ const SecretPrivateChat = () => {
         );
 
         setMessages(decryptedMessages);
-
-        // ← ДОБАВЛЕНИЕ:
-        setTimeout(() => {
-          decryptedMessages
-            .filter(m => m.messageType === 'audio' && m.fileUrl)
-            .forEach(msg => {
-              if (audioRefs.current[msg.id]) {
-                preloadAudio(msg.id, msg.fileUrl, msg);
-              }
-            });
-        }, 500);
-
         setTimeout(scrollToBottom, 0);
       } catch (error) {
         console.error('Error fetching chat data:', error);
@@ -689,15 +677,22 @@ const SecretPrivateChat = () => {
   }, [isDragging]);
 
   // Предзагрузка аудио
-  useEffect(() => {
-    const audioMessages = messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
-    audioMessages.slice(-10).forEach(async (msg) => {  // async для preloadAudio
+  useLayoutEffect(() => {
+    const audioMessages = messages
+      .filter(msg => msg.messageType === 'audio' && msg.fileUrl)
+      .slice(-10);
+
+    audioMessages.forEach(msg => {
+      const audioEl = audioRefs.current[msg.id];
       if (
-        audioRefs.current[msg.id] &&
+        audioEl &&
         !audioProgress[msg.id]?.isReady &&
         !audioProgress[msg.id]?.isPreloading
       ) {
-        await preloadAudio(msg.id, msg.fileUrl, msg);  // + msg param
+        console.log(`[PRELOAD] Starting for ${msg.id}`);
+        preloadAudio(msg.id, msg.fileUrl, msg).catch(err => {
+          console.error(`Preload failed for ${msg.id}:`, err);
+        });
       }
     });
   }, [messages]);
