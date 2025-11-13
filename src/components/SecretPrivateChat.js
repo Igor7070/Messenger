@@ -264,7 +264,11 @@ const SecretPrivateChat = () => {
 
       try {
         const chatData = await getChatById(chatIdParam);
-        if (!chatData.isSecret) { toast.error('This is not a secret chat'); navigate('/'); return; }
+        if (!chatData.isSecret) {
+          toast.error('This is not a secret chat');
+          navigate('/');
+          return;
+        }
 
         const names = chatData.name.replace('_secret', '').split('_');
         const interlocutorName = names.find((name) => name !== username);
@@ -290,9 +294,10 @@ const SecretPrivateChat = () => {
         const newKeys = await Promise.all(keyPromises);
         setPublicKeys(prev => ({ ...prev, ...Object.fromEntries(newKeys.map(k => [k.senderId, k.publicKey])) }));
 
-        // Расшифровка сообщений
+        // === РАСШИФРОВКА СООБЩЕНИЙ ===
         const decryptedMessages = await Promise.all(
           initialMessages.map(async (msg) => {
+            // === ТЕКСТ ===
             if (msg.messageType === 'text' && msg.encryptedContent && msg.nonce) {
               if (msg.sender.id === userId) {
                 const localContent = getOwnMessageContent(chatIdParam, userId, msg.clientMessageId);
@@ -307,6 +312,7 @@ const SecretPrivateChat = () => {
               }
             }
 
+            // === ФАЙЛЫ — НЕ ТРОГАЕМ ===
             if (msg.messageType === 'file') {
               if (msg.sender.id === userId) {
                 const stored = localStorage.getItem(`fileContent_${chatIdParam}_${userId}_${msg.clientMessageId}`);
@@ -314,7 +320,6 @@ const SecretPrivateChat = () => {
                 return { ...msg, ...fileData, delivered: msg.delivered_status, read: msg.read_status };
               }
 
-              // === ВХОДЯЩИЕ ФАЙЛЫ — без кэша, только имя и тип ===
               try {
                 let fileName = 'Unknown file';
                 let contentType = 'application/octet-stream';
@@ -356,6 +361,70 @@ const SecretPrivateChat = () => {
               }
             }
 
+            // === АУДИО — РАСШИФРОВКА ПРИ ЗАГРУЗКЕ ===
+            if (msg.messageType === 'audio') {
+              let fileName = 'audio.mp3';
+              let contentType = 'audio/mpeg';
+              let fileUrl = msg.fileUrl || msg.file_url;
+
+              // --- МЕТАДАННЫЕ (имя, тип) ---
+              if (msg.encryptedContent && msg.nonce) {
+                try {
+                  let publicKey = publicKeys[msg.sender.id];
+                  if (!publicKey || msg.publicKeyId) {
+                    publicKey = await getPublicKey(msg.sender.id, msg.publicKeyId);
+                    setPublicKeys(p => ({ ...p, [msg.sender.id]: publicKey }));
+                  }
+
+                  const decryptedMeta = await decryptMessage(
+                    msg.encryptedContent,
+                    msg.nonce,
+                    msg.sender.id,
+                    msg.timestamp,
+                    publicKey
+                  );
+                  const meta = JSON.parse(decryptedMeta);
+                  fileName = meta.fileName || 'audio.mp3';
+                  contentType = 'audio/mpeg';
+                } catch (e) {
+                  console.error('Audio metadata decryption failed:', e);
+                  fileName = 'decryption_failed.mp3';
+                }
+              }
+
+              // --- РАСШИФРОВКА АУДИО ФАЙЛА ПРИ ЗАГРУЗКЕ ---
+              if (fileUrl && msg.nonce && !fileUrl.startsWith('blob:')) {
+                try {
+                  const fileMetadata = await fetchFileMetadata(msg.id);
+                  if (fileMetadata.fileUrl && fileMetadata.nonce) {
+                    const decryptedBlobUrl = await decryptAudioForPlayback(
+                      msg.id,
+                      fileMetadata.fileUrl,
+                      fileMetadata.nonce,
+                      fileMetadata.publicKeyId || msg.publicKeyId,
+                      msg.sender.id
+                    );
+                    fileUrl = decryptedBlobUrl;
+                    console.log(`[LOAD] Audio decrypted: ${msg.id} → ${decryptedBlobUrl}`);
+                  }
+                } catch (e) {
+                  console.error('Failed to decrypt audio on load:', msg.id, e);
+                }
+              }
+
+              return {
+                ...msg,
+                fileName,
+                contentType,
+                fileUrl,
+                file_url: fileUrl,
+                delivered: msg.delivered_status,
+                read: msg.read_status,
+                _audioReady: fileUrl?.startsWith('blob:')
+              };
+            }
+
+            // === ДРУГИЕ ТИПЫ ===
             return { ...msg, delivered: msg.delivered_status, read: msg.read_status };
           })
         );
