@@ -361,6 +361,18 @@ const SecretPrivateChat = () => {
         );
 
         setMessages(decryptedMessages);
+
+        // ← ДОБАВЛЕНИЕ:
+        setTimeout(() => {
+          decryptedMessages
+            .filter(m => m.messageType === 'audio' && m.fileUrl)
+            .forEach(msg => {
+              if (audioRefs.current[msg.id]) {
+                preloadAudio(msg.id, msg.fileUrl, msg);
+              }
+            });
+        }, 500);
+
         setTimeout(scrollToBottom, 0);
       } catch (error) {
         console.error('Error fetching chat data:', error);
