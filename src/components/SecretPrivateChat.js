@@ -154,6 +154,7 @@ const SecretPrivateChat = () => {
   const textAreaRef = useRef(null);
   const ffmpeg = useRef(new FFmpeg());
   const audioBlobRef = useRef(null);  // ← Добавление в начало компонента
+  const messagesRef = useRef([]);
   const { chatId: chatIdParam } = useParams();
   const navigate = useNavigate();
   const { userInteracted, handleInteraction } = useUserInteraction();
@@ -816,6 +817,10 @@ const SecretPrivateChat = () => {
       document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [contextMenu.visible]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   const scrollToBottom = () => {
     if (messagesEndRef.current && messageListRef.current) {
