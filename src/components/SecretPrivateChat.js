@@ -1502,12 +1502,13 @@ const SecretPrivateChat = () => {
           ? {
               ...msg,
               id: savedMessage.id,
-              fileUrl: serverFileUrl,
-              file_url: serverFileUrl,
+              fileUrl: tempFileUrl,           // ← ОСТАЁТСЯ blob: (mp3)
+              file_url: serverFileUrl,        // ← HTTPS — только для сервера
               clientMessageId: undefined,
               delivered: savedMessage.delivered_status ?? false,
               read: savedMessage.read_status ?? false,
               timestamp: savedMessage.timestamp,
+              _isOwnAudio: true               // ← метка
             }
           : msg
       ));
