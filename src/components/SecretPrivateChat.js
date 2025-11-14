@@ -1953,16 +1953,7 @@ const SecretPrivateChat = () => {
   const handleAudioEnded = (msgId) => {
     console.log(`Audio ended for msg ${msgId}`);
     const audio = audioRefs.current[msgId];
-    // Cleanup decrypted blob
-    if (decryptedAudioBlobs[msgId]) {
-      URL.revokeObjectURL(decryptedAudioBlobs[msgId].blobUrl);
-      setDecryptedAudioBlobs(prev => {
-        const newState = { ...prev };
-        delete newState[msgId];
-        return newState;
-      });
-      console.log(`Cleaned up decrypted blob for ${msgId}`);
-    }
+
     setAudioProgress((prev) => ({
       ...prev,
       [msgId]: {
@@ -1970,14 +1961,13 @@ const SecretPrivateChat = () => {
         currentTime: 0,
         isPlaying: false,
         isReady: audio?.readyState >= 2,
-        decrypted: false,  // Allow re-decrypt if needed
         error: null,
       },
     }));
+
     if (audio) {
       audio.currentTime = 0;
-      audio.load();
-      console.log(`Audio reloaded for msg ${msgId} to maintain playability`);
+      console.log(`Audio reset to start for msg ${msgId}`);
     }
   };
 
