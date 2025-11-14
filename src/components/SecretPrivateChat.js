@@ -857,18 +857,13 @@ const SecretPrivateChat = () => {
         const oldMsg = prev[existingIdx];
         const oldFileUrl = oldMsg.fileUrl;
 
-        // ← ДЛЯ СВОИХ СООБЩЕНИЙ: заменяем blob: на server URL
+        // ← НЕ ПЕРЕЗАПИСЫВАЕМ fileUrl, ЕСЛИ ЭТО НАШЕ СООБЩЕНИЕ И УЖЕ blob:
         if (newMessage.sender.id === userId && oldFileUrl?.startsWith('blob:')) {
-          const updated = [...prev];
-          updated[existingIdx] = {
-            ...updated[existingIdx],
-            ...newMessage,
-            fileUrl: newMessage.fileUrl || newMessage.file_url,
-            file_url: newMessage.file_url || newMessage.fileUrl,
-          };
-          URL.revokeObjectURL(oldFileUrl);
-          console.log(`Replaced temp blob with server URL for ${newMessage.id}`);
-          return updated;
+          return prev.map((m, i) =>
+            i === existingIdx
+              ? { ...m, delivered: newMessage.delivered_status, read: newMessage.read_status }
+              : m
+          );
         }
 
         const updated = [...prev];
@@ -888,14 +883,10 @@ const SecretPrivateChat = () => {
           const oldFileUrl = tempMsg.fileUrl;
           const updated = [...prev];
           updated[tempIdx] = { 
-            ...tempMsg,
-            ...newMessage,
-            id: newMessage.id,
-            clientMessageId: undefined,
-            fileUrl: newMessage.fileUrl || newMessage.file_url,
-            file_url: newMessage.file_url || newMessage.fileUrl,
-            delivered: newMessage.delivered_status ?? false,
-            read: newMessage.read_status ?? false,
+            ...tempMsg,  // Carry nonce/encryptedContent from temp
+            ...newMessage, 
+            delivered: false, 
+            read: false 
           };
           if (oldFileUrl?.startsWith('blob:')) {
             URL.revokeObjectURL(oldFileUrl);
@@ -909,7 +900,7 @@ const SecretPrivateChat = () => {
       return [...prev, { ...newMessage, delivered: false, read: false }];
     });
 
-    // Trigger preload for audio
+    // Trigger preload for audio after any update
     if (newMessage.messageType === 'audio' && audioRefs.current[newMessage.id]) {
       const fullMsg = { ...newMessage, sender: { id: newMessage.sender?.id || userId } };
       setTimeout(() => preloadAudio(newMessage.id, newMessage.fileUrl || newMessage.file_url, fullMsg), 100);
@@ -2006,32 +1997,26 @@ const SecretPrivateChat = () => {
       console.log(`Preload skipped for ${msgId}: already ready/decrypted`);
       return;
     }
-    if (audioProgress[msgId]?.isPreloading) return;
+    if (audioProgress[msgId]?.isPreloading) return;  // Avoid duplicate
 
     setAudioProgress(prev => ({ ...prev, [msgId]: { ...prev[msgId], isPreloading: true } }));
 
-    // ← ЗАЩИТА ОТ NULL
-    if (!url || typeof url !== 'string') {
-      console.warn(`Invalid URL for preload: ${url}`);
-      setAudioProgress(prev => ({ ...prev, [msgId]: { ...prev[msgId], isPreloading: false, error: 'No file URL' } }));
-      return;
-    }
-
     let playableUrl = url;
 
-    if (!msg.sender) msg.sender = { id: userId };
+    // Ensure msg has sender for own/incoming logic
+    if (!msg.sender) msg.sender = { id: userId };  // Fallback for WS
 
-    // Если зашифровано — расшифровываем
-    if (msg.nonce && !url.startsWith('blob:')) {
+    // Если зашифровано (nonce есть) — decrypt в blob
+    if (msg.nonce && (url.includes('encrypted') || !url.startsWith('blob:'))) {
       try {
         playableUrl = await decryptAudioForPlayback(msgId, url, msg.nonce, msg.publicKeyId || null, msg.sender.id);
       } catch (e) {
-        setAudioProgress(prev => ({ ...prev, [msgId]: { ...prev[msgId], isPreloading: false, error: 'Decrypt failed' } }));
+        setAudioProgress(prev => ({ ...prev, [msgId]: { ...prev[msgId], isPreloading: false, error: 'Decrypt failed during preload' } }));
         return;
       }
     }
 
-    // Для своих temp blob — используем как есть
+    // Если temp blob у отправителя — используем как есть (уже decrypted)
     if (url.startsWith('blob:') && msg.sender.id === userId) {
       console.log(`Using temp blob for own audio ${msgId}`);
     }
@@ -2043,8 +2028,8 @@ const SecretPrivateChat = () => {
           ...prev[msgId],
           isPreloading: false,
           isReady: true,
-          decrypted: true,
-          error: audio.duration === Infinity ? 'Duration unavailable' : null,
+          decrypted: true,  // Mark as processed
+          error: audio.duration === Infinity ? 'Duration unavailable: file issue' : null,
         },
       }));
       return;
@@ -2320,37 +2305,34 @@ const SecretPrivateChat = () => {
       if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
       const encryptedBytes = new Uint8Array(await res.arrayBuffer());
 
-      let publicKey;
-      let decryptRecipientId;
-
+      // Получить publicKey (sender для incoming, recipient для own)
+      let publicKey, recipientIdForOwn;
       if (senderId === userId) {
-        // СВОЁ СООБЩЕНИЕ → шифровали на ключ ПОЛУЧАТЕЛЯ
-        const recipientName = chatName.split('_').find(name => name !== username);
+        // Own audio: recipient key (from chat)
+        const recipientName = chatName.split('_').find((name) => name !== username);
         const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
         const recipient = await recipientResponse.json();
-        decryptRecipientId = recipient.id;
-        publicKey = publicKeys[decryptRecipientId] || await getPublicKey(decryptRecipientId, publicKeyId);
+        recipientIdForOwn = recipient.id;
+        publicKey = publicKeys[recipientIdForOwn] || await getPublicKey(recipientIdForOwn, publicKeyId);
       } else {
-        // ЧУЖОЕ СООБЩЕНИЕ → шифровали на наш ключ, используем ключ ОТПРАВИТЕЛЯ
+        // Incoming: sender key
         publicKey = publicKeys[senderId] || await getPublicKey(senderId, publicKeyId);
-        decryptRecipientId = userId;
       }
-
-      setPublicKeys(prev => ({ ...prev, [decryptRecipientId]: publicKey }));
+      setPublicKeys(prev => ({ ...prev, [senderId || recipientIdForOwn]: publicKey }));
 
       const decryptedBytes = await decryptFileContent(
         encryptedBytes,
         nonce,
-        senderId,
+        senderId || userId,  // senderId для incoming, userId для own
         publicKeyId,
         publicKeys,
         keyPair,
-        decryptRecipientId  // ← ВАЖНО: для своих — recipientId
+        senderId || recipientIdForOwn  // recipient для own
       );
-
       const mp3Blob = new Blob([decryptedBytes], { type: 'audio/mpeg' });
       const blobUrl = URL.createObjectURL(mp3Blob);
 
+      // Сохранить для reuse
       setDecryptedAudioBlobs(prev => ({ ...prev, [msgId]: { blobUrl, mp3Blob } }));
       console.log(`Decrypted audio blob created: size=${mp3Blob.size}, url=${blobUrl}`);
       return blobUrl;
