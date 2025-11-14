@@ -310,25 +310,37 @@ const SecretPrivateChat = () => {
               }
             }
 
-            // === ФАЙЛЫ — НЕ ТРОГАЕМ ===
+            // === ФАЙЛЫ ===
             if (msg.messageType === 'file') {
+              let fileName = 'Unknown file';
+              let contentType = 'application/octet-stream';
+              let fileUrl = msg.fileUrl || msg.file_url;
+
+              // Свои файлы — из localStorage
               if (msg.sender.id === userId) {
-                const stored = localStorage.getItem(`fileContent_${chatIdParam}_${userId}_${msg.clientMessageId}`);
-                const fileData = stored ? JSON.parse(stored) : {};
-                return { ...msg, ...fileData, delivered: msg.delivered_status, read: msg.read_status };
+                const key = `fileContent_${chatIdParam}_${userId}_${msg.clientMessageId}`;
+                const stored = localStorage.getItem(key);
+                if (stored) {
+                  const fileData = JSON.parse(stored);
+                  return { ...msg, ...fileData, delivered: msg.delivered_status, read: msg.read_status };
+                }
+                // Попытка по server id
+                const key2 = `fileContent_${chatIdParam}_${userId}_${msg.id}`;
+                const stored2 = localStorage.getItem(key2);
+                if (stored2) {
+                  const fileData = JSON.parse(stored2);
+                  return { ...msg, ...fileData, delivered: msg.delivered_status, read: msg.read_status };
+                }
               }
 
-              try {
-                let fileName = 'Unknown file';
-                let contentType = 'application/octet-stream';
-
-                if (msg.encryptedContent && msg.nonce) {
+              // Расшифровка метаданных
+              if (msg.encryptedContent && msg.nonce) {
+                try {
                   let publicKey = publicKeys[msg.sender.id];
                   if (!publicKey || msg.publicKeyId) {
                     publicKey = await getPublicKey(msg.sender.id, msg.publicKeyId);
                     setPublicKeys(p => ({ ...p, [msg.sender.id]: publicKey }));
                   }
-
                   const decryptedMeta = await decryptMessage(
                     msg.encryptedContent,
                     msg.nonce,
@@ -339,24 +351,32 @@ const SecretPrivateChat = () => {
                   const meta = JSON.parse(decryptedMeta);
                   fileName = meta.fileName;
                   contentType = meta.contentType || meta.mimeType || 'application/octet-stream';
+                } catch (e) {
+                  console.error('File metadata decrypt failed:', e);
+                  fileName = 'Decryption failed';
                 }
-
-                return {
-                  ...msg,
-                  fileName,
-                  contentType,
-                  delivered: msg.delivered_status,
-                  read: msg.read_status
-                };
-              } catch (e) {
-                console.error('File metadata decryption failed on load:', e);
-                return {
-                  ...msg,
-                  fileName: 'Decryption failed',
-                  delivered: msg.delivered_status,
-                  read: msg.read_status
-                };
               }
+
+              // ПОЛУЧИТЬ fileUrl, если нет
+              if (!fileUrl && msg.id) {
+                try {
+                  console.log(`[FILE] History load: fetching metadata for ${msg.id}`);
+                  const metadata = await fetchFileMetadata(msg.id);
+                  fileUrl = metadata.fileUrl;
+                  console.log(`[FILE] Got fileUrl: ${fileUrl}`);
+                } catch (e) {
+                  console.error(`[FILE] Failed to fetch metadata for ${msg.id}:`, e);
+                }
+              }
+
+              return {
+                ...msg,
+                fileName,
+                contentType,
+                fileUrl,
+                delivered: msg.delivered_status,
+                read: msg.read_status
+              };
             }
 
             // === АУДИО — РАСШИФРОВКА ПРИ ЗАГРУЗКЕ (БЕЗ fetchFileMetadata) ===
