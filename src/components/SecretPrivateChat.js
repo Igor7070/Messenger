@@ -909,10 +909,25 @@ const SecretPrivateChat = () => {
       return [...prev, { ...newMessage, delivered: false, read: false }];
     });
 
-    // Trigger preload for audio
+    // Trigger preload for audio — ТОЛЬКО если URL уже есть
     if (newMessage.messageType === 'audio' && audioRefs.current[newMessage.id]) {
-      const fullMsg = { ...newMessage, sender: { id: newMessage.sender?.id || userId } };
-      setTimeout(() => preloadAudio(newMessage.id, newMessage.fileUrl || newMessage.file_url, fullMsg), 100);
+      setTimeout(() => {
+        // Ждём обновления messages
+        const currentMsg = messages.find(m => m.id === newMessage.id);
+        if (!currentMsg) {
+          console.warn(`Message ${newMessage.id} not yet in state, skipping preload`);
+          return;
+        }
+
+        const url = currentMsg.fileUrl || currentMsg.file_url;
+        if (!url) {
+          console.warn(`No file URL yet for msg ${newMessage.id}, will preload later`);
+          return;
+        }
+
+        const fullMsg = { ...currentMsg, sender: { id: currentMsg.sender?.id || userId } };
+        preloadAudio(newMessage.id, url, fullMsg);
+      }, 100);
     }
   };
 
