@@ -155,6 +155,7 @@ const SecretPrivateChat = () => {
   const ffmpeg = useRef(new FFmpeg());
   const audioBlobRef = useRef(null);  // ← Добавление в начало компонента
   const messagesRef = useRef([]);
+  const processedMessagesRef = useRef(new Set());
   const { chatId: chatIdParam } = useParams();
   const navigate = useNavigate();
   const { userInteracted, handleInteraction } = useUserInteraction();
@@ -511,11 +512,12 @@ const SecretPrivateChat = () => {
           const newMessage = JSON.parse(message.body);
           console.log('NewMessage:', newMessage);
 
-          // Skip if already processed (avoid multiples)
-          if (processedMessages.has(newMessage.id)) {
+          // ← НОВОЕ: Немедленная блокировка дублей через ref
+          if (processedMessagesRef.current.has(newMessage.id)) {
             console.log(`Skipped duplicate NewMessage for id=${newMessage.id}`);
             return;
           }
+          processedMessagesRef.current.add(newMessage.id);
           setProcessedMessages(prev => new Set([...prev, newMessage.id]));
 
           // ← ОБРАБАТЫВАЕМ УДАЛЕНИЕ
@@ -535,9 +537,15 @@ const SecretPrivateChat = () => {
             // Trigger preload if audio (after status update)
             if (newMessage.messageType === 'audio' && audioRefs.current[newMessage.id]) {
               setTimeout(() => {
-                const updatedMsg = { ...newMessage, sender: { id: userId } };  // Ensure sender
-                preloadAudio(newMessage.id, newMessage.fileUrl, updatedMsg);
-              }, 100);
+                const currentMsg = messagesRef.current.find(m => m.id === newMessage.id);
+                if (currentMsg && currentMsg.fileUrl) {
+                  console.log(`[preload own] Starting for ${newMessage.id} with URL: ${currentMsg.fileUrl}`);
+                  const updatedMsg = { ...currentMsg, sender: { id: userId } };
+                  preloadAudio(newMessage.id, currentMsg.fileUrl, updatedMsg);
+                } else {
+                  console.log(`[preload own] Skipping ${newMessage.id}: no fileUrl yet`);
+                }
+              }, 200);  // Увеличили таймаут
             }
             return;
           }
@@ -2021,6 +2029,7 @@ const SecretPrivateChat = () => {
   };
 
   const preloadAudio = async (msgId, url, msg) => {  // Добавлен msg param
+    console.log(`[preloadAudio] Called for ${msgId} with url: ${url ? 'present' : 'null'}`);
     const audio = audioRefs.current[msgId];
     if (!audio || audioProgress[msgId]?.isReady || audioProgress[msgId]?.decrypted) {
       console.log(`Preload skipped for ${msgId}: already ready/decrypted`);
