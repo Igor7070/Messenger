@@ -1781,4 +1781,20 @@
         gap: 8px;
         margin-bottom: 8px !important;  /* ← ФИКС: Нижний отступ для симметрии с верхом/боками */
   }
+
+  /* ДОБАВЛЕНО: Мобильные стили для аудио (аналог secret-chat) */
+  .private-message.private-audio-message .private-message-content-container {
+        width: 260px !important;
+        min-width: 260px !important;
+        max-width: 260px !important;
+        padding: 8px 4px 4px 4px !important;  /* Верхний отступ 8px, остальные 4px */
+  }
+
+  .private-message.private-current-user.private-audio-message .private-message-content-container {
+      margin-right: 10px !important;  /* Отступ справа для выравнивания по краю */
+  }
+
+  .private-message.private-other-user.private-audio-message .private-message-content-container {
+      margin-left: 0 !important;
+  }
 }
