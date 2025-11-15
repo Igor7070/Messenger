@@ -1647,6 +1647,7 @@
         padding: 8px !important;
         border-radius: 8px !important;
         box-shadow: none !important;
+        margin-bottom: 8px !important;  /* ← ФИКС: Нижний отступ для симметрии с верхом/боками */
     }
 
     .input-message {
