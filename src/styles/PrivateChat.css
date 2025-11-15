@@ -1779,5 +1779,6 @@
         border-radius: 8px !important;
         box-shadow: none !important;
         gap: 8px;
+        margin-bottom: 8px !important;  /* ← ФИКС: Нижний отступ для симметрии с верхом/боками */
   }
 }
