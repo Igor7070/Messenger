@@ -1319,6 +1319,50 @@ const SecretPrivateChat = () => {
             fileData: base64File,
           });
 
+          // ← ФИКС: ЗАМЕНА TEMP В UI (сразу после upload)
+          setMessages((prev) => prev.map((msg) =>
+            msg.id === clientMessageId
+              ? {
+                  ...msg,
+                  id: savedMessage.id,
+                  fileUrl: serverFileUrl,
+                  file_url: serverFileUrl,
+                  clientMessageId: undefined,
+                  delivered: savedMessage.delivered_status ?? false,
+                  read: savedMessage.read_status ?? false,
+                  timestamp: savedMessage.timestamp || timestamp,
+                }
+              : msg
+          ));
+
+          // ← ФИКС: WS PUBLISH ДЛЯ FILE (с реальными статусами)
+          if (client && client.connected) {
+            const wsPayload = {
+              ...messageData,
+              id: savedMessage.id,
+              content: undefined,
+              clientMessageId: undefined,
+              fileUrl: serverFileUrl,
+              file_url: serverFileUrl,
+              fileName: selectedFile.name,
+              contentType: selectedFile.type,
+              encryptedContent,
+              nonce,
+              delivered: savedMessage.delivered_status ?? false,  // Из сервера
+              read: savedMessage.read_status ?? false,
+              timestamp: savedMessage.timestamp || timestamp,
+            };
+
+            console.log('SENDING FILE VIA WS:', wsPayload);
+            client.publish({
+              destination: `/app/sendMessage/chat/${chatId}`,
+              body: JSON.stringify(wsPayload),
+            });
+          }
+
+          // ← ОЧИСТКА TEMP BLOB
+          URL.revokeObjectURL(tempFileUrl);
+
         // === АУДИО СООБЩЕНИЕ ===
         } else if (audioBlob) {
           const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
