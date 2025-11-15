@@ -1791,7 +1791,7 @@
   }
 
   .private-message.private-current-user.private-audio-message .private-message-content-container {
-      margin-right: 10px !important;  /* Отступ справа для выравнивания по краю */
+      margin-right: 0px !important;  /* Отступ справа для выравнивания по краю */
   }
 
   .private-message.private-other-user.private-audio-message .private-message-content-container {
