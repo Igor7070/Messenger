@@ -531,12 +531,16 @@ const SecretPrivateChat = () => {
                 ? { ...m, delivered: newMessage.delivered_status ?? m.delivered, read: newMessage.read_status ?? m.read }
                 : m
             ));
-            // Trigger preload if audio (after status update)
+            // Trigger preload if audio (use current state fileUrl to avoid null)
             if (newMessage.messageType === 'audio' && audioRefs.current[newMessage.id]) {
-              setTimeout(() => {
-                const updatedMsg = { ...newMessage, sender: { id: userId } };  // Ensure sender
-                preloadAudio(newMessage.id, newMessage.fileUrl, updatedMsg);
-              }, 100);
+              const currentMsg = messages.find(m => m.id === newMessage.id);
+              if (currentMsg && currentMsg.fileUrl) {
+                setTimeout(() => {
+                  preloadAudio(newMessage.id, currentMsg.fileUrl, currentMsg);
+                }, 100);
+              } else {
+                console.warn(`No fileUrl in state for own audio ${newMessage.id}`);
+              }
             }
             return;
           }
