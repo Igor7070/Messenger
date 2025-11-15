@@ -154,8 +154,6 @@ const SecretPrivateChat = () => {
   const textAreaRef = useRef(null);
   const ffmpeg = useRef(new FFmpeg());
   const audioBlobRef = useRef(null);  // ← Добавление в начало компонента
-  const messagesRef = useRef([]);
-  const processedMessagesRef = useRef(new Set());
   const { chatId: chatIdParam } = useParams();
   const navigate = useNavigate();
   const { userInteracted, handleInteraction } = useUserInteraction();
@@ -512,12 +510,11 @@ const SecretPrivateChat = () => {
           const newMessage = JSON.parse(message.body);
           console.log('NewMessage:', newMessage);
 
-          // ← НОВОЕ: Немедленная блокировка дублей через ref
-          if (processedMessagesRef.current.has(newMessage.id)) {
+          // Skip if already processed (avoid multiples)
+          if (processedMessages.has(newMessage.id)) {
             console.log(`Skipped duplicate NewMessage for id=${newMessage.id}`);
             return;
           }
-          processedMessagesRef.current.add(newMessage.id);
           setProcessedMessages(prev => new Set([...prev, newMessage.id]));
 
           // ← ОБРАБАТЫВАЕМ УДАЛЕНИЕ
@@ -537,15 +534,9 @@ const SecretPrivateChat = () => {
             // Trigger preload if audio (after status update)
             if (newMessage.messageType === 'audio' && audioRefs.current[newMessage.id]) {
               setTimeout(() => {
-                const currentMsg = messagesRef.current.find(m => m.id === newMessage.id);
-                if (currentMsg && currentMsg.fileUrl) {
-                  console.log(`[preload own] Starting for ${newMessage.id} with URL: ${currentMsg.fileUrl}`);
-                  const updatedMsg = { ...currentMsg, sender: { id: userId } };
-                  preloadAudio(newMessage.id, currentMsg.fileUrl, updatedMsg);
-                } else {
-                  console.log(`[preload own] Skipping ${newMessage.id}: no fileUrl yet`);
-                }
-              }, 200);  // Увеличили таймаут
+                const updatedMsg = { ...newMessage, sender: { id: userId } };  // Ensure sender
+                preloadAudio(newMessage.id, newMessage.fileUrl, updatedMsg);
+              }, 100);
             }
             return;
           }
@@ -826,10 +817,6 @@ const SecretPrivateChat = () => {
     };
   }, [contextMenu.visible]);
 
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
-
   const scrollToBottom = () => {
     if (messagesEndRef.current && messageListRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -922,25 +909,10 @@ const SecretPrivateChat = () => {
       return [...prev, { ...newMessage, delivered: false, read: false }];
     });
 
-    // ──────── ПРЕДЗАГРУЗКА АУДИО (С useRef) ────────
+    // Trigger preload for audio
     if (newMessage.messageType === 'audio' && audioRefs.current[newMessage.id]) {
-      setTimeout(() => {
-        // ← ИСПОЛЬЗУЕМ АКТУАЛЬНОЕ СОСТОЯНИЕ ИЗ РЕФА
-        const currentMsg = messagesRef.current.find(m => m.id === newMessage.id);
-        if (!currentMsg) {
-          console.warn(`[preload] Message ${newMessage.id} not in state yet`);
-          return;
-        }
-
-        const url = currentMsg.fileUrl || currentMsg.file_url;
-        if (!url) {
-          console.warn(`[preload] No file URL for ${newMessage.id}`);
-          return;
-        }
-
-        const fullMsg = { ...currentMsg, sender: { id: currentMsg.sender?.id || userId } };
-        preloadAudio(newMessage.id, url, fullMsg);
-      }, 150);
+      const fullMsg = { ...newMessage, sender: { id: newMessage.sender?.id || userId } };
+      setTimeout(() => preloadAudio(newMessage.id, newMessage.fileUrl || newMessage.file_url, fullMsg), 100);
     }
   };
 
@@ -2029,7 +2001,6 @@ const SecretPrivateChat = () => {
   };
 
   const preloadAudio = async (msgId, url, msg) => {  // Добавлен msg param
-    console.log(`[preloadAudio] Called for ${msgId} with url: ${url ? 'present' : 'null'}`);
     const audio = audioRefs.current[msgId];
     if (!audio || audioProgress[msgId]?.isReady || audioProgress[msgId]?.decrypted) {
       console.log(`Preload skipped for ${msgId}: already ready/decrypted`);
