@@ -2418,7 +2418,6 @@ const SecretPrivateChat = () => {
         <span className="secret-chat-indicator">🔒</span>
         {displayChatName}
       </div>
-
       <div className="secret-message-list" ref={messageListRef}>
         {messages.map((msg, index) => (
           <div
@@ -2462,7 +2461,6 @@ const SecretPrivateChat = () => {
                   )}
                 </div>
               )}
-
               <div
                 className={`secret-message-content-container ${
                   shouldShowAvatar(msg, index) ? '' : 'no-avatar'
@@ -2477,39 +2475,24 @@ const SecretPrivateChat = () => {
                             ref={(el) => {
                               if (el && audioRefs.current[msg.id] !== el) {
                                 audioRefs.current[msg.id] = el;
-                                console.log(
-                                  `Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`
-                                );
+                                console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
                               }
                             }}
-                            src={decryptedAudioBlobs[msg.id]?.blobUrl || msg.fileUrl}
-                            onTimeUpdate={() =>
-                              handleTimeUpdate(msg.id, audioRefs.current[msg.id])
-                            }
-                            onLoadedMetadata={() =>
-                              handleLoadedMetadata(msg.id, audioRefs.current[msg.id])
-                            }
+                            src={decryptedAudioBlobs[msg.id]?.blobUrl || msg.fileUrl} // Fallback: decrypted или original (encrypted/temp)
+                            onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
+                            onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
                             onCanPlay={() => handleCanPlay(msg.id)}
                             onError={async (e) => {
                               const audio = audioRefs.current[msg.id];
-                              if (!decryptedAudioBlobs[msg.id] && msg.nonce && msg.fileUrl) {
+                              if (!decryptedAudioBlobs[msg.id] && msg.nonce && msg.fileUrl) { // Retry decrypt on error, if encrypted
                                 console.log(`Audio error ${msg.id}: retrying decrypt`);
                                 try {
-                                  const newUrl = await decryptAudioForPlayback(
-                                    msg.id,
-                                    msg.fileUrl,
-                                    msg.nonce,
-                                    msg.publicKeyId || null,
-                                    msg.sender.id
-                                  );
+                                  const newUrl = await decryptAudioForPlayback(msg.id, msg.fileUrl, msg.nonce, msg.publicKeyId || null, msg.sender.id);
                                   audio.src = newUrl;
                                   audio.load();
-                                  setAudioProgress((prev) => ({
-                                    ...prev,
-                                    [msg.id]: { ...prev[msg.id], error: null },
-                                  }));
+                                  setAudioProgress(prev => ({ ...prev, [msg.id]: { ...prev[msg.id], error: null } }));
                                 } catch (retryErr) {
-                                  console.error('Decrypt retry on error failed:', retryErr);
+                                  console.error(`Decrypt retry on error failed:`, retryErr);
                                   handleAudioError(msg.id, e);
                                 }
                               } else {
@@ -2520,24 +2503,20 @@ const SecretPrivateChat = () => {
                             className="secret-audio-player"
                             preload="auto"
                           >
-                            <source
-                              src={decryptedAudioBlobs[msg.id]?.blobUrl || msg.fileUrl}
-                              type={msg.fileUrl?.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'}
-                            />
+                            <source src={decryptedAudioBlobs[msg.id]?.blobUrl || msg.fileUrl} type={msg.fileUrl?.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'} />
                             Your browser does not support the audio element.
                           </audio>
-
                           {audioProgress[msg.id]?.error ? (
-                            <span className="secret-audio-error">
-                              {audioProgress[msg.id].error}
-                            </span>
+                            <span className="secret-audio-error">{audioProgress[msg.id].error}</span>
                           ) : (
                             <div className="secret-audio-controls">
                               <button
                                 className="secret-audio-play-pause"
                                 onClick={() => {
                                   const audio = audioRefs.current[msg.id];
-                                  if (!audio || !audioProgress[msg.id]?.isReady) return;
+                                  if (!audio || !audioProgress[msg.id]?.isReady) {
+                                    return;
+                                  }
                                   if (audio.paused) {
                                     audio.play().catch((e) => handleAudioError(msg.id, e));
                                   } else {
@@ -2547,36 +2526,26 @@ const SecretPrivateChat = () => {
                                     ...prev,
                                     [msg.id]: {
                                       ...prev[msg.id],
-                                      isPlaying: !audio.paused,
+                                      isPlaying: audio.paused ? false : true,
                                     },
                                   }));
                                 }}
                                 disabled={!audioProgress[msg.id]?.isReady}
                               >
-                                {audioProgress[msg.id]?.isPlaying ? 'Pause' : 'Play'}
+                                {audioProgress[msg.id]?.isPlaying ? '⏸' : '▶'}
                               </button>
-
                               <div
                                 className="secret-audio-progress-bar"
                                 onClick={(e) => handleSeek(msg.id, e)}
                                 onMouseDown={(e) => handleDragStart(msg.id, e)}
-                                style={{
-                                  cursor:
-                                    audioProgress[msg.id]?.duration === 0
-                                      ? 'not-allowed'
-                                      : 'pointer',
-                                }}
+                                style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
                               >
                                 <div
                                   className="secret-audio-progress"
                                   style={{
                                     width: `${
-                                      audioProgress[msg.id]?.duration &&
-                                      audioProgress[msg.id]?.isReady &&
-                                      audioProgress[msg.id]?.duration !== 0
-                                        ? (audioProgress[msg.id].currentTime /
-                                            audioProgress[msg.id].duration) *
-                                          100
+                                      audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
+                                        ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
                                         : 0
                                     }%`,
                                   }}
@@ -2584,7 +2553,6 @@ const SecretPrivateChat = () => {
                                   <div className="secret-audio-progress-thumb"></div>
                                 </div>
                               </div>
-
                               <span className="secret-audio-time">
                                 {formatAudioTime(audioProgress[msg.id]?.currentTime || 0)} /{' '}
                                 {formatAudioTime(audioProgress[msg.id]?.duration || 0)}
@@ -2595,8 +2563,9 @@ const SecretPrivateChat = () => {
                       </div>
                     ) : (
                       <>
-                        <span className="secret-message-content">{msg.content}</span>
-
+                        <span className="secret-message-content">
+                          {msg.content}
+                        </span>
                         {msg.messageType === 'file' && msg.fileUrl && (
                           <a
                             href="#"
@@ -2604,7 +2573,7 @@ const SecretPrivateChat = () => {
                             onClick={async (e) => {
                               e.preventDefault();
                               if (msg.sender.id === userId) {
-                                await downloadOwnFile(msg);
+                                await downloadOwnFile(msg); // [CHANGE] Используем новую функцию
                               } else {
                                 await downloadFile(msg);
                               }
@@ -2615,29 +2584,23 @@ const SecretPrivateChat = () => {
                         )}
                       </>
                     )}
-
                     <div className="secret-message-status">
                       {msg.sender.id === userId && (
                         <>
-                          {msg.delivered && <span className="secret-delivery-indicator">Check</span>}
-                          {msg.read && <span className="secret-read-indicator">Check</span>}
+                          {msg.delivered && <span className="secret-delivery-indicator">✔️</span>}
+                          {msg.read && <span className="secret-read-indicator">✔️</span>}
                         </>
                       )}
                     </div>
-
-                    <div className="secret-message-timestamp">
-                      {formatTimestamp(msg.timestamp)}
-                    </div>
+                    <div className="secret-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         ))}
-
         <div ref={messagesEndRef} />
       </div>
-
       <div className="secret-input-container">
         <div className="secret-textarea-wrapper">
           <div className="secret-textarea-inner">
@@ -2647,20 +2610,10 @@ const SecretPrivateChat = () => {
               role="button"
               aria-label="Attach File"
             >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 015 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 005 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"
-                  fill="#757575"
-                />
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 015 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 005 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z" fill="#757575"/>
               </svg>
             </span>
-
             <textarea
               ref={textAreaRef}
               value={content}
@@ -2670,74 +2623,40 @@ const SecretPrivateChat = () => {
               className="secret-input-message"
               rows={rows}
             />
-
             <input
               type="file"
-              onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+              onChange={(e) => setSelectedFile(e.target.files[0])}
               className="secret-file-input"
               ref={fileInputRef}
               id="secret-file-input"
             />
-
             {content.length === 0 && micIconState !== 'sending' && !selectedFile && (
               <div className="secret-mic-icon-container">
                 <span
                   onClick={isRecording ? stopRecording : startRecording}
                   className={`secret-mic-icon ${micIconState} ${!userId ? 'disabled' : ''}`}
                   role="button"
-                  aria-label={
-                    micIconState === 'mic'
-                      ? 'Start Recording'
-                      : micIconState === 'recording'
-                      ? 'Stop Recording'
-                      : 'Sending Audio'
-                  }
+                  aria-label={micIconState === 'mic' ? 'Start Recording' : micIconState === 'recording' ? 'Stop Recording' : 'Sending Audio'}
                 >
                   {micIconState === 'mic' && (
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 
-                        0 1.66 1.34 3 3 3z"
-                        fill="#757575"
-                      />
-                      <path
-                        d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
-                        fill="#757575"
-                      />
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#757575"/>
+                      <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#757575"/>
                     </svg>
                   )}
                   {micIconState === 'recording' && (
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <circle cx="12" cy="12" r="8" fill="#FF0000" />
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="8" fill="#FF0000"/>
                     </svg>
                   )}
                   {micIconState === 'sending' && (
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1" />
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
                     </svg>
                   )}
                 </span>
               </div>
             )}
-
             {(content.length > 0 || selectedFile) && (
               <div className="secret-send-icon-container">
                 <span
@@ -2746,20 +2665,13 @@ const SecretPrivateChat = () => {
                   role="button"
                   aria-label="Send Message"
                 >
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1" />
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#0288D1"/>
                   </svg>
                 </span>
               </div>
             )}
           </div>
-
           {selectedFile && (
             <div className="secret-attached-file">
               <span className="secret-attached-file-name">{selectedFile.name}</span>
@@ -2767,25 +2679,26 @@ const SecretPrivateChat = () => {
                 className="secret-remove-file-button"
                 onClick={() => {
                   setSelectedFile(null);
-                  if (fileInputRef.current) fileInputRef.current.value = '';
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = null;
+                  }
                 }}
                 aria-label="Remove attached file"
               >
-                Remove
+                ✕
               </button>
             </div>
           )}
         </div>
       </div>
-
       {contextMenu.visible && contextMenu.message && (
         <div
           ref={contextMenuRef}
           className="secret-context-menu"
           style={{
             position: 'fixed',
-            top: `${contextMenu.y}px`,
-            left: `${contextMenu.x}px`,
+            top: contextMenu.y + 'px',
+            left: contextMenu.x + 'px',
             zIndex: 10000,
           }}
         >
@@ -2795,7 +2708,6 @@ const SecretPrivateChat = () => {
           <button onClick={() => handleMenuAction('delete')}>Delete</button>
         </div>
       )}
-
       {incomingCall && (
         <IncomingCallNotification
           callerId={incomingCall.callerId}
