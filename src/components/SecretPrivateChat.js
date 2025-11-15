@@ -2415,7 +2415,7 @@ const SecretPrivateChat = () => {
   return (
     <div className="secret-chat">
       <div className="secret-chat-name">
-        <span className="secret-chat-indicator">Lock</span>
+        <span className="secret-chat-indicator">🔒</span>
         {displayChatName}
       </div>
 
