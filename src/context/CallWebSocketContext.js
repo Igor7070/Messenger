@@ -420,6 +420,7 @@ export const CallWebSocketProvider = ({ children }) => {
             route =
               incomingCall.type === 'video' ? `/video-call/${roomId}` :
               incomingCall.type === 'translate' ? `/voice-call-translate/${roomId}` :
+              incomingCall.type === 'voice_secure' ? `/secure-call/${roomId}` :  // ← ЭТА СТРОЧКА!
               `/voice-call/${roomId}`;
             state = {
               roomId: roomId,

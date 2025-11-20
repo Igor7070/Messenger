@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaPhone, FaVideo, FaLanguage, FaUsers } from 'react-icons/fa';
+import { FaPhone, FaVideo, FaLanguage, FaUsers, FaLock } from 'react-icons/fa';
 import '../styles/IncomingCallNotification.css';
 
 const IncomingCallNotification = ({ callerId, callerName, avatar, callType, onAccept, onReject }) => {
@@ -10,17 +10,24 @@ const IncomingCallNotification = ({ callerId, callerName, avatar, callType, onAc
     const getNotificationDetails = () => {
         switch (callType) {
             case 'video':
-                return { title: 'Incoming Video Call', Icon: FaVideo };
+                return { title: 'Входящий видеозвонок', Icon: FaVideo };
             case 'translate':
-                return { title: 'Incoming Translate Call', Icon: FaLanguage };
+                return { title: 'Входящий звонок с переводом', Icon: FaLanguage };
             case 'group':
-                return { title: 'Incoming Group Call', Icon: FaUsers };
+                return { title: 'Входящий групровой звонок', Icon: FaUsers };
+            case 'voice_secure': // ← НОВЫЙ ТИП!
+                return { 
+                    title: 'Защищённый звонок (E2EE)', 
+                    Icon: FaLock,
+                    iconColor: '#00ff00',
+                    titleColor: '#00ff00'
+                };
             default:
-                return { title: 'Incoming Voice Call', Icon: FaPhone };
+                return { title: 'Входящий голосовой звонок', Icon: FaPhone };
         }
     };
 
-    const { title, Icon } = getNotificationDetails();
+    const { title, Icon, iconColor = '#4A90E2', titleColor = '#333' } = getNotificationDetails();
 
     return (
         <div className="incoming-call-notification">
@@ -35,18 +42,22 @@ const IncomingCallNotification = ({ callerId, callerName, avatar, callType, onAc
                     <div className="caller-avatar-placeholder">{initials}</div>
                 )}
             </div>
+
             <div className="notification-header">
-                <h2>{title} from {callerName}</h2>
+                <h2 style={{ color: titleColor, fontWeight: 'bold' }}>
+                    {title} от {callerName}
+                </h2>
                 <div className="notification-icon-container">
-                    <Icon className="notification-icon" />
+                    <Icon className="notification-icon" style={{ color: iconColor }} />
                 </div>
             </div>
+
             <div className="button-container">
                 <button className="accept-button" onClick={onAccept}>
-                    Accept
+                    Принять
                 </button>
                 <button className="reject-button" onClick={onReject}>
-                    Reject
+                    Отклонить
                 </button>
             </div>
         </div>

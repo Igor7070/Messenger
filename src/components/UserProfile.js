@@ -460,6 +460,58 @@ const UserProfile = () => {
         }
     };
 
+    const handleSecureCall = async () => {
+        if (!currentUserId) {
+            toast.error('You need to log in');
+            return;
+        }
+        if (String(currentUserId) === userId) {
+            toast.error('You cannot call yourself');
+            return;
+        }
+
+        const roomId = `secure-${currentUserId}-${userId}-${Date.now()}`;
+
+        const callRequest = {
+            callerId: currentUserId,
+            recipientId: parseInt(userId),
+            roomId: roomId,
+            callerName: localStorage.getItem('username') || 'Unknown',
+            type: 'voice_secure'
+        };
+
+        try {
+            const response = await fetch('https://unlimitedpossibilities12.org/api/webrtc/call', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(callRequest),
+            });
+
+            if (response.ok) {
+                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}`);
+                const callerData = await callerResponse.json();
+
+                toast.success(`Защищённый звонок ${user.username}... 🔒`, { autoClose: 3000 });
+
+                navigate(`/secure-call/${roomId}`, {
+                    state: {
+                        incomingCall: callRequest,
+                        isCaller: true,
+                        currentUserId: currentUserId,
+                        callerName: callerData.username,
+                        recipientName: user.username,
+                        recipientId: parseInt(userId),
+                    }
+                });
+            } else {
+                toast.error('Failed to initiate secure call');
+            }
+        } catch (error) {
+            console.error('Error initiating secure call:', error);
+            toast.error('Error initiating secure call');
+        }
+    };
+
     if (error) return <div className="error-message">{error}</div>;
     if (!user) return <div>Loading...</div>;
 
@@ -577,7 +629,24 @@ const UserProfile = () => {
                             <FaEllipsisV className="settings-icon" onClick={toggleSettingsMenu} />
                             {settingsMenuVisible && (
                                 <div className="settings-menu">
-                                    <button onClick={handleSecretChat}>Open Secret Chat</button>
+                                    <button onClick={handleSecretChat} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span role="img" aria-label="secret chat">🔒</span> Open Secret Chat
+                                    </button>
+
+                                    {/* НОВАЯ КНОПКА — ЗАЩИЩЁННЫЙ ЗВОНОК */}
+                                    <button 
+                                        onClick={handleSecureCall} 
+                                        style={{ 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            gap: '8px',
+                                            marginTop: '8px',
+                                            color: '#00ff00',
+                                            fontWeight: 'bold'
+                                        }}
+                                    >
+                                        <span role="img" aria-label="secure call">🔒📞</span> Secure Call (E2EE)
+                                    </button>
                                 </div>
                             )}
                         </>

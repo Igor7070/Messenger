@@ -14,7 +14,7 @@ Chart.register(...registerables);
 const VoiceCallSecure = () => {
   const navigate = useNavigate();
   const notify = useNotification();
-  const { roomId } = useParams<string>();
+  const { roomId } = useParams();
   const location = useLocation();
 
   const {
@@ -26,21 +26,22 @@ const VoiceCallSecure = () => {
     recipientId,
   } = location.state || {};
 
-  // === Рефы ===
-  const localAudioRef = useRef<HTMLAudioElement>(null);
-  const remoteAudioRef = useRef<HTMLAudioElement>(null);
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-  const stompClient = useRef<Client | null>(null);
-  const ringtoneRef = useRef<HTMLAudioElement>(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
+  // Рефы — как в обычном звонке
+  const localAudioRef = useRef(null);
+  const remoteAudioRef = useRef(null);
+  const peerConnectionRef = useRef(null);
+  const stompClient = useRef(null);
+  const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
 
-  // === Состояние ===
+  // Состояние
   const [isWaiting, setIsWaiting] = useState(false);
-  const [secureStatus, setSecureStatus] = useState<'checking' | 'secure' | 'compromised'>('checking');
+  const [secureStatus, setSecureStatus] = useState('checking'); // checking | secure | compromised
+
   const [chartData, setChartData] = useState({
-    labels: [] as string[],
+    labels: [],
     datasets: [{
       label: 'Voice Activity',
-      data: [] as number[],
+      data: [],
       borderColor: 'rgba(74, 144, 226, 1)',
       backgroundColor: 'rgba(74, 144, 226, 0.2)',
       borderWidth: 2,
@@ -48,24 +49,24 @@ const VoiceCallSecure = () => {
     }],
   });
 
-  // === Флаги (точно как в обычном звонке) ===
+  // Флаги — точно как в обычном звонке
   const hasNotifiedEndCall = useRef(false);
   const hasNotifiedAcceptCall = useRef(false);
   const hasNotifiedRejectCall = useRef(false);
   const hasSavedCall = useRef(false);
   let terminationInitiator = false;
 
-  // === Ключи ===
-  const [myKeys, setMyKeys] = useState<{ publicKey: string; privateKey: string } | null>(null);
-  const [partnerPublicKey, setPartnerPublicKey] = useState<string | null>(null);
+  // Ключи
+  const [myKeys, setMyKeys] = useState(null);
+  const [partnerPublicKey, setPartnerPublicKey] = useState(null);
 
-  // === Загрузка ключей ===
+  // Загрузка ключей
   useEffect(() => {
     const loadKeys = async () => {
       await sodium.ready;
       const stored = localStorage.getItem(`keyPair_${currentUserId}`);
       if (!stored) {
-        notify('Нет ключей для защищённого звонка', { type: 'error' });
+        notify('Нет ключей для защищённого звонка');
         navigate('/');
         return;
       }
@@ -73,7 +74,8 @@ const VoiceCallSecure = () => {
       setMyKeys(pair);
 
       try {
-        const resp = await fetch(`https://unlimitedpossibilities12.org/api/public_keys/${isCaller ? recipientId : incomingCall?.callerId}`);
+        const targetId = isCaller ? recipientId : incomingCall?.callerId;
+        const resp = await fetch(`https://unlimitedpossibilities12.org/api/public_keys/${targetId}`);
         const data = await resp.json();
         setPartnerPublicKey(data.publicKey);
       } catch (e) {
@@ -83,14 +85,14 @@ const VoiceCallSecure = () => {
     loadKeys();
   }, [currentUserId, recipientId, incomingCall, isCaller, navigate, notify]);
 
-  // === Подпись и проверка ===
-  const signSdp = (sdp: string): string => {
+  // Подпись и проверка SDP
+  const signSdp = (sdp) => {
     const msg = new TextEncoder().encode(sdp);
-    const sig = sodium.crypto_sign_detached(msg, sodium.from_base64(myKeys!.privateKey));
+    const sig = sodium.crypto_sign_detached(msg, sodium.from_base64(myKeys.privateKey));
     return sodium.to_base64(sig);
   };
 
-  const verifySdp = (sdp: string, signature: string, publicKey: string): boolean => {
+  const verifySdp = (sdp, signature, publicKey) => {
     try {
       const msg = new TextEncoder().encode(sdp);
       const sig = sodium.from_base64(signature);
@@ -101,9 +103,9 @@ const VoiceCallSecure = () => {
     }
   };
 
-  // === WebSocket + всё как в обычном ===
+  // WebSocket
   useEffect(() => {
-    if (!currentUserId || !myKeys) return;
+    if (!currentUserId || !myKeys || !roomId) return;
 
     const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
     stompClient.current = new Client({
@@ -112,12 +114,16 @@ const VoiceCallSecure = () => {
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
       onConnect: () => {
-        stompClient.current!.subscribe(`/topic/room/${roomId}`, msg => {
-          const data = JSON.parse(msg.body);
-          handleSignal(data);
+        stompClient.current.subscribe(`/topic/room/${roomId}`, (msg) => {
+          try {
+            const data = JSON.parse(msg.body);
+            handleSignal(data);
+          } catch (e) {
+            console.error('Ошибка сигнала', e);
+          }
         });
 
-        stompClient.current!.publish({
+        stompClient.current.publish({
           destination: '/app/publicKey/update',
           body: JSON.stringify({ userId: currentUserId, publicKey: myKeys.publicKey }),
         });
@@ -138,7 +144,10 @@ const VoiceCallSecure = () => {
     const interval = setInterval(() => {
       setChartData(prev => ({
         labels: [...prev.labels.slice(-30), new Date().toLocaleTimeString()],
-        datasets: [{ ...prev.datasets[0], data: [...prev.datasets[0].data.slice(-30), Math.random() * 100] }],
+        datasets: [{
+          ...prev.datasets[0],
+          data: [...prev.datasets[0].data.slice(-30), Math.random() * 100],
+        }],
       }));
     }, 1000);
 
@@ -150,7 +159,7 @@ const VoiceCallSecure = () => {
     };
   }, [currentUserId, myKeys, roomId, isCaller, incomingCall]);
 
-  // === PeerConnection ===
+  // Создание PeerConnection
   const createPeerConnection = () => {
     const iceServers = isCaller
       ? [
@@ -164,10 +173,9 @@ const VoiceCallSecure = () => {
 
     peerConnectionRef.current = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'all' });
 
-    peerConnectionRef.current.ontrack = e => {
+    peerConnectionRef.current.ontrack = (e) => {
       if (remoteAudioRef.current && e.streams[0]) {
         remoteAudioRef.current.srcObject = e.streams[0];
-        remoteAudioRef.current.play().catch(() => {});
       }
     };
 
@@ -178,7 +186,7 @@ const VoiceCallSecure = () => {
       }
     };
 
-    peerConnectionRef.current.onicecandidate = e => {
+    peerConnectionRef.current.onicecandidate = (e) => {
       if (e.candidate) {
         sendSignal({
           from: currentUserId,
@@ -197,22 +205,22 @@ const VoiceCallSecure = () => {
 
   const handleIncomingSecureCall = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    localAudioRef.current!.srcObject = stream;
+    localAudioRef.current.srcObject = stream;
     createPeerConnection();
-    stream.getTracks().forEach(t => peerConnectionRef.current!.addTrack(t, stream));
+    stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
     sendSignal({ from: currentUserId, signal: { type: 'ready' } });
   };
 
   const startSecureCall = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    localAudioRef.current!.srcObject = stream;
+    localAudioRef.current.srcObject = stream;
     createPeerConnection();
-    stream.getTracks().forEach(t => peerConnectionRef.current!.addTrack(t, stream));
+    stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
 
-    const offer = await peerConnectionRef.current!.createOffer();
-    await peerConnectionRef.current!.setLocalDescription(offer);
+    const offer = await peerConnectionRef.current.createOffer();
+    await peerConnectionRef.current.setLocalDescription(offer);
 
-    const signature = signSdp(offer.sdp!);
+    const signature = signSdp(offer.sdp);
 
     sendSignal({
       from: currentUserId,
@@ -220,58 +228,56 @@ const VoiceCallSecure = () => {
         type: 'offer',
         sdp: offer.sdp,
         signature,
-        publicKey: myKeys!.publicKey,
+        publicKey: myKeys.publicKey,
       },
     });
   };
 
-  const handleSignal = async (msg: any) => {
+  const handleSignal = async (msg) => {
     const s = msg.signal;
 
     if (s.type === 'offer') {
-      if (!verifySdp(s.sdp, s.signature, s.publicKey || partnerPublicKey!)) {
+      if (!verifySdp(s.sdp, s.signature, s.publicKey || partnerPublicKey)) {
         setSecureStatus('compromised');
-        notify('АТАКА! Подпись SDP не совпадает', { type: 'error' });
+        notify('АТАКА! Подпись не совпадает');
         endCall();
         return;
       }
 
-      await peerConnectionRef.current!.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: s.sdp }));
-      const answer = await peerConnectionRef.current!.createAnswer();
-      await peerConnectionRef.current!.setLocalDescription(answer);
+      await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: s.sdp }));
+      const answer = await peerConnectionRef.current.createAnswer();
+      await peerConnectionRef.current.setLocalDescription(answer);
 
-      const sig = signSdp(answer.sdp!);
+      const sig = signSdp(answer.sdp);
 
       sendSignal({
         from: currentUserId,
-        signal: { type: 'answer', sdp: answer.sdp, signature: sig, publicKey: myKeys!.publicKey },
+        signal: { type: 'answer', sdp: answer.sdp, signature: sig, publicKey: myKeys.publicKey },
       });
 
       hasNotifiedAcceptCall.current = true;
       setSecureStatus('secure');
 
     } else if (s.type === 'answer') {
-      if (!verifySdp(s.sdp, s.signature, s.publicKey || partnerPublicKey!)) {
+      if (!verifySdp(s.sdp, s.signature, s.publicKey || partnerPublicKey)) {
         setSecureStatus('compromised');
-        notify('АТАКА! Ответ подделан', { type: 'error' });
+        notify('АТАКА! Ответ подделан');
         endCall();
         return;
       }
 
-      await peerConnectionRef.current!.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: s.sdp }));
+      await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: s.sdp }));
       setSecureStatus('secure');
 
     } else if (s.type === 'candidate' && peerConnectionRef.current) {
       try {
         await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(s.iceCandidate));
       } catch {}
-
     } else if (s.type === 'ready' && isCaller) {
       setIsWaiting(false);
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
       startSecureCall();
-
     } else if (s.type === 'endCall') {
       if (!hasNotifiedEndCall.current) {
         hasNotifiedEndCall.current = true;
@@ -282,7 +288,7 @@ const VoiceCallSecure = () => {
     }
   };
 
-  const sendSignal = (data: any) => {
+  const sendSignal = (data) => {
     if (stompClient.current?.connected) {
       stompClient.current.publish({
         destination: `/app/signal/${roomId}`,
@@ -291,21 +297,21 @@ const VoiceCallSecure = () => {
     }
   };
 
-  // === endCall — 100% как в обычном звонке ===
   const endCall = async () => {
     if (hasSavedCall.current) return;
+    hasSavedCall.current = true;
 
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
+    peerConnectionRef.current?.close();
+    peerConnectionRef.current = null;
+
+    if (localAudioRef.current?.srcObject) {
+      localAudioRef.current.srcObject.getTracks().forEach(t => t.stop());
+      localAudioRef.current.srcObject = null;
     }
-
-    [localAudioRef, remoteAudioRef].forEach(ref => {
-      if (ref.current?.srcObject) {
-        (ref.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
-        ref.current.srcObject = null;
-      }
-    });
+    if (remoteAudioRef.current?.srcObject) {
+      remoteAudioRef.current.srcObject.getTracks().forEach(t => t.stop());
+      remoteAudioRef.current.srcObject = null;
+    }
 
     if (isCaller) {
       setIsWaiting(false);
@@ -315,7 +321,6 @@ const VoiceCallSecure = () => {
 
     if (stompClient.current?.connected && !terminationInitiator) {
       sendSignal({ from: currentUserId, signal: { type: 'endCall' } });
-
       if (isCaller && incomingCall?.recipientId) {
         stompClient.current.publish({
           destination: `/app/call/${incomingCall.recipientId}`,
@@ -329,31 +334,22 @@ const VoiceCallSecure = () => {
       }
     }
 
-    const saveCall = async () => {
-      try {
-        const status = hasNotifiedRejectCall.current ? 'rejected' : 'completed';
+    try {
+      const status = hasNotifiedRejectCall.current ? 'rejected' : 'completed';
+      await axios.post(`https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`, {
+        caller: isCaller ? currentUserId : incomingCall?.callerId,
+        receiver: isCaller ? recipientId : currentUserId,
+        direction: isCaller ? 'outgoing' : 'incoming',
+        status,
+        callType: 'voice_secure',
+        timestamp: new Date().toISOString(),
+        roomId,
+      });
+    } catch (e) {}
 
-        await axios.post(`https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`, {
-          caller: isCaller ? currentUserId : incomingCall?.callerId,
-          receiver: isCaller ? recipientId : currentUserId,
-          direction: isCaller ? 'outgoing' : 'incoming',
-          status,
-          callType: 'voice_secure',
-          timestamp: new Date().toISOString(),
-          roomId,
-        });
-
-        hasSavedCall.current = true;
-      } catch (e) {
-        console.error('Ошибка сохранения защищённого звонка', e);
-      }
-    };
-
-    await saveCall();
     navigate('/');
   };
 
-  // === Автостарт ===
   useEffect(() => {
     if (isCaller && myKeys && partnerPublicKey) {
       setTimeout(startSecureCall, 500);
