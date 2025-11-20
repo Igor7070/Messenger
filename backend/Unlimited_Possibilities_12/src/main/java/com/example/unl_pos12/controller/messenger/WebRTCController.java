@@ -120,9 +120,12 @@ public class WebRTCController {
         System.out.println("callRequest: " + callRequest);
         System.out.println("callRequest.getRecipientId(): " + callRequest.getRecipientId());
 
-        if (callRequest.getType() == null || (!callRequest.getType().equals("voice") && !callRequest.getType().equals("video") && !callRequest.getType().equals("translate"))) {
-            System.out.println("Invalid or missing call type, defaulting to 'voice'");
+        // Разрешаем любые типы звонков: voice, video, translate, voice_secure и т.д.
+        if (callRequest.getType() == null || callRequest.getType().trim().isEmpty()) {
+            System.out.println("Call type is missing, defaulting to 'voice'");
             callRequest.setType("voice");
+        } else {
+            System.out.println("Accepted call type: " + callRequest.getType());
         }
 
         String key = callRequest.getRoomId() + "-" + callRequest.getRecipientId();
