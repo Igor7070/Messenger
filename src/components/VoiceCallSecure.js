@@ -57,67 +57,74 @@ const VoiceCallSecure = () => {
   const [myKeys, setMyKeys] = useState(null);
   const [partnerPublicKey, setPartnerPublicKey] = useState(null);
 
-  // Загрузка ключей
+  // Загрузка ключей (ОТДЕЛЬНО ДЛЯ SIGN)
   useEffect(() => {
     const loadKeys = async () => {
       if (!currentUserId || !roomId) return;
 
       await sodium.ready;
-      const stored = localStorage.getItem(`keyPair_${currentUserId}`);
+      const stored = localStorage.getItem(`signKeyPair_${currentUserId}`); // ОТДЕЛЬНО ОТ BOX-КЛЮЧЕЙ ЧАТА
       let pair;
       if (!stored) {
-        console.log(`Generating new key pair for userId: ${currentUserId}`);
-        const newKeyPair = sodium.crypto_sign_keypair();
+        console.log(`Generating new SIGN key pair for userId: ${currentUserId}`);
+        const newKeyPair = sodium.crypto_sign_keypair(); // Ed25519 для sign (64/32 bytes)
         const publicKeyBase64 = sodium.to_base64(newKeyPair.publicKey);
         const privateKeyBase64 = sodium.to_base64(newKeyPair.privateKey);
         pair = {
           publicKey: publicKeyBase64,
           privateKey: privateKeyBase64
         };
-        localStorage.setItem(`keyPair_${currentUserId}`, JSON.stringify(pair));
-        notify('Ключи сгенерированы и синхронизированы');
+        localStorage.setItem(`signKeyPair_${currentUserId}`, JSON.stringify(pair));
+        notify('Ключи подписи сгенерированы и синхронизированы');
         try {
-          console.log(`Syncing public key for userId: ${currentUserId}`);
+          console.log(`Syncing SIGN public key for userId: ${currentUserId}`);
           const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: currentUserId, publicKey: publicKeyBase64 }),
           });
           if (!syncResponse.ok) throw new Error(`Sync failed: ${syncResponse.status}`);
-          console.log(`Key synced for userId: ${currentUserId}`);
+          console.log(`SIGN key synced for userId: ${currentUserId}`);
         } catch (syncError) {
           console.error('Sync error:', syncError);
-          notify('Синхронизация ключей не удалась — попробуйте перезапустить звонок');
+          notify('Синхронизация ключей подписи не удалась — попробуйте перезапустить звонок');
         }
       } else {
         pair = JSON.parse(stored);
+        console.log(`Loaded existing SIGN keys for userId: ${currentUserId}, private length: ${sodium.from_base64(pair.privateKey).length}`); // Должно быть 64
         // Синхронизируем существующие ключи (на случай обновления)
         try {
-          console.log(`Syncing existing public key for userId: ${currentUserId}`);
+          console.log(`Syncing existing SIGN public key for userId: ${currentUserId}`);
           const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: currentUserId, publicKey: pair.publicKey }),
           });
           if (!syncResponse.ok) throw new Error(`Sync failed: ${syncResponse.status}`);
-          console.log(`Existing key synced for userId: ${currentUserId}`);
-          notify('Ключи обновлены и синхронизированы');
+          console.log(`Existing SIGN key synced for userId: ${currentUserId}`);
+          notify('Ключи подписи обновлены и синхронизированы');
         } catch (syncError) {
           console.error('Sync error:', syncError);
-          notify('Синхронизация ключей не удалась — попробуйте перезапустить звонок');
+          notify('Синхронизация ключей подписи не удалась — попробуйте перезапустить звонок');
         }
       }
       setMyKeys(pair);
 
       try {
         const targetId = isCaller ? recipientId : incomingCall?.callerId;
+        console.log(`Fetching partner SIGN public key for targetId: ${targetId}`);
         const resp = await fetch(`https://unlimitedpossibilities12.org/api/public_keys/${targetId}`);
         if (resp.ok) {
           const data = await resp.json();
           setPartnerPublicKey(data.publicKey);
+          console.log(`Partner SIGN public key fetched: length ${sodium.from_base64(data.publicKey).length}`); // 32 bytes
+        } else {
+          console.error(`Fetch partner key failed: ${resp.status}`);
+          notify('Не удалось загрузить ключ подписи собеседника');
         }
       } catch (e) {
-        notify('Не удалось загрузить ключ собеседника');
+        console.error('Error fetching partner key:', e);
+        notify('Не удалось загрузить ключ подписи собеседника');
       }
     };
     loadKeys();
@@ -125,8 +132,12 @@ const VoiceCallSecure = () => {
 
   // WebSocket
   useEffect(() => {
-    if (!myKeys || !currentUserId || !roomId) return;
+    if (!myKeys || !currentUserId || !roomId) {
+      console.log('Secure WS setup skipped: missing myKeys/currentUserId/roomId');
+      return;
+    }
 
+    console.log('Initializing Secure WS');
     const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
     stompClient.current = new Client({
       webSocketFactory: () => socket,
@@ -134,26 +145,40 @@ const VoiceCallSecure = () => {
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
       onConnect: () => {
+        console.log('Secure WS connected');
         stompClient.current.subscribe(`/topic/room/${roomId}`, (msg) => {
+          console.log('Secure WS received:', msg.body);
           try {
             const data = JSON.parse(msg.body);
             handleSignal(data);
-          } catch (e) {}
-        });
-
-        stompClient.current.publish({
-          destination: '/app/publicKey/update',
-          body: JSON.stringify({ userId: currentUserId, publicKey: myKeys.publicKey }),
+          } catch (e) {
+            console.error('Secure WS parse error:', e);
+          }
         });
 
         if (!isCaller && incomingCall) {
+          console.log('Secure: handling incoming call');
           handleIncomingSecureCall();
         }
       },
+      onStompError: (frame) => {
+        console.error('Secure STOMP error:', frame);
+        notify('STOMP protocol error.');
+      },
+      onWebSocketError: (error) => {
+        console.error('Secure WS error:', error);
+        notify('WebSocket connection error');
+      },
+      onDisconnect: () => {
+        console.log('Secure WS disconnected');
+      },
     });
-    stompClient.current.activate();
+    if (!stompClient.current.connected) {
+      stompClient.current.activate();
+    }
 
     if (isCaller) {
+      console.log('Secure caller: starting ringtone');
       ringtoneRef.current.loop = true;
       ringtoneRef.current.play().catch(() => {});
     }
@@ -170,13 +195,13 @@ const VoiceCallSecure = () => {
 
     return () => {
       clearInterval(interval);
-      stompClient.current?.deactivate();
+      if (stompClient.current) stompClient.current.deactivate();
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
     };
-  }, [myKeys, roomId, isCaller, incomingCall]);
+  }, [myKeys, roomId, isCaller]); // Убрал incomingCall — redundant
 
-  // Если нет ID — просто покажем ошибку, но хуки уже вызваны выше
+  // Если нет ID — просто покажем ошибку
   if (!currentUserId || !roomId) {
     return (
       <div className="voice-call-container">
@@ -188,18 +213,25 @@ const VoiceCallSecure = () => {
 
   // Подпись и проверка SDP
   const signSdp = (sdp) => {
+    console.log('Signing SDP, privateKey length:', sodium.from_base64(myKeys.privateKey).length); // Должно быть 64
     const msg = new TextEncoder().encode(sdp);
     const sig = sodium.crypto_sign_detached(msg, sodium.from_base64(myKeys.privateKey));
-    return sodium.to_base64(sig);
+    const signature = sodium.to_base64(sig);
+    console.log('Signature created (length ok)');
+    return signature;
   };
 
   const verifySdp = (sdp, signature, publicKey) => {
+    console.log('Verifying SDP, publicKey length:', sodium.from_base64(publicKey).length); // 32
     try {
       const msg = new TextEncoder().encode(sdp);
       const sig = sodium.from_base64(signature);
       const pk = sodium.from_base64(publicKey);
-      return sodium.crypto_sign_verify_detached(sig, msg, pk);
-    } catch {
+      const valid = sodium.crypto_sign_verify_detached(sig, msg, pk);
+      console.log('Verify result:', valid ? 'SUCCESS' : 'FAILED');
+      return valid;
+    } catch (e) {
+      console.error('Verify error (length/invalid):', e.message);
       return false;
     }
   };
@@ -216,22 +248,30 @@ const VoiceCallSecure = () => {
           { urls: 'turn:13.49.238.121:3478?transport=tcp', username: 'username2', credential: 'key2' },
         ];
 
+    console.log('Creating Secure PC with iceServers');
     peerConnectionRef.current = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'all' });
 
     peerConnectionRef.current.ontrack = (e) => {
+      console.log('Secure ontrack:', e.streams[0]);
       if (remoteAudioRef.current && e.streams[0]) {
         remoteAudioRef.current.srcObject = e.streams[0];
+        remoteAudioRef.current.play().catch((err) => console.error('Secure audio play error:', err));
       }
     };
 
     peerConnectionRef.current.oniceconnectionstatechange = () => {
-      if (peerConnectionRef.current?.iceConnectionState === 'failed') {
+      const state = peerConnectionRef.current?.iceConnectionState;
+      console.log('Secure ICE state:', state);
+      if (state === 'failed') {
         notify('Соединение не удалось');
         endCall();
+      } else if (state === 'connected') {
+        console.log('Secure WebRTC connected');
       }
     };
 
     peerConnectionRef.current.onicecandidate = (e) => {
+      console.log('Secure onicecandidate:', e.candidate ? 'candidate' : 'end');
       if (e.candidate) {
         sendSignal({
           from: currentUserId,
@@ -246,104 +286,200 @@ const VoiceCallSecure = () => {
         });
       }
     };
+
+    peerConnectionRef.current.onicegatheringstatechange = () => {
+      console.log('Secure ICE gathering state:', peerConnectionRef.current.iceGatheringState);
+    };
   };
 
   const handleIncomingSecureCall = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    localAudioRef.current.srcObject = stream;
-    createPeerConnection();
-    stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
-    sendSignal({ from: currentUserId, signal: { type: 'ready' } });
+    console.log('Secure handling incoming call');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localAudioRef.current.srcObject = stream;
+      console.log('Secure local stream obtained');
+      createPeerConnection();
+      stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
+      console.log('Secure tracks added');
+      sendSignal({ from: currentUserId, signal: { type: 'ready' } });
+    } catch (error) {
+      console.error('Secure media error:', error);
+      notify('Failed to access microphone.');
+      endCall();
+    }
   };
 
   const startSecureCall = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    localAudioRef.current.srcObject = stream;
-    createPeerConnection();
-    stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
+    if (!myKeys) {
+      console.error('No myKeys for signing');
+      endCall();
+      return;
+    }
+    console.log('Secure starting call');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localAudioRef.current.srcObject = stream;
+      console.log('Secure local stream obtained');
+      createPeerConnection();
+      stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
+      console.log('Secure tracks added');
 
-    const offer = await peerConnectionRef.current.createOffer();
-    await peerConnectionRef.current.setLocalDescription(offer);
+      const offer = await peerConnectionRef.current.createOffer();
+      await peerConnectionRef.current.setLocalDescription(offer);
+      console.log('Secure offer created/set');
 
-    const signature = signSdp(offer.sdp);
+      const signature = signSdp(offer.sdp);
 
-    sendSignal({
-      from: currentUserId,
-      signal: {
-        type: 'offer',
-        sdp: offer.sdp,
-        signature,
-        publicKey: myKeys.publicKey,
-      },
-    });
+      sendSignal({
+        from: currentUserId,
+        signal: {
+          type: 'offer',
+          sdp: offer.sdp,
+          signature,
+          publicKey: myKeys.publicKey,
+        },
+      });
+    } catch (error) {
+      console.error('Secure start call error:', error);
+      notify('Failed to start secure call.');
+      endCall();
+    }
   };
 
   const handleSignal = async (msg) => {
+    console.log('Secure handling signal:', JSON.stringify(msg.signal, null, 2));
     const s = msg.signal;
 
+    if (s.type === 'acceptCall' && isCaller) {
+      console.log('Secure received acceptCall');
+      if (!hasNotifiedAcceptCall.current) {
+        hasNotifiedAcceptCall.current = true;
+        notify(`${recipientName} accepted the call.`);
+      }
+      return;
+    }
+
     if (s.type === 'offer') {
-      if (!verifySdp(s.sdp, s.signature, s.publicKey || partnerPublicKey)) {
+      console.log('Secure handling offer');
+      const publicKeyToUse = s.publicKey || partnerPublicKey;
+      if (!publicKeyToUse) {
+        console.error('No public key for verify');
+        endCall();
+        return;
+      }
+      if (!verifySdp(s.sdp, s.signature, publicKeyToUse)) {
+        console.error('Secure verify FAILED');
         setSecureStatus('compromised');
         notify('АТАКА! Подпись не совпадает');
         endCall();
         return;
       }
+      console.log('Secure verify SUCCESS');
 
-      await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: s.sdp }));
-      const answer = await peerConnectionRef.current.createAnswer();
-      await peerConnectionRef.current.setLocalDescription(answer);
+      try {
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: s.sdp }));
+        const answer = await peerConnectionRef.current.createAnswer();
+        await peerConnectionRef.current.setLocalDescription(answer);
+        console.log('Secure answer created/set');
 
-      const sig = signSdp(answer.sdp);
+        const sig = signSdp(answer.sdp);
 
-      sendSignal({
-        from: currentUserId,
-        signal: { type: 'answer', sdp: answer.sdp, signature: sig, publicKey: myKeys.publicKey },
-      });
+        sendSignal({
+          from: currentUserId,
+          signal: { type: 'answer', sdp: answer.sdp, signature: sig, publicKey: myKeys.publicKey },
+        });
 
-      setSecureStatus('secure');
+        setSecureStatus('secure');
+        if (!hasNotifiedAcceptCall.current) {
+          hasNotifiedAcceptCall.current = true;
+          notify(`${recipientName} accepted the call.`);
+        }
+      } catch (e) {
+        console.error('Secure offer processing error:', e);
+        endCall();
+      }
 
     } else if (s.type === 'answer') {
-      if (!verifySdp(s.sdp, s.signature, s.publicKey || partnerPublicKey)) {
+      console.log('Secure handling answer');
+      const publicKeyToUse = s.publicKey || partnerPublicKey;
+      if (!publicKeyToUse) {
+        console.error('No public key for verify');
+        endCall();
+        return;
+      }
+      if (!verifySdp(s.sdp, s.signature, publicKeyToUse)) {
+        console.error('Secure verify FAILED');
         setSecureStatus('compromised');
         notify('АТАКА! Ответ подделан');
         endCall();
         return;
       }
+      console.log('Secure verify SUCCESS');
 
-      await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: s.sdp }));
-      setSecureStatus('secure');
+      try {
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: s.sdp }));
+        setSecureStatus('secure');
+      } catch (e) {
+        console.error('Secure answer processing error:', e);
+        endCall();
+      }
 
     } else if (s.type === 'candidate' && peerConnectionRef.current) {
-      try {
-        await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(s.iceCandidate));
-      } catch {}
+      console.log('Secure handling candidate');
+      // + delay для race fix
+      setTimeout(async () => {
+        try {
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(s.iceCandidate));
+          console.log('Secure candidate added');
+        } catch (e) {
+          console.error('Secure add candidate error:', e);
+        }
+      }, 100);
 
     } else if (s.type === 'ready' && isCaller) {
+      console.log('Secure received ready');
       setIsWaiting(false);
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
-      startSecureCall();
+      setTimeout(() => startSecureCall(), 1000); // + delay как в обычном
 
     } else if (s.type === 'endCall') {
+      console.log('Secure endCall received');
       if (!hasNotifiedEndCall.current) {
         hasNotifiedEndCall.current = true;
         notify(`${isCaller ? recipientName : callerName} завершил звонок`);
       }
       terminationInitiator = true;
       endCall();
+    } else if (s.type === 'rejectCall' && isCaller) {
+      console.log('Secure rejectCall received');
+      if (!hasNotifiedRejectCall.current) {
+        hasNotifiedRejectCall.current = true;
+        setIsWaiting(false);
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+        notify(`${recipientName} rejected the call.`);
+        terminationInitiator = true;
+        endCall();
+      }
     }
   };
 
   const sendSignal = (data) => {
+    console.log('Secure sending signal:', JSON.stringify(data, null, 2));
     if (stompClient.current?.connected) {
       stompClient.current.publish({
         destination: `/app/signal/${roomId}`,
         body: JSON.stringify(data),
       });
+      console.log('Secure signal sent');
+    } else {
+      console.error('Secure: WS not connected');
     }
   };
 
   const endCall = async () => {
+    console.log('Secure endCall called');
     if (hasSavedCall.current) return;
     hasSavedCall.current = true;
 
@@ -381,16 +517,20 @@ const VoiceCallSecure = () => {
     }
 
     try {
+      let status = hasNotifiedRejectCall.current ? 'rejected' : 'completed';
       await axios.post(`https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`, {
         caller: isCaller ? currentUserId : incomingCall?.callerId,
         receiver: isCaller ? recipientId : currentUserId,
         direction: isCaller ? 'outgoing' : 'incoming',
-        status: 'completed',
+        status,
         callType: 'voice_secure',
         timestamp: new Date().toISOString(),
         roomId,
       });
-    } catch (e) {}
+      console.log(`Secure call saved: ${status}`);
+    } catch (e) {
+      console.error('Secure save error:', e);
+    }
 
     navigate('/');
   };
