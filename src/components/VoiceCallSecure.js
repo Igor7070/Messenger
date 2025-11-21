@@ -17,25 +17,26 @@ const VoiceCallSecure = () => {
   const { roomId } = useParams();
   const location = useLocation();
 
-  const state = location.state || {};
-  const incomingCall = state.incomingCall || null;
-  const isCaller = state.isCaller || false;
-  const currentUserId = state.currentUserId;
-  const callerName = state.callerName || '';
-  const recipientName = state.recipientName || '';
-  const recipientId = state.recipientId;
+  const {
+    incomingCall = null,
+    isCaller = false,
+    currentUserId = null,
+    callerName = '',
+    recipientName = '',
+    recipientId = null,
+  } = location.state || {};
 
-  // Если нет currentUserId — просто ничего не рендерим (но хуки уже вызваны!)
+  // Если нет ID — просто покажем ошибку, но хуки уже вызваны ниже
   if (!currentUserId || !roomId) {
     return (
       <div className="voice-call-container">
-        <h2>Ошибка доступа к звонку</h2>
+        <h2>Ошибка: нет доступа к звонку</h2>
         <button onClick={() => navigate('/')}>На главную</button>
       </div>
     );
   }
 
-  // === ВСЕ ХУКИ ДОЛЖНЫ БЫТЬ ВЫШЕ ЛЮБОГО RETURN ===
+  // === ВСЕ ХУКИ ЗДЕСЬ — ВСЕГДА В ОДНОМ ПОРЯДКЕ ===
   const localAudioRef = useRef(null);
   const remoteAudioRef = useRef(null);
   const peerConnectionRef = useRef(null);
@@ -44,6 +45,7 @@ const VoiceCallSecure = () => {
 
   const [isWaiting, setIsWaiting] = useState(isCaller);
   const [secureStatus, setSecureStatus] = useState('checking');
+
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [{
@@ -57,6 +59,8 @@ const VoiceCallSecure = () => {
   });
 
   const hasNotifiedEndCall = useRef(false);
+  const hasNotifiedAcceptCall = useRef(false);
+  const hasNotifiedRejectCall = useRef(false);
   const hasSavedCall = useRef(false);
   let terminationInitiator = false;
 
@@ -73,12 +77,11 @@ const VoiceCallSecure = () => {
         navigate('/');
         return;
       }
-      const pair = JSON.parse(st144);
+      const pair = JSON.parse(stored);
       setMyKeys(pair);
 
       try {
         const targetId = isCaller ? recipientId : incomingCall?.callerId;
-        if (!targetId) return;
         const resp = await fetch(`https://unlimitedpossibilities12.org/api/public_keys/${targetId}`);
         if (resp.ok) {
           const data = await resp.json();
@@ -89,7 +92,7 @@ const VoiceCallSecure = () => {
       }
     };
     loadKeys();
-  }, [currentUserId, isCaller, recipientId, incomingCall, navigate, notify]);
+  }, [currentUserId, recipientId, incomingCall, isCaller, navigate, notify]);
 
   // Подпись и проверка SDP
   const signSdp = (sdp) => {
@@ -124,9 +127,7 @@ const VoiceCallSecure = () => {
           try {
             const data = JSON.parse(msg.body);
             handleSignal(data);
-          } catch (e) {
-            console.error('Ошибка парсинга сигнала', e);
-          }
+          } catch (e) {}
         });
 
         stompClient.current.publish({
@@ -209,43 +210,33 @@ const VoiceCallSecure = () => {
   };
 
   const handleIncomingSecureCall = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localAudioRef.current.srcObject = stream;
-      createPeerConnection();
-      stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
-      sendSignal({ from: currentUserId, signal: { type: 'ready' } });
-    } catch (e) {
-      notify('Нет доступа к микрофону');
-      endCall();
-    }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    localAudioRef.current.srcObject = stream;
+    createPeerConnection();
+    stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
+    sendSignal({ from: currentUserId, signal: { type: 'ready' } });
   };
 
   const startSecureCall = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localAudioRef.current.srcObject = stream;
-      createPeerConnection();
-      stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    localAudioRef.current.srcObject = stream;
+    createPeerConnection();
+    stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
 
-      const offer = await peerConnectionRef.current.createOffer();
-      await peerConnectionRef.current.setLocalDescription(offer);
+    const offer = await peerConnectionRef.current.createOffer();
+    await peerConnectionRef.current.setLocalDescription(offer);
 
-      const signature = signSdp(offer.sdp);
+    const signature = signSdp(offer.sdp);
 
-      sendSignal({
-        from: currentUserId,
-        signal: {
-          type: 'offer',
-          sdp: offer.sdp,
-          signature,
-          publicKey: myKeys.publicKey,
-        },
-      });
-    } catch (e) {
-      notify('Ошибка запуска звонка');
-      endCall();
-    }
+    sendSignal({
+      from: currentUserId,
+      signal: {
+        type: 'offer',
+        sdp: offer.sdp,
+        signature,
+        publicKey: myKeys.publicKey,
+      },
+    });
   };
 
   const handleSignal = async (msg) => {
@@ -258,14 +249,18 @@ const VoiceCallSecure = () => {
         endCall();
         return;
       }
+
       await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: s.sdp }));
       const answer = await peerConnectionRef.current.createAnswer();
       await peerConnectionRef.current.setLocalDescription(answer);
+
       const sig = signSdp(answer.sdp);
+
       sendSignal({
         from: currentUserId,
         signal: { type: 'answer', sdp: answer.sdp, signature: sig, publicKey: myKeys.publicKey },
       });
+
       setSecureStatus('secure');
 
     } else if (s.type === 'answer') {
@@ -275,6 +270,7 @@ const VoiceCallSecure = () => {
         endCall();
         return;
       }
+
       await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: s.sdp }));
       setSecureStatus('secure');
 
