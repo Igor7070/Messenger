@@ -245,7 +245,11 @@ export const CallWebSocketProvider = ({ children }) => {
           audioSrc: audioRef.current?.src,
         });
       }
-    } else if (callRequest.type === 'voice' || callRequest.type === 'video' || callRequest.type === 'translate' || callRequest.type === 'group') {
+    } else if (callRequest.type === 'voice' || 
+               callRequest.type === 'video' || 
+               callRequest.type === 'translate' || 
+               callRequest.type === 'group' || 
+               callRequest.type === 'voice_secure') {
       console.log('CallWebSocketContext: Получен запрос на звонок:', callRequest);
       handleIncomingCall(callRequest);
     } else {
