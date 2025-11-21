@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';  // ← ОДИН РАЗ!
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import axios from 'axios';
@@ -8,7 +7,7 @@ import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import { useNotification } from '../context/NotificationContext';
 import '../styles/VoiceCall.css';
-import * as sodium from 'libsodium from 'libsodium-wrappers';
+import * as sodium from 'libsodium-wrappers';
 
 Chart.register(...registerables);
 
