@@ -64,12 +64,49 @@ const VoiceCallSecure = () => {
 
       await sodium.ready;
       const stored = localStorage.getItem(`keyPair_${currentUserId}`);
+      let pair;
       if (!stored) {
-        notify('Нет ключей для защищённого звонка');
-        navigate('/');
-        return;
+        console.log(`Generating new key pair for userId: ${currentUserId}`);
+        const newKeyPair = sodium.crypto_sign_keypair();
+        const publicKeyBase64 = sodium.to_base64(newKeyPair.publicKey);
+        const privateKeyBase64 = sodium.to_base64(newKeyPair.privateKey);
+        pair = {
+          publicKey: publicKeyBase64,
+          privateKey: privateKeyBase64
+        };
+        localStorage.setItem(`keyPair_${currentUserId}`, JSON.stringify(pair));
+        notify('Ключи сгенерированы и синхронизированы');
+        try {
+          console.log(`Syncing public key for userId: ${currentUserId}`);
+          const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUserId, publicKey: publicKeyBase64 }),
+          });
+          if (!syncResponse.ok) throw new Error(`Sync failed: ${syncResponse.status}`);
+          console.log(`Key synced for userId: ${currentUserId}`);
+        } catch (syncError) {
+          console.error('Sync error:', syncError);
+          notify('Синхронизация ключей не удалась — попробуйте перезапустить звонок');
+        }
+      } else {
+        pair = JSON.parse(stored);
+        // Синхронизируем существующие ключи (на случай обновления)
+        try {
+          console.log(`Syncing existing public key for userId: ${currentUserId}`);
+          const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUserId, publicKey: pair.publicKey }),
+          });
+          if (!syncResponse.ok) throw new Error(`Sync failed: ${syncResponse.status}`);
+          console.log(`Existing key synced for userId: ${currentUserId}`);
+          notify('Ключи обновлены и синхронизированы');
+        } catch (syncError) {
+          console.error('Sync error:', syncError);
+          notify('Синхронизация ключей не удалась — попробуйте перезапустить звонок');
+        }
       }
-      const pair = JSON.parse(stored);
       setMyKeys(pair);
 
       try {
