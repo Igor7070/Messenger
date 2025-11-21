@@ -17,30 +17,31 @@ const VoiceCallSecure = () => {
   const { roomId } = useParams();
   const location = useLocation();
 
-  const {
-    incomingCall,
-    isCaller,
-    currentUserId,
-    callerName,
-    recipientName,
-    recipientId,
-  } = location.state || {};
+  const state = location.state || {};
+  const incomingCall = state.incomingCall || null;
+  const isCaller = state.isCaller || false;
+  const currentUserId = state.currentUserId;
+  const callerName = state.callerName || '';
+  const recipientName = state.recipientName || '';
+  const recipientId = state.recipientId;
 
+  // Если нет currentUserId — просто ничего не рендерим (но хуки уже вызваны!)
   if (!currentUserId || !roomId) {
-    notify('Ошибка доступа к звонку');
-    navigate('/');
-    return null;
+    return (
+      <div className="voice-call-container">
+        <h2>Ошибка доступа к звонку</h2>
+        <button onClick={() => navigate('/')}>На главную</button>
+      </div>
+    );
   }
 
-  // Рефы
-  // ← Ошибка была здесь — лишняя запятая в конце
+  // === ВСЕ ХУКИ ДОЛЖНЫ БЫТЬ ВЫШЕ ЛЮБОГО RETURN ===
   const localAudioRef = useRef(null);
   const remoteAudioRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const stompClient = useRef(null);
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
 
-  // Состояние
   const [isWaiting, setIsWaiting] = useState(isCaller);
   const [secureStatus, setSecureStatus] = useState('checking');
   const [chartData, setChartData] = useState({
@@ -55,12 +56,10 @@ const VoiceCallSecure = () => {
     }],
   });
 
-  // Флаги
   const hasNotifiedEndCall = useRef(false);
   const hasSavedCall = useRef(false);
   let terminationInitiator = false;
 
-  // Ключи
   const [myKeys, setMyKeys] = useState(null);
   const [partnerPublicKey, setPartnerPublicKey] = useState(null);
 
@@ -74,18 +73,19 @@ const VoiceCallSecure = () => {
         navigate('/');
         return;
       }
-      const pair = JSON.parse(stored);
+      const pair = JSON.parse(st144);
       setMyKeys(pair);
 
       try {
         const targetId = isCaller ? recipientId : incomingCall?.callerId;
+        if (!targetId) return;
         const resp = await fetch(`https://unlimitedpossibilities12.org/api/public_keys/${targetId}`);
         if (resp.ok) {
           const data = await resp.json();
           setPartnerPublicKey(data.publicKey);
         }
       } catch (e) {
-        notify('Не удалось получить ключ собеседника');
+        notify('Не удалось загрузить ключ собеседника');
       }
     };
     loadKeys();
@@ -125,7 +125,7 @@ const VoiceCallSecure = () => {
             const data = JSON.parse(msg.body);
             handleSignal(data);
           } catch (e) {
-            console.error('Parse error:', e);
+            console.error('Ошибка парсинга сигнала', e);
           }
         });
 
@@ -135,7 +135,7 @@ const VoiceCallSecure = () => {
         });
 
         if (!isCaller && incomingCall) {
-          handleIncomingSecure();
+          handleIncomingSecureCall();
         }
       },
     });
@@ -185,9 +185,7 @@ const VoiceCallSecure = () => {
     };
 
     peerConnectionRef.current.oniceconnectionstatechange = () => {
-      const state = peerConnectionRef.current?.iceConnectionState;
-      if (state === 'connected') console.log('Secure call connected');
-      if (state === 'failed') {
+      if (peerConnectionRef.current?.iceConnectionState === 'failed') {
         notify('Соединение не удалось');
         endCall();
       }
@@ -210,7 +208,7 @@ const VoiceCallSecure = () => {
     };
   };
 
-  const handleIncomingSecure = async () => {
+  const handleIncomingSecureCall = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localAudioRef.current.srcObject = stream;
@@ -283,7 +281,7 @@ const VoiceCallSecure = () => {
     } else if (s.type === 'candidate' && peerConnectionRef.current) {
       try {
         await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(s.iceCandidate));
-      } catch (e) {}
+      } catch {}
 
     } else if (s.type === 'ready' && isCaller) {
       setIsWaiting(false);
@@ -317,17 +315,19 @@ const VoiceCallSecure = () => {
     peerConnectionRef.current?.close();
     peerConnectionRef.current = null;
 
-    ['localAudioRef', 'remoteAudioRef'].forEach(ref => {
-      const el = ref === 'localAudioRef' ? localAudioRef : remoteAudioRef;
-      if (el.current?.srcObject) {
-        el.current.srcObject.getTracks().forEach(t => t.stop());
-        el.current.srcObject = null;
-      }
-    });
+    if (localAudioRef.current?.srcObject) {
+      localAudioRef.current.srcObject.getTracks().forEach(t => t.stop());
+      localAudioRef.current.srcObject = null;
+    }
+    if (remoteAudioRef.current?.srcObject) {
+      remoteAudioRef.current.srcObject.getTracks().forEach(t => t.stop());
+      remoteAudioRef.current.srcObject = null;
+    }
 
     if (isCaller) {
       setIsWaiting(false);
       ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
     }
 
     if (stompClient.current?.connected && !terminationInitiator) {
@@ -346,12 +346,11 @@ const VoiceCallSecure = () => {
     }
 
     try {
-      const status = 'completed'; // reject не используется в защищённом
       await axios.post(`https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`, {
         caller: isCaller ? currentUserId : incomingCall?.callerId,
         receiver: isCaller ? recipientId : currentUserId,
         direction: isCaller ? 'outgoing' : 'incoming',
-        status,
+        status: 'completed',
         callType: 'voice_secure',
         timestamp: new Date().toISOString(),
         roomId,
