@@ -26,16 +26,6 @@ const VoiceCallSecure = () => {
     recipientId = null,
   } = location.state || {};
 
-  // Если нет ID — просто покажем ошибку, но хуки уже вызваны ниже
-  if (!currentUserId || !roomId) {
-    return (
-      <div className="voice-call-container">
-        <h2>Ошибка: нет доступа к звонку</h2>
-        <button onClick={() => navigate('/')}>На главную</button>
-      </div>
-    );
-  }
-
   // === ВСЕ ХУКИ ЗДЕСЬ — ВСЕГДА В ОДНОМ ПОРЯДКЕ ===
   const localAudioRef = useRef(null);
   const remoteAudioRef = useRef(null);
@@ -70,6 +60,8 @@ const VoiceCallSecure = () => {
   // Загрузка ключей
   useEffect(() => {
     const loadKeys = async () => {
+      if (!currentUserId || !roomId) return;
+
       await sodium.ready;
       const stored = localStorage.getItem(`keyPair_${currentUserId}`);
       if (!stored) {
@@ -94,27 +86,9 @@ const VoiceCallSecure = () => {
     loadKeys();
   }, [currentUserId, recipientId, incomingCall, isCaller, navigate, notify]);
 
-  // Подпись и проверка SDP
-  const signSdp = (sdp) => {
-    const msg = new TextEncoder().encode(sdp);
-    const sig = sodium.crypto_sign_detached(msg, sodium.from_base64(myKeys.privateKey));
-    return sodium.to_base64(sig);
-  };
-
-  const verifySdp = (sdp, signature, publicKey) => {
-    try {
-      const msg = new TextEncoder().encode(sdp);
-      const sig = sodium.from_base64(signature);
-      const pk = sodium.from_base64(publicKey);
-      return sodium.crypto_sign_verify_detached(sig, msg, pk);
-    } catch {
-      return false;
-    }
-  };
-
   // WebSocket
   useEffect(() => {
-    if (!myKeys) return;
+    if (!myKeys || !currentUserId || !roomId) return;
 
     const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
     stompClient.current = new Client({
@@ -164,6 +138,34 @@ const VoiceCallSecure = () => {
       ringtoneRef.current.currentTime = 0;
     };
   }, [myKeys, roomId, isCaller, incomingCall]);
+
+  // Если нет ID — просто покажем ошибку, но хуки уже вызваны выше
+  if (!currentUserId || !roomId) {
+    return (
+      <div className="voice-call-container">
+        <h2>Ошибка: нет доступа к звонку</h2>
+        <button onClick={() => navigate('/')}>На главную</button>
+      </div>
+    );
+  }
+
+  // Подпись и проверка SDP
+  const signSdp = (sdp) => {
+    const msg = new TextEncoder().encode(sdp);
+    const sig = sodium.crypto_sign_detached(msg, sodium.from_base64(myKeys.privateKey));
+    return sodium.to_base64(sig);
+  };
+
+  const verifySdp = (sdp, signature, publicKey) => {
+    try {
+      const msg = new TextEncoder().encode(sdp);
+      const sig = sodium.from_base64(signature);
+      const pk = sodium.from_base64(publicKey);
+      return sodium.crypto_sign_verify_detached(sig, msg, pk);
+    } catch {
+      return false;
+    }
+  };
 
   // Создание PeerConnection
   const createPeerConnection = () => {
