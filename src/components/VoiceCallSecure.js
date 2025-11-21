@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';  // ← ОДИН РАЗ!
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import axios from 'axios';
@@ -26,31 +26,30 @@ const VoiceCallSecure = () => {
     recipientId,
   } = location.state || {};
 
-  if (!currentUserId) {
-    notify('Ошибка: нет currentUserId');
+  if (!currentUserId || !roomId) {
+    notify('Ошибка доступа к звонку');
     navigate('/');
     return null;
   }
 
   // Рефы
+  // ← Ошибка была здесь — лишняя запятая в конце
   const localAudioRef = useRef(null);
   const remoteAudioRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const stompClient = useRef(null);
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
-  ringtoneRef.current.loop = true;
 
   // Состояние
   const [isWaiting, setIsWaiting] = useState(isCaller);
-  const [secureStatus, setSecureStatus] = useState('checking'); // checking | secure | compromised
-
+  const [secureStatus, setSecureStatus] = useState('checking');
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [{
       label: 'Voice Activity',
       data: [],
       borderColor: 'rgba(74, 144, 226, 1)',
-      backgroundColor: 'rgba(74, 226, 0.2)',
+      backgroundColor: 'rgba(74, 144, 226, 0.2)',
       borderWidth: 2,
       fill: true,
     }],
@@ -90,7 +89,7 @@ const VoiceCallSecure = () => {
       }
     };
     loadKeys();
-  }, []);
+  }, [currentUserId, isCaller, recipientId, incomingCall, navigate, notify]);
 
   // Подпись и проверка SDP
   const signSdp = (sdp) => {
@@ -110,9 +109,9 @@ const VoiceCallSecure = () => {
     }
   };
 
-  // WebSocket + уведомление о ключах
+  // WebSocket
   useEffect(() => {
-    if (!myKeys || !roomId) return;
+    if (!myKeys) return;
 
     const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
     stompClient.current = new Client({
@@ -121,18 +120,15 @@ const VoiceCallSecure = () => {
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
       onConnect: () => {
-        console.log('WS connected (secure)');
-
         stompClient.current.subscribe(`/topic/room/${roomId}`, (msg) => {
           try {
             const data = JSON.parse(msg.body);
             handleSignal(data);
           } catch (e) {
-            console.error('Ошибка парсинга', e);
+            console.error('Parse error:', e);
           }
         });
 
-        // Уведомляем собеседника о своих актуальных ключах (как в секретном чате)
         stompClient.current.publish({
           destination: '/app/publicKey/update',
           body: JSON.stringify({ userId: currentUserId, publicKey: myKeys.publicKey }),
@@ -146,6 +142,7 @@ const VoiceCallSecure = () => {
     stompClient.current.activate();
 
     if (isCaller) {
+      ringtoneRef.current.loop = true;
       ringtoneRef.current.play().catch(() => {});
     }
 
@@ -156,13 +153,14 @@ const VoiceCallSecure = () => {
           ...prev.datasets[0],
           data: [...prev.datasets[0].data.slice(-30), Math.random() * 100],
         }],
-      })),
+      }));
     }, 1000);
 
     return () => {
       clearInterval(interval);
       stompClient.current?.deactivate();
       ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
     };
   }, [myKeys, roomId, isCaller, incomingCall]);
 
@@ -181,14 +179,15 @@ const VoiceCallSecure = () => {
     peerConnectionRef.current = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'all' });
 
     peerConnectionRef.current.ontrack = (e) => {
-      if (remoteAudioRef.current) remoteAudioRef.current.srcObject = e.streams[0];
+      if (remoteAudioRef.current && e.streams[0]) {
+        remoteAudioRef.current.srcObject = e.streams[0];
+      }
     };
 
     peerConnectionRef.current.oniceconnectionstatechange = () => {
-      if (peerConnectionRef.current?.iceConnectionState === 'connected') {
-        console.log('Secure call connected');
-      }
-      if (peerConnectionRef.current?.iceConnectionState === 'failed') {
+      const state = peerConnectionRef.current?.iceConnectionState;
+      if (state === 'connected') console.log('Secure call connected');
+      if (state === 'failed') {
         notify('Соединение не удалось');
         endCall();
       }
@@ -212,36 +211,43 @@ const VoiceCallSecure = () => {
   };
 
   const handleIncomingSecure = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    localAudioRef.current.srcObject = stream;
-
-    createPeerConnection();
-    stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
-
-    sendSignal({ from: currentUserId, signal: { type: 'ready' } });
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localAudioRef.current.srcObject = stream;
+      createPeerConnection();
+      stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
+      sendSignal({ from: currentUserId, signal: { type: 'ready' } });
+    } catch (e) {
+      notify('Нет доступа к микрофону');
+      endCall();
+    }
   };
 
   const startSecureCall = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    localAudioRef.current.srcObject = stream;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localAudioRef.current.srcObject = stream;
+      createPeerConnection();
+      stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
 
-    createPeerConnection();
-    stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
+      const offer = await peerConnectionRef.current.createOffer();
+      await peerConnectionRef.current.setLocalDescription(offer);
 
-    const offer = await peerConnectionRef.current.createOffer();
-    await peerConnectionRef.current.setLocalDescription(offer);
+      const signature = signSdp(offer.sdp);
 
-    const signature = signSdp(offer.sdp);
-
-    sendSignal({
-      from: currentUserId,
-      signal: {
-        type: 'offer',
-        sdp: offer.sdp,
-        signature,
-        publicKey: myKeys.publicKey,
-      },
-    });
+      sendSignal({
+        from: currentUserId,
+        signal: {
+          type: 'offer',
+          sdp: offer.sdp,
+          signature,
+          publicKey: myKeys.publicKey,
+        },
+      });
+    } catch (e) {
+      notify('Ошибка запуска звонка');
+      endCall();
+    }
   };
 
   const handleSignal = async (msg) => {
@@ -250,44 +256,41 @@ const VoiceCallSecure = () => {
     if (s.type === 'offer') {
       if (!verifySdp(s.sdp, s.signature, s.publicKey || partnerPublicKey)) {
         setSecureStatus('compromised');
-        notify('АТАКА! Подпись SDP не совпадает', { type: 'error' });
+        notify('АТАКА! Подпись не совпадает');
         endCall();
         return;
       }
-
       await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: s.sdp }));
       const answer = await peerConnectionRef.current.createAnswer();
       await peerConnectionRef.current.setLocalDescription(answer);
-
       const sig = signSdp(answer.sdp);
-
       sendSignal({
         from: currentUserId,
         signal: { type: 'answer', sdp: answer.sdp, signature: sig, publicKey: myKeys.publicKey },
       });
-
       setSecureStatus('secure');
 
     } else if (s.type === 'answer') {
       if (!verifySdp(s.sdp, s.signature, s.publicKey || partnerPublicKey)) {
         setSecureStatus('compromised');
-        notify('АТАКА! Ответ подделан', { type: 'error' });
+        notify('АТАКА! Ответ подделан');
         endCall();
         return;
       }
-
-      await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: s.sdp));
+      await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: s.sdp }));
       setSecureStatus('secure');
 
     } else if (s.type === 'candidate' && peerConnectionRef.current) {
       try {
         await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(s.iceCandidate));
       } catch (e) {}
+
     } else if (s.type === 'ready' && isCaller) {
       setIsWaiting(false);
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
       startSecureCall();
+
     } else if (s.type === 'endCall') {
       if (!hasNotifiedEndCall.current) {
         hasNotifiedEndCall.current = true;
@@ -307,7 +310,6 @@ const VoiceCallSecure = () => {
     }
   };
 
-  // Конец звонка — 100% как в обычном
   const endCall = async () => {
     if (hasSavedCall.current) return;
     hasSavedCall.current = true;
@@ -315,19 +317,17 @@ const VoiceCallSecure = () => {
     peerConnectionRef.current?.close();
     peerConnectionRef.current = null;
 
-    if (localAudioRef.current?.srcObject) {
-      localAudioRef.current.srcObject.getTracks().forEach(t => t.stop());
-      localAudioRef.current.srcObject = null;
-    }
-    if (remoteAudioRef.current?.srcObject) {
-      remoteAudioRef.current.srcObject.getTracks().forEach(t => t.stop());
-      remoteAudioRef.current.srcObject = null;
-    }
+    ['localAudioRef', 'remoteAudioRef'].forEach(ref => {
+      const el = ref === 'localAudioRef' ? localAudioRef : remoteAudioRef;
+      if (el.current?.srcObject) {
+        el.current.srcObject.getTracks().forEach(t => t.stop());
+        el.current.srcObject = null;
+      }
+    });
 
     if (isCaller) {
       setIsWaiting(false);
       ringtoneRef.current.pause();
-      ringtoneRef.current.currentTime = 0;
     }
 
     if (stompClient.current?.connected && !terminationInitiator) {
@@ -346,7 +346,7 @@ const VoiceCallSecure = () => {
     }
 
     try {
-      const status = hasNotifiedRejectCall.current ? 'rejected' : 'completed';
+      const status = 'completed'; // reject не используется в защищённом
       await axios.post(`https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`, {
         caller: isCaller ? currentUserId : incomingCall?.callerId,
         receiver: isCaller ? recipientId : currentUserId,
@@ -356,19 +356,10 @@ const VoiceCallSecure = () => {
         timestamp: new Date().toISOString(),
         roomId,
       });
-    } catch (e) {
-      console.error('Ошибка сохранения защищённого звонка', e);
-    }
+    } catch (e) {}
 
     navigate('/');
   };
-
-  // Автостарт для звонищего — только после получения ready!
-  useEffect(() => {
-    if (isCaller && myKeys && partnerPublicKey) {
-      // НИЧЕГО НЕ ДЕЛАЕМ! Ждём ready от принимающего
-    }
-  }, [isCaller, myKeys, partnerPublicKey]); // ← пустой, потому что старт только по ready
 
   return (
     <div className="voice-call-container">
