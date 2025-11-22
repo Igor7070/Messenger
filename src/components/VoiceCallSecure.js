@@ -167,7 +167,7 @@ const VoiceCallSecure = () => {
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
     };
-  }, [currentUserId, roomId, isCaller, incomingCall, myKeys]);
+  }, [currentUserId, roomId, isCaller, incomingCall]);
 
   // Отправляем keys_ready как только ключи загружены и WS подключён
   useEffect(() => {
