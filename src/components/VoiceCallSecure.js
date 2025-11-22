@@ -347,11 +347,16 @@ const VoiceCallSecure = () => {
   };
 
   const handleSignal = async (msg) => {
+    // КРИТИЧЕСКИ ВАЖНО: игнорируем свои собственные сообщения (эхо от STOMP)
+    if (msg.from == currentUserId) {
+      return;
+    }
+
     console.log('Secure handling signal:', JSON.stringify(msg.signal, null, 2));
     const s = msg.signal;
 
+    // acceptCall — только звонящий
     if (s.type === 'acceptCall' && isCaller) {
-      console.log('Secure received acceptCall');
       if (!hasNotifiedAcceptCall.current) {
         hasNotifiedAcceptCall.current = true;
         notify(`${recipientName} accepted the call.`);
@@ -359,34 +364,47 @@ const VoiceCallSecure = () => {
       return;
     }
 
-    if (s.type === 'offer') {
-      console.log('Secure handling offer');
+    // offer — только принимающий (не звонящий!)
+    if (s.type === 'offer' && !isCaller) {
+      console.log('Secure handling offer (callee)');
+      
       const publicKeyToUse = s.publicKey || partnerPublicKey;
-      if (!publicKeyToUse) {
-        console.error('No public key for verify');
-        endCall();
-        return;
-      }
-      if (!verifySdp(s.sdp, s.signature, publicKeyToUse)) {
-        console.error('Secure verify FAILED');
+      if (!publicKeyToUse || !s.signature) {
+        console.error('Missing key or signature in offer');
         setSecureStatus('compromised');
-        notify('АТАКА! Подпись не совпадает');
+        notify('АТАКА! Отсутствует ключ или подпись');
         endCall();
         return;
       }
-      console.log('Secure verify SUCCESS');
+
+      if (!verifySdp(s.sdp, s.signature, publicKeyToUse)) {
+        console.error('Secure verify FAILED (offer)');
+        setSecureStatus('compromised');
+        notify('АТАКА! Подпись offer не совпадает');
+        endCall();
+        return;
+      }
+
+      console.log('Secure verify SUCCESS (offer)');
 
       try {
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: s.sdp }));
+        await peerConnectionRef.current.setRemoteDescription(
+          new RTCSessionDescription({ type: 'offer', sdp: s.sdp })
+        );
+
         const answer = await peerConnectionRef.current.createAnswer();
         await peerConnectionRef.current.setLocalDescription(answer);
-        console.log('Secure answer created/set');
 
-        const sig = signSdp(answer.sdp);
+        const answerSig = signSdp(answer.sdp);
 
         sendSignal({
           from: currentUserId,
-          signal: { type: 'answer', sdp: answer.sdp, signature: sig, publicKey: myKeys.publicKey },
+          signal: {
+            type: 'answer',
+            sdp: answer.sdp,
+            signature: answerSig,
+            publicKey: myKeys.publicKey,
+          },
         });
 
         setSecureStatus('secure');
@@ -399,69 +417,90 @@ const VoiceCallSecure = () => {
         endCall();
       }
 
-    } else if (s.type === 'answer') {
-      console.log('Secure handling answer');
+      return;
+    }
+
+    // answer — только звонящий!
+    if (s.type === 'answer' && isCaller) {
+      console.log('Secure handling answer (caller)');
+
       const publicKeyToUse = s.publicKey || partnerPublicKey;
-      if (!publicKeyToUse) {
-        console.error('No public key for verify');
-        endCall();
-        return;
-      }
-      if (!verifySdp(s.sdp, s.signature, publicKeyToUse)) {
-        console.error('Secure verify FAILED');
+      if (!publicKeyToUse || !s.signature) {
+        console.error('Missing key or signature in answer');
         setSecureStatus('compromised');
-        notify('АТАКА! Ответ подделан');
+        notify('АТАКА! Ответ без подписи');
         endCall();
         return;
       }
-      console.log('Secure verify SUCCESS');
+
+      if (!verifySdp(s.sdp, s.signature, publicKeyToUse)) {
+        console.error('Secure verify FAILED (answer)');
+        setSecureStatus('compromised');
+        notify('АТАКА! Подпись ответа не совпадает');
+        endCall();
+        return;
+      }
+
+      console.log('Secure verify SUCCESS (answer)');
 
       try {
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: s.sdp }));
+        await peerConnectionRef.current.setRemoteDescription(
+          new RTCSessionDescription({ type: 'answer', sdp: s.sdp })
+        );
         setSecureStatus('secure');
       } catch (e) {
-        console.error('Secure answer processing error:', e);
+        console.error('Failed to set remote answer:', e);
         endCall();
       }
 
-    } else if (s.type === 'candidate' && peerConnectionRef.current) {
-      console.log('Secure handling candidate');
-      // + delay для race fix
+      return;
+    }
+
+    // ICE candidate
+    if (s.type === 'candidate' && peerConnectionRef.current) {
       setTimeout(async () => {
         try {
-          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(s.iceCandidate));
-          console.log('Secure candidate added');
+          await peerConnectionRef.current.addIceCandidate(
+            new RTCIceCandidate(s.iceCandidate)
+          );
         } catch (e) {
-          console.error('Secure add candidate error:', e);
+          console.error('Add ICE candidate error:', e);
         }
       }, 100);
+      return;
+    }
 
-    } else if (s.type === 'ready' && isCaller) {
-      console.log('Secure received ready');
+    // ready — только звонящий
+    if (s.type === 'ready' && isCaller) {
       setIsWaiting(false);
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
-      setTimeout(() => startSecureCall(), 1000); // + delay как в обычном
+      setTimeout(() => startSecureCall(), 1000);
+      return;
+    }
 
-    } else if (s.type === 'endCall') {
-      console.log('Secure endCall received');
+    // endCall
+    if (s.type === 'endCall') {
       if (!hasNotifiedEndCall.current) {
         hasNotifiedEndCall.current = true;
         notify(`${isCaller ? recipientName : callerName} завершил звонок`);
       }
       terminationInitiator = true;
       endCall();
-    } else if (s.type === 'rejectCall' && isCaller) {
-      console.log('Secure rejectCall received');
+      return;
+    }
+
+    // rejectCall
+    if (s.type === 'rejectCall' && isCaller) {
       if (!hasNotifiedRejectCall.current) {
         hasNotifiedRejectCall.current = true;
         setIsWaiting(false);
         ringtoneRef.current.pause();
         ringtoneRef.current.currentTime = 0;
-        notify(`${recipientName} rejected the call.`);
-        terminationInitiator = true;
-        endCall();
+        notify(`${recipientName} отклонил звонок`);
       }
+      terminationInitiator = true;
+      endCall();
     }
   };
 
