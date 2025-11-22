@@ -374,31 +374,28 @@ const VoiceCallSecure = () => {
         endCall();
         return;
       }
-      console.log('Secure verify SUCCESS');
 
-      try {
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: s.sdp }));
-        const answer = await peerConnectionRef.current.createAnswer();
-        await peerConnectionRef.current.setLocalDescription(answer);
-        console.log('Secure answer created/set');
-
-        const sig = signSdp(answer.sdp);
-
-        sendSignal({
-          from: currentUserId,
-          signal: { type: 'answer', sdp: answer.sdp, signature: sig, publicKey: myKeys.publicKey },
-        });
-
-        setSecureStatus('secure');
-        if (!hasNotifiedAcceptCall.current) {
-          hasNotifiedAcceptCall.current = true;
-          notify(`${recipientName} accepted the call.`);
+      // ← СОЗДАЁМ PC, ЕСЛИ ЕГО ЕЩЁ НЕТ!
+      if (!peerConnectionRef.current) {
+        createPeerConnection();
+        const stream = localAudioRef.current?.srcObject;
+        if (stream) {
+          stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
         }
-      } catch (e) {
-        console.error('Secure offer processing error:', e);
-        endCall();
       }
 
+      await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: s.sdp }));
+      const answer = await peerConnectionRef.current.createAnswer();
+      await peerConnectionRef.current.setLocalDescription(answer);
+
+      const sig = signSdp(answer.sdp);
+
+      sendSignal({
+        from: currentUserId,
+        signal: { type: 'answer', sdp: answer.sdp, signature: sig, publicKey: myKeys.publicKey },
+      });
+
+      setSecureStatus('secure');
     } else if (s.type === 'answer') {
       console.log('Secure handling answer');
       const publicKeyToUse = s.publicKey || partnerPublicKey;
