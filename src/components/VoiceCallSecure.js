@@ -101,14 +101,6 @@ const VoiceCallSecure = () => {
           const data = await resp.json();
           setPartnerPublicKey(data.publicKey);
           console.log('Partner key loaded — sending keys_ready');
-
-          // ОТПРАВЛЯЕМ keys_ready ТОЛЬКО ЗДЕСЬ — после загрузки ключа собеседника!
-          if (stompClient.current?.connected) {
-            sendSignal({ 
-              from: currentUserId, 
-              signal: { type: 'keys_ready', publicKey: pair.publicKey } 
-            });
-          }
         }
       } catch (e) {
         notify('Не удалось загрузить ключ собеседника');
@@ -120,12 +112,8 @@ const VoiceCallSecure = () => {
 
   // WebSocket
   useEffect(() => {
-    if (!myKeys || !currentUserId || !roomId) {
-      console.log('Secure WS setup skipped: missing myKeys/currentUserId/roomId');
-      return;
-    }
+    if (!myKeys) return;
 
-    console.log('Initializing Secure WS');
     const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
     stompClient.current = new Client({
       webSocketFactory: () => socket,
@@ -134,39 +122,25 @@ const VoiceCallSecure = () => {
       heartbeatOutgoing: 10000,
       onConnect: () => {
         console.log('Secure WS connected');
+
         stompClient.current.subscribe(`/topic/room/${roomId}`, (msg) => {
-          console.log('Secure WS received:', msg.body);
           try {
             const data = JSON.parse(msg.body);
             handleSignal(data);
-          } catch (e) {
-            console.error('Secure WS parse error:', e);
-          }
+          } catch (e) {}
         });
 
+        // ← ОТПРАВЛЯЕМ keys_ready ТОЛЬКО ЗДЕСЬ — когда WS точно подключён!
+        sendSignal({ from: currentUserId, signal: { type: 'keys_ready', publicKey: myKeys.publicKey } });
+
         if (!isCaller && incomingCall) {
-          console.log('Secure: handling incoming call');
           handleIncomingSecureCall();
         }
       },
-      onStompError: (frame) => {
-        console.error('Secure STOMP error:', frame);
-        notify('STOMP protocol error.');
-      },
-      onWebSocketError: (error) => {
-        console.error('Secure WS error:', error);
-        notify('WebSocket connection error');
-      },
-      onDisconnect: () => {
-        console.log('Secure WS disconnected');
-      },
     });
-    if (!stompClient.current.connected) {
-      stompClient.current.activate();
-    }
+    stompClient.current.activate();
 
     if (isCaller) {
-      console.log('Secure caller: starting ringtone');
       ringtoneRef.current.loop = true;
       ringtoneRef.current.play().catch(() => {});
     }
@@ -183,11 +157,11 @@ const VoiceCallSecure = () => {
 
     return () => {
       clearInterval(interval);
-      if (stompClient.current) stompClient.current.deactivate();
+      stompClient.current?.deactivate();
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
     };
-  }, [myKeys, roomId, isCaller]); // Убрал incomingCall — redundant
+  }, [myKeys, roomId, isCaller, incomingCall]);
 
   // Если нет ID — просто покажем ошибку
   if (!currentUserId || !roomId) {
