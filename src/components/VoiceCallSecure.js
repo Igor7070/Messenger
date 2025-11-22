@@ -100,7 +100,7 @@ const VoiceCallSecure = () => {
         if (resp.ok) {
           const data = await resp.json();
           setPartnerPublicKey(data.publicKey);
-          console.log('Partner key loaded — sending keys_ready');
+          console.log('Partner key loaded');
         }
       } catch (e) {
         notify('Не удалось загрузить ключ собеседника');
@@ -112,8 +112,9 @@ const VoiceCallSecure = () => {
 
   // WebSocket
   useEffect(() => {
-    if (!myKeys) return;
+    if (!currentUserId || !roomId) return;
 
+    console.log('Initializing Secure WS');
     const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
     stompClient.current = new Client({
       webSocketFactory: () => socket,
@@ -130,8 +131,13 @@ const VoiceCallSecure = () => {
           } catch (e) {}
         });
 
-        // ← ОТПРАВЛЯЕМ keys_ready ТОЛЬКО ЗДЕСЬ — когда WS точно подключён!
-        sendSignal({ from: currentUserId, signal: { type: 'keys_ready', publicKey: myKeys.publicKey } });
+        // ← ОТПРАВЛЯЕМ keys_ready ВСЕГДА ПОСЛЕ ПОДКЛЮЧЕНИЯ WS!
+        if (myKeys) {
+          sendSignal({ 
+            from: currentUserId, 
+            signal: { type: 'keys_ready', publicKey: myKeys.publicKey } 
+          });
+        }
 
         if (!isCaller && incomingCall) {
           handleIncomingSecureCall();
@@ -161,7 +167,7 @@ const VoiceCallSecure = () => {
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
     };
-  }, [currentUserId, roomId, isCaller, incomingCall]);
+  }, [currentUserId, roomId, isCaller, incomingCall, myKeys]);
 
   // Отправляем keys_ready как только ключи загружены и WS подключён
   useEffect(() => {
@@ -267,18 +273,12 @@ const VoiceCallSecure = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localAudioRef.current.srcObject = stream;
-      console.log('Secure local stream obtained');
-
       createPeerConnection();
       stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
-      console.log('Secure tracks added');
 
-      // Отправляем ТОЛЬКО ready — keys_ready уже отправлен в useEffect!
       sendSignal({ from: currentUserId, signal: { type: 'ready' } });
-
     } catch (error) {
-      console.error('Secure media error:', error);
-      notify('Failed to access microphone.');
+      notify('Нет доступа к микрофону');
       endCall();
     }
   };
