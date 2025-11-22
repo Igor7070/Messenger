@@ -81,7 +81,7 @@ const VoiceCallSecure = () => {
 
       setMyKeys(pair);
 
-      // Синхронизация публичного ключа
+      // Синхронизация своего публичного ключа
       try {
         await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
           method: 'POST',
@@ -100,11 +100,14 @@ const VoiceCallSecure = () => {
         if (resp.ok) {
           const data = await resp.json();
           setPartnerPublicKey(data.publicKey);
-          console.log('Partner key loaded');
+          console.log('Partner key loaded — sending keys_ready');
 
-          // ← ОТПРАВЛЯЕМ keys_ready СРАЗУ ПОСЛЕ ЗАГРУЗКИ КЛЮЧА СОБЕСЕДНИКА
+          // ОТПРАВЛЯЕМ keys_ready ТОЛЬКО ЗДЕСЬ — после загрузки ключа собеседника!
           if (stompClient.current?.connected) {
-            sendSignal({ from: currentUserId, signal: { type: 'keys_ready', publicKey: pair.publicKey } });
+            sendSignal({ 
+              from: currentUserId, 
+              signal: { type: 'keys_ready', publicKey: pair.publicKey } 
+            });
           }
         }
       } catch (e) {
@@ -286,12 +289,11 @@ const VoiceCallSecure = () => {
 
       createPeerConnection();
       stream.getTracks().forEach(t => peerConnectionRef.current.addTrack(t, stream));
+      console.log('Secure tracks added');
 
-      // Отправляем ready
+      // Отправляем ТОЛЬКО ready — keys_ready уже отправлен в useEffect!
       sendSignal({ from: currentUserId, signal: { type: 'ready' } });
 
-      // Отправляем keys_ready (на всякий случай, если useEffect ещё не успел)
-      sendSignal({ from: currentUserId, signal: { type: 'keys_ready', publicKey: myKeys.publicKey } });
     } catch (error) {
       console.error('Secure media error:', error);
       notify('Failed to access microphone.');
