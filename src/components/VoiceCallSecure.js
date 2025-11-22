@@ -161,7 +161,15 @@ const VoiceCallSecure = () => {
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
     };
-  }, [myKeys, roomId, isCaller, incomingCall]);
+  }, [currentUserId, roomId, isCaller, incomingCall]);
+
+  // Отправляем keys_ready как только ключи загружены и WS подключён
+  useEffect(() => {
+    if (myKeys && stompClient.current?.connected) {
+      console.log('Keys ready — sending keys_ready');
+      sendSignal({ from: currentUserId, signal: { type: 'keys_ready', publicKey: myKeys.publicKey } });
+    }
+  }, [myKeys]);
 
   // Если нет ID — просто покажем ошибку
   if (!currentUserId || !roomId) {
