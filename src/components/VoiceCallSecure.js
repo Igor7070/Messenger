@@ -75,7 +75,7 @@ const VoiceCallSecure = () => {
           privateKey: privateKeyBase64
         };
         localStorage.setItem(`signKeyPair_${currentUserId}`, JSON.stringify(pair));
-        notify('Ключи подписи сгенерированы и синхронизированы');
+        notify('Signing keys have been generated and synchronized');
         try {
           console.log(`Syncing SIGN public key for userId: ${currentUserId}`);
           const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
@@ -87,7 +87,7 @@ const VoiceCallSecure = () => {
           console.log(`SIGN key synced for userId: ${currentUserId}`);
         } catch (syncError) {
           console.error('Sync error:', syncError);
-          notify('Синхронизация ключей подписи не удалась — попробуйте перезапустить звонок');
+          notify('Signature key synchronization failed - try restarting the call');
         }
       } else {
         pair = JSON.parse(stored);
@@ -102,10 +102,10 @@ const VoiceCallSecure = () => {
           });
           if (!syncResponse.ok) throw new Error(`Sync failed: ${syncResponse.status}`);
           console.log(`Existing SIGN key synced for userId: ${currentUserId}`);
-          notify('Ключи подписи обновлены и синхронизированы');
+          notify('Signing keys have been updated and synchronized');
         } catch (syncError) {
           console.error('Sync error:', syncError);
-          notify('Синхронизация ключей подписи не удалась — попробуйте перезапустить звонок');
+          notify('Signature key synchronization failed - try restarting the call');
         }
       }
       setMyKeys(pair);
@@ -120,11 +120,11 @@ const VoiceCallSecure = () => {
           console.log(`Partner SIGN public key fetched: length ${sodium.from_base64(data.publicKey).length}`); // 32 bytes
         } else {
           console.error(`Fetch partner key failed: ${resp.status}`);
-          notify('Не удалось загрузить ключ подписи собеседника');
+          notify('Failed to load the other party s signature key');
         }
       } catch (e) {
         console.error('Error fetching partner key:', e);
-        notify('Не удалось загрузить ключ подписи собеседника');
+        notify('Failed to load the other party s signature key');
       }
     };
     loadKeys();
@@ -263,7 +263,7 @@ const VoiceCallSecure = () => {
       const state = peerConnectionRef.current?.iceConnectionState;
       console.log('Secure ICE state:', state);
       if (state === 'failed') {
-        notify('Соединение не удалось');
+        notify('Connection failed');
         endCall();
       } else if (state === 'connected') {
         console.log('Secure WebRTC connected');
@@ -372,7 +372,7 @@ const VoiceCallSecure = () => {
       if (!publicKeyToUse || !s.signature) {
         console.error('Missing key or signature in offer');
         setSecureStatus('compromised');
-        notify('АТАКА! Отсутствует ключ или подпись');
+        notify('ATTACK! Missing key or signature');
         endCall();
         return;
       }
@@ -380,7 +380,7 @@ const VoiceCallSecure = () => {
       if (!verifySdp(s.sdp, s.signature, publicKeyToUse)) {
         console.error('Secure verify FAILED (offer)');
         setSecureStatus('compromised');
-        notify('АТАКА! Подпись offer не совпадает');
+        notify('ATTACK! The offer signature does not match');
         endCall();
         return;
       }
@@ -428,7 +428,7 @@ const VoiceCallSecure = () => {
       if (!publicKeyToUse || !s.signature) {
         console.error('Missing key or signature in answer');
         setSecureStatus('compromised');
-        notify('АТАКА! Ответ без подписи');
+        notify('ATTACK! Unsigned response');
         endCall();
         return;
       }
@@ -436,7 +436,7 @@ const VoiceCallSecure = () => {
       if (!verifySdp(s.sdp, s.signature, publicKeyToUse)) {
         console.error('Secure verify FAILED (answer)');
         setSecureStatus('compromised');
-        notify('АТАКА! Подпись ответа не совпадает');
+        notify('ATTACK! Response signature does not match');
         endCall();
         return;
       }
@@ -483,7 +483,7 @@ const VoiceCallSecure = () => {
     if (s.type === 'endCall') {
       if (!hasNotifiedEndCall.current) {
         hasNotifiedEndCall.current = true;
-        notify(`${isCaller ? recipientName : callerName} завершил звонок`);
+        notify(`${isCaller ? recipientName : callerName} ended the call`);
       }
       terminationInitiator = true;
       endCall();
@@ -497,7 +497,7 @@ const VoiceCallSecure = () => {
         setIsWaiting(false);
         ringtoneRef.current.pause();
         ringtoneRef.current.currentTime = 0;
-        notify(`${recipientName} отклонил звонок`);
+        notify(`${recipientName} rejected the call`);
       }
       terminationInitiator = true;
       endCall();
@@ -584,9 +584,9 @@ const VoiceCallSecure = () => {
           color: secureStatus === 'secure' ? '#00ff00' : secureStatus === 'compromised' ? '#ff0000' : '#ffaa00',
           marginTop: '10px'
         }}>
-          {secureStatus === 'checking' && 'Проверка шифрования...'}
-          {secureStatus === 'secure' && 'Сквозное шифрование активно'}
-          {secureStatus === 'compromised' && 'АТАКА! ЗВОНОК НЕБЕЗОПАСЕН'}
+          {secureStatus === 'checking' && 'Encryption verification...'}
+          {secureStatus === 'secure' && 'End-to-end encryption is active'}
+          {secureStatus === 'compromised' && 'ATTACK! CALL UNSAFE'}
         </div>
       </div>
 
@@ -598,7 +598,7 @@ const VoiceCallSecure = () => {
       </div>
 
       <button className="end-call-button-voice" onClick={endCall}>
-        Завершить
+        End Call
       </button>
     </div>
   );
