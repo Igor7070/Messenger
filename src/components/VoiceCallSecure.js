@@ -222,11 +222,22 @@ const VoiceCallSecure = () => {
   };
 
   const verifySdp = (sdp, signature, publicKey) => {
-    console.log('Verifying SDP, publicKey length:', sodium.from_base64(publicKey).length); // 32
     try {
+      // Функция для приведения URL-safe base64 к обычному
+      const fromBase64 = (str) => {
+        const normalized = str
+          .replace(/-/g, '+')
+          .replace(/_/g, '/');
+        const padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
+        return sodium.from_base64(padded);
+      };
+
       const msg = new TextEncoder().encode(sdp);
-      const sig = sodium.from_base64(signature);
-      const pk = sodium.from_base64(publicKey);
+      const sig = fromBase64(signature);
+      const pk = fromBase64(publicKey);
+
+      console.log('Verifying SDP, publicKey length:', pk.length); // Должно быть 32
+
       const valid = sodium.crypto_sign_verify_detached(sig, msg, pk);
       console.log('Verify result:', valid ? 'SUCCESS' : 'FAILED');
       return valid;
