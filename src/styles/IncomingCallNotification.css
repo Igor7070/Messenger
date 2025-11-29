@@ -97,3 +97,18 @@ h2 {
     background-color: #e53935;
 }
 
+@media (max-width: 800px) {
+    .incoming-call-notification {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        max-width: 90vw !important;
+        width: 320px !important;
+        margin: 0 !important;
+        padding: 24px !important;
+        border-radius: 16px !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+    }
+}
+
