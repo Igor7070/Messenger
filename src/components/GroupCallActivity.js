@@ -1417,7 +1417,7 @@ const GroupCallActivity = () => {
     }
 
     if (isCameraOn) {
-      // Выключаем камеру
+      // ====================== ВЫКЛЮЧЕНИЕ КАМЕРЫ ======================
       if (localVideoStreamRef.current) {
         localVideoStreamRef.current.getVideoTracks().forEach((track) => track.stop());
         localVideoStreamRef.current = new MediaStream(localAudioRef.current.srcObject.getAudioTracks());
@@ -1428,7 +1428,8 @@ const GroupCallActivity = () => {
         console.log('Camera turned off');
       }
       setIsCameraOn(false);
-      // [ДОБАВЛЕНО]: Уведомляем других участников об отключении камеры
+
+      // Уведомляем других об отключении камеры
       callParticipants
         .filter((u) => u.id !== Number(currentUserId))
         .forEach((user) => {
@@ -1446,14 +1447,48 @@ const GroupCallActivity = () => {
             console.log(`Sent cameraOff signal to user ${user.id}`);
           }
         });
+
+      // [НОВОЕ: Renegotiation при выключении камеры]
+      // Нужно отправить новый offer без видео m-line, чтобы другие участники убрали твой видеопоток
+      peerConnections.current.forEach((pc, userId) => {
+        if (
+          (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') &&
+          pc.signalingState === 'stable'
+        ) {
+          pc.createOffer()
+            .then((offer) => pc.setLocalDescription(offer))
+            .then(() => {
+              const signalKey = `${currentUserId}-${userId}-renegotiated-offer-camera-off-${pc.localDescription.sdp.slice(0, 50)}`;
+              if (!sentSignals.current.has(signalKey)) {
+                sentSignals.current.add(signalKey);
+                sendSignal(
+                  {
+                    from: currentUserId,
+                    to: userId,
+                    signal: pc.localDescription, // { type: 'offer', sdp: ... }
+                  },
+                  roomId.current
+                );
+                console.log(`Sent RENEGOTIATED OFFER (camera off) to user ${userId}`);
+              }
+            })
+            .catch((err) => {
+              console.error(`Renegotiation failed (camera off) for user ${userId}:`, err);
+            });
+        }
+      });
+      // ============================================================
+
     } else {
-      // Включаем камеру
+      // ====================== ВКЛЮЧЕНИЕ КАМЕРЫ ======================
       try {
         const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
         localVideoStreamRef.current = new MediaStream([
           ...localAudioRef.current.srcObject.getAudioTracks(),
           ...videoStream.getVideoTracks(),
         ]);
+
+        // Показываем себя локально
         const videoElement = videoRefs.current.get(String(currentUserId));
         if (videoElement) {
           videoElement.srcObject = localVideoStreamRef.current;
@@ -1462,7 +1497,8 @@ const GroupCallActivity = () => {
             toast.error('Failed to display local video');
           });
         }
-        // [ДОБАВЛЕНО]: Добавляем видеотреки в существующие peerConnections
+
+        // Добавляем видеотрек в существующие peerConnections
         peerConnections.current.forEach((pc, userId) => {
           if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
             videoStream.getVideoTracks().forEach((track) => {
@@ -1471,8 +1507,10 @@ const GroupCallActivity = () => {
             });
           }
         });
+
         setIsCameraOn(true);
-        // [ДОБАВЛЕНО]: Уведомляем других участников о включении камеры
+
+        // Уведомляем других о включении камеры
         callParticipants
           .filter((u) => u.id !== Number(currentUserId))
           .forEach((user) => {
@@ -1490,6 +1528,40 @@ const GroupCallActivity = () => {
               console.log(`Sent cameraOn signal to user ${user.id}`);
             }
           });
+
+        // [НОВОЕ: Renegotiation при включении камеры]
+        // Обязательно: после addTrack отправляем renegotiated offer с видео m-line
+        peerConnections.current.forEach((pc, userId) => {
+          if (
+            (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') &&
+            pc.signalingState === 'stable'
+          ) {
+            pc.createOffer()
+              .then((offer) => pc.setLocalDescription(offer))
+              .then(() => {
+                const signalKey = `${currentUserId}-${userId}-renegotiated-offer-camera-on-${pc.localDescription.sdp.slice(0, 50)}`;
+                if (!sentSignals.current.has(signalKey)) {
+                  sentSignals.current.add(signalKey);
+                  sendSignal(
+                    {
+                      from: currentUserId,
+                      to: userId,
+                      signal: pc.localDescription, // { type: 'offer', sdp: ... }
+                    },
+                    roomId.current
+                  );
+                  console.log(`Sent RENEGOTIATED OFFER (camera on) to user ${userId}`);
+                }
+              })
+              .catch((err) => {
+                console.error(`Renegotiation failed (camera on) for user ${userId}:`, err);
+              });
+          } else {
+            console.warn(`Skipping renegotiation for ${userId}: ice=${pc.iceConnectionState}, signaling=${pc.signalingState}`);
+          }
+        });
+        // ============================================================
+
       } catch (error) {
         console.error('Error accessing camera:', error);
         toast.error('Failed to access camera');
