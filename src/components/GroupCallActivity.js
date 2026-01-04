@@ -1483,15 +1483,19 @@ const GroupCallActivity = () => {
       // ====================== ВКЛЮЧЕНИЕ КАМЕРЫ ======================
       try {
         const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // Создаём ПОЛНЫЙ поток (аудио + видео) — он пойдёт к другим участникам
         localVideoStreamRef.current = new MediaStream([
           ...localAudioRef.current.srcObject.getAudioTracks(),
           ...videoStream.getVideoTracks(),
         ]);
 
-        // Показываем себя локально
+        // Создаём ОТДЕЛЬНЫЙ поток ТОЛЬКО с видео — для локального превью (без звука!)
+        const localVideoOnlyStream = new MediaStream(videoStream.getVideoTracks());
+
+        // Показываем себя локально — ТОЛЬКО ВИДЕО, без аудио → нет эха
         const videoElement = videoRefs.current.get(String(currentUserId));
         if (videoElement) {
-          videoElement.srcObject = localVideoStreamRef.current;
+          videoElement.srcObject = localVideoOnlyStream;  // ← Только видео!
           videoElement.play().catch((error) => {
             console.error('Error playing local video:', error);
             toast.error('Failed to display local video');
