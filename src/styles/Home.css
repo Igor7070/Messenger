@@ -425,11 +425,18 @@ h2 {
   background-color: rgba(0, 0, 0, 0.5);
 }
 
+/* Обертка для контента — чтобы паддинг не влиял на позицию иконки */
+.home-content-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 /* === ИКОНКА ИИ-АССИСТЕНТА === */
 .assistant-icon {
   position: absolute;
-  top: 40px;
-  right: 40px;
+  top: 20px;
+  right: 20px;
   width: 56px;
   height: 56px;
   background: rgba(255, 255, 255, 0.15);
