@@ -428,8 +428,8 @@ h2 {
 /* === ИКОНКА ИИ-АССИСТЕНТА === */
 .assistant-icon {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 40px;
+  right: 40px;
   width: 56px;
   height: 56px;
   background: rgba(255, 255, 255, 0.15);
