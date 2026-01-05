@@ -417,161 +417,156 @@ const Home = () => {
 
   return (
     <div className="home-container">
-      {/* Обертка для позиционирования */}
-      <div className="home-content-wrapper">
-
-        <div className="login-container-home">
-          {isLoggedIn ? (
-            <button onClick={logoutUser} className="logout-button-home">
-              Logout
+      <div className="login-container-home">
+        {isLoggedIn ? (
+          <button onClick={logoutUser} className="logout-button-home">
+            Logout
+          </button>
+        ) : (
+          <>
+            <input
+              type="text"
+              value={loginUsername}
+              onChange={(e) => setLoginUsername(e.target.value)}
+              placeholder="Username"
+              className="login-input-home"
+            />
+            <input
+              type="password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              placeholder="Password"
+              className="login-input-home"
+            />
+            <button onClick={loginUserHandler} className="login-button-home">
+              Login
             </button>
-          ) : (
-            <>
-              <input
-                type="text"
-                value={loginUsername}
-                onChange={(e) => setLoginUsername(e.target.value)}
-                placeholder="Username"
-                className="login-input-home"
-              />
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="Password"
-                className="login-input-home"
-              />
-              <button onClick={loginUserHandler} className="login-button-home">
-                Login
-              </button>
-            </>
-          )}
-        </div>
-
-        {incomingCall && (
-          <IncomingCallNotification
-            callerId={incomingCall.callerId}
-            callerName={incomingCall.callerName || 'Unknown'}
-            avatar={incomingCall.avatar}
-            callType={incomingCall.type}
-            onAccept={() => acceptCall(navigate)}
-            onReject={rejectCall}
-          />
+          </>
         )}
+      </div>
 
-        {/* === ВКЛАДКИ ТОЛЬКО НА ТЕЛЕФОНЕ === */}
-        <div className="tab-buttons-mobile">
-          <button
-            className={`tab-button ${activeTab === 'users' ? 'active' : ''}`}
-            onClick={() => setActiveTab('users')}
-          >
-            Users
+      {incomingCall && (
+        <IncomingCallNotification
+          callerId={incomingCall.callerId}
+          callerName={incomingCall.callerName || 'Unknown'}
+          avatar={incomingCall.avatar}
+          callType={incomingCall.type}
+          onAccept={() => acceptCall(navigate)}
+          onReject={rejectCall}
+        />
+      )}
+
+      {/* === ВКЛАДКИ ТОЛЬКО НА ТЕЛЕФОНЕ === */}
+      <div className="tab-buttons-mobile">
+        <button
+          className={`tab-button ${activeTab === 'users' ? 'active' : ''}`}
+          onClick={() => setActiveTab('users')}
+        >
+          Users
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'chats' ? 'active' : ''}`}
+          onClick={() => setActiveTab('chats')}
+        >
+          Group Chats
+        </button>
+      </div>
+
+      {/* === ОСНОВНОЙ КОНТЕНТ === */}
+      <div className="line-divider-container">
+        {/* === USERS === */}
+        <div className={`users-container ${activeTab === 'users' ? 'tab-active' : ''}`}>
+          {/* Заголовок — только на ПК */}
+          <h2 className="home-users-h2 desktop-only">Users</h2>
+
+          <button type="button" onClick={openModal} className="create-user-button-main">
+            Create a new user
           </button>
-          <button
-            className={`tab-button ${activeTab === 'chats' ? 'active' : ''}`}
-            onClick={() => setActiveTab('chats')}
-          >
-            Group Chats
-          </button>
-        </div>
+          <input
+            type="text"
+            value={userSearchTerm}
+            onChange={(e) => setUserSearchTerm(e.target.value)}
+            placeholder="Search user"
+            className="search-input"
+          />
+          <ul className="user-list">
+            {filteredUsers.map((user) => {
+              const avatarSrc = user.avatar
+                ? `https://unlimitedpossibilities12.org${user.avatar}`
+                : null;
+              const initials = user.username ? user.username.charAt(0).toUpperCase() : '';
+              const userStatus = usersStatus[user.id] || { online: false };
 
-        {/* === ОСНОВНОЙ КОНТЕНТ === */}
-        <div className="line-divider-container">
-          {/* === USERS === */}
-          <div className={`users-container ${activeTab === 'users' ? 'tab-active' : ''}`}>
-            {/* Заголовок — только на ПК */}
-            <h2 className="home-users-h2 desktop-only">Users</h2>
-
-            <button type="button" onClick={openModal} className="create-user-button-main">
-              Create a new user
-            </button>
-            <input
-              type="text"
-              value={userSearchTerm}
-              onChange={(e) => setUserSearchTerm(e.target.value)}
-              placeholder="Search user"
-              className="search-input"
-            />
-            <ul className="user-list">
-              {filteredUsers.map((user) => {
-                const avatarSrc = user.avatar
-                  ? `https://unlimitedpossibilities12.org${user.avatar}`
-                  : null;
-                const initials = user.username ? user.username.charAt(0).toUpperCase() : '';
-                const userStatus = usersStatus[user.id] || { online: false };
-
-                return (
-                  <li
-                    key={user.id}
-                    className="user-item"
-                    onClick={() => navigate(`/user/${user.id}`)}
-                  >
-                    {avatarSrc ? (
-                      <img
-                        src={avatarSrc}
-                        alt={`${user.username} avatar`}
-                        className="user-avatar"
-                      />
-                    ) : (
-                      <div className="user-avatar">{initials}</div>
-                    )}
-                    <span className="user-name">{user.username}</span>
-                    {userStatus.online && (
-                      <span className="status-indicator-online-home"></span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          <div className="line-divider"></div>
-
-          {/* === GROUP CHATS === */}
-          <div className={`chats-container ${activeTab === 'chats' ? 'tab-active' : ''}`}>
-            {/* Заголовок — только на ПК */}
-            <h1 className="home-group-chats-h1 desktop-only">Group chats</h1>
-
-            <div className="chat-input-container">
-              <input
-                type="text"
-                value={chatName}
-                onChange={(e) => setChatName(e.target.value)}
-                placeholder="Enter the chat name"
-                className="chat-input"
-              />
-              <button onClick={createChatHandler} className="create-chat-button">
-                Create a group chat
-              </button>
-            </div>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search chats..."
-              className="search-input"
-            />
-            <ul className="chat-list">
-              {filteredChats.map((chat) => (
-                <li key={chat.id} onClick={() => goToChat(chat.id)} className="chat-item">
-                  <div className="chat-info">
-                    <div className="chat-header">
-                      <span className="chat-name-group">{chat.name}</span>
-                      {chat.unreadCount > 0 && (
-                        <span className="unread-count">{chat.unreadCount}</span>
-                      )}
-                    </div>
-                    <div className="chat-footer">
-                      <span className="chat-last-message">{truncateMessage(chat.lastMessage)}</span>
-                      <span className="chat-timestamp">{formatTimestamp(chat.timestamp)}</span>
-                    </div>
-                  </div>
+              return (
+                <li
+                  key={user.id}
+                  className="user-item"
+                  onClick={() => navigate(`/user/${user.id}`)}
+                >
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      alt={`${user.username} avatar`}
+                      className="user-avatar"
+                    />
+                  ) : (
+                    <div className="user-avatar">{initials}</div>
+                  )}
+                  <span className="user-name">{user.username}</span>
+                  {userStatus.online && (
+                    <span className="status-indicator-online-home"></span>
+                  )}
                 </li>
-              ))}
-            </ul>
-          </div>
+              );
+            })}
+          </ul>
         </div>
 
+        <div className="line-divider"></div>
+
+        {/* === GROUP CHATS === */}
+        <div className={`chats-container ${activeTab === 'chats' ? 'tab-active' : ''}`}>
+          {/* Заголовок — только на ПК */}
+          <h1 className="home-group-chats-h1 desktop-only">Group chats</h1>
+
+          <div className="chat-input-container">
+            <input
+              type="text"
+              value={chatName}
+              onChange={(e) => setChatName(e.target.value)}
+              placeholder="Enter the chat name"
+              className="chat-input"
+            />
+            <button onClick={createChatHandler} className="create-chat-button">
+              Create a group chat
+            </button>
+          </div>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search chats..."
+            className="search-input"
+          />
+          <ul className="chat-list">
+            {filteredChats.map((chat) => (
+              <li key={chat.id} onClick={() => goToChat(chat.id)} className="chat-item">
+                <div className="chat-info">
+                  <div className="chat-header">
+                    <span className="chat-name-group">{chat.name}</span>
+                    {chat.unreadCount > 0 && (
+                      <span className="unread-count">{chat.unreadCount}</span>
+                    )}
+                  </div>
+                  <div className="chat-footer">
+                    <span className="chat-last-message">{truncateMessage(chat.lastMessage)}</span>
+                    <span className="chat-timestamp">{formatTimestamp(chat.timestamp)}</span>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       {/* === МОДАЛКА === */}
@@ -618,23 +613,6 @@ const Home = () => {
           Close
         </button>
       </Modal>
-
-      {/* === ИКОНКА ИИ-АССИСТЕНТА === */}
-      <div className="assistant-icon" onClick={() => toast.info('ИИ-ассистент скоро здесь! 🚀')}>
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="11" stroke="url(#grad)" strokeWidth="2" opacity="0.8"/>
-          <path d="M8 9L12 12L16 9" stroke="url(#grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M8 15L12 12L16 15" stroke="url(#grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <defs>
-            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#7B5EFF"/>
-              <stop offset="50%" stopColor="#5E3EFF"/>
-              <stop offset="100%" stopColor="#3E1EFF"/>
-            </linearGradient>
-          </defs>
-        </svg>
-        <span className="assistant-pulse"></span>
-      </div>
     </div>
   );
 };
