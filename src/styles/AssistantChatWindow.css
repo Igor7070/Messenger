@@ -1,0 +1,144 @@
+/* === ОКНО ЧАТА С ИИ-АССИСТЕНТОМ === */
+.assistant-window {
+  position: fixed;
+  background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(96, 165, 250, 0.3);
+}
+
+.assistant-window.mini {
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 65vh;
+  max-height: 80vh;
+  border-radius: 20px;
+}
+
+.assistant-window.full-screen {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 0;
+}
+
+.assistant-header {
+  padding: 16px 20px;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+.assistant-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  font-weight: 600;
+}
+
+.assistant-avatar {
+  width: 40px;
+  height: 40px;
+  background: rgba(96, 165, 250, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #60A5FA;
+}
+
+.online-dot {
+  width: 10px;
+  height: 10px;
+  background: #34d399;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #34d399;
+}
+
+.assistant-actions .icon-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.assistant-actions .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.assistant-body {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.welcome-message {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.assistant-input {
+  padding: 16px 20px;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.assistant-input input {
+  flex: 1;
+  padding: 14px 18px;
+  border-radius: 30px;
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  background: rgba(30, 41, 59, 0.6);
+  color: white;
+  font-size: 16px;
+}
+
+.assistant-input input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.mic-btn, .send-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mic-btn {
+  background: rgba(96, 165, 250, 0.2);
+  color: #60A5FA;
+}
+
+.send-btn {
+  background: linear-gradient(135deg, #60A5FA, #2563EB);
+  color: white;
+}
+
+.mic-btn:hover, .send-btn:hover {
+  transform: scale(1.1);
+}

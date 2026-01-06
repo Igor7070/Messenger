@@ -126,9 +126,11 @@ const App = () => {
       <NotificationProvider>
         <UserStatusProvider>
           <CallWebSocketProvider>
-            <Router>
-              <AppContent />
-            </Router>
+            <AssistantProvider>
+              <Router>
+                <AppContent />
+              </Router>
+            </AssistantProvider>
           </CallWebSocketProvider>
         </UserStatusProvider>
       </NotificationProvider>
