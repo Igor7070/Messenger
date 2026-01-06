@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAssistant } from '../context/AssistantContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import '../components/AssistantChatWindow.css';
+import '../styles/AssistantChatWindow.css';
 
 const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
