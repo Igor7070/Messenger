@@ -31,7 +31,7 @@ const AssistantChatWindow = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/communicating_with_a_advanced_ai_model', {
+      const response = await fetch('https://unlimitedpossibilities12.org/api/communicating_with_a_advanced_ai_model', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
