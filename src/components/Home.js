@@ -613,6 +613,22 @@ const Home = () => {
           Close
         </button>
       </Modal>
+
+      <div className="assistant-icon" onClick={() => toast.info('ИИ-ассистент скоро здесь! 🚀')}>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="11" stroke="url(#grad)" strokeWidth="2" opacity="0.8"/>
+          <path d="M8 9L12 12L16 9" stroke="url(#grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M8 15L12 12L16 15" stroke="url(#grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <defs>
+            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#7B5EFF"/>
+              <stop offset="50%" stopColor="#5E3EFF"/>
+              <stop offset="100%" stopColor="#3E1EFF"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span className="assistant-pulse"></span>
+      </div>
     </div>
   );
 };
