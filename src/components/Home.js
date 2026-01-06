@@ -616,9 +616,17 @@ const Home = () => {
 
       <div className="assistant-icon" onClick={() => toast.info('ИИ-ассистент скоро здесь! 🚀')}>
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Круг-фон с градиентом */}
           <circle cx="12" cy="12" r="11" stroke="url(#grad)" strokeWidth="2" opacity="0.8"/>
-          <path d="M8 9L12 12L16 9" stroke="url(#grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M8 15L12 12L16 15" stroke="url(#grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          
+          {/* Молния ⚡ */}
+          <path d="M13 2L4.09344 12.6879C3.74461 13.1064 3.5702 13.3157 3.56738 13.4925C3.5649 13.6461 3.63372 13.7923 3.75324 13.8889C3.89073 14 4.16316 14 4.70803 14H12L11 22L19.9066 11.3121C20.2554 10.8936 20.4298 10.6843 20.4326 10.5075C20.4351 10.3539 20.3663 10.2077 20.2468 10.1111C20.1093 10 19.8368 10 19.292 10H12L13 2Z" 
+                stroke="url(#grad)" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"/>
+          
+          {/* Градиент */}
           <defs>
             <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#7B5EFF"/>
