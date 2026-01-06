@@ -19,6 +19,7 @@ import { UserInteractionProvider } from '../context/UserInteractionContext';
 import { UserStatusProvider, useUserStatusContext } from '../context/UserStatusContext';
 import { CallWebSocketProvider } from '../context/CallWebSocketContext';
 import { PrivateMessageNotificationProvider } from '../context/PrivateMessageNotificationContext';
+import { AssistantProvider } from '../context/AssistantContext';
 import { createPortal } from 'react-dom';
 import '../styles/App.css';
 
