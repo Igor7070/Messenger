@@ -5,6 +5,62 @@ import '../styles/AssistantChatWindow.css';
 
 const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
+  const [messages, setMessages] = useState([
+    { role: 'assistant', content: 'Привет! Я твой умный ассистент.' },
+    { role: 'assistant', content: 'Могу помочь с резюме, переводами, анализом чатов и многим другим.' },
+    { role: 'assistant', content: 'Спрашивай что угодно ⚡' }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const sendMessage = async () => {
+    if (!inputValue.trim() || isLoading) return;
+
+    const userMessage = inputValue.trim();
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setInputValue('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/communicating_with_a_advanced_ai_model', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: userMessage }),
+      });
+
+      if (!response.ok) throw new Error('Ошибка сервера');
+
+      const result = await response.text(); // твой эндпоинт возвращает чистый текст
+
+      setMessages(prev => [...prev, { role: 'assistant', content: result }]);
+    } catch (error) {
+      console.error('Ошибка при запросе к ИИ:', error);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Извини, не смог ответить. Попробуй ещё раз.' 
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -37,20 +93,45 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Тело чата — пока заглушка */}
-        <div className="assistant-body">
-          <div className="welcome-message">
-            <p>Привет! Я твой умный ассистент.</p>
-            <p>Могу помочь с резюме, переводами, анализом чатов и многим другим.</p>
-            <p>Спрашивай что угодно ⚡</p>
-          </div>
+        {/* Сообщения */}
+        <div className="assistant-messages">
+          {messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`message ${msg.role === 'user' ? 'user-message' : 'assistant-message'}`}
+            >
+              <div className="message-bubble">
+                {msg.content}
+              </div>
+            </div>
+          ))}
+          {isLoading && (
+            <div className="message assistant-message">
+              <div className="message-bubble typing">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Поле ввода */}
         <div className="assistant-input">
-          <input type="text" placeholder="Напиши сообщение..." disabled />
-          <button className="mic-btn">🎤</button>
-          <button className="send-btn">➤</button>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Напиши сообщение..."
+            disabled={isLoading}
+          />
+          <button 
+            onClick={sendMessage} 
+            className="send-btn"
+            disabled={isLoading || !inputValue.trim()}
+          >
+            ➤
+          </button>
         </div>
       </motion.div>
     </AnimatePresence>
