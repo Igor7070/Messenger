@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAssistant } from '../../context/AssistantContext';
+import { useAssistant } from '../context/AssistantContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import './AssistantChatWindow.css';
 
