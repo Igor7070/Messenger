@@ -1,6 +1,6 @@
 /* === ИКОНКА ИИ-АССИСТЕНТА (ГЛОБАЛЬНАЯ) === */
 .assistant-icon {
-  position: fixed; /* фиксированная позиция — работает везде */
+  position: absolute;
   width: 56px;
   height: 56px;
   background: rgba(255, 255, 255, 0.25);
