@@ -30,41 +30,47 @@
 }
 
 /* Специально для маленькой иконки в шапке чата — как у остальных иконок */
+/* Специально для маленькой иконки в шапке чата — точно как остальные кнопки */
 .assistant-icon-small.in-header {
   position: static !important;
-  width: 16px !important;           /* ← одинаково с кнопками */
-  height: 16px !important;          /* ← одинаково с кнопками */
+  width: 28px !important;           /* одинаково с кнопками */
+  height: 28px !important;          /* одинаково с кнопками */
   background: transparent !important;
   backdrop-filter: none !important;
   box-shadow: none !important;
   border: none !important;
-  margin: 0 !important;             /* ← убираем margin-left, используем gap из контейнера */
-  padding: 4px !important;          /* ← как у других кнопок */
+  margin: 0 !important;
+  padding: 4px !important;          /* точно как у кнопок */
   border-radius: 8px;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer;
   transition: all 0.2s ease;
+  z-index: auto !important;         /* не поверх, в одном слое */
 }
 
 .assistant-icon-small.in-header:hover {
-  background: rgba(139, 92, 246, 0.15) !important; /* лёгкий фиолетовый бэкграунд при ховере */
+  background: rgba(139, 92, 246, 0.15) !important;
   transform: scale(1.1);
 }
 
-/* Убеждаемся, что SVG внутри не больше контейнера */
+/* SVG внутри — точно по центру, без сдвигов */
 .assistant-icon-small.in-header svg {
-  width: 20px;
-  height: 20px;
-  fill: #B0BEC5; /* серый по умолчанию */
+  width: 20px !important;
+  height: 20px !important;
+  fill: #B0BEC5;
   transition: fill 0.3s ease;
+  transform: translateY(0) !important; /* сбрасываем любой сдвиг */
 }
 
-/* Если ассистент активен — можно сделать цвет как у включённых кнопок */
-.assistant-icon-small.in-header.active svg,
 .assistant-icon-small.in-header:hover svg {
-  fill: #42a5f5; /* синий, как у включённых функций */
+  fill: #42a5f5;
+}
+
+/* Убираем пульсацию в шапке — она ломает слой и выравнивание */
+.assistant-icon-small.in-header .assistant-pulse {
+  display: none !important;
 }
 
 .assistant-icon-small:hover {

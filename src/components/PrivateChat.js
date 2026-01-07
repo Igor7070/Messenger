@@ -1431,8 +1431,8 @@ const PrivateChat = () => {
             </button>
             {isTTSEnabled && <span className="private-tts-indicator">ON</span>}
           </div>
-          <AssistantIcon size="header" className="in-header" />
           <div className="private-translation-controls">
+            <AssistantIcon size="header" className="in-header" />
             <button
               className="private-spellcheck-button" 
               onClick={handleSpellCheckToggle}
