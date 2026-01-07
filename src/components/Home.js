@@ -619,7 +619,7 @@ const Home = () => {
       </Modal>
 
       {/* Иконка ассистента — теперь открывает окно */}
-      <AssistantIcon position="top-right" />
+      <AssistantIcon size="large" position="top-right" />
     </div>
   );
 };
