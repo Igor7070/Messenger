@@ -20,6 +20,7 @@ import { UserStatusProvider, useUserStatusContext } from '../context/UserStatusC
 import { CallWebSocketProvider } from '../context/CallWebSocketContext';
 import { PrivateMessageNotificationProvider } from '../context/PrivateMessageNotificationContext';
 import { AssistantProvider } from '../context/AssistantContext';
+import AssistantChatWindow from './AssistantChatWindow';
 import { createPortal } from 'react-dom';
 import '../styles/App.css';
 
@@ -117,6 +118,10 @@ const AppContent = () => {
           </PrivateMessageNotificationProvider>
         </ErrorBoundary>
       </div>
+
+      {/* ЗДЕСЬ ДОБАВЛЯЕМ ГЛОБАЛЬНОЕ ОКНО АССИСТЕНТА */}
+      <AssistantChatWindow />
+
     </>
   );
 };

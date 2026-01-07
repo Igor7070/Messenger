@@ -425,57 +425,6 @@ h2 {
   background-color: rgba(0, 0, 0, 0.5);
 }
 
-/* === ИКОНКА ИИ-АССИСТЕНТА === */
-.assistant-icon {
-  position: absolute;
-  top: 100px;
-  right: 40px;
-  width: 56px;
-  height: 56px;
-  background: rgba(255, 255, 255, 0.25); /* чуть плотнее фон */
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 
-    0 6px 20px rgba(139, 92, 246, 0.4),
-    inset 0 0 15px rgba(255, 255, 255, 0.3);
-  border: 2px solid rgba(139, 92, 246, 0.3);
-  transition: all 0.3s ease;
-  z-index: 100;
-}
-
-.assistant-icon:hover {
-  transform: scale(1.15) translateY(-4px);
-  box-shadow: 
-    0 12px 30px rgba(139, 92, 246, 0.6),
-    0 0 30px rgba(124, 58, 237, 0.5);
-}
-
-.assistant-pulse {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.5) 0%, transparent 65%);
-  border-radius: 50%;
-  animation: pulse 2.5s infinite ease-in-out;
-  pointer-events: none;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-  50% {
-    transform: scale(1.4);
-    opacity: 0.3;
-  }
-}
-
 @media (max-width: 768px) {
   .home-container {
     padding: 10px;
@@ -593,17 +542,5 @@ h2 {
     max-height: 29vh !important;  /* Ограничиваем высоту чат-списка до 25% экрана */
     overflow-y: auto !important;  /* Включаем скролл внутри */
     -webkit-overflow-scrolling: touch !important;
-  }
-
-  .assistant-icon {
-    width: 50px;
-    height: 50px;
-    top: 10px;
-    right: 10px;
-  }
-
-  .assistant-icon svg {
-    width: 24px;
-    height: 24px;
   }
 }
