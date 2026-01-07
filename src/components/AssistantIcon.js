@@ -5,8 +5,8 @@ import '../styles/AssistantIcon.css';
 const AssistantIcon = ({ size = 'large', position = 'bottom-right' }) => {
   const { openAssistant } = useAssistant();
 
-  const iconSize = size === 'large' ? '56px' : '40px';  // large = Home, small = чаты
-  const svgSize = size === 'large' ? 32 : 24;
+  const iconSize = size === 'large' ? '56px' : '24px';  // large = Home, small = чаты
+  const svgSize = size === 'large' ? 32 : 20;
 
   return (
     <div 
