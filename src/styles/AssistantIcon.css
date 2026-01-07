@@ -29,6 +29,29 @@
   border-width: 1.5px;
 }
 
+/* Специально для маленькой иконки в шапке чата — как у остальных иконок */
+.assistant-icon-small.in-header {
+  position: static !important; /* в потоке, не absolute */
+  background: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  margin-left: 12px; /* отступ от предыдущей иконки */
+  padding: 0;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.assistant-icon-small.in-header:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  transform: scale(1.1);
+}
+
+/* Пульсация не нужна в шапке */
+.assistant-icon-small.in-header .assistant-pulse {
+  display: none;
+}
+
 .assistant-icon-small:hover {
   transform: scale(1.1);
   box-shadow: 

@@ -13,6 +13,7 @@ import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 import TranslationSettingsModal from './TranslationSettingsModal';
+import AssistantIcon from './AssistantIcon';
 import { translateMessage, saveTranslation } from '../api/messages';
 import usePrivateChatTranslationAndSpellCheck from '../hooks/usePrivateChatTranslationAndSpellCheck';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -1430,6 +1431,7 @@ const PrivateChat = () => {
             </button>
             {isTTSEnabled && <span className="private-tts-indicator">ON</span>}
           </div>
+          <AssistantIcon size="small" className="in-header" />
           <div className="private-translation-controls"> 
             <button
               className="private-spellcheck-button" 
