@@ -31,25 +31,40 @@
 
 /* Специально для маленькой иконки в шапке чата — как у остальных иконок */
 .assistant-icon-small.in-header {
-  position: static !important; /* в потоке, не absolute */
+  position: static !important;
+  width: 28px !important;           /* ← одинаково с кнопками */
+  height: 28px !important;          /* ← одинаково с кнопками */
   background: transparent !important;
   backdrop-filter: none !important;
   box-shadow: none !important;
   border: none !important;
-  margin-left: 12px; /* отступ от предыдущей иконки */
-  padding: 0;
+  margin: 0 !important;             /* ← убираем margin-left, используем gap из контейнера */
+  padding: 4px !important;          /* ← как у других кнопок */
   border-radius: 8px;
-  transition: background 0.2s ease;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .assistant-icon-small.in-header:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(139, 92, 246, 0.15) !important; /* лёгкий фиолетовый бэкграунд при ховере */
   transform: scale(1.1);
 }
 
-/* Пульсация не нужна в шапке */
-.assistant-icon-small.in-header .assistant-pulse {
-  display: none;
+/* Убеждаемся, что SVG внутри не больше контейнера */
+.assistant-icon-small.in-header svg {
+  width: 20px;
+  height: 20px;
+  fill: #B0BEC5; /* серый по умолчанию */
+  transition: fill 0.3s ease;
+}
+
+/* Если ассистент активен — можно сделать цвет как у включённых кнопок */
+.assistant-icon-small.in-header.active svg,
+.assistant-icon-small.in-header:hover svg {
+  fill: #42a5f5; /* синий, как у включённых функций */
 }
 
 .assistant-icon-small:hover {
