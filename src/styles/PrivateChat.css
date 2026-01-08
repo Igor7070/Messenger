@@ -1257,7 +1257,6 @@
 /* Иконка ассистента в ряду — только на телефоне */
 .mobile-assistant-header {
   display: none !important; /* скрыта на ПК */
-  order: 2; /* ставим в середину flex-ряда */
 }
 
 @media (max-width: 800px) {
