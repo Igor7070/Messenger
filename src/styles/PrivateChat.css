@@ -1258,6 +1258,11 @@
   display: none !important;
 }
 
+/* По умолчанию скрываем обертку с иконкой ассистента (на ПК не нужна) */
+.header-assistant-wrapper {
+  display: none;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         position: fixed !important;
@@ -1821,18 +1826,54 @@
     flex-shrink: 0;
   }
 
-   /* Фиксируем высоту ряда, чтобы не растягивался даже если что-то пойдёт не так */
+   .header-assistant-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; /* не сжимается */
+  }
+
+  /* Переопределяем стили компонента, чтобы он вёл себя как обычная кнопка в ряду */
+  .header-assistant-wrapper .assistant-icon {
+    position: static !important;        /* УБИРАЕМ absolute — это главная причина проблем */
+    width: 28px !important;
+    height: 28px !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 4px;
+    border-radius: 8px;
+    margin: 0 12px;                      /* ровное центрирование */
+  }
+
+  .header-assistant-wrapper .assistant-pulse {
+    display: none !important;
+  }
+
+  .header-assistant-wrapper svg {
+    width: 20px !important;
+    height: 20px !important;
+    fill: #B0BEC5;
+    transition: fill 0.3s ease;
+  }
+
+  .header-assistant-wrapper:hover {
+    background: rgba(139, 92, 246, 0.15) !important;
+    transform: scale(1.1);
+  }
+
+  .header-assistant-wrapper:hover svg {
+    fill: #42a5f5;
+  }
+
+  /* Жёстко фиксируем высоту ряда — растяжение исчезнет полностью */
   .private-icons-row {
     height: 48px !important;
-    padding: 0 16px;
-    box-sizing: border-box;
     display: flex !important;
     align-items: center;
     justify-content: space-between;
-  }
-
-  /* Немного отступов по бокам от центральной иконки для идеального центрирования */
-  .assistant-icon-header {
-    margin: 0 12px !important;
+    padding: 0 16px;
+    box-sizing: border-box;
   }
 }
