@@ -168,9 +168,9 @@
   }
 
   /* Показываем иконку в шапке только на телефоне */
-  /*.assistant-icon-header {
+  .assistant-icon-header {
     display: flex !important;
     align-items: center;
     justify-content: center;
-  }*/
+  }
 }
