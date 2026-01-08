@@ -17,9 +17,8 @@
   border: 2px solid rgba(139, 92, 246, 0.3);
   transition: all 0.3s ease;
   z-index: 999;
-}
+}/* Маленький размер — для чатов */
 
-/* Маленький размер — для чатов */
 .assistant-icon-small {
   width: 40px !important;
   height: 40px !important;
@@ -136,37 +135,69 @@
   display: none !important;
 }
 
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.3;
+  }
+}
+
+/* Позиционирование — разные варианты */
+.assistant-icon-top-right {
+  top: 20px;
+  right: 20px;
+}
+
+.assistant-icon-bottom-right {
+  bottom: 20px;
+  right: 20px;
+}
+
+.assistant-icon-bottom-left {
+  bottom: 20px;
+  left: 20px;
+}
+
+.assistant-icon-chat { /* для чатов — над полем ввода */
+  bottom: 80px;
+  right: 20px;
+}
+
 /* Мобильная адаптация */
 @media (max-width: 768px) {
   .assistant-icon {
     width: 50px;
     height: 50px;
-  }
-
+  }  
+  
   .assistant-icon svg {
     width: 24px;
     height: 24px;
-  }
-
+  }  
+  
   .assistant-icon-top-right {
     top: 10px;
     right: 10px;
-  }
-
+  } 
+  
   .assistant-icon-bottom-right,
   .assistant-icon-chat {
     bottom: 15px;
     right: 15px;
-  }
-
+  }  
+  
   /* Скрываем большую фиксированную иконку в PrivateChat на телефоне — максимально сильно */
   .assistant-icon-large,
   .assistant-icon.fixed-app-bottom-right,
   .fixed-app-bottom-right .assistant-icon,
   .fixed-app-bottom-right {
     display: none !important;
-  }
-
+  } 
+  
   /* Показываем иконку в шапке только на телефоне */
   .assistant-icon-header {
     display: flex !important;
@@ -174,3 +205,4 @@
     justify-content: center;
   }
 }
+
