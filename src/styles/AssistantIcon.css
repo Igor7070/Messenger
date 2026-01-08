@@ -31,6 +31,25 @@
 
 /* Специально для маленькой иконки в шапке чата — как у остальных иконок */
 /* Специально для маленькой иконки в шапке чата — точно как остальные кнопки */
+.assistant-icon-small.in-header {
+  position: static !important;
+  width: 28px !important;           /* одинаково с кнопками */
+  height: 28px !important;          /* одинаково с кнопками */
+  background: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 4px !important;          /* точно как у кнопок */
+  border-radius: 8px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: auto !important;         /* не поверх, в одном слое */
+}
+
 
 
 /* Позиционирование — разные варианты */
@@ -52,27 +71,6 @@
 .assistant-icon-chat { /* для чатов — над полем ввода */
   bottom: 80px;
   right: 20px;
-}
-
-/* Яркий градиент для маленькой иконки в шапке */
-.assistant-icon-header.in-header path,
-.assistant-icon-small.in-header path {
-  fill: url(#grad) !important;
-  stroke: url(#grad) !important;
-}
-
-.assistant-icon-header.in-header circle,
-.assistant-icon-small.in-header circle {
-  fill: rgba(255, 255, 255, 0.2) !important;
-  stroke: url(#grad) !important;
-  stroke-width: 2 !important;
-}
-
-/* Hover — только фон, не трогаем градиент */
-.assistant-icon-header.in-header:hover,
-.assistant-icon-small.in-header:hover {
-  background: rgba(139, 92, 246, 0.15) !important;
-  transform: scale(1.1);
 }
 
 /* Мобильная адаптация */
