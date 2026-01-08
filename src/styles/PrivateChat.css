@@ -1255,8 +1255,8 @@
 }
 
 /* Иконка ассистента в ряду — только на телефоне */
-.mobile-assistant-in-row {
-  display: none; /* скрыта по умолчанию (на ПК) */
+.mobile-assistant-header {
+  display: none; /* скрыта на ПК */
 }
 
 @media (max-width: 800px) {
@@ -1811,5 +1811,49 @@
     display: flex !important;
     align-items: center;
     justify-content: center;
+  }
+
+  .mobile-assistant-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-assistant-header.assistant-icon-header {
+    position: static !important;
+    width: 28px !important;
+    height: 28px !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 4px !important;
+    border-radius: 8px !important;
+    margin: 0 8px !important; /* отступы слева и справа для центрирования */
+  }
+
+  .mobile-assistant-header.assistant-icon-header svg {
+    width: 20px !important;
+    height: 20px !important;
+    fill: #B0BEC5;
+    transition: fill 0.3s ease;
+  }
+
+  .mobile-assistant-header.assistant-icon-header:hover svg {
+    fill: #42a5f5;
+  }
+
+  .mobile-assistant-header .assistant-pulse {
+    display: none !important;
+  }
+
+  /* Ряд иконок — ровный, с центрированием ассистента */
+  .private-icons-row {
+    display: flex;
+    justify-content: space-between; /* слева, центр, справа */
+    align-items: center;
+    width: 100%;
+    padding: 0 16px;
+    gap: 8px; /* расстояние между блоками */
   }
 }
