@@ -1254,9 +1254,8 @@
   display: contents;
 }
 
-/* Иконка ассистента в ряду — только на телефоне */
-.mobile-assistant-header {
-  display: none !important; /* скрыта на ПК */
+.mobile-assistant-icon {
+  display: none !important;
 }
 
 @media (max-width: 800px) {
@@ -1807,50 +1806,6 @@
     display: none !important;
   }
 
-  .mobile-assistant-in-row {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .mobile-assistant-header {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .mobile-assistant-header.assistant-icon-header {
-    position: static !important;
-    width: 28px !important;
-    height: 28px !important;
-    background: transparent !important;
-    backdrop-filter: none !important;
-    box-shadow: none !important;
-    border: none !important;
-    padding: 4px !important;
-    border-radius: 8px !important;
-    margin: 0 12px !important; /* отступы слева и справа для идеального центрирования */
-  }
-
-  .mobile-assistant-header.assistant-icon-header svg {
-    width: 20px !important;
-    height: 20px !important;
-    fill: #B0BEC5;
-  }
-
-  .mobile-assistant-header.assistant-icon-header:hover {
-    background: rgba(139, 92, 246, 0.15) !important;
-    transform: scale(1.1);
-  }
-
-  .mobile-assistant-header.assistant-icon-header:hover svg {
-    fill: #42a5f5;
-  }
-
-  .mobile-assistant-header .assistant-pulse {
-    display: none !important;
-  }
-
   /* Главное — ряд иконок на телефоне */
   .private-icons-row {
     display: flex !important;
@@ -1864,5 +1819,51 @@
   .private-transcription-controls,
   .private-translation-controls {
     flex-shrink: 0;
+  }
+
+  .mobile-assistant-icon {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Применяем стили header из AssistantIcon.css + доработки */
+  .mobile-assistant-icon.assistant-icon-header {
+    width: 28px !important;
+    height: 28px !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 4px;
+    border-radius: 8px;
+    margin: 0 12px; /* для ровного центрирования */
+  }
+
+  .mobile-assistant-icon.assistant-icon-header .assistant-pulse {
+    display: none !important;
+  }
+
+  .mobile-assistant-icon.assistant-icon-header svg {
+    width: 20px !important;
+    height: 20px !important;
+    fill: #B0BEC5;
+    transition: fill 0.3s ease;
+  }
+
+  .mobile-assistant-icon.assistant-icon-header:hover {
+    background: rgba(139, 92, 246, 0.15) !important;
+    transform: scale(1.1);
+  }
+
+  .mobile-assistant-icon.assistant-icon-header:hover svg {
+    fill: #42a5f5;
+  }
+
+  /* Предотвращаем растяжение шапки из-за иконки */
+  .private-icons-row {
+    height: 48px !important;
+    padding: 0 16px;
+    box-sizing: border-box;
   }
 }
