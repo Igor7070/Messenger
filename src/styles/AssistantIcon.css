@@ -1,5 +1,5 @@
 /* === ИКОНКА ИИ-АССИСТЕНТА (ГЛОБАЛЬНАЯ) === */
-.assistant-icon {
+/*.assistant-icon {
   position: absolute;
   width: 56px;
   height: 56px;
@@ -17,17 +17,17 @@
   border: 2px solid rgba(139, 92, 246, 0.3);
   transition: all 0.3s ease;
   z-index: 999;
-}
+}*/
 
 /* Маленький размер — для чатов */
-.assistant-icon-small {
+/*.assistant-icon-small {
   width: 40px !important;
   height: 40px !important;
   box-shadow: 
     0 4px 12px rgba(139, 92, 246, 0.3),
     inset 0 0 10px rgba(255, 255, 255, 0.2);
   border-width: 1.5px;
-}
+}*/
 
 /* Специально для маленькой иконки в шапке чата — как у остальных иконок */
 /* Специально для маленькой иконки в шапке чата — точно как остальные кнопки */
