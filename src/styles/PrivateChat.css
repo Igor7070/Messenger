@@ -1821,6 +1821,13 @@
     flex-shrink: 0;
   }
 
+  .private-chat .assistant-icon-large,
+  .private-chat .assistant-icon.fixed-app-bottom-right,
+  .private-chat .fixed-app-bottom-right .assistant-icon,
+  .private-chat .fixed-app-bottom-right {
+    display: none !important;
+  }
+
    .mobile-header-icon {
     display: flex !important;
     position: static !important;            /* Убираем absolute — критично */
