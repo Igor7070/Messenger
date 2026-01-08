@@ -1846,17 +1846,6 @@
     transition: all 0.2s ease;
   }
 
-  /* Hover-эффект как у остальных кнопок */
-  .mobile-header-icon:hover {
-    background: rgba(139, 92, 246, 0.15) !important;
-    transform: scale(1.1);
-  }
-
-  /* Пульсация не нужна в шапке */
-  .mobile-header-icon .assistant-pulse {
-    display: none !important;
-  }
-
   /* Фикс высоты шапки — растяжения больше не будет */
   .private-icons-row {
     display: flex !important;
