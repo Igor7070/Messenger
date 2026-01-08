@@ -1846,10 +1846,4 @@
   .mobile-assistant-icon-wrapper {
     display: flex;
   }
-
-  .private-icons-row {
-    justify-content: space-between; /* слева, центр, справа */
-    align-items: center;
-    gap: 16px; /* расстояние между блоками */
-  }
 }
