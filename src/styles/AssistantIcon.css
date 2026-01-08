@@ -103,7 +103,7 @@
 
 /* Стиль для иконки в шапке (header) — базовый скрытый */
 /*.assistant-icon-header {
-  display: none !important;*/ /* скрыта по умолчанию (на ПК) */
+  display: none !important; *//* скрыта по умолчанию (на ПК) */
   /*position: static !important;
   width: 28px !important;
   height: 28px !important;
@@ -114,7 +114,7 @@
   padding: 4px !important;
   border-radius: 8px !important;
   margin: 0 16px !important;
-}*/
+}
 
 .assistant-icon-header svg {
   width: 20px !important;
@@ -134,7 +134,7 @@
 
 .assistant-icon-header .assistant-pulse {
   display: none !important;
-}
+}*/
 
 @keyframes pulse {
   0%, 100% {
