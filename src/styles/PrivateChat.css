@@ -1871,9 +1871,11 @@
   /* Фикс высоты шапки — растяжения больше не будет */
   .private-icons-row {
     display: flex !important;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 16px;
-    box-sizing: border-box;
+    align-items: center !important;      /* ← Добавьте эту строку (самое важное) */
+    justify-content: space-between !important;
+    padding: 0 16px !important;
+    box-sizing: border-box !important;
+    height: auto !important;              /* ← Явно разрешаем авто-высоту по содержимому */
+    min-height: 0 !important;             /* ← Предотвращаем лишнее растяжение от детей */
   }
 }
