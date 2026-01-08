@@ -1256,7 +1256,8 @@
 
 /* Иконка ассистента в ряду — только на телефоне */
 .mobile-assistant-header {
-  display: none; /* скрыта на ПК */
+  display: none !important; /* скрыта на ПК */
+  order: 2; /* ставим в середину flex-ряда */
 }
 
 @media (max-width: 800px) {
@@ -1829,14 +1830,18 @@
     border: none !important;
     padding: 4px !important;
     border-radius: 8px !important;
-    margin: 0 8px !important; /* отступы слева и справа для центрирования */
+    margin: 0 12px !important; /* отступы слева и справа для идеального центрирования */
   }
 
   .mobile-assistant-header.assistant-icon-header svg {
     width: 20px !important;
     height: 20px !important;
     fill: #B0BEC5;
-    transition: fill 0.3s ease;
+  }
+
+  .mobile-assistant-header.assistant-icon-header:hover {
+    background: rgba(139, 92, 246, 0.15) !important;
+    transform: scale(1.1);
   }
 
   .mobile-assistant-header.assistant-icon-header:hover svg {
@@ -1847,13 +1852,18 @@
     display: none !important;
   }
 
-  /* Ряд иконок — ровный, с центрированием ассистента */
+  /* Главное — ряд иконок на телефоне */
   .private-icons-row {
-    display: flex;
-    justify-content: space-between; /* слева, центр, справа */
-    align-items: center;
-    width: 100%;
-    padding: 0 16px;
-    gap: 8px; /* расстояние между блоками */
+    display: flex !important;
+    justify-content: space-between !important; /* слева — левый блок, справа — правый, центр — ассистент */
+    align-items: center !important;
+    width: 100% !important;
+    padding: 0 16px !important;
+  }
+
+  /* Левый и правый блоки занимают минимум места */
+  .private-transcription-controls,
+  .private-translation-controls {
+    flex-shrink: 0;
   }
 }
