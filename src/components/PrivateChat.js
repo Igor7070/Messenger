@@ -1408,6 +1408,8 @@ const PrivateChat = () => {
 
   return (
     <div className="private-chat">
+      {/* Большая фиксированная иконка ассистента — только в PrivateChat на ПК */}
+      <AssistantIcon size="large" className="fixed-app-bottom-right" />
       <div className="private-chat-name">
         <div className="private-chat-name-mobile">{displayChatName}</div>
         <div className="private-icons-row">
@@ -1432,7 +1434,6 @@ const PrivateChat = () => {
             {isTTSEnabled && <span className="private-tts-indicator">ON</span>}
           </div>
           <div className="private-translation-controls">
-            <AssistantIcon size="header" className="in-header" />
             <button
               className="private-spellcheck-button" 
               onClick={handleSpellCheckToggle}
