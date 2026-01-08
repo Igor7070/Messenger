@@ -50,19 +50,19 @@
   z-index: auto !important;         /* не поверх, в одном слое */
 }
 
-.assistant-icon-small.in-header:hover {
+/*.assistant-icon-small.in-header:hover {
   background: rgba(139, 92, 246, 0.15) !important;
   transform: scale(1.1);
-}
+}*/
 
 /* SVG внутри — точно по центру, без сдвигов */
-.assistant-icon-small.in-header svg {
+/*.assistant-icon-small.in-header svg {
   width: 20px !important;
   height: 20px !important;
   fill: #B0BEC5;
   transition: fill 0.3s ease;
-  transform: translateY(0) !important; /* сбрасываем любой сдвиг */
-}
+  transform: translateY(0) !important;*/ /* сбрасываем любой сдвиг */
+/*}*/
 
 .assistant-icon-small.in-header:hover svg {
   fill: #42a5f5;
