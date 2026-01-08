@@ -1870,7 +1870,6 @@
 
   /* Фикс высоты шапки — растяжения больше не будет */
   .private-icons-row {
-    height: 48px !important;
     display: flex !important;
     align-items: center;
     justify-content: space-between;
