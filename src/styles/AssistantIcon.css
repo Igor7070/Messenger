@@ -155,4 +155,9 @@
     bottom: 15px;
     right: 15px;
   }
+
+  /* СКРЫВАЕМ БОЛЬШУЮ ФИКСИРОВАННУЮ ИКОНКУ В PRIVATECHAT НА ТЕЛЕФОНЕ */
+  .fixed-app-bottom-right {
+    display: none !important;
+  }
 }
