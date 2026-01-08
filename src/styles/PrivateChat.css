@@ -1853,12 +1853,6 @@
     transition: all 0.2s ease;
   }
 
-  /* Дополнительно убедимся, что большая иконка скрыта */
-  .fixed-app-bottom-right,
-  .assistant-icon-large {
-    display: none !important;
-  }
-
   /* Фикс высоты шапки — растяжения больше не будет */
   .private-icons-row {
     display: flex !important;
