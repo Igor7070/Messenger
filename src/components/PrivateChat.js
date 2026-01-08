@@ -1433,6 +1433,10 @@ const PrivateChat = () => {
             </button>
             {isTTSEnabled && <span className="private-tts-indicator">ON</span>}
           </div>
+          {/* Маленькая иконка ассистента — по центру в ряду */}
+          <div className="mobile-assistant-icon-wrapper">
+            <AssistantIcon size="small" />
+          </div>
           <div className="private-translation-controls">
             <button
               className="private-spellcheck-button" 

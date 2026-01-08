@@ -1254,6 +1254,47 @@
   display: contents;
 }
 
+/* Обертка для иконки ассистента в ряду — только на телефоне */
+.mobile-assistant-icon-wrapper {
+  display: none; /* скрыта по умолчанию */
+}
+
+/* Стиль маленькой иконки в ряду — точно как другие кнопки */
+.mobile-assistant-icon-wrapper .assistant-icon-small {
+  position: static;
+  width: 28px !important;
+  height: 28px !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 4px !important;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-assistant-icon-wrapper .assistant-icon-small:hover {
+  background: rgba(139, 92, 246, 0.15) !important;
+  transform: scale(1.1);
+}
+
+.mobile-assistant-icon-wrapper .assistant-icon-small svg {
+  width: 20px !important;
+  height: 20px !important;
+  fill: #B0BEC5;
+  transition: fill 0.3s ease;
+}
+
+.mobile-assistant-icon-wrapper .assistant-icon-small:hover svg {
+  fill: #42a5f5;
+}
+
+.mobile-assistant-icon-wrapper .assistant-pulse {
+  display: none !important;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         position: fixed !important;
@@ -1800,5 +1841,15 @@
 
   .fixed-app-bottom-right {
     display: none !important;
+  }
+
+  .mobile-assistant-icon-wrapper {
+    display: flex;
+  }
+
+  .private-icons-row {
+    justify-content: space-between; /* слева, центр, справа */
+    align-items: center;
+    gap: 16px; /* расстояние между блоками */
   }
 }
