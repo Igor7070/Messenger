@@ -102,9 +102,9 @@
 }
 
 /* Стиль для иконки в шапке (header) — базовый скрытый */
-.assistant-icon-header {
-  display: none !important; /* скрыта по умолчанию (на ПК) */
-  position: static !important;
+/*.assistant-icon-header {
+  display: none !important;*/ /* скрыта по умолчанию (на ПК) */
+  /*position: static !important;
   width: 28px !important;
   height: 28px !important;
   background: transparent !important;
@@ -114,7 +114,7 @@
   padding: 4px !important;
   border-radius: 8px !important;
   margin: 0 16px !important;
-}
+}*/
 
 .assistant-icon-header svg {
   width: 20px !important;
@@ -190,14 +190,6 @@
     bottom: 15px;
     right: 15px;
   } 
-  
-  /* Скрываем большую фиксированную иконку в PrivateChat на телефоне — максимально сильно */
-  /*.assistant-icon-large,
-  .assistant-icon.fixed-app-bottom-right,
-  .fixed-app-bottom-right .assistant-icon,
-  .fixed-app-bottom-right {
-    display: none !important;
-  } */
   
   /* Показываем иконку в шапке только на телефоне */
   /*.assistant-icon-header {
