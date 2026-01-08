@@ -102,9 +102,9 @@
 }
 
 /* Стиль для иконки в шапке (header) — базовый скрытый */
-/*.assistant-icon-header {
-  display: none !important; *//* скрыта по умолчанию (на ПК) */
-  /*position: static !important;
+.assistant-icon-header {
+  display: none !important; /* скрыта по умолчанию (на ПК) */
+  position: static !important;
   width: 28px !important;
   height: 28px !important;
   background: transparent !important;
@@ -134,7 +134,7 @@
 
 .assistant-icon-header .assistant-pulse {
   display: none !important;
-}*/
+}
 
 @keyframes pulse {
   0%, 100% {
