@@ -192,12 +192,12 @@
   } 
   
   /* Скрываем большую фиксированную иконку в PrivateChat на телефоне — максимально сильно */
-  .assistant-icon-large,
+  /*.assistant-icon-large,
   .assistant-icon.fixed-app-bottom-right,
   .fixed-app-bottom-right .assistant-icon,
   .fixed-app-bottom-right {
     display: none !important;
-  } 
+  } */
   
   /* Показываем иконку в шапке только на телефоне */
   /*.assistant-icon-header {
