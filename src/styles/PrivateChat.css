@@ -1840,17 +1840,32 @@
     position: static !important;
     width: 28px !important;
     height: 28px !important;
-    background: transparent !important;
-    backdrop-filter: none !important;
-    box-shadow: none !important;
-    border: none !important;
+    background: transparent !important;     /* убираем полупрозрачный фон */
+    backdrop-filter: none !important;       /* убираем блюр полностью */
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;            /* убираем тень */
+    border: none !important;                /* убираем бордер */
+    border-radius: 8px !important;          /* маленький радиус, как у кнопок */
     padding: 4px !important;
-    border-radius: 8px !important;
-    margin: 0 12px !important;
+    margin: 0 12px !important;              /* отступы для центрирования */
     align-items: center !important;
     justify-content: center !important;
     cursor: pointer;
     transition: all 0.2s ease;
+    z-index: auto !important;
+  }
+
+  /* Дополнительно убираем пульсацию и любые остатки глобальных стилей */
+  .assistant-icon-header .assistant-pulse,
+  .mobile-header-icon .assistant-pulse {
+    display: none !important;
+  }
+
+  /* Ховер-эффект как у остальных кнопок в шапке */
+  .assistant-icon-header:hover,
+  .mobile-header-icon:hover {
+    background: rgba(139, 92, 246, 0.15) !important;
+    transform: scale(1.1);
   }
 
   /* Фикс высоты шапки — растяжения больше не будет */
