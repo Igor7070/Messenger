@@ -116,14 +116,14 @@
   margin: 0 16px !important;
 }*/
 
-.assistant-icon-header svg {
+/*.assistant-icon-header svg {
   width: 20px !important;
   height: 20px !important;
   fill: #B0BEC5;
   transition: fill 0.3s ease;
-}
+}*/
 
-.assistant-icon-header:hover {
+/*.assistant-icon-header:hover {
   background: rgba(139, 92, 246, 0.15) !important;
   transform: scale(1.1);
 }
@@ -145,7 +145,7 @@
     transform: scale(1.4);
     opacity: 0.3;
   }
-}
+}*/
 
 /* Позиционирование — разные варианты */
 .assistant-icon-top-right {
