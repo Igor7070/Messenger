@@ -1797,4 +1797,8 @@
   .private-message.private-other-user.private-audio-message .private-message-content-container {
       margin-left: 0 !important;
   }
+
+  .fixed-app-bottom-right {
+    display: none !important;
+  }
 }
