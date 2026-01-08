@@ -1837,45 +1837,47 @@
   .assistant-icon-header,
   .mobile-header-icon {
     display: flex !important;
-    position: static !important;
+    position: absolute !important;          /* ← Возвращаем absolute — критично! */
+    left: 50% !important;                   /* Центрируем по горизонтали */
+    top: 50% !important;                    /* Центрируем по вертикали */
+    transform: translate(-50%, -50%) !important;  /* Точная центровка */
     width: 28px !important;
     height: 28px !important;
-    background: transparent !important;     /* убираем полупрозрачный фон */
-    backdrop-filter: none !important;       /* убираем блюр полностью */
+    background: transparent !important;
+    backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    box-shadow: none !important;            /* убираем тень */
-    border: none !important;                /* убираем бордер */
-    border-radius: 8px !important;          /* маленький радиус, как у кнопок */
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 8px !important;
     padding: 4px !important;
-    margin: 0 12px !important;              /* отступы для центрирования */
+    margin: 0 !important;                   /* Убираем margin — он не нужен при absolute */
     align-items: center !important;
     justify-content: center !important;
     cursor: pointer;
     transition: all 0.2s ease;
-    z-index: auto !important;
+    z-index: 10 !important;                 /* Чуть выше, чтобы не перекрывалась кнопками */
   }
 
-  /* Дополнительно убираем пульсацию и любые остатки глобальных стилей */
+  /* Убираем пульсацию */
   .assistant-icon-header .assistant-pulse,
   .mobile-header-icon .assistant-pulse {
     display: none !important;
   }
 
-  /* Ховер-эффект как у остальных кнопок в шапке */
+  /* Ховер */
   .assistant-icon-header:hover,
   .mobile-header-icon:hover {
     background: rgba(139, 92, 246, 0.15) !important;
-    transform: scale(1.1);
+    transform: translate(-50%, -50%) scale(1.1) !important;  /* Сохраняем центровку при ховере */
   }
 
-  /* Фикс высоты шапки — растяжения больше не будет */
+  /* Делаем родительский ряд позиционно-относительным, чтобы absolute работал от него */
   .private-icons-row {
+    position: relative !important;          /* ← Обязательно! */
     display: flex !important;
-    align-items: center !important;      /* ← Добавьте эту строку (самое важное) */
     justify-content: space-between !important;
+    align-items: center !important;
     padding: 0 16px !important;
     box-sizing: border-box !important;
-    height: auto !important;              /* ← Явно разрешаем авто-высоту по содержимому */
-    min-height: 0 !important;             /* ← Предотвращаем лишнее растяжение от детей */
   }
 }
