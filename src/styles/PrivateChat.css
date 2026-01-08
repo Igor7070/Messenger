@@ -1821,49 +1821,18 @@
     flex-shrink: 0;
   }
 
-  .mobile-assistant-icon {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Применяем стили header из AssistantIcon.css + доработки */
-  .mobile-assistant-icon.assistant-icon-header {
-    width: 28px !important;
-    height: 28px !important;
-    background: transparent !important;
-    backdrop-filter: none !important;
-    box-shadow: none !important;
-    border: none !important;
-    padding: 4px;
-    border-radius: 8px;
-    margin: 0 12px; /* для ровного центрирования */
-  }
-
-  .mobile-assistant-icon.assistant-icon-header .assistant-pulse {
-    display: none !important;
-  }
-
-  .mobile-assistant-icon.assistant-icon-header svg {
-    width: 20px !important;
-    height: 20px !important;
-    fill: #B0BEC5;
-    transition: fill 0.3s ease;
-  }
-
-  .mobile-assistant-icon.assistant-icon-header:hover {
-    background: rgba(139, 92, 246, 0.15) !important;
-    transform: scale(1.1);
-  }
-
-  .mobile-assistant-icon.assistant-icon-header:hover svg {
-    fill: #42a5f5;
-  }
-
-  /* Предотвращаем растяжение шапки из-за иконки */
+   /* Фиксируем высоту ряда, чтобы не растягивался даже если что-то пойдёт не так */
   .private-icons-row {
     height: 48px !important;
     padding: 0 16px;
     box-sizing: border-box;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Немного отступов по бокам от центральной иконки для идеального центрирования */
+  .assistant-icon-header {
+    margin: 0 12px !important;
   }
 }
