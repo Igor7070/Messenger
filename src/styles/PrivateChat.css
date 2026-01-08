@@ -1833,9 +1833,11 @@
     display: none !important;
   }
 
-   .mobile-header-icon {
+   /* На мобильных — показываем и стилизуем маленькую иконку в шапке */
+  .assistant-icon-header,
+  .mobile-header-icon {
     display: flex !important;
-    position: static !important;            /* Убираем absolute — критично */
+    position: static !important;
     width: 28px !important;
     height: 28px !important;
     background: transparent !important;
@@ -1844,11 +1846,17 @@
     border: none !important;
     padding: 4px !important;
     border-radius: 8px !important;
-    margin: 0 12px !important;               /* центрирование между блоками */
-    align-items: center;
-    justify-content: center;
+    margin: 0 12px !important;
+    align-items: center !important;
+    justify-content: center !important;
     cursor: pointer;
     transition: all 0.2s ease;
+  }
+
+  /* Дополнительно убедимся, что большая иконка скрыта */
+  .fixed-app-bottom-right,
+  .assistant-icon-large {
+    display: none !important;
   }
 
   /* Фикс высоты шапки — растяжения больше не будет */
