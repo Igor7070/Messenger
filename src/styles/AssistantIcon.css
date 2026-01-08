@@ -132,9 +132,9 @@
   fill: #42a5f5;
 }
 
-.assistant-icon-header .assistant-pulse {
+/*.assistant-icon-header .assistant-pulse {
   display: none !important;
-}
+}*/
 
 @keyframes pulse {
   0%, 100% {
