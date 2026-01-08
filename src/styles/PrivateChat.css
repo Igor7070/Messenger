@@ -1852,17 +1852,6 @@
     transform: scale(1.1);
   }
 
-  .mobile-header-icon svg {
-    width: 20px !important;
-    height: 20px !important;
-    fill: #B0BEC5;
-    transition: fill 0.3s ease;
-  }
-
-  .mobile-header-icon:hover svg {
-    fill: #42a5f5;
-  }
-
   /* Пульсация не нужна в шапке */
   .mobile-header-icon .assistant-pulse {
     display: none !important;
