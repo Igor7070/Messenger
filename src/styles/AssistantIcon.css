@@ -101,74 +101,9 @@
   pointer-events: none;
 }
 
-/* Стиль для иконки в шапке (header) — базовый скрытый */
-.assistant-icon-header {
-  display: none !important; /* скрыта по умолчанию (на ПК) */
-  position: static !important;
-  width: 28px !important;
-  height: 28px !important;
-  background: transparent !important;
-  backdrop-filter: none !important;
-  box-shadow: none !important;
-  border: none !important;
-  padding: 4px !important;
-  border-radius: 8px !important;
-  margin: 0 16px !important;
-}
-
-.assistant-icon-header svg {
-  width: 20px !important;
-  height: 20px !important;
-  fill: #B0BEC5;
-  transition: fill 0.3s ease;
-}
-
-.assistant-icon-header:hover {
-  background: rgba(139, 92, 246, 0.15) !important;
-  transform: scale(1.1);
-}
-
-.assistant-icon-header:hover svg {
-  fill: #42a5f5;
-}
-
 .assistant-icon-header .assistant-pulse {
   display: none !important;
 }
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-  50% {
-    transform: scale(1.4);
-    opacity: 0.3;
-  }
-}
-
-/* Позиционирование — разные варианты */
-.assistant-icon-top-right {
-  top: 20px;
-  right: 20px;
-}
-
-.assistant-icon-bottom-right {
-  bottom: 20px;
-  right: 20px;
-}
-
-.assistant-icon-bottom-left {
-  bottom: 20px;
-  left: 20px;
-}
-
-.assistant-icon-chat { /* для чатов — над полем ввода */
-  bottom: 80px;
-  right: 20px;
-}
-
-
 
 /* Мобильная адаптация */
 @media (max-width: 768px) {
