@@ -20,14 +20,14 @@
 }
 
 /* Маленький размер — для чатов */
-/*.assistant-icon-small {
+.assistant-icon-small {
   width: 40px !important;
   height: 40px !important;
   box-shadow: 
     0 4px 12px rgba(139, 92, 246, 0.3),
     inset 0 0 10px rgba(255, 255, 255, 0.2);
   border-width: 1.5px;
-}*/
+}
 
 /* Специально для маленькой иконки в шапке чата — как у остальных иконок */
 /* Специально для маленькой иконки в шапке чата — точно как остальные кнопки */
@@ -50,19 +50,19 @@
   z-index: auto !important;         /* не поверх, в одном слое */
 }
 
-/*.assistant-icon-small.in-header:hover {
+.assistant-icon-small.in-header:hover {
   background: rgba(139, 92, 246, 0.15) !important;
   transform: scale(1.1);
-}*/
+}
 
 /* SVG внутри — точно по центру, без сдвигов */
-/*.assistant-icon-small.in-header svg {
+.assistant-icon-small.in-header svg {
   width: 20px !important;
   height: 20px !important;
   fill: #B0BEC5;
   transition: fill 0.3s ease;
-  transform: translateY(0) !important;*/ /* сбрасываем любой сдвиг */
-/*}*/
+  transform: translateY(0) !important; /* сбрасываем любой сдвиг */
+}
 
 .assistant-icon-small.in-header:hover svg {
   fill: #42a5f5;
@@ -120,6 +120,27 @@
 .assistant-icon-chat { /* для чатов — над полем ввода */
   bottom: 80px;
   right: 20px;
+}
+
+/* Яркий градиент для маленькой иконки в шапке */
+.assistant-icon-header.in-header path,
+.assistant-icon-small.in-header path {
+  fill: url(#grad) !important;
+  stroke: url(#grad) !important;
+}
+
+.assistant-icon-header.in-header circle,
+.assistant-icon-small.in-header circle {
+  fill: rgba(255, 255, 255, 0.2) !important;
+  stroke: url(#grad) !important;
+  stroke-width: 2 !important;
+}
+
+/* Hover — только фон, не трогаем градиент */
+.assistant-icon-header.in-header:hover,
+.assistant-icon-small.in-header:hover {
+  background: rgba(139, 92, 246, 0.15) !important;
+  transform: scale(1.1);
 }
 
 /* Мобильная адаптация */
