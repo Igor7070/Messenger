@@ -156,7 +156,10 @@
     right: 15px;
   }
 
-  /* СКРЫВАЕМ БОЛЬШУЮ ФИКСИРОВАННУЮ ИКОНКУ В PRIVATECHAT НА ТЕЛЕФОНЕ */
+  /* Скрываем большую фиксированную иконку в PrivateChat на телефоне — максимально сильно */
+  .assistant-icon-large,
+  .assistant-icon.fixed-app-bottom-right,
+  .fixed-app-bottom-right .assistant-icon,
   .fixed-app-bottom-right {
     display: none !important;
   }
