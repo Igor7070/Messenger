@@ -1756,4 +1756,15 @@
         box-sizing: border-box !important;
         position: static !important; /* на всякий случай */
     }
+
+    .fixed-app-bottom-right {
+        display: none !important;
+    }
+
+    .messenger .assistant-icon-large,
+    .messenger .assistant-icon.fixed-app-bottom-right,
+    .messenger .fixed-app-bottom-right .assistant-icon,
+    .messenger .fixed-app-bottom-right {
+        display: none !important;
+    }
 }

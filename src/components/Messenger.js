@@ -1412,6 +1412,8 @@ const Messenger = () => {
 
     return (
     <div className="messenger">
+      {/* Большая фиксированная иконка ассистента — только в Messenger на ПК */}
+      <AssistantIcon size="large" className="fixed-app-bottom-right" />
       <div className="chat-header-group">
         <div className="chat-name-mobile">Group Chat: {chatName}</div>
         <div className="icons-row">
