@@ -1696,4 +1696,64 @@
     .message.other-user.audio-message .message-content-container {
         margin-left: 0 !important;
     }
+
+    /* Скрываем маленькую иконку на ПК (как в личном чате) */
+    .assistant-icon-header,
+    .mobile-header-icon {
+        display: none !important;
+    }
+
+    /* Родитель для absolute-позиционирования — теперь .chat-header-group */
+    .chat-header-group {
+        position: relative !important;
+    }
+
+    /* Маленькая иконка ассистента — центрирована, не влияет на layout */
+    .assistant-icon-header,
+    .mobile-header-icon {
+        display: flex !important;
+        position: absolute !important;
+        left: 50% !important;
+        top: 72% !important;                    /* ← то же смещение вниз, как в личном чате */
+        transform: translate(-50%, -50%) !important;
+        width: 30px !important;
+        height: 30px !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 4px !important;
+        margin: 0 !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        z-index: 10 !important;
+    }
+
+    /* Убираем пульсацию */
+    .assistant-icon-header .assistant-pulse,
+    .mobile-header-icon .assistant-pulse {
+        display: none !important;
+    }
+
+    /* Ховер-эффект */
+    .assistant-icon-header:hover,
+    .mobile-header-icon:hover {
+        background: rgba(139, 92, 246, 0.15) !important;
+        transform: translate(-50%, -50%) scale(1.1) !important;
+    }
+
+    /* Ряд кнопок — теперь без иконки внутри, кнопки у краёв */
+    .icons-row {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+        padding: 0 16px !important;
+        box-sizing: border-box !important;
+        position: static !important; /* на всякий случай */
+    }
 }

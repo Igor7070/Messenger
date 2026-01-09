@@ -1471,6 +1471,8 @@ const Messenger = () => {
             )}
           </div>
         </div>
+        {/* Маленькая иконка ассистента — по центру в ряду */}
+        <AssistantIcon size="header" className="mobile-header-icon" />
         <div className="chat-name">Group Chat: {chatName}</div>
       </div>
       {showTranslationModal && (
