@@ -517,6 +517,7 @@ const UserProfile = () => {
     if (!user) return <div>Loading...</div>;
 
     return (
+        <>
         <div className="user-profile-container">
             <h1 className="user-profile-username">{user.username}</h1>
             <span className="userprofile-status-text">
@@ -678,9 +679,9 @@ const UserProfile = () => {
                     onReject={rejectCall}
                 />
             )}
-
-            <AssistantIcon size="large" className="fixed-app-bottom-right" />
         </div>
+        <AssistantIcon size="large" className="fixed-app-bottom-right" />
+        </>
     );
 };
 
