@@ -677,6 +677,9 @@ const UserProfile = () => {
                     onReject={rejectCall}
                 />
             )}
+
+            {/* Большая иконка ассистента — всегда в правом верхнем углу */}
+            <AssistantIcon size="large" position="top-right" />
         </div>
     );
 };
