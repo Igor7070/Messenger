@@ -6,7 +6,7 @@ const AssistantIcon = ({ size = 'large', position = 'bottom-right' }) => {
   const { openAssistant } = useAssistant();
 
   const iconSize = size === 'large' ? '56px' : (size === 'header' ? '28px' : '24px');
-  const svgSize = size === 'large' ? 32 : (size === 'header' ? 20 : 20);
+  const svgSize = size === 'large' ? 32 : (size === 'header' ? 28 : 24);
 
   // Уникальный id для градиента — на основе size и случайного суффикса
   const gradId = `assistant-grad-${size}-${Math.random().toString(36).substr(2, 9)}`;
