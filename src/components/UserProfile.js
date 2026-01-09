@@ -680,7 +680,7 @@ const UserProfile = () => {
             )}
 
             {/* Большая иконка ассистента — всегда в правом верхнем углу */}
-            <AssistantIcon size="large" position="top-right" />
+            <AssistantIcon size="large" position="top-left" />
         </div>
     );
 };
