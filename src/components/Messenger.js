@@ -14,6 +14,7 @@ import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 import TranslationSettingsModal from './TranslationSettingsModal';
 import TranscriptionSettingsModal from './TranscriptionSettingsModal'; // ДОБАВЛЕНО: Импорт модального окна для транскрипции
+import AssistantIcon from './AssistantIcon';
 import { translateMessage, saveTranslation } from '../api/messages';
 import useGroupChatTranslationAndSpellCheck from '../hooks/useGroupChatTranslationAndSpellCheck';
 import sodium from 'libsodium-wrappers';
