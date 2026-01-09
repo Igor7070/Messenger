@@ -1433,8 +1433,6 @@ const PrivateChat = () => {
             </button>
             {isTTSEnabled && <span className="private-tts-indicator">ON</span>}
           </div>
-          {/* Маленькая иконка ассистента — по центру в ряду */}
-          <AssistantIcon size="header" className="mobile-header-icon" />
           <div className="private-translation-controls">
             <button
               className="private-spellcheck-button" 
@@ -1460,6 +1458,8 @@ const PrivateChat = () => {
             )}
           </div>
         </div>
+        {/* Маленькая иконка ассистента — по центру в ряду */}
+        <AssistantIcon size="header" className="mobile-header-icon" />
         <div className="private-display-name">{displayChatName}</div>
       </div>
       {showTranscriptionModal && (

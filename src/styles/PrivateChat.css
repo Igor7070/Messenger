@@ -1833,14 +1833,19 @@
     display: none !important;
   }
 
-   /* На мобильных — показываем и стилизуем маленькую иконку в шапке */
+   /* Родитель для absolute-позиционирования иконки — теперь .private-chat-name */
+  .private-chat-name {
+    position: relative !important;
+  }
+
+  /* Маленькая иконка ассистента — центрирована, не влияет на layout */
   .assistant-icon-header,
   .mobile-header-icon {
     display: flex !important;
-    position: absolute !important;          /* ← Возвращаем absolute — критично! */
-    left: 50% !important;                   /* Центрируем по горизонтали */
-    top: 50% !important;                    /* Центрируем по вертикали */
-    transform: translate(-50%, -50%) !important;  /* Точная центровка */
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
     width: 28px !important;
     height: 28px !important;
     background: transparent !important;
@@ -1850,12 +1855,12 @@
     border: none !important;
     border-radius: 8px !important;
     padding: 4px !important;
-    margin: 0 !important;                   /* Убираем margin — он не нужен при absolute */
+    margin: 0 !important;
     align-items: center !important;
     justify-content: center !important;
     cursor: pointer;
     transition: all 0.2s ease;
-    z-index: 10 !important;                 /* Чуть выше, чтобы не перекрывалась кнопками */
+    z-index: 10 !important;
   }
 
   /* Убираем пульсацию */
@@ -1864,20 +1869,21 @@
     display: none !important;
   }
 
-  /* Ховер */
+  /* Ховер-эффект — сохраняем центровку */
   .assistant-icon-header:hover,
   .mobile-header-icon:hover {
     background: rgba(139, 92, 246, 0.15) !important;
-    transform: translate(-50%, -50%) scale(1.1) !important;  /* Сохраняем центровку при ховере */
+    transform: translate(-50%, -50%) scale(1.1) !important;
   }
 
-  /* Делаем родительский ряд позиционно-относительным, чтобы absolute работал от него */
+  /* Ряд кнопок — теперь без лишних элементов, прижимается к краям */
   .private-icons-row {
-    position: relative !important;          /* ← Обязательно! */
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
+    width: 100% !important;
     padding: 0 16px !important;
     box-sizing: border-box !important;
+    /* position: relative; — больше НЕ нужен, убираем */
   }
 }
