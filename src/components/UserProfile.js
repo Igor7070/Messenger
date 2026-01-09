@@ -679,8 +679,7 @@ const UserProfile = () => {
                 />
             )}
 
-            {/* Большая иконка ассистента — всегда в правом верхнем углу */}
-            <AssistantIcon size="large" position="top-left" />
+            <AssistantIcon size="large" className="fixed-app-bottom-right" />
         </div>
     );
 };
