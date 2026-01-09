@@ -10,6 +10,7 @@ import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 import { generateChatName } from './SecretPrivateChat';
+import AssistantIcon from './AssistantIcon';
 
 const UserProfile = () => {
     const { userId } = useParams();
