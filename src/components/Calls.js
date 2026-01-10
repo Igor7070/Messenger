@@ -470,7 +470,7 @@ const Calls = () => {
       )}
     </div>
     {/* Иконка вне контейнера — fixed относительно всего экрана */}
-    <AssistantIcon size="large" className="fixed-app-bottom-left" />
+    <AssistantIcon size="large" className="assistant-icon-bottom-left" />
     </>
   );
 };
