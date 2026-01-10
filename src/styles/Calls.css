@@ -435,14 +435,20 @@
   display: none;
 }
 
-.assistant-icon-large.assistant-icon-bottom-left,
-.assistant-icon-bottom-left {
-  display: flex !important;           /* ← Обязательно, перебивает все display: none */
+/* Максимально сильное переопределение для большой иконки в левом нижнем углу */
+.assistant-icon.assistant-icon-large.assistant-icon-bottom-left,
+.assistant-icon-bottom-left,
+.assistant-icon-large {
+  display: flex !important;
   position: fixed !important;
   bottom: 20px !important;
   left: 20px !important;
   right: auto !important;
-  z-index: 9999 !important;           /* выше модалок, уведомлений и т.д. */
+  z-index: 9999 !important;
+  transform: none !important;
+  margin: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 @media (max-width: 768px) {
