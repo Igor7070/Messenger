@@ -592,4 +592,11 @@
   .calls-user-name {
     font-size: 14px !important;
   }
+
+  .assistant-icon.assistant-icon-large.assistant-icon-bottom-left,
+  .assistant-icon-bottom-left,
+  .assistant-icon-large {
+    bottom: 12px !important;
+    left: 12px !important;
+  }
 }
