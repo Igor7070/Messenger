@@ -468,9 +468,9 @@ const Calls = () => {
               onReject={rejectCall}
           />
       )}
-      {/* Иконка вне контейнера — fixed относительно всего экрана */}
-      <AssistantIcon size="large" className="fixed-app-bottom-left" />
     </div>
+    {/* Иконка вне контейнера — fixed относительно всего экрана */}
+    <AssistantIcon size="large" className="fixed-app-bottom-left" />
     </>
   );
 };
