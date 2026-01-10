@@ -9,6 +9,7 @@ import { useUserInteraction } from '../context/UserInteractionContext';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
+import AssistantIcon from './AssistantIcon';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
