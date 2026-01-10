@@ -6,6 +6,7 @@ import { FaUsers, FaPlus, FaArrowUp, FaArrowDown, FaPhone, FaTimes } from 'react
 import axios from 'axios';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import IncomingCallNotification from './IncomingCallNotification';
+import AssistantIcon from './AssistantIcon';
 import '../styles/Calls.css';
 
 const Calls = () => {
@@ -283,6 +284,7 @@ const Calls = () => {
   );
 
   return (
+    <>
     <div className="calls-container">
       <h1>Calls</h1>
 
@@ -467,6 +469,9 @@ const Calls = () => {
           />
       )}
     </div>
+    {/* Иконка вне контейнера — fixed относительно всего экрана */}
+    <AssistantIcon size="large" className="fixed-app-bottom-left" />
+    </>
   );
 };
 
