@@ -436,9 +436,9 @@
 }
 
 /* Максимально сильное переопределение для большой иконки в левом нижнем углу */
-.assistant-icon.assistant-icon-large.assistant-icon-bottom-left,
-.assistant-icon-bottom-left,
-.assistant-icon-large {
+.calls-container .assistant-icon.assistant-icon-large.assistant-icon-bottom-left,
+.calls-container .assistant-icon-bottom-left,
+.calls-container .assistant-icon-large {
   display: flex !important;
   position: fixed !important;
   bottom: 20px !important;
@@ -593,9 +593,9 @@
     font-size: 14px !important;
   }
 
-  .assistant-icon.assistant-icon-large.assistant-icon-bottom-left,
-  .assistant-icon-bottom-left,
-  .assistant-icon-large {
+  .calls-container .assistant-icon.assistant-icon-large.assistant-icon-bottom-left,
+  .calls-container .assistant-icon-bottom-left,
+  .calls-container .assistant-icon-large {
     bottom: 8px !important;
     left: 8px !important;
   }
