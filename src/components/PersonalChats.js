@@ -261,6 +261,7 @@ const PersonalChats = () => {
     };
 
     return (
+        <>
         <div className="personal-chats-container" onClick={closeContextMenu}>
             <h1 className="custom-h1">{`${currentUserName}'s private chats`}</h1>
             <ul>
@@ -326,6 +327,9 @@ const PersonalChats = () => {
                 />
             )}
         </div>
+        {/* Иконка вне контейнера — fixed относительно всего экрана */}
+        <AssistantIcon size="large" className="fixed-app-bottom-right" />
+        </>
     );
 };
 
