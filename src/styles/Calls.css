@@ -435,16 +435,6 @@
   display: none;
 }
 
-/* Принудительно фиксируем большую иконку в левом нижнем углу на всех экранах */
-.assistant-icon-bottom-left,
-.fixed-app-bottom-left {  /* на случай если используешь свой класс */
-  position: fixed !important;
-  bottom: 20px !important;
-  left: 20px !important;
-  right: auto !important;
-  z-index: 9999 !important;         /* выше всего */
-}
-
 @media (max-width: 768px) {
   .calls-container {
     padding: 10px !important;
