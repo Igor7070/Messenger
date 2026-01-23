@@ -619,7 +619,13 @@ const Home = () => {
       </Modal>
 
       {/* Иконка ассистента — теперь открывает окно */}
-      <AssistantIcon size="large" position="top-right" />
+      {window.innerWidth <= 768 ? (
+        <div className="assistant-icon-mobile">
+          <AssistantIcon size="large" onClick={() => {/* твой обработчик открытия диалога */}} />
+        </div>
+      ) : (
+        <AssistantIcon size="large" position="top-right" onClick={() => {/* твой обработчик */}} />
+      )}
     </div>
   );
 };

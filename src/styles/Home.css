@@ -426,6 +426,13 @@ h2 {
   background-color: rgba(0, 0, 0, 0.5);
 }
 
+.assistant-icon-mobile {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 1000;
+}
+
 @media (max-width: 768px) {
   .home-container {
     padding: 10px;
