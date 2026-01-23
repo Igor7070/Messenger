@@ -209,4 +209,34 @@ public class WebSocketMessageController {
             }
         }, 5, 5, TimeUnit.SECONDS); // Проверяем каждые 5 секунд
     }
+
+    @MessageMapping("/typing/{chatId}")
+    @SendTo("/topic/chat/{chatId}/messages")
+    public Message handleTyping(
+            @DestinationVariable String chatId,
+            @Payload Message typingMessage) {
+
+        System.out.println("Received typing event in chat " + chatId +
+                " from user: " + (typingMessage.getSender() != null ? typingMessage.getSender().getUsername() : "unknown") +
+                ", type: " + typingMessage.getMessageType());
+
+        // Минимальная валидация
+        if (typingMessage.getSender() == null || typingMessage.getSender().getId() == null) {
+            System.out.println("Typing ignored: sender missing");
+            return null; // или можно бросить исключение, но лучше просто игнорировать
+        }
+
+        if (!"TYPING".equals(typingMessage.getMessageType()) &&
+                !"STOP_TYPING".equals(typingMessage.getMessageType())) {
+            System.out.println("Invalid typing messageType: " + typingMessage.getMessageType());
+            return null;
+        }
+
+        // Не сохраняем в базу — это временное событие
+        // Просто возвращаем объект дальше — он уйдёт всем подписчикам
+        typingMessage.setTimestamp(ZonedDateTime.now());
+        typingMessage.setDelivered_status(true); // опционально
+
+        return typingMessage;
+    }
 }
