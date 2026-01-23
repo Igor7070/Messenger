@@ -620,10 +620,12 @@ const Home = () => {
       </Modal>
 
       {/* Иконка ассистента — теперь открывает окно */}
-      <AssistantIcon size="large" position="top-right" />
+      {window.innerWidth > 800 && (
+        <AssistantIcon size="large" position="top-right" onClick={() => {/* обработчик */}} />
+      )}
     </div>
      {/* Иконка ассистента — только на телефоне, вне контейнера */}
-    {window.innerWidth <= 768 && (
+    {window.innerWidth <= 800 && (
       <div className="assistant-icon-mobile">
         <AssistantIcon size="large" onClick={() => {/* твой обработчик */}} />
       </div>

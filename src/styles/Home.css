@@ -428,8 +428,8 @@ h2 {
 
 .assistant-icon-mobile {
   position: fixed;
-  bottom: 8px;
-  right: 8px;
+  bottom: 4px;
+  right: 4px;
   z-index: 1000;
 }
 
