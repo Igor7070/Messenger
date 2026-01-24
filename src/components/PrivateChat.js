@@ -88,6 +88,11 @@ const PrivateChat = () => {
   const [transcriptionQueue, setTranscriptionQueue] = useState([]);
   const [isTranscribing, setIsTranscribing] = useState(false);
 
+  // Для индикатора "печатает…"
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingName, setTypingName] = useState('');
+  const typingTimerRef = useRef(null); // для таймера скрытия
+
   // Мемоизация аудиосообщений
   const memoizedAudioMessages = useMemo(() => {
     return messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
@@ -278,6 +283,42 @@ const PrivateChat = () => {
             setTranscriptionQueue((prevQueue) => [...prevQueue, newMessage]);
           }
         });
+
+        // ← НОВОЕ: Подписка на отдельную тему typing (добавляем сразу после messages)
+        stompClientInstance.subscribe(`/topic/chat/${chatId}/typing`, (message) => {
+          try {
+            const data = JSON.parse(message.body);
+            console.log('Typing event received:', data); // ← для отладки
+
+            const type = data.messageType;
+            const sender = data.sender;
+
+            if (sender && sender.id !== userId) { // не показываем себе
+              if (type === 'TYPING') {
+                setTypingName(sender.username || 'Кто-то');
+                setIsTyping(true);
+
+                // Сбрасываем старый таймер и запускаем новый (6.5 сек)
+                if (typingTimerRef.current) {
+                  clearTimeout(typingTimerRef.current);
+                }
+                typingTimerRef.current = setTimeout(() => {
+                  setIsTyping(false);
+                  console.log('Typing indicator hidden by timeout');
+                }, 6500);
+              } else if (type === 'STOP_TYPING') {
+                setIsTyping(false);
+                if (typingTimerRef.current) {
+                  clearTimeout(typingTimerRef.current);
+                }
+                console.log('STOP_TYPING received');
+              }
+            }
+          } catch (err) {
+            console.error('Error parsing typing event:', err);
+          }
+        });
+        // ← КОНЕЦ НОВОГО блока
       },
       onWebSocketError: (error) => {
         console.error('WebSocket error in PrivateChat:', error);
@@ -298,7 +339,7 @@ const PrivateChat = () => {
       console.log('Deactivating WebSocket in PrivateChat');
       stompClientInstance.deactivate();
     };
-  }, [chatId, isTranslationEnabled, translationLanguage, translationMode, isMessageNew]); 
+  }, [chatId, isTranslationEnabled, translationLanguage, translationMode, isMessageNew]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -956,6 +997,10 @@ const PrivateChat = () => {
     } else {
         textAreaRef.current.classList.remove('scroll-enabled');
     }
+    // Отправляем typing, если текст не пустой
+    if (newValue.trim() !== '') {
+      sendTypingEvent(true);
+    }
   };
 
   // Форматирование времени в формате MM:SS
@@ -1406,6 +1451,31 @@ const PrivateChat = () => {
     if (arrow) arrow.remove();
   };
 
+  const sendTypingEvent = (isTyping) => {
+    if (!client || !client.connected) {
+      console.warn('Cannot send typing: STOMP not connected');
+      return;
+    }
+
+    const payload = {
+      messageType: isTyping ? 'TYPING' : 'STOP_TYPING',
+      sender: {
+        id: userId,
+        username: username,
+      },
+      chat: {
+        id: chatId,
+      },
+    };
+
+    client.publish({
+      destination: `/app/typing/${chatId}`,
+      body: JSON.stringify(payload),
+    });
+
+    console.log(`Typing event sent: ${isTyping ? 'TYPING' : 'STOP_TYPING'}`);
+  };
+
   return (
     <div className="private-chat">
       {/* Большая фиксированная иконка ассистента — только в PrivateChat на ПК */}
@@ -1475,6 +1545,12 @@ const PrivateChat = () => {
           onSave={handleTranslationSettingsSave}
           onClose={() => setShowTranslationModal(false)}
         />
+      )}
+      {/* Индикатор "печатает…" */}
+      {isTyping && (
+        <div className="typing-indicator">
+          <span>{typingName} печатает…</span>
+        </div>
       )}
       <div className="private-message-list" ref={messageListRef}>
         {messages.map((msg, index) => (
