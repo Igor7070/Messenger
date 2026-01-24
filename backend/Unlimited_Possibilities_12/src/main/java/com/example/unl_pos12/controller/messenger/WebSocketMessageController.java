@@ -211,7 +211,7 @@ public class WebSocketMessageController {
     }
 
     @MessageMapping("/typing/{chatId}")
-    @SendTo("/topic/chat/{chatId}/messages")
+    @SendTo("/topic/chat/{chatId}/typing")
     public Message handleTyping(
             @DestinationVariable String chatId,
             @Payload Message typingMessage) {
