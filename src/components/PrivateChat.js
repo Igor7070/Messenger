@@ -742,6 +742,9 @@ const PrivateChat = () => {
         // ДОБАВЛЕНО: Удаляем класс scroll-enabled при сбросе
         textAreaRef.current.classList.remove('scroll-enabled');
     }
+
+    // ← Отправка события при отправке сообщения, о прекращении печатания
+    sendTypingEvent(false);
   };
 
   const handleRightClick = (e, message) => {
