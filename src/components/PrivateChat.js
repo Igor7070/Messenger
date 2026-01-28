@@ -93,6 +93,9 @@ const PrivateChat = () => {
   const [typingName, setTypingName] = useState('');
   const typingTimerRef = useRef(null); // для таймера скрытия
 
+  const [partnerAvatar, setPartnerAvatar] = useState(null);
+  const [partnerId, setPartnerId] = useState(null);
+
   // Мемоизация аудиосообщений
   const memoizedAudioMessages = useMemo(() => {
     return messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
@@ -168,6 +171,33 @@ const PrivateChat = () => {
         setDisplayChatName(`Chat with ${interlocutorName}`);
         setChatId(chatIdParam);
         setCurrentChatId(chatIdParam);
+
+        // ────────────────────────────────────────────────────────────────
+        // НАЧАЛО ВСТАВЛЕННОГО БЛОКА — получение аватара и ID собеседника
+        try {
+          const partnerResponse = await fetch(
+            `https://unlimitedpossibilities12.org/api/users/by-username/${interlocutorName}`
+          );
+
+          if (partnerResponse.ok) {
+            const partnerData = await partnerResponse.json();
+            setPartnerId(partnerData.id);
+            setPartnerAvatar(partnerData.avatar); // предполагается, что avatar — это строка, например "/uploads/avatars/xxx.jpg"
+            console.log('Аватар и ID собеседника успешно загружены:', {
+              id: partnerData.id,
+              username: partnerData.username,
+              avatar: partnerData.avatar
+            });
+          } else {
+            console.warn(
+              `Не удалось загрузить данные собеседника "${interlocutorName}", статус: ${partnerResponse.status}`
+            );
+          }
+        } catch (fetchError) {
+          console.error('Ошибка при запросе аватара/ID собеседника:', fetchError);
+        }
+        // КОНЕЦ ВСТАВЛЕННОГО БЛОКА
+        // ────────────────────────────────────────────────────────────────
 
         const initialMessages = await getMessages(chatIdParam);
         const updatedMessages = initialMessages.map((msg) => {
@@ -1484,6 +1514,34 @@ const PrivateChat = () => {
       {/* Большая фиксированная иконка ассистента — только в PrivateChat на ПК */}
       <AssistantIcon size="large" className="fixed-app-bottom-right" />
       <div className="private-chat-name">
+        {/* Аватар + имя + typing — как в Android */}
+        <div className="header-content">
+          {/* Аватар слева */}
+          <div className="partner-avatar-container">
+            {partnerAvatar ? (
+              <img
+                src={`https://unlimitedpossibilities12.org${partnerAvatar}`}
+                alt="Аватар"
+                className="partner-avatar"
+                onClick={() => partnerId && navigate(`/user/${partnerId}`)}
+              />
+            ) : (
+              <div className="partner-avatar placeholder">
+                {displayChatName?.charAt(0)?.toUpperCase() || '?'}
+              </div>
+            )}
+          </div>
+
+          {/* Имя по центру + typing под ним */}
+          <div className="partner-info">
+            <div className="partner-name">{displayChatName}</div>
+            {isTyping && (
+              <div className="typing-text">{typingName} печатает…</div>
+            )}
+          </div>
+        </div>
+
+        {/* Старые элементы оставляем как есть — иконки, ассистент, мобильное имя */}
         <div className="private-chat-name-mobile">{displayChatName}</div>
         <div className="private-icons-row">
           <div className="private-transcription-controls">
@@ -1496,6 +1554,8 @@ const PrivateChat = () => {
               🎤
             </button>
             {isTranscriptionEnabled && <span className="private-transcription-indicator">ON</span>}
+          </div>
+          <div className="private-tts-button-container">
             <button
               className="private-tts-button"
               onClick={handleTTSToggle}
@@ -1508,16 +1568,16 @@ const PrivateChat = () => {
           </div>
           <div className="private-translation-controls">
             <button
-              className="private-spellcheck-button" 
+              className="private-spellcheck-button"
               onClick={handleSpellCheckToggle}
               data-tooltip={isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF'}
               style={{ color: isSpellCheckEnabled ? '#42a5f5' : '#B0BEC5' }}
             >
               ✍️
             </button>
-            {isSpellCheckEnabled && <span className="private-spellcheck-indicator">SC</span>} 
+            {isSpellCheckEnabled && <span className="private-spellcheck-indicator">SC</span>}
             <button
-              className="private-translation-button" 
+              className="private-translation-button"
               onClick={() => setShowTranslationModal(true)}
               data-tooltip="Toggle translation for messages"
               style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
@@ -1525,15 +1585,13 @@ const PrivateChat = () => {
               🌐
             </button>
             {isTranslationEnabled && (
-              <span className="private-translation-indicator"> 
+              <span className="private-translation-indicator">
                 {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
               </span>
             )}
           </div>
         </div>
-        {/* Маленькая иконка ассистента — по центру в ряду */}
         <AssistantIcon size="header" className="mobile-header-icon" />
-        <div className="private-display-name">{displayChatName}</div>
       </div>
       {showTranscriptionModal && (
         <TranscriptionSettingsModal
