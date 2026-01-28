@@ -305,7 +305,7 @@ const PrivateChat = () => {
                 typingTimerRef.current = setTimeout(() => {
                   setIsTyping(false);
                   console.log('Typing indicator hidden by timeout');
-                }, 3500);
+                }, 2500);
               } else if (type === 'STOP_TYPING') {
                 setIsTyping(false);
                 if (typingTimerRef.current) {
