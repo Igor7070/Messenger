@@ -1263,6 +1263,7 @@
   display: none !important;
 }
 
+/* Не задействован */
 .typing-indicator {
   padding: 8px 16px;
   font-size: 14px;
@@ -1276,6 +1277,7 @@
   animation: typing 1.5s infinite;
 }
 
+/* Не задействован */
 @keyframes typing {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
@@ -1932,7 +1934,6 @@
     border-radius: 8px !important;
     padding: 3px !important;
     margin: 0 !important;
-    /*margin-top: 1,5px !important;*/
     align-items: center !important;
     justify-content: center !important;
     cursor: pointer;

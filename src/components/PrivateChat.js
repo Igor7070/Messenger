@@ -1534,7 +1534,7 @@ const PrivateChat = () => {
           <div className="partner-info">
             <div className="partner-name">{displayChatName.replace('Chat with ', '')}</div>
             {isTyping && (
-              <div className="typing-text">{typingName} печатает…</div>
+              <div className="typing-text">{typingName} is typing…</div>
             )}
           </div>
         </div>
@@ -1603,11 +1603,11 @@ const PrivateChat = () => {
         />
       )}
       {/* Индикатор "печатает…" */}
-      {isTyping && (
+      {/*{isTyping && (
         <div className="typing-indicator">
           <span>{typingName} печатает…</span>
         </div>
-      )}
+      )}*/}
       <div className="private-message-list" ref={messageListRef}>
         {messages.map((msg, index) => (
           <div
