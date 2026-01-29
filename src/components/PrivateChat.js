@@ -1588,7 +1588,6 @@ const PrivateChat = () => {
           </div>
         </div>
         <AssistantIcon size="header" className="mobile-header-icon" />
-        <div className="private-display-name">{displayChatName}</div>
       </div>
       {showTranscriptionModal && (
         <TranscriptionSettingsModal
