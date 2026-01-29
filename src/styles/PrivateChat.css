@@ -1969,4 +1969,8 @@
     height: 28px !important;
     font-size: 14px !important;  /* если placeholder с буквой — тоже уменьшить шрифт */
   }
+
+  .private-chat-name {
+    padding-top: 4px !important;     /* было 2px → стало 4px (увеличить) */
+  }
 }
