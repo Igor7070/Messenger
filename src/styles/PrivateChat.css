@@ -1333,6 +1333,43 @@
   font-style: italic;
 }
 
+/* Фикс высоты и центрирования всего заголовка */
+.private-chat-name {
+  padding: 8px 16px !important;     /* возвращаем компактный padding как был раньше */
+  min-height: auto !important;       /* убираем лишнюю высоту */
+  gap: 4px !important;               /* маленький зазор между аватаром/именем и иконками */
+  align-items: center !important;    /* центрируем ВСЁ содержимое по вертикали */
+  justify-content: center !important;/* горизонтальное центрирование */
+}
+
+/* Делаем блок аватар+имя самостоятельным и центрированным */
+.header-content {
+  display: flex;
+  align-items: center !important;    /* ← вертикальное центрирование аватара и имени */
+  justify-content: center !important;
+  gap: 12px;
+  padding: 0 !important;             /* убираем лишние внутренние отступы */
+  margin: 0 !important;
+  width: 100%;
+  height: 48px;                      /* фиксированная высота, как в Android — ровно центрирует */
+  box-sizing: border-box;
+}
+
+/* Уменьшаем влияние старых элементов на высоту */
+.private-chat-name > .private-icons-row,
+.private-chat-name > .private-chat-name-mobile,
+.private-chat-name > .mobile-header-icon {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Если нужно — чуть меньше высоты аватара, чтобы было компактнее */
+.partner-avatar,
+.partner-avatar.placeholder {
+  width: 32px !important;
+  height: 32px !important;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         position: fixed !important;
