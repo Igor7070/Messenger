@@ -1526,7 +1526,7 @@ const PrivateChat = () => {
               />
             ) : (
               <div className="partner-avatar placeholder">
-                {interlocutorName?.trim()?.charAt(0)?.toUpperCase() || '?'}
+                {displayChatName.replace(/^Chat with\s*/i, '').trim().charAt(0).toUpperCase() || '?'}
               </div>
             )}
           </div>
