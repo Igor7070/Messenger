@@ -1288,7 +1288,6 @@
   justify-content: center;
   gap: 12px;
   padding-bottom: 8px; /* отступ перед старыми иконками */
-  border-bottom: 1px solid #eee; /* визуальное отделение, можно убрать */
 }
 
 .partner-avatar-container {
