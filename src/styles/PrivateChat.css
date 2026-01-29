@@ -1971,6 +1971,6 @@
   }
 
   .private-chat-name {
-    padding-top: 4px !important;     /* было 2px → стало 4px (увеличить) */
+    padding-top: 6px !important;     
   }
 }
