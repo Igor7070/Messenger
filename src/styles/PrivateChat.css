@@ -1962,4 +1962,11 @@
     box-sizing: border-box !important;
     /* position: relative; — больше НЕ нужен, убираем */
   }
+
+  .partner-avatar,
+  .partner-avatar.placeholder {
+    width: 28px !important;      /* уменьшили с 30px до 28px — подбери 26px или 27px, если нужно ещё меньше */
+    height: 28px !important;
+    font-size: 14px !important;  /* если placeholder с буквой — тоже уменьшить шрифт */
+  }
 }
