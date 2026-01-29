@@ -1977,4 +1977,9 @@
   .private-chat-name {
     padding-top: 6px !important;     
   }
+
+  .mobile-header-icon,
+  .assistant-icon-header {
+    padding-bottom: 2px !important;
+  }
 }
