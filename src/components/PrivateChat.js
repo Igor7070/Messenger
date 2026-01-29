@@ -1514,9 +1514,8 @@ const PrivateChat = () => {
       {/* Большая фиксированная иконка ассистента — только в PrivateChat на ПК */}
       <AssistantIcon size="large" className="fixed-app-bottom-right" />
       <div className="private-chat-name">
-        {/* Аватар + имя + typing — как в Android */}
+        {/* Новый блок с аватаром и именем — над всем остальным */}
         <div className="header-content">
-          {/* Аватар слева */}
           <div className="partner-avatar-container">
             {partnerAvatar ? (
               <img
@@ -1532,16 +1531,15 @@ const PrivateChat = () => {
             )}
           </div>
 
-          {/* Имя по центру + typing под ним */}
           <div className="partner-info">
-            <div className="partner-name">{displayChatName}</div>
+            <div className="partner-name">{displayChatName.replace('Chat with ', '')}</div>
             {isTyping && (
               <div className="typing-text">{typingName} печатает…</div>
             )}
           </div>
         </div>
 
-        {/* Старые элементы оставляем как есть — иконки, ассистент, мобильное имя */}
+        {/* ← ВСЁ НИЖЕ ОСТАЁТСЯ ТОЧНО КАК БЫЛО РАНЬШЕ, ничего не трогаем */}
         <div className="private-chat-name-mobile">{displayChatName}</div>
         <div className="private-icons-row">
           <div className="private-transcription-controls">
@@ -1554,8 +1552,6 @@ const PrivateChat = () => {
               🎤
             </button>
             {isTranscriptionEnabled && <span className="private-transcription-indicator">ON</span>}
-          </div>
-          <div className="private-tts-button-container">
             <button
               className="private-tts-button"
               onClick={handleTTSToggle}
@@ -1592,6 +1588,7 @@ const PrivateChat = () => {
           </div>
         </div>
         <AssistantIcon size="header" className="mobile-header-icon" />
+        <div className="private-display-name">{displayChatName}</div>
       </div>
       {showTranscriptionModal && (
         <TranscriptionSettingsModal
