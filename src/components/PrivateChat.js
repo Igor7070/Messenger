@@ -1540,7 +1540,6 @@ const PrivateChat = () => {
         </div>
 
         {/* ← ВСЁ НИЖЕ ОСТАЁТСЯ ТОЧНО КАК БЫЛО РАНЬШЕ, ничего не трогаем */}
-        <div className="private-chat-name-mobile">{displayChatName}</div>
         <div className="private-icons-row">
           <div className="private-transcription-controls">
             <button
