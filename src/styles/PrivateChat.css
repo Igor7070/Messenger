@@ -1932,6 +1932,7 @@
     border-radius: 8px !important;
     padding: 3px !important;
     margin: 0 !important;
+    margin-top: 1px !important;
     align-items: center !important;
     justify-content: center !important;
     cursor: pointer;
