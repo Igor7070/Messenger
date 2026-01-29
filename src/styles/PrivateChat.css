@@ -1970,6 +1970,10 @@
     font-size: 14px !important;  /* если placeholder с буквой — тоже уменьшить шрифт */
   }
 
+  .partner-avatar-container {
+    margin-bottom: 6px !important;  
+  }
+
   .private-chat-name {
     padding-top: 6px !important;     
   }
