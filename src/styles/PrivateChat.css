@@ -1286,7 +1286,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 6px;                      
+  padding: 0 !important;         /* убираем любые внутренние отступы, которые могут сбивать */
+  margin: 0 !important;
 }
 
 .partner-avatar-container {
