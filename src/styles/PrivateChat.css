@@ -1324,9 +1324,11 @@
 .partner-info {
   display: flex;
   flex-direction: column;
-  justify-content: center;            /* ← центрируем имя + typing внутри строки */
-  height: 100%;                       /* занимает всю высоту .header-content */
+  justify-content: center;             /* оставляем для вертикального центрирования */
+  align-items: flex-start !important;  /* ← выравнивание по левому краю */
+  height: 100%;
   margin: 0 !important;
+  text-align: left !important;         /* на всякий случай */
 }
 
 .partner-name {
@@ -1336,9 +1338,12 @@
 }
 
 .typing-text {
-  margin-top: 0 !important;           
-  line-height: 1 !important;          
-  font-size: 14px !important;         
+  margin-top: 0 !important;
+  line-height: 1.1 !important;
+  font-size: 14px !important;
+  text-align: left !important;         /* ← текст typing строго слева */
+  width: 100%;                         /* занимает всю ширину, чтобы не центрировался */
+  align-self: flex-start !important;   /* ← прижимает typing к левому краю */
 }
 
 @media (max-width: 800px) {
