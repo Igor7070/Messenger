@@ -1,17 +1,17 @@
 {
   "files": {
-    "main.css": "/Messenger/static/css/main.890c89ef.css",
-    "main.js": "/Messenger/static/js/main.ef8df8bb.js",
+    "main.css": "/Messenger/static/css/main.06371643.css",
+    "main.js": "/Messenger/static/js/main.7a302181.js",
     "static/js/726.63e59fed.chunk.js": "/Messenger/static/js/726.63e59fed.chunk.js",
     "static/js/453.d3aabf12.chunk.js": "/Messenger/static/js/453.d3aabf12.chunk.js",
     "index.html": "/Messenger/index.html",
-    "main.890c89ef.css.map": "/Messenger/static/css/main.890c89ef.css.map",
-    "main.ef8df8bb.js.map": "/Messenger/static/js/main.ef8df8bb.js.map",
+    "main.06371643.css.map": "/Messenger/static/css/main.06371643.css.map",
+    "main.7a302181.js.map": "/Messenger/static/js/main.7a302181.js.map",
     "726.63e59fed.chunk.js.map": "/Messenger/static/js/726.63e59fed.chunk.js.map",
     "453.d3aabf12.chunk.js.map": "/Messenger/static/js/453.d3aabf12.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.890c89ef.css",
-    "static/js/main.ef8df8bb.js"
+    "static/css/main.06371643.css",
+    "static/js/main.7a302181.js"
   ]
 }
