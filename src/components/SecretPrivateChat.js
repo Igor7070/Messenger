@@ -2593,6 +2593,8 @@ const SecretPrivateChat = () => {
       <AssistantIcon size="large" className="fixed-app-bottom-right" />
       <div className="secret-chat-name">
         <div className="secret-header-content">
+          {/* Маленькая иконка ассистента — ТОЛЬКО на мобильных, слева от замка */}
+          <AssistantIcon size="small" className="mobile-assistant-icon secret-mobile-assistant-left" />
           {/* Иконка замка слева */}
           <span className="secret-chat-indicator">🔒</span>
 
