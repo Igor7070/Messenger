@@ -14,6 +14,7 @@ import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { usePrivateMessageNotification } from '../context/PrivateMessageNotificationContext';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import * as sodium from 'libsodium-wrappers';
+import AssistantIcon from './AssistantIcon';
 
 const saveOwnMessageContent = (chatId, userId, clientMessageId, content) => {
   try {
@@ -146,6 +147,11 @@ const SecretPrivateChat = () => {
   const [sentMessagesCache, setSentMessagesCache] = useState({}); // Кэш отправленных сообщений: { clientMessageId: content }
   const [processedMessages, setProcessedMessages] = useState(new Set());
   const [decryptedAudioBlobs, setDecryptedAudioBlobs] = useState({}); // { [msgId]: { blobUrl: string, mp3Blob: Blob } }
+  const [isTyping, setIsTyping] = useState(false); // Для индикатора печатания
+  const [typingName, setTypingName] = useState(''); // Для индикатора печатания
+  const [partnerId, setPartnerId] = useState(null);
+  const [partnerAvatar, setPartnerAvatar] = useState(null);
+  const typingTimerRef = useRef(null); // для таймера скрытия
   const messagesEndRef = useRef(null);
   const messageListRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -167,93 +173,138 @@ const SecretPrivateChat = () => {
       await sodium.ready;
       const storedKeyPair = localStorage.getItem(`keyPair_${userId}`);
       console.log(`Checking keyPair for userId: ${userId}, exists: ${!!storedKeyPair}`);
+
+      let parsedKeyPair = null;
+      let publicKeyBase64 = '';   // ← Объявляем заранее, чтобы избежать no-undef
+      let privateKeyBase64 = '';  // ← Объявляем заранее
+
       if (storedKeyPair) {
-        const parsedKeyPair = JSON.parse(storedKeyPair);
-        console.log(`Private key length: ${parsedKeyPair.privateKey?.length}, Public key length: ${parsedKeyPair.publicKey?.length}`);
         try {
-          const privateKeyBytes = sodium.from_base64(parsedKeyPair.privateKey);
+          parsedKeyPair = JSON.parse(storedKeyPair);
+          console.log(`Private key length: ${parsedKeyPair.privateKey?.length}, Public key length: ${parsedKeyPair.publicKey?.length}`);
+        } catch (e) {
+          console.error(`Failed to parse stored keyPair, regenerating...`, e);
+          localStorage.removeItem(`keyPair_${userId}`);
+          parsedKeyPair = null;
+        }
+      }
+
+      if (parsedKeyPair) {
+        privateKeyBase64 = parsedKeyPair.privateKey || '';
+        publicKeyBase64 = parsedKeyPair.publicKey || '';
+
+        // Проверяем, корректна ли длина ключа
+        let privateKeyBytes;
+        try {
+          privateKeyBytes = sodium.from_base64(privateKeyBase64);
           console.log(`Private key bytes length: ${privateKeyBytes.length}`);
         } catch (e) {
           console.error(`Private key decode error for userId: ${userId}, error: ${e.message}`);
+          privateKeyBytes = null;
         }
-        setKeyPair(parsedKeyPair);
-        // Добавляем собственный публичный ключ в publicKeys
-        setPublicKeys((prev) => ({
-          ...prev,
-          [userId]: parsedKeyPair.publicKey,
-        }));
-        // Force-sync key всегда при reload/update (уведомление партнёра)
-        const currentPublicKey = parsedKeyPair.publicKey;
-        try {
-          console.log(`Syncing public key for userId: ${userId}`);
-          const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, publicKey: currentPublicKey }),
-          });
-          if (!syncResponse.ok) throw new Error(`Sync failed: ${syncResponse.status}`);
-          console.log(`Key synced for userId: ${userId}`);
 
-          // WS-broadcast для партнёра (он получит в /topic/publicKey/{recipientId})
-          if (client && client.connected) {
-            client.publish({
-              destination: `/app/publicKey/${userId}`,
-              body: JSON.stringify({ userId, publicKey: currentPublicKey }),
-            });
-            console.log('WS broadcast sent to partner');
+        // Если длина неверная — чистим строку и пробуем снова
+        if (!privateKeyBytes || privateKeyBytes.length !== sodium.crypto_box_SECRETKEYBYTES) {
+          console.warn(`Invalid private key length (${privateKeyBytes?.length || 'invalid'}), attempting cleanup`);
+
+          privateKeyBase64 = privateKeyBase64
+            .trim()
+            .replace(/\s+/g, '')          // убираем все пробелы, табы
+            .replace(/[\r\n]+/g, '');     // убираем переносы строк
+
+          publicKeyBase64 = publicKeyBase64
+            .trim()
+            .replace(/\s+/g, '')
+            .replace(/[\r\n]+/g, '');
+
+          try {
+            privateKeyBytes = sodium.from_base64(privateKeyBase64);
+            console.log(`After cleanup - Private key bytes length: ${privateKeyBytes.length}`);
+
+            if (privateKeyBytes.length === sodium.crypto_box_SECRETKEYBYTES) {
+              // Успех — перезаписываем в localStorage чистые строки
+              localStorage.setItem(`keyPair_${userId}`, JSON.stringify({
+                publicKey: publicKeyBase64,
+                privateKey: privateKeyBase64
+              }));
+              console.log(`Cleaned key pair saved back to localStorage`);
+            } else {
+              console.warn(`Cleanup failed - length still wrong: ${privateKeyBytes.length}, regenerating key pair`);
+              localStorage.removeItem(`keyPair_${userId}`);
+              parsedKeyPair = null; // заставим сгенерировать новый
+            }
+          } catch (cleanError) {
+            console.error(`Cleanup attempt failed:`, cleanError);
+            localStorage.removeItem(`keyPair_${userId}`);
+            parsedKeyPair = null;
           }
-
-          toast.info('Key updated and synced with partner');  // Уведомление юзеру
-        } catch (syncError) {
-          console.error('Sync error:', syncError);
-          toast.error('Key sync failed — retry chat');
         }
-      } else {
+
+        // Если после всех проверок ключ валиден — используем
+        if (parsedKeyPair) {
+          setKeyPair({
+            publicKey: publicKeyBase64,
+            privateKey: privateKeyBase64
+          });
+
+          setPublicKeys((prev) => ({
+            ...prev,
+            [userId]: publicKeyBase64,
+          }));
+        }
+      }
+
+      // Если ключа нет или он был удалён — генерируем новый
+      if (!parsedKeyPair) {
         console.log(`Generating new key pair for userId: ${userId}`);
         const newKeyPair = sodium.crypto_box_keypair();
-        const publicKeyBase64 = sodium.to_base64(newKeyPair.publicKey);
-        const privateKeyBase64 = sodium.to_base64(newKeyPair.privateKey);
+        publicKeyBase64 = sodium.to_base64(newKeyPair.publicKey).trim();
+        privateKeyBase64 = sodium.to_base64(newKeyPair.privateKey).trim();
+
         localStorage.setItem(`keyPair_${userId}`, JSON.stringify({
           publicKey: publicKeyBase64,
           privateKey: privateKeyBase64
         }));
+
         setKeyPair({
           publicKey: publicKeyBase64,
           privateKey: privateKeyBase64
         });
-        // Добавляем собственный публичный ключ в publicKeys
+
         setPublicKeys((prev) => ({
           ...prev,
           [userId]: publicKeyBase64,
         }));
-        // Force-sync key всегда при reload/update (уведомление партнёра)
-        const currentPublicKey = publicKeyBase64;
-        try {
-          console.log(`Syncing public key for userId: ${userId}`);
-          const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+      }
+
+      // Force-sync key всегда при reload/update (уведомление партнёра)
+      const currentPublicKey = keyPair?.publicKey || publicKeyBase64; // ← Теперь publicKeyBase64 всегда определена
+      try {
+        console.log(`Syncing public key for userId: ${userId}`);
+        const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, publicKey: currentPublicKey }),
+        });
+        if (!syncResponse.ok) throw new Error(`Sync failed: ${syncResponse.status}`);
+        console.log(`Key synced for userId: ${userId}`);
+
+        // WS-broadcast для партнёра (он получит в /topic/publicKey/{recipientId})
+        if (client && client.connected) {
+          client.publish({
+            destination: `/app/publicKey/${userId}`,
             body: JSON.stringify({ userId, publicKey: currentPublicKey }),
           });
-          if (!syncResponse.ok) throw new Error(`Sync failed: ${syncResponse.status}`);
-          console.log(`Key synced for userId: ${userId}`);
-
-          // WS-broadcast для партнёра (он получит в /topic/publicKey/{recipientId})
-          if (client && client.connected) {
-            client.publish({
-              destination: `/app/publicKey/${userId}`,
-              body: JSON.stringify({ userId, publicKey: currentPublicKey }),
-            });
-            console.log('WS broadcast sent to partner');
-          }
-
-          toast.info('Key updated and synced with partner');  // Уведомление юзеру
-        } catch (syncError) {
-          console.error('Sync error:', syncError);
-          toast.error('Key sync failed — retry chat');
+          console.log('WS broadcast sent to partner');
         }
+
+        toast.info('Key updated and synced with partner');  // Уведомление юзеру
+      } catch (syncError) {
+        console.error('Sync error:', syncError);
+        toast.error('Key sync failed — retry chat');
       }
     };
+
     initializeSodium();
   }, [userId]);
 
@@ -281,6 +332,9 @@ const SecretPrivateChat = () => {
         const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${interlocutorName}`);
         const recipient = await recipientResponse.json();
         const recipientId = recipient.id;
+
+        setPartnerId(recipientId);
+        setPartnerAvatar(recipient.avatar); // предполагается, что в ответе есть поле avatar (строка типа "/uploads/avatars/xxx.jpg")
 
         const recipientPublicKey = await getPublicKey(recipientId);
         setPublicKeys(prev => ({ ...prev, [recipientId]: recipientPublicKey }));
@@ -674,6 +728,40 @@ const SecretPrivateChat = () => {
           );
         });
 
+        // ← НОВОЕ: Подписка на typing
+        stompClientInstance.subscribe(`/topic/chat/${chatId}/typing`, (message) => {
+          try {
+            const data = JSON.parse(message.body);
+            console.log('Typing event received in SecretChat:', data);
+
+            const type = data.messageType;
+            const sender = data.sender;
+
+            if (sender && sender.id !== userId) {
+              if (type === 'TYPING') {
+                setTypingName(sender.username || 'Собеседник');
+                setIsTyping(true);
+
+                if (typingTimerRef.current) {
+                  clearTimeout(typingTimerRef.current);
+                }
+                typingTimerRef.current = setTimeout(() => {
+                  setIsTyping(false);
+                  console.log('Typing indicator hidden by timeout in SecretChat');
+                }, 2500);
+              } else if (type === 'STOP_TYPING') {
+                setIsTyping(false);
+                if (typingTimerRef.current) {
+                  clearTimeout(typingTimerRef.current);
+                }
+                console.log('STOP_TYPING received in SecretChat');
+              }
+            }
+          } catch (err) {
+            console.error('Error parsing typing event in SecretChat:', err);
+          }
+        });
+
         // ← ПОДПИСКА НА ОБНОВЛЕНИЕ КЛЮЧЕЙ
         if (chatName) {
           const recipientName = chatName.replace('_secret', '').split('_').find((name) => name !== username);
@@ -735,6 +823,9 @@ const SecretPrivateChat = () => {
       }
       if (reconnectTimeout) {
         clearTimeout(reconnectTimeout);
+      }
+      if (typingTimerRef.current) {
+        clearTimeout(typingTimerRef.current);
       }
     };
   }, [chatId, userId, chatName, username]);
@@ -975,7 +1066,7 @@ const SecretPrivateChat = () => {
     };
   };
 
-  const decryptMessage = async (encryptedContent, nonce, senderId, timestamp, publicKey, originalPublicKeyId = null) => { // [CHANGE] Добавлен параметр publicKey, originalPublicKeyId = null
+  const decryptMessage = async (encryptedContent, nonce, senderId, timestamp, publicKey, originalPublicKeyId = null) => {
     console.log(
       `decryptMessage called: senderId=${senderId}, timestamp=${timestamp}`
     );
@@ -1022,7 +1113,7 @@ const SecretPrivateChat = () => {
     const encryptedBytes = sodium.from_base64(encryptedContent);
     const nonceBytes = sodium.from_base64(nonce);
     const publicKeyBytes = sodium.from_base64(publicKey);
-    const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
+    let privateKeyBytes = sodium.from_base64(keyPair.privateKey);
 
     console.log(
       `Decryption input: encryptedBytesLength=${encryptedBytes.length}, nonceBytesLength=${nonceBytes.length}, publicKeyBytesLength=${publicKeyBytes.length}, privateKeyBytesLength=${privateKeyBytes.length}`
@@ -1047,16 +1138,66 @@ const SecretPrivateChat = () => {
       return decryptedMessage;
     } catch (error) {
       console.error(`Decryption error for senderId: ${senderId}, encryptedContent: ${encryptedContent}, nonce: ${nonce}, error: ${error.message}`);
-      // [FIX] Retry with current key if history fail (vars теперь доступны)
+
+      // ← Добавляем ТОЛЬКО обработку конкретной мобильной проблемы
+      const errorMsg = error.message.toLowerCase();
+      if (
+        errorMsg.includes('invalid') ||
+        errorMsg.includes('length') ||
+        errorMsg.includes('incorrect key pair') ||
+        errorMsg.includes('key')
+      ) {
+        console.warn('Possible mobile browser key corruption detected — attempting one-time cleanup retry');
+
+        // Чистим строку приватного ключа ТОЛЬКО для этой попытки
+        const cleanedPrivateKey = keyPair.privateKey
+          .trim()
+          .replace(/\s+/g, '')           // убираем все пробелы, табы
+          .replace(/[\r\n]+/g, '');      // убираем переносы строк
+
+        try {
+          privateKeyBytes = sodium.from_base64(cleanedPrivateKey);
+          console.log(`Cleaned private key bytes length: ${privateKeyBytes.length}`);
+
+          // Пробуем ещё раз с очищенным ключом
+          const decryptedBytes = sodium.crypto_box_open_easy(
+            encryptedBytes,
+            nonceBytes,
+            publicKeyBytes,
+            privateKeyBytes
+          );
+          const decryptedMessage = sodium.to_string(decryptedBytes);
+          console.log(`Retry with cleaned private key SUCCESS: ${decryptedMessage}`);
+
+          // Если успех — можно тихо обновить state (не обязательно, но полезно)
+          // setKeyPair(prev => ({ ...prev, privateKey: cleanedPrivateKey }));
+
+          return decryptedMessage;
+        } catch (cleanError) {
+          console.error('Retry with cleaned key failed:', cleanError);
+        }
+      }
+
+      // ← Твой существующий fallback на current key (остаётся без изменений)
       if (originalPublicKeyId && error.message.includes('incorrect key pair')) {
         console.log(`Retry with current key for senderId=${senderId}`);
         const currentKey = await getPublicKey(senderId);  // No ID = current
         const currentBytes = sodium.from_base64(currentKey);
-        const decryptedBytes = sodium.crypto_box_open_easy(encryptedBytes, nonceBytes, currentBytes, privateKeyBytes);
-        const decryptedMessage = sodium.to_string(decryptedBytes);
-        console.log(`Retry success: ${decryptedMessage}`);
-        return decryptedMessage;
+        try {
+          const decryptedBytes = sodium.crypto_box_open_easy(
+            encryptedBytes,
+            nonceBytes,
+            currentBytes,
+            privateKeyBytes
+          );
+          const decryptedMessage = sodium.to_string(decryptedBytes);
+          console.log(`Retry success: ${decryptedMessage}`);
+          return decryptedMessage;
+        } catch (fallbackErr) {
+          console.error('Fallback retry failed:', fallbackErr);
+        }
       }
+
       throw new Error(`Decryption failed: ${error.message}`);
     }
   };
@@ -1452,6 +1593,8 @@ const SecretPrivateChat = () => {
             body: JSON.stringify(websocketMessage),
           });
         }
+
+        sendTypingEvent(false);
 
         // === Очистка формы ===
         resetForm();
@@ -1902,6 +2045,13 @@ const SecretPrivateChat = () => {
       textAreaRef.current.classList.add('scroll-enabled');
     } else {
       textAreaRef.current.classList.remove('scroll-enabled');
+    }
+
+    // ← Для логики печатания
+    if (newValue.trim() !== '') {
+      sendTypingEvent(true);
+    } else {
+      sendTypingEvent(false); // если стёрли весь текст — тоже убираем индикатор
     }
   };
 
@@ -2412,11 +2562,80 @@ const SecretPrivateChat = () => {
     }
   };
 
+  const sendTypingEvent = (isTyping) => {
+    if (!client || !client.connected) {
+      console.warn('Cannot send typing in SecretChat: STOMP not connected');
+      return;
+    }
+
+    const payload = {
+      messageType: isTyping ? 'TYPING' : 'STOP_TYPING',
+      sender: {
+        id: userId,
+        username: username,
+      },
+      chat: {
+        id: chatId,
+      },
+    };
+
+    client.publish({
+      destination: `/app/typing/${chatId}`,
+      body: JSON.stringify(payload),
+    });
+
+    console.log(`Typing event sent in SecretChat: ${isTyping ? 'TYPING' : 'STOP_TYPING'}`);
+  };
+
   return (
     <div className="secret-chat">
+      {/* Большая фиксированная иконка ассистента — только на ПК */}
+      <AssistantIcon size="large" className="fixed-app-bottom-right" />
       <div className="secret-chat-name">
-        <span className="secret-chat-indicator">🔒</span>
-        {displayChatName}
+        <div className="secret-header-content">
+          {/* Иконка замка слева */}
+          <span className="secret-chat-indicator">🔒</span>
+
+          {/* Аватар + имя + typing — центрировано */}
+          <div className="secret-partner-container">
+            {/* Круглый аватар с кликабельностью */}
+            <div 
+              className="secret-partner-avatar-wrapper"
+              onClick={() => partnerId && navigate(`/user/${partnerId}`)}
+              style={{ cursor: partnerId ? 'pointer' : 'default' }}
+            >
+              {partnerAvatar ? (
+                <img
+                  src={`https://unlimitedpossibilities12.org${partnerAvatar}`}
+                  alt="Аватар собеседника"
+                  className="secret-partner-avatar"
+                />
+              ) : (
+                <div className="secret-partner-avatar secret-partner-avatar-placeholder">
+                  {displayChatName
+                    .replace('Secret Chat with ', '')
+                    .charAt(0)
+                    .toUpperCase() || '?'}
+                </div>
+              )}
+
+              {/* Зелёная точка онлайн-статуса */}
+              {partnerId && usersStatus[partnerId]?.online && (
+                <span className="secret-status-indicator-online"></span>
+              )}
+            </div>
+
+            {/* Имя + "печатает…" */}
+            <div className="secret-partner-text">
+              <div className="secret-partner-name">
+                {displayChatName.replace('Secret Chat with ', '')}
+              </div>
+              {isTyping && (
+                <div className="secret-typing-text">{typingName} печатает…</div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
       <div className="secret-message-list" ref={messageListRef}>
         {messages.map((msg, index) => (
