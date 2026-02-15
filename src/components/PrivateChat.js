@@ -1890,6 +1890,7 @@ const PrivateChat = () => {
                           <div 
                             className="link-preview-card"
                             onClick={() => window.open(previewData[msg.id].url, '_blank')}
+                            style={{ cursor: 'pointer' }}
                           >
                             {/* Картинка */}
                             {previewData[msg.id].imageUrl && (
@@ -1929,13 +1930,30 @@ const PrivateChat = () => {
                               {previewData[msg.id].description}
                             </div>
 
-                            {/* Домен */}
+                            {/* Домен — теперь синяя кликабельная ссылка */}
                             <div style={{
                               padding: '0 12px 8px',
                               fontSize: '12px',
-                              color: '#777',
                             }}>
-                              {new URL(previewData[msg.id].url).hostname}
+                              <a
+                                href={previewData[msg.id].url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  color: '#0066cc',           // синий
+                                  textDecoration: 'none',
+                                  cursor: 'pointer',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.textDecoration = 'underline';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.textDecoration = 'none';
+                                }}
+                                onClick={(e) => e.stopPropagation()} // предотвращает двойной клик по карточке
+                              >
+                                {new URL(previewData[msg.id].url).hostname}
+                              </a>
                             </div>
                           </div>
                         )}
