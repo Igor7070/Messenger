@@ -1393,6 +1393,18 @@
   color: #777;
 }
 
+.message-link {
+  color: #1e88e5 !important;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.message-link:hover,
+.message-link:active {
+  text-decoration: underline;
+  color: #1565c0 !important;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         position: fixed !important;

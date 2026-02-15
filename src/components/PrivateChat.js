@@ -1529,6 +1529,47 @@ const PrivateChat = () => {
     return null;
   };
 
+  const renderTextWithLinks = (text) => {
+    if (!text) return text;
+
+    const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/gi;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = urlRegex.exec(text)) !== null) {
+      // Текст до ссылки
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+
+      const rawUrl = match[0];
+      const fullUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
+
+      parts.push(
+        <a
+          key={match.index}
+          href={fullUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="message-link"
+          // НЕ используем stopPropagation — пусть браузер сам обработает переход
+        >
+          {rawUrl}
+        </a>
+      );
+
+      lastIndex = urlRegex.lastIndex;
+    }
+
+    // Остаток текста
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : text;
+  };
+
   // ДОБАВЛЕНО: Загрузка превью ссылок через бэкенд
   useEffect(() => {
     const loadPreviews = async () => {
@@ -1851,27 +1892,37 @@ const PrivateChat = () => {
                     ) : (
                       <>
                         {/* ИЗМЕНЕНО: Добавлен класс tts-enabled для корректных отступов */}
-                        <span
+                        <div
                           className={`private-message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''} ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
-                          onClick={(e) => {
-                            if (e.target.tagName === 'A') return;
-                            if (msg.translatedContent) {
-                              setMessages((prevMessages) =>
-                                prevMessages.map((m) =>
-                                  m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
-                                )
-                              );
-                            }
-                          }}
                           style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                          onClick={(e) => {
+                            // Если кликнули НЕ по ссылке → переключаем перевод
+                            if (e.target.tagName !== 'A' && e.target.tagName !== 'a') {
+                              if (msg.translatedContent) {
+                                setMessages((prevMessages) =>
+                                  prevMessages.map((m) =>
+                                    m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                  )
+                                );
+                              }
+                            }
+                            // Если кликнули по <a> — ничего не делаем здесь, пусть браузер сам перейдёт
+                          }}
                         >
+                          {/* Оригинал / текущий текст с активными ссылками */}
                           <span className="private-original-content">
-                            {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
+                            {renderTextWithLinks(
+                              msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent
+                            )}
                           </span>
+
+                          {/* Перевод (если есть) — тоже с активными ссылками */}
                           {msg.translatedContent && (
-                            <span className="private-translated-content">{msg.translatedContent}</span>
+                            <span className="private-translated-content">
+                              {renderTextWithLinks(msg.translatedContent)}
+                            </span>
                           )}
-                        </span>
+                        </div>
                         {msg.fileUrl && (
                           <a
                             href={msg.fileUrl}
@@ -1890,7 +1941,6 @@ const PrivateChat = () => {
                           <div 
                             className="link-preview-card"
                             onClick={() => window.open(previewData[msg.id].url, '_blank')}
-                            style={{ cursor: 'pointer' }}
                           >
                             {/* Картинка */}
                             {previewData[msg.id].imageUrl && (
@@ -1930,30 +1980,13 @@ const PrivateChat = () => {
                               {previewData[msg.id].description}
                             </div>
 
-                            {/* Домен — теперь синяя кликабельная ссылка */}
+                            {/* Домен */}
                             <div style={{
                               padding: '0 12px 8px',
                               fontSize: '12px',
+                              color: '#777',
                             }}>
-                              <a
-                                href={previewData[msg.id].url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                  color: '#0066cc',           // синий
-                                  textDecoration: 'none',
-                                  cursor: 'pointer',
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.textDecoration = 'underline';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.textDecoration = 'none';
-                                }}
-                                onClick={(e) => e.stopPropagation()} // предотвращает двойной клик по карточке
-                              >
-                                {new URL(previewData[msg.id].url).hostname}
-                              </a>
+                              {new URL(previewData[msg.id].url).hostname}
                             </div>
                           </div>
                         )}
