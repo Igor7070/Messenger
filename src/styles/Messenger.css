@@ -1193,6 +1193,65 @@
   display: contents;
 }
 
+/* ─── Превью ссылок (точно как в личном чате) ─── */
+.link-preview-card {
+  margin: 8px 0 4px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  border: 1px solid #e0e0e0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.link-preview-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transform: translateY(-1px);
+}
+
+.link-preview-card img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+}
+
+.link-preview-card > div:nth-child(2) {
+  padding: 10px 12px 4px;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.4;
+  color: #1a1a1a;
+}
+
+.link-preview-card > div:nth-child(3) {
+  padding: 0 12px 8px;
+  font-size: 13px;
+  color: #555;
+  line-height: 1.4;
+  max-height: 60px;
+  overflow: hidden;
+}
+
+.link-preview-card > div:last-child {
+  padding: 0 12px 8px;
+  font-size: 12px;
+  color: #777;
+}
+
+/* Ссылки в тексте сообщения */
+.message-link {
+  color: #1e88e5 !important;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.message-link:hover,
+.message-link:active {
+  text-decoration: underline;
+  color: #1565c0 !important;
+}
+
 @media (max-width: 800px) {
     .messenger {
         position: fixed !important;
@@ -1766,5 +1825,24 @@
     .messenger .fixed-app-bottom-right .assistant-icon,
     .messenger .fixed-app-bottom-right {
         display: none !important;
+    }
+
+    .link-preview-card img {
+        height: 120px;
+    }
+    
+    .link-preview-card > div:nth-child(2) {
+        font-size: 14px;
+        padding: 8px 10px 4px;
+    }
+    
+    .link-preview-card > div:nth-child(3) {
+        font-size: 12px;
+        padding: 0 10px 6px;
+    }
+    
+    .link-preview-card > div:last-child {
+        font-size: 11px;
+        padding: 0 10px 6px;
     }
 }

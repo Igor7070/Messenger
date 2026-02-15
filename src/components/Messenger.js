@@ -132,6 +132,8 @@ const Messenger = () => {
     const [transcriptionQueue, setTranscriptionQueue] = useState([]);
     const [isTranscribing, setIsTranscribing] = useState(false);
 
+    const [previewData, setPreviewData] = useState({}); // ДОБАВЛЕНО: Кэш превью ссылок
+
     // Использование хука
     const {
         isMessageNew,
@@ -1410,6 +1412,116 @@ const Messenger = () => {
         }
     };
 
+    // ДОБАВЛЕНО: Находит первую ссылку в тексте
+    const extractFirstUrl = (text) => {
+        if (!text) return null;
+        const regex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/gi;
+        const match = text.match(regex);
+        if (match) {
+            let url = match[0];
+            if (!url.startsWith('http')) url = 'https://' + url;
+            try {
+            new URL(url);
+            return url;
+            } catch {
+            return null;
+            }
+        }
+        return null;
+    };
+
+    // ДОБАВЛЕНО: Рендерит текст с кликабельными синими ссылками
+    const renderTextWithLinks = (text) => {
+        if (!text) return text;
+
+        const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/gi;
+        const parts = [];
+        let lastIndex = 0;
+        let match;
+
+        while ((match = urlRegex.exec(text)) !== null) {
+            if (match.index > lastIndex) {
+            parts.push(text.slice(lastIndex, match.index));
+            }
+
+            const rawUrl = match[0];
+            const fullUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
+
+            parts.push(
+            <a
+                key={match.index}
+                href={fullUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="message-link"
+            >
+                {rawUrl}
+            </a>
+            );
+
+            lastIndex = urlRegex.lastIndex;
+        }
+
+        if (lastIndex < text.length) {
+            parts.push(text.slice(lastIndex));
+        }
+
+        return parts.length > 0 ? parts : text;
+    };
+
+    // ДОБАВЛЕНО: Загрузка превью ссылок через бэкенд (точно как в личном чате)
+    useEffect(() => {
+        const loadPreviews = async () => {
+            const newPreviews = { ...previewData };
+
+            for (const msg of messages) {
+            if (
+                newPreviews[msg.id] ||
+                msg.messageType === 'audio' ||
+                msg.fileUrl ||
+                !msg.content
+            ) {
+                continue;
+            }
+
+            const url = extractFirstUrl(msg.content);
+            if (!url) continue;
+
+            try {
+                const res = await fetch(
+                `https://unlimitedpossibilities12.org/api/preview?url=${encodeURIComponent(url)}`
+                );
+
+                if (!res.ok) {
+                console.warn(`Превью не загрузилось для ${url}, статус: ${res.status}`);
+                continue;
+                }
+
+                const data = await res.json();
+
+                if (!data.title && !data.description && !data.image) continue;
+
+                newPreviews[msg.id] = {
+                title: data.title || 'Без названия',
+                description: data.description || '',
+                imageUrl: data.image || '',
+                url: url,
+                };
+
+                console.log(`Превью загружено для сообщения ${msg.id}`);
+            } catch (err) {
+                console.warn(`Ошибка загрузки превью для ${url}:`, err);
+            }
+            }
+
+            if (Object.keys(newPreviews).length > Object.keys(previewData).length) {
+            setPreviewData(newPreviews);
+            }
+        };
+
+        loadPreviews();
+    }, [messages]);
+
     return (
     <div className="messenger">
       {/* Большая фиксированная иконка ассистента — только в Messenger на ПК */}
@@ -1679,42 +1791,111 @@ const Messenger = () => {
                         )}
                       </div>
                     ) : (
-                      <div className="message-content-wrapper">
-                        <span
-                          className={`message-content ${
-                            isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
-                          } ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
-                          onClick={(e) => {
-                            if (e.target.tagName === 'A') return;
-                            if (msg.translatedContent) {
-                              setMessages((prevMessages) =>
-                                prevMessages.map((m) =>
-                                  m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
-                                )
-                              );
-                            }
-                          }}
-                          style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
-                        >
-                          <span className="original-content">
-                            {msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent}
-                          </span>
-                          {msg.translatedContent && (
-                            <span className="translated-content">{msg.translatedContent}</span>
-                          )}
-                        </span>
-                        {msg.fileUrl && (
-                          <a
-                            href={msg.fileUrl}
-                            download
-                            className={`file-link ${
-                              isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
+                        <div className="message-content-wrapper">
+                            {/* ─── НАЧАЛО ИЗМЕНЁННОГО БЛОКА ТЕКСТА (с активными ссылками) ─── */}
+                            <div
+                            className={`message-content ${
+                                isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
                             } ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
-                          >
-                            📥 Download file
-                          </a>
-                        )}
-                      </div>
+                            style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                            onClick={(e) => {
+                                // Переключаем перевод ТОЛЬКО если клик НЕ по ссылке
+                                if (e.target.tagName !== 'A' && e.target.tagName !== 'a') {
+                                if (msg.translatedContent) {
+                                    setMessages((prevMessages) =>
+                                    prevMessages.map((m) =>
+                                        m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                    )
+                                    );
+                                }
+                                }
+                            }}
+                            >
+                            <span className="original-content">
+                                {renderTextWithLinks(
+                                msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent
+                                )}
+                            </span>
+
+                            {msg.translatedContent && (
+                                <span className="translated-content">
+                                {renderTextWithLinks(msg.translatedContent)}
+                                </span>
+                            )}
+                            </div>
+                            {/* ─── КОНЕЦ ИЗМЕНЁННОГО БЛОКА ТЕКСТА ─── */}
+
+                            {msg.fileUrl && (
+                            <a
+                                href={msg.fileUrl}
+                                download
+                                className={`file-link ${
+                                isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
+                                } ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
+                            >
+                                📥 Download file
+                            </a>
+                            )}
+
+                            {/* ─── НАЧАЛО ВСТАВКИ ПРЕВЬЮ (точно как в личном чате) ─── */}
+                            {msg.messageType !== 'audio' && 
+                            !msg.fileUrl && 
+                            extractFirstUrl(msg.content || '') && 
+                            previewData[msg.id] && (
+                            <div 
+                                className="link-preview-card"
+                                onClick={() => window.open(previewData[msg.id].url, '_blank')}
+                            >
+                                {/* Картинка */}
+                                {previewData[msg.id].imageUrl && (
+                                <img
+                                    src={previewData[msg.id].imageUrl}
+                                    alt="Превью"
+                                    style={{
+                                    width: '100%',
+                                    height: '140px',
+                                    objectFit: 'cover',
+                                    display: 'block',
+                                    }}
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                />
+                                )}
+
+                                {/* Заголовок */}
+                                <div style={{
+                                padding: '10px 12px 4px',
+                                fontWeight: 600,
+                                fontSize: '15px',
+                                lineHeight: '1.4',
+                                color: '#1a1a1a',
+                                }}>
+                                {previewData[msg.id].title}
+                                </div>
+
+                                {/* Описание */}
+                                <div style={{
+                                padding: '0 12px 8px',
+                                fontSize: '13px',
+                                color: '#555',
+                                lineHeight: '1.4',
+                                maxHeight: '60px',
+                                overflow: 'hidden',
+                                }}>
+                                {previewData[msg.id].description}
+                                </div>
+
+                                {/* Домен */}
+                                <div style={{
+                                padding: '0 12px 8px',
+                                fontSize: '12px',
+                                color: '#777',
+                                }}>
+                                {new URL(previewData[msg.id].url).hostname}
+                                </div>
+                            </div>
+                            )}
+                            {/* ─── КОНЕЦ ВСТАВКИ ПРЕВЬЮ ─── */}
+                        </div>
                     )}
                     {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && (
                       <div className="message-actions-container">
