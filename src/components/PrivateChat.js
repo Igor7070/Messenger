@@ -96,6 +96,8 @@ const PrivateChat = () => {
   const [partnerAvatar, setPartnerAvatar] = useState(null);
   const [partnerId, setPartnerId] = useState(null);
 
+  const [previewData, setPreviewData] = useState({}); // ДОБАВЛЕНО: кэш превью { msgId: { title, description, imageUrl, url } }
+
   // Мемоизация аудиосообщений
   const memoizedAudioMessages = useMemo(() => {
     return messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
@@ -1509,6 +1511,84 @@ const PrivateChat = () => {
     console.log(`Typing event sent: ${isTyping ? 'TYPING' : 'STOP_TYPING'}`);
   };
 
+  // ДОБАВЛЕНО: Находит первую ссылку в тексте сообщения
+  const extractFirstUrl = (text) => {
+    if (!text) return null;
+    const regex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/gi;
+    const match = text.match(regex);
+    if (match) {
+      let url = match[0];
+      if (!url.startsWith('http')) url = 'https://' + url;
+      try {
+        new URL(url); // Проверяем валидность
+        return url;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  // ДОБАВЛЕНО: Загрузка превью ссылок через бэкенд
+  useEffect(() => {
+    const loadPreviews = async () => {
+      const newPreviews = { ...previewData };
+
+      for (const msg of messages) {
+        // Пропускаем, если:
+        // - уже есть кэш
+        // - это аудио
+        // - есть fileUrl (файл)
+        // - нет текста
+        if (
+          newPreviews[msg.id] ||
+          msg.messageType === 'audio' ||
+          msg.fileUrl ||
+          !msg.content
+        ) {
+          continue;
+        }
+
+        const url = extractFirstUrl(msg.content);
+        if (!url) continue;
+
+        try {
+          const res = await fetch(
+            `https://unlimitedpossibilities12.org/api/preview?url=${encodeURIComponent(url)}`
+          );
+
+          if (!res.ok) {
+            console.warn(`Превью не загрузилось для ${url}, статус: ${res.status}`);
+            continue;
+          }
+
+          const data = await res.json();
+
+          // Если сервер вернул пустой объект — пропускаем
+          if (!data.title && !data.description && !data.image) continue;
+
+          newPreviews[msg.id] = {
+            title: data.title || 'Без названия',
+            description: data.description || '',
+            imageUrl: data.image || '',
+            url: url,
+          };
+
+          console.log(`Превью загружено для сообщения ${msg.id}:`, newPreviews[msg.id]);
+        } catch (err) {
+          console.warn(`Ошибка загрузки превью для ${url}:`, err);
+        }
+      }
+
+      // Обновляем состояние только если что-то новое появилось
+      if (Object.keys(newPreviews).length > Object.keys(previewData).length) {
+        setPreviewData(newPreviews);
+      }
+    };
+
+    loadPreviews();
+  }, [messages]); // Зависимость только от messages — пересчитываем при изменении списка
+
   return (
     <div className="private-chat">
       {/* Большая фиксированная иконка ассистента — только в PrivateChat на ПК */}
@@ -1801,6 +1881,65 @@ const PrivateChat = () => {
                             📥 Download file
                           </a>
                         )}
+                        {/* ─── НАЧАЛО ВСТАВКИ ПРЕВЬЮ ─── */}
+                        {/* ДОБАВЛЕНО: Превью ссылок (только для текстовых сообщений без файлов и аудио) */}
+                        {msg.messageType !== 'audio' && 
+                        !msg.fileUrl && 
+                        extractFirstUrl(msg.content || '') && 
+                        previewData[msg.id] && (
+                          <div 
+                            className="link-preview-card"
+                            onClick={() => window.open(previewData[msg.id].url, '_blank')}
+                          >
+                            {/* Картинка */}
+                            {previewData[msg.id].imageUrl && (
+                              <img
+                                src={previewData[msg.id].imageUrl}
+                                alt="Превью"
+                                style={{
+                                  width: '100%',
+                                  height: '140px',
+                                  objectFit: 'cover',
+                                  display: 'block',
+                                }}
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                              />
+                            )}
+
+                            {/* Заголовок */}
+                            <div style={{
+                              padding: '10px 12px 4px',
+                              fontWeight: 600,
+                              fontSize: '15px',
+                              lineHeight: '1.4',
+                              color: '#1a1a1a',
+                            }}>
+                              {previewData[msg.id].title}
+                            </div>
+
+                            {/* Описание */}
+                            <div style={{
+                              padding: '0 12px 8px',
+                              fontSize: '13px',
+                              color: '#555',
+                              lineHeight: '1.4',
+                              maxHeight: '60px',
+                              overflow: 'hidden',
+                            }}>
+                              {previewData[msg.id].description}
+                            </div>
+
+                            {/* Домен */}
+                            <div style={{
+                              padding: '0 12px 8px',
+                              fontSize: '12px',
+                              color: '#777',
+                            }}>
+                              {new URL(previewData[msg.id].url).hostname}
+                            </div>
+                          </div>
+                        )}
+                        {/* ─── КОНЕЦ ВСТАВКИ ПРЕВЬЮ ─── */}
                       </>
                     )}
                     <div className="private-message-status">
