@@ -1405,6 +1405,103 @@
   color: #1565c0 !important;
 }
 
+/* ─── Полноэкранное изображение ─── */
+.full-screen-image-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.full-screen-image-content {
+  position: relative;
+  max-width: 94%;
+  max-height: 94vh;
+}
+
+.full-screen-image {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+
+.full-screen-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  font-size: 32px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.full-screen-close-btn:hover {
+  background: rgba(0,0,0,0.75);
+}
+
+.full-screen-download-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 28px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.full-screen-download-btn:hover {
+  background: rgba(0,0,0,0.75);
+}
+
+/* Превью изображения в сообщении */
+.image-preview-container {
+  margin: 8px 0 4px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  max-width: 280px; /* Ограничение ширины в личном чате */
+}
+
+.image-preview-container:hover {
+  transform: scale(1.015);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.message-image-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         position: fixed !important;

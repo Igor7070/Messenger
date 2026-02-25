@@ -97,6 +97,7 @@ const PrivateChat = () => {
   const [partnerId, setPartnerId] = useState(null);
 
   const [previewData, setPreviewData] = useState({}); // ДОБАВЛЕНО: кэш превью { msgId: { title, description, imageUrl, url } }
+  const [fullScreenImage, setFullScreenImage] = useState(null);
 
   // Мемоизация аудиосообщений
   const memoizedAudioMessages = useMemo(() => {
@@ -1630,6 +1631,10 @@ const PrivateChat = () => {
     loadPreviews();
   }, [messages]); // Зависимость только от messages — пересчитываем при изменении списка
 
+  const openFullScreenImage = (fileUrl) => {
+    setFullScreenImage(fileUrl);
+  };
+
   return (
     <div className="private-chat">
       {/* Большая фиксированная иконка ассистента — только в PrivateChat на ПК */}
@@ -1891,13 +1896,12 @@ const PrivateChat = () => {
                       </div>
                     ) : (
                       <>
-                        {/* ИЗМЕНЕНО: Добавлен класс tts-enabled для корректных отступов */}
                         <div
                           className={`private-message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''} ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
                           style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
                           onClick={(e) => {
-                            // Если кликнули НЕ по ссылке → переключаем перевод
-                            if (e.target.tagName !== 'A' && e.target.tagName !== 'a') {
+                            // Переключаем перевод, если клик НЕ по ссылке и НЕ по изображению
+                            if (e.target.tagName !== 'A' && e.target.tagName !== 'a' && e.target.tagName !== 'IMG') {
                               if (msg.translatedContent) {
                                 setMessages((prevMessages) =>
                                   prevMessages.map((m) =>
@@ -1906,24 +1910,40 @@ const PrivateChat = () => {
                                 );
                               }
                             }
-                            // Если кликнули по <a> — ничего не делаем здесь, пусть браузер сам перейдёт
                           }}
                         >
-                          {/* Оригинал / текущий текст с активными ссылками */}
                           <span className="private-original-content">
                             {renderTextWithLinks(
                               msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent
                             )}
                           </span>
 
-                          {/* Перевод (если есть) — тоже с активными ссылками */}
                           {msg.translatedContent && (
                             <span className="private-translated-content">
                               {renderTextWithLinks(msg.translatedContent)}
                             </span>
                           )}
                         </div>
-                        {msg.fileUrl && (
+
+                        {/* Превью изображения — показываем, если fileUrl заканчивается на картинку */}
+                        {msg.fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && (
+                          <div className="image-preview-container">
+                            <img
+                              src={msg.fileUrl}
+                              alt="Изображение в сообщении"
+                              className="message-image-preview"
+                              onClick={() => openFullScreenImage(msg.fileUrl)}
+                              loading="lazy"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                console.warn('Ошибка загрузки превью в личном чате:', msg.fileUrl);
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        {/* Ссылка на скачивание — только если НЕ картинка */}
+                        {msg.fileUrl && !/\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && (
                           <a
                             href={msg.fileUrl}
                             download
@@ -1932,17 +1952,16 @@ const PrivateChat = () => {
                             📥 Download file
                           </a>
                         )}
-                        {/* ─── НАЧАЛО ВСТАВКИ ПРЕВЬЮ ─── */}
-                        {/* ДОБАВЛЕНО: Превью ссылок (только для текстовых сообщений без файлов и аудио) */}
+
+                        {/* Превью ссылок (оставляем как было) */}
                         {msg.messageType !== 'audio' && 
-                        !msg.fileUrl && 
-                        extractFirstUrl(msg.content || '') && 
-                        previewData[msg.id] && (
+                         !msg.fileUrl && 
+                         extractFirstUrl(msg.content || '') && 
+                         previewData[msg.id] && (
                           <div 
                             className="link-preview-card"
                             onClick={() => window.open(previewData[msg.id].url, '_blank')}
                           >
-                            {/* Картинка */}
                             {previewData[msg.id].imageUrl && (
                               <img
                                 src={previewData[msg.id].imageUrl}
@@ -1956,8 +1975,6 @@ const PrivateChat = () => {
                                 onError={(e) => { e.target.style.display = 'none'; }}
                               />
                             )}
-
-                            {/* Заголовок */}
                             <div style={{
                               padding: '10px 12px 4px',
                               fontWeight: 600,
@@ -1967,8 +1984,6 @@ const PrivateChat = () => {
                             }}>
                               {previewData[msg.id].title}
                             </div>
-
-                            {/* Описание */}
                             <div style={{
                               padding: '0 12px 8px',
                               fontSize: '13px',
@@ -1979,8 +1994,6 @@ const PrivateChat = () => {
                             }}>
                               {previewData[msg.id].description}
                             </div>
-
-                            {/* Домен */}
                             <div style={{
                               padding: '0 12px 8px',
                               fontSize: '12px',
@@ -1990,7 +2003,6 @@ const PrivateChat = () => {
                             </div>
                           </div>
                         )}
-                        {/* ─── КОНЕЦ ВСТАВКИ ПРЕВЬЮ ─── */}
                       </>
                     )}
                     <div className="private-message-status">
@@ -2176,6 +2188,41 @@ const PrivateChat = () => {
           <button onClick={() => handleMenuAction('delete')}>Delete</button>
         </div>
       )}
+      {/* ─── НАЧАЛО ВСТАВКИ: Полноэкранное фото ─── */}
+      {fullScreenImage && (
+        <div 
+          className="full-screen-image-overlay"
+          onClick={() => setFullScreenImage(null)}
+        >
+          <div 
+            className="full-screen-image-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              className="full-screen-close-btn"
+              onClick={() => setFullScreenImage(null)}
+            >
+              ×
+            </button>
+
+            <img 
+              src={fullScreenImage} 
+              alt="Full screen image" 
+              className="full-screen-image"
+            />
+
+            <a 
+              href={fullScreenImage}
+              download
+              className="full-screen-download-btn"
+              title="Скачать фото"
+            >
+              ↓
+            </a>
+          </div>
+        </div>
+      )}
+      {/* ─── КОНЕЦ ВСТАВКИ ─── */}
       {incomingCall && (
         <IncomingCallNotification
           callerId={incomingCall.callerId}
