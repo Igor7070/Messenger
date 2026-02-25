@@ -1387,7 +1387,8 @@ const SecretPrivateChat = () => {
             encryptedContent,
             nonce,
             fileName: selectedFile.name,
-            fileUrl: tempFileUrl,
+            fileUrl: tempFileUrl,           // ← временный blob для отображения
+            previewUrl: tempFileUrl,        // ← НОВОЕ: сохраняем blob навсегда для превью
           };
 
           const fileContentKey = `fileContent_${chatId}_${userId}_${clientMessageId}`;
@@ -1462,6 +1463,7 @@ const SecretPrivateChat = () => {
           });
 
           // ← ФИКС: ЗАМЕНА TEMP В UI (сразу после upload)
+          // previewUrl НЕ трогаем — он остаётся blob!
           setMessages((prev) => prev.map((msg) =>
             msg.id === clientMessageId
               ? {
@@ -1469,6 +1471,7 @@ const SecretPrivateChat = () => {
                   id: savedMessage.id,
                   fileUrl: serverFileUrl,
                   file_url: serverFileUrl,
+                  previewUrl: msg.previewUrl,  // ← сохраняем оригинальный blob
                   clientMessageId: undefined,
                   delivered: savedMessage.delivered_status ?? false,
                   read: savedMessage.read_status ?? false,
@@ -1486,6 +1489,7 @@ const SecretPrivateChat = () => {
               clientMessageId: undefined,
               fileUrl: serverFileUrl,
               file_url: serverFileUrl,
+              previewUrl: messageData.previewUrl,  // ← передаём в WS
               fileName: selectedFile.name,
               contentType: selectedFile.type,
               encryptedContent,
@@ -2793,24 +2797,23 @@ const SecretPrivateChat = () => {
                           {msg.content}
                         </span>
 
-                        {/* Превью — ТОЛЬКО если это blob-URL (отправленное фото/изображение) */}
-                        {msg.fileUrl && msg.fileUrl.startsWith('blob:') && msg.messageType === 'file' && (
+                        {/* Превью — используем previewUrl (если есть) */}
+                        {msg.messageType === 'file' && msg.previewUrl && (
                           <div className="image-preview-container">
                             <img
-                              src={msg.fileUrl}
+                              src={msg.previewUrl}   // ← всегда blob:, не пропадает
                               alt="Изображение в сообщении"
                               className="message-image-preview"
-                              onClick={() => openFullScreenImage(msg.fileUrl)}
+                              onClick={() => openFullScreenImage(msg.previewUrl)}
                               loading="lazy"
                               onError={(e) => {
                                 e.target.style.display = 'none';
-                                console.warn('Ошибка загрузки превью (blob):', msg.fileUrl);
+                                console.warn('Ошибка превью:', msg.previewUrl);
                               }}
                             />
                           </div>
                         )}
-
-                        {/* Ссылка на скачивание — показываем ВСЕГДА для файлов */}
+                        {/* Ссылка на скачивание — всегда */}
                         {msg.messageType === 'file' && msg.fileUrl && (
                           <a
                             href="#"
@@ -2824,9 +2827,7 @@ const SecretPrivateChat = () => {
                               }
                             }}
                           >
-                            {msg.fileUrl.startsWith('blob:') 
-                              ? 'Открыть / Скачать изображение' 
-                              : `Download ${msg.fileName || 'file'}`}
+                            Download {msg.fileName || 'Download file'}
                           </a>
                         )}
                       </>
