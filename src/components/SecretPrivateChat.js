@@ -166,7 +166,6 @@ const SecretPrivateChat = () => {
   const { usersStatus } = useUserStatusContext();
   const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
   const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification();
-  const [fullScreenImage, setFullScreenImage] = useState(null);
 
   // Инициализация libsodium и генерация ключей
   useEffect(() => {
@@ -947,34 +946,28 @@ const SecretPrivateChat = () => {
         return prev.filter(m => m.id !== newMessage.id);
       }
 
-      // ОБНОВЛЕНИЕ ПО id (существующее сообщение)
+      // ОБНОВЛЕНИЕ ПО id
       const existingIdx = prev.findIndex(m => m.id === newMessage.id);
       if (existingIdx !== -1) {
         const oldMsg = prev[existingIdx];
         const oldFileUrl = oldMsg.fileUrl;
 
         // ← ДЛЯ СВОИХ СООБЩЕНИЙ: заменяем blob: на server URL
-        if (newMessage.sender?.id === userId && oldFileUrl?.startsWith('blob:')) {
+        if (newMessage.sender.id === userId && oldFileUrl?.startsWith('blob:')) {
           const updated = [...prev];
           updated[existingIdx] = {
             ...updated[existingIdx],
             ...newMessage,
             fileUrl: newMessage.fileUrl || newMessage.file_url,
             file_url: newMessage.file_url || newMessage.fileUrl,
-            previewUrl: oldMsg.previewUrl,  // ← САМОЕ ГЛАВНОЕ: сохраняем previewUrl (blob) из старого объекта
           };
-          if (oldFileUrl) URL.revokeObjectURL(oldFileUrl);
-          console.log(`Replaced temp blob with server URL for ${newMessage.id}, previewUrl saved`);
+          URL.revokeObjectURL(oldFileUrl);
+          console.log(`Replaced temp blob with server URL for ${newMessage.id}`);
           return updated;
         }
 
-        // Обычное обновление (статусы, etc.)
         const updated = [...prev];
-        updated[existingIdx] = { 
-          ...updated[existingIdx], 
-          ...newMessage,
-          previewUrl: oldMsg.previewUrl || updated[existingIdx].previewUrl,  // ← на всякий случай сохраняем
-        };
+        updated[existingIdx] = { ...updated[existingIdx], ...newMessage };
         if (oldFileUrl?.startsWith('blob:')) {
           URL.revokeObjectURL(oldFileUrl);
           console.log(`Revoked temp blob in updateMessages for ${newMessage.id}`);
@@ -982,13 +975,12 @@ const SecretPrivateChat = () => {
         return updated;
       }
 
-      // ЗАМЕНА ВРЕМЕННОГО СООБЩЕНИЯ (когда сервер вернул реальный id)
-      if (newMessage.sender?.id === userId && newMessage.clientMessageId) {
+      // ЗАМЕНА ВРЕМЕННОГО СООБЩЕНИЯ
+      if (newMessage.sender.id === userId && newMessage.clientMessageId) {
         const tempIdx = prev.findIndex(m => m.id === newMessage.clientMessageId);
         if (tempIdx !== -1) {
           const tempMsg = prev[tempIdx];
           const oldFileUrl = tempMsg.fileUrl;
-
           const updated = [...prev];
           updated[tempIdx] = { 
             ...tempMsg,
@@ -997,33 +989,19 @@ const SecretPrivateChat = () => {
             clientMessageId: undefined,
             fileUrl: newMessage.fileUrl || newMessage.file_url,
             file_url: newMessage.file_url || newMessage.fileUrl,
-            previewUrl: tempMsg.previewUrl,  // ← сохраняем previewUrl из временного сообщения
             delivered: newMessage.delivered_status ?? false,
             read: newMessage.read_status ?? false,
           };
-
           if (oldFileUrl?.startsWith('blob:')) {
             URL.revokeObjectURL(oldFileUrl);
             console.log(`Revoked temp blob in updateMessages for ${newMessage.id}`);
           }
-
-          setSentMessagesCache(p => { 
-            const c = { ...p }; 
-            delete c[newMessage.clientMessageId]; 
-            return c; 
-          });
-
+          setSentMessagesCache(p => { const c = { ...p }; delete c[newMessage.clientMessageId]; return c; });
           return updated;
         }
       }
 
-      // Новое сообщение
-      return [...prev, { 
-        ...newMessage, 
-        delivered: false, 
-        read: false,
-        previewUrl: newMessage.previewUrl || undefined  // ← если пришло с WS, может быть
-      }];
+      return [...prev, { ...newMessage, delivered: false, read: false }];
     });
 
     // Trigger preload for audio
@@ -1408,8 +1386,7 @@ const SecretPrivateChat = () => {
             encryptedContent,
             nonce,
             fileName: selectedFile.name,
-            fileUrl: tempFileUrl,           // ← временный blob для отображения
-            previewUrl: tempFileUrl,        // ← НОВОЕ: сохраняем blob навсегда для превью
+            fileUrl: tempFileUrl,
           };
 
           const fileContentKey = `fileContent_${chatId}_${userId}_${clientMessageId}`;
@@ -1484,7 +1461,6 @@ const SecretPrivateChat = () => {
           });
 
           // ← ФИКС: ЗАМЕНА TEMP В UI (сразу после upload)
-          // previewUrl НЕ трогаем — он остаётся blob!
           setMessages((prev) => prev.map((msg) =>
             msg.id === clientMessageId
               ? {
@@ -1492,7 +1468,6 @@ const SecretPrivateChat = () => {
                   id: savedMessage.id,
                   fileUrl: serverFileUrl,
                   file_url: serverFileUrl,
-                  previewUrl: msg.previewUrl,  // ← сохраняем оригинальный blob
                   clientMessageId: undefined,
                   delivered: savedMessage.delivered_status ?? false,
                   read: savedMessage.read_status ?? false,
@@ -1510,7 +1485,6 @@ const SecretPrivateChat = () => {
               clientMessageId: undefined,
               fileUrl: serverFileUrl,
               file_url: serverFileUrl,
-              previewUrl: messageData.previewUrl,  // ← передаём в WS
               fileName: selectedFile.name,
               contentType: selectedFile.type,
               encryptedContent,
@@ -2613,10 +2587,6 @@ const SecretPrivateChat = () => {
     console.log(`Typing event sent in SecretChat: ${isTyping ? 'TYPING' : 'STOP_TYPING'}`);
   };
 
-  const openFullScreenImage = (fileUrl) => {
-    setFullScreenImage(fileUrl);
-  };
-
   return (
     <div className="secret-chat">
       {/* Большая фиксированная иконка ассистента — только на ПК */}
@@ -2817,24 +2787,6 @@ const SecretPrivateChat = () => {
                         <span className="secret-message-content">
                           {msg.content}
                         </span>
-
-                        {/* Превью — ТОЛЬКО если есть previewUrl (отправленные изображения) */}
-                        {msg.messageType === 'file' && msg.previewUrl && (
-                          <div className="image-preview-container">
-                            <img
-                              src={msg.previewUrl}
-                              alt="Изображение в сообщении"
-                              className="message-image-preview"
-                              onClick={() => openFullScreenImage(msg.previewUrl)}
-                              loading="lazy"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                console.warn('Ошибка превью (previewUrl):', msg.previewUrl);
-                              }}
-                            />
-                          </div>
-                        )}
-                        {/* Ссылка на скачивание — всегда */}
                         {msg.messageType === 'file' && msg.fileUrl && (
                           <a
                             href="#"
@@ -2842,7 +2794,7 @@ const SecretPrivateChat = () => {
                             onClick={async (e) => {
                               e.preventDefault();
                               if (msg.sender.id === userId) {
-                                await downloadOwnFile(msg);
+                                await downloadOwnFile(msg); // [CHANGE] Используем новую функцию
                               } else {
                                 await downloadFile(msg);
                               }
@@ -2975,40 +2927,6 @@ const SecretPrivateChat = () => {
             <button onClick={() => handleMenuAction('edit')}>Edit</button>
           )}
           <button onClick={() => handleMenuAction('delete')}>Delete</button>
-        </div>
-      )}
-      {/* Полноэкранное фото */}
-      {fullScreenImage && (
-        <div 
-          className="full-screen-image-overlay"
-          onClick={() => setFullScreenImage(null)}
-        >
-          <div 
-            className="full-screen-image-content"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button 
-              className="full-screen-close-btn"
-              onClick={() => setFullScreenImage(null)}
-            >
-              ×
-            </button>
-
-            <img 
-              src={fullScreenImage} 
-              alt="Full screen image" 
-              className="full-screen-image"
-            />
-
-            <a 
-              href={fullScreenImage}
-              download
-              className="full-screen-download-btn"
-              title="Скачать фото"
-            >
-              ↓
-            </a>
-          </div>
         </div>
       )}
       {incomingCall && (
