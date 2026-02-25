@@ -133,6 +133,7 @@ const Messenger = () => {
     const [isTranscribing, setIsTranscribing] = useState(false);
 
     const [previewData, setPreviewData] = useState({}); // ДОБАВЛЕНО: Кэш превью ссылок
+    const [fullScreenImage, setFullScreenImage] = useState(null);
 
     // Использование хука
     const {
@@ -1522,6 +1523,10 @@ const Messenger = () => {
         loadPreviews();
     }, [messages]);
 
+    const openFullScreenImage = (fileUrl) => {
+        setFullScreenImage(fileUrl);
+    };
+
     return (
     <div className="messenger">
       {/* Большая фиксированная иконка ассистента — только в Messenger на ПК */}
@@ -1792,109 +1797,118 @@ const Messenger = () => {
                       </div>
                     ) : (
                         <div className="message-content-wrapper">
-                            {/* ─── НАЧАЛО ИЗМЕНЁННОГО БЛОКА ТЕКСТА (с активными ссылками) ─── */}
+
+                            {/* Текст сообщения (с кликабельными ссылками и переключением перевода) */}
                             <div
-                            className={`message-content ${
-                                isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
-                            } ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
-                            style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
-                            onClick={(e) => {
-                                // Переключаем перевод ТОЛЬКО если клик НЕ по ссылке
-                                if (e.target.tagName !== 'A' && e.target.tagName !== 'a') {
-                                if (msg.translatedContent) {
-                                    setMessages((prevMessages) =>
-                                    prevMessages.map((m) =>
-                                        m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
-                                    )
-                                    );
-                                }
-                                }
-                            }}
-                            >
-                            <span className="original-content">
-                                {renderTextWithLinks(
-                                msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent
-                                )}
-                            </span>
-
-                            {msg.translatedContent && (
-                                <span className="translated-content">
-                                {renderTextWithLinks(msg.translatedContent)}
-                                </span>
-                            )}
-                            </div>
-                            {/* ─── КОНЕЦ ИЗМЕНЁННОГО БЛОКА ТЕКСТА ─── */}
-
-                            {msg.fileUrl && (
-                            <a
-                                href={msg.fileUrl}
-                                download
-                                className={`file-link ${
-                                isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
+                                className={`message-content ${
+                                    isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
                                 } ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
+                                style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
+                                onClick={(e) => {
+                                    // Переключаем перевод ТОЛЬКО если клик НЕ по ссылке и НЕ по изображению
+                                    if (e.target.tagName !== 'A' && e.target.tagName !== 'a' && e.target.tagName !== 'IMG') {
+                                        if (msg.translatedContent) {
+                                            setMessages((prevMessages) =>
+                                                prevMessages.map((m) =>
+                                                    m.id === msg.id ? { ...m, showOriginal: !m.showOriginal } : m
+                                                )
+                                            );
+                                        }
+                                    }
+                                }}
                             >
-                                📥 Download file
-                            </a>
-                            )}
+                                <span className="original-content">
+                                    {renderTextWithLinks(
+                                        msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent
+                                    )}
+                                </span>
 
-                            {/* ─── НАЧАЛО ВСТАВКИ ПРЕВЬЮ (точно как в личном чате) ─── */}
-                            {msg.messageType !== 'audio' && 
-                            !msg.fileUrl && 
-                            extractFirstUrl(msg.content || '') && 
-                            previewData[msg.id] && (
-                            <div 
-                                className="link-preview-card"
-                                onClick={() => window.open(previewData[msg.id].url, '_blank')}
-                            >
-                                {/* Картинка */}
-                                {previewData[msg.id].imageUrl && (
-                                <img
-                                    src={previewData[msg.id].imageUrl}
-                                    alt="Превью"
-                                    style={{
-                                    width: '100%',
-                                    height: '140px',
-                                    objectFit: 'cover',
-                                    display: 'block',
-                                    }}
-                                    onError={(e) => { e.target.style.display = 'none'; }}
-                                />
+                                {msg.translatedContent && (
+                                    <span className="translated-content">
+                                        {renderTextWithLinks(msg.translatedContent)}
+                                    </span>
                                 )}
-
-                                {/* Заголовок */}
-                                <div style={{
-                                padding: '10px 12px 4px',
-                                fontWeight: 600,
-                                fontSize: '15px',
-                                lineHeight: '1.4',
-                                color: '#1a1a1a',
-                                }}>
-                                {previewData[msg.id].title}
-                                </div>
-
-                                {/* Описание */}
-                                <div style={{
-                                padding: '0 12px 8px',
-                                fontSize: '13px',
-                                color: '#555',
-                                lineHeight: '1.4',
-                                maxHeight: '60px',
-                                overflow: 'hidden',
-                                }}>
-                                {previewData[msg.id].description}
-                                </div>
-
-                                {/* Домен */}
-                                <div style={{
-                                padding: '0 12px 8px',
-                                fontSize: '12px',
-                                color: '#777',
-                                }}>
-                                {new URL(previewData[msg.id].url).hostname}
-                                </div>
                             </div>
+
+                            {/* Превью изображения — показываем только если тип = image и есть fileUrl */}
+                            {msg.messageType === 'image' && msg.fileUrl && (
+                                <div className="image-preview-container">
+                                    <img
+                                        src={msg.fileUrl}
+                                        alt="Изображение в сообщении"
+                                        className="message-image-preview"
+                                        onClick={() => openFullScreenImage(msg.fileUrl)}
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            console.warn('Не удалось загрузить превью изображения:', msg.fileUrl);
+                                        }}
+                                    />
+                                </div>
                             )}
-                            {/* ─── КОНЕЦ ВСТАВКИ ПРЕВЬЮ ─── */}
+
+                            {/* Обычная ссылка на скачивание — только если НЕ изображение и НЕ аудио */}
+                            {msg.fileUrl && msg.messageType !== 'image' && msg.messageType !== 'audio' && (
+                                <a
+                                    href={msg.fileUrl}
+                                    download
+                                    className={`file-link ${
+                                        isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
+                                    } ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
+                                >
+                                    📥 Download file
+                                </a>
+                            )}
+
+                            {/* Превью ссылки (оставляем как было) */}
+                            {msg.messageType !== 'audio' && 
+                             !msg.fileUrl && 
+                             extractFirstUrl(msg.content || '') && 
+                             previewData[msg.id] && (
+                                <div 
+                                    className="link-preview-card"
+                                    onClick={() => window.open(previewData[msg.id].url, '_blank')}
+                                >
+                                    {previewData[msg.id].imageUrl && (
+                                        <img
+                                            src={previewData[msg.id].imageUrl}
+                                            alt="Превью"
+                                            style={{
+                                                width: '100%',
+                                                height: '140px',
+                                                objectFit: 'cover',
+                                                display: 'block',
+                                            }}
+                                            onError={(e) => { e.target.style.display = 'none'; }}
+                                        />
+                                    )}
+                                    <div style={{
+                                        padding: '10px 12px 4px',
+                                        fontWeight: 600,
+                                        fontSize: '15px',
+                                        lineHeight: '1.4',
+                                        color: '#1a1a1a',
+                                    }}>
+                                        {previewData[msg.id].title}
+                                    </div>
+                                    <div style={{
+                                        padding: '0 12px 8px',
+                                        fontSize: '13px',
+                                        color: '#555',
+                                        lineHeight: '1.4',
+                                        maxHeight: '60px',
+                                        overflow: 'hidden',
+                                    }}>
+                                        {previewData[msg.id].description}
+                                    </div>
+                                    <div style={{
+                                        padding: '0 12px 8px',
+                                        fontSize: '12px',
+                                        color: '#777',
+                                    }}>
+                                        {new URL(previewData[msg.id].url).hostname}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                     {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && (
@@ -2071,6 +2085,41 @@ const Messenger = () => {
               <button onClick={() => handleMenuAction('delete')}>Delete</button>
           </div>
       )}
+      {/* ─── НАЧАЛО ВСТАВКИ: Полноэкранное фото ─── */}
+      {fullScreenImage && (
+        <div 
+          className="full-screen-image-overlay"
+          onClick={() => setFullScreenImage(null)}
+        >
+          <div 
+            className="full-screen-image-content"
+            onClick={(e) => e.stopPropagation()} // чтобы клик по картинке/кнопке не закрывал
+          >
+            <button 
+              className="full-screen-close-btn"
+              onClick={() => setFullScreenImage(null)}
+            >
+              ×
+            </button>
+
+            <img 
+              src={fullScreenImage} 
+              alt="Full screen image" 
+              className="full-screen-image"
+            />
+
+            <a 
+              href={fullScreenImage}
+              download
+              className="full-screen-download-btn"
+              title="Скачать фото"
+            >
+              ↓
+            </a>
+          </div>
+        </div>
+      )}
+      {/* ─── КОНЕЦ ВСТАВКИ ─── */}
       {incomingCall && (
         <IncomingCallNotification
           callerId={incomingCall.callerId}
