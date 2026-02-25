@@ -947,28 +947,34 @@ const SecretPrivateChat = () => {
         return prev.filter(m => m.id !== newMessage.id);
       }
 
-      // ОБНОВЛЕНИЕ ПО id
+      // ОБНОВЛЕНИЕ ПО id (существующее сообщение)
       const existingIdx = prev.findIndex(m => m.id === newMessage.id);
       if (existingIdx !== -1) {
         const oldMsg = prev[existingIdx];
         const oldFileUrl = oldMsg.fileUrl;
 
         // ← ДЛЯ СВОИХ СООБЩЕНИЙ: заменяем blob: на server URL
-        if (newMessage.sender.id === userId && oldFileUrl?.startsWith('blob:')) {
+        if (newMessage.sender?.id === userId && oldFileUrl?.startsWith('blob:')) {
           const updated = [...prev];
           updated[existingIdx] = {
             ...updated[existingIdx],
             ...newMessage,
             fileUrl: newMessage.fileUrl || newMessage.file_url,
             file_url: newMessage.file_url || newMessage.fileUrl,
+            previewUrl: oldMsg.previewUrl,  // ← САМОЕ ГЛАВНОЕ: сохраняем previewUrl (blob) из старого объекта
           };
-          URL.revokeObjectURL(oldFileUrl);
-          console.log(`Replaced temp blob with server URL for ${newMessage.id}`);
+          if (oldFileUrl) URL.revokeObjectURL(oldFileUrl);
+          console.log(`Replaced temp blob with server URL for ${newMessage.id}, previewUrl saved`);
           return updated;
         }
 
+        // Обычное обновление (статусы, etc.)
         const updated = [...prev];
-        updated[existingIdx] = { ...updated[existingIdx], ...newMessage };
+        updated[existingIdx] = { 
+          ...updated[existingIdx], 
+          ...newMessage,
+          previewUrl: oldMsg.previewUrl || updated[existingIdx].previewUrl,  // ← на всякий случай сохраняем
+        };
         if (oldFileUrl?.startsWith('blob:')) {
           URL.revokeObjectURL(oldFileUrl);
           console.log(`Revoked temp blob in updateMessages for ${newMessage.id}`);
@@ -976,12 +982,13 @@ const SecretPrivateChat = () => {
         return updated;
       }
 
-      // ЗАМЕНА ВРЕМЕННОГО СООБЩЕНИЯ
-      if (newMessage.sender.id === userId && newMessage.clientMessageId) {
+      // ЗАМЕНА ВРЕМЕННОГО СООБЩЕНИЯ (когда сервер вернул реальный id)
+      if (newMessage.sender?.id === userId && newMessage.clientMessageId) {
         const tempIdx = prev.findIndex(m => m.id === newMessage.clientMessageId);
         if (tempIdx !== -1) {
           const tempMsg = prev[tempIdx];
           const oldFileUrl = tempMsg.fileUrl;
+
           const updated = [...prev];
           updated[tempIdx] = { 
             ...tempMsg,
@@ -990,19 +997,33 @@ const SecretPrivateChat = () => {
             clientMessageId: undefined,
             fileUrl: newMessage.fileUrl || newMessage.file_url,
             file_url: newMessage.file_url || newMessage.fileUrl,
+            previewUrl: tempMsg.previewUrl,  // ← сохраняем previewUrl из временного сообщения
             delivered: newMessage.delivered_status ?? false,
             read: newMessage.read_status ?? false,
           };
+
           if (oldFileUrl?.startsWith('blob:')) {
             URL.revokeObjectURL(oldFileUrl);
             console.log(`Revoked temp blob in updateMessages for ${newMessage.id}`);
           }
-          setSentMessagesCache(p => { const c = { ...p }; delete c[newMessage.clientMessageId]; return c; });
+
+          setSentMessagesCache(p => { 
+            const c = { ...p }; 
+            delete c[newMessage.clientMessageId]; 
+            return c; 
+          });
+
           return updated;
         }
       }
 
-      return [...prev, { ...newMessage, delivered: false, read: false }];
+      // Новое сообщение
+      return [...prev, { 
+        ...newMessage, 
+        delivered: false, 
+        read: false,
+        previewUrl: newMessage.previewUrl || undefined  // ← если пришло с WS, может быть
+      }];
     });
 
     // Trigger preload for audio
@@ -2797,18 +2818,18 @@ const SecretPrivateChat = () => {
                           {msg.content}
                         </span>
 
-                        {/* Превью — используем previewUrl (если есть) */}
+                        {/* Превью — ТОЛЬКО если есть previewUrl (отправленные изображения) */}
                         {msg.messageType === 'file' && msg.previewUrl && (
                           <div className="image-preview-container">
                             <img
-                              src={msg.previewUrl}   // ← всегда blob:, не пропадает
+                              src={msg.previewUrl}
                               alt="Изображение в сообщении"
                               className="message-image-preview"
                               onClick={() => openFullScreenImage(msg.previewUrl)}
                               loading="lazy"
                               onError={(e) => {
                                 e.target.style.display = 'none';
-                                console.warn('Ошибка превью:', msg.previewUrl);
+                                console.warn('Ошибка превью (previewUrl):', msg.previewUrl);
                               }}
                             />
                           </div>
