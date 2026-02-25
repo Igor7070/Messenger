@@ -2793,8 +2793,10 @@ const SecretPrivateChat = () => {
                           {msg.content}
                         </span>
 
-                        {/* Превью изображения — если это картинка */}
-                        {msg.fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && (
+                        {/* Превью изображения — показываем, если это явно картинка */}
+                        {(msg.contentType && msg.contentType.startsWith('image/')) ||
+                         (msg.fileName && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileName)) ||
+                         (msg.fileUrl && msg.fileUrl.startsWith('blob:')) ? (
                           <div className="image-preview-container">
                             <img
                               src={msg.fileUrl}
@@ -2808,10 +2810,10 @@ const SecretPrivateChat = () => {
                               }}
                             />
                           </div>
-                        )}
+                        ) : null}
 
-                        {/* Ссылка на скачивание — только если НЕ картинка */}
-                        {msg.fileUrl && !/\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && msg.messageType === 'file' && (
+                        {/* Ссылка на скачивание — ВСЕГДА для файлов, если это не превью */}
+                        {msg.messageType === 'file' && msg.fileUrl && (
                           <a
                             href="#"
                             className="secret-file-link"
