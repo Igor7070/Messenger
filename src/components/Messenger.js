@@ -1831,19 +1831,33 @@ const Messenger = () => {
                             </div>
 
                             {/* Превью изображения — показываем только если тип = image и есть fileUrl */}
-                            {msg.messageType === 'image' && msg.fileUrl && (
+                            {msg.fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && (
                                 <div className="image-preview-container">
                                     <img
                                         src={msg.fileUrl}
                                         alt="Изображение в сообщении"
                                         className="message-image-preview"
                                         onClick={() => openFullScreenImage(msg.fileUrl)}
+                                        loading="lazy"  // ускоряет загрузку списка
                                         onError={(e) => {
                                             e.target.style.display = 'none';
-                                            console.warn('Не удалось загрузить превью изображения:', msg.fileUrl);
+                                            console.warn('Ошибка загрузки изображения:', msg.fileUrl);
                                         }}
                                     />
                                 </div>
+                            )}
+
+                            {/* Ссылка на скачивание — показываем ТОЛЬКО если НЕ изображение */}
+                            {msg.fileUrl && !/\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && msg.messageType !== 'audio' && (
+                                <a
+                                    href={msg.fileUrl}
+                                    download
+                                    className={`file-link ${
+                                        isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
+                                    } ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
+                                >
+                                    📥 Download file
+                                </a>
                             )}
 
                             {/* Обычная ссылка на скачивание — только если НЕ изображение и НЕ аудио */}
