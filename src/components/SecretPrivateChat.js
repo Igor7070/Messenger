@@ -166,6 +166,7 @@ const SecretPrivateChat = () => {
   const { usersStatus } = useUserStatusContext();
   const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
   const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification();
+  const [fullScreenImage, setFullScreenImage] = useState(null);
 
   // Инициализация libsodium и генерация ключей
   useEffect(() => {
@@ -2587,6 +2588,10 @@ const SecretPrivateChat = () => {
     console.log(`Typing event sent in SecretChat: ${isTyping ? 'TYPING' : 'STOP_TYPING'}`);
   };
 
+  const openFullScreenImage = (fileUrl) => {
+    setFullScreenImage(fileUrl);
+  };
+
   return (
     <div className="secret-chat">
       {/* Большая фиксированная иконка ассистента — только на ПК */}
@@ -2787,14 +2792,33 @@ const SecretPrivateChat = () => {
                         <span className="secret-message-content">
                           {msg.content}
                         </span>
-                        {msg.messageType === 'file' && msg.fileUrl && (
+
+                        {/* Превью изображения — если это картинка */}
+                        {msg.fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && (
+                          <div className="image-preview-container">
+                            <img
+                              src={msg.fileUrl}
+                              alt="Изображение в сообщении"
+                              className="message-image-preview"
+                              onClick={() => openFullScreenImage(msg.fileUrl)}
+                              loading="lazy"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                console.warn('Ошибка загрузки превью в секретном чате:', msg.fileUrl);
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        {/* Ссылка на скачивание — только если НЕ картинка */}
+                        {msg.fileUrl && !/\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && msg.messageType === 'file' && (
                           <a
                             href="#"
                             className="secret-file-link"
                             onClick={async (e) => {
                               e.preventDefault();
                               if (msg.sender.id === userId) {
-                                await downloadOwnFile(msg); // [CHANGE] Используем новую функцию
+                                await downloadOwnFile(msg);
                               } else {
                                 await downloadFile(msg);
                               }
@@ -2927,6 +2951,40 @@ const SecretPrivateChat = () => {
             <button onClick={() => handleMenuAction('edit')}>Edit</button>
           )}
           <button onClick={() => handleMenuAction('delete')}>Delete</button>
+        </div>
+      )}
+      {/* Полноэкранное фото */}
+      {fullScreenImage && (
+        <div 
+          className="full-screen-image-overlay"
+          onClick={() => setFullScreenImage(null)}
+        >
+          <div 
+            className="full-screen-image-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              className="full-screen-close-btn"
+              onClick={() => setFullScreenImage(null)}
+            >
+              ×
+            </button>
+
+            <img 
+              src={fullScreenImage} 
+              alt="Full screen image" 
+              className="full-screen-image"
+            />
+
+            <a 
+              href={fullScreenImage}
+              download
+              className="full-screen-download-btn"
+              title="Скачать фото"
+            >
+              ↓
+            </a>
+          </div>
         </div>
       )}
       {incomingCall && (
