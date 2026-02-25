@@ -2793,10 +2793,8 @@ const SecretPrivateChat = () => {
                           {msg.content}
                         </span>
 
-                        {/* Превью изображения — показываем, если это явно картинка */}
-                        {(msg.contentType && msg.contentType.startsWith('image/')) ||
-                         (msg.fileName && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileName)) ||
-                         (msg.fileUrl && msg.fileUrl.startsWith('blob:')) ? (
+                        {/* Превью — ТОЛЬКО если это blob-URL (отправленное фото/изображение) */}
+                        {msg.fileUrl && msg.fileUrl.startsWith('blob:') && msg.messageType === 'file' && (
                           <div className="image-preview-container">
                             <img
                               src={msg.fileUrl}
@@ -2806,13 +2804,13 @@ const SecretPrivateChat = () => {
                               loading="lazy"
                               onError={(e) => {
                                 e.target.style.display = 'none';
-                                console.warn('Ошибка загрузки превью в секретном чате:', msg.fileUrl);
+                                console.warn('Ошибка загрузки превью (blob):', msg.fileUrl);
                               }}
                             />
                           </div>
-                        ) : null}
+                        )}
 
-                        {/* Ссылка на скачивание — ВСЕГДА для файлов, если это не превью */}
+                        {/* Ссылка на скачивание — показываем ВСЕГДА для файлов */}
                         {msg.messageType === 'file' && msg.fileUrl && (
                           <a
                             href="#"
@@ -2826,7 +2824,9 @@ const SecretPrivateChat = () => {
                               }
                             }}
                           >
-                            Download {msg.fileName || 'Download file'}
+                            {msg.fileUrl.startsWith('blob:') 
+                              ? 'Открыть / Скачать изображение' 
+                              : `Download ${msg.fileName || 'file'}`}
                           </a>
                         )}
                       </>
