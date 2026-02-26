@@ -167,6 +167,7 @@ const SecretPrivateChat = () => {
   const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
   const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification();
   const [fullScreenImage, setFullScreenImage] = useState(null);
+  const [decryptedImageBlobs, setDecryptedImageBlobs] = useState({}); // { [msg.id]: blobUrl }
 
   // Инициализация libsodium и генерация ключей
   useEffect(() => {
@@ -2592,6 +2593,84 @@ const SecretPrivateChat = () => {
     setFullScreenImage(fileUrl);
   };
 
+  const decryptImageForPreview = async (msgId, fileUrl, nonce, publicKeyId, senderId) => {
+    try {
+      console.log(`Decrypting image preview for msg ${msgId}: ${fileUrl}`);
+
+      const res = await fetch(fileUrl);
+      if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+      const encryptedBytes = new Uint8Array(await res.arrayBuffer());
+
+      let publicKey;
+      let decryptRecipientId;
+
+      if (senderId === userId) {
+        // Своё → ключ получателя
+        const recipientName = chatName.split('_').find(name => name !== username);
+        const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
+        const recipient = await recipientResponse.json();
+        decryptRecipientId = recipient.id;
+        publicKey = publicKeys[decryptRecipientId] || await getPublicKey(decryptRecipientId, publicKeyId);
+      } else {
+        // Чужое → ключ отправителя
+        publicKey = publicKeys[senderId] || await getPublicKey(senderId, publicKeyId);
+        decryptRecipientId = userId;
+      }
+
+      setPublicKeys(prev => ({ ...prev, [decryptRecipientId]: publicKey }));
+
+      const decryptedBytes = await decryptFileContent(
+        encryptedBytes,
+        nonce,
+        senderId,
+        publicKeyId,
+        publicKeys,
+        keyPair,
+        decryptRecipientId
+      );
+
+      const blob = new Blob([decryptedBytes], { type: 'image/jpeg' }); // можно динамически определять по contentType
+      const blobUrl = URL.createObjectURL(blob);
+
+      setDecryptedImageBlobs(prev => ({ ...prev, [msgId]: blobUrl }));
+      console.log(`Image preview decrypted: msg ${msgId} → ${blobUrl}`);
+
+      // Обновляем сообщение в списке
+      setMessages(prev => prev.map(m => 
+        m.id === msgId ? { ...m, fileUrl: blobUrl } : m
+      ));
+
+      return blobUrl;
+    } catch (error) {
+      console.error(`Image decrypt failed for ${msgId}:`, error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const imageMessages = messages.filter(msg => 
+      msg.messageType === 'file' &&
+      msg.fileUrl &&
+      !decryptedImageBlobs[msg.id] &&
+      !msg.fileUrl.startsWith('blob:') && // ещё не расшифровано
+      (msg.contentType?.startsWith('image/') ||
+      (msg.fileName && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileName)))
+    );
+
+    imageMessages.forEach(msg => {
+      if (msg.nonce && msg.fileUrl) {
+        console.log(`Auto-decrypting image preview: msg ${msg.id}`);
+        decryptImageForPreview(
+          msg.id,
+          msg.fileUrl,
+          msg.nonce,
+          msg.publicKeyId || null,
+          msg.sender.id
+        );
+      }
+    });
+  }, [messages, decryptedImageBlobs]);
+
   return (
     <div className="secret-chat">
       {/* Большая фиксированная иконка ассистента — только на ПК */}
@@ -2793,23 +2872,26 @@ const SecretPrivateChat = () => {
                           {msg.content}
                         </span>
 
-                        {/* Превью — только пока blob (отправленное) */}
-                        {msg.messageType === 'file' && msg.fileUrl?.startsWith('blob:') && (
-                          <div className="image-preview-container">
-                            <img
-                              src={msg.fileUrl}
-                              alt="Изображение в сообщении"
-                              className="message-image-preview"
-                              onClick={() => openFullScreenImage(msg.fileUrl)}
-                              loading="lazy"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          </div>
+                        {/* Превью изображения — используем расшифрованный blob или локальный */}
+                        {msg.messageType === 'file' && msg.fileUrl && (
+                          (decryptedImageBlobs[msg.id] || msg.fileUrl.startsWith('blob:')) && (
+                            <div className="image-preview-container">
+                              <img
+                                src={decryptedImageBlobs[msg.id] || msg.fileUrl}
+                                alt="Изображение в сообщении"
+                                className="message-image-preview"
+                                onClick={() => openFullScreenImage(decryptedImageBlobs[msg.id] || msg.fileUrl)}
+                                loading="lazy"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  console.warn('Ошибка загрузки превью:', msg.fileUrl);
+                                }}
+                              />
+                            </div>
+                          )
                         )}
 
-                        {/* Ссылка на скачивание */}
+                        {/* Ссылка на скачивание — всегда */}
                         {msg.messageType === 'file' && msg.fileUrl && (
                           <a
                             href="#"
