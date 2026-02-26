@@ -2597,28 +2597,44 @@ const SecretPrivateChat = () => {
     try {
       console.log(`Decrypting image preview for msg ${msgId}: ${fileUrl}`);
 
+      // 1. Скачиваем зашифрованный файл
       const res = await fetch(fileUrl);
-      if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+      if (!res.ok) throw new Error(`Fetch failed: ${res.status} - ${res.statusText}`);
       const encryptedBytes = new Uint8Array(await res.arrayBuffer());
 
+      // 2. Определяем, чей публичный ключ использовать
       let publicKey;
       let decryptRecipientId;
 
       if (senderId === userId) {
-        // Своё → ключ получателя
+        // Своё изображение → шифровали на ключ получателя
         const recipientName = chatName.split('_').find(name => name !== username);
+        if (!recipientName) throw new Error('Recipient name not found');
+
         const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
+        if (!recipientResponse.ok) throw new Error(`Failed to fetch recipient: ${recipientResponse.status}`);
         const recipient = await recipientResponse.json();
         decryptRecipientId = recipient.id;
-        publicKey = publicKeys[decryptRecipientId] || await getPublicKey(decryptRecipientId, publicKeyId);
+
+        // Принудительно берём свежий ключ получателя
+        publicKey = publicKeys[decryptRecipientId];
+        if (!publicKey || publicKeyId) {
+          console.log(`[OWN IMAGE] Fetching fresh public key for recipientId=${decryptRecipientId}, publicKeyId=${publicKeyId}`);
+          publicKey = await getPublicKey(decryptRecipientId, publicKeyId);
+          setPublicKeys(prev => ({ ...prev, [decryptRecipientId]: publicKey }));
+        }
       } else {
-        // Чужое → ключ отправителя
-        publicKey = publicKeys[senderId] || await getPublicKey(senderId, publicKeyId);
+        // Чужое изображение → шифровали на наш ключ, используем публичный ключ отправителя
+        publicKey = publicKeys[senderId];
+        if (!publicKey || publicKeyId) {
+          console.log(`[INCOMING IMAGE] Fetching fresh public key for senderId=${senderId}, publicKeyId=${publicKeyId}`);
+          publicKey = await getPublicKey(senderId, publicKeyId);
+          setPublicKeys(prev => ({ ...prev, [senderId]: publicKey }));
+        }
         decryptRecipientId = userId;
       }
 
-      setPublicKeys(prev => ({ ...prev, [decryptRecipientId]: publicKey }));
-
+      // 3. Расшифровываем
       const decryptedBytes = await decryptFileContent(
         encryptedBytes,
         nonce,
@@ -2629,20 +2645,22 @@ const SecretPrivateChat = () => {
         decryptRecipientId
       );
 
-      const blob = new Blob([decryptedBytes], { type: 'image/jpeg' }); // можно динамически определять по contentType
+      // 4. Создаём blob и URL
+      const blob = new Blob([decryptedBytes], { type: 'image/jpeg' }); // можно заменить на msg.contentType, если есть
       const blobUrl = URL.createObjectURL(blob);
 
+      // 5. Сохраняем в состояние
       setDecryptedImageBlobs(prev => ({ ...prev, [msgId]: blobUrl }));
-      console.log(`Image preview decrypted: msg ${msgId} → ${blobUrl}`);
 
-      // Обновляем сообщение в списке
+      // 6. Обновляем сообщение в списке (чтобы превью сразу появилось)
       setMessages(prev => prev.map(m => 
         m.id === msgId ? { ...m, fileUrl: blobUrl } : m
       ));
 
+      console.log(`Image preview decrypted successfully: msg ${msgId} → ${blobUrl}`);
       return blobUrl;
     } catch (error) {
-      console.error(`Image decrypt failed for ${msgId}:`, error);
+      console.error(`Image decrypt failed for msg ${msgId}:`, error);
       return null;
     }
   };
