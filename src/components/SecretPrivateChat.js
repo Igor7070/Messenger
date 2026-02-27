@@ -2591,51 +2591,46 @@ const SecretPrivateChat = () => {
     setFullScreenImage(fileUrl);
   };
 
-  const decryptImageForPreview = async (msgId, fileUrl, nonce, publicKeyId, senderId) => {
+  const decryptImageForPreview = async (msgId, fileUrl, nonceFromMsg, publicKeyId, senderId) => {
     try {
       console.log(`Decrypting image preview for msg ${msgId}: ${fileUrl}`);
 
-      const res = await fetch(fileUrl);
+      // !!! КЛЮЧЕВОЙ ФИКС — берём правильные nonce и fileUrl из метаданных !!!
+      const metadata = await fetchFileMetadata(msgId);           // ← здесь правильный nonce и fileUrl
+      const correctFileUrl = metadata.fileUrl;
+      const correctNonce   = metadata.nonce;
+
+      console.log(`Using metadata nonce for file decryption: ${correctNonce}`);
+
+      const res = await fetch(correctFileUrl);                   // используем правильный URL из metadata
       if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
       const encryptedBytes = new Uint8Array(await res.arrayBuffer());
 
-      let publicKey;
-      let decryptRecipientId;
+      // Публичный ключ отправителя (как и раньше)
+      let publicKey = publicKeys[senderId] || await getPublicKey(senderId, publicKeyId);
 
-      if (senderId === userId) {
-        // Своё → ключ получателя
-        const recipientName = chatName.split('_').find(name => name !== username);
-        const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
-        const recipient = await recipientResponse.json();
-        decryptRecipientId = recipient.id;
-        publicKey = publicKeys[decryptRecipientId] || await getPublicKey(decryptRecipientId, publicKeyId);
-      } else {
-        // Чужое → ключ отправителя
-        publicKey = publicKeys[senderId] || await getPublicKey(senderId, publicKeyId);
-        decryptRecipientId = userId;
-      }
+      setPublicKeys(prev => ({ ...prev, [senderId]: publicKey }));
 
-      setPublicKeys(prev => ({ ...prev, [decryptRecipientId]: publicKey }));
-
+      // Расшифровываем с правильным nonce !!!
       const decryptedBytes = await decryptFileContent(
         encryptedBytes,
-        nonce,
+        correctNonce,               // ← !!! здесь самое важное !!!
         senderId,
         publicKeyId,
         publicKeys,
         keyPair,
-        decryptRecipientId
+        userId                      // для входящих — свой id
       );
 
-      const blob = new Blob([decryptedBytes], { type: 'image/jpeg' }); // можно динамически определять по contentType
+      const blob = new Blob([decryptedBytes], { type: 'image/jpeg' });
       const blobUrl = URL.createObjectURL(blob);
 
       setDecryptedImageBlobs(prev => ({ ...prev, [msgId]: blobUrl }));
       console.log(`Image preview decrypted: msg ${msgId} → ${blobUrl}`);
 
-      // Обновляем сообщение в списке
+      // Обновляем и fileUrl в сообщении, чтобы плеер/скачивание использовали blob
       setMessages(prev => prev.map(m => 
-        m.id === msgId ? { ...m, fileUrl: blobUrl } : m
+        m.id === msgId ? { ...m, fileUrl: blobUrl, file_url: blobUrl } : m
       ));
 
       return blobUrl;
