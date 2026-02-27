@@ -2634,8 +2634,8 @@ const SecretPrivateChat = () => {
     console.log(`Typing event sent in SecretChat: ${isTyping ? 'TYPING' : 'STOP_TYPING'}`);
   };
 
-  const openFullScreenImage = (fileUrl) => {
-    setFullScreenImage(fileUrl);
+  const openFullScreenImage = (fileUrl, fileName = 'photo.jpg') => {
+    setFullScreenImage({ url: fileUrl, fileName });
   };
 
   const decryptImageForPreview = async (msgId, fileUrl, nonceFromMsg, publicKeyId, senderId) => {
@@ -2920,7 +2920,10 @@ const SecretPrivateChat = () => {
                                 src={decryptedImageBlobs[msg.id] || msg.fileUrl}
                                 alt="Изображение в сообщении"
                                 className="message-image-preview"
-                                onClick={() => openFullScreenImage(decryptedImageBlobs[msg.id] || msg.fileUrl)}
+                                onClick={() => openFullScreenImage(
+                                  decryptedImageBlobs[msg.id] || msg.fileUrl,
+                                  msg.fileName || 'photo.jpg'   // ← оригинальное имя с расширением!
+                                )}
                                 loading="lazy"
                                 onError={(e) => {
                                   e.target.style.display = 'none';
@@ -3092,19 +3095,36 @@ const SecretPrivateChat = () => {
             </button>
 
             <img 
-              src={fullScreenImage} 
+              src={fullScreenImage.url} 
               alt="Full screen image" 
               className="full-screen-image"
             />
 
-            <a 
-              href={fullScreenImage}
-              download
+            <button
               className="full-screen-download-btn"
               title="Скачать фото"
+              onClick={async () => {
+                try {
+                  const response = await fetch(fullScreenImage.url);
+                  if (!response.ok) throw new Error('Не удалось загрузить фото');
+                  const blob = await response.blob();
+
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = fullScreenImage.fileName;  // ← оригинальное имя с расширением!
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                } catch (err) {
+                  console.error('Ошибка скачивания из полноэкранного:', err);
+                  toast.error('Не удалось скачать фото');
+                }
+              }}
             >
               ↓
-            </a>
+            </button>
           </div>
         </div>
       )}
