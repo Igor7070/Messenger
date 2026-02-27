@@ -2635,7 +2635,13 @@ const SecretPrivateChat = () => {
   };
 
   const openFullScreenImage = (fileUrl, fileName = 'photo.jpg') => {
-    setFullScreenImage({ url: fileUrl, fileName });
+    // Если передана строка (старый код) — делаем объект
+    if (typeof fileUrl === 'string') {
+      setFullScreenImage({ url: fileUrl, fileName });
+    } else {
+      // Если уже объект — оставляем как есть
+      setFullScreenImage(fileUrl);
+    }
   };
 
   const decryptImageForPreview = async (msgId, fileUrl, nonceFromMsg, publicKeyId, senderId) => {
@@ -2920,10 +2926,7 @@ const SecretPrivateChat = () => {
                                 src={decryptedImageBlobs[msg.id] || msg.fileUrl}
                                 alt="Изображение в сообщении"
                                 className="message-image-preview"
-                                onClick={() => openFullScreenImage(
-                                  decryptedImageBlobs[msg.id] || msg.fileUrl,
-                                  msg.fileName || 'photo.jpg'   // ← оригинальное имя с расширением!
-                                )}
+                                onClick={() => openFullScreenImage(decryptedImageBlobs[msg.id] || msg.fileUrl)}
                                 loading="lazy"
                                 onError={(e) => {
                                   e.target.style.display = 'none';
@@ -3095,7 +3098,7 @@ const SecretPrivateChat = () => {
             </button>
 
             <img 
-              src={fullScreenImage.url} 
+              src={typeof fullScreenImage === 'string' ? fullScreenImage : fullScreenImage.url} 
               alt="Full screen image" 
               className="full-screen-image"
             />
@@ -3105,14 +3108,20 @@ const SecretPrivateChat = () => {
               title="Скачать фото"
               onClick={async () => {
                 try {
-                  const response = await fetch(fullScreenImage.url);
+                  const imageSrc = typeof fullScreenImage === 'string' ? fullScreenImage : fullScreenImage.url;
+                  const response = await fetch(imageSrc);
                   if (!response.ok) throw new Error('Не удалось загрузить фото');
                   const blob = await response.blob();
 
                   const url = URL.createObjectURL(blob);
                   const link = document.createElement('a');
                   link.href = url;
-                  link.download = fullScreenImage.fileName;  // ← оригинальное имя с расширением!
+
+                  // Используем оригинальное имя, если есть
+                  link.download = (typeof fullScreenImage === 'object' && fullScreenImage.fileName) 
+                    ? fullScreenImage.fileName 
+                    : 'photo.jpg';
+
                   document.body.appendChild(link);
                   link.click();
                   document.body.removeChild(link);
