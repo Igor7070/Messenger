@@ -2634,8 +2634,8 @@ const SecretPrivateChat = () => {
     console.log(`Typing event sent in SecretChat: ${isTyping ? 'TYPING' : 'STOP_TYPING'}`);
   };
 
-  const openFullScreenImage = (fileUrl) => {
-    setFullScreenImage(fileUrl);
+  const openFullScreenImage = (fileUrl, fileName = 'photo.jpg') => {
+    setFullScreenImage({ url: fileUrl, fileName });
   };
 
   const decryptImageForPreview = async (msgId, fileUrl, nonceFromMsg, publicKeyId, senderId) => {
@@ -2920,7 +2920,10 @@ const SecretPrivateChat = () => {
                                 src={decryptedImageBlobs[msg.id] || msg.fileUrl}
                                 alt="Изображение в сообщении"
                                 className="message-image-preview"
-                                onClick={() => openFullScreenImage(decryptedImageBlobs[msg.id] || msg.fileUrl)}
+                                onClick={() => openFullScreenImage(
+                                  decryptedImageBlobs[msg.id] || msg.fileUrl,
+                                  msg.fileName || 'photo.jpg'  // ← берём оригинальное имя из сообщения
+                                )}
                                 loading="lazy"
                                 onError={(e) => {
                                   e.target.style.display = 'none';
@@ -3076,30 +3079,19 @@ const SecretPrivateChat = () => {
       )}
       {/* Полноэкранное фото */}
       {fullScreenImage && (
-        <div 
-          className="full-screen-image-overlay"
-          onClick={() => setFullScreenImage(null)}
-        >
-          <div 
-            className="full-screen-image-content"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button 
-              className="full-screen-close-btn"
-              onClick={() => setFullScreenImage(null)}
-            >
+        <div className="full-screen-image-overlay" onClick={() => setFullScreenImage(null)}>
+          <div className="full-screen-image-content" onClick={(e) => e.stopPropagation()}>
+            <button className="full-screen-close-btn" onClick={() => setFullScreenImage(null)}>
               ×
             </button>
-
-            <img 
-              src={fullScreenImage} 
-              alt="Full screen image" 
+            <img
+              src={fullScreenImage.url}
+              alt="Full screen image"
               className="full-screen-image"
             />
-
-            <a 
-              href={fullScreenImage}
-              download
+            <a
+              href={fullScreenImage.url}
+              download={fullScreenImage.fileName}  // ← здесь главное исправление!
               className="full-screen-download-btn"
               title="Скачать фото"
             >
