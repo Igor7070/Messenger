@@ -1240,42 +1240,89 @@ const SecretPrivateChat = () => {
     let publicKey;
 
     if (senderId === userId) {
-      // === СВОЙ ФАЙЛ — ключ получателя ===
-      publicKey = publicKeys[recipientId];
-      if (!publicKey && publicKeyId) {
-        console.log(`[OWN FILE] Fetching public key for recipientId=${recipientId}, publicKeyId=${publicKeyId}`);
-        publicKey = await getPublicKey(recipientId, publicKeyId);
-        setPublicKeys((prev) => ({ ...prev, [recipientId]: publicKey }));
-      }
+        // === СВОЙ ФАЙЛ — ключ получателя ===
+        // Эту логику не трогаем, она работает
+        publicKey = publicKeys[recipientId];
+        if (!publicKey && publicKeyId) {
+            console.log(`[OWN FILE] Fetching public key for recipientId=${recipientId}, publicKeyId=${publicKeyId}`);
+            publicKey = await getPublicKey(recipientId, publicKeyId);
+            setPublicKeys((prev) => ({ ...prev, [recipientId]: publicKey }));
+        }
     } else {
-      // === ВХОДЯЩИЙ ФАЙЛ — ключ отправителя ===
-      // ВСЕГДА берём свежий ключ по publicKeyId из метаданных сообщения
-      console.log(`[INCOMING FILE] Always fetching fresh key by publicKeyId=${publicKeyId || 'none'} for senderId=${senderId}`);
-      publicKey = await getPublicKey(senderId, publicKeyId);
-      setPublicKeys((prev) => ({ ...prev, [senderId]: publicKey }));
+        // === ВХОДЯЩИЙ ФАЙЛ — ключ отправителя ===
+
+        // Сначала пытаемся взять ключ по publicKeyId из сообщения (исторический)
+        if (publicKeyId) {
+            console.log(`[INCOMING FILE] Trying history public key: senderId=${senderId}, publicKeyId=${publicKeyId}`);
+            try {
+                publicKey = await getPublicKey(senderId, publicKeyId);
+            } catch (err) {
+                console.warn(`Failed to fetch history key for publicKeyId=${publicKeyId}, falling back to current`);
+            }
+        }
+
+        // Если не получилось или publicKeyId не было — берём текущий ключ
+        if (!publicKey) {
+            console.log(`[INCOMING FILE] Fetching current public key for senderId=${senderId}`);
+            publicKey = await getPublicKey(senderId); // без publicKeyId → текущий
+        }
+
+        setPublicKeys((prev) => ({ ...prev, [senderId]: publicKey }));
     }
 
     if (!publicKey || !keyPair?.privateKey) {
-      throw new Error('Decryption keys not available for file');
+        throw new Error('Decryption keys not available for file');
     }
 
+    const publicKeyBytes = sodium.from_base64(publicKey);
+    const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
+    const nonceBytes = sodium.from_base64(nonce);
+
     try {
-      const publicKeyBytes = sodium.from_base64(publicKey);
-      const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
-      const nonceBytes = sodium.from_base64(nonce);
+        const decryptedBytes = sodium.crypto_box_open_easy(
+            encryptedFileBytes,
+            nonceBytes,
+            publicKeyBytes,
+            privateKeyBytes
+        );
 
-      const decryptedBytes = sodium.crypto_box_open_easy(
-        encryptedFileBytes,
-        nonceBytes,
-        publicKeyBytes,
-        privateKeyBytes
-      );
-
-      console.log(`File decryption successful for senderId=${senderId}`);
-      return decryptedBytes;
+        console.log(`File decryption successful for senderId=${senderId} (used keyId: ${publicKeyId || 'current'})`);
+        return decryptedBytes;
     } catch (error) {
-      console.error(`File decryption failed:`, error);
-      throw new Error(`File decryption failed: ${error.message}`);
+        console.error(`File decryption failed with used public key:`, {
+            error: error.message,
+            usedPublicKeyId: publicKeyId || 'current',
+            publicKeyLength: publicKey.length,
+        });
+
+        // Если ошибка именно "incorrect key pair" и мы использовали history-ключ — пробуем current ещё раз явно
+        if (
+            error.message.includes('incorrect key pair') &&
+            publicKeyId && 
+            senderId !== userId
+        ) {
+            console.log(`[INCOMING FILE] Retry decryption with current key for senderId=${senderId}`);
+            const currentPublicKey = await getPublicKey(senderId); // без ID → current
+            const currentPublicKeyBytes = sodium.from_base64(currentPublicKey);
+
+            try {
+                const decryptedBytes = sodium.crypto_box_open_easy(
+                    encryptedFileBytes,
+                    nonceBytes,
+                    currentPublicKeyBytes,
+                    privateKeyBytes
+                );
+                console.log(`File decryption succeeded on retry with current key for senderId=${senderId}`);
+                // Сохраняем текущий ключ в state, чтобы в будущем не мучиться
+                setPublicKeys((prev) => ({ ...prev, [senderId]: currentPublicKey }));
+                return decryptedBytes;
+            } catch (retryError) {
+                console.error(`Retry also failed:`, retryError);
+                throw new Error(`File decryption failed even with current key: ${retryError.message}`);
+            }
+        }
+
+        throw new Error(`File decryption failed: ${error.message}`);
     }
   };
 
