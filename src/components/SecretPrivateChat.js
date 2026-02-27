@@ -2595,58 +2595,54 @@ const SecretPrivateChat = () => {
 
   const decryptImageForPreview = async (msgId, fileUrl, nonce, publicKeyId, senderId) => {
     try {
-      console.log(`[AUTO-PREVIEW] Starting for msg ${msgId}, sender=${senderId}, pkId=${publicKeyId || 'none'}, url=${fileUrl}`);
+      console.log(`Decrypting image preview for msg ${msgId}: ${fileUrl}`);
 
-      // Скачиваем зашифрованный файл...
       const res = await fetch(fileUrl);
       if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
       const encryptedBytes = new Uint8Array(await res.arrayBuffer());
 
-      // Берём публичный ключ отправителя **по publicKeyId из метаданных** (самое важное!)
       let publicKey;
-      if (publicKeyId) {
-        console.log(`[AUTO-PREVIEW] Priority: fetching key by publicKeyId=${publicKeyId}`);
-        publicKey = await getPublicKey(senderId, publicKeyId);
+      let decryptRecipientId;
+
+      if (senderId === userId) {
+        // Своё → ключ получателя
+        const recipientName = chatName.split('_').find(name => name !== username);
+        const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
+        const recipient = await recipientResponse.json();
+        decryptRecipientId = recipient.id;
+        publicKey = publicKeys[decryptRecipientId] || await getPublicKey(decryptRecipientId, publicKeyId);
       } else {
-        console.log(`[AUTO-PREVIEW] Fallback: fetching current key for senderId=${senderId}`);
-        publicKey = await getPublicKey(senderId);
+        // Чужое → ключ отправителя
+        publicKey = publicKeys[senderId] || await getPublicKey(senderId, publicKeyId);
+        decryptRecipientId = userId;
       }
 
-      // Обновляем кэш ключей (чтобы в будущем использовался правильный)
-      setPublicKeys(prev => ({ ...prev, [senderId]: publicKey }));
+      setPublicKeys(prev => ({ ...prev, [decryptRecipientId]: publicKey }));
 
-      if (!publicKey || !keyPair?.privateKey) {
-        throw new Error('Missing keys');
-      }
-
-      // Расшифровываем напрямую (как в downloadFile)
-      const publicKeyBytes = sodium.from_base64(publicKey);
-      const privateKeyBytes = sodium.from_base64(keyPair.privateKey);
-      const nonceBytes = sodium.from_base64(nonce);
-
-      const decryptedBytes = sodium.crypto_box_open_easy(
+      const decryptedBytes = await decryptFileContent(
         encryptedBytes,
-        nonceBytes,
-        publicKeyBytes,
-        privateKeyBytes
+        nonce,
+        senderId,
+        publicKeyId,
+        publicKeys,
+        keyPair,
+        decryptRecipientId
       );
 
-      console.log(`[AUTO-PREVIEW] Decryption OK for msg ${msgId}`);
-
-      const blob = new Blob([decryptedBytes], { type: 'image/jpeg' });
+      const blob = new Blob([decryptedBytes], { type: 'image/jpeg' }); // можно динамически определять по contentType
       const blobUrl = URL.createObjectURL(blob);
 
       setDecryptedImageBlobs(prev => ({ ...prev, [msgId]: blobUrl }));
+      console.log(`Image preview decrypted: msg ${msgId} → ${blobUrl}`);
 
-      // Обновляем сообщение → превью появится сразу
-      setMessages(prev => prev.map(m =>
+      // Обновляем сообщение в списке
+      setMessages(prev => prev.map(m => 
         m.id === msgId ? { ...m, fileUrl: blobUrl } : m
       ));
 
-      console.log(`[AUTO-PREVIEW] Success: msg ${msgId} → ${blobUrl}`);
       return blobUrl;
     } catch (error) {
-      console.error(`[AUTO-PREVIEW] Failed for msg ${msgId}:`, error.message);
+      console.error(`Image decrypt failed for ${msgId}:`, error);
       return null;
     }
   };
