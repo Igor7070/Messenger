@@ -1249,12 +1249,10 @@ const SecretPrivateChat = () => {
       }
     } else {
       // === ВХОДЯЩИЙ ФАЙЛ — ключ отправителя ===
-      publicKey = publicKeys[senderId];
-      if (!publicKey) {
-        console.log(`[INCOMING FILE] Public key missing for senderId=${senderId}, fetching...`);
-        publicKey = await getPublicKey(senderId, publicKeyId);
-        setPublicKeys((prev) => ({ ...prev, [senderId]: publicKey }));
-      }
+      // ВСЕГДА берём свежий ключ по publicKeyId из метаданных сообщения
+      console.log(`[INCOMING FILE] Always fetching fresh key by publicKeyId=${publicKeyId || 'none'} for senderId=${senderId}`);
+      publicKey = await getPublicKey(senderId, publicKeyId);
+      setPublicKeys((prev) => ({ ...prev, [senderId]: publicKey }));
     }
 
     if (!publicKey || !keyPair?.privateKey) {
