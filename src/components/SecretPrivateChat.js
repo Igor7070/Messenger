@@ -2634,14 +2634,8 @@ const SecretPrivateChat = () => {
     console.log(`Typing event sent in SecretChat: ${isTyping ? 'TYPING' : 'STOP_TYPING'}`);
   };
 
-  const openFullScreenImage = (fileUrl, fileName = 'photo.jpg') => {
-    // Если передана строка (старый код) — делаем объект
-    if (typeof fileUrl === 'string') {
-      setFullScreenImage({ url: fileUrl, fileName });
-    } else {
-      // Если уже объект — оставляем как есть
-      setFullScreenImage(fileUrl);
-    }
+  const openFullScreenImage = (fileUrl) => {
+    setFullScreenImage(fileUrl);
   };
 
   const decryptImageForPreview = async (msgId, fileUrl, nonceFromMsg, publicKeyId, senderId) => {
@@ -3098,42 +3092,19 @@ const SecretPrivateChat = () => {
             </button>
 
             <img 
-              src={typeof fullScreenImage === 'string' ? fullScreenImage : fullScreenImage.url} 
+              src={fullScreenImage} 
               alt="Full screen image" 
               className="full-screen-image"
             />
 
-            <button
+            <a 
+              href={fullScreenImage}
+              download
               className="full-screen-download-btn"
               title="Скачать фото"
-              onClick={async () => {
-                try {
-                  const imageSrc = typeof fullScreenImage === 'string' ? fullScreenImage : fullScreenImage.url;
-                  const response = await fetch(imageSrc);
-                  if (!response.ok) throw new Error('Не удалось загрузить фото');
-                  const blob = await response.blob();
-
-                  const url = URL.createObjectURL(blob);
-                  const link = document.createElement('a');
-                  link.href = url;
-
-                  // Используем оригинальное имя, если есть
-                  link.download = (typeof fullScreenImage === 'object' && fullScreenImage.fileName) 
-                    ? fullScreenImage.fileName 
-                    : 'photo.jpg';
-
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  URL.revokeObjectURL(url);
-                } catch (err) {
-                  console.error('Ошибка скачивания из полноэкранного:', err);
-                  toast.error('Не удалось скачать фото');
-                }
-              }}
             >
               ↓
-            </button>
+            </a>
           </div>
         </div>
       )}
