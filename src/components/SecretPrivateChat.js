@@ -1476,6 +1476,14 @@ const SecretPrivateChat = () => {
           serverFileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
           if (!serverFileUrl) throw new Error('File upload failed');
 
+          // ────────────────────────────────────────────────
+          // ЭТОТ БЛОК ДОБАВИТЬ (3 строки) — и всё
+          setDecryptedImageBlobs(prev => ({
+            ...prev,
+            [savedMessage.id]: tempFileUrl   // сохраняем временный blob как превью
+          }));
+          // ────────────────────────────────────────────────
+
           // ← ДОБАВЬ: обнови messageData
           messageData.fileUrl = serverFileUrl;
           messageData.file_url = serverFileUrl;
