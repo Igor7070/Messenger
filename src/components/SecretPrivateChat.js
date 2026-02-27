@@ -2640,7 +2640,7 @@ const SecretPrivateChat = () => {
 
       return blobUrl;
     } catch (error) {
-      console.error(`Image decrypt failed for ${msgId}:`, error);
+      console.error(`Method decryptImageForPreview. Image decrypt failed for ${msgId}:`, error);
       return null;
     }
   };
