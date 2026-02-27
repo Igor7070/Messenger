@@ -2597,7 +2597,7 @@ const SecretPrivateChat = () => {
     try {
       console.log(`[AUTO-PREVIEW] Starting for msg ${msgId}, sender=${senderId}, pkId=${publicKeyId || 'none'}, url=${fileUrl}`);
 
-      // Скачиваем зашифрованный файл
+      // Скачиваем зашифрованный файл...
       const res = await fetch(fileUrl);
       if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
       const encryptedBytes = new Uint8Array(await res.arrayBuffer());
