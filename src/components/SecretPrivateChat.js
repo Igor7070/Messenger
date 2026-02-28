@@ -2682,12 +2682,6 @@ const SecretPrivateChat = () => {
 
       setDecryptedImageBlobs(prev => ({ ...prev, [msgId]: blobUrl }));
       console.log(`Image preview decrypted: msg ${msgId} → ${blobUrl}`);
-
-      // Обновляем и fileUrl в сообщении, чтобы плеер/скачивание использовали blob
-      setMessages(prev => prev.map(m => 
-        m.id === msgId ? { ...m, fileUrl: blobUrl, file_url: blobUrl } : m
-      ));
-
       return blobUrl;
     } catch (error) {
       console.error(`Method decryptImageForPreview. Image decrypt failed for ${msgId}:`, error);
