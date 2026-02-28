@@ -2925,6 +2925,7 @@ const SecretPrivateChat = () => {
                           (decryptedImageBlobs[msg.id] || msg.fileUrl.startsWith('blob:')) && (
                             <div className="image-preview-container">
                               <img
+                                key={decryptedImageBlobs[msg.id] || msg.fileUrl}   // ← ЭТО САМОЕ ГЛАВНОЕ
                                 src={decryptedImageBlobs[msg.id] || msg.fileUrl}
                                 alt="Изображение в сообщении"
                                 className="message-image-preview"
