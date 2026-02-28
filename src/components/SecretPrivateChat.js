@@ -1557,7 +1557,11 @@ const SecretPrivateChat = () => {
           }
 
           // ← ОЧИСТКА TEMP BLOB
-          URL.revokeObjectURL(tempFileUrl);
+          //URL.revokeObjectURL(tempFileUrl);
+          setTimeout(() => {
+            URL.revokeObjectURL(tempFileUrl);
+            console.log('Revoked temp blob after timeout for msg', savedMessage.id);
+          }, 300);  // 300 мс — обычно хватает React на батч + рендер
 
         // === АУДИО СООБЩЕНИЕ ===
         } else if (audioBlob) {
