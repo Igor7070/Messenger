@@ -433,43 +433,6 @@ h2 {
   z-index: 1000;
 }
 
-/* ────────────────────────────────────────────────
-   Десктопная иконка ассистента — по центру над разделителем
-──────────────────────────────────────────────── */
-
-.assistant-icon-desktop-wrapper {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 12px 20px 36px 20px;     /* сверху небольшой отступ, снизу — чтобы линия была явно ниже */
-  margin: 0;
-  box-sizing: border-box;
-}
-
-/* Очень важный блок — отключаем возможное позиционирование внутри AssistantIcon */
-.assistant-icon-desktop-wrapper,
-.assistant-icon-desktop-wrapper * {
-  position: static !important;
-  top: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-  left: auto !important;
-  transform: none !important;
-  inset: auto !important;
-  margin: 0 auto !important;        /* на всякий случай центрируем */
-}
-
-/* Если в AssistantIcon есть свои классы с position — их тоже можно переопределить */
-.assistant-icon-desktop-wrapper .assistant-icon,
-.assistant-icon-desktop-wrapper [class*="assistant"],
-.assistant-icon-desktop-wrapper [class*="Assistant"] {
-  position: static !important;
-  right: auto !important;
-  top: auto !important;
-  transform: none !important;
-}
-
 @media (max-width: 768px) {
   .home-container {
     padding: 10px;
