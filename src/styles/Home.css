@@ -433,6 +433,33 @@ h2 {
   z-index: 1000;
 }
 
+.assistant-icon-desktop-wrapper {
+  width: 100%;
+  text-align: center;
+  padding-bottom: 30px;  /* расстояние между иконкой и линией */
+  margin: 0;
+}
+
+/* Самое важное — пытаемся отключить fixed/absolute внутри иконки */
+.assistant-icon-desktop-wrapper,
+.assistant-icon-desktop-wrapper * {
+  position: relative !important;   /* или static, если relative не помогает */
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+}
+
+/* Если у иконки есть классы с fixed — переопределяем */
+.assistant-icon-desktop-wrapper [class*="fixed"],
+.assistant-icon-desktop-wrapper [class*="absolute"],
+.assistant-icon-desktop-wrapper .assistant-icon,
+.assistant-icon-desktop-wrapper svg,
+.assistant-icon-desktop-wrapper button {
+  position: static !important;
+  transform: none !important;
+}
+
 @media (max-width: 768px) {
   .home-container {
     padding: 10px;
