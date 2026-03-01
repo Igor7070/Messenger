@@ -2753,61 +2753,17 @@ const SecretPrivateChat = () => {
   useEffect(() => {
     const imageMessages = messages.filter(msg => 
       msg.messageType === 'file' &&
-      msg.fileUrl &&                                 // есть хоть какой-то url
-      !decryptedImageBlobs[msg.id] &&                // ещё не расшифровано
+      msg.fileUrl &&
+      !decryptedImageBlobs[msg.id] &&
+      !msg.fileUrl.startsWith('blob:') && // ещё не расшифровано
       (msg.contentType?.startsWith('image/') ||
       (msg.fileName && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileName)))
     );
 
-    imageMessages.forEach(async (msg) => {
-      // ──────────────────────────────────────────────
-      // Специально для своих отправленных изображений
-      // ──────────────────────────────────────────────
-      if (msg.sender.id === userId) {
-        const cacheKey1 = `fileContent_${chatId}_${userId}_${msg.id}`;
-        const cacheKey2 = msg.clientMessageId 
-          ? `fileContent_${chatId}_${userId}_${msg.clientMessageId}` 
-          : null;
-
-        let stored = localStorage.getItem(cacheKey1);
-        if (!stored && cacheKey2) stored = localStorage.getItem(cacheKey2);
-
-        if (stored) {
-          try {
-            const cachedData = JSON.parse(stored);
-            if (cachedData?.fileUrl && !cachedData.fileUrl.startsWith('blob:')) {
-              console.log(`Используем кэшированный серверный URL для своего изображения: ${msg.id} → ${cachedData.fileUrl}`);
-              const blobUrl = await decryptImageForPreview(
-                msg.id,
-                cachedData.fileUrl,
-                msg.nonce,
-                msg.publicKeyId || null,
-                msg.sender.id
-              );
-              if (blobUrl) return; // успех — выходим
-            }
-          } catch (err) {
-            console.warn(`Не удалось распарсить кэш своего изображения ${msg.id}`, err);
-          }
-        }
-
-        // fallback — если в кэше нет, но в сообщении уже есть серверный URL
-        if (msg.fileUrl && !msg.fileUrl.startsWith('blob:')) {
-          console.log(`Пробуем расшифровать свой файл по fileUrl из сообщения: ${msg.id}`);
-          await decryptImageForPreview(msg.id, msg.fileUrl, msg.nonce, msg.publicKeyId || null, msg.sender.id);
-          return;
-        }
-
-        console.warn(`Не найден рабочий серверный URL для превью своего изображения после перезагрузки: ${msg.id}`);
-        return;
-      }
-
-      // ──────────────────────────────────────────────
-      // Входящие изображения (логика почти как была)
-      // ──────────────────────────────────────────────
-      if (msg.nonce && msg.fileUrl && !msg.fileUrl.startsWith('blob:')) {
-        console.log(`Авто-расшифровка входящего изображения: ${msg.id}`);
-        await decryptImageForPreview(
+    imageMessages.forEach(msg => {
+      if (msg.nonce && msg.fileUrl) {
+        console.log(`Auto-decrypting image preview: msg ${msg.id}`);
+        decryptImageForPreview(
           msg.id,
           msg.fileUrl,
           msg.nonce,
@@ -2816,7 +2772,7 @@ const SecretPrivateChat = () => {
         );
       }
     });
-  }, [messages, decryptedImageBlobs, chatId, userId]);
+  }, [messages, decryptedImageBlobs]);
 
   return (
     <div className="secret-chat">
