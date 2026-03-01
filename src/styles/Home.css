@@ -436,7 +436,7 @@ h2 {
 .assistant-center-wrapper {
   position: absolute;
   left: 50%;
-  top: 140px;                     /* подбери своё значение, если нужно */
+  top: 40px;                     /* подбери своё значение, если нужно */
   transform: translateX(-50%);
   z-index: 20;
   pointer-events: none;
