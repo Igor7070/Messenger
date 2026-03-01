@@ -2672,45 +2672,78 @@ const SecretPrivateChat = () => {
     try {
       console.log(`Decrypting image preview for msg ${msgId}: ${fileUrl}`);
 
-      // !!! КЛЮЧЕВОЙ ФИКС — берём правильные nonce и fileUrl из метаданных !!!
-      const metadata = await fetchFileMetadata(msgId);           // ← здесь правильный nonce и fileUrl
+      // 1. Берём актуальные метаданные (правильный nonce и fileUrl)
+      const metadata = await fetchFileMetadata(msgId);
       const correctFileUrl = metadata.fileUrl;
       const correctNonce   = metadata.nonce;
 
       console.log(`Using metadata nonce for file decryption: ${correctNonce}`);
 
-      const res = await fetch(correctFileUrl);                   // используем правильный URL из metadata
+      // 2. Загружаем зашифрованный файл
+      const res = await fetch(correctFileUrl);
       if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
       const encryptedBytes = new Uint8Array(await res.arrayBuffer());
 
-      // Публичный ключ отправителя (как и раньше)
-      let publicKey = publicKeys[senderId] || await getPublicKey(senderId, publicKeyId);
+      // 3. Определяем, на чей публичный ключ шифровалось (recipientId для decryption)
+      let decryptRecipientId;
+      let publicKey;
 
-      setPublicKeys(prev => ({ ...prev, [senderId]: publicKey }));
+      if (senderId === userId) {
+        // Это своё сообщение → шифровали на ключ собеседника (partnerId)
+        const recipientName = chatName.replace('_secret', '').split('_').find((name) => name !== username);
+        if (!recipientName) {
+          throw new Error('Recipient name not found for own image decryption');
+        }
 
-      // Расшифровываем с правильным nonce !!!
+        const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
+        if (!recipientResponse.ok) {
+          throw new Error(`Failed to fetch recipient: ${recipientResponse.status}`);
+        }
+
+        const recipient = await recipientResponse.json();
+        decryptRecipientId = recipient.id;
+
+        // Берём публичный ключ собеседника
+        publicKey = publicKeys[decryptRecipientId] || await getPublicKey(decryptRecipientId, publicKeyId);
+        console.log(`Own image: using partnerId=${decryptRecipientId} as recipient for decryption (publicKeyId=${publicKeyId || 'current'})`);
+      } else {
+        // Входящее сообщение → шифровали на наш ключ
+        decryptRecipientId = userId;
+
+        // Берём публичный ключ отправителя
+        publicKey = publicKeys[senderId] || await getPublicKey(senderId, publicKeyId);
+        console.log(`Incoming image: using userId=${userId} as recipient for decryption (senderId=${senderId}, publicKeyId=${publicKeyId || 'current'})`);
+      }
+
+      // Обновляем кэш публичных ключей
+      setPublicKeys(prev => ({ ...prev, [decryptRecipientId]: publicKey }));
+
+      // 4. Расшифровываем содержимое файла
       const decryptedBytes = await decryptFileContent(
         encryptedBytes,
-        correctNonce,               // ← !!! здесь самое важное !!!
+        correctNonce,
         senderId,
         publicKeyId,
         publicKeys,
         keyPair,
-        userId                      // для входящих — свой id
+        decryptRecipientId   // ← Вот здесь главное изменение!
       );
 
-      const blob = new Blob([decryptedBytes], { type: 'image/jpeg' });
+      // 5. Создаём blob и URL
+      const blob = new Blob([decryptedBytes], { type: 'image/jpeg' }); // можно сделать динамическим по contentType, если есть
       const blobUrl = URL.createObjectURL(blob);
 
+      // 6. Сохраняем в state
       setDecryptedImageBlobs(prev => ({ ...prev, [msgId]: blobUrl }));
       console.log(`Image preview decrypted: msg ${msgId} → ${blobUrl}`);
 
-      // Обновляем и fileUrl в сообщении, чтобы плеер/скачивание использовали blob
+      // 7. Обновляем fileUrl в сообщении (чтобы отображался blob вместо зашифрованного URL)
       setMessages(prev => prev.map(m => 
         m.id === msgId ? { ...m, fileUrl: blobUrl, file_url: blobUrl } : m
       ));
 
       return blobUrl;
+
     } catch (error) {
       console.error(`Method decryptImageForPreview. Image decrypt failed for ${msgId}:`, error);
       return null;
