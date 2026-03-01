@@ -2721,16 +2721,17 @@ const SecretPrivateChat = () => {
     const imageMessages = messages.filter(msg => 
       msg.messageType === 'file' &&
       msg.fileUrl &&
-      !decryptedImageBlobs[msg.id] &&                     // ещё не расшифровано
-      !msg.fileUrl.startsWith('blob:') &&                 // не временный blob
+      !decryptedImageBlobs[msg.id] &&                        // ещё не расшифровано
+      !msg.fileUrl.startsWith('blob:') &&                     // не временный blob (после перезагрузки его нет)
+      msg.nonce &&                                            // есть чем расшифровывать
       (msg.contentType?.startsWith('image/') ||
       (msg.fileName && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileName))) &&
-      msg.nonce                                           // ← важно: только если есть nonce (зашифровано)
+      (msg.sender.id !== userId || msg.sender.id === userId) // ← всегда true, но оставляем для ясности
     );
 
     imageMessages.forEach(msg => {
       if (msg.nonce && msg.fileUrl) {
-        console.log(`Auto-decrypting image preview: msg ${msg.id}`);
+        console.log(`Auto-decrypting image preview (including own): msg ${msg.id}, sender ${msg.sender.id}`);
         decryptImageForPreview(
           msg.id,
           msg.fileUrl,
@@ -2740,7 +2741,7 @@ const SecretPrivateChat = () => {
         );
       }
     });
-  }, [messages, decryptedImageBlobs]);
+  }, [messages, decryptedImageBlobs, userId]);  // добавили userId в зависимости
 
   return (
     <div className="secret-chat">
@@ -2944,24 +2945,26 @@ const SecretPrivateChat = () => {
                         </span>
 
                         {/* Превью изображения — используем расшифрованный blob или локальный */}
-                        {msg.messageType === 'file' && msg.fileUrl && msg.contentType?.startsWith('image/') && (
-                          <div className="image-preview-container">
-                            <img
-                              key={decryptedImageBlobs[msg.id] || msg.fileUrl}
-                              src={decryptedImageBlobs[msg.id] || msg.fileUrl}
-                              alt="Изображение в сообщении"
-                              className="message-image-preview"
-                              onClick={() => openFullScreenImage(
-                                decryptedImageBlobs[msg.id] || msg.fileUrl,
-                                msg.fileName || 'photo.jpg'
-                              )}
-                              loading="lazy"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                console.warn('Ошибка загрузки превью:', msg.fileUrl);
-                              }}
-                            />
-                          </div>
+                        {msg.messageType === 'file' && msg.fileUrl && (
+                          (decryptedImageBlobs[msg.id] || msg.fileUrl.startsWith('blob:')) && (
+                            <div className="image-preview-container">
+                              <img
+                                key={decryptedImageBlobs[msg.id] || msg.fileUrl}   // ← ЭТО САМОЕ ГЛАВНОЕ
+                                src={decryptedImageBlobs[msg.id] || msg.fileUrl}
+                                alt="Изображение в сообщении"
+                                className="message-image-preview"
+                                onClick={() => openFullScreenImage(
+                                  decryptedImageBlobs[msg.id] || msg.fileUrl,
+                                  msg.fileName || 'photo.jpg'   // ← оригинальное имя с расширением!
+                                )}
+                                loading="lazy"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  console.warn('Ошибка загрузки превью:', msg.fileUrl);
+                                }}
+                              />
+                            </div>
+                          )
                         )}
 
                         {/* Ссылка на скачивание — всегда */}
