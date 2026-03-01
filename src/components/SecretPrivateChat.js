@@ -982,6 +982,19 @@ const SecretPrivateChat = () => {
         const tempIdx = prev.findIndex(m => m.id === newMessage.clientMessageId);
         if (tempIdx !== -1) {
           const tempMsg = prev[tempIdx];
+
+          // [ADD] Переносим blob-URL в decryptedImageBlobs для превью (только для изображений)
+          if (
+            tempMsg.fileUrl?.startsWith('blob:') &&
+            (tempMsg.contentType?.startsWith('image/') || 
+            (tempMsg.fileName && /\.(jpg|jpeg|png|gif|webp)$/i.test(tempMsg.fileName)))
+          ) {
+            setDecryptedImageBlobs(prevBlobs => ({
+              ...prevBlobs,
+              [newMessage.id]: tempMsg.fileUrl,   // Переносим blob на новый ID
+            }));
+          }
+          
           const oldFileUrl = tempMsg.fileUrl;
           const updated = [...prev];
           updated[tempIdx] = { 
@@ -1473,6 +1486,15 @@ const SecretPrivateChat = () => {
           }
           savedMessage = await response.json();
 
+          // [ADD] Сохраняем временный blob-URL в decryptedImageBlobs для превью (только для изображений)
+          if (selectedFile.type.startsWith('image/')) {
+            setDecryptedImageBlobs(prev => ({
+              ...prev,
+              [clientMessageId]: tempFileUrl,  // На временный ID (на всякий случай)
+              [savedMessage.id]: tempFileUrl,   // На постоянный серверный ID (основное)
+            }));
+          }
+
           serverFileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
           if (!serverFileUrl) throw new Error('File upload failed');
 
@@ -1557,7 +1579,7 @@ const SecretPrivateChat = () => {
           }
 
           // ← ОЧИСТКА TEMP BLOB
-          URL.revokeObjectURL(tempFileUrl);
+          //URL.revokeObjectURL(tempFileUrl);
 
         // === АУДИО СООБЩЕНИЕ ===
         } else if (audioBlob) {
