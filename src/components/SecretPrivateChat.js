@@ -1240,38 +1240,38 @@ const SecretPrivateChat = () => {
     let publicKey;
 
     if (senderId === userId) {
-        // === СВОЙ ФАЙЛ — ключ получателя ===
-        // Эту логику не трогаем, она работает
-        publicKey = publicKeys[recipientId];
-        if (!publicKey && publicKeyId) {
-            console.log(`[OWN FILE] Fetching public key for recipientId=${recipientId}, publicKeyId=${publicKeyId}`);
-            publicKey = await getPublicKey(recipientId, publicKeyId);
-            setPublicKeys((prev) => ({ ...prev, [recipientId]: publicKey }));
-        }
+      // === СВОЙ ФАЙЛ — ключ получателя ===
+      // Эту логику не трогаем, она работает
+      publicKey = publicKeys[recipientId];
+      if (!publicKey && publicKeyId) {
+        console.log(`[OWN FILE] Fetching public key for recipientId=${recipientId}, publicKeyId=${publicKeyId}`);
+        publicKey = await getPublicKey(recipientId, publicKeyId);
+        setPublicKeys((prev) => ({ ...prev, [recipientId]: publicKey }));
+      }
     } else {
-        // === ВХОДЯЩИЙ ФАЙЛ — ключ отправителя ===
+      // === ВХОДЯЩИЙ ФАЙЛ — ключ отправителя ===
 
-        // Сначала пытаемся взять ключ по publicKeyId из сообщения (исторический)
-        if (publicKeyId) {
-            console.log(`[INCOMING FILE] Trying history public key: senderId=${senderId}, publicKeyId=${publicKeyId}`);
-            try {
-                publicKey = await getPublicKey(senderId, publicKeyId);
-            } catch (err) {
-                console.warn(`Failed to fetch history key for publicKeyId=${publicKeyId}, falling back to current`);
-            }
+      // Сначала пытаемся взять ключ по publicKeyId из сообщения (исторический)
+      if (publicKeyId) {
+        console.log(`[INCOMING FILE] Trying history public key: senderId=${senderId}, publicKeyId=${publicKeyId}`);
+        try {
+          publicKey = await getPublicKey(senderId, publicKeyId);
+        } catch (err) {
+          console.warn(`Failed to fetch history key for publicKeyId=${publicKeyId}, falling back to current`);
         }
+      }
 
-        // Если не получилось или publicKeyId не было — берём текущий ключ
-        if (!publicKey) {
-            console.log(`[INCOMING FILE] Fetching current public key for senderId=${senderId}`);
-            publicKey = await getPublicKey(senderId); // без publicKeyId → текущий
-        }
+      // Если не получилось или publicKeyId не было — берём текущий ключ
+      if (!publicKey) {
+        console.log(`[INCOMING FILE] Fetching current public key for senderId=${senderId}`);
+        publicKey = await getPublicKey(senderId); // без publicKeyId → текущий
+      }
 
-        setPublicKeys((prev) => ({ ...prev, [senderId]: publicKey }));
+      setPublicKeys((prev) => ({ ...prev, [senderId]: publicKey }));
     }
 
     if (!publicKey || !keyPair?.privateKey) {
-        throw new Error('Decryption keys not available for file');
+      throw new Error('Decryption keys not available for file');
     }
 
     const publicKeyBytes = sodium.from_base64(publicKey);
@@ -1279,50 +1279,47 @@ const SecretPrivateChat = () => {
     const nonceBytes = sodium.from_base64(nonce);
 
     try {
-        const decryptedBytes = sodium.crypto_box_open_easy(
+      const decryptedBytes = sodium.crypto_box_open_easy(
+        encryptedFileBytes,
+        nonceBytes,
+        publicKeyBytes,
+        privateKeyBytes
+      );
+
+      console.log(`File decryption successful for senderId=${senderId} (used keyId: ${publicKeyId || 'current'})`);
+      return decryptedBytes;
+    } catch (error) {
+      console.error(`File decryption failed with used public key:`, {
+        error: error.message,
+        usedPublicKeyId: publicKeyId || 'current',
+        publicKeyLength: publicKey.length,
+      });
+
+      // Если ошибка именно "incorrect key pair" — пробуем текущий ключ (fallback)
+      if (error.message.includes('incorrect key pair')) {
+        console.log(`Retry decryption with current key for senderId=${senderId}`);
+        const currentPublicKey = await getPublicKey(senderId); // без ID → current
+        const currentPublicKeyBytes = sodium.from_base64(currentPublicKey);
+
+        try {
+          const decryptedBytes = sodium.crypto_box_open_easy(
             encryptedFileBytes,
             nonceBytes,
-            publicKeyBytes,
+            currentPublicKeyBytes,
             privateKeyBytes
-        );
+          );
 
-        console.log(`File decryption successful for senderId=${senderId} (used keyId: ${publicKeyId || 'current'})`);
-        return decryptedBytes;
-    } catch (error) {
-        console.error(`File decryption failed with used public key:`, {
-            error: error.message,
-            usedPublicKeyId: publicKeyId || 'current',
-            publicKeyLength: publicKey.length,
-        });
-
-        // Если ошибка именно "incorrect key pair" и мы использовали history-ключ — пробуем current ещё раз явно
-        if (
-            error.message.includes('incorrect key pair') &&
-            publicKeyId && 
-            senderId !== userId
-        ) {
-            console.log(`[INCOMING FILE] Retry decryption with current key for senderId=${senderId}`);
-            const currentPublicKey = await getPublicKey(senderId); // без ID → current
-            const currentPublicKeyBytes = sodium.from_base64(currentPublicKey);
-
-            try {
-                const decryptedBytes = sodium.crypto_box_open_easy(
-                    encryptedFileBytes,
-                    nonceBytes,
-                    currentPublicKeyBytes,
-                    privateKeyBytes
-                );
-                console.log(`File decryption succeeded on retry with current key for senderId=${senderId}`);
-                // Сохраняем текущий ключ в state, чтобы в будущем не мучиться
-                setPublicKeys((prev) => ({ ...prev, [senderId]: currentPublicKey }));
-                return decryptedBytes;
-            } catch (retryError) {
-                console.error(`Retry also failed:`, retryError);
-                throw new Error(`File decryption failed even with current key: ${retryError.message}`);
-            }
+          console.log(`File decryption succeeded on retry with current key for senderId=${senderId}`);
+          // Сохраняем текущий ключ в state, чтобы в будущем не мучиться
+          setPublicKeys((prev) => ({ ...prev, [senderId]: currentPublicKey }));
+          return decryptedBytes;
+        } catch (retryError) {
+          console.error(`Retry also failed:`, retryError);
+          throw new Error(`File decryption failed even with current key: ${retryError.message}`);
         }
+      }
 
-        throw new Error(`File decryption failed: ${error.message}`);
+      throw new Error(`File decryption failed: ${error.message}`);
     }
   };
 
@@ -3106,23 +3103,21 @@ const SecretPrivateChat = () => {
             <button
               className="full-screen-download-btn"
               title="Скачать фото"
-              onClick={async () => {
-                try {
-                  const response = await fetch(fullScreenImage.url);
-                  if (!response.ok) throw new Error('Не удалось загрузить фото');
-                  const blob = await response.blob();
+              onClick={() => {
+                const url = fullScreenImage.url;
+                const fileName = fullScreenImage.fileName || 'photo.jpg';
 
-                  const url = URL.createObjectURL(blob);
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = fullScreenImage.fileName;  // ← оригинальное имя с расширением!
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
+                const link = document.createElement('a');
+                link.href = url;                     // ← напрямую blob: или https
+                link.download = fileName;
+
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                // Отзываем только blob-URL (HTTPS не трогаем)
+                if (url.startsWith('blob:')) {
                   URL.revokeObjectURL(url);
-                } catch (err) {
-                  console.error('Ошибка скачивания из полноэкранного:', err);
-                  toast.error('Не удалось скачать фото');
                 }
               }}
             >
