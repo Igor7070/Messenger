@@ -389,19 +389,25 @@ const SecretPrivateChat = () => {
                 }
               }
 
-              // ← Добавь это:
+              // Восстанавливаем превью из base64-кэша для своих отправленных изображений
               if (msg.sender.id === userId && msg.contentType?.startsWith('image/')) {
-                const previewKey = `imagePreview_${chatIdParam}_${userId}_${msg.id}`;          // по server id
+                const previewKey = `imgPreview_${chatIdParam}_${userId}_${msg.id}`;
                 const base64 = localStorage.getItem(previewKey);
+
                 if (base64) {
-                  const blobUrl = `data:image/jpeg;base64,${base64}`; // или другой mime, если нужно
+                  const dataUrl = `data:image/jpeg;base64,${base64}`; // можно уточнить mime по msg.contentType
                   setDecryptedImageBlobs(prev => ({
                     ...prev,
-                    [msg.id]: blobUrl
+                    [msg.id]: dataUrl
                   }));
-                  console.log(`Restored preview from localStorage for msg ${msg.id}`);
-                  // Можно сразу вернуть, если хочешь пропустить дальнейшую обработку
-                  return { ...msg, fileUrl: blobUrl };
+                  console.log(`[PREVIEW RESTORE] Loaded base64 preview for msg ${msg.id}`);
+
+                  // Можно сразу вернуть с восстановленным fileUrl, чтобы не обрабатывать дальше
+                  return {
+                    ...msg,
+                    fileUrl: dataUrl,
+                    // file_url: dataUrl,  // если где-то используется file_url
+                  };
                 }
               }
 
@@ -1453,14 +1459,21 @@ const SecretPrivateChat = () => {
 
           const tempFileUrl = URL.createObjectURL(selectedFile);
 
-          // Вставь это:
+          // Сохраняем base64-превью для своих изображений (чтобы пережило перезагрузку)
           if (selectedFile.type.startsWith('image/')) {
             const reader = new FileReader();
-            reader.onload = function () {
-              const base64 = reader.result.split(',')[1]; // только данные без "data:image/...;base64,"
-              const cacheKey = `imagePreview_${chatId}_${userId}_${clientMessageId}`;
-              localStorage.setItem(cacheKey, base64);
-              console.log(`Saved base64 preview for own image: ${cacheKey}, length: ${base64.length}`);
+            reader.onload = () => {
+              const base64Data = reader.result.split(',')[1]; // убираем префикс data:image/...;base64,
+              const cacheKey = `imgPreview_${chatId}_${userId}_${clientMessageId}`;
+              localStorage.setItem(cacheKey, base64Data);
+              console.log(`[PREVIEW CACHE] Saved base64 for temp msg ${clientMessageId}, key: ${cacheKey}, length: ${base64Data.length}`);
+
+              // Сразу кладём в состояние (для текущей сессии)
+              setDecryptedImageBlobs(prev => ({
+                ...prev,
+                [clientMessageId]: reader.result,          // data: URL
+                [savedMessage?.id || clientMessageId]: reader.result  // на случай, если id уже есть
+              }));
             };
             reader.readAsDataURL(selectedFile);
           }
