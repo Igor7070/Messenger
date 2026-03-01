@@ -435,29 +435,26 @@ h2 {
 
 .assistant-icon-desktop-wrapper {
   width: 100%;
-  text-align: center;
-  padding-bottom: 30px;  /* расстояние между иконкой и линией */
+  display: flex;
+  justify-content: center;
+  padding: 0 0 32px 0;   /* расстояние до разделительной линии */
   margin: 0;
 }
 
-/* Самое важное — пытаемся отключить fixed/absolute внутри иконки */
-.assistant-icon-desktop-wrapper,
-.assistant-icon-desktop-wrapper * {
-  position: relative !important;   /* или static, если relative не помогает */
+/* Отключаем абсолютное позиционирование от AssistantIcon.css */
+.assistant-icon-desktop-wrapper .assistant-icon {
+  position: relative !important;   /* или static — попробуй оба варианта */
   top: auto !important;
   right: auto !important;
   bottom: auto !important;
   left: auto !important;
+  margin: 0 auto !important;
+  transform: none !important;
 }
 
-/* Если у иконки есть классы с fixed — переопределяем */
-.assistant-icon-desktop-wrapper [class*="fixed"],
-.assistant-icon-desktop-wrapper [class*="absolute"],
-.assistant-icon-desktop-wrapper .assistant-icon,
-.assistant-icon-desktop-wrapper svg,
-.assistant-icon-desktop-wrapper button {
-  position: static !important;
-  transform: none !important;
+/* Убираем пульсацию, если она мешает выравниванию */
+.assistant-icon-desktop-wrapper .assistant-pulse {
+  display: none !important;
 }
 
 @media (max-width: 768px) {
