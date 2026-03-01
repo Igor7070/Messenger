@@ -389,28 +389,6 @@ const SecretPrivateChat = () => {
                 }
               }
 
-              // Восстанавливаем превью из base64-кэша для своих отправленных изображений
-              if (msg.sender.id === userId && msg.contentType?.startsWith('image/')) {
-                const previewKey = `imgPreview_${chatIdParam}_${userId}_${msg.id}`;
-                const base64 = localStorage.getItem(previewKey);
-
-                if (base64) {
-                  const dataUrl = `data:image/jpeg;base64,${base64}`; // можно уточнить mime по msg.contentType
-                  setDecryptedImageBlobs(prev => ({
-                    ...prev,
-                    [msg.id]: dataUrl
-                  }));
-                  console.log(`[PREVIEW RESTORE] Loaded base64 preview for msg ${msg.id}`);
-
-                  // Можно сразу вернуть с восстановленным fileUrl, чтобы не обрабатывать дальше
-                  return {
-                    ...msg,
-                    fileUrl: dataUrl,
-                    // file_url: dataUrl,  // если где-то используется file_url
-                  };
-                }
-              }
-
               // Расшифровка метаданных
               if (msg.encryptedContent && msg.nonce) {
                 try {
@@ -1458,25 +1436,6 @@ const SecretPrivateChat = () => {
           );
 
           const tempFileUrl = URL.createObjectURL(selectedFile);
-
-          // Сохраняем base64-превью для своих изображений (чтобы пережило перезагрузку)
-          if (selectedFile.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const base64Data = reader.result.split(',')[1]; // убираем префикс data:image/...;base64,
-              const cacheKey = `imgPreview_${chatId}_${userId}_${clientMessageId}`;
-              localStorage.setItem(cacheKey, base64Data);
-              console.log(`[PREVIEW CACHE] Saved base64 for temp msg ${clientMessageId}, key: ${cacheKey}, length: ${base64Data.length}`);
-
-              // Сразу кладём в состояние (для текущей сессии)
-              setDecryptedImageBlobs(prev => ({
-                ...prev,
-                [clientMessageId]: reader.result,          // data: URL
-                [savedMessage?.id || clientMessageId]: reader.result  // на случай, если id уже есть
-              }));
-            };
-            reader.readAsDataURL(selectedFile);
-          }
 
           messageData = {
             ...messageData,
@@ -2762,10 +2721,11 @@ const SecretPrivateChat = () => {
     const imageMessages = messages.filter(msg => 
       msg.messageType === 'file' &&
       msg.fileUrl &&
-      !decryptedImageBlobs[msg.id] &&
-      !msg.fileUrl.startsWith('blob:') && // ещё не расшифровано
+      !decryptedImageBlobs[msg.id] &&                     // ещё не расшифровано
+      !msg.fileUrl.startsWith('blob:') &&                 // не временный blob
       (msg.contentType?.startsWith('image/') ||
-      (msg.fileName && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileName)))
+      (msg.fileName && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileName))) &&
+      msg.nonce                                           // ← важно: только если есть nonce (зашифровано)
     );
 
     imageMessages.forEach(msg => {
@@ -2984,26 +2944,24 @@ const SecretPrivateChat = () => {
                         </span>
 
                         {/* Превью изображения — используем расшифрованный blob или локальный */}
-                        {msg.messageType === 'file' && msg.fileUrl && (
-                          (decryptedImageBlobs[msg.id] || msg.fileUrl.startsWith('blob:')) && (
-                            <div className="image-preview-container">
-                              <img
-                                key={decryptedImageBlobs[msg.id] || msg.fileUrl}   // ← ЭТО САМОЕ ГЛАВНОЕ
-                                src={decryptedImageBlobs[msg.id] || msg.fileUrl}
-                                alt="Изображение в сообщении"
-                                className="message-image-preview"
-                                onClick={() => openFullScreenImage(
-                                  decryptedImageBlobs[msg.id] || msg.fileUrl,
-                                  msg.fileName || 'photo.jpg'   // ← оригинальное имя с расширением!
-                                )}
-                                loading="lazy"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  console.warn('Ошибка загрузки превью:', msg.fileUrl);
-                                }}
-                              />
-                            </div>
-                          )
+                        {msg.messageType === 'file' && msg.fileUrl && msg.contentType?.startsWith('image/') && (
+                          <div className="image-preview-container">
+                            <img
+                              key={decryptedImageBlobs[msg.id] || msg.fileUrl}
+                              src={decryptedImageBlobs[msg.id] || msg.fileUrl}
+                              alt="Изображение в сообщении"
+                              className="message-image-preview"
+                              onClick={() => openFullScreenImage(
+                                decryptedImageBlobs[msg.id] || msg.fileUrl,
+                                msg.fileName || 'photo.jpg'
+                              )}
+                              loading="lazy"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                console.warn('Ошибка загрузки превью:', msg.fileUrl);
+                              }}
+                            />
+                          </div>
                         )}
 
                         {/* Ссылка на скачивание — всегда */}
