@@ -433,17 +433,16 @@ h2 {
   z-index: 1000;
 }
 
-.assistant-icon-desktop-wrapper {
+.assistant-center-wrapper {
   width: 100%;
-  display: flex;
-  justify-content: center;
-  padding: 0 0 32px 0;   /* расстояние до разделительной линии */
+  text-align: center;
+  padding: 0 0 24px 0;  /* расстояние до разделительной линии */
   margin: 0;
 }
 
-/* Отключаем абсолютное позиционирование от AssistantIcon.css */
-.assistant-icon-desktop-wrapper .assistant-icon {
-  position: relative !important;   /* или static — попробуй оба варианта */
+/* Пытаемся нейтрализовать absolute/fixed от AssistantIcon */
+.assistant-center-wrapper .assistant-icon {
+  position: relative !important;
   top: auto !important;
   right: auto !important;
   bottom: auto !important;
@@ -452,9 +451,9 @@ h2 {
   transform: none !important;
 }
 
-/* Убираем пульсацию, если она мешает выравниванию */
-.assistant-icon-desktop-wrapper .assistant-pulse {
-  display: none !important;
+/* Если всё равно улетает — ещё один удар */
+.assistant-center-wrapper .assistant-icon {
+  inset: auto !important;
 }
 
 @media (max-width: 768px) {

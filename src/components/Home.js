@@ -450,6 +450,19 @@ const Home = () => {
         )}
       </div>
 
+      {/* Десктоп: иконка ассистента по центру под логином */}
+      {window.innerWidth > 800 && (
+        <div className="assistant-center-wrapper">
+          <AssistantIcon
+            size="large"
+            position="none"          // ← чтобы не применялись bottom/right и т.п.
+            onClick={() => {
+              // обработчик
+            }}
+          />
+        </div>
+      )}
+
       {incomingCall && (
         <IncomingCallNotification
           callerId={incomingCall.callerId}
@@ -479,19 +492,6 @@ const Home = () => {
 
       {/* === ОСНОВНОЙ КОНТЕНТ === */}
       <div className="line-divider-container">
-
-        {/* Десктоп — иконка ассистента по центру над разделителем */}
-        {window.innerWidth > 800 && (
-          <div className="assistant-icon-desktop-wrapper">
-            <AssistantIcon
-              size="large"
-              onClick={() => {
-                /* обработчик */
-              }}
-            />
-          </div>
-        )}
-
         {/* === USERS === */}
         <div className={`users-container ${activeTab === 'users' ? 'tab-active' : ''}`}>
           {/* Заголовок — только на ПК */}
