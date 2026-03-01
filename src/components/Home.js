@@ -479,6 +479,19 @@ const Home = () => {
 
       {/* === ОСНОВНОЙ КОНТЕНТ === */}
       <div className="line-divider-container">
+
+        {/* Десктоп — иконка ассистента по центру над разделителем */}
+        {window.innerWidth > 800 && (
+          <div className="assistant-icon-desktop-wrapper">
+            <AssistantIcon
+              size="large"
+              onClick={() => {
+                /* обработчик */
+              }}
+            />
+          </div>
+        )}
+
         {/* === USERS === */}
         <div className={`users-container ${activeTab === 'users' ? 'tab-active' : ''}`}>
           {/* Заголовок — только на ПК */}
@@ -618,16 +631,11 @@ const Home = () => {
           Close
         </button>
       </Modal>
-
-      {/* Иконка ассистента — теперь открывает окно */}
-      {window.innerWidth > 800 && (
-        <AssistantIcon size="large" position="top-right" onClick={() => {/* обработчик */}} />
-      )}
     </div>
      {/* Иконка ассистента — только на телефоне, вне контейнера */}
     {window.innerWidth <= 800 && (
       <div className="assistant-icon-mobile">
-        <AssistantIcon size="large" onClick={() => {/* твой обработчик */}} />
+        <AssistantIcon size="large" onClick={() => {/* обработчик */}} />
       </div>
     )}
     </>
