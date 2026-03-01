@@ -436,14 +436,30 @@ h2 {
 .assistant-center-wrapper {
   position: absolute;
   left: 50%;
-  top: 140px;                     /* подбери значение: 100–200px от верха страницы */
+  top: 140px;                     /* подбери своё значение, если нужно */
   transform: translateX(-50%);
   z-index: 20;
-  pointer-events: none;           /* обёртка не ловит клики */
+  pointer-events: none;
+  width: 100px;                   /* чуть шире самой иконки, чтобы было место для корректировки */
+  height: 80px;
 }
 
+/* Самое важное — отключаем right/left/bottom/top от классов AssistantIcon */
 .assistant-center-wrapper .assistant-icon {
-  pointer-events: auto;           /* только сама иконка кликабельна */
+  right: auto !important;
+  left: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  transform: none !important;
+}
+
+/* Убеждаемся, что иконка центрируется внутри обёртки */
+.assistant-center-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 @media (max-width: 768px) {
