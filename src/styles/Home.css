@@ -436,29 +436,14 @@ h2 {
 .assistant-center-wrapper {
   position: absolute;
   left: 50%;
+  top: 140px;                     /* подбери значение: 100–200px от верха страницы */
   transform: translateX(-50%);
-  top: 120px;                   /* ← подбери под себя: 100–180px от верха страницы */
-  z-index: 10;
-  width: auto;
-  height: auto;
-  padding: 0;
-  margin: 0;
+  z-index: 20;
+  pointer-events: none;           /* обёртка не ловит клики */
 }
 
-/* Отменяем absolute/fixed из AssistantIcon.css */
 .assistant-center-wrapper .assistant-icon {
-  position: relative !important;
-  top: auto !important;
-  left: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-  transform: none !important;
-  margin: 0 !important;
-}
-
-/* На всякий случай отключаем пульсацию, если она мешает */
-.assistant-center-wrapper .assistant-pulse {
-   display: none !important;
+  pointer-events: auto;           /* только сама иконка кликабельна */
 }
 
 @media (max-width: 768px) {
