@@ -2721,17 +2721,15 @@ const SecretPrivateChat = () => {
     const imageMessages = messages.filter(msg => 
       msg.messageType === 'file' &&
       msg.fileUrl &&
-      !decryptedImageBlobs[msg.id] &&                        // ещё не расшифровано
-      !msg.fileUrl.startsWith('blob:') &&                     // не временный blob (после перезагрузки его нет)
-      msg.nonce &&                                            // есть чем расшифровывать
+      !decryptedImageBlobs[msg.id] &&
+      !msg.fileUrl.startsWith('blob:') && // ещё не расшифровано
       (msg.contentType?.startsWith('image/') ||
-      (msg.fileName && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileName))) &&
-      (msg.sender.id !== userId || msg.sender.id === userId) // ← всегда true, но оставляем для ясности
+      (msg.fileName && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileName)))
     );
 
     imageMessages.forEach(msg => {
       if (msg.nonce && msg.fileUrl) {
-        console.log(`Auto-decrypting image preview (including own): msg ${msg.id}, sender ${msg.sender.id}`);
+        console.log(`Auto-decrypting image preview: msg ${msg.id}`);
         decryptImageForPreview(
           msg.id,
           msg.fileUrl,
@@ -2741,7 +2739,7 @@ const SecretPrivateChat = () => {
         );
       }
     });
-  }, [messages, decryptedImageBlobs, userId]);  // добавили userId в зависимости
+  }, [messages, decryptedImageBlobs]);
 
   return (
     <div className="secret-chat">
