@@ -204,7 +204,7 @@ h2 {
 .line-divider {
     width: 1px;
     background-color: #ccc;
-    margin: 0 80px;
+    margin: 0 20px;
 }
 
 .ReactModal__Overlay {
