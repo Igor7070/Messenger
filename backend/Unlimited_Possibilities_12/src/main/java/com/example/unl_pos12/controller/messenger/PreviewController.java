@@ -65,7 +65,7 @@ public class PreviewController {
 
         } catch (Exception e) {
             System.err.println("Не удалось получить превью для " + url + ": " + e.getMessage());
-            // e.printStackTrace();  // Раскомментируй для полной трассировки в консоли
+            // e.printStackTrace();  // Раскомментировать для полной трассировки в консоли
 
             // Фронт не должен падать — возвращаем пустой объект
             return ResponseEntity.ok(Map.of());
