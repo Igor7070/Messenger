@@ -463,8 +463,10 @@ h2 {
 }
 
 .line-divider {
-  margin-top: 120px;              /* ← подбери под свою иконку: 100–160px обычно хватает */
-  align-self: flex-start;         /* линия начинается сверху своего места */
+  margin-top: 120px;              /* ← подбери: 100–160px, чтобы не заходила под иконку */
+  align-self: flex-start;
+  height: 100vh;                  /* или calc(100% - 120px) — главное, чтобы была длинной */
+  background-color: #ccc;         /* на всякий случай переопределяем цвет */
 }
 
 @media (max-width: 768px) {
