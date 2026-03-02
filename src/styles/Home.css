@@ -462,12 +462,6 @@ h2 {
   align-items: center;
 }
 
-.line-divider {
-  margin-top: 120px;              /* ← подбери: 100–160px, чтобы не заходила под иконку */
-  align-self: flex-start;
-  overflow: hidden; 
-}
-
 @media (max-width: 768px) {
   .home-container {
     padding: 10px;
