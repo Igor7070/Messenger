@@ -462,6 +462,10 @@ h2 {
   align-items: center;
 }
 
+.line-divider {
+  margin-top: 100px;   /* ← основное значение, подбери под себя */
+}
+
 @media (max-width: 768px) {
   .home-container {
     padding: 10px;
