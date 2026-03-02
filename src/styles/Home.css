@@ -462,6 +462,12 @@ h2 {
   align-items: center;
 }
 
+.line-divider {
+  height: calc(100% - 120px);     /* укорачиваем линию сверху на 120px */
+  margin-top: 120px;              /* сдвигаем начало линии вниз на 120px */
+  align-self: flex-start;         /* линия прижимается к верху своего flex-контейнера */
+}
+
 @media (max-width: 768px) {
   .home-container {
     padding: 10px;
