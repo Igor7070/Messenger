@@ -439,7 +439,6 @@ h2 {
   top: 60px;                     /* подбери своё значение, если нужно */
   transform: translateX(-50%);
   z-index: 20;
-  pointer-events: none;
   width: 100px;                   /* чуть шире самой иконки, чтобы было место для корректировки */
   height: 80px;
 }
@@ -453,6 +452,7 @@ h2 {
   margin-left: auto !important;
   margin-right: auto !important;
   transform: none !important;
+  pointer-events: auto !important;
 }
 
 /* Убеждаемся, что иконка центрируется внутри обёртки */
