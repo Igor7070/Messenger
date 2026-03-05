@@ -1,5 +1,6 @@
 package com.example.unl_pos12.controller.communication_with_ai;
 
+import com.example.unl_pos12.model.chat_ai.GenerateMessageRequest;
 import com.example.unl_pos12.model.chat_ai.MessageRequest;
 import com.example.unl_pos12.model.chat_ai.SettingsRequest;
 import com.example.unl_pos12.model.messenger.Message;
@@ -227,6 +228,62 @@ public class ChatGPTController {
             System.out.println(String.format("Error transcribing audio for messageId=%d: %s", messageId, e.getMessage()));
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error transcribing audio: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/api/generate-message")
+    @ResponseBody
+    public ResponseEntity<String> generateAiMessage(@RequestBody GenerateMessageRequest request) {
+        try {
+            // Логируем запрос (для отладки)
+            System.out.println("Generate message request: history size = " +
+                    (request.getHistory() != null ? request.getHistory().size() : 0) +
+                    ", preference = " + request.getPreference());
+
+            // Формируем промпт
+            StringBuilder prompt = new StringBuilder();
+            prompt.append("Вот чат в мессенджере и последние сообщения (от старых к новым):\n\n");
+
+            if (request.getHistory() == null || request.getHistory().isEmpty()) {
+                prompt.append("[Нет предыдущих сообщений в чате].\n");
+            } else {
+                for (Message msg : request.getHistory()) {
+                    String sender = msg.getSender() != null && msg.getSender().getUsername() != null
+                            ? msg.getSender().getUsername()
+                            : "Собеседник";
+                    prompt.append(sender).append(": ").append(msg.getContent()).append("\n");
+                }
+            }
+
+            prompt.append("\nСформулируй максимально корректный ответ из контекста содержания сообщений собеседников, учитывая и язык сообщений. ");
+            prompt.append("Обращай внимание по приоритету от последнего сообщения и выше для понимания контекста. ");
+
+            if (request.getPreference() != null && !request.getPreference().trim().isEmpty()) {
+                prompt.append("Учти пожелания для ответа: ").append(request.getPreference()).append(". ");
+            }
+
+            prompt.append("Ответ заключи в двойные кавычки.");
+
+            // Вызываем OpenAI
+            String generatedText = openAIService.generateCompletion(prompt.toString());
+
+            // Извлекаем текст из двойных кавычек (если есть)
+            if (generatedText.startsWith("\"") && generatedText.endsWith("\"")) {
+                generatedText = generatedText.substring(1, generatedText.length() - 1).trim();
+            } else {
+                // Если не в кавычках — просто trim
+                generatedText = generatedText.trim();
+            }
+
+            System.out.println("Generated response: " + generatedText);
+
+            return ResponseEntity.ok(generatedText);
+
+        } catch (Exception e) {
+            System.err.println("Ошибка генерации сообщения: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Ошибка генерации: " + e.getMessage());
         }
     }
 }
