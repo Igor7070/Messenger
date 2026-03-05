@@ -234,13 +234,28 @@ public class ChatGPTController {
     @PostMapping("/api/generate-message")
     @ResponseBody
     public ResponseEntity<String> generateAiMessage(@RequestBody GenerateMessageRequest request) {
-        try {
-            // Логируем запрос (для отладки)
-            System.out.println("Generate message request: history size = " +
-                    (request.getHistory() != null ? request.getHistory().size() : 0) +
-                    ", preference = " + request.getPreference());
+        System.out.println("=== /api/generate-message вызван ===");
+        System.out.println("Запрос получен: " + request);
 
-            // Формируем промпт
+        try {
+            // 1. Логируем входные данные подробно
+            System.out.println("История сообщений (размер): " +
+                    (request.getHistory() != null ? request.getHistory().size() : 0));
+            if (request.getHistory() != null && !request.getHistory().isEmpty()) {
+                System.out.println("Последние 3 сообщения (для отладки):");
+                int start = Math.max(0, request.getHistory().size() - 3);
+                for (int i = start; i < request.getHistory().size(); i++) {
+                    Message msg = request.getHistory().get(i);
+                    String sender = msg.getSender() != null && msg.getSender().getUsername() != null
+                            ? msg.getSender().getUsername()
+                            : "Собеседник";
+                    System.out.println("  " + sender + ": " + msg.getContent());
+                }
+            }
+            System.out.println("Пожелание (preference): " +
+                    (request.getPreference() != null ? request.getPreference() : "отсутствует"));
+
+            // 2. Формируем промпт
             StringBuilder prompt = new StringBuilder();
             prompt.append("Вот чат в мессенджере и последние сообщения (от старых к новым):\n\n");
 
@@ -264,24 +279,34 @@ public class ChatGPTController {
 
             prompt.append("Ответ заключи в двойные кавычки.");
 
-            // Вызываем OpenAI
-            String generatedText = openAIService.generateCompletion(prompt.toString());
+            // 3. Показываем полный промпт перед отправкой в OpenAI
+            System.out.println("\n=== Полный промпт, отправляемый в OpenAI ===");
+            System.out.println(prompt.toString());
+            System.out.println("=== Конец промпта ===\n");
 
-            // Извлекаем текст из двойных кавычек (если есть)
+            // 4. Вызываем OpenAI и логируем ответ
+            System.out.println("Вызываем generateCompletion...");
+            String generatedText = openAIService.generateCompletion(prompt.toString());
+            System.out.println("OpenAI вернул сырой ответ: " + generatedText);
+
+            // 5. Очищаем от кавычек и лишних пробелов
             if (generatedText.startsWith("\"") && generatedText.endsWith("\"")) {
                 generatedText = generatedText.substring(1, generatedText.length() - 1).trim();
             } else {
-                // Если не в кавычках — просто trim
                 generatedText = generatedText.trim();
             }
 
-            System.out.println("Generated response: " + generatedText);
+            System.out.println("Итоговый очищенный текст для фронта: " + generatedText);
+            System.out.println("=== /api/generate-message завершён успешно ===\n");
 
             return ResponseEntity.ok(generatedText);
 
         } catch (Exception e) {
-            System.err.println("Ошибка генерации сообщения: " + e.getMessage());
+            System.err.println("=== Ошибка в /api/generate-message ===");
+            System.err.println("Сообщение: " + e.getMessage());
             e.printStackTrace();
+            System.err.println("=== Конец ошибки ===\n");
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Ошибка генерации: " + e.getMessage());
         }
