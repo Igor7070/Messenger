@@ -4,8 +4,12 @@
   "private": true,
   "homepage": "https://Igor7070.github.io/Messenger",
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@ffmpeg/core": "^0.12.10",
     "@ffmpeg/ffmpeg": "^0.12.15",
+    "@mui/icons-material": "^7.3.9",
+    "@mui/material": "^7.3.9",
     "@stomp/stompjs": "^7.0.0",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",

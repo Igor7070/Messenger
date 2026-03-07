@@ -2120,6 +2120,19 @@ const PrivateChat = () => {
                   ref={fileInputRef}
                   id="private-file-input"
               />
+              {/* Иконка AI-ассистента */}
+              <span
+                onClick={handleOpenAiDialog}
+                className="private-ai-icon"
+                role="button"
+                aria-label="Сгенерировать сообщение ИИ"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#6200EA"/>
+                  <path d="M2 17L12 22L22 17" fill="#6200EA"/>
+                  <path d="M2 12L12 17L22 12" fill="#6200EA"/>
+                </svg>
+              </span>
               {content.length === 0 && micIconState !== 'sending' && !selectedFile && (
                   <div className="private-mic-icon-container">
                       <span
@@ -2161,19 +2174,6 @@ const PrivateChat = () => {
                       </span>
                   </div>
               )}
-              {/* Иконка AI-ассистента */}
-              <span
-                onClick={handleOpenAiDialog}
-                className="private-ai-icon"
-                role="button"
-                aria-label="Сгенерировать сообщение ИИ"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#6200EA"/>
-                  <path d="M2 17L12 22L22 17" fill="#6200EA"/>
-                  <path d="M2 12L12 17L22 12" fill="#6200EA"/>
-                </svg>
-              </span>
           </div>
           {selectedFile && (
               <div className="private-attached-file">
