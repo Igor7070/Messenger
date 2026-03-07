@@ -58,45 +58,47 @@ const AiMessageGeneratorDialog = ({
     setGeneratedText('');
 
     try {
-      // Берём последние 20 сообщений как контекст
-      const history = messages.slice(-20).map(msg => ({
-        content: msg.content,
-        sender: { id: msg.sender.id, username: msg.sender.username },
-        timestamp: msg.timestamp,
-        messageType: msg.messageType || 'text',
-      }));
-
-      const requestBody = {
-        history,
-        preference: preferenceChecked ? preferenceText.trim() : null,
-      };
+      // ... (history и requestBody остаются без изменений)
 
       const response = await fetch('https://unlimitedpossibilities12.org/api/generate-message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Если нужен токен авторизации — добавь
-          // 'Authorization': `Bearer ${localStorage.getItem('token')}`
+          // 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` // если нужен
         },
         body: JSON.stringify(requestBody),
       });
 
+      const contentType = response.headers.get('content-type');
+
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        // Если ошибка 4xx/5xx — читаем как текст, а не json
+        const errorText = await response.text();
+        throw new Error(`Сервер вернул ошибку ${response.status}: ${errorText}`);
       }
 
-      const data = await response.json();
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Если вернулся не JSON — читаем как текст
+        const text = await response.text();
+        // Пытаемся найти текст сообщения в ответе
+        const textMatch = text.match(/"message":"(.*?)"/) || text.match(/"text":"(.*?)"/) || [null, text.trim()];
+        data = { message: textMatch[1] || text.trim() };
+      }
+
       const text = data.message?.trim() || data.text?.trim() || '';
 
       if (text) {
         setGeneratedText(text);
         toast.success('Сообщение сгенерировано');
       } else {
-        toast.warn('Не удалось сгенерировать текст');
+        toast.warn('Не удалось получить текст от сервера');
       }
     } catch (err) {
       console.error('Ошибка генерации:', err);
-      toast.error('Не удалось сгенерировать: ' + (err.message || 'попробуйте позже'));
+      toast.error(err.message || 'Не удалось сгенерировать: попробуйте позже');
     } finally {
       setIsGenerating(false);
     }
