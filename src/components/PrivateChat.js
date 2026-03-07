@@ -1661,7 +1661,6 @@ const PrivateChat = () => {
     }
 
     toast.success('Message sent directly');
-    onClose();  // если хочешь закрывать диалог
   };
 
   return (
