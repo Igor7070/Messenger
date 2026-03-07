@@ -2301,7 +2301,7 @@ const PrivateChat = () => {
           setContent(text.trim());
           toast.info('Text inserted — edit and send');
         }}
-        onSendDirect={sendDirectFromAI}   // ← теперь передаём функцию
+        onSendDirect={sendDirectFromAI}          // ← эта функция теперь независима
         messages={messages}
       />
     </div>
