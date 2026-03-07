@@ -23,12 +23,11 @@ import {
 import { styled } from '@mui/material/styles';
 import { toast } from 'react-toastify';
 
-// Анимация появления снизу (как в мобильных мессенджерах)
+// Анимация появления снизу
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-// Стилизованный диалог с современным видом
 const StyledDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialog-paper': {
     borderRadius: 28,
@@ -43,60 +42,55 @@ const StyledDialog = styled(Dialog)(({ theme }) => ({
 const AiMessageGeneratorDialog = ({
   open,
   onClose,
-  onInsert,       
-  onSendDirect,   
-  messages, // передаём для контекста (последние 20 сообщений)
+  onInsert,       // вставка в поле ввода (можно оставить, но мы его почти не используем)
+  onSendDirect,   // мгновенная отправка в чат
+  messages,
 }) => {
   const [preferenceChecked, setPreferenceChecked] = useState(false);
   const [preferenceText, setPreferenceText] = useState('');
   const [generatedText, setGeneratedText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedText, setEditedText] = useState('');
+
   const handleGenerate = async () => {
     if (isGenerating) return;
-
     setIsGenerating(true);
     setGeneratedText('');
+    setIsEditing(false);
 
     try {
-      // Берём последние 20 сообщений как контекст (точно как в Android)
-      const history = messages.slice(-20).map(msg => ({
+      const history = messages.slice(-20).map((msg) => ({
         content: msg.content || '',
         sender: { id: msg.sender?.id, username: msg.sender?.username },
         timestamp: msg.timestamp,
-        messageType: msg.messageType || 'text'
+        messageType: msg.messageType || 'text',
       }));
 
       const requestBody = {
         history,
-        preference: preferenceChecked ? preferenceText.trim() : null
+        preference: preferenceChecked ? preferenceText.trim() : null,
       };
 
       const response = await fetch('https://unlimitedpossibilities12.org/api/generate-message', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Если нужен токен — раскомментируй и подставь
-          // 'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
       });
 
-      const contentType = response.headers.get('content-type');
-
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Сервер вернул ошибку ${response.status}: ${errorText || 'нет деталей'}`);
+        throw new Error(`Ошибка сервера ${response.status}: ${errorText || 'нет деталей'}`);
       }
 
       let text = '';
-      if (contentType && contentType.includes('application/json')) {
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
         const data = await response.json();
         text = data.message?.trim() || data.text?.trim() || '';
       } else {
-        // Сервер вернул просто строку (как часто бывает в Android-ответах)
-        text = await response.text();
-        text = text.trim();
+        text = (await response.text()).trim();
       }
 
       if (text) {
@@ -115,25 +109,37 @@ const AiMessageGeneratorDialog = ({
 
   const handleCopy = () => {
     navigator.clipboard.writeText(generatedText);
-    toast.success('Скопировано');
+    toast.success('Скопировано в буфер обмена');
   };
 
-  const handleEdit = () => {
-    if (generatedText.trim()) {
-      onInsert(generatedText.trim());
-      onClose();
-    } else {
-      toast.warn('Сообщение пустое');
-    }
+  const handleStartEdit = () => {
+    setEditedText(generatedText);
+    setIsEditing(true);
   };
 
-  const handleSend = () => {
-    if (generatedText.trim()) {
-      onSendDirect(generatedText.trim());
-      onClose();
-    } else {
+  const handleSendDirect = () => {
+    if (!generatedText.trim()) {
       toast.warn('Сообщение пустое');
+      return;
     }
+    onSendDirect(generatedText.trim());
+    onClose();
+    toast.success('Сообщение отправлено в чат');
+  };
+
+  const handleSendEdited = () => {
+    if (!editedText.trim()) {
+      toast.warn('Сообщение пустое');
+      return;
+    }
+    onSendDirect(editedText.trim());
+    onClose();
+    toast.success('Отредактированное сообщение отправлено');
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedText('');
   };
 
   return (
@@ -156,7 +162,7 @@ const AiMessageGeneratorDialog = ({
           color: 'white',
         }}
       >
-        <Typography variant="h6">AI message generation</Typography>
+        <Typography variant="h6">Генерация сообщения ИИ</Typography>
         <IconButton onClick={onClose} sx={{ color: 'white' }}>
           <CloseIcon />
         </IconButton>
@@ -169,10 +175,10 @@ const AiMessageGeneratorDialog = ({
               checked={preferenceChecked}
               onChange={(e) => setPreferenceChecked(e.target.checked)}
               color="primary"
-              disabled={isGenerating}
+              disabled={isGenerating || isEditing}
             />
           }
-          label="Add a wish to the message"
+          label="Добавить пожелание к сообщению"
           sx={{ mb: 2 }}
         />
 
@@ -184,14 +190,14 @@ const AiMessageGeneratorDialog = ({
             placeholder="Например: вежливее / в стиле пирата / коротко и по делу"
             value={preferenceText}
             onChange={(e) => setPreferenceText(e.target.value)}
-            disabled={isGenerating}
+            disabled={isGenerating || isEditing}
             sx={{ mb: 3 }}
           />
         )}
 
         <Box
           sx={{
-            minHeight: 120,
+            minHeight: 140,
             p: 2,
             borderRadius: 2,
             backgroundColor: generatedText ? '#f5f5f5' : 'transparent',
@@ -203,48 +209,79 @@ const AiMessageGeneratorDialog = ({
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
               <CircularProgress size={40} thickness={4} />
               <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
-                Generating a message...
+                Генерирую сообщение...
               </Typography>
             </Box>
+          ) : isEditing ? (
+            <TextField
+              fullWidth
+              multiline
+              minRows={4}
+              maxRows={8}
+              variant="outlined"
+              value={editedText}
+              onChange={(e) => setEditedText(e.target.value)}
+              autoFocus
+              placeholder="Редактируйте сообщение здесь..."
+              sx={{ '& .MuiOutlinedInput-root': { fontSize: '1rem' } }}
+            />
           ) : generatedText ? (
             <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
               {generatedText}
             </Typography>
           ) : (
             <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
-              Click "Generate" to get a smart message
+              Нажмите «Сгенерировать», чтобы получить умное сообщение
             </Typography>
           )}
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-        {generatedText && (
+      <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1.5, flexWrap: 'wrap' }}>
+        {generatedText && !isEditing && (
           <>
-            <IconButton onClick={handleCopy} title="Copy">
-              <CopyIcon />
+            <IconButton onClick={handleCopy} title="Скопировать" size="small">
+              <CopyIcon fontSize="small" />
             </IconButton>
 
             <Button
-              onClick={handleEdit}
+              onClick={handleStartEdit}
               startIcon={<EditIcon />}
               color="primary"
+              variant="outlined"
             >
-              Edit
+              Редактировать
             </Button>
 
             <Button
               variant="contained"
               color="primary"
               startIcon={<SendIcon />}
-              onClick={handleSend}
+              onClick={handleSendDirect}
             >
-              Send
+              Отправить
             </Button>
           </>
         )}
 
-        {!generatedText && (
+        {isEditing && (
+          <>
+            <Button onClick={handleCancelEdit} color="inherit">
+              Отмена
+            </Button>
+
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<SendIcon />}
+              onClick={handleSendEdited}
+            >
+              Отправить отредактированное
+            </Button>
+          </>
+        )}
+
+        {!generatedText && !isEditing && (
           <Button
             variant="contained"
             color="primary"
@@ -253,12 +290,12 @@ const AiMessageGeneratorDialog = ({
             fullWidth
             sx={{ py: 1.5, borderRadius: 3 }}
           >
-            {isGenerating ? 'Generation...' : 'Generate'}
+            {isGenerating ? 'Генерирую...' : 'Сгенерировать'}
           </Button>
         )}
 
-        <Button onClick={onClose} color="inherit">
-          Close
+        <Button onClick={onClose} color="inherit" sx={{ ml: 'auto' }}>
+          Закрыть
         </Button>
       </DialogActions>
     </StyledDialog>
