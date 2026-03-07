@@ -1503,15 +1503,20 @@
 }
 
 .private-ai-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #6200ea;
-  border-radius: 50%;
+    position: absolute;
+    right: 80px;           /* ← Левее микрофона/отправки */
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #6200ea;
+    border-radius: 50%;
+    z-index: 10;
 }
 
 .private-ai-icon:hover {
