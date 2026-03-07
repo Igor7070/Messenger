@@ -58,13 +58,25 @@ const AiMessageGeneratorDialog = ({
     setGeneratedText('');
 
     try {
-      // ... (history и requestBody остаются без изменений)
+      // Берём последние 20 сообщений как контекст (точно как в Android)
+      const history = messages.slice(-20).map(msg => ({
+        content: msg.content || '',
+        sender: { id: msg.sender?.id, username: msg.sender?.username },
+        timestamp: msg.timestamp,
+        messageType: msg.messageType || 'text'
+      }));
+
+      const requestBody = {
+        history,
+        preference: preferenceChecked ? preferenceText.trim() : null
+      };
 
       const response = await fetch('https://unlimitedpossibilities12.org/api/generate-message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` // если нужен
+          // Если нужен токен — раскомментируй и подставь
+          // 'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
         },
         body: JSON.stringify(requestBody),
       });
@@ -72,33 +84,29 @@ const AiMessageGeneratorDialog = ({
       const contentType = response.headers.get('content-type');
 
       if (!response.ok) {
-        // Если ошибка 4xx/5xx — читаем как текст, а не json
         const errorText = await response.text();
-        throw new Error(`Сервер вернул ошибку ${response.status}: ${errorText}`);
+        throw new Error(`Сервер вернул ошибку ${response.status}: ${errorText || 'нет деталей'}`);
       }
 
-      let data;
+      let text = '';
       if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
+        const data = await response.json();
+        text = data.message?.trim() || data.text?.trim() || '';
       } else {
-        // Если вернулся не JSON — читаем как текст
-        const text = await response.text();
-        // Пытаемся найти текст сообщения в ответе
-        const textMatch = text.match(/"message":"(.*?)"/) || text.match(/"text":"(.*?)"/) || [null, text.trim()];
-        data = { message: textMatch[1] || text.trim() };
+        // Сервер вернул просто строку (как часто бывает в Android-ответах)
+        text = await response.text();
+        text = text.trim();
       }
-
-      const text = data.message?.trim() || data.text?.trim() || '';
 
       if (text) {
         setGeneratedText(text);
         toast.success('Сообщение сгенерировано');
       } else {
-        toast.warn('Не удалось получить текст от сервера');
+        toast.warn('Сервер вернул пустой ответ');
       }
     } catch (err) {
       console.error('Ошибка генерации:', err);
-      toast.error(err.message || 'Не удалось сгенерировать: попробуйте позже');
+      toast.error(err.message || 'Не удалось сгенерировать сообщение');
     } finally {
       setIsGenerating(false);
     }
