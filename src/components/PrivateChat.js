@@ -2256,10 +2256,23 @@ const PrivateChat = () => {
       <AiMessageGeneratorDialog
         open={openAiDialog}
         onClose={() => setOpenAiDialog(false)}
-        onSend={(text) => {
+        
+        // Только вставка текста в поле (для кнопки "Редактировать")
+        onInsert={(text) => {
           setContent(text.trim());
-          sendMessage();
+          toast.info('Текст вставлен в поле ввода — отредактируйте и отправьте');
         }}
+        
+        // Мгновенная отправка (для кнопки "Отправить")
+        onSendDirect={(text) => {
+          setContent(text.trim());
+          // Даём React время обновить состояние content перед вызовом sendMessage
+          setTimeout(() => {
+            sendMessage();
+            toast.success('Сообщение отправлено в чат');
+          }, 0);
+        }}
+        
         messages={messages}
       />
     </div>

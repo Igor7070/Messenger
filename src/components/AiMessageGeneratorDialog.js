@@ -43,7 +43,8 @@ const StyledDialog = styled(Dialog)(({ theme }) => ({
 const AiMessageGeneratorDialog = ({
   open,
   onClose,
-  onSend,
+  onInsert,       
+  onSendDirect,   
   messages, // передаём для контекста (последние 20 сообщений)
 }) => {
   const [preferenceChecked, setPreferenceChecked] = useState(false);
@@ -119,9 +120,8 @@ const AiMessageGeneratorDialog = ({
 
   const handleEdit = () => {
     if (generatedText.trim()) {
-      onSend(generatedText.trim());   // вставляем в поле ввода чата
-      onClose();                      // закрываем диалог
-      toast.info('Сообщение вставлено в поле ввода — отредактируйте и отправьте');
+      onInsert(generatedText.trim());
+      onClose();
     } else {
       toast.warn('Сообщение пустое');
     }
@@ -129,11 +129,8 @@ const AiMessageGeneratorDialog = ({
 
   const handleSend = () => {
     if (generatedText.trim()) {
-      onSend(generatedText.trim());   // вставляем в поле ввода
-      // Вызываем sendMessage() из родительского компонента (PrivateChat)
-      // Но поскольку onSend уже вызывает setContent + sendMessage — ничего больше не нужно
-      onClose();                      // закрываем диалог
-      toast.success('Сообщение отправлено');
+      onSendDirect(generatedText.trim());
+      onClose();
     } else {
       toast.warn('Сообщение пустое');
     }
