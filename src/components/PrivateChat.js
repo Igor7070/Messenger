@@ -18,6 +18,7 @@ import { translateMessage, saveTranslation } from '../api/messages';
 import usePrivateChatTranslationAndSpellCheck from '../hooks/usePrivateChatTranslationAndSpellCheck';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import TranscriptionSettingsModal from './TranscriptionSettingsModal';
+import AiMessageGeneratorDialog from './AiMessageGeneratorDialog';
 
 const PrivateChat = () => {
   const [messages, setMessages] = useState([]);
@@ -98,6 +99,8 @@ const PrivateChat = () => {
 
   const [previewData, setPreviewData] = useState({}); // ДОБАВЛЕНО: кэш превью { msgId: { title, description, imageUrl, url } }
   const [fullScreenImage, setFullScreenImage] = useState(null);
+
+  const [openAiDialog, setOpenAiDialog] = useState(false);
 
   // Мемоизация аудиосообщений
   const memoizedAudioMessages = useMemo(() => {
@@ -1635,6 +1638,10 @@ const PrivateChat = () => {
     setFullScreenImage(fileUrl);
   };
 
+  const handleOpenAiDialog = () => {
+    setOpenAiDialog(true);
+  };
+
   return (
     <div className="private-chat">
       {/* Большая фиксированная иконка ассистента — только в PrivateChat на ПК */}
@@ -2154,6 +2161,19 @@ const PrivateChat = () => {
                       </span>
                   </div>
               )}
+              {/* Иконка AI-ассистента */}
+              <span
+                onClick={handleOpenAiDialog}
+                className="private-ai-icon"
+                role="button"
+                aria-label="Сгенерировать сообщение ИИ"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#6200EA"/>
+                  <path d="M2 17L12 22L22 17" fill="#6200EA"/>
+                  <path d="M2 12L12 17L22 12" fill="#6200EA"/>
+                </svg>
+              </span>
           </div>
           {selectedFile && (
               <div className="private-attached-file">
@@ -2233,6 +2253,15 @@ const PrivateChat = () => {
           onReject={rejectCall}
         />
       )}
+      <AiMessageGeneratorDialog
+        open={openAiDialog}
+        onClose={() => setOpenAiDialog(false)}
+        onSend={(text) => {
+          setContent(text.trim());
+          sendMessage();
+        }}
+        messages={messages}
+      />
     </div>
   );
 };

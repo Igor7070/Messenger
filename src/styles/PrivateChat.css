@@ -1502,6 +1502,31 @@
   border-radius: 8px;
 }
 
+.private-ai-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6200ea;
+  border-radius: 50%;
+}
+
+.private-ai-icon:hover {
+  background-color: rgba(98, 0, 234, 0.08);
+  transform: scale(1.15);
+}
+
+.private-ai-icon svg {
+  transition: transform 0.3s ease;
+}
+
+.private-ai-icon:hover svg {
+  transform: rotate(15deg);
+}
+
 @media (max-width: 800px) {
     .private-chat {
         position: fixed !important;
