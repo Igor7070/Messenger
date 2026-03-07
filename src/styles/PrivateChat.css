@@ -1504,7 +1504,7 @@
 
 .private-ai-icon {
     position: absolute;
-    right: 80px;           /* ← Левее микрофона/отправки */
+    right: 40px;           /* ← Левее микрофона/отправки */
     top: 50%;
     transform: translateY(-50%);
     display: flex;
