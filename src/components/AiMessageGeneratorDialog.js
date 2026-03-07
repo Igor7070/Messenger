@@ -118,16 +118,22 @@ const AiMessageGeneratorDialog = ({
   };
 
   const handleEdit = () => {
-    // Можно сделать редактирование внутри диалога, но проще сразу вставить в чат
-    onSend(generatedText);
-    onClose();
-    toast.info('Сообщение вставлено в поле ввода');
+    if (generatedText.trim()) {
+      onSend(generatedText.trim());   // вставляем в поле ввода чата
+      onClose();                      // закрываем диалог
+      toast.info('Сообщение вставлено в поле ввода — отредактируйте и отправьте');
+    } else {
+      toast.warn('Сообщение пустое');
+    }
   };
 
   const handleSend = () => {
     if (generatedText.trim()) {
-      onSend(generatedText.trim());
-      onClose();
+      onSend(generatedText.trim());   // вставляем в поле ввода
+      // Вызываем sendMessage() из родительского компонента (PrivateChat)
+      // Но поскольку onSend уже вызывает setContent + sendMessage — ничего больше не нужно
+      onClose();                      // закрываем диалог
+      toast.success('Сообщение отправлено');
     } else {
       toast.warn('Сообщение пустое');
     }
