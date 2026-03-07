@@ -71,7 +71,7 @@ const AiMessageGeneratorDialog = ({
         preference: preferenceChecked ? preferenceText.trim() : null,
       };
 
-      const response = await fetch('https://unlimitedpossibilities12.org/api/messages/generate', {
+      const response = await fetch('https://unlimitedpossibilities12.org/api/generate-message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
