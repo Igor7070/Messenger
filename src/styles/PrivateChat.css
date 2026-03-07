@@ -1532,6 +1532,10 @@
   transform: rotate(15deg);
 }
 
+.private-ai-icon.hidden {
+  display: none !important;
+}
+
 @media (max-width: 800px) {
     .private-chat {
         position: fixed !important;

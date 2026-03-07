@@ -2123,7 +2123,7 @@ const PrivateChat = () => {
               {/* Иконка AI-ассистента */}
               <span
                 onClick={handleOpenAiDialog}
-                className="private-ai-icon"
+                className={`private-ai-icon ${content.length > 0 || selectedFile ? 'hidden' : ''}`}
                 role="button"
                 aria-label="Сгенерировать сообщение ИИ"
               >
