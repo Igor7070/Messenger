@@ -1642,6 +1642,28 @@ const PrivateChat = () => {
     setOpenAiDialog(true);
   };
 
+  const sendDirectFromAI = (text) => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      toast.warn('Cannot send empty message');
+      return;
+    }
+
+    // Временно устанавливаем content только для отправки
+    setContent(trimmed);
+
+    // Отправляем сразу
+    if (client && client.connected) {
+      // Здесь можно скопировать логику из sendMessage, но проще вызвать её
+      sendMessage();  // ← content уже установлен
+    } else {
+      toast.error('No connection to send message');
+    }
+
+    toast.success('Message sent directly');
+    onClose();  // если хочешь закрывать диалог
+  };
+
   return (
     <div className="private-chat">
       {/* Большая фиксированная иконка ассистента — только в PrivateChat на ПК */}
@@ -2256,23 +2278,11 @@ const PrivateChat = () => {
       <AiMessageGeneratorDialog
         open={openAiDialog}
         onClose={() => setOpenAiDialog(false)}
-        
-        // Только вставка текста в поле (для кнопки "Редактировать")
         onInsert={(text) => {
           setContent(text.trim());
-          toast.info('Текст вставлен в поле ввода — отредактируйте и отправьте');
+          toast.info('Text inserted — edit and send');
         }}
-        
-        // Мгновенная отправка (для кнопки "Отправить")
-        onSendDirect={(text) => {
-          setContent(text.trim());
-          // Даём React время обновить состояние content перед вызовом sendMessage
-          setTimeout(() => {
-            sendMessage();
-            toast.success('Сообщение отправлено в чат');
-          }, 0);
-        }}
-        
+        onSendDirect={sendDirectFromAI}   // ← теперь передаём функцию
         messages={messages}
       />
     </div>

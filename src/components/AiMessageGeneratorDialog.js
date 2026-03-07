@@ -23,7 +23,6 @@ import {
 import { styled } from '@mui/material/styles';
 import { toast } from 'react-toastify';
 
-// Анимация появления снизу
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -42,15 +41,14 @@ const StyledDialog = styled(Dialog)(({ theme }) => ({
 const AiMessageGeneratorDialog = ({
   open,
   onClose,
-  onInsert,       // вставка в поле ввода (можно оставить, но мы его почти не используем)
-  onSendDirect,   // мгновенная отправка в чат
+  onInsert,
+  onSendDirect,
   messages,
 }) => {
   const [preferenceChecked, setPreferenceChecked] = useState(false);
   const [preferenceText, setPreferenceText] = useState('');
   const [generatedText, setGeneratedText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState('');
 
@@ -79,14 +77,10 @@ const AiMessageGeneratorDialog = ({
         body: JSON.stringify(requestBody),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Ошибка сервера ${response.status}: ${errorText || 'нет деталей'}`);
-      }
+      if (!response.ok) throw new Error(`Server error ${response.status}`);
 
       let text = '';
-      const contentType = response.headers.get('content-type');
-      if (contentType?.includes('application/json')) {
+      if (response.headers.get('content-type')?.includes('application/json')) {
         const data = await response.json();
         text = data.message?.trim() || data.text?.trim() || '';
       } else {
@@ -95,13 +89,13 @@ const AiMessageGeneratorDialog = ({
 
       if (text) {
         setGeneratedText(text);
-        toast.success('Сообщение сгенерировано');
+        toast.success('Message generated');
       } else {
-        toast.warn('Сервер вернул пустой ответ');
+        toast.warn('Empty response from server');
       }
     } catch (err) {
-      console.error('Ошибка генерации:', err);
-      toast.error(err.message || 'Не удалось сгенерировать сообщение');
+      console.error(err);
+      toast.error('Failed to generate message');
     } finally {
       setIsGenerating(false);
     }
@@ -109,7 +103,7 @@ const AiMessageGeneratorDialog = ({
 
   const handleCopy = () => {
     navigator.clipboard.writeText(generatedText);
-    toast.success('Скопировано в буфер обмена');
+    toast.success('Copied');
   };
 
   const handleStartEdit = () => {
@@ -118,23 +112,15 @@ const AiMessageGeneratorDialog = ({
   };
 
   const handleSendDirect = () => {
-    if (!generatedText.trim()) {
-      toast.warn('Сообщение пустое');
-      return;
-    }
+    if (!generatedText.trim()) return toast.warn('Message is empty');
     onSendDirect(generatedText.trim());
     onClose();
-    toast.success('Сообщение отправлено в чат');
   };
 
   const handleSendEdited = () => {
-    if (!editedText.trim()) {
-      toast.warn('Сообщение пустое');
-      return;
-    }
+    if (!editedText.trim()) return toast.warn('Message is empty');
     onSendDirect(editedText.trim());
     onClose();
-    toast.success('Отредактированное сообщение отправлено');
   };
 
   const handleCancelEdit = () => {
@@ -149,20 +135,9 @@ const AiMessageGeneratorDialog = ({
       TransitionComponent={Transition}
       maxWidth="sm"
       fullWidth
-      aria-labelledby="ai-dialog-title"
     >
-      <DialogTitle
-        id="ai-dialog-title"
-        sx={{
-          pb: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: 'linear-gradient(135deg, #6200ea 0%, #3700b3 100%)',
-          color: 'white',
-        }}
-      >
-        <Typography variant="h6">Генерация сообщения ИИ</Typography>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg, #6200ea 0%, #3700b3 100%)', color: 'white' }}>
+        AI Message Generator
         <IconButton onClick={onClose} sx={{ color: 'white' }}>
           <CloseIcon />
         </IconButton>
@@ -170,15 +145,8 @@ const AiMessageGeneratorDialog = ({
 
       <DialogContent sx={{ pt: 3, pb: 2 }}>
         <FormControlLabel
-          control={
-            <Checkbox
-              checked={preferenceChecked}
-              onChange={(e) => setPreferenceChecked(e.target.checked)}
-              color="primary"
-              disabled={isGenerating || isEditing}
-            />
-          }
-          label="Добавить пожелание к сообщению"
+          control={<Checkbox checked={preferenceChecked} onChange={(e) => setPreferenceChecked(e.target.checked)} color="primary" disabled={isGenerating || isEditing} />}
+          label="Add custom preference"
           sx={{ mb: 2 }}
         />
 
@@ -187,7 +155,7 @@ const AiMessageGeneratorDialog = ({
             fullWidth
             variant="outlined"
             size="small"
-            placeholder="Например: вежливее / в стиле пирата / коротко и по делу"
+            placeholder="e.g. more polite / pirate style / short and direct"
             value={preferenceText}
             onChange={(e) => setPreferenceText(e.target.value)}
             disabled={isGenerating || isEditing}
@@ -195,22 +163,11 @@ const AiMessageGeneratorDialog = ({
           />
         )}
 
-        <Box
-          sx={{
-            minHeight: 140,
-            p: 2,
-            borderRadius: 2,
-            backgroundColor: generatedText ? '#f5f5f5' : 'transparent',
-            border: generatedText ? '1px solid #ddd' : '1px dashed #ccc',
-            position: 'relative',
-          }}
-        >
+        <Box sx={{ minHeight: 140, p: 2, borderRadius: 2, backgroundColor: generatedText ? '#f5f5f5' : 'transparent', border: generatedText ? '1px solid #ddd' : '1px dashed #ccc' }}>
           {isGenerating ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
-              <CircularProgress size={40} thickness={4} />
-              <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
-                Генерирую сообщение...
-              </Typography>
+              <CircularProgress size={40} />
+              <Typography sx={{ mt: 2, color: 'text.secondary' }}>Generating...</Typography>
             </Box>
           ) : isEditing ? (
             <TextField
@@ -222,81 +179,40 @@ const AiMessageGeneratorDialog = ({
               value={editedText}
               onChange={(e) => setEditedText(e.target.value)}
               autoFocus
-              placeholder="Редактируйте сообщение здесь..."
-              sx={{ '& .MuiOutlinedInput-root': { fontSize: '1rem' } }}
             />
           ) : generatedText ? (
-            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-              {generatedText}
-            </Typography>
+            <Typography sx={{ whiteSpace: 'pre-wrap' }}>{generatedText}</Typography>
           ) : (
-            <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
-              Нажмите «Сгенерировать», чтобы получить умное сообщение
+            <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+              Click "Generate" to create a smart reply
             </Typography>
           )}
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1.5, flexWrap: 'wrap' }}>
+      <DialogActions sx={{ px: 3, pb: 3, gap: 1.5 }}>
         {generatedText && !isEditing && (
           <>
-            <IconButton onClick={handleCopy} title="Скопировать" size="small">
-              <CopyIcon fontSize="small" />
-            </IconButton>
-
-            <Button
-              onClick={handleStartEdit}
-              startIcon={<EditIcon />}
-              color="primary"
-              variant="outlined"
-            >
-              Редактировать
-            </Button>
-
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<SendIcon />}
-              onClick={handleSendDirect}
-            >
-              Отправить
-            </Button>
+            <IconButton onClick={handleCopy} title="Copy"><CopyIcon /></IconButton>
+            <Button onClick={handleStartEdit} startIcon={<EditIcon />} color="primary">Edit</Button>
+            <Button variant="contained" startIcon={<SendIcon />} onClick={handleSendDirect}>Send</Button>
           </>
         )}
 
         {isEditing && (
           <>
-            <Button onClick={handleCancelEdit} color="inherit">
-              Отмена
-            </Button>
-
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<SendIcon />}
-              onClick={handleSendEdited}
-            >
-              Отправить отредактированное
-            </Button>
+            <Button onClick={handleCancelEdit} color="inherit">Cancel</Button>
+            <Button variant="contained" startIcon={<SendIcon />} onClick={handleSendEdited}>Send Edited</Button>
           </>
         )}
 
         {!generatedText && !isEditing && (
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            fullWidth
-            sx={{ py: 1.5, borderRadius: 3 }}
-          >
-            {isGenerating ? 'Генерирую...' : 'Сгенерировать'}
+          <Button variant="contained" color="primary" onClick={handleGenerate} disabled={isGenerating} fullWidth sx={{ py: 1.5 }}>
+            {isGenerating ? 'Generating...' : 'Generate'}
           </Button>
         )}
 
-        <Button onClick={onClose} color="inherit" sx={{ ml: 'auto' }}>
-          Закрыть
-        </Button>
+        <Button onClick={onClose} color="inherit" sx={{ ml: 'auto' }}>Close</Button>
       </DialogActions>
     </StyledDialog>
   );
