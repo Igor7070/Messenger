@@ -145,7 +145,7 @@ const AiMessageGeneratorDialog = ({
           color: 'white',
         }}
       >
-        <Typography variant="h6">Генерация сообщения ИИ</Typography>
+        <Typography variant="h6">AI message generation</Typography>
         <IconButton onClick={onClose} sx={{ color: 'white' }}>
           <CloseIcon />
         </IconButton>
@@ -161,7 +161,7 @@ const AiMessageGeneratorDialog = ({
               disabled={isGenerating}
             />
           }
-          label="Добавить пожелание к сообщению"
+          label="Add a wish to the message"
           sx={{ mb: 2 }}
         />
 
@@ -192,7 +192,7 @@ const AiMessageGeneratorDialog = ({
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
               <CircularProgress size={40} thickness={4} />
               <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
-                Генерирую сообщение...
+                Generating a message...
               </Typography>
             </Box>
           ) : generatedText ? (
@@ -201,7 +201,7 @@ const AiMessageGeneratorDialog = ({
             </Typography>
           ) : (
             <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
-              Нажмите «Сгенерировать», чтобы получить умное сообщение
+              Click "Generate" to get a smart message
             </Typography>
           )}
         </Box>
@@ -210,7 +210,7 @@ const AiMessageGeneratorDialog = ({
       <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
         {generatedText && (
           <>
-            <IconButton onClick={handleCopy} title="Скопировать">
+            <IconButton onClick={handleCopy} title="Copy">
               <CopyIcon />
             </IconButton>
 
@@ -219,7 +219,7 @@ const AiMessageGeneratorDialog = ({
               startIcon={<EditIcon />}
               color="primary"
             >
-              Редактировать
+              Edit
             </Button>
 
             <Button
@@ -228,7 +228,7 @@ const AiMessageGeneratorDialog = ({
               startIcon={<SendIcon />}
               onClick={handleSend}
             >
-              Отправить
+              Send
             </Button>
           </>
         )}
@@ -242,12 +242,12 @@ const AiMessageGeneratorDialog = ({
             fullWidth
             sx={{ py: 1.5, borderRadius: 3 }}
           >
-            {isGenerating ? 'Генерация...' : 'Сгенерировать'}
+            {isGenerating ? 'Generation...' : 'Generate'}
           </Button>
         )}
 
         <Button onClick={onClose} color="inherit">
-          Закрыть
+          Close
         </Button>
       </DialogActions>
     </StyledDialog>
