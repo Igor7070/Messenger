@@ -2286,6 +2286,7 @@ const PrivateChat = () => {
         />
       )}
       <AiMessageGeneratorDialog
+        key={openAiDialog ? "ai-dialog-fresh" : undefined}
         open={openAiDialog}
         onClose={() => setOpenAiDialog(false)}
         onInsert={(text) => {
