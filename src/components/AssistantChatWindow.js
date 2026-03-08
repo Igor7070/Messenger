@@ -6,9 +6,9 @@ import '../styles/AssistantChatWindow.css';
 const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Привет! Я твой умный ассистент.' },
-    { role: 'assistant', content: 'Могу помочь с резюме, переводами, анализом чатов и многим другим.' },
-    { role: 'assistant', content: 'Спрашивай что угодно ⚡' }
+    { role: 'assistant', content: 'Hi! I am your smart assistant.' },
+    { role: 'assistant', content: 'I can help with resumes, translations, chat analysis, and much more.' },
+    { role: 'assistant', content: 'Ask anything ⚡' }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -39,16 +39,16 @@ const AssistantChatWindow = () => {
         body: JSON.stringify({ prompt: userMessage }),
       });
 
-      if (!response.ok) throw new Error('Ошибка сервера');
+      if (!response.ok) throw new Error('Server error');
 
-      const result = await response.text(); // твой эндпоинт возвращает чистый текст
+      const result = await response.text(); // эндпоинт возвращает чистый текст
 
       setMessages(prev => [...prev, { role: 'assistant', content: result }]);
     } catch (error) {
-      console.error('Ошибка при запросе к ИИ:', error);
+      console.error('Error while requesting AI:', error);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Извини, не смог ответить. Попробуй ещё раз.' 
+        content: 'Sorry, I could not answer. Try again.' 
       }]);
     } finally {
       setIsLoading(false);
@@ -82,7 +82,7 @@ const AssistantChatWindow = () => {
                       fill="#60A5FA"/>
               </svg>
             </div>
-            <span>ИИ-Ассистент</span>
+            <span>AI Assistant</span>
             <span className="online-dot"></span>
           </div>
           <div className="assistant-actions">
@@ -122,7 +122,7 @@ const AssistantChatWindow = () => {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Напиши сообщение..."
+            placeholder="Write a message..."
             disabled={isLoading}
           />
           <button 
