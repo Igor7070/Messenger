@@ -19,6 +19,7 @@ import { translateMessage, saveTranslation } from '../api/messages';
 import useGroupChatTranslationAndSpellCheck from '../hooks/useGroupChatTranslationAndSpellCheck';
 import sodium from 'libsodium-wrappers';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
+import AiMessageGeneratorDialog from './AiMessageGeneratorDialog';
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
@@ -134,6 +135,8 @@ const Messenger = () => {
 
     const [previewData, setPreviewData] = useState({}); // ДОБАВЛЕНО: Кэш превью ссылок
     const [fullScreenImage, setFullScreenImage] = useState(null);
+
+    const [openAiDialog, setOpenAiDialog] = useState(false);
 
     // Использование хука
     const {
@@ -1527,6 +1530,45 @@ const Messenger = () => {
         setFullScreenImage(fileUrl);
     };
 
+    const handleOpenAiDialog = () => {
+        setOpenAiDialog(true);
+    };
+
+    const sendDirectFromAI = (text) => {
+        const trimmed = text.trim();
+        if (!trimmed) {
+            toast.warn('Cannot send empty message');
+            return;
+        }
+
+        const message = {
+            id: Date.now(),
+            content: trimmed,
+            sender: { id: userId, username },
+            chat: { id: chatId, name: chatName },
+            fileUrl: null,
+            delivered: false,
+            read: false,
+            timestamp: new Date().toISOString(),
+            messageType: 'text',
+            contentType: null,
+        };
+
+        if (client && client.connected) {
+            client.publish({
+            destination: `/app/sendMessage/chat/${chatId}`,
+            body: JSON.stringify(message),
+            });
+
+            // Уведомление для группы (по аналогии с sendMessage)
+            sendNotification(message, trimmed);
+
+            toast.success('Message sent to group');
+        } else {
+            toast.error('WebSocket not connected');
+        }
+    };
+
     return (
     <div className="messenger">
       {/* Большая фиксированная иконка ассистента — только в Messenger на ПК */}
@@ -2024,6 +2066,18 @@ const Messenger = () => {
               ref={fileInputRef}
               id="file-input"
             />
+            <span
+                onClick={handleOpenAiDialog}
+                className={`group-ai-icon ${content.length > 0 || selectedFile ? 'hidden' : ''}`}
+                role="button"
+                aria-label="Generate message with AI"
+                >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#6200EA"/>
+                    <path d="M2 17L12 22L22 17" fill="#6200EA"/>
+                    <path d="M2 12L12 17L22 12" fill="#6200EA"/>
+                </svg>
+            </span>
             {content.length === 0 && micIconState !== 'sending' && !selectedFile && (
               <div className="mic-icon-container">
                 <span
@@ -2144,6 +2198,17 @@ const Messenger = () => {
           onReject={rejectCall}
         />
       )}
+      <AiMessageGeneratorDialog
+        key={openAiDialog ? "ai-dialog-fresh-group" : undefined}
+        open={openAiDialog}
+        onClose={() => setOpenAiDialog(false)}
+        onInsert={(text) => {
+            setContent(text.trim());
+            toast.info('Text inserted — edit and send');
+        }}
+        onSendDirect={sendDirectFromAI}
+        messages={messages}
+      />
     </div>
   );
 };

@@ -1349,6 +1349,42 @@
   border-radius: 8px;
 }
 
+/* ─── Иконка AI-генерации сообщений в групповом чате ─── */
+.group-ai-icon {
+    position: absolute;
+    right: 30px;                    /* Сдвигаем правее, чтобы не пересекаться с микрофоном/отправкой */
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #6200ea;
+    border-radius: 50%;
+    z-index: 10;
+}
+
+.group-ai-icon:hover {
+    background-color: rgba(98, 0, 234, 0.08);
+    transform: translateY(-50%) scale(1.15);
+    box-shadow: 0 2px 8px rgba(98, 0, 234, 0.2);
+}
+
+.group-ai-icon svg {
+    transition: transform 0.3s ease;
+}
+
+.group-ai-icon:hover svg {
+    transform: rotate(15deg);
+}
+
+.group-ai-icon.hidden {
+    display: none !important;
+}
+
 @media (max-width: 800px) {
     .messenger {
         position: fixed !important;
