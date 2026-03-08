@@ -1667,14 +1667,11 @@ const PrivateChat = () => {
         destination: `/app/sendMessage/chat/${chatId}`,
         body: JSON.stringify(message),
       });
-      // sendNotification(message, trimmed); // если нужно
+      sendNotification(message, trimmed); 
       toast.success('Message sent directly');
     } else {
       toast.error('WebSocket not connected');
     }
-
-    // УБРАТЬ ЭТУ СТРОКУ полностью:
-    // setMessages((prev) => [...prev, { ...message, delivered: true }]);
   };
 
   return (
