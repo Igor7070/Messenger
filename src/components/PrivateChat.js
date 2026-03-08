@@ -1649,13 +1649,12 @@ const PrivateChat = () => {
       return;
     }
 
-    // Формируем сообщение вручную — точно так же, как в sendMessage, но без зависимости от content
     const message = {
-      id: Date.now(),                        // или другой уникальный id
+      id: Date.now(),
       content: trimmed,
       sender: { id: userId, username },
       chat: { id: chatId, name: chatName },
-      fileUrl: null,                         // нет файла
+      fileUrl: null,
       delivered: false,
       read: false,
       timestamp: new Date().toISOString(),
@@ -1668,19 +1667,14 @@ const PrivateChat = () => {
         destination: `/app/sendMessage/chat/${chatId}`,
         body: JSON.stringify(message),
       });
-
-      // Если у тебя есть sendNotification — вызови его
-      // sendNotification(message, trimmed);
-
-      toast.success('Message sent directly to chat');
+      // sendNotification(message, trimmed); // если нужно
+      toast.success('Message sent directly');
     } else {
-      toast.error('WebSocket not connected — cannot send');
+      toast.error('WebSocket not connected');
     }
 
-    // Опционально: можно добавить сообщение локально сразу (для мгновенного отображения)
-    setMessages((prev) => [...prev, { ...message, delivered: true }]); // или без delivered: true
-
-    // НЕ трогаем content — поле ввода остаётся нетронутым
+    // УБРАТЬ ЭТУ СТРОКУ полностью:
+    // setMessages((prev) => [...prev, { ...message, delivered: true }]);
   };
 
   return (
