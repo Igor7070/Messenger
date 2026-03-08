@@ -187,7 +187,7 @@ const AiMessageGeneratorDialog = ({
           }
           label={
             <Typography sx={{ color: '#d1d5db', fontWeight: 500 }}>
-              Customize style / tone
+              Add custom preference
             </Typography>
           }
           sx={{ mb: 3 }}
