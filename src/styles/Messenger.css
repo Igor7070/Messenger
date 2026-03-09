@@ -281,7 +281,7 @@
 
 .input-message {
     width: 100%;
-    padding: 10px 36px 10px 36px; /* Уменьшено с 44px до 36px для согласованности с исходным кодом */
+    padding: 10px 36px 10px 36px; 
     border: 1px solid #0288d1;
     border-radius: 5px;
     resize: none;
@@ -686,7 +686,7 @@
 
 .attach-icon {
     position: absolute;
-    left: 8px; /* Уменьшено с 10px для более плотного прилегания, как в исходном коде */
+    left: 8px; 
     top: 50%;
     transform: translateY(-50%);
     display: flex;
@@ -705,9 +705,9 @@
     padding: 5px 10px;
     background-color: #e8ecef;
     border-radius: 5px;
-    max-width: calc(100% - 72px); /* Уменьшено с 88px до 72px, как в исходном коде */
-    margin-left: 36px; /* Уменьшено с 44px до 36px */
-    margin-right: 36px; /* Уменьшено с 44px до 36px */
+    max-width: calc(100% - 72px); 
+    margin-left: 36px; 
+    margin-right: 36px; 
     overflow: hidden;
 }
 
@@ -828,7 +828,7 @@
     left: 4px;
     display: flex;
     flex-direction: column;
-    gap: 4px; /* Увеличен gap для лучшего разделения иконок */
+    gap: 4px; 
     z-index: 100;
 }
 
@@ -1721,7 +1721,7 @@
     }
 
     .message-tts-translated-container .message-tts-translated-button {
-        font-size: 10px; /* Исправлено с "10 dobropx" на "10px" */
+        font-size: 10px; 
         padding: 1px;
         width: 14px;
         height: 14px;
@@ -1870,7 +1870,7 @@
         justify-content: space-between !important;
         align-items: center !important;
         width: 100% !important;
-        gap: 0 !important; /* Убираем gap — он не нужен, space-between сам распределяет */
+        gap: 0 !important; 
     }
 
     /* ДОБАВЛЕНО: Мобильные стили для аудио (аналог secret-chat) */
@@ -1946,7 +1946,7 @@
         width: 100% !important;
         padding: 0 16px !important;
         box-sizing: border-box !important;
-        position: static !important; /* на всякий случай */
+        position: static !important; 
     }
 
     .fixed-app-bottom-right {
