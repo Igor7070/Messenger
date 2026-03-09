@@ -2000,7 +2000,7 @@
   }
 
   .private-message-audio-message .private-audio-player-wrapper {
-    padding-left: 20px; /* Меньший отступ для мобильных */
+    padding-left: 20px; 
   }
 
   .private-message.private-audio-message .private-message-content-container:has(.private-message-tts-translated-container),
