@@ -1907,9 +1907,9 @@
         position: absolute !important;
         left: 50% !important;
         top: 72% !important;                    /* ← то же смещение вниз, как в личном чате */
-        transform: translate(-50%, -50%) !important;
-        width: 30px !important;
-        height: 30px !important;
+        transform: translate(-50%, calc(-50% + 2px)) !important;
+        width: 20px !important;
+        height: 20px !important;
         background: transparent !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
