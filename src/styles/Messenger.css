@@ -1882,7 +1882,7 @@
     }
 
     .message.current-user.audio-message .message-content-container {
-        margin-right: 10px !important;  /* Отступ справа для выравнивания по краю */
+        margin-right: 10px !important;  
     }
     
     .message.other-user.audio-message .message-content-container {
