@@ -30,17 +30,16 @@
 }
 
 /* Специально для маленькой иконки в шапке чата — как у остальных иконок */
-/* Специально для маленькой иконки в шапке чата — точно как остальные кнопки */
 .assistant-icon-small.in-header {
   position: static !important;
-  width: 30px !important;           /* одинаково с кнопками */
-  height: 30px !important;          /* одинаково с кнопками */
+  width: 30px !important;           
+  height: 30px !important;          
   background: transparent !important;
   backdrop-filter: none !important;
   box-shadow: none !important;
   border: none !important;
   margin: 0 !important;
-  padding: 4px !important;          /* точно как у кнопок */
+  padding: 4px !important;          
   border-radius: 8px;
   display: flex !important;
   align-items: center !important;
