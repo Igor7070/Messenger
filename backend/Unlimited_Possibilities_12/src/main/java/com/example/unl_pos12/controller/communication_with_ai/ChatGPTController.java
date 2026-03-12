@@ -355,7 +355,7 @@ public class ChatGPTController {
             }
 
             String translated = transcription;
-            String detectedLang = sourceLanguage; // пока заглушка, потом можно доработать
+            String detectedLang = sourceLanguage; // пока заглушка, потом можно доработать...
 
             // Перевод, если выбран конкретный язык
             if (!"auto".equalsIgnoreCase(targetLanguage) && !targetLanguage.trim().isEmpty()) {
