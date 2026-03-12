@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import ws.schild.jave.MultimediaInfo;
 import ws.schild.jave.MultimediaObject;
 
@@ -309,6 +310,94 @@ public class ChatGPTController {
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Ошибка генерации: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/api/global-assistant/translate-voice")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> translateVoiceGlobalAssistant(
+            @RequestParam("audio") MultipartFile audioFile,
+            @RequestParam(value = "targetLanguage", required = false, defaultValue = "auto") String targetLanguage,
+            @RequestParam(value = "sourceLanguage", required = false, defaultValue = "auto") String sourceLanguage,
+            @RequestParam(value = "withTts", defaultValue = "true") boolean withTts) {
+
+        System.out.println("Method translateVoiceGlobalAssistant is working...");
+
+        try {
+            if (audioFile.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Аудиофайл пустой"));
+            }
+
+            byte[] audioBytes = audioFile.getBytes();
+            System.out.println("[Global Assistant Voice Translator] Получен аудиофайл: " + audioBytes.length + " байт");
+
+            // Транскрипция
+            String transcription = openAIService.transcribeChatAudio(audioBytes);
+
+            if (transcription == null || transcription.trim().isEmpty()) {
+                return ResponseEntity.ok(Map.of(
+                        "original", "",
+                        "translated", "",
+                        "audioBase64", null,
+                        "message", "Не удалось распознать речь"
+                ));
+            }
+
+            // Фильтрация коротких/пустых результатов
+            if (!openAIService.isValidTranscription(transcription)) {
+                return ResponseEntity.ok(Map.of(
+                        "original", transcription,
+                        "translated", "",
+                        "audioBase64", null,
+                        "message", "Слишком короткий или невалидный звук"
+                ));
+            }
+
+            String translated = transcription;
+            String detectedLang = sourceLanguage; // пока заглушка, потом можно доработать
+
+            // Перевод, если выбран конкретный язык
+            if (!"auto".equalsIgnoreCase(targetLanguage) && !targetLanguage.trim().isEmpty()) {
+                String translatePrompt = String.format(
+                        "Translate the following text to %s and return only the translated phrase in double quotes: \"%s\"",
+                        targetLanguage, transcription
+                );
+                String rawTranslated = openAIService.generateCompletion(translatePrompt);
+
+                if (rawTranslated != null && !rawTranslated.trim().isEmpty()) {
+                    if (rawTranslated.startsWith("\"") && rawTranslated.endsWith("\"")) {
+                        translated = rawTranslated.substring(1, rawTranslated.length() - 1).trim();
+                    } else {
+                        translated = rawTranslated.trim();
+                    }
+                }
+            }
+
+            // TTS
+            String audioBase64 = null;
+            if (withTts && !translated.trim().isEmpty()) {
+                byte[] ttsBytes = openAIService.synthesizeSpeech(translated);
+                audioBase64 = java.util.Base64.getEncoder().encodeToString(ttsBytes);
+            }
+
+            // Ответ
+            Map<String, Object> result = Map.of(
+                    "original", transcription,
+                    "detectedLang", detectedLang,
+                    "translated", translated,
+                    "targetLang", targetLanguage,
+                    "audioBase64", audioBase64,
+                    "ttsEnabled", withTts
+            );
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            System.err.println("[Global Assistant Voice Translator] Ошибка: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 }
