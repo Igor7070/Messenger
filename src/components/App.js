@@ -120,7 +120,7 @@ const AppContent = () => {
       </div>
 
       {/* ЗДЕСЬ ДОБАВЛЯЕМ ГЛОБАЛЬНОЕ ОКНО АССИСТЕНТА */}
-      <AssistantChatWindow />
+      {isOpen && <AssistantChatWindow />}
 
     </>
   );
