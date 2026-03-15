@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
 import toast from 'react-hot-toast';
 
-// Heroicons v2 — только те иконки, которые реально существуют
+// Heroicons v2
 import {
   EllipsisVerticalIcon,
   ArrowsPointingOutIcon,
@@ -19,13 +19,7 @@ import '../styles/AssistantChatWindow.css';
 const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
 
-  // Защита от краша — если контекст не загрузился
-  if (!useAssistant) {
-    console.error('useAssistant is undefined — проверь AssistantProvider');
-    return null;
-  }
-
-  // ─── Состояния ─────────────────────────────────────────────
+  // Все хуки — наверху, до любого return!
   const [mode, setMode] = useState<'chat' | 'translator'>('chat');
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Привет! Я твой умный ассистент.' },
@@ -60,18 +54,17 @@ const AssistantChatWindow = () => {
     { value: 'ja', label: '日本語 🇯🇵' },
   ];
 
-  // Безопасный объект для react-select (никогда не undefined)
+  // Безопасный объект для react-select
   const currentLangOption = languages.find(l => l.value === selectedLanguage) || languages[0];
 
-  // Защита: если язык слетел — возвращаем auto
+  // Защита от невалидного языка
   useEffect(() => {
     if (!languages.some(l => l.value === selectedLanguage)) {
-      console.warn('Язык не найден в списке, сбрасываем на auto');
       setSelectedLanguage('auto');
     }
   }, [selectedLanguage]);
 
-  // Скролл вниз в чате
+  // Скролл вниз
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -80,10 +73,10 @@ const AssistantChatWindow = () => {
     if (mode === 'chat') scrollToBottom();
   }, [messages, mode]);
 
-  // ─── Отправка текстового сообщения ─────────────────────────
+  // ─── Функции ───────────────────────────────────────────────
+
   const sendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
-
     const userMessage = inputValue.trim();
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setInputValue('');
@@ -96,29 +89,24 @@ const AssistantChatWindow = () => {
         body: JSON.stringify({ prompt: userMessage }),
       });
 
-      if (!res.ok) throw new Error(`Сервер ответил ${res.status}`);
-
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const result = await res.text();
       setMessages(prev => [...prev, { role: 'assistant', content: result }]);
     } catch (err) {
-      console.error('Ошибка отправки сообщения:', err);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Извини, ошибка связи. Попробуй ещё раз.' }]);
+      console.error(err);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Извини, ошибка. Попробуй ещё раз.' }]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ─── Запись голоса ─────────────────────────────────────────
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunksRef.current = [];
 
-      mediaRecorderRef.current.ondataavailable = e => {
-        audioChunksRef.current.push(e.data);
-      };
-
+      mediaRecorderRef.current.ondataavailable = e => audioChunksRef.current.push(e.data);
       mediaRecorderRef.current.start();
       setIsRecording(true);
       setRecordingTimer(0);
@@ -129,7 +117,6 @@ const AssistantChatWindow = () => {
 
       toast.success('Запись началась');
     } catch (err) {
-      console.error('Ошибка доступа к микрофону:', err);
       toast.error('Нет доступа к микрофону');
     }
   };
@@ -153,7 +140,6 @@ const AssistantChatWindow = () => {
     };
   };
 
-  // ─── Отправка аудио на сервер ──────────────────────────────
   const sendVoiceToTranslator = async (audioBlob) => {
     const formData = new FormData();
     formData.append('audio', audioBlob, 'voice.mp3');
@@ -165,7 +151,7 @@ const AssistantChatWindow = () => {
         { method: 'POST', body: formData }
       );
 
-      if (!res.ok) throw new Error(`Сервер: ${res.status}`);
+      if (!res.ok) throw new Error('Сервер не отвечает');
 
       const data = await res.json();
 
@@ -173,25 +159,17 @@ const AssistantChatWindow = () => {
       setTranslatedText(data.translated || 'Перевод не удался');
 
       if (data.audioBase64) {
-        const cleanBase64 = data.audioBase64.includes(',') 
-          ? data.audioBase64.split(',')[1] 
-          : data.audioBase64;
-
+        const cleanBase64 = data.audioBase64.includes(',') ? data.audioBase64.split(',')[1] : data.audioBase64;
         const audio = new Audio(`data:audio/mp3;base64,${cleanBase64}`);
-        audio.play().catch(e => {
-          console.error('Автозапуск не сработал:', e);
-          toast('Нажми ▶ чтобы послушать');
-        });
+        audio.play().catch(() => toast('Нажми ▶ для прослушивания'));
       }
     } catch (err) {
-      console.error('Ошибка перевода:', err);
       toast.error('Ошибка перевода');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ─── Воспроизведение TTS ───────────────────────────────────
   const speakText = async (text, lang) => {
     if (!text) return;
 
@@ -202,24 +180,17 @@ const AssistantChatWindow = () => {
         body: JSON.stringify({ text, language: lang }),
       });
 
-      if (!res.ok) throw new Error(`TTS сервер: ${res.status}`);
+      if (!res.ok) throw new Error('TTS ошибка');
 
       const data = await res.json();
       let base64 = data.audio || '';
 
-      if (base64.includes(',')) {
-        base64 = base64.split(',')[1];
-      }
-
-      if (!base64) {
-        toast.error('Нет аудио в ответе');
-        return;
-      }
+      if (base64.includes(',')) base64 = base64.split(',')[1];
+      if (!base64) return toast.error('Нет аудио');
 
       const audio = new Audio(`data:audio/mp3;base64,${base64}`);
       audio.play();
     } catch (err) {
-      console.error('Ошибка TTS:', err);
       toast.error('Не удалось воспроизвести');
     }
   };
@@ -244,13 +215,10 @@ const AssistantChatWindow = () => {
 
           <div className="assistant-actions">
             <button onClick={toggleFullScreen} className="icon-btn">
-              {isFullScreen 
-                ? <ArrowsPointingInIcon className="w-6 h-6" /> 
-                : <ArrowsPointingOutIcon className="w-6 h-6" />
-              }
+              {isFullScreen ? <ArrowsPointingInIcon className="w-6 h-6" /> : <ArrowsPointingOutIcon className="w-6 h-6" />}
             </button>
 
-            <button className="icon-btn" onClick={() => toast('Меню пока не реализовано')}>
+            <button className="icon-btn" onClick={() => toast('Меню в разработке')}>
               <EllipsisVerticalIcon className="w-6 h-6" />
             </button>
 
@@ -258,23 +226,16 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Переключение режимов */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
-            <motion.div
-              key="chat"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col flex-1"
-            >
+            <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col flex-1">
               <div className="assistant-messages">
                 {messages.map((msg, i) => (
                   <div key={i} className={`message ${msg.role}`}>
                     <div className="message-bubble">{msg.content}</div>
                   </div>
                 ))}
-                {isLoading && <div className="typing"><span></span><span></span><span></span></div>}
+                {isLoading && <div className="typing"><span /><span /><span /></div>}
                 <div ref={messagesEndRef} />
               </div>
 
@@ -286,19 +247,11 @@ const AssistantChatWindow = () => {
                   placeholder="Напиши сообщение..."
                   disabled={isLoading}
                 />
-                <button onClick={sendMessage} disabled={isLoading || !inputValue.trim()}>
-                  ➤
-                </button>
+                <button onClick={sendMessage} disabled={isLoading || !inputValue.trim()}>➤</button>
               </div>
             </motion.div>
           ) : (
-            <motion.div
-              key="translator"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="translator-mode"
-            >
+            <motion.div key="translator" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="translator-mode">
               <Select
                 options={languages}
                 value={currentLangOption}
@@ -306,19 +259,14 @@ const AssistantChatWindow = () => {
                 className="language-select mb-6"
                 classNamePrefix="react-select"
                 styles={{
-                  control: (base) => ({
-                    ...base,
-                    backgroundColor: '#1e293b',
-                    borderColor: '#334155',
-                    color: 'white',
-                  }),
-                  menu: (base) => ({ ...base, backgroundColor: '#0f172a', color: 'white' }),
+                  control: base => ({ ...base, backgroundColor: '#1e293b', borderColor: '#334155', color: 'white' }),
+                  menu: base => ({ ...base, backgroundColor: '#0f172a', color: 'white' }),
                   option: (base, state) => ({
                     ...base,
                     backgroundColor: state.isSelected ? '#2563eb' : state.isFocused ? '#334155' : '#0f172a',
                     color: 'white',
                   }),
-                  singleValue: (base) => ({ ...base, color: 'white' }),
+                  singleValue: base => ({ ...base, color: 'white' }),
                 }}
               />
 
@@ -342,11 +290,7 @@ const AssistantChatWindow = () => {
                   <div className="label">Оригинал</div>
                   <div className="text-content">
                     {originalText || 'Говори что-нибудь...'}
-                    {originalText && (
-                      <button onClick={() => speakText(originalText, 'auto')} className="play-btn blue">
-                        <PlayIcon className="w-6 h-6" />
-                      </button>
-                    )}
+                    {originalText && <button onClick={() => speakText(originalText, 'auto')} className="play-btn blue"><PlayIcon className="w-6 h-6" /></button>}
                   </div>
                 </div>
 
@@ -354,11 +298,7 @@ const AssistantChatWindow = () => {
                   <div className="label">Перевод</div>
                   <div className="text-content">
                     {translatedText || 'Ожидаем перевод...'}
-                    {translatedText && (
-                      <button onClick={() => speakText(translatedText, selectedLanguage)} className="play-btn green">
-                        <PlayIcon className="w-6 h-6" />
-                      </button>
-                    )}
+                    {translatedText && <button onClick={() => speakText(translatedText, selectedLanguage)} className="play-btn green"><PlayIcon className="w-6 h-6" /></button>}
                   </div>
                 </div>
               </div>
