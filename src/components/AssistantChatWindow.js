@@ -211,7 +211,7 @@ const AssistantChatWindow = () => {
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
-        {/* Шапка — твоя старая */}
+        {/* Шапка — твоя старая, добавили только три точки правее online-dot */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -223,27 +223,31 @@ const AssistantChatWindow = () => {
             <span>AI Assistant</span>
             <span className="online-dot"></span>
 
-            {/* Три точки */}
-            <div className="relative ml-3">
+            {/* Три точки — правее зелёного кружка, минимальный отступ */}
+            <div className="relative ml-2">
               <button 
-                className="icon-btn p-1"
+                className="icon-btn"
                 onClick={() => setShowMenu(!showMenu)}
               >
                 <EllipsisVerticalIcon className="w-6 h-6" />
               </button>
 
+              {/* Простое меню */}
               {showMenu && (
-                <div className="absolute right-0 mt-2 w-64 bg-slate-800 rounded-lg shadow-2xl z-50 py-2 border border-slate-700">
+                <div 
+                  className="absolute right-0 mt-2 w-56 bg-slate-900 rounded-xl shadow-2xl z-50 overflow-hidden border border-slate-700"
+                  style={{ transform: 'translateY(4px)' }}
+                >
                   <button
                     onClick={() => {
                       setMode(mode === 'chat' ? 'translator' : 'chat');
                       setShowMenu(false);
                     }}
-                    className="w-full text-left px-5 py-3 text-white hover:bg-slate-700 transition-colors flex items-center gap-3"
+                    className="w-full text-left px-5 py-4 text-white hover:bg-slate-800 transition-colors flex items-center gap-3 text-base"
                   >
                     {mode === 'chat' ? (
                       <>
-                        <MicrophoneIcon className="w-5 h-5" />
+                        <MicrophoneIcon className="w-5 h-5 text-green-400" />
                         Голосовой переводчик
                       </>
                     ) : (
@@ -263,7 +267,7 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Контент */}
+        {/* Переключение режимов */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
@@ -272,6 +276,7 @@ const AssistantChatWindow = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
+              {/* Сообщения — как было */}
               <div className="assistant-messages">
                 {messages.map((msg, index) => (
                   <div
@@ -293,6 +298,7 @@ const AssistantChatWindow = () => {
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* Поле ввода — точно как в старом коде */}
               <div className="assistant-input">
                 <input
                   type="text"
@@ -319,6 +325,7 @@ const AssistantChatWindow = () => {
               exit={{ opacity: 0 }}
               className="translator-mode"
             >
+              {/* ... твой текущий код переводчика остаётся без изменений ... */}
               <div className="mb-6">
                 <Select
                   options={languages}
