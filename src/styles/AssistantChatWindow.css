@@ -212,11 +212,16 @@
   50% { transform: translateY(-10px); }
 }
 
+/* Режим переводчика */
 .translator-mode {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 1rem;
+  padding: 1.5rem;
+}
+
+.language-select-container {
+  margin-bottom: 2rem;
 }
 
 .record-container {
@@ -234,10 +239,12 @@
   color: white;
   border: none;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   box-shadow: 0 10px 30px rgba(34, 197, 94, 0.4);
   transition: all 0.3s;
+  position: relative;
 }
 
 .record-btn.recording {
@@ -246,17 +253,12 @@
   box-shadow: 0 10px 30px rgba(239, 68, 68, 0.5);
 }
 
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
-}
-
 .timer {
   position: absolute;
-  bottom: -40px;
+  bottom: -2.5rem;
   font-size: 1.5rem;
-  color: white;
   font-weight: bold;
+  color: white;
 }
 
 .translation-result {
@@ -266,13 +268,15 @@
   margin-top: 1rem;
 }
 
-.translation-block {
-  margin-bottom: 1.5rem;
+.translation-block + .translation-block {
+  margin-top: 1.5rem;
+  border-top: 1px solid #334155;
+  padding-top: 1.5rem;
 }
 
 .label {
   color: #94a3b8;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   margin-bottom: 0.5rem;
 }
 
@@ -281,16 +285,27 @@
   justify-content: space-between;
   align-items: flex-start;
   font-size: 1.1rem;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .play-btn {
   background: none;
   border: none;
-  font-size: 1.8rem;
   cursor: pointer;
   padding: 0.5rem;
+  border-radius: 50%;
+  transition: background 0.2s;
 }
 
-.play-btn.blue { color: #60a5fa; }
-.play-btn.green { color: #22c55e; }
+.play-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.play-btn.blue svg { color: #60a5fa; }
+.play-btn.green svg { color: #22c55e; }
+
+/* Анимация пульсации при записи */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
