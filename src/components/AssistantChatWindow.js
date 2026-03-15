@@ -3,6 +3,7 @@ import { useAssistant } from '../context/AssistantContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
 import toast from 'react-hot-toast';
+
 import {
   EllipsisVerticalIcon,
   ArrowsPointingOutIcon,
@@ -33,26 +34,11 @@ const AssistantChatWindow = () => {
   const [recordingTimer, setRecordingTimer] = useState(0);
   const [originalText, setOriginalText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
-  const [selectedLanguage, setSelectedLanguage] = useState('auto');
+  const [translatorLang, setTranslatorLang] = useState('auto');   // ← ПЕРЕИМЕНОВАНО
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const timerIntervalRef = useRef(null);
-
-  console.log("[DEBUG selectedLanguage при монтировании]", 
-    typeof selectedLanguage, 
-    selectedLanguage,
-    JSON.stringify(selectedLanguage)
-  );
-
-  useEffect(() => {
-    console.log("[DEBUG selectedLanguage изменился]", 
-      typeof selectedLanguage, 
-      selectedLanguage,
-      "mode =", mode,
-      "isOpen =", isOpen
-    );
-  }, [selectedLanguage, mode, isOpen]);
 
   const languages = [
     { value: 'auto', label: 'Авто 🌐' },
@@ -67,15 +53,18 @@ const AssistantChatWindow = () => {
     { value: 'ja', label: '日本語 🇯🇵' },
   ];
 
-  // Защита: если selectedLanguage испортился — принудительно сбрасываем
-  useEffect(() => {
-    if (typeof selectedLanguage !== 'string' || !languages.some(l => l.value === selectedLanguage)) {
-      console.warn('selectedLanguage испорчен → сбрасываем на auto', selectedLanguage);
-      setSelectedLanguage('auto');
-    }
-  }, [selectedLanguage]);
+  // Безопасный выбор текущей опции языка
+  const currentLangOption = languages.find(l => l.value === translatorLang) || languages[0];
 
-  // ─── Скролл вниз только в режиме чата ──────────────────────
+  // Защита: если значение пропало из списка — сбрасываем на auto
+  useEffect(() => {
+    if (!languages.some(l => l.value === translatorLang)) {
+      console.warn('translatorLang не найден в списке → сбрасываем на auto');
+      setTranslatorLang('auto');
+    }
+  }, [translatorLang]);
+
+  // ─── Скролл вниз в чате ────────────────────────────────────
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -165,11 +154,8 @@ const AssistantChatWindow = () => {
     try {
       setIsLoading(true);
       const res = await fetch(
-        `https://unlimitedpossibilities12.org/api/global-assistant/translate-voice?targetLanguage=${selectedLanguage}&sourceLanguage=auto&withTts=true`,
-        {
-          method: 'POST',
-          body: formData,
-        }
+        `https://unlimitedpossibilities12.org/api/global-assistant/translate-voice?targetLanguage=${translatorLang}&sourceLanguage=auto&withTts=true`,
+        { method: 'POST', body: formData }
       );
 
       if (!res.ok) throw new Error('Ошибка сервера');
@@ -229,9 +215,6 @@ const AssistantChatWindow = () => {
 
   if (!isOpen) return null;
 
-  // Находим объект языка ТОЛЬКО когда он нужен
-  const currentLangOption = languages.find(l => l.value === selectedLanguage) ?? languages[0];
-
   return (
     <AnimatePresence>
       <motion.div
@@ -246,33 +229,35 @@ const AssistantChatWindow = () => {
           <div className="assistant-title">
             <div className="assistant-avatar">⚡</div>
             <span>{mode === 'chat' ? 'AI Ассистент' : 'Голосовой переводчик'}</span>
-            <span className="online-dot" />
           </div>
 
           <div className="assistant-actions">
             <button onClick={toggleFullScreen} className="icon-btn">
-              {isFullScreen ? <ArrowsPointingInIcon className="w-6 h-6" /> : <ArrowsPointingOutIcon className="w-6 h-6" />}
+              {isFullScreen 
+                ? <ArrowsPointingInIcon className="w-6 h-6" /> 
+                : <ArrowsPointingOutIcon className="w-6 h-6" />
+              }
             </button>
 
-            {/* Здесь можно потом добавить переключатель режима */}
-            {/* <button onClick={() => setMode(mode === 'chat' ? 'translator' : 'chat')}>
-              {mode === 'chat' ? 'Переводчик' : 'Чат'}
-            </button> */}
+            <div className="relative">
+              <button className="icon-btn" onClick={() => { /* меню режимов */ }}>
+                <EllipsisVerticalIcon className="w-6 h-6" />
+              </button>
+            </div>
 
             <button onClick={closeAssistant} className="icon-btn">✕</button>
           </div>
         </div>
 
-        {/* Основной контент с анимацией смены режима */}
+        {/* Переключение режимов */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
               key="chat"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="flex flex-col flex-1 overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col flex-1"
             >
               <div className="assistant-messages">
                 {messages.map((msg, i) => (
@@ -280,13 +265,7 @@ const AssistantChatWindow = () => {
                     <div className="message-bubble">{msg.content}</div>
                   </div>
                 ))}
-                {isLoading && (
-                  <div className="message assistant-message">
-                    <div className="message-bubble typing">
-                      <span></span><span></span><span></span>
-                    </div>
-                  </div>
-                )}
+                {isLoading && <div className="typing"><span></span><span></span><span></span></div>}
                 <div ref={messagesEndRef} />
               </div>
 
@@ -303,10 +282,9 @@ const AssistantChatWindow = () => {
                   placeholder="Напиши сообщение..."
                   disabled={isLoading}
                 />
-                <button
-                  onClick={sendMessage}
+                <button 
+                  onClick={sendMessage} 
                   disabled={isLoading || !inputValue.trim()}
-                  className="send-btn"
                 >
                   ➤
                 </button>
@@ -315,40 +293,30 @@ const AssistantChatWindow = () => {
           ) : (
             <motion.div
               key="translator"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="translator-mode flex flex-col items-center justify-center flex-1 p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="translator-mode"
             >
               <Select
                 options={languages}
                 value={currentLangOption}
-                onChange={option => setSelectedLanguage(option?.value ?? 'auto')}
-                className="language-select mb-8 w-full max-w-xs"
+                onChange={opt => setTranslatorLang(opt.value)}   // ← здесь новое имя
+                className="language-select mb-6"
                 classNamePrefix="react-select"
                 styles={{
-                  control: base => ({
-                    ...base,
-                    backgroundColor: '#1e293b',
-                    borderColor: '#334155',
-                    color: 'white',
-                  }),
-                  menu: base => ({
-                    ...base,
-                    backgroundColor: '#0f172a',
-                    color: 'white',
-                  }),
+                  control: (base) => ({ ...base, backgroundColor: '#1e293b', borderColor: '#334155', color: 'white' }),
+                  menu: (base) => ({ ...base, backgroundColor: '#0f172a', color: 'white' }),
                   option: (base, state) => ({
                     ...base,
                     backgroundColor: state.isSelected ? '#2563eb' : state.isFocused ? '#334155' : '#0f172a',
                     color: 'white',
                   }),
-                  singleValue: base => ({ ...base, color: 'white' }),
+                  singleValue: (base) => ({ ...base, color: 'white' }),
                 }}
               />
 
-              <div className="record-container mb-10">
+              <div className="record-container">
                 <motion.button
                   whileTap={{ scale: 0.92 }}
                   onClick={isRecording ? stopRecording : startRecording}
@@ -363,13 +331,16 @@ const AssistantChatWindow = () => {
                 </motion.button>
               </div>
 
-              <div className="translation-result w-full max-w-2xl">
+              <div className="translation-result">
                 <div className="translation-block">
                   <div className="label">Оригинал</div>
                   <div className="text-content">
                     {originalText || 'Говори что-нибудь...'}
                     {originalText && (
-                      <button onClick={() => speakText(originalText, 'auto')} className="play-btn blue">
+                      <button 
+                        onClick={() => speakText(originalText, 'auto')} 
+                        className="play-btn blue"
+                      >
                         <PlayIcon className="w-6 h-6" />
                       </button>
                     )}
@@ -381,8 +352,8 @@ const AssistantChatWindow = () => {
                   <div className="text-content">
                     {translatedText || 'Ожидаем перевод...'}
                     {translatedText && (
-                      <button
-                        onClick={() => speakText(translatedText, selectedLanguage)}
+                      <button 
+                        onClick={() => speakText(translatedText, translatorLang)}   // ← здесь тоже новое имя
                         className="play-btn green"
                       >
                         <PlayIcon className="w-6 h-6" />
