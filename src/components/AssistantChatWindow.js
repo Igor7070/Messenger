@@ -210,7 +210,7 @@ const AssistantChatWindow = () => {
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
-        {/* Шапка — ТОЧНО КАК БЫЛО, только добавлены три точки правее зелёного кружка */}
+        {/* Шапка — ТОЧНО как в твоём старом коде + три точки правее online-dot */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -222,16 +222,15 @@ const AssistantChatWindow = () => {
             <span>AI Assistant</span>
             <span className="online-dot"></span>
 
-            {/* Три точки — правее зелёного кружка */}
+            {/* Три точки — правее зелёного кружка, без изменения шапки */}
             <div className="relative ml-3">
               <button 
                 className="icon-btn"
-                onClick={() => setShowMenu(!showMenu)}
+                onClick={() => setShowMenu(prev => !prev)}
               >
                 <EllipsisVerticalIcon className="w-6 h-6" />
               </button>
 
-              {/* Выпадающее меню */}
               {showMenu && (
                 <div className="absolute right-0 mt-2 w-64 bg-slate-800 rounded-lg shadow-2xl z-50 py-2 border border-slate-700">
                   <button
@@ -239,15 +238,23 @@ const AssistantChatWindow = () => {
                       setMode(mode === 'chat' ? 'translator' : 'chat');
                       setShowMenu(false);
                     }}
-                    className="w-full text-left px-5 py-3 text-white hover:bg-slate-700 transition-colors"
+                    className="w-full text-left px-5 py-3 text-white hover:bg-slate-700 transition-colors flex items-center gap-3"
                   >
-                    {mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}
+                    {mode === 'chat' ? (
+                      <>
+                        <MicrophoneIcon className="w-5 h-5" />
+                        Голосовой переводчик
+                      </>
+                    ) : (
+                      'Вернуться в чат'
+                    )}
                   </button>
                 </div>
               )}
             </div>
           </div>
 
+          {/* Действия — только две иконки, как было */}
           <div className="assistant-actions">
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
@@ -264,10 +271,10 @@ const AssistantChatWindow = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col flex-1"
+              className="flex flex-col h-full"
             >
-              {/* Сообщения — ТОЧНО КАК БЫЛО */}
-              <div className="assistant-messages">
+              {/* Сообщения — занимают всё пространство сверху */}
+              <div className="assistant-messages flex-1 overflow-y-auto">
                 {messages.map((msg, index) => (
                   <div
                     key={index}
@@ -288,7 +295,7 @@ const AssistantChatWindow = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Поле ввода — ТОЧНО КАК БЫЛО, внизу */}
+              {/* Поле ввода — строго внизу, как было */}
               <div className="assistant-input">
                 <input
                   type="text"
@@ -313,10 +320,10 @@ const AssistantChatWindow = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="translator-mode"
+              className="translator-mode flex flex-col h-full p-6"
             >
               {/* Выбор языка */}
-              <div className="language-select-container mb-6">
+              <div className="mb-6">
                 <Select
                   options={languages}
                   value={languages.find(l => l.value === selectedLanguage)}
@@ -342,7 +349,7 @@ const AssistantChatWindow = () => {
               </div>
 
               {/* Большая кнопка записи */}
-              <div className="record-container flex-1">
+              <div className="flex-1 flex items-center justify-center">
                 <motion.button
                   whileTap={{ scale: 0.92 }}
                   onClick={isRecording ? stopRecording : startRecording}
@@ -350,7 +357,7 @@ const AssistantChatWindow = () => {
                 >
                   {isRecording ? <StopIcon className="w-20 h-20" /> : <MicrophoneIcon className="w-20 h-20" />}
                   {isRecording && (
-                    <div className="timer">
+                    <div className="timer absolute -bottom-10 text-2xl font-bold">
                       {`${Math.floor(recordingTimer / 60).toString().padStart(2, '0')}:${(recordingTimer % 60).toString().padStart(2, '0')}`}
                     </div>
                   )}
@@ -358,7 +365,7 @@ const AssistantChatWindow = () => {
               </div>
 
               {/* Блоки оригинала и перевода */}
-              <div className="translation-result">
+              <div className="translation-result mt-6">
                 <div className="translation-block">
                   <div className="label">Оригинал</div>
                   <div className="text-content">
@@ -374,7 +381,7 @@ const AssistantChatWindow = () => {
                   </div>
                 </div>
 
-                <div className="translation-block">
+                <div className="translation-block mt-6">
                   <div className="label">Перевод</div>
                   <div className="text-content">
                     {translatedText || 'Ожидаем перевод...'}
