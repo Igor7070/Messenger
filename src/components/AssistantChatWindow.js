@@ -18,41 +18,23 @@ import '../styles/AssistantChatWindow.css';
 const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
 
-  console.log('[DEBUG] typeof useState:', typeof useState);
-  console.log('[DEBUG] useState === React.useState:', useState === React.useState);
-
-  console.log('[DEBUG] Перед useState mode');
-  const [mode, setMode] = useState('chat');  // упростил тип, но можно вернуть
-
-  console.log('[DEBUG] Перед useState messages');
-  const [messages, setMessages] = useState([]);  // ← ВРЕМЕННО ПУСТОЙ МАССИВ, чтобы проверить
-
-  console.log('[DEBUG] Перед useState inputValue');
+  // ─── Общие состояния ───────────────────────────────────────
+  const [mode, setMode] = useState<'chat' | 'translator'>('chat');
+  const [messages, setMessages] = useState([
+    { role: 'assistant', content: 'Привет! Я твой умный ассистент.' },
+    { role: 'assistant', content: 'Могу помочь с переводами, анализом чатов, резюме и многим другим.' },
+    { role: 'assistant', content: 'Спрашивай что угодно ⚡' }
+  ]);
   const [inputValue, setInputValue] = useState('');
-
-  console.log('[DEBUG] Перед useState isLoading');
   const [isLoading, setIsLoading] = useState(false);
-
-  console.log('[DEBUG] Перед useRef messagesEndRef');
   const messagesEndRef = useRef(null);
 
   // ─── Переводчик ────────────────────────────────────────────
-  console.log('[DEBUG] Перед useState isRecording');
   const [isRecording, setIsRecording] = useState(false);
-
-  console.log('[DEBUG] Перед useState recordingTimer');
   const [recordingTimer, setRecordingTimer] = useState(0);
-
-  console.log('[DEBUG] Перед useState originalText');
   const [originalText, setOriginalText] = useState('');
-
-  console.log('[DEBUG] Перед useState translatedText');
   const [translatedText, setTranslatedText] = useState('');
-
-  console.log('[DEBUG] Перед useState translatorLang');
   const [translatorLang, setTranslatorLang] = useState('auto');
-
-  console.log('[DEBUG] translatorLang после инициализации:', typeof translatorLang, translatorLang);
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -71,33 +53,45 @@ const AssistantChatWindow = () => {
     { value: 'ja', label: '日本語 🇯🇵' },
   ];
 
-  console.log('[DEBUG] Перед currentLangOption, translatorLang =', translatorLang);
-  const currentLangOption = 
-    typeof translatorLang === 'string' && translatorLang
-      ? languages.find(l => l.value === translatorLang) || languages[0]
-      : languages[0];
+  // ─── Функции, которые используются в JSX, должны быть подняты выше ──
+  const sendMessage = async () => {
+    if (!inputValue.trim() || isLoading) return;
 
-  // Защита от испорченного значения
-  useEffect(() => {
-    if (typeof translatorLang !== 'string' || !languages.some(l => l.value === translatorLang)) {
-      console.warn('[ЗАЩИТА] translatorLang испорчен → сбрасываем на auto', translatorLang);
-      setTranslatorLang('auto');
+    const userMessage = inputValue.trim();
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setInputValue('');
+    setIsLoading(true);
+
+    try {
+      const res = await fetch('https://unlimitedpossibilities12.org/api/communicating_with_a_advanced_ai_model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: userMessage }),
+      });
+
+      if (!res.ok) throw new Error('Ошибка сервера');
+
+      const result = await res.text();
+      setMessages(prev => [...prev, { role: 'assistant', content: result }]);
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Извини, что-то пошло не так. Попробуй ещё раз.' }]);
+    } finally {
+      setIsLoading(false);
     }
-  }, [translatorLang]);
+  };
 
-  // ─── Скролл вниз в чате ────────────────────────────────────
+  // ─── Остальные функции (можно оставить ниже, они не используются в JSX напрямую) ──
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    if (mode === 'chat') scrollToBottom();
-  }, [messages, mode]);
-
-  // ─── Остальные функции без изменений (sendMessage, startRecording, stopRecording и т.д.) ──
-  // ... (оставляем как было, чтобы не удлинять код)
+  // ... startRecording, stopRecording, sendVoiceToTranslator, speakText — оставляем как есть
 
   if (!isOpen) return null;
+
+  // Безопасный выбор текущей опции языка
+  const currentLangOption = languages.find(l => l.value === translatorLang) || languages[0];
 
   return (
     <AnimatePresence>
@@ -117,11 +111,14 @@ const AssistantChatWindow = () => {
 
           <div className="assistant-actions">
             <button onClick={toggleFullScreen} className="icon-btn">
-              {isFullScreen ? <ArrowsPointingInIcon className="w-6 h-6" /> : <ArrowsPointingOutIcon className="w-6 h-6" />}
+              {isFullScreen 
+                ? <ArrowsPointingInIcon className="w-6 h-6" /> 
+                : <ArrowsPointingOutIcon className="w-6 h-6" />
+              }
             </button>
 
             <div className="relative">
-              <button className="icon-btn" onClick={() => {}}>
+              <button className="icon-btn" onClick={() => {/* меню режимов */}}>
                 <EllipsisVerticalIcon className="w-6 h-6" />
               </button>
             </div>
@@ -133,7 +130,14 @@ const AssistantChatWindow = () => {
         {/* Переключение режимов */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
-            <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col flex-1">
+            <motion.div
+              key="chat"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col flex-1"
+            >
+              {/* Сообщения чата */}
               <div className="assistant-messages">
                 {messages.map((msg, i) => (
                   <div key={i} className={`message ${msg.role}`}>
@@ -144,26 +148,40 @@ const AssistantChatWindow = () => {
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* Поле ввода */}
               <div className="assistant-input">
                 <input
                   value={inputValue}
                   onChange={e => setInputValue(e.target.value)}
-                  onKeyPress={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
+                  onKeyPress={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();   // ← теперь функция доступна
+                    }
+                  }}
                   placeholder="Напиши сообщение..."
                   disabled={isLoading}
                 />
-                <button onClick={sendMessage} disabled={isLoading || !inputValue.trim()}>➤</button>
+                <button 
+                  onClick={sendMessage}   // ← тоже доступна
+                  disabled={isLoading || !inputValue.trim()}
+                >
+                  ➤
+                </button>
               </div>
             </motion.div>
           ) : (
-            <motion.div key="translator" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="translator-mode">
+            <motion.div
+              key="translator"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="translator-mode"
+            >
               <Select
                 options={languages}
                 value={currentLangOption}
-                onChange={(option) => {
-                  console.log('[DEBUG Select onChange] option:', option);
-                  setTranslatorLang(option ? option.value : 'auto');
-                }}
+                onChange={opt => setTranslatorLang(opt?.value ?? 'auto')}
                 className="language-select mb-6"
                 classNamePrefix="react-select"
                 styles={{
@@ -178,13 +196,8 @@ const AssistantChatWindow = () => {
                 }}
               />
 
-              {/* Остальной переводчик без изменений */}
-              <div className="record-container">
-                {/* ... */}
-              </div>
-              <div className="translation-result">
-                {/* ... */}
-              </div>
+              {/* Кнопка записи и результаты перевода — оставляем как было */}
+              {/* ... */}
             </motion.div>
           )}
         </AnimatePresence>
