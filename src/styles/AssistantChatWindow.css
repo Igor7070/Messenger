@@ -212,6 +212,18 @@
   50% { transform: translateY(-10px); }
 }
 
+/* Меню трёх точек */
+.assistant-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.ml-3 {
+  margin-left: 0.75rem;
+}
+
 /* Режим переводчика */
 .translator-mode {
   display: flex;
