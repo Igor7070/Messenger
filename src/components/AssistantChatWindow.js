@@ -14,10 +14,6 @@ import '../styles/AssistantChatWindow.css';
 const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
 
-  const [mode, setMode] = useState('chat');
-  const [showMenu, setShowMenu] = useState(false);
-
-  // Чат
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hi! I am your smart assistant.' },
     { role: 'assistant', content: 'I can help with resumes, translations, chat analysis, and much more.' },
@@ -26,6 +22,10 @@ const AssistantChatWindow = () => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // Новое: переключение режимов и меню
+  const [mode, setMode] = useState('chat'); // 'chat' или 'translator'
+  const [showMenu, setShowMenu] = useState(false);
 
   // Переводчик
   const [isRecording, setIsRecording] = useState(false);
@@ -52,12 +52,12 @@ const AssistantChatWindow = () => {
   ];
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
-    if (mode === 'chat') scrollToBottom();
-  }, [messages, mode]);
+    scrollToBottom();
+  }, [messages]);
 
   const sendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -70,13 +70,16 @@ const AssistantChatWindow = () => {
     try {
       const response = await fetch('https://unlimitedpossibilities12.org/api/communicating_with_a_advanced_ai_model', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ prompt: userMessage }),
       });
 
       if (!response.ok) throw new Error('Server error');
 
       const result = await response.text();
+
       setMessages(prev => [...prev, { role: 'assistant', content: result }]);
     } catch (error) {
       console.error('Error while requesting AI:', error);
@@ -96,8 +99,9 @@ const AssistantChatWindow = () => {
     }
   };
 
-  // Запись голоса
+  // Запись голоса (оставляем как есть, или твоя реализация)
   const startRecording = async () => {
+    // твоя реализация startRecording
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -211,7 +215,7 @@ const AssistantChatWindow = () => {
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
-        {/* Шапка — ТОЧНО как в твоём старом коде */}
+        {/* Шапка — ТОЧНО такая же, как в твоём старом коде */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -223,10 +227,10 @@ const AssistantChatWindow = () => {
             <span>AI Assistant</span>
             <span className="online-dot"></span>
 
-            {/* Три точки — правее зелёного кружка */}
+            {/* Три точки — добавлены правее зелёного кружка */}
             <div className="relative ml-3">
               <button 
-                className="icon-btn p-1"
+                className="icon-btn"
                 onClick={() => setShowMenu(!showMenu)}
               >
                 <EllipsisVerticalIcon className="w-6 h-6" />
@@ -239,16 +243,9 @@ const AssistantChatWindow = () => {
                       setMode(mode === 'chat' ? 'translator' : 'chat');
                       setShowMenu(false);
                     }}
-                    className="w-full text-left px-5 py-3 text-white hover:bg-slate-700 transition-colors flex items-center gap-3"
+                    className="w-full text-left px-5 py-3 text-white hover:bg-slate-700 transition-colors"
                   >
-                    {mode === 'chat' ? (
-                      <>
-                        <MicrophoneIcon className="w-5 h-5" />
-                        Голосовой переводчик
-                      </>
-                    ) : (
-                      'Вернуться в чат'
-                    )}
+                    {mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}
                   </button>
                 </div>
               )}
@@ -263,7 +260,7 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Переключение режимов — без лишних flex-обёрток */}
+        {/* Переключение режимов */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
@@ -272,7 +269,7 @@ const AssistantChatWindow = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {/* Сообщения */}
+              {/* Сообщения — как было */}
               <div className="assistant-messages">
                 {messages.map((msg, index) => (
                   <div
@@ -294,7 +291,7 @@ const AssistantChatWindow = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Поле ввода — строго внизу */}
+              {/* Поле ввода — как было, внизу */}
               <div className="assistant-input">
                 <input
                   type="text"
