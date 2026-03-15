@@ -271,10 +271,10 @@ const AssistantChatWindow = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col h-full"
+              className="flex flex-col h-full"  // h-full — вся высота, но без растяжения
             >
-              {/* Сообщения — занимают всё пространство сверху */}
-              <div className="assistant-messages flex-1 overflow-y-auto">
+              {/* Сообщения — занимают всё пространство сверху и скроллятся */}
+              <div className="assistant-messages flex-1 overflow-y-auto pb-4">
                 {messages.map((msg, index) => (
                   <div
                     key={index}
@@ -295,8 +295,8 @@ const AssistantChatWindow = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Поле ввода — строго внизу, как было */}
-              <div className="assistant-input">
+              {/* Поле ввода — строго внизу, без растяжения */}
+              <div className="assistant-input mt-auto">
                 <input
                   type="text"
                   value={inputValue}
