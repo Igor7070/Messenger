@@ -212,7 +212,7 @@ const AssistantChatWindow = () => {
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
-        {/* Шапка — твоя старая, только добавили три точки */}
+        {/* Шапка — ТОЧНО такая же, как была */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -273,7 +273,7 @@ const AssistantChatWindow = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {/* Сообщения — как было */}
+              {/* Сообщения */}
               <div className="assistant-messages">
                 {messages.map((msg, index) => (
                   <div
@@ -295,7 +295,7 @@ const AssistantChatWindow = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Поле ввода — как было */}
+              {/* Поле ввода */}
               <div className="assistant-input">
                 <input
                   type="text"

@@ -212,29 +212,31 @@
   50% { transform: translateY(-10px); }
 }
 
-/* Принудительно прижимаем поле ввода в самый низ */
+/* Принудительно ставим поле ввода в самый низ окна */
 .assistant-window {
   display: flex !important;
   flex-direction: column !important;
-  height: 100vh !important;  /* или 100% — главное чтобы было 100% высоты */
+  height: 100% !important;
 }
 
 .assistant-header {
-  flex-shrink: 0 !important;
+  flex: 0 0 auto !important; /* шапка не растягивается */
 }
 
 .assistant-messages {
-  flex-grow: 1 !important;  /* сообщения растягиваются */
+  flex: 1 1 auto !important; /* сообщения занимают всё свободное место */
   overflow-y: auto !important;
   margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 .assistant-input {
-  flex-shrink: 0 !important;
-  margin-top: auto !important;   /* ← это главное, толкает вниз */
-  position: relative !important; /* или sticky, если не помогает */
+  flex: 0 0 auto !important; /* поле ввода фиксированной высоты */
+  margin-top: auto !important; /* главное — толкает вниз */
+  position: relative !important;
   bottom: 0 !important;
   z-index: 10 !important;
+  background: #0f172a !important; /* чтобы не было прозрачности, если нужно */
 }
 
 /* Для full-screen — то же самое */
