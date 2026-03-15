@@ -212,6 +212,38 @@
   50% { transform: translateY(-10px); }
 }
 
+.assistant-window {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;   /* важно */
+}
+
+.assistant-header {
+  flex-shrink: 0 !important;  /* шапка не растягивается */
+}
+
+.assistant-messages {
+  flex: 1 1 auto !important;  /* сообщения занимают всё оставшееся место */
+  overflow-y: auto !important;
+  margin-bottom: 0 !important; /* убираем лишние отступы снизу */
+}
+
+.assistant-input {
+  flex-shrink: 0 !important;  /* поле ввода не сжимается */
+  margin-top: auto !important; /* ← КЛЮЧЕВОЕ: толкает блок вниз */
+  position: sticky !important;
+  bottom: 0 !important;
+  background: #0f172a !important; /* чтобы не просвечивало, если нужно */
+  z-index: 10 !important;
+  padding: 16px 20px !important; /* как было */
+  border-top: 1px solid rgba(96, 165, 250, 0.2) !important; /* если был бордер */
+}
+
+/* Если в full-screen режиме всё равно не так — добавь */
+.assistant-window.full-screen .assistant-input {
+  bottom: 0 !important;
+}
+
 /* Меню трёх точек */
 .assistant-title {
   display: flex;
