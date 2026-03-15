@@ -212,37 +212,25 @@
   50% { transform: translateY(-10px); }
 }
 
-/* Принудительно ставим поле ввода в самый низ окна */
-.assistant-window {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100% !important;
-}
-
-.assistant-header {
-  flex: 0 0 auto !important; /* шапка не растягивается */
-}
-
-.assistant-messages {
-  flex: 1 1 auto !important; /* сообщения занимают всё свободное место */
-  overflow-y: auto !important;
-  margin-bottom: 0 !important;
-  padding-bottom: 0 !important;
-}
-
+/* Фиксируем поле ввода внизу окна — это работает, даже если всё остальное сломано */
 .assistant-input {
-  flex: 0 0 auto !important; /* поле ввода фиксированной высоты */
-  margin-top: auto !important; /* главное — толкает вниз */
-  position: relative !important;
+  position: fixed !important;
   bottom: 0 !important;
-  z-index: 10 !important;
-  background: #0f172a !important; /* чтобы не было прозрачности, если нужно */
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 100 !important;
+  background: #0f172a !important; /* или твой цвет фона */
+  border-top: 1px solid rgba(96, 165, 250, 0.2) !important; /* если был бордер */
+  padding: 16px 20px !important;
+  box-shadow: 0 -4px 10px rgba(0,0,0,0.3) !important; /* чтобы красиво отделялось */
+  width: 100% !important;
+  margin: 0 !important;
 }
 
 /* Для full-screen — то же самое */
 .assistant-window.full-screen .assistant-input {
   bottom: 0 !important;
-  margin-top: auto !important;
+  position: fixed !important;
 }
 
 /* Меню трёх точек */

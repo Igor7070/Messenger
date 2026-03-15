@@ -14,7 +14,10 @@ import '../styles/AssistantChatWindow.css';
 const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
 
-  // Чат — как было
+  const [mode, setMode] = useState('chat');
+  const [showMenu, setShowMenu] = useState(false);
+
+  // Чат — твои старые состояния
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hi! I am your smart assistant.' },
     { role: 'assistant', content: 'I can help with resumes, translations, chat analysis, and much more.' },
@@ -23,10 +26,6 @@ const AssistantChatWindow = () => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
-
-  // Переключение режимов + меню
-  const [mode, setMode] = useState('chat'); // 'chat' или 'translator'
-  const [showMenu, setShowMenu] = useState(false);
 
   // Переводчик
   const [isRecording, setIsRecording] = useState(false);
@@ -100,7 +99,7 @@ const AssistantChatWindow = () => {
     }
   };
 
-  // Запись и перевод (твои функции — оставляем как есть)
+  // Функции переводчика (твои, без изменений)
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -212,7 +211,7 @@ const AssistantChatWindow = () => {
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
-        {/* Шапка — ТОЧНО такая же, как была */}
+        {/* Шапка — твоя старая */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -224,7 +223,7 @@ const AssistantChatWindow = () => {
             <span>AI Assistant</span>
             <span className="online-dot"></span>
 
-            {/* Три точки — правее зелёного кружка */}
+            {/* Три точки */}
             <div className="relative ml-3">
               <button 
                 className="icon-btn p-1"
@@ -264,7 +263,7 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Переключение режимов */}
+        {/* Контент */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
@@ -273,7 +272,6 @@ const AssistantChatWindow = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {/* Сообщения */}
               <div className="assistant-messages">
                 {messages.map((msg, index) => (
                   <div
@@ -295,7 +293,6 @@ const AssistantChatWindow = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Поле ввода */}
               <div className="assistant-input">
                 <input
                   type="text"
@@ -322,7 +319,6 @@ const AssistantChatWindow = () => {
               exit={{ opacity: 0 }}
               className="translator-mode"
             >
-              {/* Выбор языка */}
               <div className="mb-6">
                 <Select
                   options={languages}
@@ -348,7 +344,6 @@ const AssistantChatWindow = () => {
                 />
               </div>
 
-              {/* Большая кнопка записи */}
               <div className="flex-1 flex items-center justify-center">
                 <motion.button
                   whileTap={{ scale: 0.92 }}
@@ -364,7 +359,6 @@ const AssistantChatWindow = () => {
                 </motion.button>
               </div>
 
-              {/* Блоки оригинала и перевода */}
               <div className="translation-result mt-6">
                 <div className="translation-block">
                   <div className="label">Оригинал</div>
