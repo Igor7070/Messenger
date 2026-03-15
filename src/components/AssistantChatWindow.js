@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
 import toast from 'react-hot-toast';
 
-// Heroicons v2 — outline стиль 24px
+// Heroicons v2 — outline стиль (24px)
 import {
   EllipsisVerticalIcon,
   ArrowsPointingOutIcon,
@@ -20,7 +20,7 @@ const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
 
   // ─── Общие состояния ───────────────────────────────────────
-  const [mode, setMode] = useState('chat');  // ← ИСПРАВЛЕНО: убрали <'chat' | 'translator'>
+  const [mode, setMode] = useState('chat'); // 'chat' или 'translator'
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Привет! Я твой умный ассистент.' },
     { role: 'assistant', content: 'Могу помочь с переводами, анализом чатов, резюме и многим другим.' },
@@ -52,17 +52,8 @@ const AssistantChatWindow = () => {
     { value: 'it', label: 'Italiano 🇮🇹' },
     { value: 'zh', label: '中文 🇨🇳' },
     { value: 'ja', label: '日本語 🇯🇵' },
+    // можно расширить список позже
   ];
-
-  // ─── Безопасный выбор языка (защита от undefined) ──────────
-  const currentLangOption = languages.find(l => l.value === selectedLanguage) || languages[0];
-
-  // Если вдруг язык пропал из списка — сбрасываем на auto
-  useEffect(() => {
-    if (!languages.some(l => l.value === selectedLanguage)) {
-      setSelectedLanguage('auto');
-    }
-  }, [selectedLanguage]);
 
   // ─── Скролл вниз в чате ────────────────────────────────────
   const scrollToBottom = () => {
@@ -250,9 +241,7 @@ const AssistantChatWindow = () => {
               </button>
             </div>
 
-            <button onClick={closeAssistant} className="icon-btn">
-              ✕
-            </button>
+            <button onClick={closeAssistant} className="icon-btn">✕</button>
           </div>
         </div>
 
@@ -302,7 +291,7 @@ const AssistantChatWindow = () => {
               {/* Выбор языка */}
               <Select
                 options={languages}
-                value={currentLangOption}
+                value={languages.find(l => l.value === selectedLanguage)}
                 onChange={opt => setSelectedLanguage(opt.value)}
                 className="language-select mb-6"
                 classNamePrefix="react-select"
