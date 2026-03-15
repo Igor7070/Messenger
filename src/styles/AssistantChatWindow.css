@@ -212,36 +212,35 @@
   50% { transform: translateY(-10px); }
 }
 
+/* Принудительно прижимаем поле ввода в самый низ */
 .assistant-window {
   display: flex !important;
   flex-direction: column !important;
-  height: 100% !important;   /* важно */
+  height: 100vh !important;  /* или 100% — главное чтобы было 100% высоты */
 }
 
 .assistant-header {
-  flex-shrink: 0 !important;  /* шапка не растягивается */
+  flex-shrink: 0 !important;
 }
 
 .assistant-messages {
-  flex: 1 1 auto !important;  /* сообщения занимают всё оставшееся место */
+  flex-grow: 1 !important;  /* сообщения растягиваются */
   overflow-y: auto !important;
-  margin-bottom: 0 !important; /* убираем лишние отступы снизу */
+  margin-bottom: 0 !important;
 }
 
 .assistant-input {
-  flex-shrink: 0 !important;  /* поле ввода не сжимается */
-  margin-top: auto !important; /* ← КЛЮЧЕВОЕ: толкает блок вниз */
-  position: sticky !important;
+  flex-shrink: 0 !important;
+  margin-top: auto !important;   /* ← это главное, толкает вниз */
+  position: relative !important; /* или sticky, если не помогает */
   bottom: 0 !important;
-  background: #0f172a !important; /* чтобы не просвечивало, если нужно */
   z-index: 10 !important;
-  padding: 16px 20px !important; /* как было */
-  border-top: 1px solid rgba(96, 165, 250, 0.2) !important; /* если был бордер */
 }
 
-/* Если в full-screen режиме всё равно не так — добавь */
+/* Для full-screen — то же самое */
 .assistant-window.full-screen .assistant-input {
   bottom: 0 !important;
+  margin-top: auto !important;
 }
 
 /* Меню трёх точек */

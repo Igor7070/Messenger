@@ -212,7 +212,7 @@ const AssistantChatWindow = () => {
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
-        {/* Шапка — ТОЧНО такая же, как в старом коде */}
+        {/* Шапка — твоя старая, только добавили три точки */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -224,7 +224,7 @@ const AssistantChatWindow = () => {
             <span>AI Assistant</span>
             <span className="online-dot"></span>
 
-            {/* Три точки — правее зелёного кружка, без изменения структуры шапки */}
+            {/* Три точки — правее зелёного кружка */}
             <div className="relative ml-3">
               <button 
                 className="icon-btn p-1"
@@ -264,7 +264,7 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Переключение режимов — без лишних div и flex */}
+        {/* Переключение режимов */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
@@ -295,7 +295,7 @@ const AssistantChatWindow = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Поле ввода — как было, внизу */}
+              {/* Поле ввода — как было */}
               <div className="assistant-input">
                 <input
                   type="text"
