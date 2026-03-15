@@ -18,6 +18,9 @@ import '../styles/AssistantChatWindow.css';
 const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
 
+  console.log('typeof useState:', typeof useState);
+  console.log('useState === React.useState:', useState === React.useState)
+
   // ─── Общие состояния ───────────────────────────────────────
   const [mode, setMode] = useState<'chat' | 'translator'>('chat');
   const [messages, setMessages] = useState([
