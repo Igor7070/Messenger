@@ -39,6 +39,21 @@ const AssistantChatWindow = () => {
   const audioChunksRef = useRef([]);
   const timerIntervalRef = useRef(null);
 
+  console.log("[DEBUG selectedLanguage при монтировании]", 
+    typeof selectedLanguage, 
+    selectedLanguage,
+    JSON.stringify(selectedLanguage)
+  );
+
+  useEffect(() => {
+    console.log("[DEBUG selectedLanguage изменился]", 
+      typeof selectedLanguage, 
+      selectedLanguage,
+      "mode =", mode,
+      "isOpen =", isOpen
+    );
+  }, [selectedLanguage, mode, isOpen]);
+
   const languages = [
     { value: 'auto', label: 'Авто 🌐' },
     { value: 'en', label: 'English 🇬🇧' },
