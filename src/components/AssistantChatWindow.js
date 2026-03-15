@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
 import toast from 'react-hot-toast';
 
-// Heroicons v2 — outline стиль (24px)
+// Heroicons v2 — outline стиль 24px
 import {
   EllipsisVerticalIcon,
   ArrowsPointingOutIcon,
@@ -52,8 +52,18 @@ const AssistantChatWindow = () => {
     { value: 'it', label: 'Italiano 🇮🇹' },
     { value: 'zh', label: '中文 🇨🇳' },
     { value: 'ja', label: '日本語 🇯🇵' },
-    // можно добавить остальные 100+ языков позже
+    // можно расширить до 100+ языков позже
   ];
+
+  // ─── Безопасный выбор языка (защита от undefined) ──────────
+  const currentLangOption = languages.find(l => l.value === selectedLanguage) || languages[0];
+
+  // Если вдруг язык пропал из списка — сбрасываем на auto
+  useEffect(() => {
+    if (!languages.some(l => l.value === selectedLanguage)) {
+      setSelectedLanguage('auto');
+    }
+  }, [selectedLanguage]);
 
   // ─── Скролл вниз в чате ────────────────────────────────────
   const scrollToBottom = () => {
@@ -168,7 +178,7 @@ const AssistantChatWindow = () => {
         const audio = new Audio(`data:audio/mp3;base64,${cleanBase64}`);
         audio.play().catch(e => {
           console.error('Автопроигрывание не удалось', e);
-          toast('Нажми на кнопку воспроизведения', { icon: '🔊' });
+          toast('Нажми кнопку воспроизведения', { icon: '🔊' });
         });
       }
     } catch (err) {
@@ -293,7 +303,7 @@ const AssistantChatWindow = () => {
               {/* Выбор языка */}
               <Select
                 options={languages}
-                value={languages.find(l => l.value === selectedLanguage)}
+                value={currentLangOption}
                 onChange={opt => setSelectedLanguage(opt.value)}
                 className="language-select mb-6"
                 classNamePrefix="react-select"
