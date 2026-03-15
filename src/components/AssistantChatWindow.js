@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
 import toast from 'react-hot-toast';
 import { 
-  HiOutlineDotsVertical, 
-  HiOutlineArrowsExpand, 
-  HiOutlineArrowsCollapse, 
+  HiOutlineDotsVertical,
+  HiOutlineArrowsPointingOut,   // expand (стрелки наружу)
+  HiOutlineArrowsPointingIn,    // collapse (стрелки внутрь)
   HiMicrophone,
   HiStop 
 } from 'react-icons/hi';
@@ -222,7 +222,10 @@ const AssistantChatWindow = () => {
 
           <div className="assistant-actions">
             <button onClick={toggleFullScreen} className="icon-btn">
-              {isFullScreen ? <HiOutlineArrowsCollapse /> : <HiOutlineArrowsExpand />}
+              {isFullScreen 
+                ? <HiOutlineArrowsPointingIn size={24} /> 
+                : <HiOutlineArrowsPointingOut size={24} />
+              }
             </button>
             <div className="relative">
               <button className="icon-btn" onClick={() => {/* открыть меню */}}>
