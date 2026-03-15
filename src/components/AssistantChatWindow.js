@@ -14,6 +14,7 @@ import '../styles/AssistantChatWindow.css';
 const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
 
+  // Чат — как было
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hi! I am your smart assistant.' },
     { role: 'assistant', content: 'I can help with resumes, translations, chat analysis, and much more.' },
@@ -23,8 +24,8 @@ const AssistantChatWindow = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Новое: переключение режимов и меню
-  const [mode, setMode] = useState('chat'); // 'chat' или 'translator'
+  // Новое: режим и меню
+  const [mode, setMode] = useState('chat');
   const [showMenu, setShowMenu] = useState(false);
 
   // Переводчик
@@ -99,9 +100,8 @@ const AssistantChatWindow = () => {
     }
   };
 
-  // Запись голоса (оставляем как есть, или твоя реализация)
+  // ─── Функции переводчика (оставляем как есть) ──────────────
   const startRecording = async () => {
-    // твоя реализация startRecording
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -152,10 +152,7 @@ const AssistantChatWindow = () => {
     try {
       const res = await fetch(
         `https://unlimitedpossibilities12.org/api/global-assistant/translate-voice?targetLanguage=${selectedLanguage}&sourceLanguage=auto&withTts=true`,
-        {
-          method: 'POST',
-          body: formData,
-        }
+        { method: 'POST', body: formData }
       );
 
       if (!res.ok) throw new Error('Server error');
@@ -215,7 +212,7 @@ const AssistantChatWindow = () => {
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
-        {/* Шапка — ТОЧНО такая же, как в твоём старом коде */}
+        {/* Шапка — идентична старому коду */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -227,7 +224,7 @@ const AssistantChatWindow = () => {
             <span>AI Assistant</span>
             <span className="online-dot"></span>
 
-            {/* Три точки — добавлены правее зелёного кружка */}
+            {/* Три точки — правее зелёного кружка, без изменения шапки */}
             <div className="relative ml-3">
               <button 
                 className="icon-btn"
@@ -260,7 +257,7 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Переключение режимов */}
+        {/* Переключение режимов — без лишних обёрток */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
