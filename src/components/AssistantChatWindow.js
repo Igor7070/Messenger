@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAssistant } from '../context/AssistantContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import Select from 'react-select';
 import toast from 'react-hot-toast';
 
 import {
@@ -52,13 +51,14 @@ const AssistantChatWindow = () => {
     { value: 'ja', label: '日本語 🇯🇵' },
   ];
 
-  // Защита: любой входящий язык → строка
-  const safeSetLang = (val) => {
-    const str = String(val ?? 'auto').trim();
-    setTranslatorLang(str);
-  };
+  // Защита от мусора в состоянии
+  useEffect(() => {
+    if (typeof translatorLang !== 'string' || !languages.some(l => l.value === translatorLang)) {
+      console.warn('translatorLang был некорректным → исправлено на auto', translatorLang);
+      setTranslatorLang('auto');
+    }
+  }, [translatorLang]);
 
-  // Скролл вниз
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -103,10 +103,7 @@ const AssistantChatWindow = () => {
       setIsRecording(true);
       setRecordingTimer(0);
 
-      timerIntervalRef.current = setInterval(() => {
-        setRecordingTimer(prev => prev + 1);
-      }, 1000);
-
+      timerIntervalRef.current = setInterval(() => setRecordingTimer(p => p + 1), 1000);
       toast.success('Запись началась');
     } catch (err) {
       toast.error('Нет доступа к микрофону');
@@ -157,7 +154,7 @@ const AssistantChatWindow = () => {
       }
     } catch (err) {
       console.error(err);
-      toast.error('Ошибка перевода голоса');
+      toast.error('Ошибка перевода');
     } finally {
       setIsLoading(false);
     }
@@ -199,6 +196,7 @@ const AssistantChatWindow = () => {
         exit={{ y: '100%', opacity: 0 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
+        {/* Шапка */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">⚡</div>
@@ -242,37 +240,29 @@ const AssistantChatWindow = () => {
             </motion.div>
           ) : (
             <motion.div key="translator" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="translator-mode p-4">
-              <Select
-                options={languages}
+              {/* Нативный select вместо react-select */}
+              <select
                 value={translatorLang}
-                onChange={opt => safeSetLang(opt ? opt.value : 'auto')}
-                getOptionValue={opt => opt.value}
-                getOptionLabel={opt => opt.label}
-                isSearchable={false}
-                className="language-select mb-6"
-                classNamePrefix="react-select"
-                styles={{
-                  control: base => ({ ...base, backgroundColor: '#1e293b', borderColor: '#334155', color: 'white' }),
-                  menu: base => ({ ...base, backgroundColor: '#0f172a', color: 'white' }),
-                  option: (base, { isSelected, isFocused }) => ({
-                    ...base,
-                    backgroundColor: isSelected ? '#2563eb' : isFocused ? '#334155' : '#0f172a',
-                    color: 'white',
-                  }),
-                  singleValue: base => ({ ...base, color: 'white' }),
-                }}
-              />
+                onChange={e => setTranslatorLang(e.target.value)}
+                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {languages.map(lang => (
+                  <option key={lang.value} value={lang.value}>
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
 
               <div className="record-container flex justify-center my-8">
                 <motion.button
                   whileTap={{ scale: 0.92 }}
                   onClick={isRecording ? stopRecording : startRecording}
-                  className={`record-btn ${isRecording ? 'recording' : ''}`}
+                  className={`record-btn ${isRecording ? 'recording' : ''} relative`}
                   disabled={isLoading}
                 >
                   {isRecording ? <StopIcon className="w-16 h-16" /> : <MicrophoneIcon className="w-16 h-16" />}
                   {isRecording && (
-                    <div className="timer absolute -bottom-10 text-white font-mono">
+                    <div className="absolute -bottom-10 text-white font-mono text-sm">
                       {`${Math.floor(recordingTimer / 60).toString().padStart(2, '0')}:${(recordingTimer % 60).toString().padStart(2, '0')}`}
                     </div>
                   )}
@@ -282,12 +272,12 @@ const AssistantChatWindow = () => {
               <div className="translation-result space-y-6">
                 <div className="translation-block bg-gray-800 p-4 rounded-lg">
                   <div className="text-gray-400 mb-1">Оригинал</div>
-                  <div className="relative min-h-[60px]">
+                  <div className="relative min-h-[60px] whitespace-pre-wrap">
                     {originalText || 'Говори что-нибудь...'}
                     {originalText && (
                       <button
                         onClick={() => speakText(originalText, 'auto')}
-                        className="absolute right-3 top-2 text-blue-400 hover:text-blue-300"
+                        className="absolute right-3 top-2 text-blue-400 hover:text-blue-300 transition-colors"
                       >
                         <PlayIcon className="w-6 h-6" />
                       </button>
@@ -297,12 +287,12 @@ const AssistantChatWindow = () => {
 
                 <div className="translation-block bg-gray-800 p-4 rounded-lg">
                   <div className="text-gray-400 mb-1">Перевод</div>
-                  <div className="relative min-h-[60px]">
+                  <div className="relative min-h-[60px] whitespace-pre-wrap">
                     {translatedText || 'Ожидаем перевод...'}
                     {translatedText && (
                       <button
                         onClick={() => speakText(translatedText, translatorLang)}
-                        className="absolute right-3 top-2 text-green-400 hover:text-green-300"
+                        className="absolute right-3 top-2 text-green-400 hover:text-green-300 transition-colors"
                       >
                         <PlayIcon className="w-6 h-6" />
                       </button>
