@@ -19,7 +19,6 @@ import '../styles/AssistantChatWindow.css';
 const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
 
-  // Все хуки — наверху, до любого return!
   const [mode, setMode] = useState<'chat' | 'translator'>('chat');
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Привет! Я твой умный ассистент.' },
@@ -54,15 +53,16 @@ const AssistantChatWindow = () => {
     { value: 'ja', label: '日本語 🇯🇵' },
   ];
 
-  // Безопасный объект для react-select
-  const currentLangOption = languages.find(l => l.value === selectedLanguage) || languages[0];
-
-  // Защита от невалидного языка
+  // Защита: всегда строка + лог при проблеме
   useEffect(() => {
-    if (!languages.some(l => l.value === selectedLanguage)) {
+    if (typeof selectedLanguage !== 'string') {
+      console.warn('selectedLanguage стал не строкой →', selectedLanguage);
       setSelectedLanguage('auto');
     }
   }, [selectedLanguage]);
+
+  // Получаем опцию безопасно
+  const currentLangOption = languages.find(l => l.value === selectedLanguage) ?? languages[0];
 
   // Скролл вниз
   const scrollToBottom = () => {
@@ -151,7 +151,7 @@ const AssistantChatWindow = () => {
         { method: 'POST', body: formData }
       );
 
-      if (!res.ok) throw new Error('Сервер не отвечает');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
 
@@ -164,14 +164,15 @@ const AssistantChatWindow = () => {
         audio.play().catch(() => toast('Нажми ▶ для прослушивания'));
       }
     } catch (err) {
-      toast.error('Ошибка перевода');
+      console.error(err);
+      toast.error('Ошибка перевода голоса');
     } finally {
       setIsLoading(false);
     }
   };
 
   const speakText = async (text, lang) => {
-    if (!text) return;
+    if (!text?.trim()) return;
 
     try {
       const res = await fetch('https://unlimitedpossibilities12.org/tts', {
@@ -180,18 +181,19 @@ const AssistantChatWindow = () => {
         body: JSON.stringify({ text, language: lang }),
       });
 
-      if (!res.ok) throw new Error('TTS ошибка');
+      if (!res.ok) throw new Error(`TTS HTTP ${res.status}`);
 
       const data = await res.json();
       let base64 = data.audio || '';
 
       if (base64.includes(',')) base64 = base64.split(',')[1];
-      if (!base64) return toast.error('Нет аудио');
+      if (!base64) return toast.error('Нет аудио от TTS');
 
       const audio = new Audio(`data:audio/mp3;base64,${base64}`);
-      audio.play();
+      audio.play().catch(() => toast('Не удалось воспроизвести'));
     } catch (err) {
-      toast.error('Не удалось воспроизвести');
+      console.error(err);
+      toast.error('Ошибка воспроизведения');
     }
   };
 
@@ -255,7 +257,7 @@ const AssistantChatWindow = () => {
               <Select
                 options={languages}
                 value={currentLangOption}
-                onChange={opt => setSelectedLanguage(opt ? opt.value : 'auto')}
+                onChange={opt => setSelectedLanguage(opt?.value ?? 'auto')}
                 className="language-select mb-6"
                 classNamePrefix="react-select"
                 styles={{
@@ -290,7 +292,11 @@ const AssistantChatWindow = () => {
                   <div className="label">Оригинал</div>
                   <div className="text-content">
                     {originalText || 'Говори что-нибудь...'}
-                    {originalText && <button onClick={() => speakText(originalText, 'auto')} className="play-btn blue"><PlayIcon className="w-6 h-6" /></button>}
+                    {originalText && (
+                      <button onClick={() => speakText(originalText, 'auto')} className="play-btn blue">
+                        <PlayIcon className="w-6 h-6" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -298,7 +304,11 @@ const AssistantChatWindow = () => {
                   <div className="label">Перевод</div>
                   <div className="text-content">
                     {translatedText || 'Ожидаем перевод...'}
-                    {translatedText && <button onClick={() => speakText(translatedText, selectedLanguage)} className="play-btn green"><PlayIcon className="w-6 h-6" /></button>}
+                    {translatedText && (
+                      <button onClick={() => speakText(translatedText, selectedLanguage)} className="play-btn green">
+                        <PlayIcon className="w-6 h-6" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
