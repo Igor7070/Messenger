@@ -214,17 +214,17 @@
 
 /* Фиксируем поле ввода внизу окна — это работает, даже если всё остальное сломано */
 .assistant-input {
-  position: fixed !important;
+  position: sticky !important;          /* вместо fixed — лучше работает внутри скролла */
   bottom: 0 !important;
   left: 0 !important;
   right: 0 !important;
-  z-index: 100 !important;
-  background: #0f172a !important; /* или твой цвет фона */
-  border-top: 1px solid rgba(96, 165, 250, 0.2) !important; /* если был бордер */
-  padding: 16px 20px !important;
-  box-shadow: 0 -4px 10px rgba(0,0,0,0.3) !important; /* чтобы красиво отделялось */
   width: 100% !important;
-  margin: 0 !important;
+  margin: 0 !important;                 /* убираем любые внешние отступы */
+  padding: 16px 20px !important;        /* твои внутренние отступы */
+  box-sizing: border-box !important;    /* важно — чтобы padding не добавлял ширину */
+  background: #0f172a !important;       /* фон, чтобы не просвечивало */
+  border-top: 1px solid rgba(96, 165, 250, 0.2) !important; /* если был бордер */
+  z-index: 10 !important;
 }
 
 /* Для full-screen — то же самое */
