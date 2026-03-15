@@ -17,7 +17,7 @@ const AssistantChatWindow = () => {
   const [mode, setMode] = useState('chat');
   const [showMenu, setShowMenu] = useState(false);
 
-  // Чат — состояния как были
+  // Чат
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hi! I am your smart assistant.' },
     { role: 'assistant', content: 'I can help with resumes, translations, chat analysis, and much more.' },
@@ -70,16 +70,13 @@ const AssistantChatWindow = () => {
     try {
       const response = await fetch('https://unlimitedpossibilities12.org/api/communicating_with_a_advanced_ai_model', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: userMessage }),
       });
 
       if (!response.ok) throw new Error('Server error');
 
       const result = await response.text();
-
       setMessages(prev => [...prev, { role: 'assistant', content: result }]);
     } catch (error) {
       console.error('Error while requesting AI:', error);
@@ -170,10 +167,7 @@ const AssistantChatWindow = () => {
           : data.audioBase64;
 
         const audio = new Audio(`data:audio/mp3;base64,${cleanBase64}`);
-        audio.play().catch(e => {
-          console.error('Auto-play failed', e);
-          toast('Tap play button to listen', { icon: '🔊' });
-        });
+        audio.play().catch(() => toast('Tap play button to listen', { icon: '🔊' }));
       }
     } catch (err) {
       console.error(err);
@@ -196,9 +190,7 @@ const AssistantChatWindow = () => {
       const data = await res.json();
       let base64 = data.audio;
 
-      if (base64?.includes(',')) {
-        base64 = base64.split(',')[1];
-      }
+      if (base64?.includes(',')) base64 = base64.split(',')[1];
 
       const audio = new Audio(`data:audio/mp3;base64,${base64}`);
       audio.play();
@@ -219,7 +211,7 @@ const AssistantChatWindow = () => {
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
-        {/* Шапка — идентична твоему старому коду */}
+        {/* Шапка — ТОЧНО как в твоём старом коде */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -231,10 +223,10 @@ const AssistantChatWindow = () => {
             <span>AI Assistant</span>
             <span className="online-dot"></span>
 
-            {/* Три точки правее зелёного кружка */}
+            {/* Три точки — правее зелёного кружка */}
             <div className="relative ml-3">
               <button 
-                className="icon-btn"
+                className="icon-btn p-1"
                 onClick={() => setShowMenu(!showMenu)}
               >
                 <EllipsisVerticalIcon className="w-6 h-6" />
@@ -247,9 +239,16 @@ const AssistantChatWindow = () => {
                       setMode(mode === 'chat' ? 'translator' : 'chat');
                       setShowMenu(false);
                     }}
-                    className="w-full text-left px-5 py-3 text-white hover:bg-slate-700 transition-colors"
+                    className="w-full text-left px-5 py-3 text-white hover:bg-slate-700 transition-colors flex items-center gap-3"
                   >
-                    {mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}
+                    {mode === 'chat' ? (
+                      <>
+                        <MicrophoneIcon className="w-5 h-5" />
+                        Голосовой переводчик
+                      </>
+                    ) : (
+                      'Вернуться в чат'
+                    )}
                   </button>
                 </div>
               )}
@@ -264,142 +263,141 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Контент */}
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <AnimatePresence mode="wait">
-            {mode === 'chat' ? (
-              <motion.div
-                key="chat"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col flex-1"
-              >
-                <div className="assistant-messages flex-1 overflow-y-auto">
-                  {messages.map((msg, index) => (
-                    <div
-                      key={index}
-                      className={`message ${msg.role === 'user' ? 'user-message' : 'assistant-message'}`}
-                    >
-                      <div className="message-bubble">
-                        {msg.content}
-                      </div>
+        {/* Переключение режимов — без лишних flex-обёрток */}
+        <AnimatePresence mode="wait">
+          {mode === 'chat' ? (
+            <motion.div
+              key="chat"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              {/* Сообщения */}
+              <div className="assistant-messages">
+                {messages.map((msg, index) => (
+                  <div
+                    key={index}
+                    className={`message ${msg.role === 'user' ? 'user-message' : 'assistant-message'}`}
+                  >
+                    <div className="message-bubble">
+                      {msg.content}
                     </div>
-                  ))}
-                  {isLoading && (
-                    <div className="message assistant-message">
-                      <div className="message-bubble typing">
-                        <span></span><span></span><span></span>
-                      </div>
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="message assistant-message">
+                    <div className="message-bubble typing">
+                      <span></span><span></span><span></span>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Поле ввода — строго внизу */}
+              <div className="assistant-input">
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Write a message..."
+                  disabled={isLoading}
+                />
+                <button 
+                  onClick={sendMessage} 
+                  className="send-btn"
+                  disabled={isLoading || !inputValue.trim()}
+                >
+                  ➤
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="translator"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="translator-mode"
+            >
+              {/* Выбор языка */}
+              <div className="mb-6">
+                <Select
+                  options={languages}
+                  value={languages.find(l => l.value === selectedLanguage)}
+                  onChange={opt => setSelectedLanguage(opt.value)}
+                  className="language-select"
+                  classNamePrefix="react-select"
+                  styles={{
+                    control: base => ({
+                      ...base,
+                      backgroundColor: '#1e293b',
+                      borderColor: '#334155',
+                      color: 'white',
+                    }),
+                    menu: base => ({ ...base, backgroundColor: '#0f172a', color: 'white' }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected ? '#2563eb' : state.isFocused ? '#334155' : '#0f172a',
+                      color: 'white',
+                    }),
+                    singleValue: base => ({ ...base, color: 'white' }),
+                  }}
+                />
+              </div>
+
+              {/* Большая кнопка записи */}
+              <div className="flex-1 flex items-center justify-center">
+                <motion.button
+                  whileTap={{ scale: 0.92 }}
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className={`record-btn ${isRecording ? 'recording' : ''}`}
+                >
+                  {isRecording ? <StopIcon className="w-20 h-20" /> : <MicrophoneIcon className="w-20 h-20" />}
+                  {isRecording && (
+                    <div className="timer absolute -bottom-10 text-2xl font-bold text-white">
+                      {`${Math.floor(recordingTimer / 60).toString().padStart(2, '0')}:${(recordingTimer % 60).toString().padStart(2, '0')}`}
                     </div>
                   )}
-                  <div ref={messagesEndRef} />
-                </div>
+                </motion.button>
+              </div>
 
-                <div className="assistant-input">
-                  <input
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Write a message..."
-                    disabled={isLoading}
-                  />
-                  <button 
-                    onClick={sendMessage} 
-                    className="send-btn"
-                    disabled={isLoading || !inputValue.trim()}
-                  >
-                    ➤
-                  </button>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="translator"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="translator-mode flex flex-col h-full p-6"
-              >
-                {/* Выбор языка */}
-                <div className="mb-6">
-                  <Select
-                    options={languages}
-                    value={languages.find(l => l.value === selectedLanguage)}
-                    onChange={opt => setSelectedLanguage(opt.value)}
-                    className="language-select"
-                    classNamePrefix="react-select"
-                    styles={{
-                      control: base => ({
-                        ...base,
-                        backgroundColor: '#1e293b',
-                        borderColor: '#334155',
-                        color: 'white',
-                      }),
-                      menu: base => ({ ...base, backgroundColor: '#0f172a', color: 'white' }),
-                      option: (base, state) => ({
-                        ...base,
-                        backgroundColor: state.isSelected ? '#2563eb' : state.isFocused ? '#334155' : '#0f172a',
-                        color: 'white',
-                      }),
-                      singleValue: base => ({ ...base, color: 'white' }),
-                    }}
-                  />
-                </div>
-
-                {/* Большая кнопка записи */}
-                <div className="flex-1 flex items-center justify-center">
-                  <motion.button
-                    whileTap={{ scale: 0.92 }}
-                    onClick={isRecording ? stopRecording : startRecording}
-                    className={`record-btn ${isRecording ? 'recording' : ''}`}
-                  >
-                    {isRecording ? <StopIcon className="w-20 h-20" /> : <MicrophoneIcon className="w-20 h-20" />}
-                    {isRecording && (
-                      <div className="timer absolute -bottom-10 text-2xl font-bold text-white">
-                        {`${Math.floor(recordingTimer / 60).toString().padStart(2, '0')}:${(recordingTimer % 60).toString().padStart(2, '0')}`}
-                      </div>
+              {/* Блоки оригинала и перевода */}
+              <div className="translation-result mt-6">
+                <div className="translation-block">
+                  <div className="label">Оригинал</div>
+                  <div className="text-content">
+                    {originalText || 'Говорите...'}
+                    {originalText && (
+                      <button 
+                        onClick={() => speakText(originalText, 'auto')}
+                        className="play-btn blue"
+                      >
+                        <PlayIcon className="w-6 h-6" />
+                      </button>
                     )}
-                  </motion.button>
-                </div>
-
-                {/* Блоки оригинала и перевода */}
-                <div className="translation-result mt-6">
-                  <div className="translation-block">
-                    <div className="label">Оригинал</div>
-                    <div className="text-content">
-                      {originalText || 'Говорите...'}
-                      {originalText && (
-                        <button 
-                          onClick={() => speakText(originalText, 'auto')}
-                          className="play-btn blue"
-                        >
-                          <PlayIcon className="w-6 h-6" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="translation-block mt-6">
-                    <div className="label">Перевод</div>
-                    <div className="text-content">
-                      {translatedText || 'Ожидаем перевод...'}
-                      {translatedText && (
-                        <button 
-                          onClick={() => speakText(translatedText, selectedLanguage)}
-                          className="play-btn green"
-                        >
-                          <PlayIcon className="w-6 h-6" />
-                        </button>
-                      )}
-                    </div>
                   </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+
+                <div className="translation-block mt-6">
+                  <div className="label">Перевод</div>
+                  <div className="text-content">
+                    {translatedText || 'Ожидаем перевод...'}
+                    {translatedText && (
+                      <button 
+                        onClick={() => speakText(translatedText, selectedLanguage)}
+                        className="play-btn green"
+                      >
+                        <PlayIcon className="w-6 h-6" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </AnimatePresence>
   );
