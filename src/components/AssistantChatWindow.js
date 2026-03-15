@@ -3,13 +3,17 @@ import { useAssistant } from '../context/AssistantContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
 import toast from 'react-hot-toast';
-import { 
-  HiOutlineDotsVertical,
-  HiOutlineArrowsPointingOut,   // expand (стрелки наружу)
-  HiOutlineArrowsPointingIn,    // collapse (стрелки внутрь)
-  HiMicrophone,
-  HiStop 
-} from 'react-icons/hi';
+
+// Heroicons v2 — outline стиль (24px)
+import {
+  EllipsisVerticalIcon,
+  ArrowsPointingOutIcon,
+  ArrowsPointingInIcon,
+  MicrophoneIcon,
+  StopIcon,
+  PlayIcon,
+} from '@heroicons/react/24/outline';
+
 import '../styles/AssistantChatWindow.css';
 
 const AssistantChatWindow = () => {
@@ -18,9 +22,9 @@ const AssistantChatWindow = () => {
   // ─── Общие состояния ───────────────────────────────────────
   const [mode, setMode] = useState<'chat' | 'translator'>('chat');
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hi! I am your smart assistant.' },
-    { role: 'assistant', content: 'I can help with translations, chat analysis, resumes and much more.' },
-    { role: 'assistant', content: 'Ask anything ⚡' }
+    { role: 'assistant', content: 'Привет! Я твой умный ассистент.' },
+    { role: 'assistant', content: 'Могу помочь с переводами, анализом чатов, резюме и многим другим.' },
+    { role: 'assistant', content: 'Спрашивай что угодно ⚡' }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +42,7 @@ const AssistantChatWindow = () => {
   const timerIntervalRef = useRef(null);
 
   const languages = [
-    { value: 'auto', label: 'Auto 🌐' },
+    { value: 'auto', label: 'Авто 🌐' },
     { value: 'en', label: 'English 🇬🇧' },
     { value: 'ru', label: 'Русский 🇷🇺' },
     { value: 'uk', label: 'Українська 🇺🇦' },
@@ -48,10 +52,10 @@ const AssistantChatWindow = () => {
     { value: 'it', label: 'Italiano 🇮🇹' },
     { value: 'zh', label: '中文 🇨🇳' },
     { value: 'ja', label: '日本語 🇯🇵' },
-    // добавь остальные по желанию
+    // можно добавить остальные 100+ языков позже
   ];
 
-  // ─── Скролл вниз ───────────────────────────────────────────
+  // ─── Скролл вниз в чате ────────────────────────────────────
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -76,13 +80,13 @@ const AssistantChatWindow = () => {
         body: JSON.stringify({ prompt: userMessage }),
       });
 
-      if (!res.ok) throw new Error('Server error');
+      if (!res.ok) throw new Error('Ошибка сервера');
 
       const result = await res.text();
       setMessages(prev => [...prev, { role: 'assistant', content: result }]);
     } catch (err) {
       console.error(err);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Try again.' }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Извини, что-то пошло не так. Попробуй ещё раз.' }]);
     } finally {
       setIsLoading(false);
     }
@@ -107,10 +111,10 @@ const AssistantChatWindow = () => {
         setRecordingTimer(prev => prev + 1);
       }, 1000);
 
-      toast.success('Recording started...');
+      toast.success('Запись началась...');
     } catch (err) {
-      console.error('Microphone access denied', err);
-      toast.error('Cannot access microphone');
+      console.error('Нет доступа к микрофону', err);
+      toast.error('Не удалось получить доступ к микрофону');
     }
   };
 
@@ -125,7 +129,7 @@ const AssistantChatWindow = () => {
       clearInterval(timerIntervalRef.current);
 
       if (audioBlob.size < 1000) {
-        toast.error('Recording is too short');
+        toast.error('Запись слишком короткая');
         return;
       }
 
@@ -148,12 +152,12 @@ const AssistantChatWindow = () => {
         }
       );
 
-      if (!res.ok) throw new Error('Server error');
+      if (!res.ok) throw new Error('Ошибка сервера');
 
       const data = await res.json();
 
-      setOriginalText(data.original || 'Not recognized');
-      setTranslatedText(data.translated || 'Translation failed');
+      setOriginalText(data.original || 'Не распознано');
+      setTranslatedText(data.translated || 'Перевод не удался');
 
       // Авто-воспроизведение перевода
       if (data.audioBase64) {
@@ -163,13 +167,13 @@ const AssistantChatWindow = () => {
 
         const audio = new Audio(`data:audio/mp3;base64,${cleanBase64}`);
         audio.play().catch(e => {
-          console.error('Auto-play failed', e);
-          toast('Tap play button to listen', { icon: '🔊' });
+          console.error('Автопроигрывание не удалось', e);
+          toast('Нажми на кнопку воспроизведения', { icon: '🔊' });
         });
       }
     } catch (err) {
       console.error(err);
-      toast.error('Translation error');
+      toast.error('Ошибка перевода');
     } finally {
       setIsLoading(false);
     }
@@ -186,7 +190,7 @@ const AssistantChatWindow = () => {
         body: JSON.stringify({ text, language: lang }),
       });
 
-      if (!res.ok) throw new Error('TTS server error');
+      if (!res.ok) throw new Error('Ошибка TTS сервера');
 
       const data = await res.json();
       let base64 = data.audio;
@@ -196,10 +200,13 @@ const AssistantChatWindow = () => {
       }
 
       const audio = new Audio(`data:audio/mp3;base64,${base64}`);
-      audio.play();
+      audio.play().catch(e => {
+        console.error('Ошибка воспроизведения', e);
+        toast.error('Не удалось воспроизвести голос');
+      });
     } catch (err) {
       console.error(err);
-      toast.error('Cannot play voice');
+      toast.error('Ошибка TTS');
     }
   };
 
@@ -217,23 +224,26 @@ const AssistantChatWindow = () => {
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">⚡</div>
-            <span>{mode === 'chat' ? 'AI Assistant' : 'Voice Translator'}</span>
+            <span>{mode === 'chat' ? 'AI Ассистент' : 'Голосовой переводчик'}</span>
           </div>
 
           <div className="assistant-actions">
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen 
-                ? <HiOutlineArrowsPointingIn size={24} /> 
-                : <HiOutlineArrowsPointingOut size={24} />
+                ? <ArrowsPointingInIcon className="w-6 h-6" /> 
+                : <ArrowsPointingOutIcon className="w-6 h-6" />
               }
             </button>
+
             <div className="relative">
-              <button className="icon-btn" onClick={() => {/* открыть меню */}}>
-                <HiOutlineDotsVertical />
+              <button className="icon-btn" onClick={() => {/* здесь можно открыть меню с выбором режима */}}>
+                <EllipsisVerticalIcon className="w-6 h-6" />
               </button>
-              {/* Здесь можно добавить Dropdown с выбором режима */}
             </div>
-            <button onClick={closeAssistant} className="icon-btn">✕</button>
+
+            <button onClick={closeAssistant} className="icon-btn">
+              ✕
+            </button>
           </div>
         </div>
 
@@ -254,7 +264,7 @@ const AssistantChatWindow = () => {
                     <div className="message-bubble">{msg.content}</div>
                   </div>
                 ))}
-                {isLoading && <div className="typing">...</div>}
+                {isLoading && <div className="typing"><span></span><span></span><span></span></div>}
                 <div ref={messagesEndRef} />
               </div>
 
@@ -264,7 +274,7 @@ const AssistantChatWindow = () => {
                   value={inputValue}
                   onChange={e => setInputValue(e.target.value)}
                   onKeyPress={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
-                  placeholder="Write a message..."
+                  placeholder="Напиши сообщение..."
                   disabled={isLoading}
                 />
                 <button onClick={sendMessage} disabled={isLoading || !inputValue.trim()}>
@@ -286,43 +296,71 @@ const AssistantChatWindow = () => {
                 value={languages.find(l => l.value === selectedLanguage)}
                 onChange={opt => setSelectedLanguage(opt.value)}
                 className="language-select mb-6"
+                classNamePrefix="react-select"
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    backgroundColor: '#1e293b',
+                    borderColor: '#334155',
+                    color: 'white',
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    backgroundColor: '#0f172a',
+                    color: 'white',
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected ? '#2563eb' : state.isFocused ? '#334155' : '#0f172a',
+                    color: 'white',
+                  }),
+                  singleValue: (base) => ({ ...base, color: 'white' }),
+                }}
               />
 
               {/* Кнопка записи */}
               <div className="record-container">
                 <motion.button
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.92 }}
                   onClick={isRecording ? stopRecording : startRecording}
                   className={`record-btn ${isRecording ? 'recording' : ''}`}
                 >
-                  {isRecording ? <HiStop size={64} /> : <HiMicrophone size={64} />}
+                  {isRecording ? <StopIcon className="w-16 h-16" /> : <MicrophoneIcon className="w-16 h-16" />}
                   {isRecording && (
-                    <div className="timer">{`${Math.floor(recordingTimer / 60).toString().padStart(2, '0')}:${(recordingTimer % 60).toString().padStart(2, '0')}`}</div>
+                    <div className="timer">
+                      {`${Math.floor(recordingTimer / 60).toString().padStart(2, '0')}:${(recordingTimer % 60).toString().padStart(2, '0')}`}
+                    </div>
                   )}
                 </motion.button>
               </div>
 
-              {/* Результат */}
+              {/* Результат перевода */}
               <div className="translation-result">
                 <div className="translation-block">
-                  <div className="label">Original</div>
+                  <div className="label">Оригинал</div>
                   <div className="text-content">
-                    {originalText || 'Speak something...'}
+                    {originalText || 'Говори что-нибудь...'}
                     {originalText && (
-                      <button onClick={() => speakText(originalText, 'auto')} className="play-btn blue">
-                        ▶
+                      <button 
+                        onClick={() => speakText(originalText, 'auto')} 
+                        className="play-btn blue"
+                      >
+                        <PlayIcon className="w-6 h-6" />
                       </button>
                     )}
                   </div>
                 </div>
 
                 <div className="translation-block">
-                  <div className="label">Translation</div>
+                  <div className="label">Перевод</div>
                   <div className="text-content">
-                    {translatedText || 'Waiting for translation...'}
+                    {translatedText || 'Ожидаем перевод...'}
                     {translatedText && (
-                      <button onClick={() => speakText(translatedText, selectedLanguage)} className="play-btn green">
-                        ▶
+                      <button 
+                        onClick={() => speakText(translatedText, selectedLanguage)} 
+                        className="play-btn green"
+                      >
+                        <PlayIcon className="w-6 h-6" />
                       </button>
                     )}
                   </div>

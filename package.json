@@ -8,6 +8,7 @@
     "@emotion/styled": "^11.14.1",
     "@ffmpeg/core": "^0.12.10",
     "@ffmpeg/ffmpeg": "^0.12.15",
+    "@heroicons/react": "^2.2.0",
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
     "@stomp/stompjs": "^7.0.0",
