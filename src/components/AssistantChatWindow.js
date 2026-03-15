@@ -18,6 +18,9 @@ import '../styles/AssistantChatWindow.css';
 const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
 
+  console.log('typeof useState:', typeof useState);
+  console.log('useState === React.useState:', useState === React.useState)
+
   // ─── Общие состояния ───────────────────────────────────────
   const [mode, setMode] = useState<'chat' | 'translator'>('chat');
   const [messages, setMessages] = useState([
@@ -34,7 +37,7 @@ const AssistantChatWindow = () => {
   const [recordingTimer, setRecordingTimer] = useState(0);
   const [originalText, setOriginalText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
-  const [translatorLang, setTranslatorLang] = useState('auto');
+  const [translatorLang, setTranslatorLang] = useState('auto');   // ← ПЕРЕИМЕНОВАНО
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -53,7 +56,27 @@ const AssistantChatWindow = () => {
     { value: 'ja', label: '日本語 🇯🇵' },
   ];
 
-  // ─── Функции, которые используются в JSX, должны быть подняты выше ──
+  // Безопасный выбор текущей опции языка
+  const currentLangOption = languages.find(l => l.value === translatorLang) || languages[0];
+
+  // Защита: если значение пропало из списка — сбрасываем на auto
+  useEffect(() => {
+    if (!languages.some(l => l.value === translatorLang)) {
+      console.warn('translatorLang не найден в списке → сбрасываем на auto');
+      setTranslatorLang('auto');
+    }
+  }, [translatorLang]);
+
+  // ─── Скролл вниз в чате ────────────────────────────────────
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (mode === 'chat') scrollToBottom();
+  }, [messages, mode]);
+
+  // ─── Отправка текстового сообщения ─────────────────────────
   const sendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
@@ -81,17 +104,119 @@ const AssistantChatWindow = () => {
     }
   };
 
-  // ─── Остальные функции (можно оставить ниже, они не используются в JSX напрямую) ──
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // ─── Запись голоса ─────────────────────────────────────────
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = e => {
+        audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      setRecordingTimer(0);
+
+      timerIntervalRef.current = setInterval(() => {
+        setRecordingTimer(prev => prev + 1);
+      }, 1000);
+
+      toast.success('Запись началась...');
+    } catch (err) {
+      console.error('Нет доступа к микрофону', err);
+      toast.error('Не удалось получить доступ к микрофону');
+    }
   };
 
-  // ... startRecording, stopRecording, sendVoiceToTranslator, speakText — оставляем как есть
+  const stopRecording = () => {
+    if (!mediaRecorderRef.current) return;
+
+    mediaRecorderRef.current.stop();
+    mediaRecorderRef.current.onstop = async () => {
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
+      audioChunksRef.current = [];
+      setIsRecording(false);
+      clearInterval(timerIntervalRef.current);
+
+      if (audioBlob.size < 1000) {
+        toast.error('Запись слишком короткая');
+        return;
+      }
+
+      await sendVoiceToTranslator(audioBlob);
+    };
+  };
+
+  // ─── Отправка аудио на сервер ──────────────────────────────
+  const sendVoiceToTranslator = async (audioBlob) => {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'voice.mp3');
+
+    try {
+      setIsLoading(true);
+      const res = await fetch(
+        `https://unlimitedpossibilities12.org/api/global-assistant/translate-voice?targetLanguage=${translatorLang}&sourceLanguage=auto&withTts=true`,
+        { method: 'POST', body: formData }
+      );
+
+      if (!res.ok) throw new Error('Ошибка сервера');
+
+      const data = await res.json();
+
+      setOriginalText(data.original || 'Не распознано');
+      setTranslatedText(data.translated || 'Перевод не удался');
+
+      if (data.audioBase64) {
+        const cleanBase64 = data.audioBase64.includes(',') 
+          ? data.audioBase64.split(',')[1] 
+          : data.audioBase64;
+
+        const audio = new Audio(`data:audio/mp3;base64,${cleanBase64}`);
+        audio.play().catch(e => {
+          console.error('Автопроигрывание не удалось', e);
+          toast('Нажми кнопку воспроизведения', { icon: '🔊' });
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Ошибка перевода');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ─── Воспроизведение текста через TTS ──────────────────────
+  const speakText = async (text, lang) => {
+    if (!text) return;
+
+    try {
+      const res = await fetch('https://unlimitedpossibilities12.org/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, language: lang }),
+      });
+
+      if (!res.ok) throw new Error('Ошибка TTS сервера');
+
+      const data = await res.json();
+      let base64 = data.audio;
+
+      if (base64?.includes(',')) base64 = base64.split(',')[1];
+
+      const audio = new Audio(`data:audio/mp3;base64,${base64}`);
+      audio.play().catch(e => {
+        console.error('Ошибка воспроизведения', e);
+        toast.error('Не удалось воспроизвести голос');
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error('Ошибка TTS');
+    }
+  };
 
   if (!isOpen) return null;
-
-  // Безопасный выбор текущей опции языка
-  const currentLangOption = languages.find(l => l.value === translatorLang) || languages[0];
 
   return (
     <AnimatePresence>
@@ -118,7 +243,7 @@ const AssistantChatWindow = () => {
             </button>
 
             <div className="relative">
-              <button className="icon-btn" onClick={() => {/* меню режимов */}}>
+              <button className="icon-btn" onClick={() => { /* меню режимов */ }}>
                 <EllipsisVerticalIcon className="w-6 h-6" />
               </button>
             </div>
@@ -137,7 +262,6 @@ const AssistantChatWindow = () => {
               exit={{ opacity: 0 }}
               className="flex flex-col flex-1"
             >
-              {/* Сообщения чата */}
               <div className="assistant-messages">
                 {messages.map((msg, i) => (
                   <div key={i} className={`message ${msg.role}`}>
@@ -148,7 +272,6 @@ const AssistantChatWindow = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Поле ввода */}
               <div className="assistant-input">
                 <input
                   value={inputValue}
@@ -156,14 +279,14 @@ const AssistantChatWindow = () => {
                   onKeyPress={e => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      sendMessage();   // ← теперь функция доступна
+                      sendMessage();
                     }
                   }}
                   placeholder="Напиши сообщение..."
                   disabled={isLoading}
                 />
                 <button 
-                  onClick={sendMessage}   // ← тоже доступна
+                  onClick={sendMessage} 
                   disabled={isLoading || !inputValue.trim()}
                 >
                   ➤
@@ -181,7 +304,7 @@ const AssistantChatWindow = () => {
               <Select
                 options={languages}
                 value={currentLangOption}
-                onChange={opt => setTranslatorLang(opt?.value ?? 'auto')}
+                onChange={opt => setTranslatorLang(opt.value)}   // ← здесь новое имя
                 className="language-select mb-6"
                 classNamePrefix="react-select"
                 styles={{
@@ -196,8 +319,52 @@ const AssistantChatWindow = () => {
                 }}
               />
 
-              {/* Кнопка записи и результаты перевода — оставляем как было */}
-              {/* ... */}
+              <div className="record-container">
+                <motion.button
+                  whileTap={{ scale: 0.92 }}
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className={`record-btn ${isRecording ? 'recording' : ''}`}
+                >
+                  {isRecording ? <StopIcon className="w-16 h-16" /> : <MicrophoneIcon className="w-16 h-16" />}
+                  {isRecording && (
+                    <div className="timer">
+                      {`${Math.floor(recordingTimer / 60).toString().padStart(2, '0')}:${(recordingTimer % 60).toString().padStart(2, '0')}`}
+                    </div>
+                  )}
+                </motion.button>
+              </div>
+
+              <div className="translation-result">
+                <div className="translation-block">
+                  <div className="label">Оригинал</div>
+                  <div className="text-content">
+                    {originalText || 'Говори что-нибудь...'}
+                    {originalText && (
+                      <button 
+                        onClick={() => speakText(originalText, 'auto')} 
+                        className="play-btn blue"
+                      >
+                        <PlayIcon className="w-6 h-6" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="translation-block">
+                  <div className="label">Перевод</div>
+                  <div className="text-content">
+                    {translatedText || 'Ожидаем перевод...'}
+                    {translatedText && (
+                      <button 
+                        onClick={() => speakText(translatedText, translatorLang)}   // ← здесь тоже новое имя
+                        className="play-btn green"
+                      >
+                        <PlayIcon className="w-6 h-6" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
