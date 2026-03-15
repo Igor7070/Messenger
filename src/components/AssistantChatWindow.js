@@ -24,8 +24,8 @@ const AssistantChatWindow = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Новое: режим и меню
-  const [mode, setMode] = useState('chat');
+  // Переключение режимов + меню
+  const [mode, setMode] = useState('chat'); // 'chat' или 'translator'
   const [showMenu, setShowMenu] = useState(false);
 
   // Переводчик
@@ -100,7 +100,7 @@ const AssistantChatWindow = () => {
     }
   };
 
-  // ─── Функции переводчика (оставляем как есть) ──────────────
+  // Запись и перевод (твои функции — оставляем как есть)
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -212,7 +212,7 @@ const AssistantChatWindow = () => {
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
-        {/* Шапка — идентична старому коду */}
+        {/* Шапка — ТОЧНО такая же, как в старом коде */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -224,10 +224,10 @@ const AssistantChatWindow = () => {
             <span>AI Assistant</span>
             <span className="online-dot"></span>
 
-            {/* Три точки — правее зелёного кружка, без изменения шапки */}
+            {/* Три точки — правее зелёного кружка, без изменения структуры шапки */}
             <div className="relative ml-3">
               <button 
-                className="icon-btn"
+                className="icon-btn p-1"
                 onClick={() => setShowMenu(!showMenu)}
               >
                 <EllipsisVerticalIcon className="w-6 h-6" />
@@ -240,9 +240,16 @@ const AssistantChatWindow = () => {
                       setMode(mode === 'chat' ? 'translator' : 'chat');
                       setShowMenu(false);
                     }}
-                    className="w-full text-left px-5 py-3 text-white hover:bg-slate-700 transition-colors"
+                    className="w-full text-left px-5 py-3 text-white hover:bg-slate-700 transition-colors flex items-center gap-3"
                   >
-                    {mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}
+                    {mode === 'chat' ? (
+                      <>
+                        <MicrophoneIcon className="w-5 h-5" />
+                        Голосовой переводчик
+                      </>
+                    ) : (
+                      'Вернуться в чат'
+                    )}
                   </button>
                 </div>
               )}
@@ -257,7 +264,7 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Переключение режимов — без лишних обёрток */}
+        {/* Переключение режимов — без лишних div и flex */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
