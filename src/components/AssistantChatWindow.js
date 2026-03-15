@@ -33,7 +33,7 @@ const AssistantChatWindow = () => {
   const [recordingTimer, setRecordingTimer] = useState(0);
   const [originalText, setOriginalText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
-  const [selectedLanguage, setSelectedLanguage] = useState('auto');
+  const [translatorLang, setTranslatorLang] = useState('auto');
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -52,13 +52,13 @@ const AssistantChatWindow = () => {
     { value: 'ja', label: '日本語 🇯🇵' },
   ];
 
-  // Принудительно делаем selectedLanguage строкой
-  const safeSetLanguage = (val) => {
-    const strVal = String(val ?? 'auto');
-    setSelectedLanguage(strVal);
+  // Защита: любой входящий язык → строка
+  const safeSetLang = (val) => {
+    const str = String(val ?? 'auto').trim();
+    setTranslatorLang(str);
   };
 
-  // Скролл
+  // Скролл вниз
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -66,8 +66,6 @@ const AssistantChatWindow = () => {
   useEffect(() => {
     if (mode === 'chat') scrollToBottom();
   }, [messages, mode]);
-
-  // ─── Функции ───────────────────────────────────────────────
 
   const sendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -105,7 +103,9 @@ const AssistantChatWindow = () => {
       setIsRecording(true);
       setRecordingTimer(0);
 
-      timerIntervalRef.current = setInterval(() => setRecordingTimer(p => p + 1), 1000);
+      timerIntervalRef.current = setInterval(() => {
+        setRecordingTimer(prev => prev + 1);
+      }, 1000);
 
       toast.success('Запись началась');
     } catch (err) {
@@ -138,8 +138,10 @@ const AssistantChatWindow = () => {
 
     try {
       setIsLoading(true);
-      const url = `https://unlimitedpossibilities12.org/api/global-assistant/translate-voice?targetLanguage=${selectedLanguage}&sourceLanguage=auto&withTts=true`;
-      const res = await fetch(url, { method: 'POST', body: formData });
+      const res = await fetch(
+        `https://unlimitedpossibilities12.org/api/global-assistant/translate-voice?targetLanguage=${translatorLang}&sourceLanguage=auto&withTts=true`,
+        { method: 'POST', body: formData }
+      );
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -149,13 +151,13 @@ const AssistantChatWindow = () => {
       setTranslatedText(data.translated || 'Перевод не удался');
 
       if (data.audioBase64) {
-        const cleanBase64 = data.audioBase64.split(',')[1] || data.audioBase64;
+        const cleanBase64 = data.audioBase64.includes(',') ? data.audioBase64.split(',')[1] : data.audioBase64;
         const audio = new Audio(`data:audio/mp3;base64,${cleanBase64}`);
         audio.play().catch(() => toast('Нажми ▶ для прослушивания'));
       }
     } catch (err) {
       console.error(err);
-      toast.error('Ошибка перевода');
+      toast.error('Ошибка перевода голоса');
     } finally {
       setIsLoading(false);
     }
@@ -171,22 +173,22 @@ const AssistantChatWindow = () => {
         body: JSON.stringify({ text, language: lang }),
       });
 
-      if (!res.ok) throw new Error(`TTS ${res.status}`);
+      if (!res.ok) throw new Error(`TTS HTTP ${res.status}`);
 
-      const { audio } = await res.json();
-      const base64 = audio?.includes(',') ? audio.split(',')[1] : audio;
+      const data = await res.json();
+      let base64 = data.audio || '';
 
-      if (!base64) throw new Error('Нет аудио');
+      if (base64.includes(',')) base64 = base64.split(',')[1];
+      if (!base64) return toast.error('Нет аудио');
 
-      const a = new Audio(`data:audio/mp3;base64,${base64}`);
-      a.play().catch(() => toast('Не удалось воспроизвести'));
+      const audio = new Audio(`data:audio/mp3;base64,${base64}`);
+      audio.play().catch(() => toast('Не удалось воспроизвести'));
     } catch (err) {
       console.error(err);
-      toast.error('Ошибка озвучки');
+      toast.error('Ошибка воспроизведения');
     }
   };
 
-  // ─── Рендер ────────────────────────────────────────────────
   if (!isOpen) return null;
 
   return (
@@ -202,6 +204,7 @@ const AssistantChatWindow = () => {
             <div className="assistant-avatar">⚡</div>
             <span>{mode === 'chat' ? 'AI Ассистент' : 'Голосовой переводчик'}</span>
           </div>
+
           <div className="assistant-actions">
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? <ArrowsPointingInIcon className="w-6 h-6" /> : <ArrowsPointingOutIcon className="w-6 h-6" />}
@@ -241,10 +244,11 @@ const AssistantChatWindow = () => {
             <motion.div key="translator" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="translator-mode p-4">
               <Select
                 options={languages}
-                value={selectedLanguage}           // ← строка вместо объекта!
-                onChange={option => safeSetLanguage(option?.value)}
-                getOptionValue={opt => opt.value}  // явно указываем, что value — строка
+                value={translatorLang}
+                onChange={opt => safeSetLang(opt ? opt.value : 'auto')}
+                getOptionValue={opt => opt.value}
                 getOptionLabel={opt => opt.label}
+                isSearchable={false}
                 className="language-select mb-6"
                 classNamePrefix="react-select"
                 styles={{
@@ -278,10 +282,13 @@ const AssistantChatWindow = () => {
               <div className="translation-result space-y-6">
                 <div className="translation-block bg-gray-800 p-4 rounded-lg">
                   <div className="text-gray-400 mb-1">Оригинал</div>
-                  <div className="relative">
+                  <div className="relative min-h-[60px]">
                     {originalText || 'Говори что-нибудь...'}
                     {originalText && (
-                      <button onClick={() => speakText(originalText, 'auto')} className="absolute right-2 top-1 text-blue-400">
+                      <button
+                        onClick={() => speakText(originalText, 'auto')}
+                        className="absolute right-3 top-2 text-blue-400 hover:text-blue-300"
+                      >
                         <PlayIcon className="w-6 h-6" />
                       </button>
                     )}
@@ -290,10 +297,13 @@ const AssistantChatWindow = () => {
 
                 <div className="translation-block bg-gray-800 p-4 rounded-lg">
                   <div className="text-gray-400 mb-1">Перевод</div>
-                  <div className="relative">
+                  <div className="relative min-h-[60px]">
                     {translatedText || 'Ожидаем перевод...'}
                     {translatedText && (
-                      <button onClick={() => speakText(translatedText, selectedLanguage)} className="absolute right-2 top-1 text-green-400">
+                      <button
+                        onClick={() => speakText(translatedText, translatorLang)}
+                        className="absolute right-3 top-2 text-green-400 hover:text-green-300"
+                      >
                         <PlayIcon className="w-6 h-6" />
                       </button>
                     )}
