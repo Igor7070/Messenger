@@ -222,7 +222,7 @@ const AssistantChatWindow = () => {
 
             <div className="relative ml-2">
               <button
-                className="icon-btn p-2"
+                className="bg-transparent border-none p-2 cursor-pointer focus:outline-none focus:ring-0 hover:bg-transparent"
                 onClick={() => setShowMenu(!showMenu)}
               >
                 <span className="text-white text-5xl leading-none font-black">⁝</span>
