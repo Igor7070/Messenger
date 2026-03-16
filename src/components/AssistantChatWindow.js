@@ -222,38 +222,15 @@ const AssistantChatWindow = () => {
           </div>
 
           <div className="assistant-actions">
-            {/* Кнопка с меню — relative внутри actions */}
-            <div className="relative">
-              <button
-                className="menu-dots-btn"
-                onClick={() => setShowMenu(!showMenu)}
-              >
-                <span className="dot"></span>
-                <span className="dot"></span>
-                <span className="dot"></span>
-              </button>
-
-              {/* Меню — absolute, позиционировано относительно кнопки */}
-              {showMenu && (
-                <div
-                  className="absolute top-full right-0 mt-2 w-64 bg-slate-950/95 backdrop-blur-lg rounded-xl shadow-2xl border border-slate-700/50 overflow-hidden z-[9999] text-sm"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    onClick={() => {
-                      setMode(mode === 'chat' ? 'translator' : 'chat');
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-5 py-3 text-left text-white hover:bg-slate-800/80 transition-colors flex items-center gap-4"
-                  >
-                    <MicrophoneIcon className="w-6 h-6 text-green-400 flex-shrink-0" />
-                    <span className="font-medium">{mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}</span>
-                  </button>
-
-                  {/* Добавляй сюда новые пункты меню в будущем */}
-                </div>
-              )}
-            </div>
+            {/* Кнопка с тремя точками */}
+            <button
+              className="menu-dots-btn"
+              onClick={() => setShowMenu(!showMenu)}
+            >
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
+            </button>
 
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
@@ -403,6 +380,35 @@ const AssistantChatWindow = () => {
           )}
         </AnimatePresence>
       </motion.div>
+
+      {/* Меню — полностью вне окна ассистента, позиционировано относительно кнопки */}
+      {showMenu && (
+        <div
+          className="absolute z-[9999]"
+          style={{
+            top: 'calc(var(--assistant-header-bottom, 80px) + 4px)',  // под шапкой + отступ
+            right: '16px',  // подкрути под позицию кнопки с точками (12–24px)
+          }}
+        >
+          <div
+            className="bg-slate-950/95 backdrop-blur-lg rounded-xl shadow-2xl border border-slate-700/50 overflow-hidden min-w-[220px] text-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setMode(mode === 'chat' ? 'translator' : 'chat');
+                setShowMenu(false);
+              }}
+              className="w-full px-5 py-3 text-left text-white hover:bg-slate-800/80 transition-colors flex items-center gap-4"
+            >
+              <MicrophoneIcon className="w-6 h-6 text-green-400 flex-shrink-0" />
+              <span className="font-medium">{mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}</span>
+            </button>
+
+            {/* новые пункты меню добавляй сюда */}
+          </div>
+        </div>
+      )}
     </AnimatePresence>
   );
 };
