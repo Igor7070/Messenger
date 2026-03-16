@@ -219,8 +219,11 @@ const AssistantChatWindow = () => {
             </div>
             <span>AI Assistant</span>
             <span className="online-dot"></span>
+          </div>
 
-            <div className="relative ml-auto">
+          <div className="assistant-actions">
+            {/* ← здесь теперь меню-точки */}
+            <div className="relative">
               <button
                 className="menu-dots-btn"
                 onClick={() => setShowMenu(!showMenu)}
@@ -254,9 +257,7 @@ const AssistantChatWindow = () => {
                 </div>
               )}
             </div>
-          </div>
 
-          <div className="assistant-actions">
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
             </button>
