@@ -222,10 +222,21 @@ const AssistantChatWindow = () => {
 
             <div className="relative ml-2 flex items-center">
               <button
-                className="p-2 rounded-lg hover:bg-slate-700/50 transition-colors"
+                className="p-2 rounded-lg hover:bg-slate-700/50 transition-colors duration-150"
                 onClick={() => setShowMenu(!showMenu)}
               >
-                <EllipsisVerticalIcon className="w-6 h-6 text-white" aria-hidden="true" />
+                {/* Встроенные три точки — всегда видно, не зависит от библиотеки */}
+                <svg 
+                  className="w-6 h-6 text-white"
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor" 
+                  strokeWidth={3}  // толще — лучше видно
+                >
+                  <circle cx="12" cy="5" r="1.5" />
+                  <circle cx="12" cy="12" r="1.5" />
+                  <circle cx="12" cy="19" r="1.5" />
+                </svg>
               </button>
 
               <AnimatePresence>
@@ -235,24 +246,23 @@ const AssistantChatWindow = () => {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -10 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-full mt-2 w-64 bg-slate-900/95 backdrop-blur-xl 
-                              border border-slate-700/70 rounded-xl shadow-2xl shadow-black/40 
-                              overflow-hidden z-50"
+                    className="absolute right-0 top-full mt-2 w-64 bg-slate-900/95 backdrop-blur-xl border border-slate-700/70 rounded-xl shadow-2xl shadow-black/40 overflow-hidden z-50"
                   >
-                    <div className="py-1.5">
+                    <div className="py-1.5 divide-y divide-slate-700/50">
                       <button
                         onClick={() => {
                           setMode(mode === 'chat' ? 'translator' : 'chat');
                           setShowMenu(false);
                         }}
-                        className="w-full px-5 py-3.5 text-left flex items-center gap-3 
-                                  text-slate-100 hover:bg-slate-800/70 active:bg-slate-700/80 transition-colors"
+                        className="w-full px-5 py-3.5 text-left flex items-center gap-3 text-slate-100 hover:bg-slate-800/70 active:bg-slate-700/80 transition-colors"
                       >
                         <MicrophoneIcon className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                         <span className="text-sm font-medium">
                           {mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}
                         </span>
                       </button>
+
+                      {/* Будущие пункты можно добавлять сюда */}
                     </div>
                   </motion.div>
                 )}
