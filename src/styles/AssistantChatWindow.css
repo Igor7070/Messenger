@@ -111,16 +111,6 @@
   background: rgba(30, 41, 59, 0.6);
   color: white;
   font-size: 16px;
-  outline: none !important; /* отключаем дефолтный outline полностью */
-  transition: border-color 0.2s ease, box-shadow 0.2s ease; /* Плавный переход для border */
-}
-
-/* Состояние фокуса / когда есть текст */
-.assistant-input input:focus,
-.assistant-input input:not(:placeholder-shown) {
-  border: 2px solid #f59e0b;                  /* amber-500 */
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.20);
-  background: rgba(30, 41, 59, 0.8);
 }
 
 .assistant-input input::placeholder {
