@@ -212,6 +212,44 @@
   50% { transform: translateY(-10px); }
 }
 
+/* Основной контейнер окна — делаем flex-column, чтобы прижимать снизу */
+.assistant-window {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;          /* или 100vh, если нужно */
+  overflow: hidden !important;       /* чтобы ничего не вылезало */
+}
+
+/* Шапка — не растягивается */
+.assistant-header {
+  flex: 0 0 auto !important;
+}
+
+/* Сообщения — занимают всё свободное место сверху */
+.assistant-messages {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Поле ввода — строго внизу, без вылезания */
+.assistant-input {
+  flex: 0 0 auto !important;         /* фиксированная высота, не растягивается */
+  margin-top: auto !important;       /* ← главное: толкает вниз в flex-контейнере */
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: #0f172a !important;    /* или твой цвет */
+  border-top: 1px solid rgba(96, 165, 250, 0.2) !important; /* если был */
+  padding: 16px 20px !important;
+}
+
+/* Для full-screen — то же самое */
+.assistant-window.full-screen .assistant-input {
+  margin-top: auto !important;
+  width: 100% !important;
+}
+
 /* Меню трёх точек */
 .assistant-title {
   display: flex;
