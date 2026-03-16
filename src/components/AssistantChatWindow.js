@@ -222,7 +222,7 @@ const AssistantChatWindow = () => {
           </div>
 
           <div className="assistant-actions">
-            {/* Кнопка с тремя точками */}
+            {/* Кнопка остаётся в шапке */}
             <button
               className="menu-dots-btn"
               onClick={() => setShowMenu(!showMenu)}
@@ -381,17 +381,19 @@ const AssistantChatWindow = () => {
         </AnimatePresence>
       </motion.div>
 
-      {/* Меню — полностью вне окна ассистента, позиционировано относительно кнопки */}
-      {showMenu && (
+      {/* Портал: меню рендерится в body, не зависит от React-дерева */}
+      {showMenu && ReactDOM.createPortal(
         <div
-          className="absolute z-[9999]"
-          style={{
-            top: 'calc(var(--assistant-header-bottom, 80px) + 4px)',  // под шапкой + отступ
-            right: '16px',  // подкрути под позицию кнопки с точками (12–24px)
-          }}
+          className="fixed inset-0 z-[9999] pointer-events-none"
+          onClick={() => setShowMenu(false)}
         >
           <div
-            className="bg-slate-950/95 backdrop-blur-lg rounded-xl shadow-2xl border border-slate-700/50 overflow-hidden min-w-[220px] text-sm"
+            className="pointer-events-auto bg-slate-950/95 backdrop-blur-lg rounded-xl shadow-2xl border border-slate-700/50 overflow-hidden min-w-[220px] text-sm"
+            style={{
+              position: 'absolute',
+              top: '80px', // ← ИЗМЕРЬ высоту шапки в devtools и подставь точное значение!
+              right: '16px', // ← подкрути, чтобы было под кнопкой (12px, 20px, 24px)
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -407,7 +409,8 @@ const AssistantChatWindow = () => {
 
             {/* новые пункты меню добавляй сюда */}
           </div>
-        </div>
+        </div>,
+        document.body  // ← рендерим прямо в <body>
       )}
     </AnimatePresence>
   );
