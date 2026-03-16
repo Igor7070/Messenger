@@ -222,10 +222,10 @@ const AssistantChatWindow = () => {
 
             <div className="relative ml-2">
               <button
-                className="icon-btn"
+                className="icon-btn p-2"
                 onClick={() => setShowMenu(!showMenu)}
               >
-                <span className="text-white text-3xl leading-none">⁝</span>
+                <span className="text-white text-5xl leading-none font-black">⁝</span>
               </button>
 
               {showMenu && (
