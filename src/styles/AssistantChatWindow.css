@@ -212,42 +212,57 @@
   50% { transform: translateY(-10px); }
 }
 
-/* Основной контейнер окна — делаем flex-column, чтобы прижимать снизу */
-.assistant-window {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100% !important;          /* или 100vh, если нужно */
-  overflow: hidden !important;       /* чтобы ничего не вылезало */
-}
-
 /* Шапка — не растягивается */
 .assistant-header {
   flex: 0 0 auto !important;
 }
 
-/* Сообщения — занимают всё свободное место сверху */
+.assistant-window {
+  position: fixed;
+  bottom: 0;                  /* ← фиксируем снизу экрана */
+  left: 8px;                  /* ← как в .mini */
+  right: 8px;                 /* ← как в .mini */
+  height: 65vh;               /* ← твоя высота для mini-режима */
+  max-height: 80vh;           /* ← твоя max-height */
+  background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden;
+  border: 1px solid rgba(96, 165, 250, 0.3);
+}
+
+/* Для full-screen — растягиваем на весь экран */
+.assistant-window.full-screen {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh !important;   /* ← 100% высоты экрана */
+  border-radius: 0;
+}
+
+/* Сообщения — растягиваются и скроллятся */
 .assistant-messages {
   flex: 1 1 auto !important;
   overflow-y: auto !important;
+  padding: 20px;
   margin-bottom: 0 !important;
-  padding-bottom: 0 !important;
 }
 
-/* Поле ввода — строго внизу, без вылезания */
+/* Поле ввода — прижимается вниз */
 .assistant-input {
-  flex: 0 0 auto !important;         /* фиксированная высота, не растягивается */
-  margin-top: auto !important;       /* ← главное: толкает вниз в flex-контейнере */
-  width: 100% !important;
-  box-sizing: border-box !important;
-  background: #0f172a !important;    /* или твой цвет */
-  border-top: 1px solid rgba(96, 165, 250, 0.2) !important; /* если был */
-  padding: 16px 20px !important;
-}
-
-/* Для full-screen — то же самое */
-.assistant-window.full-screen .assistant-input {
-  margin-top: auto !important;
-  width: 100% !important;
+  flex: 0 0 auto !important;
+  margin-top: auto !important;  /* ← это толкает вниз */
+  padding: 16px 20px;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid rgba(96, 165, 250, 0.2);
 }
 
 /* Меню трёх точек */
