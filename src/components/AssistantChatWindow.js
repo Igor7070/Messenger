@@ -220,7 +220,7 @@ const AssistantChatWindow = () => {
             <span>AI Assistant</span>
             <span className="online-dot"></span>
 
-            <div className="relative ml-2">
+            <div className="relative ml-auto">
               <button
                 className="menu-dots-btn"
                 onClick={() => setShowMenu(!showMenu)}
