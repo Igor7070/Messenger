@@ -118,9 +118,9 @@
 /* Состояние фокуса / когда есть текст */
 .assistant-input input:focus,
 .assistant-input input:not(:placeholder-shown) {
-  border: 2px solid #60a5fa;           /* или #3b82f6, #2563eb — по вкусу */
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);  /* мягкое свечение вместо жирной линии */
-  background: rgba(30, 41, 59, 0.8);   /* чуть ярче фон, опционально */
+  border: 2px solid #f59e0b;                  /* amber-500 */
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.20);
+  background: rgba(30, 41, 59, 0.8);
 }
 
 .assistant-input input::placeholder {
