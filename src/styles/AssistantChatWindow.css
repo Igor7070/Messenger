@@ -64,29 +64,43 @@
 .assistant-actions {
   display: flex;
   align-items: center;
-  gap: 4px;                              /* маленький зазор между точками ↗ ✕ */
-  flex-shrink: 0;                        /* не даёт сжиматься */
+  gap: 8px;                          /* как было изначально — нормальный зазор */
 }
 
-.assistant-actions .icon-btn,
-.assistant-actions .menu-dots-btn {
+.assistant-actions .icon-btn {
   background: none;
   border: none;
   color: white;
+  font-size: 20px;                   /* оригинальный размер символов */
   cursor: pointer;
-  padding: 6px;
-  border-radius: 6px;
+  padding: 8px;
+  border-radius: 8px;
   transition: background 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 32px;
-  height: 32px;
 }
 
-.assistant-actions .icon-btn:hover,
+.assistant-actions .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);   /* оригинальный hover */
+}
+
+.assistant-actions .menu-dots-btn {
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3.5px;
+  width: 30px;
+  height: 30px;
+  outline: none;
+  box-shadow: none;
+  margin-left: 2px;
+}
+
 .assistant-actions .menu-dots-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* Чат-режим */
@@ -299,22 +313,22 @@
 .menu-dots-btn {
   background: transparent;
   border: none;
-  padding: 4px 6px;                      /* чуть меньше по вертикали */
+  padding: 4px 6px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3.5px;                            /* расстояние между точками ещё меньше */
+  gap: 3.5px;
   width: 30px;
   height: 30px;
   outline: none;
   box-shadow: none;
-  margin-left: 2px;                      /* маленький отступ слева от предыдущего элемента */
+  margin-left: 2px;
 }
 
 .menu-dots-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);   /* как у icon-btn — для единообразия */
 }
 
 .dot {
