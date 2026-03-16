@@ -222,44 +222,15 @@ const AssistantChatWindow = () => {
           </div>
 
           <div className="assistant-actions">
-            <div className="relative">
-              {/* Кнопка с точками остаётся в шапке */}
-              <div className="relative">
-                <button
-                  className="menu-dots-btn"
-                  onClick={() => setShowMenu(!showMenu)}
-                >
-                  <span className="dot"></span>
-                  <span className="dot"></span>
-                  <span className="dot"></span>
-                </button>
-              </div>
-
-              {/* Меню теперь рендерится отдельно, ниже всего окна (вне шапки) */}
-              {showMenu && (
-                <div
-                  className="fixed top-[calc(var(--header-height,80px)+8px)] right-12 z-50"
-                  onClick={() => setShowMenu(false)} // клик вне меню закрывает
-                >
-                  <div
-                    className="bg-slate-900/95 backdrop-blur-md rounded-lg shadow-xl border border-slate-700/60 overflow-hidden min-w-[180px]"
-                    onClick={(e) => e.stopPropagation()} // не закрывать при клике внутри меню
-                  >
-                    <button
-                      onClick={() => {
-                        setMode(mode === 'chat' ? 'translator' : 'chat');
-                        setShowMenu(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-white hover:bg-slate-700/70 transition-colors flex items-center gap-3"
-                    >
-                      <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                      <span>{mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}</span>
-                    </button>
-                    {/* сюда потом добавляй новые пункты меню */}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Только кнопка с тремя точками — без relative и без меню внутри */}
+            <button
+              className="menu-dots-btn"
+              onClick={() => setShowMenu(!showMenu)}
+            >
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
+            </button>
 
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
@@ -267,6 +238,42 @@ const AssistantChatWindow = () => {
             <button onClick={closeAssistant} className="icon-btn">✕</button>
           </div>
         </div>
+
+        {/* Меню вынесено сюда — на уровень выше шапки, fixed относительно экрана */}
+        {showMenu && (
+          <div
+            className="fixed z-[9999]"
+            style={{
+              top: '80px',           // ← подставь реальную высоту шапки в px (измерь в devtools)
+              right: '16px',         // ← подкрути, чтобы было под кнопкой с точками
+            }}
+          >
+            {/* внешний слой для закрытия по клику вне меню */}
+            <div
+              className="fixed inset-0 z-[9998]"
+              onClick={() => setShowMenu(false)}
+            >
+              {/* само меню */}
+              <div
+                className="bg-slate-950/95 backdrop-blur-lg rounded-lg shadow-2xl border border-slate-700/50 overflow-hidden min-w-[200px] text-sm pointer-events-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => {
+                    setMode(mode === 'chat' ? 'translator' : 'chat');
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-white hover:bg-slate-800/80 transition-colors flex items-center gap-3"
+                >
+                  <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <span>{mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}</span>
+                </button>
+
+                {/* сюда потом добавляй новые пункты меню */}
+              </div>
+            </div>
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
