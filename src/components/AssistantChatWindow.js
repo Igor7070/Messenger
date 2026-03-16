@@ -222,7 +222,7 @@ const AssistantChatWindow = () => {
           </div>
 
           <div className="assistant-actions">
-            {/* Только кнопка с тремя точками — без relative и без меню внутри */}
+            {/* Кнопка с тремя точками — без relative */}
             <button
               className="menu-dots-btn"
               onClick={() => setShowMenu(!showMenu)}
@@ -239,42 +239,7 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Меню вынесено сюда — на уровень выше шапки, fixed относительно экрана */}
-        {showMenu && (
-          <div
-            className="fixed z-[9999]"
-            style={{
-              top: '80px',           // ← подставь реальную высоту шапки в px (измерь в devtools)
-              right: '16px',         // ← подкрути, чтобы было под кнопкой с точками
-            }}
-          >
-            {/* внешний слой для закрытия по клику вне меню */}
-            <div
-              className="fixed inset-0 z-[9998]"
-              onClick={() => setShowMenu(false)}
-            >
-              {/* само меню */}
-              <div
-                className="bg-slate-950/95 backdrop-blur-lg rounded-lg shadow-2xl border border-slate-700/50 overflow-hidden min-w-[200px] text-sm pointer-events-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  onClick={() => {
-                    setMode(mode === 'chat' ? 'translator' : 'chat');
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-4 py-2.5 text-left text-white hover:bg-slate-800/80 transition-colors flex items-center gap-3"
-                >
-                  <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  <span>{mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}</span>
-                </button>
-
-                {/* сюда потом добавляй новые пункты меню */}
-              </div>
-            </div>
-          </div>
-        )}
-
+        {/* Чат / переводчик */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
@@ -416,6 +381,36 @@ const AssistantChatWindow = () => {
           )}
         </AnimatePresence>
       </motion.div>
+
+      {/* Меню — ВНЕ окна, последнее в return, fixed относительно экрана */}
+      {showMenu && (
+        <div
+          className="fixed inset-0 z-[9999] pointer-events-none"
+          onClick={() => setShowMenu(false)}
+        >
+          <div
+            className="pointer-events-auto bg-slate-950/95 backdrop-blur-lg rounded-lg shadow-2xl border border-slate-700/60 overflow-hidden min-w-[200px] text-sm"
+            style={{
+              top: '80px',     // ← ИЗМЕРЬ высоту шапки в devtools и подставь точное значение!
+              right: '16px'    // ← подкрути, чтобы меню было ровно под кнопкой с точками (12–24px)
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setMode(mode === 'chat' ? 'translator' : 'chat');
+                setShowMenu(false);
+              }}
+              className="w-full px-4 py-2.5 text-left text-white hover:bg-slate-800/80 flex items-center gap-3 transition-colors"
+            >
+              <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+              <span>{mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}</span>
+            </button>
+
+            {/* новые пункты меню добавляй сюда */}
+          </div>
+        </div>
+      )}
     </AnimatePresence>
   );
 };
