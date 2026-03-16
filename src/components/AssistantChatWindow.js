@@ -222,7 +222,7 @@ const AssistantChatWindow = () => {
 
             <div className="relative ml-2">
               <button className="icon-btn" onClick={() => setShowMenu(!showMenu)}>
-                <EllipsisVerticalIcon className="w-6 h-6" />
+                <EllipsisVerticalIcon className="w-8 h-8 text-white" />
               </button>
 
               {showMenu && (
