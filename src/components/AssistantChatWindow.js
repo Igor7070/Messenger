@@ -221,33 +221,49 @@ const AssistantChatWindow = () => {
             <span className="online-dot"></span>
 
             <div className="relative ml-2">
-              <button className="icon-btn" onClick={() => setShowMenu(!showMenu)}>
+              <button 
+                className="icon-btn text-white hover:text-blue-300 transition-colors"
+                onClick={() => setShowMenu(!showMenu)}
+              >
                 <EllipsisVerticalIcon className="w-6 h-6" />
               </button>
 
-              {showMenu && (
-                <div
-                  className="absolute right-0 mt-2 w-56 bg-slate-900 rounded-xl shadow-2xl z-50 overflow-hidden border border-slate-700"
-                  style={{ transform: 'translateY(4px)' }}
-                >
-                  <button
-                    onClick={() => {
-                      setMode(mode === 'chat' ? 'translator' : 'chat');
-                      setShowMenu(false);
-                    }}
-                    className="w-full text-left px-5 py-4 text-white hover:bg-slate-800 transition-colors flex items-center gap-3 text-base"
+              <AnimatePresence>
+                {showMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -8 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-64 bg-slate-900/95 backdrop-blur-xl 
+                              border border-slate-700/70 rounded-xl shadow-2xl shadow-black/40 
+                              overflow-hidden z-50"
                   >
-                    {mode === 'chat' ? (
-                      <>
-                        <MicrophoneIcon className="w-5 h-5 text-green-400" />
-                        Голосовой переводчик
-                      </>
-                    ) : (
-                      'Вернуться в чат'
-                    )}
-                  </button>
-                </div>
-              )}
+                    <div className="py-2">
+                      <button
+                        onClick={() => {
+                          setMode(mode === 'chat' ? 'translator' : 'chat');
+                          setShowMenu(false);
+                        }}
+                        className="w-full px-4 py-3.5 text-left flex items-center gap-3 
+                                  text-slate-100 hover:bg-slate-800/70 transition-colors
+                                  active:bg-slate-700/80"
+                      >
+                        <MicrophoneIcon className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                        <span className="text-sm font-medium">
+                          {mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}
+                        </span>
+                      </button>
+
+                      {/* Место для будущих пунктов меню */}
+                      {/* <button className="w-full px-4 py-3.5 text-left flex items-center gap-3 text-slate-100 hover:bg-slate-800/70 transition-colors">
+                        <Cog6ToothIcon className="w-5 h-5 text-slate-400" />
+                        <span className="text-sm font-medium">Настройки</span>
+                      </button> */}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
