@@ -222,7 +222,6 @@ const AssistantChatWindow = () => {
           </div>
 
           <div className="assistant-actions">
-            {/* ← здесь теперь меню-точки */}
             <div className="relative">
               <button
                 className="menu-dots-btn"
