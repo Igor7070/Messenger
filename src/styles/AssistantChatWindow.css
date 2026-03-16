@@ -285,26 +285,26 @@
 .menu-dots-btn {
   background: transparent;
   border: none;
-  padding: 8px;
+  padding: 6px;              /* уменьшили padding */
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;          /* расстояние между точками */
-  width: 40px;       /* можно подкорректировать */
-  height: 40px;
+  gap: 4px;                  /* расстояние между точками — стало меньше */
+  width: 32px;               /* общий размер кнопки */
+  height: 32px;
   outline: none;
   box-shadow: none;
 }
 
 .menu-dots-btn:hover {
-  opacity: 0.8;      /* лёгкий hover-эффект, опционально */
+  opacity: 0.85;
 }
 
 .dot {
-  width: 6px;
-  height: 6px;
+  width: 4px;                /* размер точки — уменьшили */
+  height: 4px;
   background-color: white;
   border-radius: 50%;
   display: block;
