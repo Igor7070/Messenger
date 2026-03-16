@@ -17,7 +17,7 @@ const AssistantChatWindow = () => {
   const [mode, setMode] = useState('chat');
   const [showMenu, setShowMenu] = useState(false);
 
-  // Чат — твои старые состояния
+  // Чат
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hi! I am your smart assistant.' },
     { role: 'assistant', content: 'I can help with resumes, translations, chat analysis, and much more.' },
@@ -52,7 +52,7 @@ const AssistantChatWindow = () => {
   ];
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -63,30 +63,27 @@ const AssistantChatWindow = () => {
     if (!inputValue.trim() || isLoading) return;
 
     const userMessage = inputValue.trim();
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
     setInputValue('');
     setIsLoading(true);
 
     try {
       const response = await fetch('https://unlimitedpossibilities12.org/api/communicating_with_a_advanced_ai_model', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: userMessage }),
       });
 
       if (!response.ok) throw new Error('Server error');
 
       const result = await response.text();
-
-      setMessages(prev => [...prev, { role: 'assistant', content: result }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: result }]);
     } catch (error) {
       console.error('Error while requesting AI:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Sorry, I could not answer. Try again.' 
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Sorry, I could not answer. Try again.' },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -99,14 +96,13 @@ const AssistantChatWindow = () => {
     }
   };
 
-  // Функции переводчика (твои, без изменений)
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunksRef.current = [];
 
-      mediaRecorderRef.current.ondataavailable = e => {
+      mediaRecorderRef.current.ondataavailable = (e) => {
         audioChunksRef.current.push(e.data);
       };
 
@@ -115,7 +111,7 @@ const AssistantChatWindow = () => {
       setRecordingTimer(0);
 
       timerIntervalRef.current = setInterval(() => {
-        setRecordingTimer(prev => prev + 1);
+        setRecordingTimer((prev) => prev + 1);
       }, 1000);
 
       toast.success('Recording started...');
@@ -162,8 +158,8 @@ const AssistantChatWindow = () => {
       setTranslatedText(data.translated || 'Translation failed');
 
       if (data.audioBase64) {
-        const cleanBase64 = data.audioBase64.includes(',') 
-          ? data.audioBase64.split(',')[1] 
+        const cleanBase64 = data.audioBase64.includes(',')
+          ? data.audioBase64.split(',')[1]
           : data.audioBase64;
 
         const audio = new Audio(`data:audio/mp3;base64,${cleanBase64}`);
@@ -205,36 +201,32 @@ const AssistantChatWindow = () => {
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ y: "100%", opacity: 0 }}
+        initial={{ y: '100%', opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        exit={{ y: "100%", opacity: 0 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        exit={{ y: '100%', opacity: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
-        {/* Шапка — твоя старая, добавили только три точки правее online-dot */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M13 2L4.09344 12.6879C3.74461 13.1064 3.5702 13.3157 3.56738 13.4925C3.5649 13.6461 3.63372 13.7923 3.75324 13.8889C3.89073 14 4.16316 14 4.70803 14H12L11 22L19.9066 11.3121C20.2554 10.8936 20.4298 10.6843 20.4326 10.5075C20.4351 10.3539 20.3663 10.2077 20.2468 10.1111C20.1093 10 19.8368 10 19.292 10H12L13 2Z" 
-                      fill="#60A5FA"/>
+                <path
+                  d="M13 2L4.09344 12.6879C3.74461 13.1064 3.5702 13.3157 3.56738 13.4925C3.5649 13.6461 3.63372 13.7923 3.75324 13.8889C3.89073 14 4.16316 14 4.70803 14H12L11 22L19.9066 11.3121C20.2554 10.8936 20.4298 10.6843 20.4326 10.5075C20.4351 10.3539 20.3663 10.2077 20.2468 10.1111C20.1093 10 19.8368 10 19.292 10H12L13 2Z"
+                  fill="#60A5FA"
+                />
               </svg>
             </div>
             <span>AI Assistant</span>
             <span className="online-dot"></span>
 
-            {/* Три точки — правее зелёного кружка, минимальный отступ */}
             <div className="relative ml-2">
-              <button 
-                className="icon-btn"
-                onClick={() => setShowMenu(!showMenu)}
-              >
+              <button className="icon-btn" onClick={() => setShowMenu(!showMenu)}>
                 <EllipsisVerticalIcon className="w-6 h-6" />
               </button>
 
-              {/* Простое меню */}
               {showMenu && (
-                <div 
+                <div
                   className="absolute right-0 mt-2 w-56 bg-slate-900 rounded-xl shadow-2xl z-50 overflow-hidden border border-slate-700"
                   style={{ transform: 'translateY(4px)' }}
                 >
@@ -267,7 +259,6 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Переключение режимов */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
@@ -275,30 +266,29 @@ const AssistantChatWindow = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              className="chat-container"
             >
-              {/* Сообщения — как было */}
               <div className="assistant-messages">
                 {messages.map((msg, index) => (
                   <div
                     key={index}
                     className={`message ${msg.role === 'user' ? 'user-message' : 'assistant-message'}`}
                   >
-                    <div className="message-bubble">
-                      {msg.content}
-                    </div>
+                    <div className="message-bubble">{msg.content}</div>
                   </div>
                 ))}
                 {isLoading && (
                   <div className="message assistant-message">
                     <div className="message-bubble typing">
-                      <span></span><span></span><span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
                     </div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Поле ввода — точно как в старом коде */}
               <div className="assistant-input">
                 <input
                   type="text"
@@ -308,8 +298,8 @@ const AssistantChatWindow = () => {
                   placeholder="Write a message..."
                   disabled={isLoading}
                 />
-                <button 
-                  onClick={sendMessage} 
+                <button
+                  onClick={sendMessage}
                   className="send-btn"
                   disabled={isLoading || !inputValue.trim()}
                 >
@@ -325,28 +315,31 @@ const AssistantChatWindow = () => {
               exit={{ opacity: 0 }}
               className="translator-mode"
             >
-              {/* ... твой текущий код переводчика остаётся без изменений ... */}
               <div className="mb-6">
                 <Select
                   options={languages}
-                  value={languages.find(l => l.value === selectedLanguage)}
-                  onChange={opt => setSelectedLanguage(opt.value)}
+                  value={languages.find((l) => l.value === selectedLanguage)}
+                  onChange={(opt) => setSelectedLanguage(opt.value)}
                   className="language-select"
                   classNamePrefix="react-select"
                   styles={{
-                    control: base => ({
+                    control: (base) => ({
                       ...base,
                       backgroundColor: '#1e293b',
                       borderColor: '#334155',
                       color: 'white',
                     }),
-                    menu: base => ({ ...base, backgroundColor: '#0f172a', color: 'white' }),
+                    menu: (base) => ({ ...base, backgroundColor: '#0f172a', color: 'white' }),
                     option: (base, state) => ({
                       ...base,
-                      backgroundColor: state.isSelected ? '#2563eb' : state.isFocused ? '#334155' : '#0f172a',
+                      backgroundColor: state.isSelected
+                        ? '#2563eb'
+                        : state.isFocused
+                        ? '#334155'
+                        : '#0f172a',
                       color: 'white',
                     }),
-                    singleValue: base => ({ ...base, color: 'white' }),
+                    singleValue: (base) => ({ ...base, color: 'white' }),
                   }}
                 />
               </div>
@@ -357,10 +350,16 @@ const AssistantChatWindow = () => {
                   onClick={isRecording ? stopRecording : startRecording}
                   className={`record-btn ${isRecording ? 'recording' : ''}`}
                 >
-                  {isRecording ? <StopIcon className="w-20 h-20" /> : <MicrophoneIcon className="w-20 h-20" />}
+                  {isRecording ? (
+                    <StopIcon className="w-20 h-20" />
+                  ) : (
+                    <MicrophoneIcon className="w-20 h-20" />
+                  )}
                   {isRecording && (
                     <div className="timer absolute -bottom-10 text-2xl font-bold text-white">
-                      {`${Math.floor(recordingTimer / 60).toString().padStart(2, '0')}:${(recordingTimer % 60).toString().padStart(2, '0')}`}
+                      {`${Math.floor(recordingTimer / 60)
+                        .toString()
+                        .padStart(2, '0')}:${(recordingTimer % 60).toString().padStart(2, '0')}`}
                     </div>
                   )}
                 </motion.button>
@@ -372,7 +371,7 @@ const AssistantChatWindow = () => {
                   <div className="text-content">
                     {originalText || 'Говорите...'}
                     {originalText && (
-                      <button 
+                      <button
                         onClick={() => speakText(originalText, 'auto')}
                         className="play-btn blue"
                       >
@@ -387,7 +386,7 @@ const AssistantChatWindow = () => {
                   <div className="text-content">
                     {translatedText || 'Ожидаем перевод...'}
                     {translatedText && (
-                      <button 
+                      <button
                         onClick={() => speakText(translatedText, selectedLanguage)}
                         className="play-btn green"
                       >
