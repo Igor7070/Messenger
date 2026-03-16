@@ -234,7 +234,7 @@ const AssistantChatWindow = () => {
 
               {showMenu && (
                 <div
-                  className="absolute right-0 mt-2 w-56 bg-slate-900 rounded-xl shadow-2xl z-50 overflow-hidden border border-slate-700"
+                  className="absolute right-0 mt-1 w-48 bg-slate-900/95 backdrop-blur-md rounded-lg shadow-xl border border-slate-700/60 z-50 overflow-hidden"
                   style={{ transform: 'translateY(4px)' }}
                 >
                   <button
@@ -242,16 +242,10 @@ const AssistantChatWindow = () => {
                       setMode(mode === 'chat' ? 'translator' : 'chat');
                       setShowMenu(false);
                     }}
-                    className="w-full text-left px-5 py-4 text-white hover:bg-slate-800 transition-colors flex items-center gap-3 text-base"
+                    className="w-full text-left px-4 py-2.5 text-sm text-white hover:bg-slate-700/70 transition-colors flex items-center gap-3"
                   >
-                    {mode === 'chat' ? (
-                      <>
-                        <MicrophoneIcon className="w-5 h-5 text-green-400" />
-                        Голосовой переводчик
-                      </>
-                    ) : (
-                      'Вернуться в чат'
-                    )}
+                    <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    <span>{mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}</span>
                   </button>
                 </div>
               )}
