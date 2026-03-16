@@ -3,6 +3,7 @@ import { useAssistant } from '../context/AssistantContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
 import toast from 'react-hot-toast';
+import ReactDOM from 'react-dom';
 import {
   EllipsisVerticalIcon,
   MicrophoneIcon,
