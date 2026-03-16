@@ -223,30 +223,40 @@ const AssistantChatWindow = () => {
 
           <div className="assistant-actions">
             <div className="relative">
-              <button
-                className="menu-dots-btn"
-                onClick={() => setShowMenu(!showMenu)}
-              >
-                <span className="dot"></span>
-                <span className="dot"></span>
-                <span className="dot"></span>
-              </button>
+              {/* Кнопка с точками остаётся в шапке */}
+              <div className="relative">
+                <button
+                  className="menu-dots-btn"
+                  onClick={() => setShowMenu(!showMenu)}
+                >
+                  <span className="dot"></span>
+                  <span className="dot"></span>
+                  <span className="dot"></span>
+                </button>
+              </div>
 
+              {/* Меню теперь рендерится отдельно, ниже всего окна (вне шапки) */}
               {showMenu && (
                 <div
-                  className="absolute right-0 mt-1 w-48 bg-slate-900/95 backdrop-blur-md rounded-lg shadow-xl border border-slate-700/60 z-50 overflow-hidden"
-                  style={{ transform: 'translateY(4px)' }}
+                  className="fixed top-[calc(var(--header-height,80px)+8px)] right-12 z-50"
+                  onClick={() => setShowMenu(false)} // клик вне меню закрывает
                 >
-                  <button
-                    onClick={() => {
-                      setMode(mode === 'chat' ? 'translator' : 'chat');
-                      setShowMenu(false);
-                    }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-white hover:bg-slate-700/70 transition-colors flex items-center gap-3"
+                  <div
+                    className="bg-slate-900/95 backdrop-blur-md rounded-lg shadow-xl border border-slate-700/60 overflow-hidden min-w-[180px]"
+                    onClick={(e) => e.stopPropagation()} // не закрывать при клике внутри меню
                   >
-                    <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                    <span>{mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}</span>
-                  </button>
+                    <button
+                      onClick={() => {
+                        setMode(mode === 'chat' ? 'translator' : 'chat');
+                        setShowMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-white hover:bg-slate-700/70 transition-colors flex items-center gap-3"
+                    >
+                      <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                      <span>{mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}</span>
+                    </button>
+                    {/* сюда потом добавляй новые пункты меню */}
+                  </div>
                 </div>
               )}
             </div>
