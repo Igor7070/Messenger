@@ -238,7 +238,7 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Меню — всегда в DOM, но не занимает место */}
+        {/* Меню — всегда в DOM, но не занимает место в потоке */}
         <div
           className="menu-wrapper"
           style={{
@@ -299,7 +299,7 @@ const AssistantChatWindow = () => {
           </motion.div>
         </div>
 
-        {/* Основной контент — теперь ничто не может его сдвинуть */}
+        {/* Основной контент */}
         <div className="flex-1 flex flex-col">
           <AnimatePresence mode="wait">
             {mode === 'chat' ? (
@@ -308,7 +308,7 @@ const AssistantChatWindow = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="chat-container flex-1 flex flex-col"
+                className="chat-container flex flex-col"           // ← УБРАЛИ flex-1 здесь!
               >
                 <div className="assistant-messages flex-1 overflow-y-auto">
                   {messages.map((msg, index) => (
@@ -355,7 +355,7 @@ const AssistantChatWindow = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="translator-mode flex-1 flex flex-col"
+                className="translator-mode flex flex-col"          // ← УБРАЛИ flex-1 здесь!
               >
                 <div className="mb-6 px-5">
                   <Select
