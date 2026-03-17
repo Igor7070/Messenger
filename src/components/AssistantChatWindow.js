@@ -207,7 +207,7 @@ const AssistantChatWindow = () => {
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
         {/* Шапка */}
-        <div className="assistant-header">
+        <div className="assistant-header relative z-10">
           <div className="assistant-title">
             <div className="assistant-avatar">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -238,200 +238,210 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Зарезервированное место под меню — всегда занимает пространство */}
+        {/* Меню — всегда в DOM, но не занимает место */}
         <div
-          className="menu-reserved-area transition-all duration-200 ease-out"
+          className="menu-wrapper"
           style={{
-            height: showMenu ? '54px' : '0px', // подберите точную высоту после теста
-            overflow: 'hidden',
+            height: 0,
+            overflow: 'visible',
+            position: 'relative',
+            zIndex: 20,
           }}
         >
-          <AnimatePresence>
-            {showMenu && (
+          <motion.div
+            animate={{
+              opacity: showMenu ? 1 : 0,
+              scale: showMenu ? 1 : 0.95,
+              y: showMenu ? 4 : -10,
+              pointerEvents: showMenu ? 'auto' : 'none',
+            }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className={`
+              absolute top-0 right-4
+              bg-slate-900/95 backdrop-blur-lg
+              border border-slate-700/70 rounded-xl
+              shadow-2xl shadow-black/40
+              py-3 px-4 min-w-[220px]
+              origin-top-right
+            `}
+          >
+            <button
+              onClick={() => {
+                setMode(mode === 'chat' ? 'translator' : 'chat');
+                setShowMenu(false);
+              }}
+              className="flex items-center gap-3 w-full text-left py-2.5 px-3 rounded-lg hover:bg-slate-800/70 transition-colors text-white hover:text-sky-300 whitespace-nowrap"
+            >
+              {mode === 'chat' ? (
+                <>
+                  <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  Голосовой переводчик
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-5 h-5 text-sky-400 flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                  Вернуться в чат
+                </>
+              )}
+            </button>
+          </motion.div>
+        </div>
+
+        {/* Основной контент — теперь ничто не может его сдвинуть */}
+        <div className="flex-1 flex flex-col">
+          <AnimatePresence mode="wait">
+            {mode === 'chat' ? (
               <motion.div
-                initial={{ opacity: 0, y: -12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.18 }}
-                className="h-full bg-slate-900/90 backdrop-blur-md border-b border-slate-700/60 flex items-center justify-end px-5"
+                key="chat"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="chat-container flex-1 flex flex-col"
               >
-                <button
-                  onClick={() => {
-                    setMode(mode === 'chat' ? 'translator' : 'chat');
-                    setShowMenu(false);
-                  }}
-                  className="flex items-center gap-3 text-white hover:text-sky-300 transition-colors whitespace-nowrap"
-                >
-                  {mode === 'chat' ? (
-                    <>
-                      <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                      Голосовой переводчик
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="w-5 h-5 text-sky-400 flex-shrink-0"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                        />
-                      </svg>
-                      Вернуться в чат
-                    </>
+                <div className="assistant-messages flex-1 overflow-y-auto">
+                  {messages.map((msg, index) => (
+                    <div
+                      key={index}
+                      className={`message ${msg.role === 'user' ? 'user-message' : 'assistant-message'}`}
+                    >
+                      <div className="message-bubble">{msg.content}</div>
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="message assistant-message">
+                      <div className="message-bubble typing">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    </div>
                   )}
-                </button>
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <div className="assistant-input">
+                  <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Write a message..."
+                    disabled={isLoading}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    className="send-btn"
+                    disabled={isLoading || !inputValue.trim()}
+                  >
+                    ➤
+                  </button>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="translator"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="translator-mode flex-1 flex flex-col"
+              >
+                <div className="mb-6 px-5">
+                  <Select
+                    options={languages}
+                    value={languages.find((l) => l.value === selectedLanguage)}
+                    onChange={(opt) => setSelectedLanguage(opt.value)}
+                    className="language-select"
+                    classNamePrefix="react-select"
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        backgroundColor: '#1e293b',
+                        borderColor: '#334155',
+                        color: 'white',
+                      }),
+                      menu: (base) => ({ ...base, backgroundColor: '#0f172a', color: 'white' }),
+                      option: (base, state) => ({
+                        ...base,
+                        backgroundColor: state.isSelected
+                          ? '#2563eb'
+                          : state.isFocused
+                          ? '#334155'
+                          : '#0f172a',
+                        color: 'white',
+                      }),
+                      singleValue: (base) => ({ ...base, color: 'white' }),
+                    }}
+                  />
+                </div>
+
+                <div className="flex-1 flex items-center justify-center">
+                  <motion.button
+                    whileTap={{ scale: 0.92 }}
+                    onClick={isRecording ? stopRecording : startRecording}
+                    className={`record-btn ${isRecording ? 'recording' : ''}`}
+                  >
+                    {isRecording ? (
+                      <StopIcon className="w-20 h-20" />
+                    ) : (
+                      <MicrophoneIcon className="w-20 h-20" />
+                    )}
+                    {isRecording && (
+                      <div className="timer absolute -bottom-10 text-2xl font-bold text-white">
+                        {`${Math.floor(recordingTimer / 60)
+                          .toString()
+                          .padStart(2, '0')}:${(recordingTimer % 60).toString().padStart(2, '0')}`}
+                      </div>
+                    )}
+                  </motion.button>
+                </div>
+
+                <div className="translation-result mt-6 px-5 pb-6">
+                  <div className="translation-block">
+                    <div className="label">Оригинал</div>
+                    <div className="text-content">
+                      {originalText || 'Говорите...'}
+                      {originalText && (
+                        <button
+                          onClick={() => speakText(originalText, 'auto')}
+                          className="play-btn blue"
+                        >
+                          <PlayIcon className="w-6 h-6" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="translation-block mt-6">
+                    <div className="label">Перевод</div>
+                    <div className="text-content">
+                      {translatedText || 'Ожидаем перевод...'}
+                      {translatedText && (
+                        <button
+                          onClick={() => speakText(translatedText, selectedLanguage)}
+                          className="play-btn green"
+                        >
+                          <PlayIcon className="w-6 h-6" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-
-        {/* Основной контент — теперь не будет сдвигаться */}
-        <AnimatePresence mode="wait">
-          {mode === 'chat' ? (
-            <motion.div
-              key="chat"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="chat-container flex-1 flex flex-col"
-            >
-              <div className="assistant-messages flex-1 overflow-y-auto">
-                {messages.map((msg, index) => (
-                  <div
-                    key={index}
-                    className={`message ${msg.role === 'user' ? 'user-message' : 'assistant-message'}`}
-                  >
-                    <div className="message-bubble">{msg.content}</div>
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="message assistant-message">
-                    <div className="message-bubble typing">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              <div className="assistant-input">
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Write a message..."
-                  disabled={isLoading}
-                />
-                <button
-                  onClick={sendMessage}
-                  className="send-btn"
-                  disabled={isLoading || !inputValue.trim()}
-                >
-                  ➤
-                </button>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="translator"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="translator-mode flex-1 flex flex-col"
-            >
-              <div className="mb-6 px-5">
-                <Select
-                  options={languages}
-                  value={languages.find((l) => l.value === selectedLanguage)}
-                  onChange={(opt) => setSelectedLanguage(opt.value)}
-                  className="language-select"
-                  classNamePrefix="react-select"
-                  styles={{
-                    control: (base) => ({
-                      ...base,
-                      backgroundColor: '#1e293b',
-                      borderColor: '#334155',
-                      color: 'white',
-                    }),
-                    menu: (base) => ({ ...base, backgroundColor: '#0f172a', color: 'white' }),
-                    option: (base, state) => ({
-                      ...base,
-                      backgroundColor: state.isSelected
-                        ? '#2563eb'
-                        : state.isFocused
-                        ? '#334155'
-                        : '#0f172a',
-                      color: 'white',
-                    }),
-                    singleValue: (base) => ({ ...base, color: 'white' }),
-                  }}
-                />
-              </div>
-
-              <div className="flex-1 flex items-center justify-center">
-                <motion.button
-                  whileTap={{ scale: 0.92 }}
-                  onClick={isRecording ? stopRecording : startRecording}
-                  className={`record-btn ${isRecording ? 'recording' : ''}`}
-                >
-                  {isRecording ? (
-                    <StopIcon className="w-20 h-20" />
-                  ) : (
-                    <MicrophoneIcon className="w-20 h-20" />
-                  )}
-                  {isRecording && (
-                    <div className="timer absolute -bottom-10 text-2xl font-bold text-white">
-                      {`${Math.floor(recordingTimer / 60)
-                        .toString()
-                        .padStart(2, '0')}:${(recordingTimer % 60).toString().padStart(2, '0')}`}
-                    </div>
-                  )}
-                </motion.button>
-              </div>
-
-              <div className="translation-result mt-6 px-5 pb-6">
-                <div className="translation-block">
-                  <div className="label">Оригинал</div>
-                  <div className="text-content">
-                    {originalText || 'Говорите...'}
-                    {originalText && (
-                      <button
-                        onClick={() => speakText(originalText, 'auto')}
-                        className="play-btn blue"
-                      >
-                        <PlayIcon className="w-6 h-6" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="translation-block mt-6">
-                  <div className="label">Перевод</div>
-                  <div className="text-content">
-                    {translatedText || 'Ожидаем перевод...'}
-                    {translatedText && (
-                      <button
-                        onClick={() => speakText(translatedText, selectedLanguage)}
-                        className="play-btn green"
-                      >
-                        <PlayIcon className="w-6 h-6" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.div>
     </AnimatePresence>
   );
