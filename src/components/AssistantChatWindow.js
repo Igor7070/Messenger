@@ -248,13 +248,34 @@ const AssistantChatWindow = () => {
               transition={{ duration: 0.18, ease: 'easeOut' }}
               className="bg-slate-900/90 backdrop-blur-md border-b border-slate-700/60 overflow-hidden"
             >
-              <div className="px-5 py-3.5 flex justify-end items-center gap-4">
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '14px 20px 14px 0',     // отступ справа 20px, слева 0
+                  marginLeft: 'auto',               // максимально отталкивает от левого края
+                  width: 'fit-content',             // не растягивает
+                  minWidth: 'max-content',
+                  marginRight: '0 !important'       // принудительно убираем любой правый margin
+                }}
+              >
+                {/* Кнопка "Закрыть" — слева от основной, если хочешь */}
+                <button
+                  onClick={() => setShowMenu(false)}
+                  className="text-slate-400 hover:text-white transition-colors px-3 py-1 rounded hover:bg-slate-800/50 whitespace-nowrap"
+                >
+                  Закрыть
+                </button>
+
+                {/* Основная кнопка */}
                 <button
                   onClick={() => {
                     setMode(mode === 'chat' ? 'translator' : 'chat');
                     setShowMenu(false);
                   }}
-                  className="flex-1 text-left flex items-center gap-3 text-white hover:text-sky-300 transition-colors"
+                  className="flex items-center gap-3 text-white hover:text-sky-300 transition-colors whitespace-nowrap"
                 >
                   {mode === 'chat' ? (
                     <>
@@ -279,14 +300,6 @@ const AssistantChatWindow = () => {
                       Вернуться в чат
                     </>
                   )}
-                </button>
-
-                {/* Можно добавить кнопку "Закрыть меню" или другие пункты */}
-                <button
-                  onClick={() => setShowMenu(false)}
-                  className="text-slate-400 hover:text-white transition-colors px-3 py-1 rounded hover:bg-slate-800/50"
-                >
-                  Закрыть
                 </button>
               </div>
             </motion.div>
