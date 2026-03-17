@@ -241,34 +241,35 @@ const AssistantChatWindow = () => {
         {/* Меню — всегда в DOM, высота 0, не толкает контент */}
         <div
           style={{
+            position: 'fixed',                    // ← переходим на fixed — относительно окна, а не родителя
+            top: 0,                               // от верхнего края окна
+            left: 0,
+            right: 0,
             height: 0,
-            overflow: 'visible',
-            position: 'relative',
-            width: '100%',
-            insetInlineStart: 'auto',
-            insetInlineEnd: 0,
+            pointerEvents: 'none',
             zIndex: 9999,
           }}
         >
           <motion.div
             animate={{
               opacity: showMenu ? 1 : 0,
-              y: showMenu ? 0 : -12,
+              y: showMenu ? 60 : 48,              // ← смещаем вниз на высоту шапки (подставь свою, например 56–72 px)
               scale: showMenu ? 1 : 0.96,
               pointerEvents: showMenu ? 'auto' : 'none',
             }}
             transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: '16px',                        // 16px от правого края ЭКРАНА
+              left: 'auto',
+              transformOrigin: 'top right',
+            }}
             className={`
-              absolute top-full right-4 mt-1 !left-auto !right-4
               bg-slate-900/95 backdrop-blur-lg border border-slate-700/60
               rounded-xl shadow-2xl shadow-black/50 py-3 px-5 min-w-[220px]
               origin-top-right z-[10000]
             `}
-            style={{
-              left: 'auto !important',
-              right: '16px !important',
-              transformOrigin: 'top right',
-            }}
           >
             <button
               onClick={() => {
