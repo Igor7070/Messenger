@@ -244,7 +244,10 @@ const AssistantChatWindow = () => {
             height: 0,
             overflow: 'visible',
             position: 'relative',
-            zIndex: 30,
+            insetInlineStart: 'auto',           // сбрасываем left
+            insetInlineEnd: 0,                  // прижимаем к правому краю
+            width: '100%',
+            zIndex: 9999,                       // очень высокий z-index
           }}
         >
           <motion.div
@@ -256,11 +259,16 @@ const AssistantChatWindow = () => {
             }}
             transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
             className={`
-              absolute top-full right-3 mt-1
+              absolute top-full right-4 mt-1 !left-auto !right-4
               bg-slate-900/95 backdrop-blur-lg border border-slate-700/60
-              rounded-xl shadow-xl shadow-black/30 py-3 px-4 min-w-[200px]
-              origin-top-right
+              rounded-xl shadow-2xl shadow-black/50 py-3 px-5 min-w-[220px]
+              origin-top-right z-[9999]
             `}
+            style={{
+              left: 'auto !important',
+              right: '1rem !important',           // максимально жёстко прижимаем
+              transformOrigin: 'top right',
+            }}
           >
             <button
               onClick={() => {
