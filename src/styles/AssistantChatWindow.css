@@ -31,6 +31,9 @@
   align-items: center;                   /* строго по центру по вертикали */
   border-bottom: 1px solid rgba(96, 165, 250, 0.2);
   gap: 16px;                             /* расстояние между левой и правой частью */
+  position: relative;
+  overflow: visible;            /* ← важно! */
+  z-index: 1001;                /* выше остальных элементов внутри окна */
 }
 
 .assistant-title {
@@ -62,6 +65,7 @@
 }
 
 .assistant-actions {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;                          /* как было изначально — нормальный зазор */
