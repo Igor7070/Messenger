@@ -204,9 +204,10 @@ const AssistantChatWindow = () => {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: '100%', opacity: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
+        className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'} relative`}
+        // ↑ добавили relative — это важно!
       >
-        {/* Шапка остаётся без изменений */}
+        {/* Шапка */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -238,36 +239,33 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Меню теперь живёт здесь — как отдельная строка под шапкой */}
+        {/* Выпадающее меню — теперь абсолютно позиционировано */}
         <AnimatePresence>
           {showMenu && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-              className="bg-slate-900/90 backdrop-blur-md border-b border-slate-700/60 overflow-hidden"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.16 }}
+              className="
+                absolute top-full left-0 right-0 z-30
+                bg-slate-900/95 backdrop-blur-md
+                border-b border-slate-700/70
+                shadow-xl shadow-black/30
+              "
             >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  alignItems: 'center',
-                  gap: '16px',
-                  padding: '0px 20px 14px 0',     // отступ справа 20px, слева 0
-                  marginLeft: 'auto',               // максимально отталкивает от левого края
-                  width: 'fit-content',             // не растягивает
-                  minWidth: 'max-content',
-                  marginRight: '0 !important'       // принудительно убираем любой правый margin
-                }}
-              >
-                {/* Основная кнопка */}
+              <div className="flex justify-end items-center px-5 py-3.5">
                 <button
                   onClick={() => {
                     setMode(mode === 'chat' ? 'translator' : 'chat');
                     setShowMenu(false);
                   }}
-                  className="flex items-center gap-3 text-white hover:text-sky-300 transition-colors whitespace-nowrap"
+                  className="
+                    flex items-center gap-3 px-4 py-2 rounded-lg
+                    text-white hover:text-sky-300
+                    hover:bg-slate-800/60 active:bg-slate-700/70
+                    transition-colors whitespace-nowrap
+                  "
                 >
                   {mode === 'chat' ? (
                     <>
@@ -298,7 +296,7 @@ const AssistantChatWindow = () => {
           )}
         </AnimatePresence>
 
-        {/* Основной контент (чат или переводчик) */}
+        {/* Основной контент — теперь не сдвигается */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
@@ -355,7 +353,6 @@ const AssistantChatWindow = () => {
               exit={{ opacity: 0 }}
               className="translator-mode flex-1 flex flex-col"
             >
-              {/* весь переводчик без изменений */}
               <div className="mb-6 px-5">
                 <Select
                   options={languages}
@@ -407,7 +404,6 @@ const AssistantChatWindow = () => {
               </div>
 
               <div className="translation-result mt-6 px-5 pb-6">
-                {/* ... оригинальный блок с переводом ... */}
                 <div className="translation-block">
                   <div className="label">Оригинал</div>
                   <div className="text-content">
