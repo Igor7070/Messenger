@@ -221,7 +221,6 @@ const AssistantChatWindow = () => {
             <span className="online-dot"></span>
           </div>
 
-          {/* ← Здесь основное изменение */}
           <div className="assistant-actions relative">
             <button
               className="menu-dots-btn"
@@ -232,32 +231,39 @@ const AssistantChatWindow = () => {
               <span className="dot"></span>
             </button>
 
-            {/* Выпадающее меню — позиционировано абсолютно справа */}
+            <button onClick={toggleFullScreen} className="icon-btn">
+              {isFullScreen ? '↙' : '↗'}
+            </button>
+            <button onClick={closeAssistant} className="icon-btn">✕</button>
+
             <AnimatePresence>
               {showMenu && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                  initial={{ opacity: 0, scale: 0.94, y: -6 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.92, y: -8 }}
-                  transition={{ duration: 0.14 }}
+                  exit={{ opacity: 0, scale: 0.92, y: -10 }}
+                  transition={{ duration: 0.13 }}
                   className="
-                    absolute top-full right-0 mt-2 w-64 
-                    bg-slate-900/95 backdrop-blur-lg 
-                    border border-slate-700/60 rounded-xl 
-                    shadow-2xl shadow-black/40 
-                    overflow-hidden z-50
+                    absolute top-full right-0 mt-1.5
+                    w-60 sm:w-64
+                    bg-slate-900/96 backdrop-blur-lg
+                    border border-slate-700/70 rounded-xl
+                    shadow-xl shadow-black/50
+                    z-[100]
+                    overflow-hidden
                   "
                 >
-                  <div className="py-1.5">
+                  <div className="py-1">
                     <button
                       onClick={() => {
                         setMode(mode === 'chat' ? 'translator' : 'chat');
                         setShowMenu(false);
                       }}
                       className="
-                        w-full px-5 py-3.5 text-left 
-                        flex items-center gap-3 
-                        hover:bg-slate-800/70 transition-colors
+                        w-full px-4 py-3.5 text-left
+                        flex items-center gap-3
+                        hover:bg-slate-800/80 active:bg-slate-700/80
+                        transition-colors
                       "
                     >
                       {mode === 'chat' ? (
@@ -284,33 +290,14 @@ const AssistantChatWindow = () => {
                         </>
                       )}
                     </button>
-
-                    <div className="border-t border-slate-700/50 mx-2 my-1" />
-
-                    <button
-                      onClick={() => setShowMenu(false)}
-                      className="
-                        w-full px-5 py-3.5 text-left 
-                        flex items-center gap-3 
-                        text-red-400 hover:bg-slate-800/70 hover:text-red-300 
-                        transition-colors
-                      "
-                    >
-                      Закрыть меню
-                    </button>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-
-            <button onClick={toggleFullScreen} className="icon-btn">
-              {isFullScreen ? '↙' : '↗'}
-            </button>
-            <button onClick={closeAssistant} className="icon-btn">✕</button>
           </div>
         </div>
 
-        {/* Основной контент (чат или переводчик) */}
+        {/* Основной контент */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
@@ -320,7 +307,6 @@ const AssistantChatWindow = () => {
               exit={{ opacity: 0 }}
               className="chat-container flex-1 flex flex-col"
             >
-              {/* ... весь чат без изменений ... */}
               <div className="assistant-messages flex-1">
                 {messages.map((msg, index) => (
                   <div
@@ -333,7 +319,9 @@ const AssistantChatWindow = () => {
                 {isLoading && (
                   <div className="message assistant-message">
                     <div className="message-bubble typing">
-                      <span></span><span></span><span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
                     </div>
                   </div>
                 )}
@@ -365,7 +353,6 @@ const AssistantChatWindow = () => {
               exit={{ opacity: 0 }}
               className="translator-mode flex-1 flex flex-col"
             >
-              {/* ... весь переводчик без изменений ... */}
               <div className="mb-6 px-5">
                 <Select
                   options={languages}
@@ -394,7 +381,6 @@ const AssistantChatWindow = () => {
                   }}
                 />
               </div>
-
               <div className="flex-1 flex items-center justify-center">
                 <motion.button
                   whileTap={{ scale: 0.92 }}
@@ -415,7 +401,6 @@ const AssistantChatWindow = () => {
                   )}
                 </motion.button>
               </div>
-
               <div className="translation-result mt-6 px-5 pb-6">
                 <div className="translation-block">
                   <div className="label">Оригинал</div>
