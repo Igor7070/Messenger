@@ -206,6 +206,7 @@ const AssistantChatWindow = () => {
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
+        {/* Шапка */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -220,7 +221,8 @@ const AssistantChatWindow = () => {
             <span className="online-dot"></span>
           </div>
 
-          <div className="assistant-actions">
+          {/* ← Здесь основное изменение */}
+          <div className="assistant-actions relative">
             <button
               className="menu-dots-btn"
               onClick={() => setShowMenu(!showMenu)}
@@ -230,66 +232,83 @@ const AssistantChatWindow = () => {
               <span className="dot"></span>
             </button>
 
+            {/* Выпадающее меню — позиционировано абсолютно справа */}
+            <AnimatePresence>
+              {showMenu && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.92, y: -8 }}
+                  transition={{ duration: 0.14 }}
+                  className="
+                    absolute top-full right-0 mt-2 w-64 
+                    bg-slate-900/95 backdrop-blur-lg 
+                    border border-slate-700/60 rounded-xl 
+                    shadow-2xl shadow-black/40 
+                    overflow-hidden z-50
+                  "
+                >
+                  <div className="py-1.5">
+                    <button
+                      onClick={() => {
+                        setMode(mode === 'chat' ? 'translator' : 'chat');
+                        setShowMenu(false);
+                      }}
+                      className="
+                        w-full px-5 py-3.5 text-left 
+                        flex items-center gap-3 
+                        hover:bg-slate-800/70 transition-colors
+                      "
+                    >
+                      {mode === 'chat' ? (
+                        <>
+                          <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                          Голосовой переводчик
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-5 h-5 text-sky-400 flex-shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                            />
+                          </svg>
+                          Вернуться в чат
+                        </>
+                      )}
+                    </button>
+
+                    <div className="border-t border-slate-700/50 mx-2 my-1" />
+
+                    <button
+                      onClick={() => setShowMenu(false)}
+                      className="
+                        w-full px-5 py-3.5 text-left 
+                        flex items-center gap-3 
+                        text-red-400 hover:bg-slate-800/70 hover:text-red-300 
+                        transition-colors
+                      "
+                    >
+                      Закрыть меню
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
             </button>
             <button onClick={closeAssistant} className="icon-btn">✕</button>
           </div>
         </div>
-
-        {/* Меню под шапкой — прижато вправо, как кнопка трёх точек */}
-        <AnimatePresence>
-          {showMenu && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-              className="bg-slate-900/90 backdrop-blur-md border-b border-slate-700/60 overflow-hidden"
-            >
-              <div className="px-5 py-3.5 flex justify-end items-center gap-4">
-                <button
-                  onClick={() => {
-                    setMode(mode === 'chat' ? 'translator' : 'chat');
-                    setShowMenu(false);
-                  }}
-                  className="flex items-center gap-3 text-white hover:text-sky-300 transition-colors px-4 py-2 rounded-lg hover:bg-slate-800/50"
-                >
-                  {mode === 'chat' ? (
-                    <>
-                      <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                      Голосовой переводчик
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="w-5 h-5 text-sky-400 flex-shrink-0"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                        />
-                      </svg>
-                      Вернуться в чат
-                    </>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => setShowMenu(false)}
-                  className="text-slate-400 hover:text-white transition-colors px-3 py-1 rounded hover:bg-slate-800/50"
-                >
-                  Закрыть
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Основной контент (чат или переводчик) */}
         <AnimatePresence mode="wait">
@@ -301,6 +320,7 @@ const AssistantChatWindow = () => {
               exit={{ opacity: 0 }}
               className="chat-container flex-1 flex flex-col"
             >
+              {/* ... весь чат без изменений ... */}
               <div className="assistant-messages flex-1">
                 {messages.map((msg, index) => (
                   <div
@@ -313,15 +333,12 @@ const AssistantChatWindow = () => {
                 {isLoading && (
                   <div className="message assistant-message">
                     <div className="message-bubble typing">
-                      <span></span>
-                      <span></span>
-                      <span></span>
+                      <span></span><span></span><span></span>
                     </div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
               </div>
-
               <div className="assistant-input">
                 <input
                   type="text"
@@ -348,6 +365,7 @@ const AssistantChatWindow = () => {
               exit={{ opacity: 0 }}
               className="translator-mode flex-1 flex flex-col"
             >
+              {/* ... весь переводчик без изменений ... */}
               <div className="mb-6 px-5">
                 <Select
                   options={languages}
@@ -413,7 +431,6 @@ const AssistantChatWindow = () => {
                     )}
                   </div>
                 </div>
-
                 <div className="translation-block mt-6">
                   <div className="label">Перевод</div>
                   <div className="text-content">
