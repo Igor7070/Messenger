@@ -341,3 +341,15 @@
   background-color: white;
   border-radius: 50%;
 }
+
+.assistant-actions {
+  overflow: visible !important;
+}
+
+.assistant-header {
+  overflow: visible !important;
+}
+
+.assistant-actions .relative {
+  overflow: visible !important;
+}
