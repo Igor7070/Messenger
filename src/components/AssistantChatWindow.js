@@ -406,7 +406,7 @@ const AssistantChatWindow = () => {
               <span className="font-medium">{mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}</span>
             </button>
 
-            {/* новые пункты меню добавляй сюда */}
+            {/* новые пункты меню здесь */}
           </div>
         </div>,
         document.body
