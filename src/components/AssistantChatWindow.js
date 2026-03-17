@@ -38,6 +38,8 @@ const AssistantChatWindow = () => {
   const audioChunksRef = useRef([]);
   const timerIntervalRef = useRef(null);
 
+  const menuButtonRef = useRef(null);
+
   const languages = [
     { value: 'auto', label: 'Auto 🌐' },
     { value: 'en', label: 'English 🇬🇧' },
