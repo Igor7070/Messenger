@@ -244,7 +244,7 @@ const AssistantChatWindow = () => {
             height: 0,
             overflow: 'visible',
             position: 'relative',
-            zIndex: 30,
+            width: '100%',                    // ← КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: растягиваем на всю ширину
           }}
         >
           <motion.div
@@ -256,9 +256,9 @@ const AssistantChatWindow = () => {
             }}
             transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
             className={`
-              absolute top-full right-3 mt-1
+              absolute top-full right-4 mt-1               // right-4 = 16px от правого края
               bg-slate-900/95 backdrop-blur-lg border border-slate-700/60
-              rounded-xl shadow-xl shadow-black/30 py-3 px-4 min-w-[200px]
+              rounded-xl shadow-xl shadow-black/30 py-3 px-5 min-w-[220px]
               origin-top-right
             `}
           >
