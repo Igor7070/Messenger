@@ -261,14 +261,6 @@ const AssistantChatWindow = () => {
                   marginRight: '0 !important'       // принудительно убираем любой правый margin
                 }}
               >
-                {/* Кнопка "Закрыть" — слева от основной, если хочешь */}
-                <button
-                  onClick={() => setShowMenu(false)}
-                  className="text-slate-400 hover:text-white transition-colors px-3 py-1 rounded hover:bg-slate-800/50 whitespace-nowrap"
-                >
-                  Закрыть
-                </button>
-
                 {/* Основная кнопка */}
                 <button
                   onClick={() => {
