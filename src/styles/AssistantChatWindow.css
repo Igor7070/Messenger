@@ -344,12 +344,15 @@
 
 .assistant-actions {
   overflow: visible !important;
+  align-items: center;
+  gap: 8px; /* или сколько у тебя было */
 }
 
 .assistant-header {
   overflow: visible !important;
 }
 
-.assistant-actions .relative {
+.relative.inline-flex {
   overflow: visible !important;
+  height: auto !important;
 }

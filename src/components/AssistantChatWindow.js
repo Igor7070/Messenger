@@ -221,8 +221,8 @@ const AssistantChatWindow = () => {
           </div>
 
           <div className="assistant-actions">
-            {/* Новый контейнер с relative + inline-block только вокруг кнопки меню */}
-            <div className="relative inline-block">
+            {/* Минимальный контейнер только вокруг кнопки меню */}
+            <div style={{ position: 'relative', display: 'inline-flex', overflow: 'visible' }}>
               <button
                 className="menu-dots-btn"
                 onClick={() => setShowMenu(!showMenu)}
@@ -235,18 +235,16 @@ const AssistantChatWindow = () => {
               <AnimatePresence>
                 {showMenu && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                    transition={{ duration: 0.12 }}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={{ duration: 0.14, ease: 'easeOut' }}
                     className="
-                      absolute right-0 top-full mt-2 
+                      absolute right-0 top-[calc(100%+6px)]
                       w-64 min-w-[220px] max-w-[280px]
-                      bg-slate-900/95 backdrop-blur-md 
-                      rounded-xl shadow-2xl 
-                      border border-slate-700/70
-                      overflow-hidden
-                      z-50
+                      bg-slate-900/95 backdrop-blur-md
+                      rounded-xl shadow-2xl border border-slate-700/70
+                      overflow-hidden z-50
                     "
                   >
                     <button
@@ -255,11 +253,9 @@ const AssistantChatWindow = () => {
                         setShowMenu(false);
                       }}
                       className="
-                        w-full text-left 
-                        px-5 py-4 
-                        text-white hover:bg-slate-800/70 
-                        transition-colors 
-                        flex items-center gap-3 text-base
+                        w-full text-left px-5 py-4
+                        text-white hover:bg-slate-800/70
+                        transition-colors flex items-center gap-3 text-base
                       "
                     >
                       {mode === 'chat' ? (
@@ -286,14 +282,11 @@ const AssistantChatWindow = () => {
                         </>
                       )}
                     </button>
-
-                    {/* Можно добавить ещё пункты меню позже */}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* Остальные кнопки остаются как были */}
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
             </button>
