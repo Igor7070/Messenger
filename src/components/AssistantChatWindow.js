@@ -254,7 +254,7 @@ const AssistantChatWindow = () => {
                   justifyContent: 'flex-end',
                   alignItems: 'center',
                   gap: '16px',
-                  padding: '14px 20px 14px 0',     // отступ справа 20px, слева 0
+                  padding: '0px 20px 14px 0',     // отступ справа 20px, слева 0
                   marginLeft: 'auto',               // максимально отталкивает от левого края
                   width: 'fit-content',             // не растягивает
                   minWidth: 'max-content',
