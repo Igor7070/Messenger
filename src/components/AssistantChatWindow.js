@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
 import toast from 'react-hot-toast';
 import {
-  EllipsisVerticalIcon,
   MicrophoneIcon,
   StopIcon,
   PlayIcon,
@@ -37,8 +36,6 @@ const AssistantChatWindow = () => {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const timerIntervalRef = useRef(null);
-
-  const menuButtonRef = useRef(null);
 
   const languages = [
     { value: 'auto', label: 'Auto 🌐' },
@@ -209,6 +206,7 @@ const AssistantChatWindow = () => {
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
+        {/* Шапка остаётся без изменений */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -224,40 +222,14 @@ const AssistantChatWindow = () => {
           </div>
 
           <div className="assistant-actions">
-            <div className="relative">
-              <button
-                className="menu-dots-btn"
-                onClick={() => setShowMenu(!showMenu)}
-              >
-                <span className="dot"></span>
-                <span className="dot"></span>
-                <span className="dot"></span>
-              </button>
-
-              {showMenu && (
-                <div
-                  className="absolute right-0 mt-2 w-56 bg-slate-900 rounded-xl shadow-2xl z-50 overflow-hidden border border-slate-700"
-                  style={{ transform: 'translateY(4px)' }}
-                >
-                  <button
-                    onClick={() => {
-                      setMode(mode === 'chat' ? 'translator' : 'chat');
-                      setShowMenu(false);
-                    }}
-                    className="w-full text-left px-5 py-4 text-white hover:bg-slate-800 transition-colors flex items-center gap-3 text-base"
-                  >
-                    {mode === 'chat' ? (
-                      <>
-                        <MicrophoneIcon className="w-5 h-5 text-green-400" />
-                        Голосовой переводчик
-                      </>
-                    ) : (
-                      'Вернуться в чат'
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
+            <button
+              className="menu-dots-btn"
+              onClick={() => setShowMenu(!showMenu)}
+            >
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
+            </button>
 
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
@@ -266,6 +238,62 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
+        {/* Меню теперь живёт здесь — как отдельная строка под шапкой */}
+        <AnimatePresence>
+          {showMenu && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="bg-slate-900/90 backdrop-blur-md border-b border-slate-700/60 overflow-hidden"
+            >
+              <div className="px-5 py-3.5 flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    setMode(mode === 'chat' ? 'translator' : 'chat');
+                    setShowMenu(false);
+                  }}
+                  className="flex-1 text-left flex items-center gap-3 text-white hover:text-sky-300 transition-colors"
+                >
+                  {mode === 'chat' ? (
+                    <>
+                      <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                      Голосовой переводчик
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-5 h-5 text-sky-400 flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                        />
+                      </svg>
+                      Вернуться в чат
+                    </>
+                  )}
+                </button>
+
+                {/* Можно добавить кнопку "Закрыть меню" или другие пункты */}
+                <button
+                  onClick={() => setShowMenu(false)}
+                  className="text-slate-400 hover:text-white transition-colors px-3 py-1 rounded hover:bg-slate-800/50"
+                >
+                  Закрыть
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Основной контент (чат или переводчик) */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
@@ -273,9 +301,9 @@ const AssistantChatWindow = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="chat-container"
+              className="chat-container flex-1 flex flex-col"
             >
-              <div className="assistant-messages">
+              <div className="assistant-messages flex-1">
                 {messages.map((msg, index) => (
                   <div
                     key={index}
@@ -320,9 +348,10 @@ const AssistantChatWindow = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="translator-mode"
+              className="translator-mode flex-1 flex flex-col"
             >
-              <div className="mb-6">
+              {/* весь переводчик без изменений */}
+              <div className="mb-6 px-5">
                 <Select
                   options={languages}
                   value={languages.find((l) => l.value === selectedLanguage)}
@@ -372,7 +401,8 @@ const AssistantChatWindow = () => {
                 </motion.button>
               </div>
 
-              <div className="translation-result mt-6">
+              <div className="translation-result mt-6 px-5 pb-6">
+                {/* ... оригинальный блок с переводом ... */}
                 <div className="translation-block">
                   <div className="label">Оригинал</div>
                   <div className="text-content">
