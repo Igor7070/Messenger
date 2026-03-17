@@ -38,6 +38,8 @@ const AssistantChatWindow = () => {
   const audioChunksRef = useRef([]);
   const timerIntervalRef = useRef(null);
 
+  const menuButtonRef = useRef(null);
+
   const languages = [
     { value: 'auto', label: 'Auto 🌐' },
     { value: 'en', label: 'English 🇬🇧' },
@@ -222,57 +224,15 @@ const AssistantChatWindow = () => {
           </div>
 
           <div className="assistant-actions">
-            <div className="relative">
-              <button
-                className="menu-dots-btn"
-                onClick={() => setShowMenu(!showMenu)}
-              >
-                <span className="dot"></span>
-                <span className="dot"></span>
-                <span className="dot"></span>
-              </button>
-
-              {showMenu && (
-                <div
-                  className="absolute top-full right-0 mt-2 w-72 bg-slate-900/95 backdrop-blur-md rounded-xl shadow-2xl border border-slate-700/80 overflow-hidden z-[9999]"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    onClick={() => {
-                      setMode(mode === 'chat' ? 'translator' : 'chat');
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-6 py-4 text-left text-white hover:bg-slate-800/70 transition-colors flex items-center gap-4 text-base font-medium"
-                  >
-                    {mode === 'chat' ? (
-                      <>
-                        <MicrophoneIcon className="w-6 h-6 text-green-400 flex-shrink-0" />
-                        Голосовой переводчик
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-6 h-6 text-blue-400 flex-shrink-0"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                          />
-                        </svg>
-                        Вернуться в чат
-                      </>
-                    )}
-                  </button>
-
-                  {/* Можно добавить другие пункты меню сюда позже */}
-                </div>
-              )}
-            </div>
+            <button
+              ref={menuButtonRef}
+              className="menu-dots-btn"
+              onClick={() => setShowMenu((prev) => !prev)}
+            >
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
+            </button>
 
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
@@ -421,6 +381,49 @@ const AssistantChatWindow = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Выпадающее меню — позиционируется по реальным координатам кнопки */}
+        {showMenu && menuButtonRef.current && (
+          (() => {
+            const btnRect = menuButtonRef.current.getBoundingClientRect();
+            // Позиция относительно viewport (fixed использует viewport)
+            const menuTop = btnRect.bottom + 6;          // 6 px ниже нижнего края кнопки
+            const menuRight = window.innerWidth - btnRect.right - 8;  // выравнивание по правому краю кнопки + небольшой отступ
+
+            return (
+              <div
+                className="fixed bg-slate-950/95 backdrop-blur-lg rounded-xl shadow-2xl border border-slate-700/60 overflow-hidden min-w-[220px] max-w-[280px] z-[9999]"
+                style={{
+                  top: `${menuTop}px`,
+                  right: `${menuRight}px`,
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => {
+                    setMode(mode === 'chat' ? 'translator' : 'chat');
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-5 py-3.5 text-left text-gray-100 hover:bg-slate-800/80 active:bg-slate-700/80 transition-colors flex items-center gap-3 text-[15px]"
+                >
+                  {mode === 'chat' ? (
+                    <>
+                      <MicrophoneIcon className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                      Голосовой переводчик
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5 text-sky-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      Вернуться в чат
+                    </>
+                  )}
+                </button>
+              </div>
+            );
+          })()
+        )}
       </motion.div>
     </AnimatePresence>
   );
