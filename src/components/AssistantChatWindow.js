@@ -248,7 +248,7 @@ const AssistantChatWindow = () => {
               transition={{ duration: 0.18, ease: 'easeOut' }}
               className="bg-slate-900/90 backdrop-blur-md border-b border-slate-700/60 overflow-hidden"
             >
-              <div className="px-5 py-3.5 flex items-center gap-4">
+              <div className="px-5 py-3.5 flex justify-end items-center gap-4">
                 <button
                   onClick={() => {
                     setMode(mode === 'chat' ? 'translator' : 'chat');
