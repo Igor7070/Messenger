@@ -222,40 +222,14 @@ const AssistantChatWindow = () => {
           </div>
 
           <div className="assistant-actions">
-            <div className="relative">
-              <button
-                className="menu-dots-btn"
-                onClick={() => setShowMenu(!showMenu)}
-              >
-                <span className="dot"></span>
-                <span className="dot"></span>
-                <span className="dot"></span>
-              </button>
-
-              {showMenu && (
-                <div
-                  className="absolute right-0 mt-2 w-56 bg-slate-900 rounded-xl shadow-2xl z-50 overflow-hidden border border-slate-700"
-                  style={{ transform: 'translateY(4px)' }}
-                >
-                  <button
-                    onClick={() => {
-                      setMode(mode === 'chat' ? 'translator' : 'chat');
-                      setShowMenu(false);
-                    }}
-                    className="w-full text-left px-5 py-4 text-white hover:bg-slate-800 transition-colors flex items-center gap-3 text-base"
-                  >
-                    {mode === 'chat' ? (
-                      <>
-                        <MicrophoneIcon className="w-5 h-5 text-green-400" />
-                        Голосовой переводчик
-                      </>
-                    ) : (
-                      'Вернуться в чат'
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
+            <button
+              className="menu-dots-btn"
+              onClick={() => setShowMenu(!showMenu)}
+            >
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
+            </button>
 
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
@@ -404,6 +378,52 @@ const AssistantChatWindow = () => {
             </motion.div>
           )}
         </AnimatePresence>
+        
+        {showMenu && (
+          <div
+            className="fixed inset-0 z-[9999] pointer-events-none"
+            onClick={() => setShowMenu(false)}
+          >
+            <div
+              className="absolute top-[64px] right-4 w-72 bg-slate-900/95 backdrop-blur-md rounded-xl shadow-2xl border border-slate-700/80 overflow-hidden pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => {
+                  setMode(mode === 'chat' ? 'translator' : 'chat');
+                  setShowMenu(false);
+                }}
+                className="w-full px-6 py-4 text-left text-white hover:bg-slate-800/70 transition-colors flex items-center gap-4 text-base font-medium"
+              >
+                {mode === 'chat' ? (
+                  <>
+                    <MicrophoneIcon className="w-6 h-6 text-green-400 flex-shrink-0" />
+                    Голосовой переводчик
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-6 h-6 text-blue-400 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                      />
+                    </svg>
+                    Вернуться в чат
+                  </>
+                )}
+              </button>
+
+              {/* Сюда можно будет легко добавить другие пункты меню позже */}
+            </div>
+          </div>
+        )}
       </motion.div>
     </AnimatePresence>
   );
