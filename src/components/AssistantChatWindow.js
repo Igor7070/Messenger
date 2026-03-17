@@ -204,10 +204,8 @@ const AssistantChatWindow = () => {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: '100%', opacity: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'} relative overflow-visible`}
-        //                                       ↑↑↑ relative + overflow-visible — критично!
+        className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
-
         {/* Шапка */}
         <div className="assistant-header">
           <div className="assistant-title">
@@ -240,35 +238,29 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Меню — теперь абсолютно позиционировано поверх всего */}
-        <AnimatePresence>
-          {showMenu && (
-            <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.97 }}
-              transition={{ duration: 0.15 }}
-              className={`
-                absolute z-50
-                top-full left-0 right-0
-                bg-slate-900/95 backdrop-blur-lg
-                border-b border-slate-600/60
-                shadow-xl shadow-black/40
-                pointer-events-auto
-              `}
-            >
-              <div className="flex justify-end px-4 py-3">
+        {/* Зарезервированное место под меню — всегда занимает пространство */}
+        <div
+          className="menu-reserved-area transition-all duration-200 ease-out"
+          style={{
+            height: showMenu ? '54px' : '0px', // подберите точную высоту после теста
+            overflow: 'hidden',
+          }}
+        >
+          <AnimatePresence>
+            {showMenu && (
+              <motion.div
+                initial={{ opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.18 }}
+                className="h-full bg-slate-900/90 backdrop-blur-md border-b border-slate-700/60 flex items-center justify-end px-5"
+              >
                 <button
                   onClick={() => {
                     setMode(mode === 'chat' ? 'translator' : 'chat');
                     setShowMenu(false);
                   }}
-                  className="
-                    flex items-center gap-3 px-5 py-2.5
-                    text-white hover:text-sky-300 font-medium
-                    hover:bg-slate-800/60 rounded-lg
-                    transition-colors duration-150
-                  "
+                  className="flex items-center gap-3 text-white hover:text-sky-300 transition-colors whitespace-nowrap"
                 >
                   {mode === 'chat' ? (
                     <>
@@ -294,12 +286,12 @@ const AssistantChatWindow = () => {
                     </>
                   )}
                 </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-        {/* Основной контент — теперь ничто не сдвигает его */}
+        {/* Основной контент — теперь не будет сдвигаться */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
@@ -309,7 +301,7 @@ const AssistantChatWindow = () => {
               exit={{ opacity: 0 }}
               className="chat-container flex-1 flex flex-col"
             >
-              <div className="assistant-messages flex-1">
+              <div className="assistant-messages flex-1 overflow-y-auto">
                 {messages.map((msg, index) => (
                   <div
                     key={index}
@@ -321,7 +313,9 @@ const AssistantChatWindow = () => {
                 {isLoading && (
                   <div className="message assistant-message">
                     <div className="message-bubble typing">
-                      <span></span><span></span><span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
                     </div>
                   </div>
                 )}
@@ -355,20 +349,89 @@ const AssistantChatWindow = () => {
               className="translator-mode flex-1 flex flex-col"
             >
               <div className="mb-6 px-5">
-                <Select /* ... весь Select без изменений ... */ />
+                <Select
+                  options={languages}
+                  value={languages.find((l) => l.value === selectedLanguage)}
+                  onChange={(opt) => setSelectedLanguage(opt.value)}
+                  className="language-select"
+                  classNamePrefix="react-select"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      backgroundColor: '#1e293b',
+                      borderColor: '#334155',
+                      color: 'white',
+                    }),
+                    menu: (base) => ({ ...base, backgroundColor: '#0f172a', color: 'white' }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected
+                        ? '#2563eb'
+                        : state.isFocused
+                        ? '#334155'
+                        : '#0f172a',
+                      color: 'white',
+                    }),
+                    singleValue: (base) => ({ ...base, color: 'white' }),
+                  }}
+                />
               </div>
 
               <div className="flex-1 flex items-center justify-center">
-                {/* ... кнопка записи без изменений ... */}
+                <motion.button
+                  whileTap={{ scale: 0.92 }}
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className={`record-btn ${isRecording ? 'recording' : ''}`}
+                >
+                  {isRecording ? (
+                    <StopIcon className="w-20 h-20" />
+                  ) : (
+                    <MicrophoneIcon className="w-20 h-20" />
+                  )}
+                  {isRecording && (
+                    <div className="timer absolute -bottom-10 text-2xl font-bold text-white">
+                      {`${Math.floor(recordingTimer / 60)
+                        .toString()
+                        .padStart(2, '0')}:${(recordingTimer % 60).toString().padStart(2, '0')}`}
+                    </div>
+                  )}
+                </motion.button>
               </div>
 
               <div className="translation-result mt-6 px-5 pb-6">
-                {/* ... блоки оригинал + перевод без изменений ... */}
+                <div className="translation-block">
+                  <div className="label">Оригинал</div>
+                  <div className="text-content">
+                    {originalText || 'Говорите...'}
+                    {originalText && (
+                      <button
+                        onClick={() => speakText(originalText, 'auto')}
+                        className="play-btn blue"
+                      >
+                        <PlayIcon className="w-6 h-6" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="translation-block mt-6">
+                  <div className="label">Перевод</div>
+                  <div className="text-content">
+                    {translatedText || 'Ожидаем перевод...'}
+                    {translatedText && (
+                      <button
+                        onClick={() => speakText(translatedText, selectedLanguage)}
+                        className="play-btn green"
+                      >
+                        <PlayIcon className="w-6 h-6" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-
       </motion.div>
     </AnimatePresence>
   );
