@@ -3,7 +3,6 @@ import { useAssistant } from '../context/AssistantContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
 import toast from 'react-hot-toast';
-import ReactDOM from 'react-dom';
 import {
   EllipsisVerticalIcon,
   MicrophoneIcon,
@@ -223,14 +222,40 @@ const AssistantChatWindow = () => {
           </div>
 
           <div className="assistant-actions">
-            <button
-              className="menu-dots-btn"
-              onClick={() => setShowMenu(!showMenu)}
-            >
-              <span className="dot"></span>
-              <span className="dot"></span>
-              <span className="dot"></span>
-            </button>
+            <div className="relative">
+              <button
+                className="menu-dots-btn"
+                onClick={() => setShowMenu(!showMenu)}
+              >
+                <span className="dot"></span>
+                <span className="dot"></span>
+                <span className="dot"></span>
+              </button>
+
+              {showMenu && (
+                <div
+                  className="absolute right-0 mt-2 w-56 bg-slate-900 rounded-xl shadow-2xl z-50 overflow-hidden border border-slate-700"
+                  style={{ transform: 'translateY(4px)' }}
+                >
+                  <button
+                    onClick={() => {
+                      setMode(mode === 'chat' ? 'translator' : 'chat');
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-5 py-4 text-white hover:bg-slate-800 transition-colors flex items-center gap-3 text-base"
+                  >
+                    {mode === 'chat' ? (
+                      <>
+                        <MicrophoneIcon className="w-5 h-5 text-green-400" />
+                        Голосовой переводчик
+                      </>
+                    ) : (
+                      'Вернуться в чат'
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
 
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
@@ -380,37 +405,6 @@ const AssistantChatWindow = () => {
           )}
         </AnimatePresence>
       </motion.div>
-
-      {/* Портал меню — рендерится в body, не зависит от шапки */}
-      {showMenu && ReactDOM.createPortal(
-        <div
-          className="fixed inset-0 z-[9999] pointer-events-none bg-black/30" // фон для затемнения (опционально, можно убрать)
-          onClick={() => setShowMenu(false)}
-        >
-          <div
-            className="pointer-events-auto absolute bg-slate-950/95 backdrop-blur-lg rounded-xl shadow-2xl border border-slate-700/50 overflow-hidden min-w-[240px] text-sm"
-            style={{
-              top: '80px', // ← ИЗМЕНЯЙ это значение! Измерь высоту шапки в devtools (Computed → height) и поставь своё + 4-8px
-              right: '16px' // ← подкручивай это, чтобы меню было точно под кнопкой (пробуй 12px, 20px, 24px)
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => {
-                setMode(mode === 'chat' ? 'translator' : 'chat');
-                setShowMenu(false);
-              }}
-              className="w-full px-5 py-3 text-left text-white hover:bg-slate-800/80 transition-colors flex items-center gap-4"
-            >
-              <MicrophoneIcon className="w-6 h-6 text-green-400 flex-shrink-0" />
-              <span className="font-medium">{mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}</span>
-            </button>
-
-            {/* новые пункты меню здесь */}
-          </div>
-        </div>,
-        document.body
-      )}
     </AnimatePresence>
   );
 };
