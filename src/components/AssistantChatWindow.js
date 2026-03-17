@@ -221,7 +221,7 @@ const AssistantChatWindow = () => {
           </div>
 
           <div className="assistant-actions">
-            {/* Оборачиваем кнопку в relative-контейнер */}
+            {/* Новый контейнер с relative + inline-block только вокруг кнопки меню */}
             <div className="relative inline-block">
               <button
                 className="menu-dots-btn"
@@ -287,12 +287,13 @@ const AssistantChatWindow = () => {
                       )}
                     </button>
 
-                    {/* Можно добавить ещё пункты меню */}
+                    {/* Можно добавить ещё пункты меню позже */}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
+            {/* Остальные кнопки остаются как были */}
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
             </button>
