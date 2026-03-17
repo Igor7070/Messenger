@@ -10,102 +10,9 @@ import {
 } from '@heroicons/react/24/outline';
 import '../styles/AssistantChatWindow.css';
 
-const MenuPopup = ({ menuButtonRef, onClose, mode, setMode }) => {
-  const [position, setPosition] = useState({ top: 0, left: 0 });
-
-  useEffect(() => {
-    if (!menuButtonRef.current) return;
-
-    const updatePosition = () => {
-      const rect = menuButtonRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.bottom + window.scrollY + 6,   // отступ снизу от кнопки
-        left: rect.right + window.scrollX, // выравнивание по правому краю (подгони под ширину меню)
-      });
-    };
-
-    updatePosition();
-
-    // пересчёт при изменении размера окна
-    window.addEventListener('resize', updatePosition);
-    return () => window.removeEventListener('resize', updatePosition);
-  }, [menuButtonRef]);
-
-  if (position.top === 0) return null;
-
-  return (
-    <>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.12 }}
-        className="fixed inset-0 z-40"
-        onClick={onClose}
-      />
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.94, y: -8 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: -16 }}
-        transition={{ duration: 0.13 }}
-        className="
-          fixed z-50
-          w-60 sm:w-64
-          bg-slate-900/96 backdrop-blur-xl
-          border border-slate-700/70 rounded-xl
-          shadow-2xl shadow-black/50
-          overflow-hidden
-        "
-        style={{
-          top: `${position.top}px`,
-          left: `${position.left}px`,
-        }}
-      >
-        <div className="py-1">
-          <button
-            onClick={() => {
-              setMode(mode === 'chat' ? 'translator' : 'chat');
-              onClose();
-            }}
-            className="
-              w-full px-5 py-3.5 text-left flex items-center gap-3
-              hover:bg-slate-800/80 active:bg-slate-700/80
-              transition-colors
-            "
-          >
-            {mode === 'chat' ? (
-              <>
-                <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                Голосовой переводчик
-              </>
-            ) : (
-              <>
-                <svg
-                  className="w-5 h-5 text-sky-400 flex-shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                  />
-                </svg>
-                Вернуться в чат
-              </>
-            )}
-          </button>
-        </div>
-      </motion.div>
-    </>
-  );
-};
-
 const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
+
   const [mode, setMode] = useState('chat');
   const [showMenu, setShowMenu] = useState(false);
 
@@ -143,8 +50,6 @@ const AssistantChatWindow = () => {
     { value: 'ja', label: '日本語 🇯🇵' },
   ];
 
-  const menuButtonRef = useRef(null);
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -155,17 +60,21 @@ const AssistantChatWindow = () => {
 
   const sendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
+
     const userMessage = inputValue.trim();
     setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
     setInputValue('');
     setIsLoading(true);
+
     try {
       const response = await fetch('https://unlimitedpossibilities12.org/api/communicating_with_a_advanced_ai_model', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: userMessage }),
       });
+
       if (!response.ok) throw new Error('Server error');
+
       const result = await response.text();
       setMessages((prev) => [...prev, { role: 'assistant', content: result }]);
     } catch (error) {
@@ -191,15 +100,19 @@ const AssistantChatWindow = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunksRef.current = [];
+
       mediaRecorderRef.current.ondataavailable = (e) => {
         audioChunksRef.current.push(e.data);
       };
+
       mediaRecorderRef.current.start();
       setIsRecording(true);
       setRecordingTimer(0);
+
       timerIntervalRef.current = setInterval(() => {
         setRecordingTimer((prev) => prev + 1);
       }, 1000);
+
       toast.success('Recording started...');
     } catch (err) {
       console.error('Microphone access denied', err);
@@ -209,16 +122,19 @@ const AssistantChatWindow = () => {
 
   const stopRecording = () => {
     if (!mediaRecorderRef.current) return;
+
     mediaRecorderRef.current.stop();
     mediaRecorderRef.current.onstop = async () => {
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
       audioChunksRef.current = [];
       setIsRecording(false);
       clearInterval(timerIntervalRef.current);
+
       if (audioBlob.size < 1000) {
         toast.error('Recording is too short');
         return;
       }
+
       await sendVoiceToTranslator(audioBlob);
     };
   };
@@ -226,19 +142,25 @@ const AssistantChatWindow = () => {
   const sendVoiceToTranslator = async (audioBlob) => {
     const formData = new FormData();
     formData.append('audio', audioBlob, 'voice.mp3');
+
     try {
       const res = await fetch(
         `https://unlimitedpossibilities12.org/api/global-assistant/translate-voice?targetLanguage=${selectedLanguage}&sourceLanguage=auto&withTts=true`,
         { method: 'POST', body: formData }
       );
+
       if (!res.ok) throw new Error('Server error');
+
       const data = await res.json();
+
       setOriginalText(data.original || 'Not recognized');
       setTranslatedText(data.translated || 'Translation failed');
+
       if (data.audioBase64) {
         const cleanBase64 = data.audioBase64.includes(',')
           ? data.audioBase64.split(',')[1]
           : data.audioBase64;
+
         const audio = new Audio(`data:audio/mp3;base64,${cleanBase64}`);
         audio.play().catch(() => toast('Tap play button to listen', { icon: '🔊' }));
       }
@@ -250,16 +172,21 @@ const AssistantChatWindow = () => {
 
   const speakText = async (text, lang) => {
     if (!text) return;
+
     try {
       const res = await fetch('https://unlimitedpossibilities12.org/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, language: lang }),
       });
+
       if (!res.ok) throw new Error('TTS server error');
+
       const data = await res.json();
       let base64 = data.audio;
+
       if (base64?.includes(',')) base64 = base64.split(',')[1];
+
       const audio = new Audio(`data:audio/mp3;base64,${base64}`);
       audio.play();
     } catch (err) {
@@ -279,7 +206,7 @@ const AssistantChatWindow = () => {
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
-        {/* Шапка */}
+        {/* Шапка остаётся без изменений */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -296,7 +223,6 @@ const AssistantChatWindow = () => {
 
           <div className="assistant-actions">
             <button
-              ref={menuButtonRef}
               className="menu-dots-btn"
               onClick={() => setShowMenu(!showMenu)}
             >
@@ -312,19 +238,62 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Выпадающее меню */}
+        {/* Меню теперь живёт здесь — как отдельная строка под шапкой */}
         <AnimatePresence>
           {showMenu && (
-            <MenuPopup
-              menuButtonRef={menuButtonRef}
-              onClose={() => setShowMenu(false)}
-              mode={mode}
-              setMode={setMode}
-            />
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="bg-slate-900/90 backdrop-blur-md border-b border-slate-700/60 overflow-hidden"
+            >
+              <div className="px-5 py-3.5 flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    setMode(mode === 'chat' ? 'translator' : 'chat');
+                    setShowMenu(false);
+                  }}
+                  className="flex-1 text-left flex items-center gap-3 text-white hover:text-sky-300 transition-colors"
+                >
+                  {mode === 'chat' ? (
+                    <>
+                      <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                      Голосовой переводчик
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-5 h-5 text-sky-400 flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                        />
+                      </svg>
+                      Вернуться в чат
+                    </>
+                  )}
+                </button>
+
+                {/* Можно добавить кнопку "Закрыть меню" или другие пункты */}
+                <button
+                  onClick={() => setShowMenu(false)}
+                  className="text-slate-400 hover:text-white transition-colors px-3 py-1 rounded hover:bg-slate-800/50"
+                >
+                  Закрыть
+                </button>
+              </div>
+            </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Основной контент */}
+        {/* Основной контент (чат или переводчик) */}
         <AnimatePresence mode="wait">
           {mode === 'chat' ? (
             <motion.div
@@ -354,6 +323,7 @@ const AssistantChatWindow = () => {
                 )}
                 <div ref={messagesEndRef} />
               </div>
+
               <div className="assistant-input">
                 <input
                   type="text"
@@ -380,6 +350,7 @@ const AssistantChatWindow = () => {
               exit={{ opacity: 0 }}
               className="translator-mode flex-1 flex flex-col"
             >
+              {/* весь переводчик без изменений */}
               <div className="mb-6 px-5">
                 <Select
                   options={languages}
@@ -431,6 +402,7 @@ const AssistantChatWindow = () => {
               </div>
 
               <div className="translation-result mt-6 px-5 pb-6">
+                {/* ... оригинальный блок с переводом ... */}
                 <div className="translation-block">
                   <div className="label">Оригинал</div>
                   <div className="text-content">
@@ -445,6 +417,7 @@ const AssistantChatWindow = () => {
                     )}
                   </div>
                 </div>
+
                 <div className="translation-block mt-6">
                   <div className="label">Перевод</div>
                   <div className="text-content">
