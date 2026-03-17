@@ -206,7 +206,6 @@ const AssistantChatWindow = () => {
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className={`assistant-window ${isFullScreen ? 'full-screen' : 'mini'}`}
       >
-        {/* Шапка остаётся без изменений */}
         <div className="assistant-header">
           <div className="assistant-title">
             <div className="assistant-avatar">
@@ -238,7 +237,7 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Меню теперь живёт здесь — как отдельная строка под шапкой */}
+        {/* Меню под шапкой — прижато вправо, как кнопка трёх точек */}
         <AnimatePresence>
           {showMenu && (
             <motion.div
@@ -248,13 +247,13 @@ const AssistantChatWindow = () => {
               transition={{ duration: 0.18, ease: 'easeOut' }}
               className="bg-slate-900/90 backdrop-blur-md border-b border-slate-700/60 overflow-hidden"
             >
-              <div className="px-5 py-3.5 flex items-center gap-4">
+              <div className="px-5 py-3.5 flex justify-end items-center gap-4">
                 <button
                   onClick={() => {
                     setMode(mode === 'chat' ? 'translator' : 'chat');
                     setShowMenu(false);
                   }}
-                  className="flex-1 text-left flex items-center gap-3 text-white hover:text-sky-300 transition-colors"
+                  className="flex items-center gap-3 text-white hover:text-sky-300 transition-colors px-4 py-2 rounded-lg hover:bg-slate-800/50"
                 >
                   {mode === 'chat' ? (
                     <>
@@ -281,7 +280,6 @@ const AssistantChatWindow = () => {
                   )}
                 </button>
 
-                {/* Можно добавить кнопку "Закрыть меню" или другие пункты */}
                 <button
                   onClick={() => setShowMenu(false)}
                   className="text-slate-400 hover:text-white transition-colors px-3 py-1 rounded hover:bg-slate-800/50"
@@ -350,7 +348,6 @@ const AssistantChatWindow = () => {
               exit={{ opacity: 0 }}
               className="translator-mode flex-1 flex flex-col"
             >
-              {/* весь переводчик без изменений */}
               <div className="mb-6 px-5">
                 <Select
                   options={languages}
@@ -402,7 +399,6 @@ const AssistantChatWindow = () => {
               </div>
 
               <div className="translation-result mt-6 px-5 pb-6">
-                {/* ... оригинальный блок с переводом ... */}
                 <div className="translation-block">
                   <div className="label">Оригинал</div>
                   <div className="text-content">
