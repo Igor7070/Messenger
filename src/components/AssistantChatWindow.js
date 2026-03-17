@@ -20,7 +20,7 @@ const MenuPopup = ({ menuButtonRef, onClose, mode, setMode }) => {
       const rect = menuButtonRef.current.getBoundingClientRect();
       setPosition({
         top: rect.bottom + window.scrollY + 6,   // отступ снизу от кнопки
-        left: rect.right + window.scrollX - 220, // выравнивание по правому краю (подгони под ширину меню)
+        left: rect.right + window.scrollX, // выравнивание по правому краю (подгони под ширину меню)
       });
     };
 
