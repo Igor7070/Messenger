@@ -10,9 +10,102 @@ import {
 } from '@heroicons/react/24/outline';
 import '../styles/AssistantChatWindow.css';
 
+const MenuPopup = ({ menuButtonRef, onClose, mode, setMode }) => {
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (!menuButtonRef.current) return;
+
+    const updatePosition = () => {
+      const rect = menuButtonRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + window.scrollY + 6,   // отступ снизу от кнопки
+        left: rect.right + window.scrollX - 220, // выравнивание по правому краю (подгони под ширину меню)
+      });
+    };
+
+    updatePosition();
+
+    // пересчёт при изменении размера окна
+    window.addEventListener('resize', updatePosition);
+    return () => window.removeEventListener('resize', updatePosition);
+  }, [menuButtonRef]);
+
+  if (position.top === 0) return null;
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.12 }}
+        className="fixed inset-0 z-40"
+        onClick={onClose}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94, y: -8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: -16 }}
+        transition={{ duration: 0.13 }}
+        className="
+          fixed z-50
+          w-60 sm:w-64
+          bg-slate-900/96 backdrop-blur-xl
+          border border-slate-700/70 rounded-xl
+          shadow-2xl shadow-black/50
+          overflow-hidden
+        "
+        style={{
+          top: `${position.top}px`,
+          left: `${position.left}px`,
+        }}
+      >
+        <div className="py-1">
+          <button
+            onClick={() => {
+              setMode(mode === 'chat' ? 'translator' : 'chat');
+              onClose();
+            }}
+            className="
+              w-full px-5 py-3.5 text-left flex items-center gap-3
+              hover:bg-slate-800/80 active:bg-slate-700/80
+              transition-colors
+            "
+          >
+            {mode === 'chat' ? (
+              <>
+                <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                Голосовой переводчик
+              </>
+            ) : (
+              <>
+                <svg
+                  className="w-5 h-5 text-sky-400 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+                Вернуться в чат
+              </>
+            )}
+          </button>
+        </div>
+      </motion.div>
+    </>
+  );
+};
+
 const AssistantChatWindow = () => {
   const { isOpen, isFullScreen, closeAssistant, toggleFullScreen } = useAssistant();
-
   const [mode, setMode] = useState('chat');
   const [showMenu, setShowMenu] = useState(false);
 
@@ -37,9 +130,6 @@ const AssistantChatWindow = () => {
   const audioChunksRef = useRef([]);
   const timerIntervalRef = useRef(null);
 
-  // Ref на кнопку меню для позиционирования
-  const menuButtonRef = useRef(null);
-
   const languages = [
     { value: 'auto', label: 'Auto 🌐' },
     { value: 'en', label: 'English 🇬🇧' },
@@ -53,18 +143,7 @@ const AssistantChatWindow = () => {
     { value: 'ja', label: '日本語 🇯🇵' },
   ];
 
-  // Позиция выпадающего меню
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-
-  useEffect(() => {
-    if (showMenu && menuButtonRef.current) {
-      const rect = menuButtonRef.current.getBoundingClientRect();
-      setMenuPosition({
-        top: rect.bottom + 6,           // немного ниже кнопки
-        left: rect.right - 180,         // смещение влево от правого края кнопки (подгони под ширину меню)
-      });
-    }
-  }, [showMenu]);
+  const menuButtonRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -219,12 +298,13 @@ const AssistantChatWindow = () => {
             <button
               ref={menuButtonRef}
               className="menu-dots-btn"
-              onClick={() => setShowMenu((prev) => !prev)}
+              onClick={() => setShowMenu(!showMenu)}
             >
               <span className="dot"></span>
               <span className="dot"></span>
               <span className="dot"></span>
             </button>
+
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
             </button>
@@ -232,76 +312,15 @@ const AssistantChatWindow = () => {
           </div>
         </div>
 
-        {/* Выпадающее меню поверх всего */}
+        {/* Выпадающее меню */}
         <AnimatePresence>
           {showMenu && (
-            <>
-              {/* Фон для закрытия по клику вне меню */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-                className="fixed inset-0 z-40"
-                onClick={() => setShowMenu(false)}
-              />
-
-              <motion.div
-                initial={{ opacity: 0, scale: 0.92, y: -10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.88, y: -16 }}
-                transition={{ duration: 0.14 }}
-                className="
-                  fixed z-50
-                  w-64 bg-slate-900/96 backdrop-blur-xl
-                  border border-slate-600/70 rounded-xl
-                  shadow-2xl shadow-black/60
-                  overflow-hidden
-                "
-                style={{
-                  top: `${menuPosition.top}px`,
-                  left: `${menuPosition.left}px`,
-                }}
-              >
-                <div className="py-1.5">
-                  <button
-                    onClick={() => {
-                      setMode(mode === 'chat' ? 'translator' : 'chat');
-                      setShowMenu(false);
-                    }}
-                    className="
-                      w-full px-5 py-3.5 text-left flex items-center gap-3.5
-                      hover:bg-slate-800/80 active:bg-slate-700/70
-                      transition-colors duration-150
-                    "
-                  >
-                    {mode === 'chat' ? (
-                      <>
-                        <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                        Голосовой переводчик
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-5 h-5 text-sky-400 flex-shrink-0"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                          />
-                        </svg>
-                        Вернуться в чат
-                      </>
-                    )}
-                  </button>
-                </div>
-              </motion.div>
-            </>
+            <MenuPopup
+              menuButtonRef={menuButtonRef}
+              onClose={() => setShowMenu(false)}
+              mode={mode}
+              setMode={setMode}
+            />
           )}
         </AnimatePresence>
 
