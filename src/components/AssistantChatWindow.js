@@ -246,8 +246,9 @@ const AssistantChatWindow = () => {
             exit={{ opacity: 0, y: -12, scale: 0.95 }}
             transition={{ duration: 0.15 }}
             className={`
-              absolute top-full right-2 mt-1
-              left-auto               /* ← добавь это */
+              absolute top-full mt-1
+              left-full                      /* ← вместо right */
+              -translate-x-full              /* ← сдвигает всё меню влево на свою ширину → прижимает к правому краю кнопки */
               z-[100]
               min-w-[220px] max-w-[340px]
               bg-slate-950/98 backdrop-blur-xl
