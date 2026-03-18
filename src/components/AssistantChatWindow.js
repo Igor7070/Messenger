@@ -243,10 +243,10 @@ const AssistantChatWindow = () => {
           style={{
             height: 0,
             overflow: 'visible',
-            position: 'absolute',
-            top: 64,
-            right: 0,
-            width: 'auto',
+            position: 'absolute',           // ← меняем на absolute
+            top: 64,                         // стартуем от верха шапки
+            right: 0,                       // ← вот здесь магия: relative → absolute + right:0
+            width: 'auto',                  // не растягиваем
             zIndex: 30,
             pointerEvents: 'none',
           }}
@@ -261,24 +261,25 @@ const AssistantChatWindow = () => {
             transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
             className={`
               absolute top-full
-              right-0
-              mr-4
+              right-0                     // теперь right считается от правого края окна
+              mr-3                        // отступ от края экрана/окна
               mt-1
-              bg-slate-900/95 backdrop-blur-lg
+              bg-slate-900/95 backdrop-blur-lg 
               border border-slate-700/60
               rounded-xl shadow-2xl shadow-black/40
-              py-1.5 px-4               // уменьшили padding
-              min-w-[180px]              // чуть уже, если хочешь — можно 160px
-              w-fit                      // ширина по содержимому
+              py-3 px-5
+              min-w-[200px]
+              w-auto
               origin-top-right
               z-[9999]
             `}
             style={{
-              right: '16px',
+              right: '16px',                // основной отступ от правого края
               left: 'auto',
               transformOrigin: 'top right',
             }}
           >
+            {/* кнопка как была */}
             <button
               onClick={() => {
                 setMode(mode === 'chat' ? 'translator' : 'chat');
@@ -287,24 +288,35 @@ const AssistantChatWindow = () => {
               className="
                 flex items-center gap-2
                 w-full
-                px-4 py-1.5                 // сильно уменьшили вертикальный padding
+                px-4 py-[6px]                   /* очень маленький вертикальный padding */
                 rounded-lg
                 hover:bg-slate-800/70
+                active:bg-slate-700/60
                 transition-colors duration-150
                 text-white hover:text-sky-300
-                text-sm leading-tight        // leading-tight = плотный межстрочный интервал
+                text-[14px] leading-[1.15]       /* маленький текст + плотный line-height */
                 font-medium
+                border-0 m-0 outline-none        /* убираем любые возможные отступы */
               "
+              style={{
+                minHeight: 'unset !important',
+                height: 'auto !important',
+                lineHeight: '1.15 !important',
+              }}
             >
               {mode === 'chat' ? (
                 <>
-                  <MicrophoneIcon className="w-[14px] h-[14px] text-green-400 flex-shrink-0 mt-px" />
+                  <MicrophoneIcon
+                    className="w-3.5 h-3.5 text-green-400 flex-shrink-0"
+                    style={{ minWidth: '14px', minHeight: '14px' }}
+                  />
                   Голосовой переводчик
                 </>
               ) : (
                 <>
                   <svg
-                    className="w-[14px] h-[14px] text-sky-400 flex-shrink-0 mt-px"
+                    className="w-3.5 h-3.5 text-sky-400 flex-shrink-0"
+                    style={{ minWidth: '14px', minHeight: '14px' }}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
