@@ -343,11 +343,19 @@
 }
 
 .assistant-window {
-  position: relative !important;          /* ← обязательно! */
-  overflow: visible !important;
-  z-index: 1000;
+  overflow: visible !important;           /* ← обязательно */
+  contain: none !important;
+  clip-path: none !important;
+  isolation: isolate;                     /* помогает со stacking context */
 }
 
 .assistant-header {
-  z-index: 20 !important;                 /* шапка ниже меню */
+  overflow: visible !important;
+  z-index: 10;                            /* не обязательно, но полезно */
+  contain: none;
+}
+
+.assistant-actions {
+  position: relative;
+  z-index: 20 !important;                 /* кнопка трёх точек выше всего в шапке */
 }
