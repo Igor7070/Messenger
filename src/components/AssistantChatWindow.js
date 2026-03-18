@@ -245,7 +245,7 @@ const AssistantChatWindow = () => {
             overflow: 'visible',
             position: 'relative',
             zIndex: 30,
-            width: '100%',           {/* ← ЭТО КЛЮЧ №1 */}
+            width: '100%',           
           }}
         >
           <motion.div
