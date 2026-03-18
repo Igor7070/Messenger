@@ -246,8 +246,9 @@ const AssistantChatWindow = () => {
             exit={{ opacity: 0, y: -12, scale: 0.95 }}
             transition={{ duration: 0.15 }}
             className={`
-              absolute top-full right-2 mt-1               /* right-2 вместо right-3 — часто лучше прижимает */
-              z-[100]                                      /* выше всего внутри окна */
+              absolute top-full right-2 mt-1
+              left-auto               /* ← добавь это */
+              z-[100]
               min-w-[220px] max-w-[340px]
               bg-slate-950/98 backdrop-blur-xl
               border border-slate-600/60 rounded-xl
@@ -257,12 +258,13 @@ const AssistantChatWindow = () => {
               pointer-events-auto
             `}
             style={{
-              /* Принудительно вырываем из обрезки */
               transform: 'translate3d(0,0,0) !important',
               willChange: 'transform, opacity',
               isolation: 'isolate',
               contain: 'none',
               clipPath: 'none !important',
+              left: 'auto !important',         // ← и это тоже
+              right: '8px !important',         // ← или 12px, 16px — подбери визуально
             }}
           >
             <button
