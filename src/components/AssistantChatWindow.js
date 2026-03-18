@@ -239,69 +239,72 @@ const AssistantChatWindow = () => {
         </div>
 
         {/* Меню — всегда в DOM, высота 0, не толкает контент */}
-        <AnimatePresence>
-          {showMenu && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.94, y: -6 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: -10 }}
-              transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-              className={`
-                absolute 
-                top-0 right-0
-                translate-y-full
-                mr-3
-                mt-2
-                z-[100]
-                bg-slate-900/96 backdrop-blur-xl 
-                border border-slate-700/50 
-                rounded-xl shadow-2xl shadow-black/40
-                py-3 px-4 
-                min-w-[200px] max-w-[280px]
-                origin-top-right
-              `}
+        <div
+          style={{
+            height: 0,
+            overflow: 'visible',
+            position: 'relative',
+            zIndex: 30,
+            width: '100%',           {/* ← ЭТО КЛЮЧ №1 */}
+          }}
+        >
+          <motion.div
+            animate={{
+              opacity: showMenu ? 1 : 0,
+              y: showMenu ? 0 : -12,
+              scale: showMenu ? 1 : 0.96,
+              pointerEvents: showMenu ? 'auto' : 'none',
+            }}
+            transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+            className={`
+              absolute 
+              top-full 
+              right-0                  {/* ← теперь 0, а не right-3 */}
+              mr-4                     {/* отступ от самого правого края окна */}
+              mt-1
+              bg-slate-900/95 backdrop-blur-lg 
+              border border-slate-700/60
+              rounded-xl shadow-xl shadow-black/30 
+              py-3 px-4 
+              min-w-[200px]
+              origin-top-right
+              z-[9999]                 {/* ← ЭТО КЛЮЧ №2 — агрессивный z-index */}
+            `}
+            style={{ right: '12px' }}   {/* ← ЭТО КЛЮЧ №3 — принудительно перебивает всё Tailwind и любые stacking context */}
+          >
+            <button
+              onClick={() => {
+                setMode(mode === 'chat' ? 'translator' : 'chat');
+                setShowMenu(false);
+              }}
+              className="flex items-center gap-3 w-full text-left py-2 px-3 rounded-lg hover:bg-slate-800/70 transition-colors text-white hover:text-sky-300 whitespace-nowrap"
             >
-              <button
-                onClick={() => {
-                  setMode(mode === 'chat' ? 'translator' : 'chat');
-                  setShowMenu(false);
-                }}
-                className="
-                  flex items-center gap-3 w-full text-left 
-                  py-2.5 px-3 rounded-lg 
-                  hover:bg-slate-800/60 transition-colors 
-                  text-white hover:text-sky-300
-                "
-              >
-                {mode === 'chat' ? (
-                  <>
-                    <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                    Голосовой переводчик
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-5 h-5 text-sky-400 flex-shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                      />
-                    </svg>
-                    Вернуться в чат
-                  </>
-                )}
-              </button>
-
-              {/* если позже добавишь ещё пункты — они сюда */}
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {mode === 'chat' ? (
+                <>
+                  <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  Голосовой переводчик
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-5 h-5 text-sky-400 flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                  Вернуться в чат
+                </>
+              )}
+            </button>
+          </motion.div>
+        </div>
 
         {/* Основной контент — структура как в твоём оригинальном коде */}
         <AnimatePresence mode="wait">
