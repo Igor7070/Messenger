@@ -243,10 +243,10 @@ const AssistantChatWindow = () => {
           style={{
             height: 0,
             overflow: 'visible',
-            position: 'absolute',           // ← меняем на absolute
-            top: 64,                         // стартуем от верха шапки
-            right: 0,                       // ← вот здесь магия: relative → absolute + right:0
-            width: 'auto',                  // не растягиваем
+            position: 'absolute',
+            top: 64,
+            right: 0,
+            width: 'auto',
             zIndex: 30,
             pointerEvents: 'none',
           }}
@@ -261,41 +261,49 @@ const AssistantChatWindow = () => {
             transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
             className={`
               absolute top-full
-              right-0                     // теперь right считается от правого края окна
-              mr-3                        // отступ от края экрана/окна
+              right-0
+              mr-4
               mt-1
-              bg-slate-900/95 backdrop-blur-lg 
+              bg-slate-900/95 backdrop-blur-lg
               border border-slate-700/60
               rounded-xl shadow-2xl shadow-black/40
-              py-3 px-5
-              min-w-[200px]
-              w-auto
+              py-1.5 px-4               // уменьшили padding
+              min-w-[180px]              // чуть уже, если хочешь — можно 160px
+              w-fit                      // ширина по содержимому
               origin-top-right
               z-[9999]
             `}
             style={{
-              right: '16px',                // основной отступ от правого края
+              right: '16px',
               left: 'auto',
               transformOrigin: 'top right',
             }}
           >
-            {/* кнопка как была */}
             <button
               onClick={() => {
                 setMode(mode === 'chat' ? 'translator' : 'chat');
                 setShowMenu(false);
               }}
-              className="flex items-center gap-3 w-full text-left py-2 px-3 rounded-lg hover:bg-slate-800/70 transition-colors text-white hover:text-sky-300 whitespace-nowrap"
+              className="
+                flex items-center gap-2.5          // чуть меньше gap
+                py-1.5 px-3                       // меньше вертикального padding
+                rounded-lg 
+                hover:bg-slate-800/70 
+                transition-colors 
+                text-white hover:text-sky-300 
+                whitespace-nowrap
+                text-sm                           // ← уменьшили текст (опционально text-base)
+              "
             >
               {mode === 'chat' ? (
                 <>
-                  <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <MicrophoneIcon className="w-4 h-4 text-green-400 flex-shrink-0" />  {/* ← w-4 h-4 вместо w-5 h-5 */}
                   Голосовой переводчик
                 </>
               ) : (
                 <>
                   <svg
-                    className="w-5 h-5 text-sky-400 flex-shrink-0"
+                    className="w-4 h-4 text-sky-400 flex-shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
