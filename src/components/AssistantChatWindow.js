@@ -286,29 +286,28 @@ const AssistantChatWindow = () => {
                 setShowMenu(false);
               }}
               className="
-                flex items-center gap-2
-                w-full
-                px-4 py-[6px]                   /* очень маленький вертикальный padding */
-                rounded-lg
-                hover:bg-slate-800/70
-                active:bg-slate-700/60
-                transition-colors duration-150
-                text-white hover:text-sky-300
-                text-[14px] leading-[1.15]       /* маленький текст + плотный line-height */
+                inline-flex items-center gap-2
+                px-4 py-1
+                text-sm text-white hover:text-sky-300
+                bg-transparent border-0
+                hover:bg-slate-800/60 rounded-lg
+                transition-colors
+                leading-none           /* ← убивает лишний межстрочный интервал */
                 font-medium
-                border-0 m-0 outline-none        /* убираем любые возможные отступы */
               "
               style={{
-                minHeight: 'unset !important',
-                height: 'auto !important',
-                lineHeight: '1.15 !important',
+                height: '28px !important',       // жёстко фиксируем высоту
+                minHeight: '28px !important',
+                lineHeight: '1 !important',
+                paddingTop: '0 !important',
+                paddingBottom: '0 !important',
               }}
             >
               {mode === 'chat' ? (
                 <>
                   <MicrophoneIcon
                     className="w-3.5 h-3.5 text-green-400 flex-shrink-0"
-                    style={{ minWidth: '14px', minHeight: '14px' }}
+                    style={{ marginTop: '-1px' }}   // микрокоррекция, если иконка всё равно чуть выше
                   />
                   Голосовой переводчик
                 </>
@@ -316,17 +315,13 @@ const AssistantChatWindow = () => {
                 <>
                   <svg
                     className="w-3.5 h-3.5 text-sky-400 flex-shrink-0"
-                    style={{ minWidth: '14px', minHeight: '14px' }}
+                    style={{ marginTop: '-1px' }}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     strokeWidth={2.5}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
                   Вернуться в чат
                 </>
