@@ -256,43 +256,19 @@ const AssistantChatWindow = () => {
             }}
             transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
             className={`
-              absolute top-full right-3 mt-1
-              bg-slate-900/95 backdrop-blur-lg border border-slate-700/60
-              rounded-xl shadow-xl shadow-black/30 py-3 px-4 min-w-[200px]
+              absolute 
+              top-full 
+              right-4               // ← 4–8px обычно идеально
+              mt-2                  // чуть больше отступа сверху
+              bg-slate-900/95 backdrop-blur-lg 
+              border border-slate-700/60
+              rounded-xl shadow-xl shadow-black/40 
+              py-3 px-5 
+              min-w-[200px] max-w-[min(90vw,320px)]
               origin-top-right
             `}
           >
-            <button
-              onClick={() => {
-                setMode(mode === 'chat' ? 'translator' : 'chat');
-                setShowMenu(false);
-              }}
-              className="flex items-center gap-3 w-full text-left py-2 px-3 rounded-lg hover:bg-slate-800/70 transition-colors text-white hover:text-sky-300 whitespace-nowrap"
-            >
-              {mode === 'chat' ? (
-                <>
-                  <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  Голосовой переводчик
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-5 h-5 text-sky-400 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    />
-                  </svg>
-                  Вернуться в чат
-                </>
-              )}
-            </button>
+            {/* кнопка меню */}
           </motion.div>
         </div>
 
