@@ -239,28 +239,28 @@ const AssistantChatWindow = () => {
         </div>
 
         {/* Меню — всегда в DOM, высота 0, не толкает контент */}
-        {showMenu && (
+        <div
+          style={{
+            height: 0,
+            overflow: 'visible',
+            position: 'relative',
+            zIndex: 30,
+          }}
+        >
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: -8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: -12 }}
+            animate={{
+              opacity: showMenu ? 1 : 0,
+              y: showMenu ? 0 : -12,
+              scale: showMenu ? 1 : 0.96,
+              pointerEvents: showMenu ? 'auto' : 'none',
+            }}
             transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
             className={`
-              absolute z-[40]                           /* выше шапки (z-10), но ниже возможных оверлеев */
-              right-3                                   /* отступ от правого края окна */
+              absolute top-full right-3 mt-1
               bg-slate-900/95 backdrop-blur-lg border border-slate-700/60
               rounded-xl shadow-xl shadow-black/30 py-3 px-4 min-w-[200px]
-              origin-top-right pointer-events-auto
+              origin-top-right
             `}
-            style={{
-              top: '56px',                              // ← высота шапки + небольшой отступ
-              left: 'auto !important',
-              right: '12px !important',                 // ← основной прижим к правому краю
-              transform: 'translate3d(0,0,0) !important',
-              clipPath: 'none !important',
-              contain: 'none',
-              isolation: 'isolate',
-            }}
           >
             <button
               onClick={() => {
@@ -294,7 +294,7 @@ const AssistantChatWindow = () => {
               )}
             </button>
           </motion.div>
-        )}
+        </div>
 
         {/* Основной контент — структура как в твоём оригинальном коде */}
         <AnimatePresence mode="wait">
