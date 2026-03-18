@@ -359,3 +359,11 @@
   position: relative;
   z-index: 20 !important;                 /* кнопка трёх точек выше всего в шапке */
 }
+
+.menu-container {
+  position: fixed;           /* ← меняем на fixed */
+  top: var(--header-bottom, 60px);   /* можно задать через переменную или JS */
+  right: 16px;               /* отступ от правого края экрана/окна */
+  z-index: 9999;
+  /* остальные стили */
+}
