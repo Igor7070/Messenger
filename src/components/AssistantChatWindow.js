@@ -270,7 +270,7 @@ const AssistantChatWindow = () => {
               origin-top-right
               z-[9999]                 {/* ← ЭТО КЛЮЧ №2 — агрессивный z-index */}
             `}
-            style={{ right: '12px' }}   {/* ← ЭТО КЛЮЧ №3 — принудительно перебивает всё Tailwind и любые stacking context */}
+            style={{ right: '12px' }}   
           >
             <button
               onClick={() => {
