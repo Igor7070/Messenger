@@ -244,7 +244,7 @@ const AssistantChatWindow = () => {
             height: 0,
             overflow: 'visible',
             position: 'absolute',           // ← меняем на absolute
-            top: 0,                         // стартуем от верха шапки
+            top: 60,                         // стартуем от верха шапки
             right: 0,                       // ← вот здесь магия: relative → absolute + right:0
             width: 'auto',                  // не растягиваем
             zIndex: 30,
