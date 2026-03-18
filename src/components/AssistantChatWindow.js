@@ -285,17 +285,17 @@ const AssistantChatWindow = () => {
                 setMode(mode === 'chat' ? 'translator' : 'chat');
                 setShowMenu(false);
               }}
-              className="flex items-center gap-3 w-full text-left py-2 px-3 rounded-lg hover:bg-slate-800/70 transition-colors text-white hover:text-sky-300 whitespace-nowrap"
+              className="flex items-center gap-2 w-full text-left py-2 px-3 rounded-lg hover:bg-slate-800/70 transition-colors text-white hover:text-sky-300 whitespace-nowrap"
             >
               {mode === 'chat' ? (
                 <>
-                  <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <MicrophoneIcon className="w-4 h-4 text-green-400 flex-shrink-0" />
                   Голосовой переводчик
                 </>
               ) : (
                 <>
                   <svg
-                    className="w-5 h-5 text-sky-400 flex-shrink-0"
+                    className="w-4 h-4 text-sky-400 flex-shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
