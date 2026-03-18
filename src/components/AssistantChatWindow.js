@@ -222,84 +222,78 @@ const AssistantChatWindow = () => {
           </div>
 
           <div className="assistant-actions">
-            {/* ← Вот здесь оборачиваем ТОЛЬКО кнопку трёх точек */}
-            <div className="relative inline-block">
-              <button
-                className="menu-dots-btn"
-                onClick={() => setShowMenu(!showMenu)}
-              >
-                <span className="dot"></span>
-                <span className="dot"></span>
-                <span className="dot"></span>
-              </button>
-
-              {/* Меню теперь позиционируется ОТНОСИТЕЛЬНО этой кнопки */}
-              {showMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -12, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className={`
-                    absolute top-full right-0 mt-1.5
-                    z-[200]                           // выше всего в шапке
-                    min-w-[220px] max-w-[340px]
-                    bg-slate-950/98 backdrop-blur-xl
-                    border border-slate-600/60 rounded-xl
-                    shadow-[0_20px_60px_-15px_rgba(0,0,0,0.75)]
-                    py-3 px-5
-                    origin-top-right
-                    pointer-events-auto
-                  `}
-                  style={{
-                    left: 'auto !important',
-                    right: '0 !important',            // строго к правому краю кнопки
-                    transform: 'translate3d(0, 0, 0) !important',
-                    isolation: 'isolate',
-                    contain: 'none',
-                    clipPath: 'none !important',
-                  }}
-                >
-                  <button
-                    onClick={() => {
-                      setMode(mode === 'chat' ? 'translator' : 'chat');
-                      setShowMenu(false);
-                    }}
-                    className="flex items-center gap-3 w-full text-left py-2.5 px-4 rounded-lg hover:bg-slate-800/80 transition text-white hover:text-sky-300 whitespace-nowrap text-[15px]"
-                  >
-                    {mode === 'chat' ? (
-                      <>
-                        <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                        Голосовой переводчик
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-5 h-5 text-sky-400 flex-shrink-0"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                          />
-                        </svg>
-                        Вернуться в чат
-                      </>
-                    )}
-                  </button>
-                </motion.div>
-              )}
-            </div>
+            <button
+              className="menu-dots-btn"
+              onClick={() => setShowMenu(!showMenu)}
+            >
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
+            </button>
 
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
             </button>
             <button onClick={closeAssistant} className="icon-btn">✕</button>
           </div>
+        </div>
+
+        {/* Меню — всегда в DOM, высота 0, не толкает контент */}
+        <div
+          style={{
+            height: 0,
+            overflow: 'visible',
+            position: 'relative',
+            zIndex: 30,
+          }}
+        >
+          <motion.div
+            animate={{
+              opacity: showMenu ? 1 : 0,
+              y: showMenu ? 0 : -12,
+              scale: showMenu ? 1 : 0.96,
+              pointerEvents: showMenu ? 'auto' : 'none',
+            }}
+            transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+            className={`
+              absolute top-full right-3 mt-1
+              bg-slate-900/95 backdrop-blur-lg border border-slate-700/60
+              rounded-xl shadow-xl shadow-black/30 py-3 px-4 min-w-[200px]
+              origin-top-right
+            `}
+          >
+            <button
+              onClick={() => {
+                setMode(mode === 'chat' ? 'translator' : 'chat');
+                setShowMenu(false);
+              }}
+              className="flex items-center gap-3 w-full text-left py-2 px-3 rounded-lg hover:bg-slate-800/70 transition-colors text-white hover:text-sky-300 whitespace-nowrap"
+            >
+              {mode === 'chat' ? (
+                <>
+                  <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  Голосовой переводчик
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-5 h-5 text-sky-400 flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                  Вернуться в чат
+                </>
+              )}
+            </button>
+          </motion.div>
         </div>
 
         {/* Основной контент — структура как в твоём оригинальном коде */}
