@@ -3,7 +3,6 @@ import { useAssistant } from '../context/AssistantContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
 import toast from 'react-hot-toast';
-import { createPortal } from 'react-dom';
 import {
   MicrophoneIcon,
   StopIcon,
@@ -240,31 +239,30 @@ const AssistantChatWindow = () => {
         </div>
 
         {/* Меню — всегда в DOM, высота 0, не толкает контент */}
-        {showMenu && createPortal(
+        {showMenu && (
           <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.16, ease: [0.25, 0.1, 0.25, 1] }}
+            exit={{ opacity: 0, y: -12, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
             className={`
-              fixed z-[99999] right-4 mt-2
-              bg-slate-950/97 backdrop-blur-xl
-              border border-slate-700/60 rounded-xl
-              shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)]
-              py-4 px-6 min-w-[220px] max-w-[360px]
-              origin-top-right pointer-events-auto
+              absolute top-full right-2 mt-1               /* right-2 вместо right-3 — часто лучше прижимает */
+              z-[100]                                      /* выше всего внутри окна */
+              min-w-[220px] max-w-[340px]
+              bg-slate-950/98 backdrop-blur-xl
+              border border-slate-600/60 rounded-xl
+              shadow-[0_20px_60px_-15px_rgba(0,0,0,0.75)]
+              py-3 px-5
+              origin-top-right
+              pointer-events-auto
             `}
             style={{
-              inset: 'auto 16px auto auto !important',
-              right: '16px !important',
-              left: 'auto !important',
-              top: '70px !important',           // ← самое важное — подбери это значение
-              transform: 'none !important',
-              margin: '0 !important',
-              paddingLeft: '1.5rem !important',
-              paddingRight: '1.5rem !important',
+              /* Принудительно вырываем из обрезки */
+              transform: 'translate3d(0,0,0) !important',
+              willChange: 'transform, opacity',
               isolation: 'isolate',
               contain: 'none',
+              clipPath: 'none !important',
             }}
           >
             <button
@@ -272,24 +270,24 @@ const AssistantChatWindow = () => {
                 setMode(mode === 'chat' ? 'translator' : 'chat');
                 setShowMenu(false);
               }}
-              className="flex items-center gap-4 w-full text-left py-3 px-4 rounded-xl hover:bg-slate-800/80 active:bg-slate-700/70 transition-colors text-white hover:text-sky-300 text-base font-medium"
+              className="flex items-center gap-3 w-full text-left py-2.5 px-4 rounded-lg hover:bg-slate-800/80 transition text-white hover:text-sky-300 whitespace-nowrap text-[15px]"
             >
+              {/* иконка + текст как у тебя */}
               {mode === 'chat' ? (
                 <>
-                  <MicrophoneIcon className="w-6 h-6 text-green-400 flex-shrink-0" />
+                  <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
                   Голосовой переводчик
                 </>
               ) : (
                 <>
-                  <svg className="w-6 h-6 text-sky-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-5 h-5 text-sky-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
                   Вернуться в чат
                 </>
               )}
             </button>
-          </motion.div>,
-          document.body
+          </motion.div>
         )}
 
         {/* Основной контент — структура как в твоём оригинальном коде */}
