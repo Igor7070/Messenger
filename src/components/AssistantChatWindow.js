@@ -222,14 +222,78 @@ const AssistantChatWindow = () => {
           </div>
 
           <div className="assistant-actions">
-            <button
-              className="menu-dots-btn"
-              onClick={() => setShowMenu(!showMenu)}
-            >
-              <span className="dot"></span>
-              <span className="dot"></span>
-              <span className="dot"></span>
-            </button>
+            {/* ← Вот здесь оборачиваем ТОЛЬКО кнопку трёх точек */}
+            <div className="relative inline-block">
+              <button
+                className="menu-dots-btn"
+                onClick={() => setShowMenu(!showMenu)}
+              >
+                <span className="dot"></span>
+                <span className="dot"></span>
+                <span className="dot"></span>
+              </button>
+
+              {/* Меню теперь позиционируется ОТНОСИТЕЛЬНО этой кнопки */}
+              {showMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -12, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className={`
+                    absolute top-full right-0 mt-1.5
+                    z-[200]                           // выше всего в шапке
+                    min-w-[220px] max-w-[340px]
+                    bg-slate-950/98 backdrop-blur-xl
+                    border border-slate-600/60 rounded-xl
+                    shadow-[0_20px_60px_-15px_rgba(0,0,0,0.75)]
+                    py-3 px-5
+                    origin-top-right
+                    pointer-events-auto
+                  `}
+                  style={{
+                    left: 'auto !important',
+                    right: '0 !important',            // строго к правому краю кнопки
+                    transform: 'translate3d(0, 0, 0) !important',
+                    isolation: 'isolate',
+                    contain: 'none',
+                    clipPath: 'none !important',
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      setMode(mode === 'chat' ? 'translator' : 'chat');
+                      setShowMenu(false);
+                    }}
+                    className="flex items-center gap-3 w-full text-left py-2.5 px-4 rounded-lg hover:bg-slate-800/80 transition text-white hover:text-sky-300 whitespace-nowrap text-[15px]"
+                  >
+                    {mode === 'chat' ? (
+                      <>
+                        <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                        Голосовой переводчик
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-5 h-5 text-sky-400 flex-shrink-0"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                          />
+                        </svg>
+                        Вернуться в чат
+                      </>
+                    )}
+                  </button>
+                </motion.div>
+              )}
+            </div>
 
             <button onClick={toggleFullScreen} className="icon-btn">
               {isFullScreen ? '↙' : '↗'}
@@ -237,61 +301,6 @@ const AssistantChatWindow = () => {
             <button onClick={closeAssistant} className="icon-btn">✕</button>
           </div>
         </div>
-
-        {/* Меню — всегда в DOM, высота 0, не толкает контент */}
-        {showMenu && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -12, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className={`
-              absolute top-full mt-1
-              left-full                      /* ← вместо right */
-              -translate-x-full              /* ← сдвигает всё меню влево на свою ширину → прижимает к правому краю кнопки */
-              z-[100]
-              min-w-[220px] max-w-[340px]
-              bg-slate-950/98 backdrop-blur-xl
-              border border-slate-600/60 rounded-xl
-              shadow-[0_20px_60px_-15px_rgba(0,0,0,0.75)]
-              py-3 px-5
-              origin-top-right
-              pointer-events-auto
-            `}
-            style={{
-              transform: 'translate3d(0,0,0) !important',
-              willChange: 'transform, opacity',
-              isolation: 'isolate',
-              contain: 'none',
-              clipPath: 'none !important',
-              left: 'auto !important',         // ← и это тоже
-              right: '8px !important',         // ← или 12px, 16px — подбери визуально
-            }}
-          >
-            <button
-              onClick={() => {
-                setMode(mode === 'chat' ? 'translator' : 'chat');
-                setShowMenu(false);
-              }}
-              className="flex items-center gap-3 w-full text-left py-2.5 px-4 rounded-lg hover:bg-slate-800/80 transition text-white hover:text-sky-300 whitespace-nowrap text-[15px]"
-            >
-              {/* иконка + текст как у тебя */}
-              {mode === 'chat' ? (
-                <>
-                  <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  Голосовой переводчик
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5 text-sky-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  Вернуться в чат
-                </>
-              )}
-            </button>
-          </motion.div>
-        )}
 
         {/* Основной контент — структура как в твоём оригинальном коде */}
         <AnimatePresence mode="wait">
