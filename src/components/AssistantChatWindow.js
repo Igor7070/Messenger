@@ -285,19 +285,20 @@ const AssistantChatWindow = () => {
                 setShowMenu(false);
               }}
               className="
-                flex items-center gap-2.5          // чуть меньше gap
-                py-1.5 px-3                       // меньше вертикального padding
-                rounded-lg 
-                hover:bg-slate-800/70 
-                transition-colors 
-                text-white hover:text-sky-300 
-                whitespace-nowrap
-                text-sm                           // ← уменьшили текст (опционально text-base)
+                flex items-center gap-2.5               /* уменьшили gap с 3 → 2.5 */
+                w-full
+                px-4 py-2.5                            /* чуть меньше padding по вертикали */
+                rounded-lg
+                hover:bg-slate-800/70
+                active:bg-slate-700/60
+                transition-colors
+                text-white hover:text-sky-300
+                text-sm font-medium                    /* text-sm вместо дефолтного */
               "
             >
               {mode === 'chat' ? (
                 <>
-                  <MicrophoneIcon className="w-4 h-4 text-green-400 flex-shrink-0" />  {/* ← w-4 h-4 вместо w-5 h-5 */}
+                  <MicrophoneIcon className="w-4 h-4 text-green-400 flex-shrink-0" />  {/* w-4 h-4 вместо w-5 h-5 */}
                   Голосовой переводчик
                 </>
               ) : (
@@ -307,7 +308,7 @@ const AssistantChatWindow = () => {
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
-                    strokeWidth={2}
+                    strokeWidth={2.2}
                   >
                     <path
                       strokeLinecap="round"
