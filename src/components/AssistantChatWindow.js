@@ -239,35 +239,41 @@ const AssistantChatWindow = () => {
         </div>
 
         {/* Меню — всегда в DOM, высота 0, не толкает контент */}
-        <div
-          style={{
-            height: 0,
-            overflow: 'visible',
-            position: 'relative',
-            zIndex: 30,
-          }}
-        >
+        {showMenu && (
           <motion.div
-            animate={{
-              opacity: showMenu ? 1 : 0,
-              y: showMenu ? 0 : -12,
-              scale: showMenu ? 1 : 0.96,
-              pointerEvents: showMenu ? 'auto' : 'none',
-            }}
+            initial={{ opacity: 0, y: -10, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.96 }}
             transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
             className={`
-              absolute top-full right-3 mt-1
-              bg-slate-900/95 backdrop-blur-lg border border-slate-700/60
-              rounded-xl shadow-xl shadow-black/30 py-3 px-4 min-w-[200px]
+              fixed                          /* ← было absolute → стало fixed */
+              z-[9999]
+              right-4                        /* ← отступ от правого края экрана */
+              mt-1
+              bg-slate-900/95 backdrop-blur-xl
+              border border-slate-600/70
+              rounded-xl shadow-2xl shadow-black/50
+              py-3 px-5
+              min-w-[220px]
+              max-w-[min(360px,90vw)]
               origin-top-right
+              pointer-events-auto
             `}
+            style={{
+              top: '64px !important',          // ← подбери под высоту своей шапки (60–80 px обычно)
+              left: 'auto !important',
+              bottom: 'auto !important',
+              transform: 'none !important',
+              marginLeft: '0 !important',
+              marginRight: '0 !important',
+            }}
           >
             <button
               onClick={() => {
                 setMode(mode === 'chat' ? 'translator' : 'chat');
                 setShowMenu(false);
               }}
-              className="flex items-center gap-3 w-full text-left py-2 px-3 rounded-lg hover:bg-slate-800/70 transition-colors text-white hover:text-sky-300 whitespace-nowrap"
+              className="flex items-center gap-3 w-full text-left py-2.5 px-4 rounded-lg hover:bg-slate-800/70 transition-colors text-white hover:text-sky-300 whitespace-nowrap"
             >
               {mode === 'chat' ? (
                 <>
@@ -294,7 +300,7 @@ const AssistantChatWindow = () => {
               )}
             </button>
           </motion.div>
-        </div>
+        )}
 
         {/* Основной контент — структура как в твоём оригинальном коде */}
         <AnimatePresence mode="wait">
