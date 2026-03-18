@@ -285,43 +285,27 @@ const AssistantChatWindow = () => {
                 setMode(mode === 'chat' ? 'translator' : 'chat');
                 setShowMenu(false);
               }}
-              className="
-                inline-flex items-center gap-2
-                px-4 py-1
-                text-sm text-white hover:text-sky-300
-                bg-transparent border-0
-                hover:bg-slate-800/60 rounded-lg
-                transition-colors
-                leading-none           /* ← убивает лишний межстрочный интервал */
-                font-medium
-              "
-              style={{
-                height: '28px !important',       // жёстко фиксируем высоту
-                minHeight: '28px !important',
-                lineHeight: '1 !important',
-                paddingTop: '0 !important',
-                paddingBottom: '0 !important',
-              }}
+              className="flex items-center gap-3 w-full text-left py-2 px-3 rounded-lg hover:bg-slate-800/70 transition-colors text-white hover:text-sky-300 whitespace-nowrap"
             >
               {mode === 'chat' ? (
                 <>
-                  <MicrophoneIcon
-                    className="w-3.5 h-3.5 text-green-400 flex-shrink-0"
-                    style={{ marginTop: '-1px' }}   // микрокоррекция, если иконка всё равно чуть выше
-                  />
+                  <MicrophoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
                   Голосовой переводчик
                 </>
               ) : (
                 <>
                   <svg
-                    className="w-3.5 h-3.5 text-sky-400 flex-shrink-0"
-                    style={{ marginTop: '-1px' }}
+                    className="w-5 h-5 text-sky-400 flex-shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
-                    strokeWidth={2.5}
+                    strokeWidth={2}
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
                   </svg>
                   Вернуться в чат
                 </>
