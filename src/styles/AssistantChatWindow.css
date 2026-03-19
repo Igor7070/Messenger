@@ -370,4 +370,5 @@
 
 .translator-mode .flex-1.flex.items-center.justify-center {
   margin-top: 2rem;   /* 32px — хороший визуальный воздух */
+  margin-bottom: 2rem;
 }
