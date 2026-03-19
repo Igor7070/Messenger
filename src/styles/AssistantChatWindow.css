@@ -365,4 +365,9 @@
   font-weight: 600 !important;        /* чуть жирнее для читаемости */
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); /* лёгкая тень для выделения на градиенте */
   letter-spacing: 0.3px;              /* чуть разнесённые буквы */
+  margin-bottom: 1rem !important;   /* 16px — хороший комфортный зазор */
+}
+
+.translator-mode .flex-1.flex.items-center.justify-center {
+  margin-top: 2rem;   /* 32px — хороший визуальный воздух */
 }
