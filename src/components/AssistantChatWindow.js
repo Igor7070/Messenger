@@ -151,10 +151,36 @@ const AssistantChatWindow = () => {
     { name: 'Zulu', code: 'zu', emoji: '🇿🇦' },
   ].sort((a, b) => (a.name === 'Auto' ? -1 : b.name === 'Auto' ? 1 : a.name.localeCompare(b.name)));
 
+  const getFlagSvg = (code) => {
+    if (code === 'auto') return '🌐'; // оставляем эмодзи для Auto
+
+    // Для zh-TW делаем zh-tw (flagcdn ожидает lowercase)
+    let iso = code.toLowerCase();
+    if (iso === 'zh-tw') iso = 'tw'; // Taiwan флаг — tw.png
+
+    return (
+      <img
+        src={`https://flagcdn.com/16x12/${iso}.png`}
+        alt={`${code} flag`}
+        style={{
+          width: '16px',
+          height: '12px',
+          marginRight: '8px',
+          verticalAlign: 'middle',
+          display: 'inline-block',
+        }}
+        onError={(e) => {
+          e.target.src = 'https://flagcdn.com/16x12/xx.png'; // fallback серый квадрат
+        }}
+      />
+    );
+  };
+
   // Форматируем под react-select (флаги + название)
   const selectLanguages = languages.map((lang) => ({
     value: lang.code,
-    label: `${lang.emoji} ${lang.name}`,
+    label: lang.name,           // только название (флаг добавим через formatOptionLabel)
+    icon: getFlagSvg(lang.code), // сохраняем иконку в объекте опции
   }));
 
   const scrollToBottom = () => {
@@ -461,6 +487,18 @@ const AssistantChatWindow = () => {
                   onChange={(opt) => setSelectedLanguage(opt.value)}
                   className="language-select"
                   classNamePrefix="react-select"
+                  formatOptionLabel={(option) => (
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {option.icon}
+                      <span>{option.label}</span>
+                    </div>
+                  )}
+                  formatSingleValue={(option) => (
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {option.icon}
+                      <span>{option.label}</span>
+                    </div>
+                  )}
                   styles={{
                     control: (base) => ({
                       ...base,
