@@ -285,7 +285,7 @@ const AssistantChatWindow = () => {
                 setMode(mode === 'chat' ? 'translator' : 'chat');
                 setShowMenu(false);
               }}
-              className="flex items-center gap-3 w-full text-left py-2 px-3 rounded-lg hover:bg-slate-800/70 transition-colors text-white hover:text-sky-300 whitespace-nowrap"
+              className="flex items-center gap-3 w-full text-left py-2.5 px-4 rounded-lg hover:bg-slate-800/70 transition-colors text-white hover:text-sky-300 whitespace-nowrap text-base font-medium"
             >
               {mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}
             </button>
