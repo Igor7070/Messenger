@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAssistant } from '../context/AssistantContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import Select from 'react-select';
 import toast from 'react-hot-toast';
 import {
   MicrophoneIcon,
@@ -37,18 +36,121 @@ const AssistantChatWindow = () => {
   const audioChunksRef = useRef([]);
   const timerIntervalRef = useRef(null);
 
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
   const languages = [
-    { value: 'auto', label: 'Auto 🌐' },
-    { value: 'en', label: 'English 🇬🇧' },
-    { value: 'ru', label: 'Русский 🇷🇺' },
-    { value: 'uk', label: 'Українська 🇺🇦' },
-    { value: 'es', label: 'Español 🇪🇸' },
-    { value: 'fr', label: 'Français 🇫🇷' },
-    { value: 'de', label: 'Deutsch 🇩🇪' },
-    { value: 'it', label: 'Italiano 🇮🇹' },
-    { value: 'zh', label: '中文 🇨🇳' },
-    { value: 'ja', label: '日本語 🇯🇵' },
-  ];
+    { name: 'Auto', code: 'auto', emoji: '🌐' },
+    { name: 'Afrikaans', code: 'af', emoji: '🇿🇦' },
+    { name: 'Albanian', code: 'sq', emoji: '🇦🇱' },
+    { name: 'Amharic', code: 'am', emoji: '🇪🇹' },
+    { name: 'Arabic', code: 'ar', emoji: '🇸🇦' },
+    { name: 'Armenian', code: 'hy', emoji: '🇦🇲' },
+    { name: 'Azerbaijani', code: 'az', emoji: '🇦🇿' },
+    { name: 'Basque', code: 'eu', emoji: '🇪🇸' },
+    { name: 'Belarusian', code: 'be', emoji: '🇧🇾' },
+    { name: 'Bengali', code: 'bn', emoji: '🇧🇩' },
+    { name: 'Bosnian', code: 'bs', emoji: '🇧🇦' },
+    { name: 'Bulgarian', code: 'bg', emoji: '🇧🇬' },
+    { name: 'Catalan', code: 'ca', emoji: '🇪🇸' },
+    { name: 'Cebuano', code: 'ceb', emoji: '🇵🇭' },
+    { name: 'Chichewa', code: 'ny', emoji: '🇲🇼' },
+    { name: 'Chinese (Simplified)', code: 'zh', emoji: '🇨🇳' },
+    { name: 'Chinese (Traditional)', code: 'zh-TW', emoji: '🇹🇼' },
+    { name: 'Corsican', code: 'co', emoji: '🇫🇷' },
+    { name: 'Croatian', code: 'hr', emoji: '🇭🇷' },
+    { name: 'Czech', code: 'cs', emoji: '🇨🇿' },
+    { name: 'Danish', code: 'da', emoji: '🇩🇰' },
+    { name: 'Dutch', code: 'nl', emoji: '🇳🇱' },
+    { name: 'English', code: 'en', emoji: '🇬🇧' },
+    { name: 'Esperanto', code: 'eo', emoji: '🏳️' },
+    { name: 'Estonian', code: 'et', emoji: '🇪🇪' },
+    { name: 'Filipino', code: 'tl', emoji: '🇵🇭' },
+    { name: 'Finnish', code: 'fi', emoji: '🇫🇮' },
+    { name: 'French', code: 'fr', emoji: '🇫🇷' },
+    { name: 'Frisian', code: 'fy', emoji: '🇳🇱' },
+    { name: 'Galician', code: 'gl', emoji: '🇪🇸' },
+    { name: 'Georgian', code: 'ka', emoji: '🇬🇪' },
+    { name: 'German', code: 'de', emoji: '🇩🇪' },
+    { name: 'Greek', code: 'el', emoji: '🇬🇷' },
+    { name: 'Gujarati', code: 'gu', emoji: '🇮🇳' },
+    { name: 'Haitian Creole', code: 'ht', emoji: '🇭🇹' },
+    { name: 'Hausa', code: 'ha', emoji: '🇳🇬' },
+    { name: 'Hawaiian', code: 'haw', emoji: '🇺🇸' },
+    { name: 'Hebrew', code: 'he', emoji: '🇮🇱' },
+    { name: 'Hindi', code: 'hi', emoji: '🇮🇳' },
+    { name: 'Hmong', code: 'hmn', emoji: '🇨🇳' },
+    { name: 'Hungarian', code: 'hu', emoji: '🇭🇺' },
+    { name: 'Icelandic', code: 'is', emoji: '🇮🇸' },
+    { name: 'Igbo', code: 'ig', emoji: '🇳🇬' },
+    { name: 'Indonesian', code: 'id', emoji: '🇮🇩' },
+    { name: 'Irish', code: 'ga', emoji: '🇮🇪' },
+    { name: 'Italian', code: 'it', emoji: '🇮🇹' },
+    { name: 'Japanese', code: 'ja', emoji: '🇯🇵' },
+    { name: 'Javanese', code: 'jv', emoji: '🇮🇩' },
+    { name: 'Kannada', code: 'kn', emoji: '🇮🇳' },
+    { name: 'Kazakh', code: 'kk', emoji: '🇰🇿' },
+    { name: 'Khmer', code: 'km', emoji: '🇰🇭' },
+    { name: 'Kinyarwanda', code: 'rw', emoji: '🇷🇼' },
+    { name: 'Korean', code: 'ko', emoji: '🇰🇷' },
+    { name: 'Kurdish', code: 'ku', emoji: '🇮🇶' },
+    { name: 'Kyrgyz', code: 'ky', emoji: '🇰🇬' },
+    { name: 'Lao', code: 'lo', emoji: '🇱🇦' },
+    { name: 'Latin', code: 'la', emoji: '🏳️' },
+    { name: 'Latvian', code: 'lv', emoji: '🇱🇻' },
+    { name: 'Lithuanian', code: 'lt', emoji: '🇱🇹' },
+    { name: 'Luxembourgish', code: 'lb', emoji: '🇱🇺' },
+    { name: 'Macedonian', code: 'mk', emoji: '🇲🇰' },
+    { name: 'Malagasy', code: 'mg', emoji: '🇲🇬' },
+    { name: 'Malay', code: 'ms', emoji: '🇲🇾' },
+    { name: 'Malayalam', code: 'ml', emoji: '🇮🇳' },
+    { name: 'Maltese', code: 'mt', emoji: '🇲🇹' },
+    { name: 'Maori', code: 'mi', emoji: '🇳🇿' },
+    { name: 'Marathi', code: 'mr', emoji: '🇮🇳' },
+    { name: 'Mongolian', code: 'mn', emoji: '🇲🇳' },
+    { name: 'Myanmar (Burmese)', code: 'my', emoji: '🇲🇲' },
+    { name: 'Nepali', code: 'ne', emoji: '🇳🇵' },
+    { name: 'Norwegian', code: 'no', emoji: '🇳🇴' },
+    { name: 'Odia', code: 'or', emoji: '🇮🇳' },
+    { name: 'Pashto', code: 'ps', emoji: '🇦🇫' },
+    { name: 'Persian', code: 'fa', emoji: '🇮🇷' },
+    { name: 'Polish', code: 'pl', emoji: '🇵🇱' },
+    { name: 'Portuguese', code: 'pt', emoji: '🇵🇹' },
+    { name: 'Punjabi', code: 'pa', emoji: '🇮🇳' },
+    { name: 'Romanian', code: 'ro', emoji: '🇷🇴' },
+    { name: 'Russian', code: 'ru', emoji: '🇷🇺' },
+    { name: 'Samoan', code: 'sm', emoji: '🇼🇸' },
+    { name: 'Scots Gaelic', code: 'gd', emoji: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+    { name: 'Serbian', code: 'sr', emoji: '🇷🇸' },
+    { name: 'Sesotho', code: 'st', emoji: '🇱🇸' },
+    { name: 'Shona', code: 'sn', emoji: '🇿🇼' },
+    { name: 'Sindhi', code: 'sd', emoji: '🇵🇰' },
+    { name: 'Sinhala', code: 'si', emoji: '🇱🇰' },
+    { name: 'Slovak', code: 'sk', emoji: '🇸🇰' },
+    { name: 'Slovenian', code: 'sl', emoji: '🇸🇮' },
+    { name: 'Somali', code: 'so', emoji: '🇸🇴' },
+    { name: 'Spanish', code: 'es', emoji: '🇪🇸' },
+    { name: 'Sundanese', code: 'su', emoji: '🇮🇩' },
+    { name: 'Swahili', code: 'sw', emoji: '🇹🇿' },
+    { name: 'Swedish', code: 'sv', emoji: '🇸🇪' },
+    { name: 'Tajik', code: 'tg', emoji: '🇹🇯' },
+    { name: 'Tamil', code: 'ta', emoji: '🇮🇳' },
+    { name: 'Tatar', code: 'tt', emoji: '🇷🇺' },
+    { name: 'Telugu', code: 'te', emoji: '🇮🇳' },
+    { name: 'Thai', code: 'th', emoji: '🇹🇭' },
+    { name: 'Turkish', code: 'tr', emoji: '🇹🇷' },
+    { name: 'Turkmen', code: 'tk', emoji: '🇹🇲' },
+    { name: 'Ukrainian', code: 'uk', emoji: '🇺🇦' },
+    { name: 'Urdu', code: 'ur', emoji: '🇵🇰' },
+    { name: 'Uyghur', code: 'ug', emoji: '🇨🇳' },
+    { name: 'Uzbek', code: 'uz', emoji: '🇺🇿' },
+    { name: 'Vietnamese', code: 'vi', emoji: '🇻🇳' },
+    { name: 'Welsh', code: 'cy', emoji: '🏴󠁧󠁢󠁷󠁬󠁳󠁿' },
+    { name: 'Xhosa', code: 'xh', emoji: '🇿🇦' },
+    { name: 'Yiddish', code: 'yi', emoji: '🇮🇱' },
+    { name: 'Yoruba', code: 'yo', emoji: '🇳🇬' },
+    { name: 'Zulu', code: 'zu', emoji: '🇿🇦' },
+  ].sort((a, b) => (a.name === 'Auto' ? -1 : b.name === 'Auto' ? 1 : a.name.localeCompare(b.name)));
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -57,6 +159,19 @@ const AssistantChatWindow = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const sendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -347,29 +462,49 @@ const AssistantChatWindow = () => {
               exit={{ opacity: 0 }}
               className="flex-1 flex flex-col translator-mode"
             >
-              <div className="mb-6 px-5">
-                <Select
-                  options={languages}
-                  value={languages.find((l) => l.value === selectedLanguage)}
-                  onChange={(opt) => setSelectedLanguage(opt.value)}
-                  className="language-select"
-                  classNamePrefix="react-select"
-                  styles={{
-                    control: (base) => ({
-                      ...base,
-                      backgroundColor: '#1e293b',
-                      borderColor: '#334155',
-                      color: 'white',
-                    }),
-                    menu: (base) => ({ ...base, backgroundColor: '#0f172a', color: 'white' }),
-                    option: (base, state) => ({
-                      ...base,
-                      backgroundColor: state.isSelected ? '#2563eb' : state.isFocused ? '#334155' : '#0f172a',
-                      color: 'white',
-                    }),
-                    singleValue: (base) => ({ ...base, color: 'white' }),
-                  }}
-                />
+              <div className="mb-6 px-5 relative">
+                <label className="block text-white text-sm font-medium mb-2">
+                  Язык перевода
+                </label>
+
+                <div className="custom-select" ref={dropdownRef}>
+                  {/* Выбранное значение */}
+                  <div
+                    className={`flex items-center justify-between px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg cursor-pointer hover:bg-slate-700 transition-colors ${isDropdownOpen ? 'ring-2 ring-blue-500' : ''}`}
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">
+                        {languages.find(l => l.code === selectedLanguage)?.emoji || '🌐'}
+                      </span>
+                      <span className="text-white font-medium">
+                        {languages.find(l => l.code === selectedLanguage)?.name || 'Auto 🌐'}
+                      </span>
+                    </div>
+                    <span className="text-gray-400 text-sm">▼</span>
+                  </div>
+
+                  {/* Выпадающий список */}
+                  {isDropdownOpen && (
+                    <div className="absolute z-50 mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg shadow-2xl max-h-64 overflow-y-auto">
+                      {languages.map((lang) => (
+                        <div
+                          key={lang.code}
+                          className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-slate-800 transition-colors ${
+                            lang.code === selectedLanguage ? 'bg-blue-900/50' : ''
+                          }`}
+                          onClick={() => {
+                            setSelectedLanguage(lang.code);
+                            setIsDropdownOpen(false);
+                          }}
+                        >
+                          <span className="text-2xl min-w-[32px]">{lang.emoji}</span>
+                          <span className="text-white">{lang.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex-1 flex items-center justify-center">
