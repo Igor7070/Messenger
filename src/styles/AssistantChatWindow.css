@@ -560,44 +560,46 @@
   background-color: transparent !important;
 }
 
-/* Максимальное восстановление цветов иконок микрофона */
+/* Финальный фикс цветов иконок — перебиваем всё */
 .translation-block button svg.text-blue-400,
 .translation-block button svg.text-blue-400 path,
 .translation-block button svg.text-blue-400 * {
-  stroke: #60a5fa !important;
   color: #60a5fa !important;
+  stroke: #60a5fa !important;
   fill: none !important;
 }
 
 .translation-block button svg.text-green-400,
 .translation-block button svg.text-green-400 path,
 .translation-block button svg.text-green-400 * {
-  stroke: #22c55e !important;
   color: #22c55e !important;
+  stroke: #22c55e !important;
   fill: none !important;
 }
 
-/* Усиление видимости и объёма */
+/* Убираем размытие, фон и любые артефакты */
 .translation-block button svg {
-  stroke-width: 2.5 !important;           /* толще обводка — лучше видно */
-  filter: drop-shadow(0 1px 4px rgba(0,0,0,0.9)) !important;
+  filter: none !important;
+  stroke-width: 2.2 !important;
+  opacity: 1 !important;
 }
 
-/* Убиваем любой возможный фон кнопки */
 .translation-block button,
 .translation-block button.absolute,
 .translation-block button.rounded-full {
   background: transparent !important;
   background-color: transparent !important;
+  backdrop-filter: none !important;
   box-shadow: none !important;
   border: none !important;
+  outline: none !important;
 }
 
-/* Hover — лёгкий и красивый */
+/* Hover — минимальный, без размытия */
 .translation-block button:hover {
-  background: rgba(30, 58, 138, 0.15) !important;  /* синий ореол */
+  background: rgba(96, 165, 250, 0.12) !important;  /* лёгкий синий */
 }
 
 .translation-block button:hover:has(.text-green-400) {
-  background: rgba(22, 163, 74, 0.15) !important;  /* зелёный ореол */
+  background: rgba(34, 197, 94, 0.12) !important;   /* лёгкий зелёный */
 }

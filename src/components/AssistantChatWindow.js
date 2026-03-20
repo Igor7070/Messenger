@@ -519,10 +519,10 @@ const AssistantChatWindow = () => {
                     {originalText && (
                       <button
                         onClick={() => speakText(originalText, 'auto')}
-                        className="absolute top-1 right-1 p-1.5 rounded-full hover:bg-blue-900/20 transition-all duration-150"
+                        className="absolute top-1 right-1 p-1 rounded-full hover:bg-blue-950/20 transition-colors duration-150"
                         title="Озвучить оригинал"
                       >
-                        <MicrophoneIcon className="w-6 h-6 !text-blue-400 !stroke-blue-400 stroke-current drop-shadow-md" />
+                        <MicrophoneIcon className="w-6 h-6 text-blue-400" />
                       </button>
                     )}
                   </div>
@@ -535,10 +535,10 @@ const AssistantChatWindow = () => {
                     {translatedText && (
                       <button
                         onClick={() => speakText(translatedText, selectedLanguage)}
-                        className="absolute top-1 right-1 p-1.5 rounded-full hover:bg-green-900/20 transition-all duration-150"
+                        className="absolute top-1 right-1 p-1 rounded-full hover:bg-green-950/20 transition-colors duration-150"
                         title="Озвучить перевод"
                       >
-                        <MicrophoneIcon className="w-6 h-6 !text-green-400 !stroke-green-400 stroke-current drop-shadow-md" />
+                        <MicrophoneIcon className="w-6 h-6 text-green-400" />
                       </button>
                     )}
                   </div>
