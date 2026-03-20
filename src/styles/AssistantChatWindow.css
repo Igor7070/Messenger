@@ -559,3 +559,45 @@
   background: transparent !important;
   background-color: transparent !important;
 }
+
+/* Максимальное восстановление цветов иконок микрофона */
+.translation-block button svg.text-blue-400,
+.translation-block button svg.text-blue-400 path,
+.translation-block button svg.text-blue-400 * {
+  stroke: #60a5fa !important;
+  color: #60a5fa !important;
+  fill: none !important;
+}
+
+.translation-block button svg.text-green-400,
+.translation-block button svg.text-green-400 path,
+.translation-block button svg.text-green-400 * {
+  stroke: #22c55e !important;
+  color: #22c55e !important;
+  fill: none !important;
+}
+
+/* Усиление видимости и объёма */
+.translation-block button svg {
+  stroke-width: 2.5 !important;           /* толще обводка — лучше видно */
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,0.9)) !important;
+}
+
+/* Убиваем любой возможный фон кнопки */
+.translation-block button,
+.translation-block button.absolute,
+.translation-block button.rounded-full {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Hover — лёгкий и красивый */
+.translation-block button:hover {
+  background: rgba(30, 58, 138, 0.15) !important;  /* синий ореол */
+}
+
+.translation-block button:hover:has(.text-green-400) {
+  background: rgba(22, 163, 74, 0.15) !important;  /* зелёный ореол */
+}
