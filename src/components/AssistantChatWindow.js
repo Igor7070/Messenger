@@ -393,7 +393,7 @@ const AssistantChatWindow = () => {
               }}
               className="flex items-center gap-3 w-full text-left py-2.5 px-4 rounded-lg hover:bg-slate-800/70 transition-colors text-white hover:text-sky-300 whitespace-nowrap text-base font-medium"
             >
-              {mode === 'chat' ? 'Голосовой переводчик' : 'Вернуться в чат'}
+              {mode === 'chat' ? 'voice translator' : 'Return to chat'}
             </button>
           </motion.div>
         </div>
@@ -456,7 +456,7 @@ const AssistantChatWindow = () => {
               {/* Кастомный селект — как в TranslationSettingsModal */}
               <div className="mb-6 px-5">
                 <label className="select-label block text-white mb-1">
-                  Язык перевода
+                  Translation language
                 </label>
 
                 <div className="custom-select" ref={dropdownRef}>
@@ -513,14 +513,14 @@ const AssistantChatWindow = () => {
 
               <div className="translation-result mt-6 px-5 pb-6">
                 <div className="translation-block relative">
-                  <div className="label">Оригинал</div>
+                  <div className="label">Original</div>
                   <div className="text-content relative">
-                    {originalText || 'Говорите...'}
+                    {originalText || 'Speak...'}
                     {originalText && (
                       <button
                         onClick={() => speakText(originalText, 'auto')}
                         className="absolute top-1 right-1 p-1 rounded-full hover:bg-blue-950/20 transition-colors duration-150"
-                        title="Озвучить оригинал"
+                        title="Voice the original"
                       >
                         <MicrophoneIcon className="w-6 h-6 text-blue-400" />
                       </button>
@@ -529,14 +529,14 @@ const AssistantChatWindow = () => {
                 </div>
 
                 <div className="translation-block mt-6 relative">
-                  <div className="label">Перевод</div>
+                  <div className="label">Translation</div>
                   <div className="text-content relative">
-                    {translatedText || 'Ожидаем перевод...'}
+                    {translatedText || 'Translation is awaited...'}
                     {translatedText && (
                       <button
                         onClick={() => speakText(translatedText, selectedLanguage)}
                         className="absolute top-1 right-1 p-1 rounded-full hover:bg-green-950/20 transition-colors duration-150"
-                        title="Озвучить перевод"
+                        title="Voice-over translation"
                       >
                         <MicrophoneIcon className="w-6 h-6 text-green-400" />
                       </button>
