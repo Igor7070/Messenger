@@ -526,3 +526,36 @@
 .translation-block button svg:not([fill]) {
   fill: currentColor !important;
 }
+
+* Убиваем любой фон у кнопок озвучки максимально жёстко */
+.translation-block .text-content button,
+.translation-block button.absolute,
+.translation-block button.rounded-full,
+.translation-block button.p-2 {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* На случай, если где-то добавляется через :before / :after */
+.translation-block button::before,
+.translation-block button::after {
+  background: transparent !important;
+  content: none !important;   /* на всякий случай */
+}
+
+/* Убираем возможный hover-фон, если он всё равно появляется */
+.translation-block button:hover {
+  background: rgba(255, 255, 255, 0.06) !important;   /* очень лёгкий, почти незаметный */
+  /* или полностью: background: transparent !important; */
+}
+
+/* Финальный удар по всем возможным bg- классам Tailwind */
+[class*="bg-"] button.rounded-full.p-2.absolute.top-2.right-2 {
+  background: transparent !important;
+  background-color: transparent !important;
+}
