@@ -287,7 +287,7 @@ const AssistantChatWindow = () => {
     if (!text) return;
 
     try {
-      const res = await fetch('https://unlimitedpossibilities12.org/tts', {
+      const res = await fetch('https://unlimitedpossibilities12.org/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, language: lang }),
