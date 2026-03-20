@@ -527,7 +527,7 @@
   fill: currentColor !important;
 }
 
-* Убиваем любой фон у кнопок озвучки максимально жёстко */
+/* Убиваем любой фон кнопок озвучки максимально жёстко */
 .translation-block .text-content button,
 .translation-block button.absolute,
 .translation-block button.rounded-full,
