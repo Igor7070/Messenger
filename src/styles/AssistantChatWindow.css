@@ -372,3 +372,42 @@
   margin-top: 2rem;   /* 32px — хороший визуальный воздух */
   margin-bottom: 2rem;
 }
+
+/* Блоки оригинала и перевода — делаем текст светлым и читаемым */
+.translation-result {
+  background: #1e293b;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+/* Сам текст внутри блоков Оригинал/Перевод */
+.translation-block .text-content {
+  color: #f1f5f9 !important;          /* очень светлый серо-белый, отлично читается */
+  font-size: 1.1rem;
+  line-height: 1.6;
+  word-break: break-word;             /* перенос длинных слов */
+}
+
+/* Если есть кнопка воспроизведения — делаем её чуть ярче */
+.translation-block .play-btn {
+  color: #60a5fa;                     /* голубой для кнопки оригинала */
+}
+
+.translation-block .play-btn.green {
+  color: #22c55e;                     /* зелёный для кнопки перевода */
+}
+
+/* Опционально: лёгкий hover-эффект на весь блок текста */
+.translation-block .text-content:hover {
+  background: rgba(255, 255, 255, 0.03); /* едва заметный светлый оверлей при наведении */
+  border-radius: 8px;
+  padding: 0.5rem;
+  transition: background 0.2s;
+}
+
+/* Если текст всё равно кажется слишком бледным — можно сделать ещё ярче */
+.translation-block .text-content {
+  color: #e2e8f0 !important;          /* альтернатива — чуть холоднее белый */
+  /* или самый яркий вариант: color: #ffffff !important; */
+}
