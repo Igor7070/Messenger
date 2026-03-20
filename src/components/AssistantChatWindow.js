@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAssistant } from '../context/AssistantContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { MicrophoneIcon as MicrophoneSolid } from '@heroicons/react/24/solid';
 import {
   MicrophoneIcon,
   StopIcon,
@@ -522,7 +523,7 @@ const AssistantChatWindow = () => {
                         className="absolute top-2 right-2 p-2 rounded-full bg-blue-900/40 hover:bg-blue-800/60 transition-colors"
                         title="Озвучить оригинал"
                       >
-                        <MicrophoneIcon className="w-5 h-5 text-blue-400" />
+                        <MicrophoneSolid className="w-5 h-5 text-blue-400" />   {/* ← solid */}
                       </button>
                     )}
                   </div>
@@ -538,7 +539,7 @@ const AssistantChatWindow = () => {
                         className="absolute top-2 right-2 p-2 rounded-full bg-green-900/40 hover:bg-green-800/60 transition-colors"
                         title="Озвучить перевод"
                       >
-                        <MicrophoneIcon className="w-5 h-5 text-green-400" />
+                        <MicrophoneSolid className="w-5 h-5 text-green-400" />  {/* ← solid */}
                       </button>
                     )}
                   </div>
