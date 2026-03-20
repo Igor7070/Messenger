@@ -512,25 +512,33 @@ const AssistantChatWindow = () => {
               </div>
 
               <div className="translation-result mt-6 px-5 pb-6">
-                <div className="translation-block">
+                <div className="translation-block relative">
                   <div className="label">Оригинал</div>
-                  <div className="text-content">
+                  <div className="text-content relative">
                     {originalText || 'Говорите...'}
                     {originalText && (
-                      <button onClick={() => speakText(originalText, 'auto')} className="play-btn blue">
-                        <PlayIcon className="w-6 h-6" />
+                      <button
+                        onClick={() => speakText(originalText, 'auto')}
+                        className="absolute top-2 right-2 p-2 rounded-full bg-blue-900/40 hover:bg-blue-800/60 transition-colors"
+                        title="Озвучить оригинал"
+                      >
+                        <MicrophoneIcon className="w-5 h-5 text-blue-400" />
                       </button>
                     )}
                   </div>
                 </div>
 
-                <div className="translation-block mt-6">
+                <div className="translation-block mt-6 relative">
                   <div className="label">Перевод</div>
-                  <div className="text-content">
+                  <div className="text-content relative">
                     {translatedText || 'Ожидаем перевод...'}
                     {translatedText && (
-                      <button onClick={() => speakText(translatedText, selectedLanguage)} className="play-btn green">
-                        <PlayIcon className="w-6 h-6" />
+                      <button
+                        onClick={() => speakText(translatedText, selectedLanguage)}
+                        className="absolute top-2 right-2 p-2 rounded-full bg-green-900/40 hover:bg-green-800/60 transition-colors"
+                        title="Озвучить перевод"
+                      >
+                        <MicrophoneIcon className="w-5 h-5 text-green-400" />
                       </button>
                     )}
                   </div>

@@ -460,3 +460,29 @@
 .record-btn:hover::after {
   opacity: 1;
 }
+
+/* Иконки повторной озвучки в блоках оригинала и перевода */
+.translation-block .text-content {
+  position: relative;                    /* обязательно для absolute позиционирования */
+  padding-right: 3.5rem;                 /* место для иконки справа (56px) */
+  min-height: 3rem;                      /* минимальная высота, чтобы иконка не выпадала */
+}
+
+.translation-block button {
+  transition: all 0.2s ease;
+}
+
+.translation-block button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
+}
+
+.translation-block button:active {
+  transform: scale(0.95);
+}
+
+/* Если текст пустой — скрываем иконку */
+.translation-block .text-content:empty + button,
+.translation-block .text-content:not(:has(text)) + button {
+  display: none;
+}
