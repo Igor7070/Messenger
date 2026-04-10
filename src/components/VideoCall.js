@@ -24,6 +24,7 @@ const VideoCall = ({ recipientId }) => {
   const stompClient = useRef(null);
   const [incomingCallState, setIncomingCallState] = useState(incomingCall);
   const [isWaiting, setIsWaiting] = useState(false);
+  const [callDuration, setCallDuration] = useState(0);
   const [videoOrientation, setVideoOrientation] = useState('horizontal'); // 'horizontal' или 'vertical'
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
   const hasNotifiedEndCall = useRef(false); // Флаг для предотвращения дублирования тостов в endCall
@@ -545,10 +546,25 @@ const VideoCall = ({ recipientId }) => {
     setVideoOrientation((prev) => (prev === 'horizontal' ? 'vertical' : 'horizontal'));
   };
 
+  // Таймер продолжительности видеозвонка
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCallDuration(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="video-call-container">
       <div className="video-call-header">
-        <h2 className="video-call-title">Video call with {isCaller ? recipientName : callerName}</h2>
+        <h2 className="video-call-title">
+          Video call with {isCaller ? recipientName : callerName}
+        </h2>
+        <div className="call-duration">
+          {Math.floor(callDuration / 60).toString().padStart(2, '0')}:
+          {(callDuration % 60).toString().padStart(2, '0')}
+        </div>
       </div>
       <div className={`video-container ${videoOrientation}`}>
         <video ref={remoteVideoRef} className="remote-video" autoPlay playsInline />

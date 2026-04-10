@@ -1,76 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 .personal-chats-container {
     padding: 20px;
-    background-color: #DCEDC8; /* Светло-зеленый, как в UserProfile */
-    border-radius: 12px;
-    max-width: 600px; /* Ограничим ширину для удобства */
-    margin: 20px auto; /* Центрируем с отступами */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    border: 2px solid #C8E6C9; /* Тонкая рамка в тон */
+    background-color: rgba(30, 41, 59, 0.95);
+    border-radius: 16px;
+    max-width: 620px;
+    margin: 20px auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    min-height: 600px;
 }
 
 .custom-h1 {
-    color: #2E7D32; /* Темно-зеленый, как в UserProfile */
-    font-size: 28px;
+    color: #67e8f9;
+    font-size: 26px;
     font-weight: 600;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-    text-align: center; /* Центрируем заголовок */
+    text-align: center;
+    margin-bottom: 24px;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.3px;
 }
 
+/* Список чатов */
 .personal-chats-container ul {
-    list-style: none; /* Убираем маркеры списка */
-    padding: 0; /* Убираем внутренние отступы */
-    margin: 0; /* Убираем внешние отступы */
-    border: none; /* Убираем возможные границы списка */
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
+/* Карточка чата */
 .chat-item1 {
     display: flex;
     align-items: center;
-    padding: 12px;
-    margin: 8px 0;
-    background-color: #E8F6F5; /* Сверхмягкий бирюзовый */
-    border-radius: 8px;
+    padding: 14px 16px;
+    background-color: rgba(15, 23, 42, 0.85);
+    border-radius: 12px;
     cursor: pointer;
-    border: 1px solid #CDE8E6; /* Рамка в тон */
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.25s ease;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    position: relative;
 }
 
 .chat-item1:hover {
-    background-color: #CDE8E6; /* Чуть насыщеннее при наведении */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Легкая тень */
+    background-color: rgba(30, 41, 59, 0.95);
+    transform: translateX(4px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border-color: rgba(103, 232, 249, 0.3);
 }
 
+/* Аватар */
 .chat-avatar-container {
     position: relative;
-    margin-right: 12px;
+    margin-right: 14px;
+    flex-shrink: 0;
 }
 
 .chat-avatar {
-    width: 40px;
-    height: 40px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
-    background-color: #81C784; /* Средний зеленый как акцент */
+    background-color: #334155;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
-    color: #fff;
-    flex-shrink: 0;
-    border: 2px solid #66BB6A; /* Рамка чуть темнее */
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    font-size: 20px;
+    color: #e2e8f0;
+    font-weight: 500;
+    border: 2px solid #22d3ee;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
 }
 
 .chat-avatar img {
     width: 100%;
     height: 100%;
-    border-radius: 50%;
     object-fit: cover;
-    border: none; /* Убираем границы у изображения */
 }
 
+/* Онлайн статус */
+.chat-status-indicator-online {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 14px;
+    height: 14px;
+    background-color: #22c55e;
+    border-radius: 50%;
+    border: 2.5px solid rgba(30, 41, 59, 0.95);
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.4);
+    z-index: 10;
+}
+
+/* Информация о чате */
 .chat-info {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
 }
@@ -79,95 +108,126 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 3px;
 }
 
 .chat-name-list-item {
-    font-size: 20px;
-    color: #424242; /* Темно-серый, как в UserProfile */
-    background-color: transparent;
-    border: none; /* Убираем границы у текста */
-    text-decoration: none;
-    font-weight: 500; /* Полужирный для акцента */
+    font-size: 17px;
+    font-weight: 500;
+    color: #f1f5f9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
 }
 
+.secret-chat-icon {
+    color: #f59e0b;
+    margin-right: 6px;
+    font-size: 15px;
+}
+
+/* Непрочитанные сообщения */
+.unread-indicator {
+    background-color: #ef4444;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    padding: 0 7px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Нижняя строка (последнее сообщение + время) */
 .chat-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 4px;
+    gap: 10px;
 }
 
 .last-message {
-    font-size: 14px;
-    color: #666666;
-    max-width: 70%;
+    font-size: 14.5px;
+    color: #94a3b8;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex: 1;
+    line-height: 1.3;
 }
 
 .timestamp {
-    font-size: 12px;
-    color: #666666;
+    font-size: 12.5px;
+    color: #64748b;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
-.unread-indicator {
-    /*background-color: #81C784;*/
-    background-color: #FF5722;
-    color: #FFFFFF;
-    border-radius: 12px;
-    padding: 2px 8px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
+/* Контекстное меню */
 .context-menu {
     position: absolute;
-    background: #FFFFFF;
-    border: 1px solid #A5D6A7; /* Зеленая рамка */
-    border-radius: 5px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    background: rgba(15, 23, 42, 0.98);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
     z-index: 1000;
-    padding: 8px;
+    padding: 6px 0;
+    min-width: 160px;
+    backdrop-filter: blur(8px);
 }
 
 .context-menu button {
     background: none;
     border: none;
-    cursor: pointer;
-    padding: 6px 10px;
     width: 100%;
+    padding: 10px 16px;
     text-align: left;
-    color: #2E7D32; /* Зеленый текст */
-    transition: background-color 0.2s ease;
+    color: #f87171;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .context-menu button:hover {
-    background-color: #F1F8E9; /* Светло-зеленый фон */
+    background-color: rgba(248, 113, 113, 0.15);
+    color: #fca5a5;
 }
 
-.chat-status-indicator-online {
-    position: absolute;
-    bottom: 0 !important; /* На ободе аватара */
-    right: 0 !important; /* На ободе аватара */
-    width: 10px;
-    height: 10px;
-    background-color: #4CAF50 !important;
-    border-radius: 50%;
-    border: 2px solid #DCEDC8; /* Фон контейнера */
-    z-index: 10 !important;
-    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3) !important;
-}
+/* Мобильная версия */
+@media (max-width: 768px) {
+    .personal-chats-container {
+        padding: 16px;
+        margin: 12px;
+        border-radius: 14px;
+        min-height: auto;
+    }
 
-.Toastify__toast-container {
-    z-index: 9999 !important;
-    position: fixed !important;
-    top: 10px !important;
-    right: 10px !important;
-}
+    .custom-h1 {
+        font-size: 23px;
+        margin-bottom: 18px;
+    }
 
-.secret-chat-icon {
-    margin-right: 5px;
-    font-size: 14px;
+    .chat-item1 {
+        padding: 12px 14px;
+    }
+
+    .chat-avatar {
+        width: 48px;
+        height: 48px;
+        font-size: 18px;
+    }
+
+    .chat-name-list-item {
+        font-size: 16.5px;
+    }
+
+    .last-message {
+        font-size: 14px;
+    }
 }
 

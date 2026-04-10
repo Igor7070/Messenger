@@ -3020,8 +3020,8 @@ const SecretPrivateChat = () => {
                     <div className="secret-message-status">
                       {msg.sender.id === userId && (
                         <>
-                          {msg.delivered && <span className="secret-delivery-indicator">✔️</span>}
-                          {msg.read && <span className="secret-read-indicator">✔️</span>}
+                          {msg.delivered && <span className="secret-delivery-indicator">✔</span>}
+                          {msg.read && <span className="secret-read-indicator">✔</span>}
                         </>
                       )}
                     </div>

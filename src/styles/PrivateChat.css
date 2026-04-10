@@ -5,42 +5,43 @@
     flex-direction: column;
     padding: 20px;
     border-radius: 10px;
-    background-color: #D7E0E6;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    background-color: #0f172a;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
     font-family: 'Roboto', sans-serif;
     max-width: 800px;
     margin: 20px auto;
-    z-index: 1; /* Низкий z-index */
+    z-index: 1;
 }
 
 .private-chat-name {
   font-family: 'Inter', 'Open Sans', sans-serif;
   font-size: 20px;
   font-weight: 600;
-  color: #333333;
-  padding: 8px;
-  background-color: #FFFFFF;
-  border-radius: 5px;
+  color: #f1f5f9;
+  padding: 12px 16px;
+  background-color: #1e2937;
+  border-radius: 8px;
   text-align: center;
   margin-bottom: 15px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   letter-spacing: 0.2px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  display: flex; /* Добавлено */
-  align-items: center; /* Добавлено */
-  justify-content: center; /* Добавлено */
-  position: relative; /* Добавлено */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
 .private-message-list {
-    border: 1px solid #D8DCE0;
+    border: 1px solid rgba(148, 163, 184, 0.15);
     padding: 10px;
     height: 540px;
     overflow-y: scroll;
     margin-bottom: 15px;
-    background-color: #E8ECEF;
+    background-color: #0f172a;
     border-radius: 5px;
     display: flex;
     flex-direction: column;
@@ -52,12 +53,12 @@
 }
 
 .private-message-list::-webkit-scrollbar-thumb {
-    background-color: #B0BEC5;
+    background-color: rgba(148, 163, 184, 0.4);
     border-radius: 4px;
 }
 
 .private-message-list::-webkit-scrollbar-track {
-    background-color: #E8ECEF;
+    background-color: #0f172a;
 }
 
 .private-message {
@@ -98,7 +99,7 @@
     height: 35px;
     border-radius: 50%;
     object-fit: cover;
-    background-color: #B0BEC5;
+    background-color: #475569;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -113,20 +114,23 @@
     min-width: 0;
     padding: 8px;
     border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
     word-wrap: break-word;
     overflow-wrap: break-word;
     white-space: pre-wrap;
     box-sizing: border-box;
 }
 
+/* === СВОИ СООБЩЕНИЯ === */
 .private-message.private-current-user .private-message-content-container {
-    background-color: #DCF8C6 !important;
+    background-color: #6366f1 !important;
+    color: #f1f5f9 !important;                /* комфортный мягкий белый */
     border-radius: 12px;
     margin-right: 10px;
     max-width: calc(80% - 10px);
     width: 100%;
     box-sizing: border-box;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 .private-message.private-current-user.first-message .private-message-content-container {
@@ -138,7 +142,8 @@
 }
 
 .private-message.private-other-user .private-message-content-container {
-    background-color: #ECE0F8 !important;
+    background-color: #1e2937 !important;
+    color: #f1f5f9 !important;
     border-radius: 0 12px 12px 12px;
     margin-left: 0;
 }
@@ -151,11 +156,55 @@
     margin-left: 45px !important;
 }
 
+/* Основной текст сообщений */
+.private-message-content,
+.private-original-content,
+.private-translated-content,
+.private-transcribed-content {
+    color: #f1f5f9 !important;
+    line-height: 1.45;
+    font-weight: 400 !important;     /* нормальная жирность */
+}
+
+.private-message.private-current-user .private-message-content,
+.private-message.private-current-user .private-original-content,
+.private-message.private-current-user .private-translated-content,
+.private-message.private-current-user .private-transcribed-content {
+    color: #f1f5f9 !important;
+    font-weight: 400 !important;     /* нормальная жирность на ПК */
+}
+
+/* Время и статус */
+.private-message-status {
+    display: flex;
+    gap: 4px;
+    margin-top: 2px;
+    justify-content: flex-end;
+    font-size: 12px;
+    background: transparent !important;
+    color: #94a3b8;
+}
+
+.private-message-timestamp {
+    font-size: 12px;
+    color: #94a3b8;
+    text-align: right;
+    margin-top: 2px;
+    font-family: 'Roboto', sans-serif;
+    background: transparent !important;
+}
+
+/* Галочки у своих сообщений — новый подходящий оттенок */
+.private-message.private-current-user .private-message-timestamp,
+.private-message.private-current-user .private-message-status {
+    color: #c7d2fe !important;
+}
+
 .private-message-body {
   background: transparent !important;
   display: flex;
   flex-direction: column;
-  padding: 0 8px; /* Убираем padding-left, оставляем правый для симметрии */
+  padding: 0 8px;
   position: relative;
   box-sizing: border-box;
 }
@@ -164,20 +213,20 @@
   display: inline-block;
   word-break: break-word;
   margin: 0;
-  padding: 0 0 0 18px; /* ИЗМЕНЕНО: Добавлен отступ слева для учета иконок */
+  padding: 0 0 0 18px;
   line-height: 1.4;
 }
 
 .private-message-content.translate-enabled,
 .private-message-content.tts-enabled {
-  padding-left: 28px; /* ИЗМЕНЕНО: Синхронизированный отступ */
+  padding-left: 28px;
 }
 
 .private-file-link {
   display: block;
   margin-top: 5px;
-  padding-left: 18px; /* ИЗМЕНЕНО: Добавлен отступ слева для учета иконок */
-  color: #0288d1;
+  padding-left: 18px;
+  color: #60a5fa;
   text-decoration: none;
   font-size: 14px;
   background: transparent !important;
@@ -185,70 +234,83 @@
 
 .private-file-link.translate-enabled,
 .private-file-link.tts-enabled {
-  padding-left: 28px; /* ИЗМЕНЕНО: Синхронизированный отступ */
+  padding-left: 28px;
 }
 
 .private-file-link:hover {
     text-decoration: underline;
 }
 
-.private-message-status {
-    display: flex;
-    gap: 4px;
-    margin-top: 2px;
-    justify-content: flex-end;
-    font-size: 12px;
-    background: transparent !important;
-    color: #666666;
+/* === ПРЕВЬЮ ССЫЛОК === */
+.message-link {
+  color: #60a5fa !important;
+  text-decoration: none;
+  transition: all 0.15s ease;
 }
 
-.private-message-timestamp {
-    font-size: 12px;
-    color: #666666;
-    text-align: right;
-    margin-top: 2px;
-    font-family: 'Roboto', sans-serif;
-    background: transparent !important;
+.private-message.private-current-user .message-link {
+  color: #bae6fd !important;
 }
 
-.private-delivery-indicator,
-.private-read-indicator {
-    color: #666666;
+.private-message.private-current-user .message-link:hover,
+.private-message.private-current-user .message-link:active {
+  color: #ffffff !important;
+}
+
+.link-preview-card > div:nth-child(2) {
+  padding: 10px 12px 4px;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.4;
+  color: #f1f5f9 !important;
+}
+
+.link-preview-card > div:nth-child(3) {
+  padding: 0 12px 8px;
+  font-size: 13px;
+  color: #cbd5e1 !important;
+  line-height: 1.4;
+  max-height: 60px;
+  overflow: hidden;
+}
+
+.link-preview-card > div:last-child {
+  padding: 0 12px 8px;
+  font-size: 12px;
+  color: #94a3b8;
 }
 
 .private-input-container {
-    background-color: #F0F4F8;
-    padding: 10px; /* ИЗМЕНЕНО: Убедимся, что padding 10px со всех сторон */
+    background-color: rgba(15, 23, 42, 0.98);
+    padding: 10px;
     border-radius: 5px;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
     position: relative;
-    display: flex; /* ДОБАВЛЕНО: Flex для управления расположением */
-    flex-direction: column; /* ДОБАВЛЕНО: Вертикальное расположение элементов */
-    gap: 8px; /* ДОБАВЛЕНО: Зазор между textarea и button-container */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-/* ДОБАВЛЕНО: Стили для обертки textarea */
 .private-textarea-wrapper {
-    position: relative; /* Для позиционирования дочерних элементов */
+    position: relative;
     width: 100%;
     display: flex;
-    flex-direction: column; /* Вертикальное расположение для attached-file */
-    align-items: stretch; /* Растягиваем по ширине */
+    flex-direction: column;
+    align-items: stretch;
 }
 
-/* ДОБАВЛЕНО: Контейнер для текстового поля и иконок */
 .private-textarea-inner {
-    position: relative; /* Для абсолютного позиционирования иконок */
+    position: relative;
     display: flex;
-    align-items: center; /* Выравнивание иконок и текстового поля по центру */
+    align-items: center;
     width: 100%;
 }
 
 .private-attach-icon {
     position: absolute;
     left: 10px;
-    top: 50%; /* ИЗМЕНЕНО: Центрируем по вертикали */
-    transform: translateY(-50%); /* ИЗМЕНЕНО: Для центрирования */
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -259,34 +321,34 @@
 
 .private-input-message {
     width: 100%;
-    padding: 10px 44px 10px 44px; /* Изменено: padding-right увеличен для учета иконки отправки */
-    border: 1px solid #0288d1;
+    padding: 10px 44px 10px 44px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
     border-radius: 5px;
     resize: none;
     box-sizing: border-box;
     min-height: 44px;
     font-size: 16px;
-    background-color: #FFFFFF;
+    background-color: #1e2937;
     font-family: 'Roboto', sans-serif;
     transition: border-color 0.3s;
     max-height: 120px;
     overflow-y: hidden;
     display: block;
+    color: #e2e8f0;
 }
 
 .private-input-message:focus {
-    border-color: #01579b;
+    border-color: #3b82f6;
     outline: none;
 }
 
-/* ДОБАВЛЕНО: Стиль для включения скроллбара при 5+ строках */
 .private-input-message.scroll-enabled {
-    overflow-y: auto; /* Включаем скроллбар при 5+ строках */
+    overflow-y: auto;
 }
 
 .private-button-container {
     display: flex;
-    justify-content: flex-end; /* ИЗМЕНЕНО: Выравнивание только кнопки отправки вправо */
+    justify-content: flex-end;
 }
 
 .private-file-input {
@@ -297,7 +359,7 @@
     flex: 1;
     padding: 8px;
     height: 36px;
-    background-color: #42a5f5;
+    background-color: #3b82f6;
     color: #FFFFFF;
     border: none;
     border-radius: 5px;
@@ -313,14 +375,14 @@
 }
 
 .private-send-button:hover {
-    background-color: #1976d2;
+    background-color: #2563eb;
 }
 
 .private-context-menu {
     position: absolute;
-    background: #FFFFFF;
-    border: 1px solid #ccc;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    background: #1e2937;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
     z-index: 1000;
 }
 
@@ -333,10 +395,11 @@
     width: 100%;
     text-align: left;
     font-size: 14px;
+    color: #e2e8f0;
 }
 
 .private-context-menu button:hover {
-    background-color: #F0F0F0;
+    background-color: rgba(148, 163, 184, 0.15);
 }
 
 .private-avatar-wrapper {
@@ -352,7 +415,7 @@
     height: 10px;
     background-color: #4CAF50;
     border-radius: 50%;
-    border: 2px solid #F0F4F8; /* Цвет фона .private-chat для обводки */
+    border: 2px solid #0f172a;
 }
 
 .Toastify__toast-container {
@@ -365,11 +428,11 @@
 .private-translation-controls {
   display: flex;
   align-items: center;
-  justify-content: flex-end; /* Добавлено для явного выравнивания вправо */
+  justify-content: flex-end;
   gap: 8px;
   position: absolute;
   right: 12px;
-  height: 100%; /* Убедимся, что контейнер занимает всю высоту родителя */
+  height: 100%;
 }
 
 .private-tts-button,
@@ -382,12 +445,12 @@
   padding: 4px;
   position: relative;
   transition: color 0.3s ease, transform 0.2s ease;
-  display: flex; /* Добавлено: Flex для центрирования эмодзи */
-  align-items: center; /* Добавлено: Вертикальное центрирование */
-  justify-content: center; /* Добавлено: Горизонтальное центрирование */
-  line-height: 1; /* Добавлено: Нормализация высоты строки для эмодзи */
-  height: 28px; /* Добавлено: Фиксированная высота для единообразия */
-  width: 28px; /* Добавлено: Фиксированная ширина для единообразия */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  height: 28px;
+  width: 28px;
 }
 
 .private-translation-button:hover,
@@ -395,7 +458,6 @@
   transform: scale(1.1);
 }
 
-/* Стили для всплывающих подсказок */
 .private-translation-button[data-tooltip],
 .private-spellcheck-button[data-tooltip] {
   position: relative;
@@ -429,7 +491,6 @@
   visibility: visible;
 }
 
-/* Стрелка для tooltip */
 .private-translation-button[data-tooltip]::before,
 .private-spellcheck-button[data-tooltip]::before {
   content: '';
@@ -451,12 +512,12 @@
 }
 
 .private-translation-indicator,
-.private-spellcheck-indicator { /* Новые стили */
+.private-spellcheck-indicator {
   font-size: 14px;
-  color: #42a5f5;
+  color: #60a5fa;
   font-weight: 500;
   font-family: 'Inter', sans-serif;
-  background: rgba(66, 165, 245, 0.1);
+  background: rgba(96, 165, 250, 0.15);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -465,7 +526,6 @@
   transform: scale(1.1);
 }
 
-/* ДОБАВЛЕНО: Стили для всплывающей подсказки кнопки озвучивания */
 .private-tts-button[data-tooltip] {
   position: relative;
 }
@@ -496,7 +556,6 @@
   visibility: visible;
 }
 
-/* ДОБАВЛЕНО: Стрелка для tooltip кнопки озвучивания */
 .private-tts-button[data-tooltip]::before {
   content: '';
   position: absolute;
@@ -515,18 +574,17 @@
   visibility: visible;
 }
 
-/* ДОБАВЛЕНО: Стили для индикатора озвучивания */
 .private-tts-indicator {
   font-size: 14px;
-  color: #42a5f5;
+  color: #60a5fa;
   font-weight: 500;
   font-family: 'Inter', sans-serif;
-  background: rgba(66, 165, 245, 0.1);
+  background: rgba(96, 165, 250, 0.15);
   padding: 2px 6px;
   border-radius: 4px;
 }
 
-.private-original-content { /* Изменено */
+.private-original-content {
   display: block;
   font-family: 'Roboto', sans-serif;
   font-size: 16px;
@@ -537,16 +595,15 @@
   display: block;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
-  color: #666;
-  margin-bottom: 4px; /* Отступ снизу для аудиосообщений, чтобы отделить от аудиоплеера */
+  color: #94a3b8;
+  margin-bottom: 4px;
   line-height: 1.4;
 }
 
-/* ДОБАВЛЕНО: Стили для иконки микрофона и аудиосообщений */
 .private-mic-icon-container {
     position: absolute;
     right: 10px;
-    top: 50%; /* Центрирование по вертикали относительно textarea-inner */
+    top: 50%;
     transform: translateY(-50%);
     display: flex;
     align-items: center;
@@ -558,8 +615,8 @@
 .private-send-icon-container {
     position: absolute;
     right: 10px;
-    top: 50%; /* ИЗМЕНЕНО: Центрируем по вертикали */
-    transform: translateY(-50%); /* ИЗМЕНЕНО: Для центрирования */
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -577,7 +634,7 @@
 }
 
 .private-send-icon:hover {
-    opacity: 0.8; /* Эффект при наведении */
+    opacity: 0.8;
 }
 
 .private-mic-icon {
@@ -587,10 +644,12 @@
     justify-content: center;
     width: 24px;
     height: 24px;
+    color: #67e8b5 !important;
 }
 
 .private-mic-icon.recording {
     cursor: pointer;
+    color: #ef4444 !important;
 }
 
 .private-mic-icon.disabled {
@@ -599,13 +658,12 @@
 }
 
 .private-mic-icon.sending {
-    cursor: default; /* Отключаем курсор во время отправки */
+    cursor: default;
 }
 
-/* ИЗМЕНЕНО: Стили для аудиосообщений */
 .private-audio-message-container {
     display: flex;
-    flex-direction: column; /* Вертикальное расположение: перевод -> аудиоплеер -> транскрипция */
+    flex-direction: column;
     align-items: flex-start;
     width: 100%;
     max-width: 100%;
@@ -615,33 +673,37 @@
     display: none;
 }
 
-/* ДОБАВЛЕНО: Стили для аудиосообщений */
 .private-message.private-audio-message {
     border-radius: 12px;
-    background-color: #f0f0f0;
+    background-color: #1e2937;
 }
 
-/* Стили для обертки аудиоплеера */
 .private-audio-player-wrapper {
     display: flex;
     flex-direction: column;
-    width: 300px; /* ИЗМЕНЕНО: Фиксированная ширина для единообразия */
-    max-width: 300px; /* ИЗМЕНЕНО: Одинаковая максимальная ширина */
+    width: 300px;
+    max-width: 300px;
 }
 
-/* Стили для кастомных элементов управления */
 .private-audio-controls {
     display: flex;
     align-items: center;
     gap: 8px;
-    background-color: #ffffff;
     border-radius: 8px;
     padding: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    width: 100%; /* ДОБАВЛЕНО: Полная ширина внутри audio-player-wrapper */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    width: 100%;
 }
 
-/* Стили для кнопки воспроизведения/паузы */
+.private-message.private-current-user .private-audio-controls {
+    background-color: #1e2937 !important;
+}
+
+.private-message.private-other-user .private-audio-controls {
+    background-color: #334155 !important;
+}
+
+/* Кнопка play/pause — яркая и видимая */
 .private-audio-play-pause {
     background: none;
     border: none;
@@ -652,6 +714,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #67e8b5 !important;
 }
 
 .private-audio-play-pause:disabled {
@@ -659,104 +722,107 @@
     opacity: 0.5;
 }
 
-/* Стили для прогресс-бара */
+/* Прогресс-бар */
 .private-audio-progress-bar {
     flex: 1;
     height: 6px;
-    background-color: #e0e0e0;
     border-radius: 3px;
     position: relative;
     cursor: pointer;
 }
 
-/* Стили для заполненной части прогресс-бара */
+/* Для СВОИХ сообщений — светлее дорожка (чтобы была хорошо видна на #6366f1) */
+.private-message.private-current-user .private-audio-progress-bar {
+    background-color: #4b5563 !important;   /* средне-серый — хорошо контрастирует */
+}
+
+/* Для ЧУЖИХ сообщений — тёмная дорожка (как было) */
+.private-message.private-other-user .private-audio-progress-bar {
+    background-color: #1e2937 !important;
+}
+
 .private-audio-progress {
     height: 100%;
-    background-color: #42a5f5;
+    background-color: #3b82f6;
     border-radius: 3px;
     transition: width 0.1s ease;
-    position: relative; /* Для позиционирования ползунка */
+    position: relative;
 }
 
-/* Стили для отображения времени */
 .private-audio-time {
     font-size: 12px;
-    color: #666666;
+    color: #94a3b8;
     font-family: 'Roboto', sans-serif;
     min-width: 60px;
-    text-align: right; /* ДОБАВЛЕНО: Выравнивание для лучшего размещения */
+    text-align: right;
 }
 
-/* Стили для ошибок аудио */
 .private-audio-error {
     font-size: 12px;
-    color: #d32f2f;
+    color: #f87171;
     font-family: 'Roboto', sans-serif;
     padding: 8px;
 }
 
-/* ДОБАВЛЕНО: Стили для отправленных и полученных аудиосообщений */
 .private-message.private-current-user .private-audio-message-container,
 .private-message.private-other-user .private-audio-message-container {
-    width: 100%; /* Убедимся, что контейнер аудио занимает всю ширину */
+    width: 100%;
 }
 
 .private-message.private-current-user .private-audio-player-wrapper,
 .private-message.private-other-user .private-audio-player-wrapper {
-    width: 300px; /* Фиксированная ширина для единообразия */
+    width: 300px;
     max-width: 300px;
 }
 
-/* ДОБАВЛЕНО: Стили для ползунка прогресс-бара */
 .private-audio-progress-thumb {
     position: absolute;
-    right: -6px; /* Ползунок выравнивается по правому краю прогресс-бара */
+    right: -6px;
     top: 50%;
     transform: translateY(-50%);
     width: 12px;
     height: 12px;
-    background-color: #42a5f5;
+    background-color: #3b82f6;
     border-radius: 50%;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     cursor: pointer;
     transition: background-color 0.2s ease;
 }
 
 .private-audio-progress-thumb:hover,
 .private-audio-progress-bar:hover .private-audio-progress-thumb {
-    background-color: #1976d2;
+    background-color: #2563eb;
 }
 
-/* ДОБАВЛЕНО: Стили для отображения прикреплённого файла */
 .private-attached-file {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-top: 8px;
     padding: 5px 10px;
-    background-color: #e8ecef;
+    background-color: #1e2937;
     border-radius: 5px;
-    max-width: calc(100% - 88px); /* Учитываем padding текстового поля и иконки */
-    margin-left: 44px; /* Учитываем attach-icon и padding */
-    margin-right: 44px; /* Учитываем mic-icon или send-icon и padding */
+    max-width: calc(100% - 88px);
+    margin-left: 44px;
+    margin-right: 44px;
     overflow: hidden;
 }
 
 .private-attached-file-name {
     font-size: 14px;
-    color: #333333;
+    color: #e2e8f0;
     font-family: 'Roboto', sans-serif;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: calc(100% - 30px); /* Учитываем ширину кнопки удаления */
+    max-width: calc(100% - 30px);
 }
 
 .private-remove-file-button {
     background: none;
     border: none;
     font-size: 14px;
-    color: #d32f2f;
+    color: #f87171;
     cursor: pointer;
     padding: 0;
     width: 20px;
@@ -767,58 +833,53 @@
 }
 
 .private-remove-file-button:hover {
-    color: #b71c1c;
+    color: #ef4444;
 }
 
-/* Стили для кнопки перевода в сообщении */
 .private-message-translate-button {
   background: none;
   border: none;
-  font-size: 12px; /* ДОБАВЛЕНО: Уменьшенный размер для ненавязчивости */
+  font-size: 12px;
   cursor: pointer;
-  padding: 0; /* ИЗМЕНЕНО: Убраны отступы, чтобы не влиять на контейнер */
+  padding: 0;
   position: absolute;
-  bottom: 0; /* ИЗМЕНЕНО: Прижато к нижнему краю */
-  left: 2px; /* ИЗМЕНЕНО: Прижато к левому краю с минимальным отступом */
-  color: #42a5f5;
+  bottom: 0;
+  left: 2px;
+  color: #60a5fa;
   transition: color 0.3s ease, transform 0.2s ease;
-  opacity: 0.6; /* ИЗМЕНЕНО: Ещё менее заметна, но видна */
+  opacity: 0.6;
   z-index: 10;
-  line-height: 1; /* ДОБАВЛЕНО: Убираем влияние высоты строки */
+  line-height: 1;
 }
 
 .private-message-translate-button:hover {
-  color: #1976d2;
+  color: #3b82f6;
   transform: scale(1.1);
   opacity: 1;
 }
 
-/* Стили для всплывающей подсказки */
 .private-message-translate-button[data-tooltip] {
   position: relative;
 }
 
-/* Стили для нового контейнера private-message-content-wrapper */
 .private-message-content-wrapper {
   display: block;
   width: 100%;
-  padding: 0; /* ДОБАВЛЕНО: Убираем возможные отступы */
+  padding: 0;
 }
 
-/* Стили для private-message-translate-container */
 .private-message-translate-container {
-  width: 16px; /* ИЗМЕНЕНО: Фиксированная ширина для иконки */
-  height: 16px; /* ИЗМЕНЕНО: Фиксированная высота для иконки */
+  width: 16px;
+  height: 16px;
 }
 
-/* Стили для кнопки перевода */
 .private-message-translate-container .private-message-translate-button {
   background: none;
   border: none;
   font-size: 12px;
   cursor: pointer;
   padding: 2px;
-  color: #42a5f5;
+  color: #60a5fa;
   transition: color 0.3s ease, transform 0.2s ease;
   opacity: 0.6;
   line-height: 1;
@@ -830,14 +891,12 @@
   justify-content: center;
 }
 
-/* Специфичность для аудиосообщений */
 .private-message-audio-message .private-message-translate-container .private-message-translate-button {
-  position: static; /* Отключаем абсолютное позиционирование только для аудиосообщений */
+  position: static;
 }
 
-/* Ховер-эффект */
 .private-message-translate-container .private-message-translate-button:hover {
-  color: #1976d2;
+  color: #3b82f6;
   transform: scale(1.1);
   opacity: 1;
 }
@@ -846,7 +905,7 @@
 .private-message-transcription-container .private-message-transcription-button[data-tooltip]::after,
 .private-message-tts-container .private-message-tts-button[data-tooltip]::after,
 .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::after {
-  display: none; /* Отключаем псевдоэлементы, так как используем JS */
+  display: none;
 }
 
 .private-message-translate-container .private-message-translate-button[data-tooltip]:hover::after,
@@ -857,12 +916,11 @@
   visibility: visible;
 }
 
-/* Стрелка для tooltip */
 .private-message-translate-container .private-message-translate-button[data-tooltip]::before,
 .private-message-transcription-container .private-message-transcription-button[data-tooltip]::before,
 .private-message-tts-container .private-message-tts-button[data-tooltip]::before,
 .private-message-tts-translated-container .private-message-tts-translated-button[data-tooltip]::before {
-  display: none; /* Отключаем псевдоэлементы, так как используем JS */
+  display: none;
 }
 
 .private-message-translate-container .private-message-translate-button[data-tooltip]:hover::before,
@@ -873,9 +931,8 @@
   visibility: visible;
 }
 
-/* Добавляем класс для динамических подсказок, чтобы сохранить стили */
 .tooltip-dynamic {
-  position: fixed; /* Изменено на fixed для позиционирования в body */
+  position: fixed;
   background-color: #333333;
   color: #FFFFFF;
   font-family: 'Inter', sans-serif;
@@ -885,7 +942,7 @@
   border-radius: 4px;
   white-space: nowrap;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 100000; /* Очень высокий z-index */
+  z-index: 100000;
   min-width: 80px;
   text-align: center;
   opacity: 1;
@@ -893,7 +950,6 @@
   transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
-/* Стрелка для динамической подсказки */
 .tooltip-dynamic-arrow {
   position: fixed;
   border: 4px solid transparent;
@@ -901,40 +957,27 @@
   z-index: 100000;
 }
 
-/* Обновление стилей для private-message-body */
 .private-message-body {
   background: transparent !important;
   display: flex;
   flex-direction: column;
-  padding: 0 8px; /* Убираем padding-left, оставляем правый для симметрии */
+  padding: 0 8px;
   position: relative;
   box-sizing: border-box;
 }
 
-/* Обновление стилей для private-message-content-container */
 .private-message-content-container {
   display: block;
   max-width: 80%;
   min-width: 0;
-  padding: 4px; /* Уменьшено с 8px */
+  padding: 4px;
   border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
   box-sizing: border-box;
-  position: relative; /* Для привязки translate-container */
-}
-
-/* Обновление стилей для сообщений */
-.private-message.private-current-user .private-message-content-container {
-  background-color: #DCF8C6 !important;
-  border-radius: 12px;
-  margin-right: 10px;
-  max-width: calc(80% - 10px);
-  width: 100%;
-  box-sizing: border-box;
-  padding: 4px;
+  position: relative;
 }
 
 .private-message.private-current-user.first-message .private-message-content-container {
@@ -947,26 +990,23 @@
 }
 
 .private-message.private-other-user .private-message-content-container {
-  background-color: #ECE0F8 !important;
   border-radius: 0 12px 12px 12px;
   margin-left: 0;
   padding: 4px;
 }
 
 .private-message-content-container.no-avatar {
-    margin-left: 45px !important; /* Синхронизировано с шириной аватара (35px) + margin-right (10px) */
+    margin-left: 45px !important;
 }
 
-/* Защита текста от перекрытия */
 .private-message-content {
   display: inline-block;
   word-break: break-word;
   margin: 0;
-  padding: 0; /* Базовый отступ 0 */
+  padding: 0;
   line-height: 1.4;
 }
 
-/* ДОБАВЛЕНО: Стили для контейнера действий (перевод и TTS) */
 .private-message-actions-container {
   position: absolute;
   top: 4px;
@@ -977,22 +1017,20 @@
   z-index: 100;
 }
 
-/* ДОБАВЛЕНО: Стили для контейнера иконки TTS */
 .private-message-tts-container {
-  width: 16px; /* ИЗМЕНЕНО: Фиксированная ширина для иконки */
-  height: 16px; /* ИЗМЕНЕНО: Фиксированная высота для иконки */
+  width: 16px;
+  height: 16px;
 }
 
-/* ДОБАВЛЕНО: Стили для кнопки TTS в сообщениях */
 .private-message-tts-container .private-message-tts-button {
   background: none;
   border: none;
   font-size: 12px;
   cursor: pointer;
   padding: 2px;
-  color: #42a5f5;
+  color: #bae6fd !important;        /* светлый голубоватый, хорошо видимый */
   transition: color 0.3s ease, transform 0.2s ease;
-  opacity: 0.6;
+  opacity: 0.85;
   line-height: 1;
   z-index: 101;
   width: 16px;
@@ -1002,75 +1040,63 @@
   justify-content: center;
 }
 
-/* Специфичность для аудиосообщений */
 .private-message-audio-message .private-message-tts-container .private-message-tts-button {
-  position: static; /* Отключаем абсолютное позиционирование только для аудиосообщений */
+  position: static;
 }
 
 .private-message-tts-container .private-message-tts-button:hover {
-  color: #1976d2;
+  color: #3b82f6;
   transform: scale(1.1);
   opacity: 1;
 }
 
-/* ДОБАВЛЕНО: Стили для контейнера иконки TTS переведенного текста */
 .private-message-tts-translated-container {
-  width: 18px; /* Убрать фиксированную ширину */
-  height: 18px; /* Убрать фиксированную высоту */
+  width: 18px;
+  height: 18px;
 }
 
-/* ДОБАВЛЕНО: Стили для кнопки TTS переведенного текста */
-.private-message-tts-translated-container .private-message-tts-translated-button {
+.private-message-tts-translated-container .private-message-tts-translated-button {      
   background: none;
   border: none;
   cursor: pointer;
   padding: 2px;
-  color: #4a148c;
+  color: #1e2937 !important;
+  opacity: 0.95;
   transition: color 0.3s ease, transform 0.2s ease;
-  opacity: 0.8;
   line-height: 1;
   z-index: 101;
-  width: 18px; /* Уменьшено для согласованности */
-  height: 18px; /* Уменьшено для согласованности */
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Специфичность для аудиосообщений */
-.private-message-audio-message .private-message-tts-translated-container .private-message-tts-translated-button {
-  position: static; /* Отключаем абсолютное позиционирование только для аудиосообщений */
+.private-message.private-current-user .private-message-tts-translated-container .private-message-tts-translated-button {
+  color: #111827 !important;
 }
 
-.private-message-tts-translated-container .private-message-tts-translated-button:hover {
-  color: #2e0a54;
-  transform: scale(1.2);
-  opacity: 1;
+.private-message.private-current-user .private-message-tts-translated-container .private-message-tts-translated-button:hover {
+  color: #02040a !important;
+  transform: scale(1.25) !important;
 }
 
-/* Минимальная высота для текстовых сообщений с TTS перевода */
 .private-message-content-container:has(.private-message-tts-translated-container) {
-  min-height: 65px; /* 16px * 3 иконки + 2px * 2 gap + 4px * 2 padding + 5px резерв */
+  min-height: 65px;
 }
 
-/* Минимальная высота для аудиосообщений с TTS перевода */
 .private-message-audio-message .private-message-content-container:has(.private-message-tts-translated-container) {
-  min-height: 100px; /* 16px * 3 иконки + 2px * 2 gap + 4px * 2 padding + 40px (аудиоплеер) + 20px (перевод) + 20px (транскрипция) */
+  min-height: 100px;
 }
 
-/* Минимальная высота для аудиосообщений с транскрипцией */
 .private-message-audio-message .private-message-content-container:has(.private-message-transcription-container) {
-   min-height: auto; /* Подстраивается под содержимое */
+   min-height: auto;
 }
 
 .private-message-tts-translated-container .private-message-tts-translated-button svg {
   width: 18px;
   height: 18px;
-  fill: #4a148c;
-}
-
-.private-message-tts-translated-container .private-message-tts-translated-button:hover svg {
-  fill: #2e0a54;
+  fill: currentColor !important;
 }
 
 .private-transcription-controls {
@@ -1153,28 +1179,26 @@
 
 .private-transcription-indicator {
   font-size: 14px;
-  color: #42a5f5;
+  color: #60a5fa;
   font-weight: 500;
   font-family: 'Inter', sans-serif;
-  background: rgba(66, 165, 245, 0.1);
+  background: rgba(96, 165, 250, 0.15);
   padding: 2px 6px;
   border-radius: 4px;
 }
 
-/* Стили для контейнера иконки транскрипции */
 .private-message-transcription-container {
   width: 16px;
   height: 16px;
 }
 
-/* Стили для кнопки транскрипции в сообщениях */
 .private-message-transcription-container .private-message-transcription-button {
   background: none;
   border: none;
   font-size: 12px;
   cursor: pointer;
   padding: 2px;
-  color: #42a5f5;
+  color: #60a5fa;
   transition: color 0.3s ease, transform 0.2s ease;
   opacity: 0.6;
   line-height: 1;
@@ -1187,65 +1211,61 @@
 }
 
 .private-message-transcription-container .private-message-transcription-button:hover {
-  color: #1976d2;
+  color: #3b82f6;
   transform: scale(1.1);
   opacity: 1;
 }
 
-/* Минимальная высота для контейнера сообщения при наличии транскрипции */
 .private-message-content-container:has(.private-message-transcription-container) {
   min-height: 30px;
 }
 
-/* ДОБАВЛЕНО: Динамический отступ слева для аудиосообщений с иконкой транскрипции */
 .private-message-content-container:has(.private-message-transcription-container) .private-audio-player-wrapper {
-  padding-left: 24px; /* Отступ слева для проигрывателя, чтобы избежать наложения */
+  padding-left: 24px;
 }
 
-/* ДОБАВЛЕНО: Стили для транскрипции в аудиосообщениях */
 .private-transcribed-content {
   display: block;
   font-family: 'Roboto', sans-serif;
   font-size: 16px;
   line-height: 1.4;
-  color: #333333;
+  color: #e2e8f0;
   margin-top: 4px;
   width: 100%;
   max-width: 300px;
   box-sizing: border-box;
-  padding-left: 24px; /* Добавлено: Отступ слева, чтобы выровнять по левому краю .private-audio-player-wrapper */
+  padding-left: 24px;
 }
 
 .private-message.private-audio-message .private-translated-content {
   display: block;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
-  color: #666;
+  color: #94a3b8;
   margin-bottom: 4px;
   line-height: 1.4;
   width: 100%;
   max-width: 300px;
   box-sizing: border-box;
-  padding-left: 24px; /* Добавлено: Отступ слева, чтобы выровнять по левому краю .private-audio-player-wrapper */
+  padding-left: 24px;
 }
 
 .private-message.private-audio-message .private-message-content-container:has(.private-message-tts-translated-container),
 .private-message.private-audio-message .private-message-content-container:has(.private-message-transcription-container) {
-    min-height: auto; /* Подстраивается под содержимое */
-    padding-bottom: 20px; /* Дополнительный отступ снизу для иконок */
+    min-height: auto;
+    padding-bottom: 20px;
 }
 
 .private-message.private-audio-message .private-message-content-container {
-    width: auto; /* Подстраивается под содержимое */
-    min-width: 340px; /* Аудиоплеер (300px) + padding (8px * 2) + отступ для иконок (24px) */
-    max-width: none; /* Убираем ограничение ширины */
-    min-height: auto; /* Подстраивается под содержимое */
-    padding: 8px 8px 8px 4px; /* Левый отступ для иконок */
+    width: auto;
+    min-width: 340px;
+    max-width: none;
+    min-height: auto;
+    padding: 8px 8px 8px 4px;
     box-sizing: border-box;
-    overflow: visible; /* Позволяем иконкам отображаться */
+    overflow: visible;
 }
 
-/* Скрываем мобильное имя на ПК */
 .private-chat-name-mobile {
   display: none !important;
 }
@@ -1263,13 +1283,12 @@
   display: none !important;
 }
 
-/* Не задействован */
 .typing-indicator {
   padding: 8px 16px;
   font-size: 14px;
-  color: #42a5f5;
+  color: #60a5fa;
   font-style: italic;
-  background: rgba(66, 165, 245, 0.1);
+  background: rgba(96, 165, 250, 0.15);
   border-radius: 12px;
   margin: 8px 16px;
   align-self: flex-start;
@@ -1277,13 +1296,11 @@
   animation: typing 1.5s infinite;
 }
 
-/* Не задействован */
 @keyframes typing {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
 
-/* Минимальные стили для нового аватара + имени — не трогаем старые absolute */
 .header-content {
   display: flex;
   align-items: center !important;     
@@ -1297,7 +1314,7 @@
   display: flex;
   align-items: center;                
   justify-content: center;
-  height: 100%;                       /* аватар занимает всю высоту строки */
+  height: 100%;
 }
 
 .partner-avatar {
@@ -1312,7 +1329,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #757575;
+  background: #475569;
   color: white;
   display: flex;
   align-items: center;
@@ -1324,43 +1341,42 @@
 .partner-info {
   display: flex;
   flex-direction: column;
-  justify-content: center;             /* оставляем для вертикального центрирования */
-  align-items: flex-start !important;  /* ← выравнивание по левому краю */
+  justify-content: center;
+  align-items: flex-start !important;
   height: 100%;
   margin: 0 !important;
-  text-align: left !important;         /* на всякий случай */
+  text-align: left !important;
 }
 
 .partner-name {
   font-size: 18px;
   font-weight: 600;
-  color: #333333;
+  color: #f1f5f9;
 }
 
 .typing-text {
-  color: #42a5f5 !important;
+  color: #60a5fa !important;
   margin-top: 0 !important;
   line-height: 1.1 !important;
   font-size: 14px !important;
-  text-align: left !important;         /* ← текст typing строго слева */
-  width: 100%;                         /* занимает всю ширину, чтобы не центрировался */
-  align-self: flex-start !important;   /* ← прижимает typing к левому краю */
+  text-align: left !important;
+  width: 100%;
+  align-self: flex-start !important;
 }
 
-/* ДОБАВЛЕНО: Превью ссылок */
 .link-preview-card {
   margin: 8px 0 4px 0;
   border-radius: 8px;
   overflow: hidden;
-  background: #ffffff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  border: 1px solid #e0e0e0;
+  background: #1e2937;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .link-preview-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   transform: translateY(-1px);
 }
 
@@ -1370,42 +1386,6 @@
   object-fit: cover;
 }
 
-.link-preview-card > div:nth-child(2) {
-  padding: 10px 12px 4px;
-  font-weight: 600;
-  font-size: 15px;
-  line-height: 1.4;
-  color: #1a1a1a;
-}
-
-.link-preview-card > div:nth-child(3) {
-  padding: 0 12px 8px;
-  font-size: 13px;
-  color: #555;
-  line-height: 1.4;
-  max-height: 60px;
-  overflow: hidden;
-}
-
-.link-preview-card > div:last-child {
-  padding: 0 12px 8px;
-  font-size: 12px;
-  color: #777;
-}
-
-.message-link {
-  color: #1e88e5 !important;
-  text-decoration: none;
-  transition: all 0.15s ease;
-}
-
-.message-link:hover,
-.message-link:active {
-  text-decoration: underline;
-  color: #1565c0 !important;
-}
-
-/* ─── Полноэкранное изображение ─── */
 .full-screen-image-overlay {
   position: fixed;
   inset: 0;
@@ -1478,20 +1458,19 @@
   background: rgba(0,0,0,0.75);
 }
 
-/* Превью изображения в сообщении */
 .image-preview-container {
   margin: 8px 0 4px 0;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
-  max-width: 280px; /* Ограничение ширины в личном чате */
+  max-width: 280px;
 }
 
 .image-preview-container:hover {
   transform: scale(1.015);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 
 .message-image-preview {
@@ -1504,7 +1483,7 @@
 
 .private-ai-icon {
     position: absolute;
-    right: 30px;                    /* ← твоё текущее значение — оставляем */
+    right: 30px;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
@@ -1514,15 +1493,15 @@
     height: 40px;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: #6200ea;
+    color: #60a5fa;
     border-radius: 50%;
     z-index: 10;
 }
 
 .private-ai-icon:hover {
-    background-color: rgba(98, 0, 234, 0.08);
-    transform: translateY(-50%) scale(1.15);   /* ← КЛЮЧ: сохраняем translateY перед scale */
-    box-shadow: 0 2px 8px rgba(98, 0, 234, 0.2); /* приятный бонус */
+    background-color: rgba(96, 165, 250, 0.12);
+    transform: translateY(-50%) scale(1.15);
+    box-shadow: 0 2px 8px rgba(96, 165, 250, 0.25);
 }
 
 .private-ai-icon svg {
@@ -1535,6 +1514,60 @@
 
 .private-ai-icon.hidden {
     display: none !important;
+}
+
+/* Для СВОИХ сообщений — тёмная иконка */
+.private-message.private-current-user .private-message-tts-translated-container .private-message-tts-translated-button {
+  color: #111827 !important;
+  opacity: 0.95 !important;
+}
+
+.private-message.private-current-user .private-message-tts-translated-container .private-message-tts-translated-button:hover {
+  color: #02040a !important;
+  transform: scale(1.25) !important;
+}
+
+/* Для ЧУЖИХ сообщений — светло-фиолетовая иконка (как было раньше) */
+.private-message.private-other-user .private-message-tts-translated-container .private-message-tts-translated-button {
+  color: #a78bfa !important;     /* светло-фиолетовый */
+  opacity: 0.9 !important;
+}
+
+.private-message.private-other-user .private-message-tts-translated-container .private-message-tts-translated-button:hover {
+  color: #c4b5fd !important;     /* чуть светлее при наведении */
+  transform: scale(1.2) !important;
+}
+
+/* SVG — всегда берёт цвет от кнопки */
+.private-message-tts-translated-container .private-message-tts-translated-button svg {
+  fill: currentColor !important;
+  width: 18px;
+  height: 18px;
+}
+
+/* === ГАЛОЧКИ ДЛЯ СВОИХ СООБЩЕНИЙ — аккуратный вариант === */
+.private-delivery-indicator,
+.private-read-indicator {
+    color: #1e2937 !important;
+    font-size: 14px !important;        
+    font-weight: 500 !important;       
+    line-height: 1 !important;
+    vertical-align: middle;
+    display: inline-block;
+    margin-left: 2px;
+}
+
+/* Лёгкая тень для объёма и красоты (не слишком агрессивная) */
+.private-delivery-indicator,
+.private-read-indicator {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Hover-эффект — плавный */
+.private-delivery-indicator:hover,
+.private-read-indicator:hover {
+    color: #111827 !important;
+    transform: scale(1.08);
 }
 
 @media (max-width: 800px) {
@@ -1551,7 +1584,7 @@
         box-shadow: none !important;
         display: flex !important;
         flex-direction: column !important;
-        background-color: #D7E0E6 !important;
+        background-color: #0f172a !important;           /* ← тёмный фон как на ПК */
         z-index: 1;
     }
 
@@ -1562,7 +1595,7 @@
       padding: 2px 16px 16px 16px !important;
       gap: 16px !important;
       position: relative !important;
-      background-color: #FFFFFF !important;
+      background-color: #1e2937 !important;             /* ← чуть светлее для выделения */
       border-radius: 8px !important;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
       margin-bottom: 8px !important;
@@ -1573,7 +1606,7 @@
       font-size: 20px !important;
       font-weight: 600 !important;
       text-align: center !important;
-      color: #333333 !important;
+      color: #f1f5f9 !important;
       font-family: 'Inter', sans-serif !important;
     }
 
@@ -1619,7 +1652,7 @@
     }
 
     .private-message-content-container.no-avatar {
-        margin-left: 40px !important; /* Синхронизировано с шириной аватара (30px) + margin-right (10px) */
+        margin-left: 40px !important;
     }
 
     .private-message.private-other-user .private-message-content-container {
@@ -1654,13 +1687,13 @@
     }
 
     .private-input-message.scroll-enabled {
-        overflow-y: auto; /* Включаем скроллбар при 5+ строках */
+        overflow-y: auto;
     }
 
     .private-attach-icon {
         left: 8px;
-        top: 50%; /* ИЗМЕНЕНО: Центрируем по вертикали */
-        transform: translateY(-50%); /* ИЗМЕНЕНО: Для центрирования */
+        top: 50%;
+        transform: translateY(-50%);
         width: 20px;
         height: 20px;
     }
@@ -1687,12 +1720,12 @@
     .private-translation-button {
         font-size: 18px;
         padding: 3px;
-        height: 24px; /* Добавлено: Фиксированная высота для мобильных */
-        width: 24px; /* Добавлено: Фиксированная ширина для мобильных */
-        display: flex; /* Добавлено: Flex для центрирования эмодзи */
-        align-items: center; /* Добавлено: Вертикальное центрирование */
-        justify-content: center; /* Добавлено: Горизонтальное центрирование */
-        line-height: 1; /* Добавлено: Нормализация высоты строки */
+        height: 24px;
+        width: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
     }
 
     .private-translation-button[data-tooltip]::after,
@@ -1730,7 +1763,7 @@
 
     .private-mic-icon-container {
         right: 8px;
-        top: 50%; /* Центрирование по вертикали относительно textarea-inner */
+        top: 50%;
         transform: translateY(-50%);
         height: 20px;
         width: 20px;
@@ -1738,8 +1771,8 @@
 
     .private-send-icon-container {
         right: 8px;
-        top: 50%; /* ИЗМЕНЕНО: Центрируем по вертикали */
-        transform: translateY(-50%); /* ИЗМЕНЕНО: Для центрирования */
+        top: 50%;
+        transform: translateY(-50%);
         height: 20px;
         width: 20px;
     }
@@ -1783,7 +1816,6 @@
         padding: 6px;
     }
 
-    /* ДОБАВЛЕНО: Одинаковая ширина для current-user и other-user на мобильных */
     .private-message.private-current-user .private-audio-player-wrapper,
     .private-message.private-other-user .private-audio-player-wrapper {
         width: 240px;
@@ -1800,13 +1832,12 @@
         position: relative;
     }
 
-    /* ДОБАВЛЕНО: Адаптивные стили для attached-file */
     .private-attached-file {
         padding: 4px 8px;
         margin-top: 6px;
-        margin-left: 36px; /* Учитываем меньший отступ для attach-icon */
-        margin-right: 36px; /* Учитываем меньший отступ для иконок */
-        max-width: calc(100% - 72px); /* Учитываем уменьшенные отступы */
+        margin-left: 36px;
+        margin-right: 36px;
+        max-width: calc(100% - 72px);
     }
 
     .private-attached-file-name {
@@ -1830,13 +1861,11 @@
       padding: 1px;
       width: 14px;
       height: 14px;
-      color: #42a5f5;
-      opacity: 0.6;
+      opacity: 0.9;
     }
 
-    /* Специфичность для аудиосообщений */
     .private-message-audio-message .private-message-translate-container .private-message-translate-button {
-        position: static; /* Отключаем абсолютное позиционирование для аудиосообщений */
+        position: static;
     }
 
     .private-message-translate-container .private-message-translate-button[data-tooltip]::after,
@@ -1873,29 +1902,28 @@
     }
 
     .private-message-content {
-        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
+        padding-left: 6px;
     }
 
     .private-file-link {
-        padding-left: 16px; /* ИЗМЕНЕНО: Уменьшенный отступ для мобильных */
+        padding-left: 6px;
     }
 
     .private-message-content.translate-enabled,
     .private-message-content.tts-enabled {
-        padding-left: 22px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
+        padding-left: 22px;
     }
 
     .private-file-link.translate-enabled,
     .private-file-link.tts-enabled {
-        padding-left: 22px; /* ИЗМЕНЕНО: Синхронизированный отступ для мобильных */
+        padding-left: 22px;
     }
 
     .private-message-tts-container {
-        width: 14px; /* ИЗМЕНЕНО: Уменьшенная ширина для мобильных */
-        height: 14px; /* ИЗМЕНЕНО: Уменьшенная высота для мобильных */
+        width: 14px;
+        height: 14px;
     }
 
-    /* ДОБАВЛЕНО: Адаптивные стили для кнопки TTS */
     .private-message-tts-container .private-message-tts-button {
       font-size: 10px;
       padding: 1px;
@@ -1905,18 +1933,15 @@
       opacity: 0.6;
     }
 
-    /* Специфичность для аудиосообщений */
     .private-message-audio-message .private-message-tts-container .private-message-tts-button {
-        position: static; /* Отключаем абсолютное позиционирование для аудиосообщений */
+        position: static;
     }
 
-    /* ДОБАВЛЕНО: Адаптивные стили для контейнера иконки TTS переведенного текста */
     .private-message-tts-translated-container {
         width: 14px;
         height: 14px;
     }
 
-    /* ДОБАВЛЕНО: Адаптивные стили для кнопки TTS переведенного текста */
     .private-message-tts-translated-container .private-message-tts-translated-button {
       font-size: 10px;
       padding: 1px;
@@ -1926,22 +1951,20 @@
       opacity: 0.8;
     }
 
-    /* Специфичность для аудиосообщений */
     .private-message-audio-message .private-message-tts-translated-container .private-message-tts-translated-button {
-      position: static; /* Отключаем абсолютное позиционирование для аудиосообщений */
+      position: static;
     }
 
     .private-message-tts-translated-container .private-message-tts-translated-button:hover {
       color: #2e0a54;
     }
 
-    /* ДОБАВЛЕНО: Минимальная высота для контейнера сообщения при наличии TTS перевода на мобильных */
     .private-message-content-container:has(.private-message-tts-translated-container) {
-      min-height: 50px; /* Для текстовых сообщений: 14px * 3 иконки + 3px * 2 gap + 3px * 2 padding */
+      min-height: 50px;
     }
 
     .private-message-audio-message .private-message-content-container:has(.private-message-tts-translated-container) {
-        min-height: auto; /* Подстраивается под содержимое */
+        min-height: auto;
     }
 
     .private-message-tts-translated-container .private-message-tts-translated-button svg {
@@ -2013,14 +2036,14 @@
     width: 100%;
     max-width: 240px;
     box-sizing: border-box;
-    padding-left: 20px; /* Добавлено: Отступ слева для мобильных, чтобы выровнять по .private-audio-player-wrapper */
+    padding-left: 20px;
   }
 
   .private-message.private-audio-message .private-translated-content {
     width: 100%;
     max-width: 240px;
     box-sizing: border-box;
-    padding-left: 20px; /* Добавлено: Отступ слева для мобильных, чтобы выровнять по .private-audio-player-wrapper */
+    padding-left: 20px;
   }
 
   .tooltip-dynamic {
@@ -2039,7 +2062,7 @@
         width: 100% !important;
         height: 100% !important;
         overflow: hidden !important;
-        background-color: #D7E0E6 !important;
+        background-color: #0f172a !important;
   }
 
   .private-message-list {
@@ -2050,9 +2073,9 @@
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
         border-radius: 8px !important;
-        background-color: #E8ECEF !important;
+        background-color: #0f172a !important;
         height: auto !important;
-        border: none !important;
+        border: 1px solid rgba(148, 163, 184, 0.15) !important;   /* ← обводка как на ПК */
         gap: 8px;
   }
 
@@ -2062,15 +2085,15 @@
         border-radius: 8px !important;
         box-shadow: none !important;
         gap: 8px;
-        margin-bottom: 8px !important;  /* ← ФИКС: Нижний отступ для симметрии с верхом/боками */
+        margin-bottom: 8px !important;
+        background-color: rgba(15, 23, 42, 0.98) !important;
   }
 
-  /* ДОБАВЛЕНО: Мобильные стили для аудио (аналог secret-chat) */
   .private-message.private-audio-message .private-message-content-container {
         width: 260px !important;
         min-width: 260px !important;
         max-width: 260px !important;
-        padding: 8px 4px 4px 4px !important;  /* Верхний отступ 8px, остальные 4px */
+        padding: 8px 4px 4px 4px !important;
   }
 
   .private-message.private-current-user.private-audio-message .private-message-content-container {
@@ -2085,91 +2108,23 @@
     display: none !important;
   }
 
-  /* Главное — ряд иконок на телефоне */
-  .private-icons-row {
-    display: flex !important;
-    justify-content: space-between !important; /* слева — левый блок, справа — правый, центр — ассистент */
-    align-items: center !important;
-    width: 100% !important;
-    padding: 0 16px !important;
-  }
-
-  /* Левый и правый блоки занимают минимум места */
-  .private-transcription-controls,
-  .private-translation-controls {
-    flex-shrink: 0;
-  }
-
-  .private-chat .assistant-icon-large,
-  .private-chat .assistant-icon.fixed-app-bottom-right,
-  .private-chat .fixed-app-bottom-right .assistant-icon,
-  .private-chat .fixed-app-bottom-right {
-    display: none !important;
-  }
-
-   /* Родитель для absolute-позиционирования иконки — теперь .private-chat-name */
-  .private-chat-name {
-    position: relative !important;
-  }
-
-  /* Маленькая иконка ассистента — центрирована, не влияет на layout */
-  .assistant-icon-header,
-  .mobile-header-icon {
-    display: flex !important;
-    position: absolute !important;
-    left: 50% !important;
-    top: 72% !important;
-    transform: translate(-50%, calc(-50% + 2px)) !important;
-    width: 29px !important;
-    height: 29px !important;
-    background: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: none !important;
-    border: none !important;
-    border-radius: 8px !important;
-    padding: 3px !important;
-    margin: 0 !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    z-index: 10 !important;
-  }
-
-  /* Убираем пульсацию */
-  .assistant-icon-header .assistant-pulse,
-  .mobile-header-icon .assistant-pulse {
-    display: none !important;
-  }
-
-  /* Ховер-эффект — сохраняем центровку */
-  .assistant-icon-header:hover,
-  .mobile-header-icon:hover {
-    background: rgba(139, 92, 246, 0.15) !important;
-    transform: translate(-50%, -50%) scale(1.1) !important;
-  }
-
-  /* Ряд кнопок — теперь без лишних элементов, прижимается к краям */
   .private-icons-row {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
     width: 100% !important;
     padding: 0 16px !important;
-    box-sizing: border-box !important;
-    /* position: relative; — больше НЕ нужен, убираем */
   }
 
   .partner-avatar,
   .partner-avatar.placeholder {
-    width: 28px !important;      /* уменьшили с 30px до 28px — подбери 26px или 27px, если нужно ещё меньше */
+    width: 28px !important;
     height: 28px !important;
-    font-size: 14px !important;  /* если placeholder с буквой — тоже уменьшить шрифт */
+    font-size: 14px !important;
   }
 
   .header-content {
-    margin-bottom: 6px !important;  /* ← сдвигаем ВЕСЬ блок аватар + имя + typing вниз на 6px */
+    margin-bottom: 6px !important;
   }
 
   .private-chat-name {
@@ -2193,5 +2148,31 @@
   .link-preview-card > div:last-child {
     font-size: 11px;
     padding: 0 10px 6px;
+  }
+
+  /* ИКОНКА ГЛОБУСА ПЕРЕВОДА — свои сообщения (мобильная версия) */
+  .private-message.private-current-user .private-message-translate-container .private-message-translate-button,
+  .private-message.private-current-user .private-message-content-container .private-message-translate-container .private-message-translate-button {
+      color: #ffffff !important;           
+      opacity: 1 !important;
+      font-size: 10px !important;          /* ← оставили как было */
+      width: 14px !important;
+      height: 14px !important;
+      text-shadow: 
+          0 0 3px rgba(0, 0, 0, 0.75), 
+          0 1px 2px rgba(0, 0, 0, 0.6) !important;
+  }
+
+  /* Наведение */
+  .private-message.private-current-user .private-message-translate-container .private-message-translate-button:hover,
+  .private-message.private-current-user .private-message-content-container .private-message-translate-container .private-message-translate-button:hover {
+      color: #fefce8 !important;           /* светло-жёлтый при наведении — очень хорошо видно */
+      transform: scale(1.25) !important;
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+  }
+
+  /* Для аудио-сообщений (чтобы иконка не ломала布局) */
+  .private-message.private-current-user.private-audio-message .private-message-translate-container .private-message-translate-button {
+      position: static !important;
   }
 }

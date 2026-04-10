@@ -1,22 +1,24 @@
 .user-profile-container {
   position: relative;
   padding: 20px;
-  background-color: #DAF7A9;
+  background-color: rgba(30, 41, 59, 0.95);     /* тёмный фон как в Home */
   border-radius: 12px;
   max-width: 600px;
   margin: auto;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border: 2px solid #A5D6A7;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .user-profile-username {
-  color: #2E7D32;
+  color: #67e8f9;                               /* яркий акцент */
   font-size: 28px;
   font-weight: 600;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   margin-bottom: 15px;
   text-align: center;
 }
@@ -26,14 +28,15 @@
   height: 100px;
   border-radius: 50%;
   object-fit: cover;
-  background-color: #e0e0e0;
+  background-color: #334155;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 40px;
-  color: #757575;
-  border: 3px solid #81C784;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #e2e8f0;
+  border: 3px solid #22d3ee;                    /* акцентная обводка */
+  box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3);
+  transition: all 0.25s ease;
 }
 
 .userprofile-avatar-container {
@@ -44,17 +47,22 @@
   margin: 0 auto;
 }
 
+.userprofile-avatar-container:hover .user-avatar-profile {
+  transform: scale(1.08);
+}
+
+/* Статус онлайн */
 .userprofile-avatar-container .userprofile-status-indicator-online {
   position: absolute;
   bottom: 8px !important;
   right: 8px !important;
   width: 15px;
   height: 15px;
-  background-color: #4CAF50 !important;
+  background-color: #22c55e !important;
   border-radius: 50%;
-  border: 2px solid #DAF7A9;
+  border: 2px solid rgba(30, 41, 59, 0.95) !important;
   z-index: 10 !important;
-  box-shadow: 0 0 3px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6) !important;
 }
 
 .userprofile-status-text {
@@ -71,11 +79,11 @@
 }
 
 .userprofile-status-label.userprofile-online {
-  color: #4CAF50;
+  color: #22c55e;
 }
 
 .userprofile-status-label.userprofile-offline {
-  color: #757575;
+  color: #94a3b8;
 }
 
 .userprofile-avatar-input-container {
@@ -91,7 +99,7 @@
   align-items: center;
   justify-content: center;
   padding: 10px 20px;
-  background-color: #4CAF50;
+  background: linear-gradient(90deg, #14b8a6, #22d3ee);
   color: white;
   border-radius: 5px;
   cursor: pointer;
@@ -100,13 +108,15 @@
   font-weight: 500;
   text-align: center;
   margin: 0 auto;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   border: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .userprofile-file-label:hover {
-  background-color: #45a049;
+  background: linear-gradient(90deg, #0f766e, #06b6d4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(34, 211, 238, 0.4);
 }
 
 .userprofile-avatar-input {
@@ -116,9 +126,9 @@
 .user-info {
   margin-top: 20px;
   padding: 15px;
-  background-color: #F1F8E9;
+  background-color: rgba(15, 23, 42, 0.85);
   border-radius: 8px;
-  border: 1px solid #C8E6C9;
+  border: 1px solid rgba(148, 163, 184, 0.25);
   width: 100%;
 }
 
@@ -130,7 +140,7 @@
 .update-button {
   margin-top: 20px;
   padding: 10px 20px;
-  background-color: #007bff;
+  background: linear-gradient(90deg, #6366f1, #22d3ee);
   color: white;
   border: none;
   border-radius: 5px;
@@ -139,12 +149,14 @@
   font-family: 'Roboto', sans-serif;
   font-weight: 500;
   text-align: center;
-  transition: background-color 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .update-button:hover {
-  background-color: #00b327;
+  background: linear-gradient(90deg, #4f46e5, #06b6d4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
 }
 
 .user-info-text {
@@ -162,11 +174,23 @@
 
 .edit-icon {
   margin-left: 10px;
+  margin-top: 5px;
   cursor: pointer;
+  color: #67e8f9;           /* основной акцентный цвет */
+  font-size: 18px;          /* немного крупнее — лучше видно */
+  transition: all 0.25s ease;
+  opacity: 0.9;
+}
+
+.edit-icon:hover {
+  color: #a5f3fc;           /* светлее при наведении */
+  transform: scale(1.15) rotate(12deg);   /* приятная анимация */
+  opacity: 1;
+  filter: drop-shadow(0 0 6px rgba(103, 232, 249, 0.6));  /* лёгкое свечение */
 }
 
 .user-info-title {
-  color: #388E3C;
+  color: #67e8f9;
   font-size: 20px;
   margin-bottom: 10px;
 }
@@ -176,7 +200,7 @@
   word-wrap: break-word;
   width: 100%;
   max-width: 100%;
-  color: #424242;
+  color: #cbd5e1;
 }
 
 .user-profile-modal {
@@ -187,11 +211,12 @@
 }
 
 .user-profile-modal-overlay {
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000 !important;
+  backdrop-filter: blur(8px);
 }
 
 .user-profile-modal-image {
@@ -200,28 +225,45 @@
   cursor: pointer;
 }
 
+/* Полностью замени предыдущий блок .user-profile-modal-close-button на этот */
 .user-profile-modal-close-button {
-  margin-top: 20px;
-  background-color: #fff;
-  border: none;
-  padding: 10px;
-  cursor: pointer;
+    margin-top: 28px;
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    padding: 12px 32px;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    align-self: center;           /* центрирует кнопку */
+    display: block;               /* дополнительно помогает */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.user-profile-modal-close-button:hover {
+    background-color: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.45);
 }
 
 .send-message-button {
-  background-color: #4CAF50;
+  background: linear-gradient(90deg, #14b8a6, #22d3ee);
   color: white;
   border: none;
   border-radius: 5px;
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
   margin-top: 20px;
 }
 
 .send-message-button:hover {
-  background-color: #45a049;
+  background: linear-gradient(90deg, #0f766e, #06b6d4);
+  transform: translateY(-2px);
 }
 
 .button-container {
@@ -234,7 +276,7 @@
 .personal-chats-button {
   margin-top: 20px;
   padding: 10px 20px;
-  background-color: #6f00ff;
+  background: linear-gradient(90deg, #8b5cf6, #c026d3);
   color: white;
   border: none;
   border-radius: 5px;
@@ -244,12 +286,13 @@
   font-family: 'Roboto', sans-serif;
   font-weight: 500;
   text-align: center;
-  transition: background-color 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .personal-chats-button:hover {
-  background-color: #00b327;
+  background: linear-gradient(90deg, #7c3aed, #b91c1c);
+  transform: translateY(-2px);
 }
 
 .settings-icon {
@@ -257,17 +300,24 @@
   top: 10px;
   right: 10px;
   cursor: pointer;
+  color: #94a3b8;
+  transition: color 0.2s;
+}
+
+.settings-icon:hover {
+  color: #e2e8f0;
 }
 
 .settings-menu {
   position: absolute;
   top: 30px;
   right: 0;
-  background: white;
-  border: 1px solid #ccc;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
   z-index: 1000;
   padding: 10px;
+  border-radius: 8px;
 }
 
 .settings-menu button {
@@ -277,10 +327,11 @@
   padding: 5px;
   width: 100%;
   text-align: left;
+  color: #e2e8f0;
 }
 
 .settings-menu button:hover {
-  background-color: #f0f0f0;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .call-buttons-container {
@@ -305,29 +356,32 @@
   width: 100%;
 }
 
-.voice-call-button, .video-call-button {
+.voice-call-button, 
+.video-call-button {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: #4CAF50;
+  background-color: #14b8a6;
   color: white;
   border: none;
   border-radius: 5px;
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
 }
 
-.voice-call-button:hover, .video-call-button:hover {
-  background-color: #45a049;
+.voice-call-button:hover, 
+.video-call-button:hover {
+  background-color: #0f766e;
+  transform: translateY(-2px);
 }
 
 .translate-call-button {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #3F51B5, #26C6DA); /* Мягкий сине-бирюзовый градиент */
+  background: linear-gradient(135deg, #6366f1, #22d3ee);
   color: #FFFFFF;
   border: none;
   border-radius: 5px;
@@ -335,13 +389,13 @@
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s, transform 0.2s;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
 .translate-call-button:hover {
-  background: linear-gradient(135deg, #5C6BC0, #4DD0E1); /* Светлее при наведении */
-  transform: scale(1.05);
+  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  transform: scale(1.05) translateY(-2px);
 }
 
 .Toastify__toast-container {
@@ -354,7 +408,7 @@
 .calls-button {
   margin-top: 20px;
   padding: 10px 20px;
-  background-color: #e57373; /* Приятный красноватый цвет */
+  background: linear-gradient(90deg, #ef4444, #f97316);
   color: white;
   border: none;
   border-radius: 5px;
@@ -363,24 +417,67 @@
   font-family: 'Roboto', sans-serif;
   font-weight: 500;
   text-align: center;
-  transition: background-color 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  min-width: 150px; /* Добавлено для соответствия размерам других кнопок */
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  min-width: 150px;
 }
 
 .calls-button:hover {
-  background-color: #d32f2f; /* Темнее при наведении */
+  background: linear-gradient(90deg, #dc2626, #ea580c);
+  transform: translateY(-2px);
 }
 
-@media (max-width: 480px) {
+/* Красивое модальное окно для просмотра фото */
+.user-profile-modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    outline: none;
+}
+
+.user-profile-modal-overlay {
+    background-color: rgba(0, 0, 0, 0.92) !important;
+    backdrop-filter: blur(10px);
+}
+
+/* Основной контент модалки */
+.ReactModal__Content {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    max-width: 90%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Само фото */
+.user-profile-modal-image {
+    max-width: 100%;
+    max-height: 82vh;
+    border-radius: 16px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    display: block;
+}
+
+/* Кнопка закрытия под фото */
+.user-profile-modal-close-button {
+    margin-top: 28px;
+    /* стили из пункта 1 выше уже применены */
+}
+
+/* ==================== МОБИЛЬНАЯ ВЕРСИЯ (оставлена почти идентично) ==================== */
+@media (max-width: 800px) {
     .user-profile-container {
-        padding: 16px !important;
-        margin: 8px !important;
-        max-width: none !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        background-color: #DAF7A9 !important;
-        border: none !important;
+        border-radius: 16px !important;           /* красивые закруглённые углы */
+        padding: 20px !important;
+        margin: 12px !important;
+        background-color: rgba(30, 41, 59, 0.95) !important;
+        border: 1px solid rgba(148, 163, 184, 0.3) !important;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4) !important;
     }
 
     .button-container {
@@ -402,7 +499,7 @@
         font-size: 16px !important;
         font-weight: 600 !important;
         border-radius: 8px !important;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
         transition: all 0.3s ease !important;
         display: flex !important;
         align-items: center !important;
@@ -410,34 +507,13 @@
         margin: 0 !important;
     }
 
-    .update-button {
-        background-color: #007bff !important;
-    }
-
-    .update-button:hover {
-        background-color: #0069d9 !important;
+    .update-button:hover,
+    .calls-button:hover,
+    .personal-chats-button:hover,
+    .send-message-button:hover {
         transform: translateY(-1px) !important;
     }
 
-    .calls-button {
-        background-color: #e57373 !important;
-    }
-
-    .calls-button:hover {
-        background-color: #d32f2f !important;
-        transform: translateY(-1px) !important;
-    }
-
-    .personal-chats-button {
-        background-color: #6f00ff !important;
-    }
-
-    .personal-chats-button:hover {
-        background-color: #5a00d4 !important;
-        transform: translateY(-1px) !important;
-    }
-
-    /* Убираем лишние отступы */
     .user-info,
     .call-buttons-container,
     .send-message-button {
@@ -452,19 +528,13 @@
         font-size: 16px !important;
         font-weight: 600 !important;
         border-radius: 8px !important;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
         transition: all 0.3s ease !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         margin: 16px 0 0 0 !important;
         width: 100% !important;
-        background-color: #4CAF50 !important;
-    }
-
-    .send-message-button:hover {
-        background-color: #45a049 !important;
-        transform: translateY(-1px) !important;
     }
 
     .standard-call-buttons,
@@ -482,19 +552,5 @@
         padding: 10px !important;
         justify-content: center !important;
         gap: 8px !important;
-    }
-
-    /* === СТИЛЬНАЯ ОБВОДКА + ЗАКРУГЛЁННЫЕ УГЛЫ ДЛЯ ПРОФИЛЯ НА ТЕЛЕФОНЕ === */
-    .user-profile-container {
-        border: 1px solid rgba(165, 214, 167, 0.4) !important;
-        box-shadow: 
-            0 6px 16px rgba(0, 0, 0, 0.12),
-            inset 0 0 0 1px rgba(255, 255, 255, 0.5) !important;
-        border-radius: 16px !important;
-        background-color: rgba(218, 247, 169, 0.92) !important;
-        backdrop-filter: blur(6px) !important;
-        -webkit-backdrop-filter: blur(6px) !important;
-        padding: 16px !important;
-        margin: 12px !important;
     }
 }

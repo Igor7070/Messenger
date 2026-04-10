@@ -134,8 +134,7 @@ body {
         width: 100% !important;
         height: 100% !important;
         margin: 0 !important;
-        /*padding: 16px !important;*/
-        padding: 0px 16px 16px 16px !important;   /* ← top: 8px, right: 16px, bottom: 16px, left: 16px */
+        padding: 0px 16px 16px 16px !important;
         max-width: none !important;
         border-radius: 0 !important;
         box-shadow: none !important;
@@ -155,7 +154,7 @@ body {
         position: relative !important;
         text-align: center !important;
         margin-top: 3px !important;
-        margin-bottom: 23px !important; /* БОЛЬШОЙ ОТСТУП ПОД ССЫЛКИ */
+        margin-bottom: 23px !important;
         padding-bottom: 12px !important;
         padding-top: 12px !important;
         z-index: 10 !important;
@@ -185,7 +184,7 @@ body {
         transition: all 0.3s ease !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
         position: absolute !important;
-        top: 46px !important; /* ПОД ЗАГОЛОВКОМ */
+        top: 46px !important;
         transform: none !important;
         z-index: 9 !important;
     }
@@ -253,7 +252,7 @@ body {
       display: none !important;
     }
 
-    /* Все чаты — на весь экран */
+    /* ====================== PRIVATE-CHAT ====================== */
     .messenger,
     .private-chat,
     .secret-chat {
@@ -266,39 +265,157 @@ body {
       padding: 8px !important;
       border-radius: 0 !important;
       box-shadow: none !important;
-      background-color: #D7E0E6 !important;
+      background-color: #0f172a !important;
       display: flex !important;
       flex-direction: column !important;
       z-index: 1 !important;
       overflow: hidden !important;
     }
 
-    /* Убираем скролл у .app, если он остался */
-    .app {
-      overflow: hidden !important;
-    } 
-
-    /* === СКРОЛЛ ТОЛЬКО В VoiceCallWithTranslate === */
-    .app:has(.voice-call-container) {
-      overflow-y: auto !important;
-      -webkit-overflow-scrolling: touch !important;
+    /* private-chat-name — чуть светлее для выделения */
+    .private-chat-name {
+      background-color: #1e2937 !important;
+      color: #f1f5f9 !important;
+      position: relative !important;           /* важно для абсолютного позиционирования иконки */
     }
 
-    .app:has(.group-call-container) {
-      overflow-y: auto !important;
-      -webkit-overflow-scrolling: touch !important;
+    /* private-message-list — тёмный + обводка */
+    .private-message-list {
+        flex: 1 !important;
+        min-height: 0 !important;
+        margin: 0 0 8px 0 !important;
+        padding: 8px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 8px !important;
+        background-color: #0f172a !important;
+        border: 1px solid rgba(148, 163, 184, 0.15) !important;
+        height: auto !important;
+        gap: 8px;
+    }
+
+    /* Панель ввода */
+    .private-input-container {
+        flex-shrink: 0;
+        padding: 8px !important;
+        border-radius: 8px !important;
+        box-shadow: none !important;
+        gap: 8px;
+        margin-bottom: 8px !important;
+        background-color: rgba(15, 23, 42, 0.98) !important;
+    }
+
+    /* ====================== ИКОНКА АССИСТЕНТА ====================== */
+    /* Маленькая иконка ассистента под именем в тулбаре */
+    .assistant-icon-header,
+    .mobile-header-icon {
+      display: flex !important;
+      position: absolute !important;
+      left: 50% !important;
+      top: 72% !important;
+      transform: translate(-50%, calc(-50% + 2px)) !important;
+      width: 29px !important;
+      height: 29px !important;
+      background: transparent !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      box-shadow: none !important;
+      border: none !important;
+      border-radius: 8px !important;
+      padding: 3px !important;
+      margin: 0 !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 10 !important;
+    }
+
+    /* Убираем пульсацию */
+    .assistant-icon-header .assistant-pulse,
+    .mobile-header-icon .assistant-pulse {
+      display: none !important;
+    }
+
+    /* Hover-эффект */
+    .assistant-icon-header:hover,
+    .mobile-header-icon:hover {
+      background: rgba(139, 92, 246, 0.15) !important;
+      transform: translate(-50%, -50%) scale(1.1) !important;
+    }
+
+    /* Остальные мобильные стили */
+    .private-message.private-audio-message .private-message-content-container {
+        width: 260px !important;
+        min-width: 260px !important;
+        max-width: 260px !important;
+        padding: 8px 4px 4px 4px !important;
+    }
+
+    .private-message.private-current-user.private-audio-message .private-message-content-container {
+        margin-right: 0px !important;
+    }
+
+    .private-message.private-other-user.private-audio-message .private-message-content-container {
+        margin-left: 0 !important;
+    }
+
+    .fixed-app-bottom-right {
+      display: none !important;
+    }
+
+    .private-icons-row {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      width: 100% !important;
+      padding: 0 16px !important;
+    }
+
+    .partner-avatar,
+    .partner-avatar.placeholder {
+      width: 28px !important;
+      height: 28px !important;
+      font-size: 14px !important;
+    }
+
+    .header-content {
+      margin-bottom: 6px !important;
+    }
+
+    .private-chat-name {
+      padding-top: 6px !important;
+    }
+
+    .link-preview-card img {
+      height: 120px;
+    }
+   
+    .link-preview-card > div:nth-child(2) {
+      font-size: 14px;
+      padding: 8px 10px 4px;
+    }
+   
+    .link-preview-card > div:nth-child(3) {
+      font-size: 12px;
+      padding: 0 10px 6px;
+    }
+   
+    .link-preview-card > div:last-child {
+      font-size: 11px;
+      padding: 0 10px 6px;
     }
 
     .refresh-icon {
       display: flex !important;
       position: absolute !important;
       left: 50% !important;
-      top: 37px !important;                     /* ← ЧУТЬ НИЖЕ 58px → 60px */
+      top: 37px !important;
       transform: translateX(-50%) !important;
-      width: 58px !important;                   /* ← 72px × 2/3 ≈ 48px */
+      width: 58px !important;
       height: 48px !important;
-      font-size: 2.3rem !important;             /* ← 2.8rem × 2/3 ≈ 1.9rem */
-      color: #555 !important;
+      font-size: 2.3rem !important;
+      color: #e2e8f0 !important;           /* светлый комфортный цвет */
       cursor: pointer !important;
       align-items: center !important;
       justify-content: center !important;
@@ -309,14 +426,10 @@ body {
 
     .refresh-icon:hover,
     .refresh-icon:active {
-      color: #000 !important;
+      color: #ffffff !important;           /* ещё ярче при наведении */
       transform: translateX(-50%) rotate(360deg) scale(1.15) !important;
       transition: transform 0.5s ease !important;
     }
-
-    /*.Toastify__toast-container {
-      display: none !important;
-    }*/
 
     #toast-root {
       position: fixed !important;
@@ -332,19 +445,23 @@ body {
       pointer-events: auto !important;
     }
 
-    /* На телефоне — центр, ниже шапки */
     .Toastify__toast-container {
       top: 30px !important;
       left: 50% !important;
       transform: translateX(-50%) !important;
       width: 90% !important;
       max-width: 400px !important;
-      /*z-index: inherit !important;*/
       z-index: 99999999 !important;
     }
 
-    /* Убираем обрезку */
     html, body {
       overflow: visible !important;
+    }
+
+    .private-chat .assistant-icon-large,
+    .private-chat .assistant-icon.fixed-app-bottom-right,
+    .private-chat .fixed-app-bottom-right .assistant-icon,
+    .private-chat .fixed-app-bottom-right {
+      display: none !important;
     }
 }

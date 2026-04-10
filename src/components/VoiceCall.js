@@ -34,6 +34,7 @@ const VoiceCall = ({ recipientId }) => {
   const hasNotifiedAcceptCall = useRef(false); // Новый флаг для acceptCall
   const hasNotifiedRejectCall = useRef(false); // NEW: Добавляем реф для rejectCall
   const hasSavedCall = useRef(false); // NEW: Флаг для предотвращения двойного сохранения звонка
+  const [callDuration, setCallDuration] = useState(0);
 
   useEffect(() => {
     if (isCaller) {
@@ -59,9 +60,10 @@ const VoiceCall = ({ recipientId }) => {
       {
         label: 'Voice Activity',
         data: [],
-        borderColor: 'rgba(74, 144, 226, 1)',
-        backgroundColor: 'rgba(74, 144, 226, 0.2)',
-        borderWidth: 2,
+        borderColor: '#67e8f9',
+        backgroundColor: 'rgba(103, 232, 249, 0.15)',
+        borderWidth: 2.5,
+        tension: 0.4,
         fill: true,
       },
     ],
@@ -133,10 +135,27 @@ const VoiceCall = ({ recipientId }) => {
     });
     stompClient.current.activate();
 
+    // === ИСПРАВЛЕННЫЙ ГРАФИК — СКОЛЬЗЯЩЕЕ ОКНО ===
+    const MAX_POINTS = 40; // сколько точек показывать на графике (примерно 40 секунд)
+
     const interval = setInterval(() => {
       setChartData((prevData) => {
-        const newLabels = [...prevData.labels, new Date().toLocaleTimeString()];
-        const newData = [...prevData.datasets[0].data, Math.random() * 100];
+        const newTime = new Date().toLocaleTimeString([], { 
+          minute: '2-digit', 
+          second: '2-digit' 
+        });
+
+        const newValue = Math.random() * 100;
+
+        let newLabels = [...prevData.labels, newTime];
+        let newData = [...prevData.datasets[0].data, newValue];
+
+        // Удаляем старые точки, если их больше MAX_POINTS
+        if (newLabels.length > MAX_POINTS) {
+          newLabels = newLabels.slice(-MAX_POINTS);
+          newData = newData.slice(-MAX_POINTS);
+        }
+
         return {
           labels: newLabels,
           datasets: [{ ...prevData.datasets[0], data: newData }],
@@ -558,38 +577,57 @@ const VoiceCall = ({ recipientId }) => {
     navigate('/');
   };
 
+  // Таймер продолжительности звонка
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCallDuration(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="voice-call-container">
       <div className="voice-call-header">
-        <h2 className="voice-call-title">Voice communication with {isCaller ? recipientName : callerName}</h2>
+        <h2 className="voice-call-title">
+          Voice Call with {isCaller ? recipientName : callerName}
+        </h2>
+        <div className="call-duration">
+          {Math.floor(callDuration / 60).toString().padStart(2, '0')}:
+          {(callDuration % 60).toString().padStart(2, '0')}
+        </div>
       </div>
+
       <div className="audio-container">
         <audio ref={localAudioRef} autoPlay muted />
         <audio ref={remoteAudioRef} autoPlay />
       </div>
+
       <div className="chart-container">
         <Line
           data={chartData}
           options={{
             responsive: true,
             maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+            },
             scales: {
               x: {
-                title: {
-                  display: true,
-                  text: 'Time',
-                },
+                grid: { color: 'rgba(148, 163, 184, 0.25)' },
+                ticks: { color: '#94a3b8' },
               },
               y: {
-                title: {
-                  display: true,
-                  text: 'Activity Level',
-                },
+                grid: { color: 'rgba(148, 163, 184, 0.25)' },
+                ticks: { color: '#94a3b8' },
+                min: 0,
+                max: 100,
               },
             },
           }}
         />
       </div>
+
       <button className="end-call-button-voice" onClick={endCall}>
         End Call
       </button>

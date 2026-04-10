@@ -162,6 +162,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   ].sort((a, b) => (a.name === 'Auto' ? -1 : b.name === 'Auto' ? 1 : a.name.localeCompare(b.name)));
 
   const [sessionId, setSessionId] = useState(`${currentUserId}_${Date.now()}`);
+  const [callDuration, setCallDuration] = useState(0);
 
   let userName = recipientName;
   let terminationInitiator = false;
@@ -361,13 +362,34 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
     });
     stompClient.current.activate();
 
+    const MAX_POINTS = 40;   // сколько секунд показывать на графике
+
     const interval = setInterval(() => {
       setChartData((prevData) => {
-        const newLabels = [...prevData.labels, new Date().toLocaleTimeString()];
-        const newData = [...prevData.datasets[0].data, Math.random() * 100];
+        const newTime = new Date().toLocaleTimeString([], { 
+          minute: '2-digit', 
+          second: '2-digit' 
+        });
+
+        const newValue = Math.random() * 85 + 15;
+
+        let newLabels = [...prevData.labels, newTime];
+        let newData = [...prevData.datasets[0].data, newValue];
+
+        // Удаляем старые точки — главное исправление
+        if (newLabels.length > MAX_POINTS) {
+          newLabels = newLabels.slice(-MAX_POINTS);
+          newData = newData.slice(-MAX_POINTS);
+        }
+
         return {
           labels: newLabels,
-          datasets: [{ ...prevData.datasets[0], data: newData }],
+          datasets: [{
+            ...prevData.datasets[0],
+            data: newData,
+            borderColor: '#67e8f9',           // в стиле твоего приложения
+            backgroundColor: 'rgba(103, 232, 249, 0.15)',
+          }],
         };
       });
     }, 1000);
@@ -938,10 +960,25 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
     navigate('/');
   };
 
+  // Таймер продолжительности звонка
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCallDuration(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="voice-call-container">
       <div className="voice-call-header">
-        <h2 className="voice-call-title">Voice communication with {isCaller ? recipientName : callerName}</h2>
+        <h2 className="voice-call-title">
+          Voice communication with {isCaller ? recipientName : callerName}
+        </h2>
+        <div className="call-duration">
+          {Math.floor(callDuration / 60).toString().padStart(2, '0')}:
+          {(callDuration % 60).toString().padStart(2, '0')}
+        </div>
       </div>
       <div className="audio-container">
         <audio ref={localAudioRef} autoPlay muted />
