@@ -1,26 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 .group-call-container {
   position: relative;
   padding: 20px;
-  background-color: #DAF7A9;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e2937 100%);
+  border-radius: 16px;
   max-width: 600px;
   margin: 20px auto;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border: 2px solid #A5D6A7;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(103, 232, 249, 0.25);
   min-height: 80vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Inter', sans-serif;
+  color: #e2e8f0;
 }
 
 .group-call-title {
-  color: #2E7D32;
+  color: #67e8f9;
   font-size: 28px;
   font-weight: 600;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  margin-bottom: 36px;
   text-align: center;
+  font-family: 'Inter', sans-serif;
 }
 
 .group-call-info {
@@ -28,14 +31,15 @@
   flex-direction: column;
   align-items: center;
   margin-bottom: 20px;
+  gap: 6px;
 }
 
 .call-timer,
 .call-start-time,
 .call-current-time {
   font-size: 16px;
-  color: #424242;
-  margin: 5px 0;
+  color: #94a3b8;
+  margin: 4px 0;
 }
 
 .group-call-participants {
@@ -44,33 +48,36 @@
 }
 
 .group-call-participants h2 {
-  color: #388E3C;
+  color: #67e8f9;
   font-size: 20px;
   font-weight: 600;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  font-family: 'Inter', sans-serif;
 }
 
+/* Список участников в аудио-режиме */
 .group-call-participant-list {
   list-style-type: none;
   padding: 0;
   max-height: 150px;
   overflow-y: auto;
   width: 100%;
-  border: 1px solid #C8E6C9;
-  border-radius: 5px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(103, 232, 249, 0.2);
+  border-radius: 12px;
 }
 
 .group-call-participant-item {
   display: flex;
   align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #C8E6C9;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(103, 232, 249, 0.15);
   transition: background-color 0.2s;
 }
 
 .group-call-participant-item:hover {
-  background-color: #E8F5E9;
+  background: rgba(103, 232, 249, 0.1);
 }
 
 .group-call-participant-item:last-child {
@@ -78,80 +85,88 @@
 }
 
 .group-call-participant-avatar {
-  width: 35px;
-  height: 35px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background-color: #e0e0e0;
+  background-color: #334155;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  color: #757575;
+  font-size: 18px;
+  color: #cbd5e1;
   overflow: hidden;
-  border: 2px solid #81C784;
+  border: 2px solid #67e8f9;
 }
 
 .group-call-participant-name {
-  margin-left: 10px;
+  margin-left: 14px;
   font-size: 16px;
-  color: #424242;
+  color: #e2e8f0;
 }
 
+/* График */
 .group-call-chart-container {
   width: 100%;
   height: 200px;
   margin-bottom: 20px;
+  background: rgba(15, 23, 42, 0.85);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(103, 232, 249, 0.2);
 }
 
+/* Кнопка завершения */
 .group-call-end-button {
-  padding: 10px 20px;
+  padding: 14px 32px;
   border: none;
-  border-radius: 5px;
-  background-color: #e57373;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #ef4444, #f87171);
   color: white;
   cursor: pointer;
   font-size: 16px;
-  font-family: 'Roboto', sans-serif;
-  font-weight: 500;
-  transition: background-color 0.3s, transform 0.1s;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s ease;
+  margin-top: auto;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
 }
 
 .group-call-end-button:hover {
-  background-color: #d32f2f;
+  background: linear-gradient(90deg, #dc2626, #f87171);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(239, 68, 68, 0.6);
 }
 
-.group-call-end-button:active {
-  transform: scale(0.95);
-}
-
-/* [ДОБАВЛЕНО]: Стили для заголовка с кнопкой переключения режимов */
+/* Заголовок участников с кнопкой переключения режима */
 .group-call-participants-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .group-call-mode-toggle {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 26px;
   cursor: pointer;
-  margin-left: 10px;
-  transition: transform 0.2s;
+  margin-left: 12px;
+  padding: 6px;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
 }
 
 .group-call-mode-toggle:hover {
-  transform: scale(1.1);
+  transform: scale(1.15);
+  background: rgba(103, 232, 249, 0.15);
 }
 
-/* [ДОБАВЛЕНО]: Стили для сетки видеоэкранов */
+/* Сетка видео в видео-режиме */
 .group-call-video-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  gap: 16px;
   width: 100%;
-  max-width: 100%;
   margin-top: 10px;
 }
 
@@ -166,9 +181,9 @@
   width: 100%;
   height: 180px;
   background: #000;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  border: 2px solid #81C784;
+  border: 2px solid #67e8f9;
 }
 
 .group-call-video {
@@ -183,15 +198,15 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: #333;
-  color: #fff;
+  background: #1e2937;
+  color: #94a3b8;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  font-family: 'Roboto', sans-serif;
 }
 
+/* Иконка камеры — ТОЧНО как в старом коде */
 .group-call-camera-toggle {
   position: absolute;
   top: 10px;
@@ -209,37 +224,38 @@
   background: rgba(0, 0, 0, 0.3);
 }
 
-/* [ДОБАВЛЕНО]: Стили для активной/неактивной кнопки камеры */
+/* Стили для активной/неактивной кнопки камеры */
 .group-call-camera-toggle.active {
-  background: #4CAF50 !important; /* Зелёный для включённой камеры */
+  background: #4CAF50 !important;
 }
 
 .group-call-camera-toggle.inactive {
-  background: red !important; /* Красный для выключенной камеры */
+  background: red !important;
 }
 
+/* Мобильная адаптация */
 @media (max-width: 768px) {
   .group-call-container {
-    padding-bottom: 30px !important;  /* Резервируем место для кнопки внутри */
-    min-height: 100vh !important;     /* Растягиваем на весь экран */
+    padding-bottom: 30px;
+    min-height: 100vh;
+    border-radius: 16px;
   }
 
   .group-call-end-button {
-    margin-top: auto !important;      /* Прижимает к низу */
-    margin-bottom: 10px !important;   /* Минимальный отступ от края */
-    width: 100%;                      /* Полная ширина */
-    max-width: 300px;                 /* Не слишком широкая */
+    margin-top: auto;
+    margin-bottom: 15px;
+    width: 100%;
+    max-width: 300px;
   }
 
-  /* === ФИКС ДЛЯ ВИДЕО-РЕЖИМА === */
   .group-call-participants {
-    flex: 1 !important;              /* Толкает кнопку вниз */
-    overflow-y: auto !important;     /* Скролл в участниках, если видео много */
-    max-height: 70vh !important;     /* Ограничиваем высоту блока участников */
+    flex: 1;
+    overflow-y: auto;
+    max-height: 70vh;
   }
 
   .group-call-video-grid {
-    max-height: 60vh !important;     /* Ограничиваем видео-сетку */
-    overflow-y: auto !important;     /* Скролл в видео, если нужно */
+    max-height: 60vh;
+    overflow-y: auto;
   }
 }
