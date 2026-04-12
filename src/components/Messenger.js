@@ -1481,9 +1481,9 @@ const Messenger = () => {
 
             for (const msg of messages) {
                 if (
-                    newPreviews[msg.id] ||                    // уже есть превью
+                    newPreviews[msg.id] || 
                     msg.messageType === 'audio' ||
-                    msg.fileUrl ||                            // это файл, а не ссылка
+                    msg.fileUrl || 
                     !msg.content
                 ) {
                     continue;
@@ -1493,11 +1493,9 @@ const Messenger = () => {
                 if (!url) continue;
 
                 try {
-                    // ←←← ГЛАВНОЕ ИЗМЕНЕНИЕ: добавляем параметр ua=facebookexternalhit
-                    const previewUrl = `https://unlimitedpossibilities12.org/api/preview?url=${encodeURIComponent(url)}&ua=facebookexternalhit`;
+                    const previewUrl = `https://unlimitedpossibilities12.org/api/preview?url=${encodeURIComponent(url)}&ua=facebookexternalhit&_t=${Date.now()}`;
 
-                    // Добавляем cache-buster, чтобы браузер не кэшировал старые плохие превью
-                    const res = await fetch(`${previewUrl}&_t=${Date.now()}`);
+                    const res = await fetch(previewUrl);
 
                     if (!res.ok) {
                         console.warn(`Превью не загрузилось для ${url}, статус: ${res.status}`);
@@ -1506,7 +1504,6 @@ const Messenger = () => {
 
                     const data = await res.json();
 
-                    // Если бэкенд вернул хоть что-то полезное — сохраняем
                     if (data.title || data.description || data.image) {
                         newPreviews[msg.id] = {
                             title: data.title || 'Без названия',
@@ -1523,14 +1520,16 @@ const Messenger = () => {
                 }
             }
 
-            // Обновляем состояние только если появилось что-то новое
             if (Object.keys(newPreviews).length > Object.keys(previewData).length) {
                 setPreviewData(newPreviews);
             }
         };
 
-        loadPreviews();
-    }, [messages, previewData]);
+        // Минимальная задержка — 120 мс (почти незаметно, но стабильно)
+        const timer = setTimeout(loadPreviews, 120);
+        return () => clearTimeout(timer);
+
+    }, [messages]);
 
     const openFullScreenImage = (fileUrl) => {
         setFullScreenImage(fileUrl);
