@@ -1473,58 +1473,64 @@ const Messenger = () => {
         return parts.length > 0 ? parts : text;
     };
 
-    // ДОБАВЛЕНО: Загрузка превью ссылок через бэкенд (точно как в личном чате)
+    // ДОБАВЛЕНО: Загрузка превью ссылок через бэкенд + передаём "хороший" User-Agent
+    // Это заставит бэкенд использовать facebookexternalhit (самый надёжный для всех сайтов)
     useEffect(() => {
         const loadPreviews = async () => {
             const newPreviews = { ...previewData };
 
             for (const msg of messages) {
-            if (
-                newPreviews[msg.id] ||
-                msg.messageType === 'audio' ||
-                msg.fileUrl ||
-                !msg.content
-            ) {
-                continue;
-            }
-
-            const url = extractFirstUrl(msg.content);
-            if (!url) continue;
-
-            try {
-                const res = await fetch(
-                `https://unlimitedpossibilities12.org/api/preview?url=${encodeURIComponent(url)}`
-                );
-
-                if (!res.ok) {
-                console.warn(`Превью не загрузилось для ${url}, статус: ${res.status}`);
-                continue;
+                if (
+                    newPreviews[msg.id] ||                    // уже есть превью
+                    msg.messageType === 'audio' ||
+                    msg.fileUrl ||                            // это файл, а не ссылка
+                    !msg.content
+                ) {
+                    continue;
                 }
 
-                const data = await res.json();
+                const url = extractFirstUrl(msg.content);
+                if (!url) continue;
 
-                if (!data.title && !data.description && !data.image) continue;
+                try {
+                    // ←←← ГЛАВНОЕ ИЗМЕНЕНИЕ: добавляем параметр ua=facebookexternalhit
+                    const previewUrl = `https://unlimitedpossibilities12.org/api/preview?url=${encodeURIComponent(url)}&ua=facebookexternalhit`;
 
-                newPreviews[msg.id] = {
-                title: data.title || 'Без названия',
-                description: data.description || '',
-                imageUrl: data.image || '',
-                url: url,
-                };
+                    // Добавляем cache-buster, чтобы браузер не кэшировал старые плохие превью
+                    const res = await fetch(`${previewUrl}&_t=${Date.now()}`);
 
-                console.log(`Превью загружено для сообщения ${msg.id}`);
-            } catch (err) {
-                console.warn(`Ошибка загрузки превью для ${url}:`, err);
+                    if (!res.ok) {
+                        console.warn(`Превью не загрузилось для ${url}, статус: ${res.status}`);
+                        continue;
+                    }
+
+                    const data = await res.json();
+
+                    // Если бэкенд вернул хоть что-то полезное — сохраняем
+                    if (data.title || data.description || data.image) {
+                        newPreviews[msg.id] = {
+                            title: data.title || 'Без названия',
+                            description: data.description || '',
+                            imageUrl: data.image || '',
+                            url: url,
+                        };
+                        console.log(`✅ Превью успешно загружено для сообщения ${msg.id} (${url})`);
+                    } else {
+                        console.log(`⚠️ Превью пришло пустым для ${url}`);
+                    }
+                } catch (err) {
+                    console.warn(`❌ Ошибка загрузки превью для ${url}:`, err);
+                }
             }
-            }
 
+            // Обновляем состояние только если появилось что-то новое
             if (Object.keys(newPreviews).length > Object.keys(previewData).length) {
-            setPreviewData(newPreviews);
+                setPreviewData(newPreviews);
             }
         };
 
         loadPreviews();
-    }, [messages]);
+    }, [messages, previewData]);
 
     const openFullScreenImage = (fileUrl) => {
         setFullScreenImage(fileUrl);
