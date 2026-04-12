@@ -141,8 +141,10 @@ const VoiceCall = ({ recipientId }) => {
     const interval = setInterval(() => {
       setChartData((prevData) => {
         const newTime = new Date().toLocaleTimeString([], { 
+          hour: '2-digit',
           minute: '2-digit', 
-          second: '2-digit' 
+          second: '2-digit',
+          hour12: false   // 24-часовой формат
         });
 
         const newValue = Math.random() * 100;
@@ -150,7 +152,6 @@ const VoiceCall = ({ recipientId }) => {
         let newLabels = [...prevData.labels, newTime];
         let newData = [...prevData.datasets[0].data, newValue];
 
-        // Удаляем старые точки, если их больше MAX_POINTS
         if (newLabels.length > MAX_POINTS) {
           newLabels = newLabels.slice(-MAX_POINTS);
           newData = newData.slice(-MAX_POINTS);
