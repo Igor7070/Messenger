@@ -21,21 +21,38 @@ import java.util.regex.Pattern;
 public class PreviewController {
 
     @GetMapping("/preview")
-    public ResponseEntity<Map<String, String>> getLinkPreview(@RequestParam String url) {
+    public ResponseEntity<Map<String, String>> getLinkPreview(
+            @RequestParam String url,
+            @RequestParam(required = false, defaultValue = "") String ua) {   // ← добавили параметр ua
+
         if (url == null || url.trim().isEmpty()) {
             System.out.println("Ошибка: URL не передан или пустой");
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "URL is required"));
+            return ResponseEntity.badRequest().body(Map.of("error", "URL is required"));
         }
 
         System.out.println("Запрос превью для URL: " + url);
 
+        // Выбираем User-Agent
+        String userAgent;
+        if (!ua.isEmpty()) {
+            if ("facebookexternalhit".equals(ua)) {
+                userAgent = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
+            } else {
+                userAgent = ua; // если передадут другой
+            }
+        } else {
+            // Запасной вариант — мобильный User-Agent (как в Android)
+            userAgent = "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
+        }
+
+        System.out.println("Используем User-Agent: " + userAgent);
+
         try {
-            // Улучшенные заголовки + больший таймаут
             Document doc = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    .userAgent(userAgent)                    // ← теперь используем нужный
                     .referrer("https://www.google.com/")
-                    .timeout(10000)  // 10 секунд — YouTube часто требует больше времени
+                    .timeout(15000)                          // увеличил до 15 сек
+                    .followRedirects(true)
                     .get();
 
             // Title
@@ -50,7 +67,7 @@ public class PreviewController {
                             .map(el -> el.attr("content"))
                             .orElse(""));
 
-            // Image — самый важный блок
+            // Image
             String image = getBestImage(doc, url);
 
             Map<String, String> result = new HashMap<>();
@@ -65,10 +82,13 @@ public class PreviewController {
 
         } catch (Exception e) {
             System.err.println("Не удалось получить превью для " + url + ": " + e.getMessage());
-            // e.printStackTrace();  // Раскомментировать для полной трассировки в консоли
-
-            // Фронт не должен падать — возвращаем пустой объект
-            return ResponseEntity.ok(Map.of());
+            // Возвращаем хоть что-то, чтобы фронт не падал
+            return ResponseEntity.ok(Map.of(
+                    "title", "Не удалось загрузить превью",
+                    "description", "",
+                    "image", "",
+                    "url", url
+            ));
         }
     }
 
