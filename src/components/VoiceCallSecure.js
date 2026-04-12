@@ -577,7 +577,7 @@ const VoiceCallSecure = () => {
   return (
     <div className="voice-call-container">
       <div className="voice-call-header">
-        <h2>Защищённый звонок с {isCaller ? recipientName : callerName}</h2>
+        <h2>Secure call with {isCaller ? recipientName : callerName}</h2>
         <div style={{
           fontSize: '18px',
           fontWeight: 'bold',
