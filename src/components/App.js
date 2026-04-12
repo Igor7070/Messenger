@@ -60,44 +60,6 @@ const AppContent = () => {
     }
   }, [initializeWebSocket, location.pathname]);
 
-  // Темный системный навигационный бар только внутри мессенджера
-  useEffect(() => {
-    let meta = document.querySelector('meta[name="theme-color"]');
-
-    // Если мета-тега ещё нет — создаём его
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.setAttribute('name', 'theme-color');
-      document.getElementsByTagName('head')[0].appendChild(meta);
-    }
-
-    // Сохраняем предыдущий цвет (чтобы вернуть при выходе)
-    const previousColor = meta.getAttribute('content') || '#ffffff';
-
-    // Принудительно устанавливаем тёмный цвет
-    meta.setAttribute('content', '#0f172a');
-
-    // Дополнительно принуждаем браузер обновить тему
-    document.documentElement.style.setProperty('color-scheme', 'dark');
-
-    return () => {
-      // Возвращаем предыдущий цвет при выходе из мессенджера
-      if (meta) {
-        meta.setAttribute('content', previousColor);
-      }
-      document.documentElement.style.removeProperty('color-scheme');
-    };
-  }, [location.pathname]);
-
-  // Дополнительное принуждение для нижней панели
-  useEffect(() => {
-    document.body.style.backgroundColor = '#0f172a';
-
-    return () => {
-      document.body.style.backgroundColor = '';
-    };
-  }, [location.pathname]);
-
   return (
     <>
       {toastPortal && createPortal(
