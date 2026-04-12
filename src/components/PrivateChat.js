@@ -1575,20 +1575,16 @@ const PrivateChat = () => {
   };
 
   // ДОБАВЛЕНО: Загрузка превью ссылок через бэкенд
+  // Используем facebookexternalhit + минимальная задержка
   useEffect(() => {
     const loadPreviews = async () => {
       const newPreviews = { ...previewData };
 
       for (const msg of messages) {
-        // Пропускаем, если:
-        // - уже есть кэш
-        // - это аудио
-        // - есть fileUrl (файл)
-        // - нет текста
         if (
-          newPreviews[msg.id] ||
+          newPreviews[msg.id] || 
           msg.messageType === 'audio' ||
-          msg.fileUrl ||
+          msg.fileUrl || 
           !msg.content
         ) {
           continue;
@@ -1598,9 +1594,9 @@ const PrivateChat = () => {
         if (!url) continue;
 
         try {
-          const res = await fetch(
-            `https://unlimitedpossibilities12.org/api/preview?url=${encodeURIComponent(url)}`
-          );
+          const previewUrl = `https://unlimitedpossibilities12.org/api/preview?url=${encodeURIComponent(url)}&ua=facebookexternalhit&_t=${Date.now()}`;
+
+          const res = await fetch(previewUrl);
 
           if (!res.ok) {
             console.warn(`Превью не загрузилось для ${url}, статус: ${res.status}`);
@@ -1609,29 +1605,32 @@ const PrivateChat = () => {
 
           const data = await res.json();
 
-          // Если сервер вернул пустой объект — пропускаем
-          if (!data.title && !data.description && !data.image) continue;
-
-          newPreviews[msg.id] = {
-            title: data.title || 'Без названия',
-            description: data.description || '',
-            imageUrl: data.image || '',
-            url: url,
-          };
-
-          console.log(`Превью загружено для сообщения ${msg.id}:`, newPreviews[msg.id]);
+          if (data.title || data.description || data.image) {
+            newPreviews[msg.id] = {
+              title: data.title || 'Без названия',
+              description: data.description || '',
+              imageUrl: data.image || '',
+              url: url,
+            };
+            console.log(`✅ Превью успешно загружено для сообщения ${msg.id} (${url})`);
+          } else {
+            console.log(`⚠️ Превью пришло пустым для ${url}`);
+          }
         } catch (err) {
-          console.warn(`Ошибка загрузки превью для ${url}:`, err);
+          console.warn(`❌ Ошибка загрузки превью для ${url}:`, err);
         }
       }
 
-      // Обновляем состояние только если что-то новое появилось
+      // Обновляем только если появилось новое превью
       if (Object.keys(newPreviews).length > Object.keys(previewData).length) {
         setPreviewData(newPreviews);
       }
     };
 
-    loadPreviews();
+    // Минимальная задержка 140 мс — быстро и стабильно
+    const timer = setTimeout(loadPreviews, 140);
+    return () => clearTimeout(timer);
+
   }, [messages]); // Зависимость только от messages — пересчитываем при изменении списка
 
   const openFullScreenImage = (fileUrl) => {
