@@ -60,6 +60,28 @@ const AppContent = () => {
     }
   }, [initializeWebSocket, location.pathname]);
 
+  // Темный системный навигационный бар только внутри мессенджера
+  useEffect(() => {
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+
+    if (!metaThemeColor) {
+      const newMeta = document.createElement('meta');
+      newMeta.setAttribute('name', 'theme-color');
+      document.getElementsByTagName('head')[0].appendChild(newMeta);
+    }
+
+    // Устанавливаем тёмный цвет при входе в мессенджер
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0f172a');
+
+    // Возвращаем стандартный цвет при выходе из мессенджера
+    return () => {
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) {
+        meta.setAttribute('content', '#ffffff'); // или тот цвет, который был по умолчанию
+      }
+    };
+  }, [location.pathname]);
+
   return (
     <>
       {toastPortal && createPortal(
