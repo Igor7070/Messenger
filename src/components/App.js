@@ -89,6 +89,15 @@ const AppContent = () => {
     };
   }, [location.pathname]);
 
+  // Дополнительное принуждение для нижней панели
+  useEffect(() => {
+    document.body.style.backgroundColor = '#0f172a';
+
+    return () => {
+      document.body.style.backgroundColor = '';
+    };
+  }, [location.pathname]);
+
   return (
     <>
       {toastPortal && createPortal(
