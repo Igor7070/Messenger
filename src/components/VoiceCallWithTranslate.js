@@ -367,8 +367,10 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
     const interval = setInterval(() => {
       setChartData((prevData) => {
         const newTime = new Date().toLocaleTimeString([], { 
+          hour: '2-digit',      // ← добавили часы
           minute: '2-digit', 
-          second: '2-digit' 
+          second: '2-digit',
+          hour12: false         // 24-часовой формат
         });
 
         const newValue = Math.random() * 85 + 15;
@@ -376,7 +378,6 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         let newLabels = [...prevData.labels, newTime];
         let newData = [...prevData.datasets[0].data, newValue];
 
-        // Удаляем старые точки — главное исправление
         if (newLabels.length > MAX_POINTS) {
           newLabels = newLabels.slice(-MAX_POINTS);
           newData = newData.slice(-MAX_POINTS);
@@ -387,7 +388,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           datasets: [{
             ...prevData.datasets[0],
             data: newData,
-            borderColor: '#67e8f9',           // в стиле твоего приложения
+            borderColor: '#67e8f9',
             backgroundColor: 'rgba(103, 232, 249, 0.15)',
           }],
         };
