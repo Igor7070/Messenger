@@ -1761,11 +1761,28 @@
         height: 14px;
     }
 
-    .message-translate-container .message-translate-button {
-        font-size: 10px;
-        padding: 1px;
-        width: 14px;
-        height: 14px;
+    /* ИКОНКА ГЛОБУСА ПЕРЕВОДА — свои сообщения (мобильная версия) */
+    .message.current-user .message-translate-container .message-translate-button {
+        color: #ffffff !important;
+        opacity: 1 !important;
+        font-size: 11px !important;
+        width: 15px !important;
+        height: 15px !important;
+        text-shadow: 
+            0 0 3px rgba(0, 0, 0, 0.85), 
+            0 1px 3px rgba(0, 0, 0, 0.7) !important;
+    }
+
+    /* Hover-эффект */
+    .message.current-user .message-translate-container .message-translate-button:hover {
+        color: #fefce8 !important;
+        transform: scale(1.25) !important;
+        text-shadow: 0 0 5px rgba(0, 0, 0, 0.9) !important;
+    }
+
+    /* Для аудио-сообщений */
+    .message.current-user.audio-message .message-translate-container .message-translate-button {
+        position: static !important;
     }
 
     .message-translate-container .message-translate-button[data-tooltip]::after {
