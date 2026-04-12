@@ -62,23 +62,30 @@ const AppContent = () => {
 
   // Темный системный навигационный бар только внутри мессенджера
   useEffect(() => {
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    let meta = document.querySelector('meta[name="theme-color"]');
 
-    if (!metaThemeColor) {
-      const newMeta = document.createElement('meta');
-      newMeta.setAttribute('name', 'theme-color');
-      document.getElementsByTagName('head')[0].appendChild(newMeta);
+    // Если мета-тега ещё нет — создаём его
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      document.getElementsByTagName('head')[0].appendChild(meta);
     }
 
-    // Устанавливаем тёмный цвет при входе в мессенджер
-    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0f172a');
+    // Сохраняем предыдущий цвет (чтобы вернуть при выходе)
+    const previousColor = meta.getAttribute('content') || '#ffffff';
 
-    // Возвращаем стандартный цвет при выходе из мессенджера
+    // Принудительно устанавливаем тёмный цвет
+    meta.setAttribute('content', '#0f172a');
+
+    // Дополнительно принуждаем браузер обновить тему
+    document.documentElement.style.setProperty('color-scheme', 'dark');
+
     return () => {
-      const meta = document.querySelector('meta[name="theme-color"]');
+      // Возвращаем предыдущий цвет при выходе из мессенджера
       if (meta) {
-        meta.setAttribute('content', '#ffffff'); // или тот цвет, который был по умолчанию
+        meta.setAttribute('content', previousColor);
       }
+      document.documentElement.style.removeProperty('color-scheme');
     };
   }, [location.pathname]);
 
