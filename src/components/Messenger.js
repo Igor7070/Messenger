@@ -1526,7 +1526,7 @@ const Messenger = () => {
         };
 
         // Минимальная задержка — 120 мс (почти незаметно, но стабильно)
-        const timer = setTimeout(loadPreviews, 120);
+        const timer = setTimeout(loadPreviews, 140);
         return () => clearTimeout(timer);
 
     }, [messages]);
