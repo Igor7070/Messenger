@@ -1473,7 +1473,7 @@ const Messenger = () => {
         return parts.length > 0 ? parts : text;
     };
 
-    // ДОБАВЛЕНО: Загрузка превью ссылок через бэкенд + передаём "хороший" User-Agent
+    // Загрузка превью ссылок через бэкенд + передаём "хороший" User-Agent
     // Это заставит бэкенд использовать facebookexternalhit (самый надёжный для всех сайтов)
     useEffect(() => {
         const loadPreviews = async () => {
