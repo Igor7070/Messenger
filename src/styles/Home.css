@@ -648,7 +648,7 @@ h2 {
 /* === УЛУЧШЕНИЕ МОДАЛКИ CREATE USER === */
 .modal-file-input {
     width: 100%;
-    padding: 10px 0 10px 5px;
+    padding: 10px 0 10px 7px;
     margin-bottom: 20px !important; 
     background: rgba(255, 255, 255, 0.08);
     color: #e2e8f0;
