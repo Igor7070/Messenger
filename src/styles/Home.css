@@ -644,3 +644,47 @@ h2 {
     -webkit-overflow-scrolling: touch !important;
   }
 }
+
+/* === УЛУЧШЕНИЕ МОДАЛКИ CREATE USER === */
+.modal-file-input {
+    width: 100%;
+    padding: 10px 0;
+    margin-bottom: 20px !important;     /* ← большой отступ перед кнопкой Create User */
+    background: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+/* Стиль для текста выбранного файла */
+.modal-file-input::file-selector-button {
+    padding: 8px 16px;
+    background: linear-gradient(90deg, #6366f1, #22d3ee);
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 12px;
+    font-weight: 500;
+}
+
+.modal-file-input::file-selector-button:hover {
+    background: linear-gradient(90deg, #4f46e5, #06b6d4);
+}
+
+/* Цвет текста имени выбранного файла */
+input[type="file"] {
+    color: #cbd5e1 !important;           /* светло-серый — хорошо видно */
+}
+
+/* Если в некоторых браузерах цвет всё равно тёмный */
+input[type="file"]::-webkit-file-upload-button {
+    color: #e2e8f0;
+}
+
+/* Дополнительный отступ для кнопки Create User */
+.modal-create-button {
+    margin-top: 10px !important;
+}
