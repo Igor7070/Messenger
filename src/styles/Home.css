@@ -648,8 +648,8 @@ h2 {
 /* === УЛУЧШЕНИЕ МОДАЛКИ CREATE USER === */
 .modal-file-input {
     width: 100%;
-    padding: 10px 0 10px 16px;
-    margin-bottom: 20px !important;     /* ← большой отступ перед кнопкой Create User */
+    padding: 10px 0 10px 5px;
+    margin-bottom: 20px !important; 
     background: rgba(255, 255, 255, 0.08);
     color: #e2e8f0;
     border: 1px solid rgba(148, 163, 184, 0.4);
