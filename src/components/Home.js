@@ -104,6 +104,8 @@ const Home = () => {
   const { incomingCall, acceptCall, rejectCall, setCurrentUserId: setContextUserId } = useCallWebSocket();
   const { setCurrentUserId: setNotificationUserId } = usePrivateMessageNotification();
   const { openAssistant } = useAssistant();  // ← это позволит открыть окно по клику
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef(null);
 
   console.log('Rendering Home, usersStatus:', usersStatus);
 
@@ -270,6 +272,18 @@ const Home = () => {
       }
     };
   }, [currentUserId, chats]);
+
+  // Закрытие меню при клике вне его
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleNewMessage = async (message, chatId) => {
     console.log('Handling new message:', message, 'for chatId:', chatId);
@@ -449,6 +463,69 @@ const Home = () => {
           </>
         )}
       </div>
+
+      {/* === Аватар текущего пользователя в левом верхнем углу (только когда авторизован) === */}
+      {isLoggedIn && currentUserId && (
+        <div className="current-user-avatar-container" ref={profileMenuRef}>
+          <div 
+            className="current-user-avatar"
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            title={localStorage.getItem('username') || 'User'}
+          >
+            {(() => {
+              const storedUsername = localStorage.getItem('username');
+              const initials = storedUsername ? storedUsername.charAt(0).toUpperCase() : '?';
+              // Если позже добавишь аватар пользователя в localStorage, можно будет показывать img
+              return <div className="avatar-initials">{initials}</div>;
+            })()}
+          </div>
+
+          {/* Выпадающее меню */}
+          {showProfileMenu && (
+            <div className="profile-dropdown-menu">
+              <div className="profile-dropdown-header">
+                <div className="profile-dropdown-avatar">
+                  {(() => {
+                    const storedUsername = localStorage.getItem('username');
+                    const initials = storedUsername ? storedUsername.charAt(0).toUpperCase() : '?';
+                    return <div className="avatar-initials-large">{initials}</div>;
+                  })()}
+                </div>
+                <div className="profile-dropdown-info">
+                  <div className="profile-dropdown-name">
+                    {localStorage.getItem('username') || 'Пользователь'}
+                  </div>
+                  <div className="profile-dropdown-status">Online</div>
+                </div>
+              </div>
+
+              <div className="profile-dropdown-items">
+                <div className="profile-dropdown-item" onClick={() => {
+                  setShowProfileMenu(false);
+                  // TODO: navigate to profile
+                  toast.info('My Profile — будет позже');
+                }}>
+                  👤 My Profile
+                </div>
+                <div className="profile-dropdown-item" onClick={() => {
+                  setShowProfileMenu(false);
+                  // TODO: navigate to chats
+                  toast.info('Chats — будет позже');
+                }}>
+                  💬 Chats
+                </div>
+                <div className="profile-dropdown-item" onClick={() => {
+                  setShowProfileMenu(false);
+                  // TODO: navigate to calls
+                  toast.info('Calls — будет позже');
+                }}>
+                  📞 Calls
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Десктоп: иконка ассистента по центру под логином */}
       {window.innerWidth > 800 && (
