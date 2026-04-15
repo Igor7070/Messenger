@@ -216,6 +216,7 @@ const Home = () => {
       setContextUserId(userId);
       setNotificationUserId(userId);
       setIsLoggedIn(true);
+      loadCurrentUserData(userId); // Загружаем данные текущего пользователя (включая аватар)
     }
     fetchChats();
     fetchUsers();
@@ -440,6 +441,30 @@ const Home = () => {
   const filteredUsers = users.filter((user) =>
     user.username.toLowerCase().includes(userSearchTerm.toLowerCase())
   );
+
+  // Загрузка данных текущего пользователя (включая аватар)
+  const loadCurrentUserData = async (userId) => {
+    try {
+      console.log(`Loading current user data for ID: ${userId}`);
+      const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${userId}`);
+
+      if (response.ok) {
+        const user = await response.json();
+        console.log('Current user data loaded:', user);
+
+        if (user.avatar) {
+          localStorage.setItem('userAvatar', user.avatar);
+          console.log('Аватар текущего пользователя сохранён:', user.avatar);
+        } else {
+          localStorage.removeItem('userAvatar');
+        }
+      } else {
+        console.warn(`Failed to load current user data. Status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error loading current user data:', error);
+    }
+  };
 
   return (
     <>
