@@ -330,6 +330,13 @@ const Home = () => {
       const userId = Number(user.id);
       localStorage.setItem('userId', String(userId));
       localStorage.setItem('username', user.username);
+
+      // Сохраняем аватар, если он есть
+      if (user.avatar) {
+        localStorage.setItem('userAvatar', user.avatar);
+        console.log('Аватар сохранён в localStorage:', user.avatar);
+      }
+
       setCurrentUserId(userId);
       setContextUserId(userId);
       setNotificationUserId(userId);
@@ -349,6 +356,7 @@ const Home = () => {
     disconnectWebSocket();
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
+    localStorage.removeItem('userAvatar');   // ← очищаем аватар
     setCurrentUserId(null);
     setContextUserId(null);
     setNotificationUserId(null);
