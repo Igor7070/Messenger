@@ -556,22 +556,44 @@ const Home = () => {
               </div>
 
               <div className="profile-dropdown-items">
-                <div className="profile-dropdown-item" onClick={() => {
-                  setShowProfileMenu(false);
-                  toast.info('My Profile — будет позже');
-                }}>
+                {/* My Profile */}
+                <div 
+                  className="profile-dropdown-item" 
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    if (currentUserId) {
+                      navigate(`/user/${currentUserId}`);
+                    } else {
+                      toast.error("User ID not found");
+                    }
+                  }}
+                >
                   👤 My Profile
                 </div>
-                <div className="profile-dropdown-item" onClick={() => {
-                  setShowProfileMenu(false);
-                  toast.info('Chats — будет позже');
-                }}>
+
+                {/* Chats — список личных чатов */}
+                <div 
+                  className="profile-dropdown-item" 
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    if (currentUserId) {
+                      navigate(`/user/${currentUserId}/personal-chats`);
+                    } else {
+                      toast.error("User ID not found");
+                    }
+                  }}
+                >
                   💬 Chats
                 </div>
-                <div className="profile-dropdown-item" onClick={() => {
-                  setShowProfileMenu(false);
-                  toast.info('Calls — будет позже');
-                }}>
+
+                {/* Calls */}
+                <div 
+                  className="profile-dropdown-item" 
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    navigate('/calls');
+                  }}
+                >
                   📞 Calls
                 </div>
               </div>
