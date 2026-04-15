@@ -474,9 +474,20 @@ const Home = () => {
           >
             {(() => {
               const storedUsername = localStorage.getItem('username');
-              const initials = storedUsername ? storedUsername.charAt(0).toUpperCase() : '?';
-              // Если позже добавишь аватар пользователя в localStorage, можно будет показывать img
-              return <div className="avatar-initials">{initials}</div>;
+              const storedAvatar = localStorage.getItem('userAvatar'); // ← будем хранить путь к аватару
+
+              if (storedAvatar) {
+                return (
+                  <img 
+                    src={`https://unlimitedpossibilities12.org${storedAvatar}`} 
+                    alt="Avatar" 
+                    className="avatar-image"
+                  />
+                );
+              } else {
+                const initials = storedUsername ? storedUsername.charAt(0).toUpperCase() : '?';
+                return <div className="avatar-initials">{initials}</div>;
+              }
             })()}
           </div>
 
@@ -487,8 +498,20 @@ const Home = () => {
                 <div className="profile-dropdown-avatar">
                   {(() => {
                     const storedUsername = localStorage.getItem('username');
-                    const initials = storedUsername ? storedUsername.charAt(0).toUpperCase() : '?';
-                    return <div className="avatar-initials-large">{initials}</div>;
+                    const storedAvatar = localStorage.getItem('userAvatar');
+
+                    if (storedAvatar) {
+                      return (
+                        <img 
+                          src={`https://unlimitedpossibilities12.org${storedAvatar}`} 
+                          alt="Avatar" 
+                          className="avatar-image-large"
+                        />
+                      );
+                    } else {
+                      const initials = storedUsername ? storedUsername.charAt(0).toUpperCase() : '?';
+                      return <div className="avatar-initials-large">{initials}</div>;
+                    }
                   })()}
                 </div>
                 <div className="profile-dropdown-info">
@@ -502,21 +525,18 @@ const Home = () => {
               <div className="profile-dropdown-items">
                 <div className="profile-dropdown-item" onClick={() => {
                   setShowProfileMenu(false);
-                  // TODO: navigate to profile
                   toast.info('My Profile — будет позже');
                 }}>
                   👤 My Profile
                 </div>
                 <div className="profile-dropdown-item" onClick={() => {
                   setShowProfileMenu(false);
-                  // TODO: navigate to chats
                   toast.info('Chats — будет позже');
                 }}>
                   💬 Chats
                 </div>
                 <div className="profile-dropdown-item" onClick={() => {
                   setShowProfileMenu(false);
-                  // TODO: navigate to calls
                   toast.info('Calls — будет позже');
                 }}>
                   📞 Calls

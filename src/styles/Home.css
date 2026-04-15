@@ -682,6 +682,28 @@ h2 {
   padding-left: 24px;
 }
 
+/* Стили для фото аватара */
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-image-large {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Если фото не загрузилось — fallback на букву */
+.current-user-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
 /* Мобильная версия (без изменений) */
 @media (max-width: 768px) {
   .home-container {
