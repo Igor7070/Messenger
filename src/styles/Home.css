@@ -569,8 +569,8 @@ h2 {
 
 .current-user-avatar-container {
   position: absolute;
-  top: 24px;
-  left: 24px;
+  top: 28px;
+  left: 28px;
   z-index: 100;
 }
 
@@ -786,6 +786,12 @@ h2 {
   .current-user-avatar-container {
     top: 10px;
     left: 10px;
+  }
+
+  .current-user-avatar {
+    width: 42px;      /* ← текущий размер на телефоне */
+    height: 42px;
+    font-size: 18px;  /* размер первой буквы */
   }
 }
 
