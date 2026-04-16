@@ -569,8 +569,8 @@ h2 {
 
 .current-user-avatar-container {
   position: absolute;
-  top: 20px;
-  left: 20px;
+  top: 24px;
+  left: 24px;
   z-index: 100;
 }
 
@@ -784,8 +784,8 @@ h2 {
   }
 
   .current-user-avatar-container {
-    top: 12px;
-    left: 12px;
+    top: 10px;
+    left: 10px;
   }
 }
 
