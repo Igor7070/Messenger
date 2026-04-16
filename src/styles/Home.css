@@ -782,6 +782,11 @@ h2 {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
   }
+
+  .current-user-avatar-container {
+    top: 12px;
+    left: 12px;
+  }
 }
 
 /* === УЛУЧШЕНИЕ МОДАЛКИ CREATE USER === */
