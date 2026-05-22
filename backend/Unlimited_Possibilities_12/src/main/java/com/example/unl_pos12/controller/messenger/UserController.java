@@ -155,11 +155,9 @@ public class UserController {
     @GetMapping("/{id}/private-chats")
     public ResponseEntity<List<Chat>> getPrivateChatsByUserId(@PathVariable Long id) {
         List<Chat> privateChats = userService.getPrivateChatsByUserId(id);
-        if (!privateChats.isEmpty()) {
-            return ResponseEntity.ok(privateChats); // Возвращаем список приватных чатов
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // Пользователь не найден
-        }
+
+        // Всегда возвращается 200 OK, даже если список пустой
+        return ResponseEntity.ok(privateChats);
     }
 
     @DeleteMapping("/{userId}/private-chats/{chatId}")
