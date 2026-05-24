@@ -140,7 +140,7 @@ public class PreviewController {
     }
 
     /**
-     * Извлекает ID видео из YouTube-ссылки..
+     * Извлекает ID видео из YouTube-ссылки
      */
     private String extractYouTubeId(String url) {
         Pattern pattern = Pattern.compile(
