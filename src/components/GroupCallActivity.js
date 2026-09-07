@@ -52,6 +52,15 @@ const GroupCallActivity = () => {
   const [isCameraOn, setIsCameraOn] = useState(false); // Состояние для отслеживания включения камеры текущего пользователя
   const localVideoStreamRef = useRef(null); // Ref для хранения локального видеопотока
 
+  // Режим пропорций плиток участников: 'auto' — по реальному разрешению потока,
+  // 'landscape' и 'portrait' — принудительно одинаковые плитки. Выбор запоминается.
+  const [tileMode, setTileMode] = useState(() => {
+    const stored = localStorage.getItem('groupCallTileMode');
+    return stored === 'landscape' || stored === 'portrait' ? stored : 'auto';
+  });
+  // userId -> соотношение сторон входящего видео (ширина / высота)
+  const [videoAspects, setVideoAspects] = useState({});
+
   const { sendSignal, setGroupSignalHandler, subscribeToRoom } = useCallWebSocket();
 
   const [chartData, setChartData] = useState({
@@ -1370,6 +1379,35 @@ const GroupCallActivity = () => {
     setIsVideoMode((prev) => !prev);
   };
 
+  // Запоминает реальные пропорции входящего потока участника.
+  // Разрешение может меняться по ходу звонка, поэтому вызывается и на resize.
+  const updateVideoAspect = (userId, videoElement) => {
+    if (!videoElement || !videoElement.videoWidth || !videoElement.videoHeight) return;
+    const aspect = videoElement.videoWidth / videoElement.videoHeight;
+    setVideoAspects((prev) => {
+      const known = prev[userId];
+      if (known && Math.abs(known - aspect) < 0.01) return prev; // без лишнего рендера
+      return { ...prev, [userId]: aspect };
+    });
+  };
+
+  const TILE_MODES = ['auto', 'landscape', 'portrait'];
+  const TILE_MODE_LABELS = { auto: 'Auto', landscape: 'Wide', portrait: 'Tall' };
+
+  const cycleTileMode = () => {
+    const next = TILE_MODES[(TILE_MODES.indexOf(tileMode) + 1) % TILE_MODES.length];
+    setTileMode(next);
+    localStorage.setItem('groupCallTileMode', next);
+  };
+
+  // Пропорции конкретной плитки: в ручных режимах одинаковые для всех,
+  // в auto — по потоку участника, с запасным 16/9 пока разрешение неизвестно.
+  const getTileAspect = (userId) => {
+    if (tileMode === 'landscape') return 16 / 9;
+    if (tileMode === 'portrait') return 9 / 16;
+    return videoAspects[String(userId)] || 16 / 9;
+  };
+
   // [ДОБАВЛЕНО]: Функция для рендеринга видеоэкранов
   const renderVideoScreens = () => {
     return (
@@ -1377,11 +1415,24 @@ const GroupCallActivity = () => {
         {callParticipants.map((user) => (
           <div key={user.id} className="group-call-video-container">
             <div className="group-call-participant-name">{user.username}</div>
-            <div className="group-call-video-wrapper">
+            <div
+              className="group-call-video-wrapper"
+              style={{ aspectRatio: getTileAspect(user.id) }}
+            >
               <video
                 id={`remote-video-${user.id}`}
                 ref={(el) => {
-                  if (el) videoRefs.current.set(String(user.id), el);
+                  if (!el) return;
+                  videoRefs.current.set(String(user.id), el);
+                  // Слушатели вешаем один раз на элемент: ref-колбэк
+                  // вызывается на каждый ререндер.
+                  if (!el.dataset.aspectBound) {
+                    el.dataset.aspectBound = '1';
+                    const onSize = () => updateVideoAspect(String(user.id), el);
+                    el.addEventListener('loadedmetadata', onSize);
+                    el.addEventListener('resize', onSize); // разрешение меняется по ходу звонка
+                  }
+                  updateVideoAspect(String(user.id), el);
                 }}
                 autoPlay
                 playsInline
@@ -1589,6 +1640,15 @@ const GroupCallActivity = () => {
               {isVideoMode ? '🔊' : '📷'}
             </span>
           </button>
+          {isVideoMode && (
+            <button
+              onClick={cycleTileMode}
+              className="group-call-tile-mode-toggle"
+              title="Screen shape: Auto fits each participant, Wide and Tall force the same shape for everyone"
+            >
+              {TILE_MODE_LABELS[tileMode]}
+            </button>
+          )}
         </div>
         {isVideoMode ? (
           renderVideoScreens()

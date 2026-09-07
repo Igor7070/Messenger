@@ -176,20 +176,42 @@
   align-items: center;
 }
 
+/* Высота больше не фиксированная: пропорции задаются инлайновым aspect-ratio
+   из GroupCallActivity.js — либо по реальному разрешению потока (режим auto),
+   либо принудительно 16/9 или 9/16. Значение здесь — запасное, на случай если
+   размеры потока ещё неизвестны. */
 .group-call-video-wrapper {
   position: relative;
   width: 100%;
-  height: 180px;
+  aspect-ratio: 16 / 9;
+  max-height: 60vh;
   background: #000;
   border-radius: 12px;
   overflow: hidden;
   border: 2px solid #67e8f9;
 }
 
+/* contain, а не cover: cover заполнял коробку и срезал всё, что не влезло,
+   поэтому вертикальное видео с телефона обрезалось сверху и снизу. */
 .group-call-video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+}
+
+.group-call-tile-mode-toggle {
+  background: none;
+  border: 1px solid #67e8f9;
+  border-radius: 8px;
+  color: #67e8f9;
+  cursor: pointer;
+  font-size: 13px;
+  margin-left: 8px;
+  padding: 4px 10px;
+}
+
+.group-call-tile-mode-toggle:hover {
+  background: rgba(103, 232, 249, 0.12);
 }
 
 .group-call-video-placeholder {
