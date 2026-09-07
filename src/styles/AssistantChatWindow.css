@@ -317,7 +317,7 @@
 .menu-dots-btn {
   background: transparent;
   border: none;
-  padding: 3px 5px;          /* уменьшили padding */
+  padding: 3px 5px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
