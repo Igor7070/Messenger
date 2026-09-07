@@ -1,5 +1,7 @@
 package com.example.unl_pos12.controller.messenger;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -9,8 +11,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -19,6 +25,16 @@ import java.util.regex.Pattern;
 @RestController
 @RequestMapping("/api")
 public class PreviewController {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    /**
+     * ID видео состоит ровно из 11 символов [A-Za-z0-9_-].
+     * Покрывает youtu.be/ID, /watch?v=ID, /embed/ID, /shorts/ID, /live/ID, /v/ID.
+     */
+    private static final Pattern YOUTUBE_ID = Pattern.compile(
+            "(?:youtu\\.be/|youtube\\.com/(?:watch\\?(?:[^#]*&)?v=|embed/|shorts/|live/|v/))([A-Za-z0-9_-]{11})"
+    );
 
     @GetMapping("/preview")
     public ResponseEntity<Map<String, String>> getLinkPreview(
@@ -31,6 +47,18 @@ public class PreviewController {
         }
 
         System.out.println("Запрос превью для URL: " + url);
+
+        // YouTube обрабатываем ДО общего запроса: страницу видео YouTube не отдаёт
+        // запросам с серверных IP (антибот), поэтому качать её бессмысленно.
+        // Собираем превью из ID видео — миниатюру грузит уже браузер клиента.
+        if (isYouTubeUrl(url)) {
+            String videoId = extractYouTubeId(url);
+            if (videoId != null) {
+                System.out.println("YouTube-ссылка, собираем превью по ID видео: " + videoId);
+                return ResponseEntity.ok(buildYouTubePreview(videoId, url));
+            }
+            System.out.println("YouTube-ссылка, но ID видео не распознан, идём общим путём: " + url);
+        }
 
         // Выбираем User-Agent
         String userAgent;
@@ -93,6 +121,68 @@ public class PreviewController {
     }
 
     /**
+     * Превью для YouTube без скачивания страницы видео.
+     * Миниатюра строится из ID и грузится браузером напрямую с CDN,
+     * название запрашивается через публичный oEmbed — он блокируется куда реже.
+     * Если oEmbed недоступен, превью всё равно вернётся с картинкой.
+     */
+    private Map<String, String> buildYouTubePreview(String videoId, String url) {
+        Map<String, String> result = new HashMap<>();
+        result.put("url", url);
+        result.put("image", "https://i.ytimg.com/vi/" + videoId + "/hqdefault.jpg");
+        result.put("title", "YouTube");
+        result.put("description", "");
+
+        try {
+            String json = Jsoup.connect("https://www.youtube.com/oembed?format=json&url="
+                            + URLEncoder.encode(url, StandardCharsets.UTF_8))
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
+                    .ignoreContentType(true)
+                    .timeout(7000)
+                    .execute()
+                    .body();
+
+            JsonNode node = OBJECT_MAPPER.readTree(json);
+
+            String title = node.path("title").asText("");
+            if (!title.isEmpty()) result.put("title", title);
+
+            String author = node.path("author_name").asText("");
+            if (!author.isEmpty()) result.put("description", author);
+
+            // Если oEmbed отдал свою миниатюру — она точнее нашей.
+            String thumbnail = node.path("thumbnail_url").asText("");
+            if (!thumbnail.isEmpty()) result.put("image", thumbnail);
+
+            System.out.println("YouTube oEmbed: title=" + result.get("title"));
+
+        } catch (Exception e) {
+            System.err.println("YouTube oEmbed недоступен для " + url + ": " + e.getMessage()
+                    + " — отдаём превью только с миниатюрой");
+        }
+
+        return result;
+    }
+
+    /**
+     * Проверяет именно домен, а не вхождение подстроки,
+     * чтобы чужая ссылка вида example.com/?u=youtu.be/xxx не считалась ютубовской.
+     */
+    private boolean isYouTubeUrl(String url) {
+        try {
+            String host = URI.create(url.trim()).getHost();
+            if (host == null) return false;
+            host = host.toLowerCase(Locale.ROOT);
+            if (host.startsWith("www.")) host = host.substring(4);
+            return host.equals("youtu.be")
+                    || host.equals("youtube.com")
+                    || host.endsWith(".youtube.com");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
      * Получает лучшую доступную картинку
      */
     private String getBestImage(Document doc, String url) {
@@ -107,7 +197,7 @@ public class PreviewController {
         if (url.contains("youtube.com") || url.contains("youtu.be")) {
             String videoId = extractYouTubeId(url);
             if (videoId != null) {
-                return "https://img.youtube.com/vi/" + videoId + "/hqdefault.jpg";
+                return "https://i.ytimg.com/vi/" + videoId + "/hqdefault.jpg";
             }
         }
 
@@ -140,13 +230,10 @@ public class PreviewController {
     }
 
     /**
-     * Извлекает ID видео из YouTube-ссылки..
+     * Извлекает ID видео из YouTube-ссылки.
      */
     private String extractYouTubeId(String url) {
-        Pattern pattern = Pattern.compile(
-                "(?<=watch\\?v=|/videos/|embed\\/|youtu.be\\/|\\/v\\/|watch\\?v%3D|watch\\?feature=player_embedded&v=|%2Fvideos%2F|embed%\u200C\u200B2F|youtu.be%2F|%2Fv%2F)[^#\\&\\?\\n]*"
-        );
-        Matcher matcher = pattern.matcher(url);
-        return matcher.find() ? matcher.group() : null;
+        Matcher matcher = YOUTUBE_ID.matcher(url);
+        return matcher.find() ? matcher.group(1) : null;
     }
 }
