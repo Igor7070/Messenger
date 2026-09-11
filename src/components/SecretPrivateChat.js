@@ -1,3 +1,4 @@
+import MessageChecks from './MessageChecks';
 import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -3023,8 +3024,7 @@ const SecretPrivateChat = () => {
                     <div className="secret-message-status">
                       {msg.sender.id === userId && (
                         <>
-                          {msg.delivered && <span className="secret-delivery-indicator">✔</span>}
-                          {msg.read && <span className="secret-read-indicator">✔</span>}
+                          <MessageChecks delivered={msg.delivered} read={msg.read} />
                         </>
                       )}
                     </div>

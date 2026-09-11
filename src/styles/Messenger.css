@@ -200,7 +200,7 @@
 }
 
 .message.current-user .message-content-container {
-    background-color: #6366f1 !important;
+    background-color: #2A5F9E !important; /* как sent_message_background в Android */
     color: #f1f5f9 !important;
     border-radius: 12px 0 12px 12px;
     margin-right: 10px;
