@@ -1,4 +1,5 @@
 import MessageChecks from './MessageChecks';
+import { computeSafetyNumber } from './SafetyNumber';
 import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -151,6 +152,25 @@ const SecretPrivateChat = () => {
   const [isTyping, setIsTyping] = useState(false); // Для индикатора печатания
   const [typingName, setTypingName] = useState(''); // Для индикатора печатания
   const [partnerId, setPartnerId] = useState(null);
+  // Отпечаток ключей (safety number) и предупреждение о смене ключа собеседника
+  const [safetyNumber, setSafetyNumber] = useState(null);
+  const [showSafetyNumber, setShowSafetyNumber] = useState(false);
+  const [partnerKeyChanged, setPartnerKeyChanged] = useState(false);
+
+  // Запоминает ключ собеседника и поднимает предупреждение, если он изменился
+  // по сравнению с тем, что видели раньше. Молчаливая замена ключа — это то,
+  // как выглядит подмена (MITM), поэтому пользователь должен это увидеть.
+  const notePartnerKey = (id, key) => {
+    if (!id || !key) return;
+    const storageKey = `public_key_${id}`;
+    const previous = localStorage.getItem(storageKey);
+    if (previous && previous !== key) {
+      console.warn(`Partner ${id} public key CHANGED`);
+      setPartnerKeyChanged(true);
+      toast.warn('Ключ шифрования собеседника изменился. Сверьте отпечаток ключей.', { autoClose: false });
+    }
+    localStorage.setItem(storageKey, key);
+  };
   const [partnerAvatar, setPartnerAvatar] = useState(null);
   const typingTimerRef = useRef(null); // для таймера скрытия
   const messagesEndRef = useRef(null);
@@ -341,6 +361,7 @@ const SecretPrivateChat = () => {
 
         const recipientPublicKey = await getPublicKey(recipientId);
         setPublicKeys(prev => ({ ...prev, [recipientId]: recipientPublicKey }));
+        notePartnerKey(recipientId, recipientPublicKey);
 
         const initialMessages = await getMessages(chatIdParam);
         const senderIds = [...new Set(initialMessages.map(m => m.sender.id))];
@@ -789,8 +810,7 @@ const SecretPrivateChat = () => {
                     ...prev,
                     [recipientId]: updatedPublicKey.publicKey,
                   }));
-                  localStorage.setItem(`public_key_${recipientId}`, updatedPublicKey.publicKey);
-                  toast.info(`Public key updated for user ${recipientName}`);
+                  notePartnerKey(recipientId, updatedPublicKey.publicKey);
                 } catch (error) {
                   console.error(`Error processing public key update for recipientId=${recipientId}:`, error);
                   toast.error('Failed to process public key update');
@@ -1381,6 +1401,14 @@ const SecretPrivateChat = () => {
     console.log('File upload response:', data);
     return data.fileUrl;
   };
+
+  useEffect(() => {
+    const partnerKey = partnerId ? publicKeys[partnerId] : null;
+    if (!keyPair?.publicKey || !partnerKey) { setSafetyNumber(null); return; }
+    computeSafetyNumber(userId, keyPair.publicKey, partnerId, partnerKey)
+      .then(setSafetyNumber)
+      .catch(() => setSafetyNumber(null));
+  }, [keyPair, partnerId, publicKeys, userId]);
 
   const sendMessage = async () => {
     if ((content || selectedFile || audioBlob) && userId && keyPair) {
@@ -2829,7 +2857,14 @@ const SecretPrivateChat = () => {
           {/* Маленькая иконка ассистента — ТОЛЬКО на мобильных, слева от замка */}
           <AssistantIcon size="small" className="mobile-assistant-icon secret-mobile-assistant-left" />
           {/* Иконка замка слева */}
-          <span className="secret-chat-indicator">🔒</span>
+          <span
+            className="secret-chat-indicator"
+            onClick={() => setShowSafetyNumber((v) => !v)}
+            title="Показать отпечаток ключей шифрования"
+            style={{ cursor: 'pointer' }}
+          >
+            {partnerKeyChanged ? '⚠️' : '🔒'}
+          </span>
 
           {/* Аватар + имя + typing — центрировано */}
           <div className="secret-partner-container">
@@ -2870,6 +2905,27 @@ const SecretPrivateChat = () => {
               )}
             </div>
           </div>
+          {(showSafetyNumber || partnerKeyChanged) && (
+            <div className="secret-safety-panel" onClick={() => setShowSafetyNumber(false)}>
+              {partnerKeyChanged && (
+                <div className="secret-safety-warning">
+                  ⚠️ Ключ собеседника изменился. Если он не переустанавливал приложение и не
+                  входил заново — сверьте отпечаток по другому каналу.
+                  <button
+                    className="secret-safety-dismiss"
+                    onClick={(e) => { e.stopPropagation(); setPartnerKeyChanged(false); }}
+                  >
+                    Понятно
+                  </button>
+                </div>
+              )}
+              <div className="secret-safety-title">Отпечаток ключей шифрования</div>
+              <div className="secret-safety-number">{safetyNumber || 'ключи ещё не загружены'}</div>
+              <div className="secret-safety-hint">
+                Должен совпадать с отпечатком на устройстве собеседника.
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <div className="secret-message-list" ref={messageListRef}>
