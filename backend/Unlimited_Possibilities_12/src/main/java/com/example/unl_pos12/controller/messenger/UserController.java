@@ -196,7 +196,7 @@ public class UserController {
         if (isAdded) {
             return ResponseEntity.ok("Chat added to user's private chats successfully");
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User or chat not found, or chat already exists");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User or chat not found");
         }
     }
 

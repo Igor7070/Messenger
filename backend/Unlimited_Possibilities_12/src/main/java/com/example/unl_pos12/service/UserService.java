@@ -101,6 +101,7 @@ public class UserService {
         return false;
     }
 
+    @Transactional
     public boolean removeChatIfNotExists(Long chatId) {
         // Получаем чат по ID
         Chat chat = chatRepository.findById(chatId).orElse(null);
@@ -108,36 +109,21 @@ public class UserService {
             return false; // Чат не найден
         }
 
-        // Извлекаем имена пользователей из названия чата
-        String[] usernames = chat.getName().split("_");
-        if (usernames.length != 2) {
-            throw new IllegalArgumentException("Chat name must consist of two usernames");
+        // Раньше участники вычислялись разбором имени чата через split("_")
+        // с требованием ровно двух частей. Имя секретного чата — «A_B_secret»,
+        // три части, поэтому метод бросал IllegalArgumentException, клиент
+        // получал 500, и удалённый обоими секретный чат навсегда оставался в базе.
+        // Считаем владельцев по связи user <-> chat, имя тут вообще не нужно.
+        long owners = userRepository.countOwnersOfChat(chatId);
+        if (owners > 0) {
+            return false; // Чат существует у хотя бы одного пользователя
         }
 
-        String username1 = usernames[0];
-        String username2 = usernames[1];
-
-        // Получаем пользователей по именам
-        User user1 = userRepository.findByUsername(username1).orElse(null);
-        User user2 = userRepository.findByUsername(username2).orElse(null);
-
-        if (user1 == null || user2 == null) {
-            return false; // Один из пользователей не найден
-        }
-
-        // Проверяем наличие чата у обоих пользователей
-        boolean chatExistsInUser1 = user1.getPrivateChats().stream().anyMatch(c -> c.getId().equals(chatId));
-        boolean chatExistsInUser2 = user2.getPrivateChats().stream().anyMatch(c -> c.getId().equals(chatId));
-
-        if (!chatExistsInUser1 && !chatExistsInUser2) {
-            // Сначала удаляем все сообщения, связанные с чатом
-            messageRepository.deleteByChatId(chatId);
-            // Если чат не найден у ни одного пользователя, удаляем его из базы
-            chatRepository.deleteById(chatId); // Удаляем чат по ID
-            return true; // Чат успешно удален из базы
-        }
-
-        return false; // Чат существует у хотя бы одного пользователя
+        // Сначала удаляем все сообщения, связанные с чатом
+        messageRepository.deleteByChatId(chatId);
+        // Если чат не найден у ни одного пользователя, удаляем его из базы
+        chatRepository.deleteById(chatId); // Удаляем чат по ID
+        return true; // Чат успешно удален из базы
     }
 
     public boolean chatExistsForUser(Long userId, Long chatId) {
@@ -157,10 +143,13 @@ public class UserService {
             if (!user.getPrivateChats().contains(chat)) { // Проверяем, что чат еще не добавлен
                 user.getPrivateChats().add(chat);
                 userRepository.save(user); // Сохраняем обновленного пользователя
-                return true; // Чат успешно добавлен
             }
+            // Уже в списке — это тоже успех. Раньше здесь возвращался false,
+            // клиент получал 404 и прерывал открытие чата на шаге «добавить
+            // собеседника», если тот свой экземпляр чата не удалял.
+            return true;
         }
-        return false; // Пользователь или чат не найден, или чат уже в списке
+        return false; // Пользователь или чат не найден
     }
 
     @Transactional // Эта аннотация позволяет выполнять операции в транзакции

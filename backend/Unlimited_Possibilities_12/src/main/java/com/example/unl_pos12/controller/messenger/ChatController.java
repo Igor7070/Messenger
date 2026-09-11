@@ -37,9 +37,14 @@ public class ChatController {
                     User user1 = userService.getUserByUsername(usernames[0]);
                     User user2 = userService.getUserByUsername(usernames[1]);
 
-                    // Добавляем чат в список приватных чатов пользователей
-                    user1.getPrivateChats().add(createdChat);
-                    user2.getPrivateChats().add(createdChat);
+                    // Добавляем чат в список приватных чатов пользователей.
+                    // createChat может вернуть уже существующий чат — не дублируем связь.
+                    if (user1.getPrivateChats().stream().noneMatch(c -> c.getId().equals(createdChat.getId()))) {
+                        user1.getPrivateChats().add(createdChat);
+                    }
+                    if (user2.getPrivateChats().stream().noneMatch(c -> c.getId().equals(createdChat.getId()))) {
+                        user2.getPrivateChats().add(createdChat);
+                    }
 
                     // Обновляем пользователей
                     userService.updateUser(user1);
