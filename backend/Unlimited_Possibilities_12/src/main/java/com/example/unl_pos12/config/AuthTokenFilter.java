@@ -36,7 +36,8 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     );
     private static final String[] PUBLIC_PREFIXES = {
             "/api/files/download/",
-            "/api/preview"
+            "/api/preview",
+            "/api/client-log"      // логи клиента должны доходить и без токена (ошибки до логина)
     };
 
     private final AuthTokenService tokenService;
