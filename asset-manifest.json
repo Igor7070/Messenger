@@ -1,17 +1,17 @@
 {
   "files": {
     "main.css": "/Messenger/static/css/main.05da4f63.css",
-    "main.js": "/Messenger/static/js/main.c196e884.js",
+    "main.js": "/Messenger/static/js/main.c9c4663e.js",
     "static/js/726.63e59fed.chunk.js": "/Messenger/static/js/726.63e59fed.chunk.js",
     "static/js/453.d3aabf12.chunk.js": "/Messenger/static/js/453.d3aabf12.chunk.js",
     "index.html": "/Messenger/index.html",
     "main.05da4f63.css.map": "/Messenger/static/css/main.05da4f63.css.map",
-    "main.c196e884.js.map": "/Messenger/static/js/main.c196e884.js.map",
+    "main.c9c4663e.js.map": "/Messenger/static/js/main.c9c4663e.js.map",
     "726.63e59fed.chunk.js.map": "/Messenger/static/js/726.63e59fed.chunk.js.map",
     "453.d3aabf12.chunk.js.map": "/Messenger/static/js/453.d3aabf12.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.05da4f63.css",
-    "static/js/main.c196e884.js"
+    "static/js/main.c9c4663e.js"
   ]
 }
