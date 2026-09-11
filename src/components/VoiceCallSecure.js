@@ -78,7 +78,7 @@ const VoiceCallSecure = () => {
         notify('Signing keys have been generated and synchronized');
         try {
           console.log(`Syncing SIGN public key for userId: ${currentUserId}`);
-          const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
+          const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/sign_keys`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: currentUserId, publicKey: publicKeyBase64 }),
@@ -95,7 +95,7 @@ const VoiceCallSecure = () => {
         // Синхронизируем существующие ключи (на случай обновления)
         try {
           console.log(`Syncing existing SIGN public key for userId: ${currentUserId}`);
-          const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
+          const syncResponse = await fetch(`https://unlimitedpossibilities12.org/api/sign_keys`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: currentUserId, publicKey: pair.publicKey }),
@@ -113,7 +113,7 @@ const VoiceCallSecure = () => {
       try {
         const targetId = isCaller ? recipientId : incomingCall?.callerId;
         console.log(`Fetching partner SIGN public key for targetId: ${targetId}`);
-        const resp = await fetch(`https://unlimitedpossibilities12.org/api/public_keys/${targetId}`);
+        const resp = await fetch(`https://unlimitedpossibilities12.org/api/sign_keys/${targetId}`);
         if (resp.ok) {
           const data = await resp.json();
           setPartnerPublicKey(data.publicKey);
