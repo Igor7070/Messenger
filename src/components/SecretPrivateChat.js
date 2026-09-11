@@ -372,6 +372,7 @@ const SecretPrivateChat = () => {
               let fileName = 'Unknown file';
               let contentType = 'application/octet-stream';
               let fileUrl = msg.fileUrl || msg.file_url;
+              let caption = '';
 
               // Свои файлы — из localStorage
               if (msg.sender.id === userId) {
@@ -379,14 +380,14 @@ const SecretPrivateChat = () => {
                 const stored = localStorage.getItem(key);
                 if (stored) {
                   const fileData = JSON.parse(stored);
-                  return { ...msg, ...fileData, delivered: msg.delivered_status, read: msg.read_status };
+                  return { ...msg, ...fileData, content: fileData.caption || '', delivered: msg.delivered_status, read: msg.read_status };
                 }
                 // Попытка по server id
                 const key2 = `fileContent_${chatIdParam}_${userId}_${msg.id}`;
                 const stored2 = localStorage.getItem(key2);
                 if (stored2) {
                   const fileData = JSON.parse(stored2);
-                  return { ...msg, ...fileData, delivered: msg.delivered_status, read: msg.read_status };
+                  return { ...msg, ...fileData, content: fileData.caption || '', delivered: msg.delivered_status, read: msg.read_status };
                 }
               }
 
@@ -408,6 +409,7 @@ const SecretPrivateChat = () => {
                   const meta = JSON.parse(decryptedMeta);
                   fileName = meta.fileName;
                   contentType = meta.contentType || meta.mimeType || 'application/octet-stream';
+                  if (meta.caption) caption = meta.caption;
                 } catch (e) {
                   console.error('File metadata decrypt failed:', e);
                   fileName = 'Decryption failed';
@@ -431,6 +433,7 @@ const SecretPrivateChat = () => {
                 fileName,
                 contentType,
                 fileUrl,
+                content: caption || '',
                 delivered: msg.delivered_status,
                 read: msg.read_status
               };
@@ -645,6 +648,7 @@ const SecretPrivateChat = () => {
               let fileName = 'Unknown file';
               let contentType = 'application/octet-stream';
               let fileUrl = newMessage.fileUrl || newMessage.file_url || null;
+              let caption = '';
 
               if (newMessage.encryptedContent && newMessage.nonce) {  // Now has for audio
                 let publicKey = publicKeys[newMessage.sender.id];
@@ -663,6 +667,7 @@ const SecretPrivateChat = () => {
                 const metadata = JSON.parse(decryptedMetadata);
                 fileName = metadata.fileName;
                 contentType = metadata.mimeType || metadata.contentType || 'application/octet-stream';
+                if (metadata.caption) caption = metadata.caption;
               }
 
               if (!fileUrl && newMessage.id) {
@@ -679,6 +684,7 @@ const SecretPrivateChat = () => {
                 fileName,
                 contentType,
                 fileUrl,
+                content: caption || newMessage.content || '',
                 delivered: newMessage.delivered_status ?? false,
                 read: newMessage.read_status ?? false,
                 // Ensure sender for preload
@@ -961,6 +967,7 @@ const SecretPrivateChat = () => {
           updated[existingIdx] = {
             ...updated[existingIdx],
             ...newMessage,
+            content: newMessage.content || updated[existingIdx].content || '',
             fileUrl: newMessage.fileUrl || newMessage.file_url,
             file_url: newMessage.file_url || newMessage.fileUrl,
           };
@@ -970,7 +977,11 @@ const SecretPrivateChat = () => {
         }
 
         const updated = [...prev];
-        updated[existingIdx] = { ...updated[existingIdx], ...newMessage };
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          ...newMessage,
+          content: newMessage.content || updated[existingIdx].content || '',
+        };
         if (oldFileUrl?.startsWith('blob:')) {
           URL.revokeObjectURL(oldFileUrl);
           console.log(`Revoked temp blob in updateMessages for ${newMessage.id}`);
@@ -998,9 +1009,10 @@ const SecretPrivateChat = () => {
           
           const oldFileUrl = tempMsg.fileUrl;
           const updated = [...prev];
-          updated[tempIdx] = { 
+          updated[tempIdx] = {
             ...tempMsg,
             ...newMessage,
+            content: newMessage.content || tempMsg.content || '',
             id: newMessage.id,
             clientMessageId: undefined,
             fileUrl: newMessage.fileUrl || newMessage.file_url,
@@ -1218,7 +1230,7 @@ const SecretPrivateChat = () => {
     }
   };
 
-  const encryptFile = async (file, recipientId, userId, keyPair, publicKeys) => {
+  const encryptFile = async (file, recipientId, userId, keyPair, publicKeys, caption = '') => {
     await sodium.ready;
 
     if (!keyPair || !publicKeys[recipientId]) {
@@ -1234,9 +1246,12 @@ const SecretPrivateChat = () => {
     const encryptedFile = sodium.crypto_box_easy(fileBytes, nonce, publicKey, privateKey);
 
     // Шифруем метаданные (имя файла и MIME-тип)
+    // Подпись к файлу едет внутри зашифрованных метаданных: отдельного поля
+    // для неё в сообщении нет, а открытым текстом в секретном чате она идти не должна.
     const metadata = {
       fileName: file.name,
       contentType: file.type,
+      ...(caption ? { caption } : {}),
     };
     const metadataBytes = sodium.from_string(JSON.stringify(metadata));
     const encryptedContent = sodium.crypto_box_easy(metadataBytes, nonce, publicKey, privateKey);
@@ -1389,8 +1404,8 @@ const SecretPrivateChat = () => {
         let savedMessage = null;
         let serverFileUrl = null;
 
-        // === ТЕКСТОВОЕ СООБЩЕНИЕ ===
-        if (content) {
+        // === ТЕКСТОВОЕ СООБЩЕНИЕ (только если нет файла: с файлом текст уходит подписью) ===
+        if (content && !selectedFile) {
           setSentMessagesCache((prev) => ({ ...prev, [clientMessageId]: content }));
           saveOwnMessageContent(chatId, userId, clientMessageId, content);
 
@@ -1428,13 +1443,20 @@ const SecretPrivateChat = () => {
 
         // === ФАЙЛОВОЕ СООБЩЕНИЕ ===
         } else if (selectedFile) {
+          const caption = (content || '').trim();
           const { encryptedFile, nonce, encryptedContent } = await encryptFile(
             selectedFile,
             recipientId,
             userId,
             keyPair,
-            publicKeys
+            publicKeys,
+            caption
           );
+          if (caption) {
+            // Свою подпись держим локально, как и текст обычных сообщений
+            setSentMessagesCache((prev) => ({ ...prev, [clientMessageId]: caption }));
+            saveOwnMessageContent(chatId, userId, clientMessageId, caption);
+          }
 
           const tempFileUrl = URL.createObjectURL(selectedFile);
 
@@ -1448,6 +1470,7 @@ const SecretPrivateChat = () => {
             nonce,
             fileName: selectedFile.name,
             fileUrl: tempFileUrl,
+            content: caption,
           };
 
           const fileContentKey = `fileContent_${chatId}_${userId}_${clientMessageId}`;
@@ -1455,6 +1478,7 @@ const SecretPrivateChat = () => {
             fileName: selectedFile.name,
             contentType: selectedFile.type,
             fileUrl: tempFileUrl,
+            caption,
           }));
 
           setMessages((prev) => {
@@ -1517,12 +1541,15 @@ const SecretPrivateChat = () => {
             fileName: selectedFile.name,
             contentType: selectedFile.type,
             fileUrl: serverFileUrl,
+            caption,
           }));
+          if (caption) saveOwnMessageContent(chatId, userId, savedMessage.id, caption);
 
           saveFileToCache(chatId, userId, savedMessage.id, {
             fileName: selectedFile.name,
             contentType: selectedFile.type,
             fileUrl: serverFileUrl,
+            caption,
           });
           saveFileToCache(chatId, userId, clientMessageId, {
             fileName: selectedFile.name,
