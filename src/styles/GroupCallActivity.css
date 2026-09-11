@@ -161,13 +161,22 @@
   background: rgba(103, 232, 249, 0.15);
 }
 
-/* Сетка видео в видео-режиме */
+/* Сетка видео в видео-режиме.
+   Высота ограничена, лишнее прокручивается ВНУТРИ сетки. Без этого
+   вертикальные плитки вытягивали контейнер, тот — страницу, а фон задан на
+   body с height: 100% (App.css), так что ниже экрана оставалась белая полоса. */
 .group-call-video-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 16px;
   width: 100%;
   margin-top: 10px;
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  align-content: start;   /* ряды прижаты к верху, не растягиваются на всю высоту */
+  padding-right: 4px;     /* место под полосу прокрутки, чтобы не наезжала на рамку */
+  box-sizing: border-box;
 }
 
 .group-call-video-container {
@@ -275,9 +284,6 @@
     overflow-y: auto;
     max-height: 70vh;
   }
-
-  .group-call-video-grid {
-    max-height: 60vh;
-    overflow-y: auto;
-  }
+  /* Ограничение высоты и прокрутка сетки видео теперь заданы в основном
+     правиле .group-call-video-grid и действуют на любой ширине экрана. */
 }
