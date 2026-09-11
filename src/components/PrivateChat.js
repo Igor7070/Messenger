@@ -1,4 +1,5 @@
 import MessageChecks from './MessageChecks';
+import { stompAuthHeaders } from '../authToken';
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -297,6 +298,7 @@ const PrivateChat = () => {
     if (!chatId) return;
 
     const stompClientInstance = new Client({
+      connectHeaders: stompAuthHeaders(),
       webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
       connectTimeout: 30000,
       reconnectDelay: 5000,

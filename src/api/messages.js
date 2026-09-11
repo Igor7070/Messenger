@@ -1,3 +1,6 @@
+import axios from 'axios';
+import { setAuthToken, applyAxiosAuth } from '../authToken';
+
 const API_URL = 'https://unlimitedpossibilities12.org/api/messages';
 const API_CHATS_URL = 'https://unlimitedpossibilities12.org/api/chats'; // URL для чатов
 
@@ -28,6 +31,12 @@ export const deleteMessage = async (id) => {
     if (!response.ok) throw new Error('Failed to delete message');
 };
 
+
+const rememberToken = (user) => {
+    if (user && user.token) { setAuthToken(user.token); applyAxiosAuth(axios); }
+    return user;
+};
+
 export const createUser = async (user) => {
     const response = await fetch('https://unlimitedpossibilities12.org/api/users', {
         method: 'POST',
@@ -35,7 +44,7 @@ export const createUser = async (user) => {
         body: JSON.stringify(user),
     });
     if (!response.ok) throw new Error('Failed to create user');
-    return await response.json();
+    return rememberToken(await response.json());
 };
 
 export const loginUser = async (user) => {
@@ -50,7 +59,7 @@ export const loginUser = async (user) => {
         throw new Error(errorText);
     }
     
-    return await response.json();
+    return rememberToken(await response.json());
 };
 
 export const createChat = async (chat) => {

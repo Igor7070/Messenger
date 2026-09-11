@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { stompAuthHeaders } from '../authToken';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getMessages, sendMessage as apiSendMessage, loginUser } from '../api/messages';
@@ -392,6 +393,7 @@ const Messenger = () => {
 
     useEffect(() => {
         const stompClientInstance = new Client({
+            connectHeaders: stompAuthHeaders(),
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
                 console.log('Connected to WebSocket');
@@ -832,6 +834,7 @@ const Messenger = () => {
     const handleLogout = () => {
         disconnectWebSocket();
         localStorage.removeItem('userId');
+        localStorage.removeItem('authToken');
         localStorage.removeItem('username');
         setUserId(null);
         setCurrentUserId(null);

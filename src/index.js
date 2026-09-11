@@ -3,6 +3,12 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './components/App';
 import reportWebVitals from './reportWebVitals';
+import axios from 'axios';
+import { installFetchAuth, applyAxiosAuth } from './authToken';
+
+// Токен доступа к API подставляется во все запросы к бэкенду
+installFetchAuth();
+applyAxiosAuth(axios);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

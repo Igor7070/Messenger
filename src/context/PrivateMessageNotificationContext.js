@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { stompAuthHeaders } from '../authToken';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { toast } from 'react-toastify';
@@ -26,6 +27,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
     console.log('useWebSocket: messageAudioRef =', messageAudioRef);
 
     const stompClient = new Client({
+      connectHeaders: stompAuthHeaders(),
       webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
       connectTimeout: 30000,
       reconnectDelay: 5000,

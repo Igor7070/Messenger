@@ -1,3 +1,6 @@
+import axios from 'axios';
+import { setAuthToken, applyAxiosAuth } from '../authToken';
+
 const API_URL = 'https://unlimitedpossibilities12.org/api/users'; // Замените на ваш URL
 
 export const createUser = async (user) => {
@@ -13,5 +16,7 @@ export const createUser = async (user) => {
         throw new Error(errorText); // Выбрасываем ошибку с текстом
     }
 
-    return await response.json();
+    const created = await response.json();
+    if (created && created.token) { setAuthToken(created.token); applyAxiosAuth(axios); }
+    return created;
 };

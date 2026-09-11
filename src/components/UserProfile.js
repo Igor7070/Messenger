@@ -369,6 +369,7 @@ const UserProfile = () => {
                 if (response.ok) {
                     console.log('User deleted successfully');
                     localStorage.removeItem('userId');
+        localStorage.removeItem('authToken');
                     localStorage.removeItem('username');
                     disconnectWebSocket();
                     setContextUserId(null);

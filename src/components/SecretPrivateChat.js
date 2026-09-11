@@ -1,4 +1,5 @@
 import MessageChecks from './MessageChecks';
+import { stompAuthHeaders } from '../authToken';
 import { computeSafetyNumber } from './SafetyNumber';
 import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
@@ -580,6 +581,7 @@ const SecretPrivateChat = () => {
 
     let reconnectTimeout;
     const stompClientInstance = new Client({
+      connectHeaders: stompAuthHeaders(),
       webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
       connectTimeout: 30000,
       reconnectDelay: 0,

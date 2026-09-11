@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { stompAuthHeaders } from '../authToken';
 import { Client } from '@stomp/stompjs';
 
 const UserStatusContext = createContext();
@@ -27,6 +28,7 @@ export const UserStatusProvider = ({ children }) => {
     }
 
     const client = new Client({
+      connectHeaders: stompAuthHeaders(),
       brokerURL: 'wss://unlimitedpossibilities12.org/ws/websocket',
       reconnectDelay: 5000,
       heartbeatIncoming: 10000,

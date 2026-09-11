@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { stompAuthHeaders } from '../authToken';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import { toast } from 'react-toastify';
@@ -57,6 +58,7 @@ export const CallWebSocketProvider = ({ children }) => {
 
     const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
     stompClient.current = new Client({
+      connectHeaders: stompAuthHeaders(),
       webSocketFactory: () => socket,
       connectTimeout: 10000,
       reconnectDelay: 5000,

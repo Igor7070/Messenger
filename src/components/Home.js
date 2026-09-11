@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { stompAuthHeaders } from '../authToken';
 import { useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
 import { toast } from 'react-toastify';
@@ -233,6 +234,7 @@ const Home = () => {
     console.log('Initializing WebSocket for messages, chats:', chats);
     const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
     messageClient.current = new Client({
+      connectHeaders: stompAuthHeaders(),
       webSocketFactory: () => socket,
       connectTimeout: 30000,
       reconnectDelay: 5000,
@@ -356,6 +358,7 @@ const Home = () => {
   const logoutUser = () => {
     disconnectWebSocket();
     localStorage.removeItem('userId');
+        localStorage.removeItem('authToken');
     localStorage.removeItem('username');
     localStorage.removeItem('userAvatar');   // ← очищаем аватар
     setCurrentUserId(null);

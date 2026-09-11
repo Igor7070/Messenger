@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { stompAuthHeaders } from '../authToken';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import '../styles/PersonalChats.css';
 import { toast } from 'react-toastify';
@@ -77,6 +78,7 @@ const PersonalChats = () => {
         if (!privateChats.length || !currentUserId) return;
 
         const stompClient = new Client({
+            connectHeaders: stompAuthHeaders(),
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
                 console.log('Connected to WebSocket for private chats');

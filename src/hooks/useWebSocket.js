@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { stompAuthHeaders } from '../authToken';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { toast } from 'react-toastify';
@@ -17,6 +18,7 @@ const useWebSocket = (currentUserId, messageAudioRef) => {
         console.log('useWebSocket: messageAudioRef =', messageAudioRef);
 
         const stompClient = new Client({
+            connectHeaders: stompAuthHeaders(),
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
                 console.log('Connected to WebSocket');

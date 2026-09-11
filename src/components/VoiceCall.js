@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { stompAuthHeaders } from '../authToken';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -80,6 +81,7 @@ const VoiceCall = ({ recipientId }) => {
 
     const socket = new SockJS('https://unlimitedpossibilities12.org/ws');
     stompClient.current = new Client({
+      connectHeaders: stompAuthHeaders(),
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
       heartbeatIncoming: 10000,
