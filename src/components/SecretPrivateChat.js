@@ -1241,9 +1241,14 @@ const SecretPrivateChat = () => {
     const publicKey = sodium.from_base64(publicKeys[recipientId]);
 
     // Читаем файл как массив байтов
+    // Два РАЗНЫХ nonce: один для содержимого файла, другой для метаданных.
+    // Один nonce на два открытых текста под одной парой ключей раскрывал бы
+    // XOR открытых текстов (а структура метаданных известна) и ломал
+    // аутентификацию Poly1305.
     const fileBytes = new Uint8Array(await file.arrayBuffer());
-    const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
-    const encryptedFile = sodium.crypto_box_easy(fileBytes, nonce, publicKey, privateKey);
+    const fileNonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
+    const encryptedFile = sodium.crypto_box_easy(fileBytes, fileNonce, publicKey, privateKey);
+    const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES); // для метаданных
 
     // Шифруем метаданные (имя файла и MIME-тип)
     // Подпись к файлу едет внутри зашифрованных метаданных: отдельного поля
@@ -1258,7 +1263,8 @@ const SecretPrivateChat = () => {
 
     return {
       encryptedFile: sodium.to_base64(encryptedFile),
-      nonce: sodium.to_base64(nonce),
+      nonce: sodium.to_base64(nonce),           // nonce метаданных — в сообщение
+      fileNonce: sodium.to_base64(fileNonce),   // nonce файла — в file_metadata на сервере
       encryptedContent: sodium.to_base64(encryptedContent),
     };
   };
@@ -1444,7 +1450,7 @@ const SecretPrivateChat = () => {
         // === ФАЙЛОВОЕ СООБЩЕНИЕ ===
         } else if (selectedFile) {
           const caption = (content || '').trim();
-          const { encryptedFile, nonce, encryptedContent } = await encryptFile(
+          const { encryptedFile, nonce, fileNonce, encryptedContent } = await encryptFile(
             selectedFile,
             recipientId,
             userId,
@@ -1520,7 +1526,7 @@ const SecretPrivateChat = () => {
             }));
           }
 
-          serverFileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
+          serverFileUrl = await uploadFile(encryptedFile, fileNonce || nonce, savedMessage.id);
           if (!serverFileUrl) throw new Error('File upload failed');
 
           // ────────────────────────────────────────────────
@@ -1615,7 +1621,7 @@ const SecretPrivateChat = () => {
           const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
 
           // === ШИФРУЕМ АУДИО КАК ОБЫЧНЫЙ ФАЙЛ ===
-          const { encryptedFile, nonce, encryptedContent } = await encryptFile(
+          const { encryptedFile, nonce, fileNonce, encryptedContent } = await encryptFile(
             audioFile,
             recipientId,
             userId,
@@ -1657,7 +1663,7 @@ const SecretPrivateChat = () => {
           const savedMessage = await response.json();
 
           // === ЗАГРУЖАЕМ ЗАШИФРОВАННЫЙ ФАЙЛ ===
-          serverFileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
+          serverFileUrl = await uploadFile(encryptedFile, fileNonce || nonce, savedMessage.id);
           if (!serverFileUrl) throw new Error('Audio upload failed');
 
           // === ОБНОВЛЯЕМ messageData ===
@@ -1742,7 +1748,7 @@ const SecretPrivateChat = () => {
       const recipientId = recipient.id;
 
       const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
-      const { encryptedFile, nonce, encryptedContent } = await encryptFile(
+      const { encryptedFile, nonce, fileNonce, encryptedContent } = await encryptFile(
         audioFile,
         recipientId,
         userId,
@@ -1814,7 +1820,7 @@ const SecretPrivateChat = () => {
       console.log('Saved message from server:', savedMessage);
 
       // ← 2. ЗАГРУЖАЕМ ФАЙЛ
-      const serverFileUrl = await uploadFile(encryptedFile, nonce, savedMessage.id);
+      const serverFileUrl = await uploadFile(encryptedFile, fileNonce || nonce, savedMessage.id);
       console.log('Encrypted file uploaded, serverFileUrl:', serverFileUrl);
 
       // ← 3. ЗАМЕНЯЕМ В UI
@@ -2619,9 +2625,18 @@ const SecretPrivateChat = () => {
     }
   };
 
-  const decryptAudioForPlayback = async (msgId, fileUrl, nonce, publicKeyId, senderId) => {
+  const decryptAudioForPlayback = async (msgId, fileUrl, nonceFromMsg, publicKeyId, senderId) => {
     try {
       console.log(`Decrypting audio for playback: msgId=${msgId}, fileUrl=${fileUrl}`);
+      // nonce файла хранится в file_metadata на сервере; nonce сообщения — это
+      // nonce метаданных, и с новых версий клиентов они разные.
+      let nonce = nonceFromMsg;
+      try {
+        const fm = await fetchFileMetadata(msgId);
+        if (fm && fm.nonce) nonce = fm.nonce;
+      } catch (e) {
+        console.warn(`No file metadata for audio ${msgId}, falling back to message nonce`);
+      }
       const res = await fetch(fileUrl);
       if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
       const encryptedBytes = new Uint8Array(await res.arrayBuffer());
