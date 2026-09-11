@@ -39,8 +39,15 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
         }
 
         stompClient.subscribe(`/topic/notifications/${currentUserId}`, (message) => {
-          const notification = message.body;
-          console.log('Received notification:', notification);
+          const rawNotification = message.body;
+          console.log('Received notification:', rawNotification);
+
+          // Сервер помечает уведомления из секретных чатов маркером [secret] —
+          // по нему открываем секретный экран, а не обычный. Пользователю
+          // маркер не показываем.
+          const isSecret = rawNotification.includes('[secret]');
+          const notification = rawNotification.replace(/\s*\[secret\]/, '');
+          const chatRoute = isSecret ? 'secret-chat' : 'private-chat';
 
           const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
           const chatId = chatIdMatch ? chatIdMatch[1] : null;
@@ -88,7 +95,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                             const exists = text === "Chat exists in user's private chats";
                             if (exists) {
                                 toast.dismiss(toastId);
-                                navigate(`/private-chat/${chatId}`);
+                                navigate(`/${chatRoute}/${chatId}`);
                                 // Отображение тоста с именем собеседника
                                 toast.success(`Navigating to chat with ${recipientName}!`, {
                                     toastId: `navigate-chat-${chatId}-${Date.now()}`,
@@ -108,7 +115,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
 
                             if (addResponse.ok) {
                                 toast.dismiss(toastId);
-                                navigate(`/private-chat/${chatId}`);
+                                navigate(`/${chatRoute}/${chatId}`);
                                 // Отображение тоста с именем собеседника
                                 toast.success(`Navigating to chat with ${recipientName}!`, {
                                     toastId: `navigate-chat-${chatId}-${Date.now()}`,
