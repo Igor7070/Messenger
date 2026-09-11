@@ -1,6 +1,7 @@
 package com.example.unl_pos12.model.messenger;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
@@ -33,6 +34,14 @@ public class User {
     )
     @JsonIgnore // Исключаем privateChats из сериализации
     private List<Chat> privateChats = new ArrayList<>(); // Список приватных чатов
+
+    /** Токен доступа к API. Не хранится в базе, заполняется только в ответе логина/регистрации. */
+    @Transient
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String token;
+
+    public String getToken() { return token; }
+    public void setToken(String token) { this.token = token; }
 
     public Long getId() {
         return id;

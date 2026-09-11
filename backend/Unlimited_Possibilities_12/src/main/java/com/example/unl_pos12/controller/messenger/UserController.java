@@ -19,6 +19,8 @@ import java.util.Map;
 public class UserController {
     @Autowired
     private UserService userService;
+    @Autowired
+    private com.example.unl_pos12.service.AuthTokenService authTokenService;
 
     @GetMapping
     public List<User> getAllUsers() {
@@ -68,7 +70,9 @@ public class UserController {
     @PostMapping
     public User createUser(@RequestBody User user) {
         System.out.println("Created user: " + user.getUsername());
-        return userService.createUser(user);
+        User created = userService.createUser(user);
+        created.setToken(authTokenService.issue(created.getId()));
+        return created;
     }
 
     @PostMapping("/create")
@@ -94,7 +98,9 @@ public class UserController {
         }
 
         System.out.println("Created user: " + user.getUsername());
-        return userService.createUser(user);
+        User created = userService.createUser(user);
+        created.setToken(authTokenService.issue(created.getId()));
+        return created;
     }
 
     // Реализация метода saveAvatar...
@@ -149,7 +155,9 @@ public class UserController {
     public User loginUser(@RequestBody Map<String, String> loginRequest) {
         String username = loginRequest.get("username");
         String password = loginRequest.get("password");
-        return userService.loginUser(username, password);
+        User user = userService.loginUser(username, password);
+        user.setToken(authTokenService.issue(user.getId()));
+        return user;
     }
 
     @GetMapping("/{id}/private-chats")
