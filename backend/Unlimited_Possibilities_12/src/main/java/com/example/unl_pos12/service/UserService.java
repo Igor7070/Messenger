@@ -7,6 +7,7 @@ import com.example.unl_pos12.repo.MessageRepository;
 import com.example.unl_pos12.repo.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
@@ -15,6 +16,19 @@ import java.util.Optional;
 
 @Service
 public class UserService {
+    /**
+     * Пароли хранятся как BCrypt-хеши. Записи, сделанные до перехода на
+     * хеширование, лежат открытым текстом; они перехешируются при первом
+     * успешном логине (пароль в этот момент известен), для пользователя
+     * это незаметно.
+     */
+    private static final BCryptPasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
+
+    private static boolean isBcryptHash(String stored) {
+        return stored != null && stored.length() == 60
+                && (stored.startsWith("$2a$") || stored.startsWith("$2b$") || stored.startsWith("$2y$"));
+    }
+
     @Autowired
     private UserRepository userRepository;
     @Autowired
@@ -36,15 +50,31 @@ public class UserService {
             System.out.println(errorMessage);
             throw new RuntimeException(errorMessage);
         }
+        user.setPassword(PASSWORD_ENCODER.encode(user.getPassword()));
         return userRepository.save(user);
     }
 
     public User loginUser(String username, String password) {
         String errorMessage = "";
         Optional<User> user = userRepository.findByUsername(username);
-        if (user.isPresent() && user.get().getPassword().equals(password)) {
-            return user.get();
-        } else {
+        if (user.isPresent() && password != null) {
+            User u = user.get();
+            String stored = u.getPassword();
+            boolean ok;
+            if (isBcryptHash(stored)) {
+                ok = PASSWORD_ENCODER.matches(password, stored);
+            } else {
+                // Запись до перехода на хеширование — открытый текст
+                ok = password.equals(stored);
+                if (ok) {
+                    u.setPassword(PASSWORD_ENCODER.encode(password));
+                    userRepository.save(u);
+                    System.out.println("Password re-hashed on login for user: " + username);
+                }
+            }
+            if (ok) return u;
+        }
+        {
             errorMessage = "Invalid username or password";
             System.out.println(errorMessage);
             throw new RuntimeException(errorMessage);
