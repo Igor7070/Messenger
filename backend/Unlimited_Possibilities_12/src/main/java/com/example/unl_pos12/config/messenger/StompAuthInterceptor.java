@@ -63,41 +63,41 @@ public class StompAuthInterceptor implements ChannelInterceptor {
                 if (userId != null) {
                     if (session != null) session.put(ATTR_USER_ID, userId);
                 } else {
-                    String line = "WS-AUTH-MISSING CONNECT" + (token == null ? " (no token)" : " (invalid token)");
-                    if (enforceToken) {
-                        System.out.println(line + " -> rejected");
-                        throw new IllegalArgumentException("Unauthorized");
-                    }
-                    System.out.println(line);
+                    // Без токена соединение НЕ рвём: до входа клиент слушает публичные
+                    // топики (статусы пользователей, групповые чаты). Всё, что требует
+                    // прав (приватные чаты, уведомления), режется на SUBSCRIBE/SEND ниже —
+                    // там без userId в сессии доступ к таким топикам не даётся.
+                    System.out.println("WS-AUTH-MISSING CONNECT" + (token == null ? " (no token)" : " (invalid token)"));
                 }
                 return message;
             }
             case SUBSCRIBE: {
                 Long me = session == null ? null : (Long) session.get(ATTR_USER_ID);
-                if (me == null) return message; // без токена — уже отработал CONNECT
                 String dest = accessor.getDestination();
                 if (dest == null) return message;
                 Matcher m = CHAT_TOPIC.matcher(dest);
                 if (m.matches()) {
                     long chatId = Long.parseLong(m.group(1));
-                    if (!authz.isChatMember(me, chatId)) return deny(message, "SUBSCRIBE " + dest, me);
+                    // Без токена: групповые чаты можно (isChatMember для них true), приватные — нет
+                    if (me == null ? !authz.isChatMember(-1L, chatId) : !authz.isChatMember(me, chatId)) {
+                        return deny(message, "SUBSCRIBE " + dest, me);
+                    }
                     return message;
                 }
                 m = NOTIF_TOPIC.matcher(dest);
-                if (m.matches() && Long.parseLong(m.group(1)) != me) {
+                if (m.matches() && (me == null || Long.parseLong(m.group(1)) != me)) {
                     return deny(message, "SUBSCRIBE " + dest, me);
                 }
                 return message;
             }
             case SEND: {
                 Long me = session == null ? null : (Long) session.get(ATTR_USER_ID);
-                if (me == null) return message;
                 String dest = accessor.getDestination();
                 if (dest == null) return message;
                 Matcher m = CHAT_APP.matcher(dest);
                 if (m.matches()) {
                     long chatId = Long.parseLong(m.group(1));
-                    if (!authz.isChatMember(me, chatId)) return deny(message, "SEND " + dest, me);
+                    if (me == null || !authz.isChatMember(me, chatId)) return deny(message, "SEND " + dest, me);
                 }
                 return message;
             }

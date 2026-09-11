@@ -60,6 +60,11 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         String method = request.getMethod();
         if ("/api/users/login".equals(path)) return true;
         if ("/api/users".equals(path) && "POST".equalsIgnoreCase(method)) return true;
+        // Экран до входа: список пользователей (имя, аватар, онлайн) и групповых
+        // чатов — публичный, с него и логинятся. Пароли из ответов уже убраны.
+        if ("GET".equalsIgnoreCase(method) && ("/api/users".equals(path) || "/api/chats".equals(path))) return true;
+        if ("GET".equalsIgnoreCase(method) && path.matches("/api/users/[0-9]+(/avatar)?")) return true;
+        if ("GET".equalsIgnoreCase(method) && path.startsWith("/api/users/check-avatar/")) return true;
         for (String p : PUBLIC_PREFIXES) {
             if (path.startsWith(p)) return true;
         }
