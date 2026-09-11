@@ -5,10 +5,13 @@ import App from './components/App';
 import reportWebVitals from './reportWebVitals';
 import axios from 'axios';
 import { installFetchAuth, applyAxiosAuth } from './authToken';
+import { installRemoteLog } from './remoteLog';
 
 // Токен доступа к API подставляется во все запросы к бэкенду
 installFetchAuth();
 applyAxiosAuth(axios);
+// Ошибки и предупреждения консоли уходят в лог бэкенда (см. remoteLog.js)
+installRemoteLog();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
