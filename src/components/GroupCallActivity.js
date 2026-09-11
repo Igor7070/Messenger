@@ -1625,7 +1625,7 @@ const GroupCallActivity = () => {
   };
 
   return (
-    <div className="group-call-container">
+    <div className={`group-call-container${isVideoMode ? ' video-mode' : ''}`}>
       <h1 className="group-call-title">Group Call with {initiator.username}</h1>
       <div className="group-call-info">
         <p className="call-timer">Duration: {callDuration}</p>

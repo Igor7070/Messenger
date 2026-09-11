@@ -17,6 +17,38 @@
   color: #e2e8f0;
 }
 
+/* Видео-режим: контейнер НЕ растёт ни на пиксель. Высота жёстко равна тем же
+   80vh, что и min-height в аудио-режиме, так что визуально размер не меняется.
+   Всё, что не помещается, прокручивается внутри сетки видео (см. ниже).
+   Иначе вертикальные плитки вытягивали контейнер, за ним .app, а фон страницы
+   задан на body с height: 100% — ниже экрана оставалась белая полоса. */
+.group-call-container.video-mode {
+  height: 80vh;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+/* Заголовок, таймеры и кнопка End Call не ужимаются — сжимается только
+   блок участников (правило ниже переопределяет это для него). */
+.group-call-container.video-mode > * {
+  flex-shrink: 0;
+}
+
+/* Блок участников в видео-режиме забирает весь остаток высоты контейнера
+   и передаёт его сетке. min-height: 0 обязателен — без него flex-элемент
+   не даёт ужать себя ниже высоты содержимого, и прокрутка не появляется. */
+.group-call-container.video-mode .group-call-participants {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+
+.group-call-container.video-mode .group-call-participants-header {
+  flex-shrink: 0;
+}
+
 .group-call-title {
   color: #67e8f9;
   font-size: 28px;
@@ -171,7 +203,11 @@
   gap: 16px;
   width: 100%;
   margin-top: 10px;
-  max-height: 60vh;
+  /* Высота не фиксированная, а «сколько осталось» в контейнере: сетка —
+     flex-ребёнок блока участников, который сам flex-ребёнок контейнера
+     с жёсткой высотой. Лишние ряды прокручиваются внутри. */
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   align-content: start;   /* ряды прижаты к верху, не растягиваются на всю высоту */
@@ -270,6 +306,13 @@
     padding-bottom: 30px;
     min-height: 100vh;
     border-radius: 16px;
+  }
+
+  /* На телефоне контейнер и так во весь экран — в видео-режиме фиксируем
+     ту же высоту, чтобы он не рос, а сетка прокручивалась внутри. */
+  .group-call-container.video-mode {
+    height: 100vh;
+    max-height: 100vh;
   }
 
   .group-call-end-button {
