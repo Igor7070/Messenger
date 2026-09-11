@@ -19,6 +19,8 @@ import java.util.List;
 public class MessageController {
     @Autowired
     private MessageService messageService;
+    @Autowired
+    private com.example.unl_pos12.service.AuthzService authz;
 
     @Autowired
     private UserRepository userRepository;
@@ -109,7 +111,8 @@ public class MessageController {
     }
 
     @GetMapping("/chats/{chatId}/messages")
-    public ResponseEntity<List<Message>> getMessagesByChatId(@PathVariable Long chatId) {
+    public ResponseEntity<List<Message>> getMessagesByChatId(@PathVariable Long chatId, jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireChatAccess(request, chatId);
         List<Message> messages = messageService.findByChatId(chatId);
         return ResponseEntity.ok(messages);
     }

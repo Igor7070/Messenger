@@ -17,6 +17,8 @@ public class PublicKeyController {
     @Autowired
     private PublicKeyRepository publicKeyRepository;
     @Autowired
+    private com.example.unl_pos12.service.AuthzService authz;
+    @Autowired
     private PublicKeyHistoryRepository publicKeyHistoryRepository; // [ADD] Внедрение PublicKeyHistoryRepository
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
@@ -56,7 +58,8 @@ public class PublicKeyController {
     }
 
     @PostMapping
-    public ResponseEntity<PublicKey> savePublicKey(@RequestBody PublicKey publicKey) {
+    public ResponseEntity<PublicKey> savePublicKey(@RequestBody PublicKey publicKey, jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireSelf(request, publicKey.getUserId()); // ключ можно публиковать только свой
         System.out.println("Received POST /api/public_keys for userId: " + publicKey.getUserId() + ", key: " + publicKey.getPublicKey());
 
         // Проверяем существующий ключ в public_keys_history

@@ -20,4 +20,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT COUNT(u) FROM User u JOIN u.privateChats c WHERE c.id = :chatId")
     long countOwnersOfChat(@Param("chatId") Long chatId);
+
+    /** 1, если пользователь состоит в приватном/секретном чате, иначе 0. */
+    @Query("SELECT COUNT(u) FROM User u JOIN u.privateChats c WHERE u.id = :userId AND c.id = :chatId")
+    long isMemberOfChat(@Param("userId") Long userId, @Param("chatId") Long chatId);
 }

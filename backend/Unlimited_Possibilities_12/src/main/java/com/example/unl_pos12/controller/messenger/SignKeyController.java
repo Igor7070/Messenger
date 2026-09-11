@@ -21,6 +21,8 @@ import java.time.ZonedDateTime;
 public class SignKeyController {
     @Autowired
     private SignKeyRepository signKeyRepository;
+    @Autowired
+    private com.example.unl_pos12.service.AuthzService authz;
 
     @GetMapping("/{userId}")
     public ResponseEntity<PublicKey> getSignKey(@PathVariable Long userId) {
@@ -36,7 +38,8 @@ public class SignKeyController {
     }
 
     @PostMapping
-    public ResponseEntity<PublicKey> saveSignKey(@RequestBody PublicKey request) {
+    public ResponseEntity<PublicKey> saveSignKey(@RequestBody PublicKey request, jakarta.servlet.http.HttpServletRequest http) {
+        authz.requireSelf(http, request.getUserId()); // ключ подписи можно публиковать только свой
         if (request.getUserId() == null || request.getPublicKey() == null || request.getPublicKey().isEmpty()) {
             return ResponseEntity.badRequest().build();
         }

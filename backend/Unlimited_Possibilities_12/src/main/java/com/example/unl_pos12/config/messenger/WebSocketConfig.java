@@ -9,6 +9,15 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+    @org.springframework.beans.factory.annotation.Autowired
+    private StompAuthInterceptor stompAuthInterceptor;
+
+    @Override
+    public void configureClientInboundChannel(org.springframework.messaging.simp.config.ChannelRegistration registration) {
+        // Токен и права на CONNECT / SUBSCRIBE / SEND — см. StompAuthInterceptor
+        registration.interceptors(stompAuthInterceptor);
+    }
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic");

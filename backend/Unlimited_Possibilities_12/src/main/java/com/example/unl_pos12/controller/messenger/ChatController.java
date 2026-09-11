@@ -20,6 +20,8 @@ public class ChatController {
     @Autowired
     private ChatService chatService;
     @Autowired
+    private com.example.unl_pos12.service.AuthzService authz;
+    @Autowired
     private UserService userService;
 
     @PostMapping
@@ -69,17 +71,20 @@ public class ChatController {
     }
 
     @DeleteMapping("/{id}")
-    public void deleteChat(@PathVariable Long id) {
+    public void deleteChat(@PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireChatAccess(request, id);
         chatService.deleteChat(id);
     }
 
     @GetMapping("/{id}/messages")
-    public List<Message> getMessagesByChatId(@PathVariable Long id) {
+    public List<Message> getMessagesByChatId(@PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireChatAccess(request, id); // историю приватного/секретного чата — только участнику
         return chatService.getMessagesByChatId(id);
     }
 
     @GetMapping("/{id}")
-    public Chat getChatById(@PathVariable Long id) {
+    public Chat getChatById(@PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireChatAccess(request, id);
         return chatService.getChatById(id);
     }
 

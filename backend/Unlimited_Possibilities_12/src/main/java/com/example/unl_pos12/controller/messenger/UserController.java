@@ -20,6 +20,8 @@ public class UserController {
     @Autowired
     private UserService userService;
     @Autowired
+    private com.example.unl_pos12.service.AuthzService authz;
+    @Autowired
     private com.example.unl_pos12.service.AuthTokenService authTokenService;
 
     @GetMapping
@@ -134,8 +136,10 @@ public class UserController {
 
     @PutMapping("/{id}") // Обновление данных пользователя
     public User updateUser(@PathVariable Long id,
+                           jakarta.servlet.http.HttpServletRequest request,
                            @RequestParam(value = "info", required = false) String info,
                            @RequestParam(value = "avatar", required = false) MultipartFile avatar) {
+        authz.requireSelf(request, id); // менять можно только свой профиль
         User user = userService.getUserById(id);
         if (user != null) {
             if (info != null) {
@@ -161,7 +165,8 @@ public class UserController {
     }
 
     @GetMapping("/{id}/private-chats")
-    public ResponseEntity<List<Chat>> getPrivateChatsByUserId(@PathVariable Long id) {
+    public ResponseEntity<List<Chat>> getPrivateChatsByUserId(@PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireSelf(request, id); // список чатов — только свой
         List<Chat> privateChats = userService.getPrivateChatsByUserId(id);
 
         // Всегда возвращается 200 OK, даже если список пустой
@@ -169,7 +174,8 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}/private-chats/{chatId}")
-    public ResponseEntity<String> deleteChat(@PathVariable Long userId, @PathVariable Long chatId) {
+    public ResponseEntity<String> deleteChat(@PathVariable Long userId, @PathVariable Long chatId, jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireSelf(request, userId); // удалять чат из своего списка может только владелец
         boolean isDeleted = userService.deleteChat(userId, chatId);
         if (isDeleted) {
             return ResponseEntity.ok("Chat deleted successfully");
@@ -189,7 +195,8 @@ public class UserController {
     }
 
     @GetMapping("/{userId}/private-chats/{chatId}/exists")
-    public ResponseEntity<String> checkChatExists(@PathVariable Long userId, @PathVariable Long chatId) {
+    public ResponseEntity<String> checkChatExists(@PathVariable Long userId, @PathVariable Long chatId, jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireSelf(request, userId);
         boolean exists = userService.chatExistsForUser(userId, chatId);
         if (exists) {
             return ResponseEntity.ok("Chat exists in user's private chats");
@@ -199,7 +206,8 @@ public class UserController {
     }
 
     @PostMapping("/{userId}/private-chats/{chatId}/add")
-    public ResponseEntity<String> addChatToUser(@PathVariable Long userId, @PathVariable Long chatId) {
+    public ResponseEntity<String> addChatToUser(@PathVariable Long userId, @PathVariable Long chatId, jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireCanAddChatTo(request, userId, chatId); // себе — всегда; собеседнику — если сам в чате
         boolean isAdded = userService.addChatToUser(userId, chatId);
         if (isAdded) {
             return ResponseEntity.ok("Chat added to user's private chats successfully");
@@ -209,7 +217,8 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<String> deleteUser(@PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireSelf(request, id); // удалить можно только свой аккаунт
         boolean isDeleted = userService.deleteUser(id);
         if (isDeleted) {
             return ResponseEntity.ok("User deleted successfully");
