@@ -103,7 +103,7 @@ public class MessageController {
             notificationContent = request.getContent();
         }
 
-        webSocketService.sendNotification(user.getId(), recipient.getId(), notificationContent, request.getChatId());
+        webSocketService.sendNotification(user.getId(), recipient.getId(), notificationContent, request.getChatId(), isSecretChat);
 
         return ResponseEntity.ok("Notification sent");
     }

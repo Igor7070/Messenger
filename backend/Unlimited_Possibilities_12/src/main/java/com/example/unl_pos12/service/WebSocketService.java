@@ -16,15 +16,25 @@ public class WebSocketService {
         this.messagingTemplate = messagingTemplate;
     }
 
+    /** Маркер в тексте уведомления: чат секретный, открывать нужно секретный экран. */
+    public static final String SECRET_MARKER = "[secret]";
+
     public void sendNotification(Long userId, Long recipientId, String content, Long chatId) {
+        sendNotification(userId, recipientId, content, chatId, false);
+    }
+
+    public void sendNotification(Long userId, Long recipientId, String content, Long chatId, boolean secretChat) {
         try {
             User user = userService.getUserById(userId);
             String userName = user.getUsername();
             String destination = "/topic/notifications/" + recipientId;
             // Используем заглушку только если content null или пустой
             String notificationContent = (content == null || content.isEmpty()) ? "New audio message" : content;
+            // Маркер идёт ПОСЛЕ «(chatId: N)», чтобы регулярка клиентов
+            // \(chatId: (\d+)\) продолжала работать как раньше.
             String notificationMessage = String.format("New message: %s from:" +
-                    " %s (chatId: %d)", notificationContent, userName, chatId);
+                    " %s (chatId: %d)%s", notificationContent, userName, chatId,
+                    secretChat ? " " + SECRET_MARKER : "");
             messagingTemplate.convertAndSend(destination, notificationMessage);
             System.out.println("Notification sent to user ID: " + recipientId + ", message: " + notificationMessage);
         } catch (Exception e) {
