@@ -1576,6 +1576,7 @@ const SecretPrivateChat = () => {
               destination: `/app/sendMessage/chat/${chatId}`,
               body: JSON.stringify(wsPayload),
             });
+            notifyPartner();
           }
 
           // ← ОЧИСТКА TEMP BLOB
@@ -1669,6 +1670,7 @@ const SecretPrivateChat = () => {
             destination: `/app/sendMessage/chat/${chatId}`,
             body: JSON.stringify(websocketMessage),
           });
+          notifyPartner();
         }
 
         sendTypingEvent(false);
@@ -1836,6 +1838,7 @@ const SecretPrivateChat = () => {
           destination: `/app/sendMessage/chat/${chatId}`,
           body: JSON.stringify(wsPayload),
         });
+        notifyPartner();
       }
 
       // ← ОЧИЩАЕМ
@@ -1864,41 +1867,41 @@ const SecretPrivateChat = () => {
     }
   };
 
-  const sendNotification = async (message, contentForNotification) => {
+  // Уведомление собеседнику, если он сейчас не в чате (на Android его показывает
+  // CallService по /topic/notifications/{userId}). Раньше здесь была функция
+  // sendNotification, которую никто не вызывал, поэтому уведомления из
+  // секретного чата с браузера не уходили вообще. Текст не передаём: сервер
+  // для секретных чатов сам подставляет «New secret message».
+  const notifyPartner = async () => {
     try {
-      const recipientName = chatName.split('_').find((name) => name !== username);
-      const userResponse = await fetch(
-        `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
-      );
-      if (!userResponse.ok) {
-        throw new Error('Failed to fetch recipient');
-      }
-      const recipient = await userResponse.json();
-      const recipientId = recipient.id;
-
-      const statusResponse = await fetch(
-        `https://unlimitedpossibilities12.org/api/messages/${message.id}`
-      );
-      if (statusResponse.ok) {
-        const messageStatus = await statusResponse.json();
-        if (messageStatus.read_status === false || messageStatus.read_status === null) {
-          await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId,
-              recipientId,
-              content: contentForNotification, // "New message"
-              chatId,
-            }),
-          });
-          console.log(`Notification sent for message ${message.id} with content: ${contentForNotification}`);
+      let recipientId = partnerId;
+      if (!recipientId) {
+        const recipientName = chatName
+          .replace(/_secret$/, '')
+          .split('_')
+          .find((name) => name !== username);
+        const userResponse = await fetch(
+          `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
+        );
+        if (!userResponse.ok) {
+          throw new Error(`Failed to fetch recipient: ${userResponse.status}`);
         }
-      } else {
-        console.error(`Failed to fetch message status for ID ${message.id}: ${statusResponse.status}`);
+        recipientId = (await userResponse.json()).id;
       }
+
+      await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          recipientId,
+          content: 'New secret message',
+          chatId,
+        }),
+      });
+      console.log(`Notification sent to user ${recipientId} for secret chat ${chatId}`);
     } catch (error) {
-      console.error('Error in sendNotification:', error);
+      console.error('Error sending secret chat notification:', error);
     }
   };
 
