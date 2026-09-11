@@ -1308,9 +1308,9 @@
 /* ─── Превью ссылок (точно как в личном чате) ─── */
 .link-preview-card {
   margin: 8px 0 4px 0;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  background: #1e2937;
+  background: #1E293B; /* карточка превью — как link_preview_card в Android */
   box-shadow: 0 1px 4px rgba(0,0,0,0.3);
   border: 1px solid rgba(148, 163, 184, 0.2);
   cursor: pointer;
@@ -1353,13 +1353,13 @@
 
 /* Ссылки в тексте сообщения */
 .message-link {
-  color: #60a5fa !important;
+  color: #B388FF !important; /* чужие сообщения — как в Android */
   text-decoration: none;
   transition: all 0.15s ease;
 }
 
 .message.current-user .message-link {
-  color: #bae6fd !important;
+  color: #4FC3F7 !important; /* свои сообщения — как в Android */
 }
 
 .message.current-user .message-link:hover,

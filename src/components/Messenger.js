@@ -1947,14 +1947,14 @@ const Messenger = () => {
                                         fontWeight: 600,
                                         fontSize: '15px',
                                         lineHeight: '1.4',
-                                        color: '#1a1a1a',
+                                        color: '#E2E8F0',
                                     }}>
                                         {previewData[msg.id].title}
                                     </div>
                                     <div style={{
                                         padding: '0 12px 8px',
                                         fontSize: '13px',
-                                        color: '#555',
+                                        color: '#CBD5E1',
                                         lineHeight: '1.4',
                                         maxHeight: '60px',
                                         overflow: 'hidden',
@@ -1964,7 +1964,7 @@ const Messenger = () => {
                                     <div style={{
                                         padding: '0 12px 8px',
                                         fontSize: '12px',
-                                        color: '#777',
+                                        color: '#94A3B8',
                                     }}>
                                         {new URL(previewData[msg.id].url).hostname}
                                     </div>
