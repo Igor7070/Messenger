@@ -1,6 +1,7 @@
 package com.example.unl_pos12.model.messenger;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -12,6 +13,10 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String username;
+    // WRITE_ONLY: пароль принимается из JSON (регистрация/логин), но никогда
+    // не отдаётся наружу. Без этого он уходил в открытом виде в объекте sender
+    // каждого сообщения всем участникам чата и в GET /api/users.
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password; // Храните пароли в зашифрованном виде
 
     //@Lob // Указываем, что это большое поле
