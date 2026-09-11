@@ -63,8 +63,17 @@ public class ChatService {
         return chatRepository.save(chat);
     }
 
+    /**
+     * Список чатов для общего экрана — только групповые. Раньше отдавались
+     * все чаты, включая чужие приватные и секретные: веб-клиент (Home.js)
+     * для каждого грузил сообщения и подписывался на топик, то есть каждый
+     * пользователь получал чужую переписку. Приватные чаты пользователя
+     * отдаёт /api/users/{id}/private-chats.
+     */
     public List<Chat> getAllChats() {
-        return chatRepository.findAll();
+        return chatRepository.findAll().stream()
+                .filter(c -> !c.isPrivate() && !Boolean.TRUE.equals(c.getIsSecret()))
+                .collect(java.util.stream.Collectors.toList());
     }
 
     public void deleteChat(Long id) {
