@@ -1,6 +1,9 @@
 import MessageChecks from './MessageChecks';
 import { stompAuthHeaders } from '../authToken';
 import { computeSafetyNumber } from './SafetyNumber';
+import SecretTranslationDialog from '../localTranslation/SecretTranslationDialog';
+import LocalTranslatedLine, { clearLocalTranslationCache } from '../localTranslation/LocalTranslatedLine';
+import { prepareOutgoingText, parseSecretText, isEnabled as isLocalTranslationEnabled, targetLanguage as localTargetLanguage } from '../localTranslation/localTranslator';
 import React, { useEffect, useState, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -157,6 +160,9 @@ const SecretPrivateChat = () => {
   const [safetyNumber, setSafetyNumber] = useState(null);
   const [showSafetyNumber, setShowSafetyNumber] = useState(false);
   const [partnerKeyChanged, setPartnerKeyChanged] = useState(false);
+  // Перевод на устройстве (секретный чат)
+  const [showTranslationDialog, setShowTranslationDialog] = useState(false);
+  const [translationRefresh, setTranslationRefresh] = useState(0);
 
   // Запоминает ключ собеседника и поднимает предупреждение, если он изменился
   // по сравнению с тем, что видели раньше. Молчаливая замена ключа — это то,
@@ -1442,10 +1448,12 @@ const SecretPrivateChat = () => {
 
         // === ТЕКСТОВОЕ СООБЩЕНИЕ (только если нет файла: с файлом текст уходит подписью) ===
         if (content && !selectedFile) {
-          setSentMessagesCache((prev) => ({ ...prev, [clientMessageId]: content }));
-          saveOwnMessageContent(chatId, userId, clientMessageId, content);
+          // Перевод на устройстве ДО шифрования: в шифртекст уходит {"text","translated","lang"}
+          const outgoingText = await prepareOutgoingText(chatId, content);
+          setSentMessagesCache((prev) => ({ ...prev, [clientMessageId]: outgoingText }));
+          saveOwnMessageContent(chatId, userId, clientMessageId, outgoingText);
 
-          const { encryptedContent, nonce } = await encryptMessage(content, recipientId);
+          const { encryptedContent, nonce } = await encryptMessage(outgoingText, recipientId);
           messageData = {
             ...messageData,
             encryptedContent,
@@ -1479,7 +1487,8 @@ const SecretPrivateChat = () => {
 
         // === ФАЙЛОВОЕ СООБЩЕНИЕ ===
         } else if (selectedFile) {
-          const caption = (content || '').trim();
+          const captionRaw = (content || '').trim();
+          const caption = captionRaw ? await prepareOutgoingText(chatId, captionRaw) : '';
           const { encryptedFile, nonce, fileNonce, encryptedContent } = await encryptFile(
             selectedFile,
             recipientId,
@@ -2867,6 +2876,13 @@ const SecretPrivateChat = () => {
           >
             {partnerKeyChanged ? '⚠️' : '🔒'}
           </span>
+          <span
+            className={`secret-translate-toggle${isLocalTranslationEnabled(chatId) && localTargetLanguage(chatId) ? ' on' : ''}`}
+            onClick={() => setShowTranslationDialog(true)}
+            title="On-device translation"
+          >
+            🌐
+          </span>
 
           {/* Аватар + имя + typing — центрировано */}
           <div className="secret-partner-container">
@@ -2907,6 +2923,13 @@ const SecretPrivateChat = () => {
               )}
             </div>
           </div>
+          {showTranslationDialog && (
+            <SecretTranslationDialog
+              chatId={chatId}
+              onClose={() => setShowTranslationDialog(false)}
+              onSaved={() => { clearLocalTranslationCache(); setTranslationRefresh((n) => n + 1); }}
+            />
+          )}
           {(showSafetyNumber || partnerKeyChanged) && (
             <div className="secret-safety-panel" onClick={() => setShowSafetyNumber(false)}>
               {partnerKeyChanged && (
@@ -3075,9 +3098,22 @@ const SecretPrivateChat = () => {
                       </div>
                     ) : (
                       <>
-                        <span className="secret-message-content">
-                          {msg.content}
-                        </span>
+                        {(() => {
+                          const st = parseSecretText(msg.content);
+                          return (
+                            <>
+                              <span className="secret-message-content">{st.text}</span>
+                              <LocalTranslatedLine
+                                chatId={chatId}
+                                msgId={msg.id}
+                                text={st.text}
+                                translated={st.translated}
+                                lang={st.lang}
+                                refreshKey={translationRefresh}
+                              />
+                            </>
+                          );
+                        })()}
 
                         {/* Превью изображения — используем расшифрованный blob или локальный */}
                         {msg.messageType === 'file' && msg.fileUrl && (
