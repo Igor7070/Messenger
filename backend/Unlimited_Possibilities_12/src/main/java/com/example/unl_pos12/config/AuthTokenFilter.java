@@ -59,7 +59,8 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         String method = request.getMethod();
         if ("/api/users/login".equals(path)) return true;
-        if ("/api/users".equals(path) && "POST".equalsIgnoreCase(method)) return true;
+        // Регистрация: веб шлёт JSON на /api/users, Android — multipart с аватаром на /api/users/create
+        if ("POST".equalsIgnoreCase(method) && ("/api/users".equals(path) || "/api/users/create".equals(path))) return true;
         // Экран до входа: список пользователей (имя, аватар, онлайн) и групповых
         // чатов — публичный, с него и логинятся. Пароли из ответов уже убраны.
         if ("GET".equalsIgnoreCase(method) && ("/api/users".equals(path) || "/api/chats".equals(path))) return true;
