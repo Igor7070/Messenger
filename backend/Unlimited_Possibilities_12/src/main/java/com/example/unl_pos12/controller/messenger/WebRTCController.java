@@ -28,6 +28,11 @@ import java.util.concurrent.*;
 @RequestMapping("/api/webrtc")
 public class WebRTCController {
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.example.unl_pos12.service.PushService pushService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.example.unl_pos12.service.UserService userService;
+
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
@@ -143,8 +148,35 @@ public class WebRTCController {
 
         messagingTemplate.convertAndSend("/topic/calls/" + callRequest.getRecipientId(), callRequest);
         messagingTemplate.convertAndSend("/topic/room/" + callRequest.getRoomId(), callRequest);
+        pushIncomingCall(callRequest);
         System.out.println("Method initiateCall worked success.");
         return ResponseEntity.ok("Call initiated");
+    }
+
+    /**
+     * Push о входящем звонке: будит телефон получателя, если приложение закрыто
+     * и постоянного соединения нет. Данных о разговоре в push нет — только кто
+     * звонит и в какую комнату, остальное клиент получает по сигнализации.
+     */
+    private void pushIncomingCall(CallRequest callRequest) {
+        if (pushService == null || callRequest == null) return;
+        try {
+            Long recipientId = Long.valueOf(callRequest.getRecipientId());
+            String callerName = "Incoming call";
+            try {
+                callerName = userService.getUserById(Long.valueOf(callRequest.getCallerId())).getUsername();
+            } catch (Exception ignored) {
+            }
+            java.util.Map<String, String> data = new java.util.HashMap<>();
+            data.put("type", "call");
+            data.put("callerId", callRequest.getCallerId());
+            data.put("roomId", callRequest.getRoomId());
+            data.put("callType", callRequest.getType());
+            data.put("callerName", callerName);
+            pushService.sendToUser(recipientId, callerName, "Incoming call", data);
+        } catch (Exception e) {
+            System.out.println("pushIncomingCall error: " + e.getMessage());
+        }
     }
 
     @MessageMapping("/call/{recipientId}")
