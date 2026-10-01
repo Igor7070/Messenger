@@ -1168,7 +1168,7 @@ const PrivateChat = () => {
                 },
             };
         }
-        toast.error('Failed to play audio message');
+        console.warn('Audio unavailable:', msgId);
         return {
             ...prev,
             [msgId]: {
