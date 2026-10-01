@@ -227,10 +227,35 @@ public class WebRTCController {
 
         for (String recipientId : groupCallRequest.getRecipientIds()) {
             messagingTemplate.convertAndSend("/topic/groupCalls/" + recipientId, groupCallRequest);
+            pushGroupCall(groupCallRequest, recipientId);
         }
         messagingTemplate.convertAndSend("/topic/room/" + groupCallRequest.getRoomId(), groupCallRequest);
         System.out.println("Method initiateGroupCall worked success.");
         return ResponseEntity.ok("Group call initiated");
+    }
+
+    /** Push о групповом вызове: без него участник с закрытым приложением ничего не узнает. */
+    private void pushGroupCall(GroupCallRequest request, String recipientId) {
+        if (pushService == null || request == null || recipientId == null) return;
+        try {
+            String initiatorName = "Group call";
+            try {
+                initiatorName = userService.getUserById(Long.valueOf(request.getInitiatorId())).getUsername();
+            } catch (Exception ignored) {
+            }
+            java.util.Map<String, String> data = new java.util.HashMap<>();
+            data.put("type", "call");
+            data.put("callType", "group");
+            data.put("callerId", request.getInitiatorId());
+            data.put("roomId", request.getRoomId());
+            data.put("callerName", initiatorName);
+            if (request.getRecipientIds() != null) {
+                data.put("recipientIds", String.join(",", request.getRecipientIds()));
+            }
+            pushService.sendToUser(Long.valueOf(recipientId), initiatorName, "Incoming group call", data);
+        } catch (Exception e) {
+            System.out.println("pushGroupCall error: " + e.getMessage());
+        }
     }
 
     @MessageMapping("/groupCall/{recipientId}")
@@ -241,6 +266,7 @@ public class WebRTCController {
             System.out.println("Ignoring endCall message for /app/groupCall/" + recipientId);
             return groupCallRequest;
         }
+        pushGroupCall(groupCallRequest, recipientId); // разбудить телефон, если приложение закрыто
 
         String key = groupCallRequest.getRoomId() + "-" + recipientId;
         ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {}, 0, TimeUnit.SECONDS); // Пустой таймер для совместимости
