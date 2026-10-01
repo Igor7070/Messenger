@@ -1272,7 +1272,10 @@ const PrivateChat = () => {
                         },
                     };
                 }
-                toast.error('Failed to preload audio message');
+                // Файла на сервере нет (старые записи пропали при перезапуске) —
+                // ошибку показываем в самом сообщении, а не тостом: иначе в чате
+                // со старыми голосовыми тосты идут сплошным потоком.
+                console.warn('Audio preload failed for msg', msgId);
                 return {
                     ...prev,
                     [msgId]: {
