@@ -9,8 +9,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class WebSocketService {
 
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private PushService pushService;
     @Autowired
     private UserService userService;
     private final SimpMessagingTemplate messagingTemplate;
@@ -41,15 +39,6 @@ public class WebSocketService {
             messagingTemplate.convertAndSend(destination, notificationMessage);
             System.out.println("Notification sent to user ID: " + recipientId + ", message: " + notificationMessage);
 
-            // Push будит приложение, если оно закрыто. Текст сообщения не передаём —
-            // только от кого и в каком чате; содержимое клиент забирает сам.
-            if (pushService != null) {
-                java.util.Map<String, String> data = new java.util.HashMap<>();
-                data.put("chatId", String.valueOf(chatId));
-                data.put("senderId", String.valueOf(userId));
-                data.put("secret", String.valueOf(secretChat));
-                pushService.sendToUser(recipientId, userName, "New message", data);
-            }
         } catch (Exception e) {
             System.out.println("Error in method sendNotification: " + e.getMessage());
             e.printStackTrace();

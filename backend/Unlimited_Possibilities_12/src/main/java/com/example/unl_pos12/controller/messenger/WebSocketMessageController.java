@@ -23,6 +23,11 @@ import java.util.concurrent.TimeUnit;
 
 @Controller
 public class WebSocketMessageController {
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.example.unl_pos12.service.PushService pushService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.example.unl_pos12.repo.UserRepository userRepository;
     @Autowired
     private MessageService messageService;
     @Autowired
@@ -111,7 +116,42 @@ public class WebSocketMessageController {
 
         message.setDelivered_status(true); // Устанавливаем статус доставки
         message.setTimestamp(ZonedDateTime.now()); // [ADD] Установка timestamp для нового сообщения
-        return messageService.saveMessage(message, null); // file = null, так как клиент отправляет fileUrl
+        Message saved = messageService.saveMessage(message, null); // file = null, так как клиент отправляет fileUrl
+        pushToChatMembers(saved);
+        return saved;
+    }
+
+    /**
+     * Push всем участникам чата, кроме отправителя.
+     *
+     * Раньше push зависел от того, что клиент сам вызовет /api/messages/notify:
+     * веб-версия делала это через три секунды, разыскивая своё сообщение по
+     * тексту, и при повторе того же текста уведомление не уходило вовсе.
+     * Теперь сервер шлёт push в момент сохранения — это единственная точка,
+     * через которую проходят сообщения всех клиентов.
+     *
+     * Текста сообщения в push нет: только имя отправителя и id чата.
+     */
+    private void pushToChatMembers(Message saved) {
+        if (pushService == null || saved == null || saved.getChat() == null) return;
+        try {
+            Long chatId = saved.getChat().getId();
+            Long senderId = saved.getSender() != null ? saved.getSender().getId() : null;
+            boolean secret = Boolean.TRUE.equals(saved.getChat().getIsSecret());
+            String senderName = saved.getSender() != null ? saved.getSender().getUsername() : "Messenger UP12";
+
+            java.util.Map<String, String> data = new java.util.HashMap<>();
+            data.put("chatId", String.valueOf(chatId));
+            data.put("senderId", String.valueOf(senderId));
+            data.put("secret", String.valueOf(secret));
+
+            for (com.example.unl_pos12.model.messenger.User member : userRepository.findMembersOfChat(chatId)) {
+                if (senderId != null && senderId.equals(member.getId())) continue; // себе не шлём
+                pushService.sendToUser(member.getId(), senderName, "New message", data);
+            }
+        } catch (Exception e) {
+            System.out.println("pushToChatMembers error: " + e.getMessage());
+        }
     }
 
     @MessageMapping("/editMessage/{chatId}")
