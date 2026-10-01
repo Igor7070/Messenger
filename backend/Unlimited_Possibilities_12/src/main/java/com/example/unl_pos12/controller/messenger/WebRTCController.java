@@ -187,6 +187,10 @@ public class WebRTCController {
             System.out.println("Ignoring endCall message for /app/call/" + recipientId);
             return callRequest;
         }
+        // Звонки идут двумя путями — через REST и через этот; push нужен на обоих,
+        // иначе вызов не разбудит телефон с закрытым приложением
+        if (callRequest.getRecipientId() == null) callRequest.setRecipientId(recipientId);
+        pushIncomingCall(callRequest);
 
         String key = callRequest.getRoomId() + "-" + recipientId;
         ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {}, 0, TimeUnit.SECONDS); // Пустой таймер для совместимости
