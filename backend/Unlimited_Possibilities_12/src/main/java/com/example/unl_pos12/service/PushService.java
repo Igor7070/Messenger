@@ -109,30 +109,74 @@ public class PushService {
         payload.put("title", title != null ? title : "Messenger UP12");
         payload.put("body", body != null ? body : "New message");
 
-        for (PushToken t : tokens) {
-            try {
-                // Только data-сообщение: уведомление рисует само приложение,
-                // поэтому текст переписки в облако не уходит.
-                Message message = Message.builder()
-                        .setToken(t.getToken())
-                        .putAllData(payload)
-                        .setAndroidConfig(com.google.firebase.messaging.AndroidConfig.builder()
-                                .setPriority(com.google.firebase.messaging.AndroidConfig.Priority.HIGH)
-                                .build())
-                        .build();
-                FirebaseMessaging.getInstance().send(message);
-            } catch (FirebaseMessagingException e) {
-                MessagingErrorCode code = e.getMessagingErrorCode();
-                if (code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.INVALID_ARGUMENT) {
-                    // Приложение удалено или токен протух — чистим
-                    repository.deleteByToken(t.getToken());
-                    System.out.println("PushService: удалён недействительный токен userId=" + userId);
-                } else {
-                    System.out.println("PushService: ошибка отправки (" + code + "): " + e.getMessage());
+        // Отправляем в отдельном потоке: вызов идёт из обработчика WebSocket, а
+        // блокировать его сетевым запросом к Google нельзя — доставка сообщения
+        // другим участникам не должна ждать Firebase.
+        List<String> tokenValues = new java.util.ArrayList<>();
+        for (PushToken t : tokens) tokenValues.add(t.getToken());
+        sender.submit(() -> deliver(userId, tokenValues, payload));
+    }
+
+    private final java.util.concurrent.ExecutorService sender =
+            java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "push-sender");
+                t.setDaemon(true);
+                return t;
+            });
+
+    private void deliver(Long userId, List<String> tokenValues, Map<String, String> payload) {
+        for (String token : tokenValues) {
+            if (!sendOnce(userId, token, payload, false)) {
+                // Транспортные сбои у Firebase случаются — пробуем ещё раз
+                try {
+                    Thread.sleep(1500);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
                 }
-            } catch (Exception e) {
-                System.out.println("PushService: ошибка отправки: " + e.getMessage());
+                sendOnce(userId, token, payload, true);
             }
         }
     }
+
+    /** @return true, если отправлено или токен удалён как недействительный. */
+    private boolean sendOnce(Long userId, String token, Map<String, String> payload, boolean lastAttempt) {
+        try {
+            Message message = Message.builder()
+                    .setToken(token)
+                    .putAllData(payload)
+                    .setAndroidConfig(com.google.firebase.messaging.AndroidConfig.builder()
+                            .setPriority(com.google.firebase.messaging.AndroidConfig.Priority.HIGH)
+                            .build())
+                    .build();
+            String id = FirebaseMessaging.getInstance().send(message);
+            System.out.println("PushService: отправлено userId=" + userId + ", id=" + id);
+            return true;
+        } catch (FirebaseMessagingException e) {
+            MessagingErrorCode code = e.getMessagingErrorCode();
+            if (code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.INVALID_ARGUMENT) {
+                repository.deleteByToken(token);
+                System.out.println("PushService: удалён недействительный токен userId=" + userId);
+                return true;
+            }
+            System.out.println("PushService: ошибка отправки (" + code + "): " + e.getMessage()
+                    + causeChain(e) + (lastAttempt ? " — повтор не помог" : " — повторим"));
+            return false;
+        } catch (Exception e) {
+            System.out.println("PushService: ошибка отправки: " + e.getMessage() + causeChain(e));
+            return false;
+        }
+    }
+
+    private static String causeChain(Throwable e) {
+        StringBuilder sb = new StringBuilder();
+        Throwable c = e.getCause();
+        int depth = 0;
+        while (c != null && depth++ < 4) {
+            sb.append(" <- ").append(c.getClass().getSimpleName()).append(": ").append(c.getMessage());
+            c = c.getCause();
+        }
+        return sb.toString();
+    }
+
 }
