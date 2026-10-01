@@ -3,6 +3,7 @@ import { stompAuthHeaders } from '../authToken';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import { toast } from 'react-toastify';
+import { notify, closeNotification } from '../desktopNotifications';
 import { useUserInteraction } from './UserInteractionContext';
 
 const CallWebSocketContext = createContext();
@@ -37,6 +38,30 @@ export const CallWebSocketProvider = ({ children }) => {
 
   useEffect(() => {
     console.log('CallWebSocketContext: Состояние incomingCall изменилось:', incomingCall);
+  }, [incomingCall]);
+
+  // Системное уведомление о входящем звонке: вкладка может быть не на виду,
+  // а звонок ждать некогда. Внутри страницы экран вызова остаётся прежним.
+  const callNotificationRef = useRef(null);
+  useEffect(() => {
+    if (incomingCall) {
+      const type = incomingCall.type || incomingCall.callType;
+      const title =
+        type === 'video' ? 'Incoming video call' :
+        type === 'translate' ? 'Incoming call with translation' :
+        type === 'group' ? 'Incoming group call' :
+        type === 'voice_secure' ? 'Incoming secure call' :
+        'Incoming call';
+      callNotificationRef.current = notify(title, {
+        body: incomingCall.callerName || incomingCall.initiatorName || 'Messenger UP12',
+        tag: `call-${incomingCall.roomId || 'current'}`,
+        requireInteraction: true, // висит, пока не ответят или не отменят
+        onClick: () => window.focus(),
+      });
+    } else {
+      closeNotification(callNotificationRef.current);
+      callNotificationRef.current = null;
+    }
   }, [incomingCall]);
 
   useEffect(() => {

@@ -3,6 +3,7 @@ import { stompAuthHeaders } from '../authToken';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { toast } from 'react-toastify';
+import { notify } from '../desktopNotifications';
 import { useNavigate } from 'react-router-dom';
 import { useUserInteraction } from './UserInteractionContext';
 
@@ -66,6 +67,15 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
             } else {
               console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef?.current);
             }
+
+            // Вкладка может быть не на виду — тогда показываем уведомление системы.
+            // Текст сообщения в нём не приводим: достаточно имени отправителя.
+            const fromMatch = notification.match(/from: (\w+)/);
+            notify(fromMatch ? fromMatch[1] : 'Messenger UP12', {
+              body: isSecret ? 'New secret message' : 'New message',
+              tag: `chat-${chatId}`,
+              onClick: () => navigate(`/${chatRoute}/${chatId}`),
+            });
 
             const toastId = `private-message-${chatId}-${Date.now()}`;
             console.log('Calling toast.info:', { notification, toastId, currentChatId, chatId });
