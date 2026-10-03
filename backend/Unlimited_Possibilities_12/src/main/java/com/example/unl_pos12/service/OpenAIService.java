@@ -33,8 +33,6 @@ public class OpenAIService {
             .writeTimeout(60, TimeUnit.SECONDS)
             .readTimeout(120, TimeUnit.SECONDS)
             .build();
-    private final ConcurrentHashMap<String, ByteArrayOutputStream> audioBuffers = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Long> lastSentTimestamps = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> sessionToRecipientMap = new ConcurrentHashMap<>(); // NEW: Храним recipientId для каждой сессии
     private final ConcurrentHashMap<String, String> userSettings = new ConcurrentHashMap<>(); // [ДОБАВЛЕНО] Хранилище настроек
 
@@ -68,36 +66,48 @@ public class OpenAIService {
             return;
         }
         try {
-            // NEW: Извлекаем recipientId из JSON или используем sessionId как ключ
             String bufferKey = roomId + "_" + sessionId;
-            ByteArrayOutputStream audioBuffer = audioBuffers.computeIfAbsent(bufferKey, k -> new ByteArrayOutputStream());
-            audioBuffer.write(audioData);
-            File debugFile = new File("debug_audio_" + bufferKey + ".raw");
-            try (FileOutputStream fos = new FileOutputStream(debugFile, true)) {
-                fos.write(audioData);
-            } catch (IOException e) {
-                LOGGER.severe("Error writing debug audio for roomId " + roomId + ": " + e.getMessage());
-            }
-            long currentTime = System.currentTimeMillis();
-            long lastSentTime = lastSentTimestamps.getOrDefault(bufferKey, 0L);
-            if (currentTime - lastSentTime >= 5000 && audioBuffer.size() >= 80000) {
-                byte[] audioBytes = audioBuffer.toByteArray();
-                audioBuffer.reset();
-                lastSentTimestamps.put(bufferKey, currentTime);
-                byte[] wavBytes = convertToWav(audioBytes);
-                String transcription = transcribeAudio(wavBytes);
-                // [ДОБАВЛЕНО] Фильтрация транскрипции
-                if (isValidTranscription(transcription)) {
-                    sendTranscription(roomId, sessionId, transcription);
-                } else {
-                    LOGGER.warning("Filtered out invalid transcription for roomId: " + roomId + ": " + transcription);
-                    //sendError(roomId, sessionId, "Invalid transcription filtered: " + transcription);
+            VoiceSegmenter segmenter = segmenters.computeIfAbsent(bufferKey, k -> new VoiceSegmenter());
+            byte[] phrase = segmenter.accept(audioData);
+            cleanupIdleSegmenters();
+            if (phrase == null) return; // человек ещё говорит
+
+            long phraseMs = phrase.length / 32; // PCM 16 бит, моно, 16 кГц
+            LOGGER.info("Фраза готова: roomId=" + roomId + ", длительность≈" + phraseMs + " мс");
+
+            // Распознавание — сетевой запрос: не держим на нём поток веб-сокета,
+            // иначе звук от собеседника копится и разговор отстаёт.
+            transcriptionExecutor.submit(() -> {
+                try {
+                    byte[] wavBytes = convertToWav(phrase);
+                    String transcription = transcribeAudio(wavBytes);
+                    if (isValidTranscription(transcription)) {
+                        sendTranscription(roomId, sessionId, transcription);
+                    } else {
+                        LOGGER.warning("Filtered out invalid transcription for roomId: " + roomId + ": " + transcription);
+                    }
+                } catch (Exception e) {
+                    LOGGER.severe("Error transcribing phrase for roomId " + roomId + ": " + e.getMessage());
                 }
-            }
+            });
         } catch (Exception e) {
             LOGGER.severe("Error processing audio for roomId " + roomId + ": " + e.getMessage());
-            //sendError(roomId, sessionId, "Error processing audio: " + e.getMessage());
         }
+    }
+
+    /** Нарезка речи на фразы — по одной на каждого говорящего в комнате. */
+    private final java.util.Map<String, VoiceSegmenter> segmenters = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private final java.util.concurrent.ExecutorService transcriptionExecutor =
+            java.util.concurrent.Executors.newFixedThreadPool(4, r -> {
+                Thread t = new Thread(r, "transcription");
+                t.setDaemon(true);
+                return t;
+            });
+
+    /** Разговоры заканчиваются без уведомления — забытые буферы убираем сами. */
+    private void cleanupIdleSegmenters() {
+        segmenters.entrySet().removeIf(e -> e.getValue().isIdle(120000));
     }
 
     // [ДОБАВЛЕНО] Метод для фильтрации транскрипции
