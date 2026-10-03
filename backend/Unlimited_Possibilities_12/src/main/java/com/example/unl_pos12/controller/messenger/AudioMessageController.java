@@ -27,7 +27,9 @@ public class AudioMessageController {
             byte[] audioData = Base64.getDecoder().decode(base64Audio);
 
             if (audioData.length > 0) {
-                openAIService.handleAudioMessage(roomId, sessionId, audioData);
+                // Язык говорящего, если он выбран в интерфейсе звонка
+                String spokenLanguage = json.has("spokenLanguage") ? json.get("spokenLanguage").asText() : null;
+                openAIService.handleAudioMessage(roomId, sessionId, audioData, spokenLanguage);
             } else {
                 System.out.println("Empty audio data for roomId " + roomId);
             }

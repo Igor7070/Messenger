@@ -60,6 +60,10 @@ public class OpenAIService {
     }
 
     public void handleAudioMessage(String roomId, String sessionId, byte[] audioData) {
+        handleAudioMessage(roomId, sessionId, audioData, null);
+    }
+
+    public void handleAudioMessage(String roomId, String sessionId, byte[] audioData, String spokenLanguage) {
         if (audioData == null || audioData.length == 0) {
             LOGGER.warning("Empty audio data for roomId: " + roomId);
             return;
@@ -81,9 +85,12 @@ public class OpenAIService {
                     byte[] wavBytes = convertToWav(phrase);
                     // Язык говорящего не меняется в середине разговора: определяем
                     // его на первой внятной фразе и дальше сообщаем Whisper явно
-                    String known = sessionLanguages.get(bufferKey);
+                    // Выбранный пользователем язык надёжнее любого автоопределения
+                    String chosen = (spokenLanguage != null && !spokenLanguage.isBlank()
+                            && !"auto".equalsIgnoreCase(spokenLanguage)) ? spokenLanguage : null;
+                    String known = chosen != null ? chosen : sessionLanguages.get(bufferKey);
                     Transcription result = transcribeAudio(wavBytes, known);
-                    if (known == null && result.language != null && phraseMs >= 1200
+                    if (chosen == null && known == null && result.language != null && phraseMs >= 1200
                             && result.text != null && result.text.trim().length() >= 8) {
                         String code = toIsoCode(result.language);
                         if (code != null) {
