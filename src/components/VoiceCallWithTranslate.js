@@ -43,9 +43,20 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   // [ДОБАВЛЕНО] Состояния для переключателя перевода, выбранного языка и рефа для выпадающего списка
   const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('auto'); // ИЗМЕНЕНО: 'en' → 'auto'
+  // Язык, на котором говорю я. Распознавание угадывает его по каждой короткой
+  // фразе и ошибается — английскую реплику записывало кириллицей. Указанный
+  // явно язык снимает эти ошибки; 'auto' оставлен как прежнее поведение.
+  const [spokenLanguage, setSpokenLanguage] = useState(
+    () => localStorage.getItem(`spoken_language_${roomId}`) || 'auto'
+  );
+  const spokenLanguageRef = useRef(spokenLanguage);
   const languageDropdownRef = useRef(null);
   const isTranslationEnabledRef = useRef(isTranslationEnabled);
   const selectedLanguageRef = useRef(selectedLanguage);
+  useEffect(() => {
+    spokenLanguageRef.current = spokenLanguage;
+    localStorage.setItem(`spoken_language_${roomId}`, spokenLanguage);
+  }, [spokenLanguage, roomId]);
   // [ДОБАВЛЕНО] Состояние и реф для переключателя TTS
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const ttsEnabledRef = useRef(ttsEnabled);
@@ -518,6 +529,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
               const audioMessage = {
                   audio: base64Audio,
                   sessionId: sessionId,
+                  spokenLanguage: spokenLanguageRef.current, // на каком языке говорю я
               };
               stompClient.current.publish({
                   destination: `/app/audio-transcription/${roomId}`,
@@ -1051,6 +1063,19 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           >
             {isTranslationEnabled ? 'Translation ON' : 'Translation OFF'}
           </button>
+          <select
+            className="voice-call-language-dropdown"
+            style={{ display: isTranslationEnabled ? 'inline-block' : 'none', marginLeft: '10px' }}
+            value={spokenLanguage}
+            title="Язык, на котором говорю я"
+            onChange={(e) => setSpokenLanguage(e.target.value)}
+          >
+            {languages.map((lang) => (
+              <option key={`spoken-${lang.code}`} value={lang.code}>
+                🎤 {lang.emoji} {lang.name}
+              </option>
+            ))}
+          </select>
           <select
             ref={languageDropdownRef}
             className="voice-call-language-dropdown"
