@@ -13,10 +13,31 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
   const { userInteracted } = useUserInteraction();
   const [currentUserId, setCurrentUserId] = useState(null);
   const [currentChatId, setCurrentChatId] = useState(null);
+  // Чаты, в которых есть непрочитанное. В заголовке вкладки показываем их
+  // количество — как в Telegram: «(2) Messenger UP12» значит, что написали
+  // из двух чатов, сколько бы сообщений там ни было.
+  const [unreadChats, setUnreadChats] = useState(() => new Set());
   const messageAudioRef = useRef(null);
   const stompClientRef = useRef(null);
   const errorToastRef = useRef(null);
   const navigate = useNavigate();
+
+  // Открыли чат — он больше не «непрочитанный»
+  useEffect(() => {
+    if (!currentChatId) return;
+    setUnreadChats((prev) => {
+      if (!prev.has(currentChatId)) return prev;
+      const next = new Set(prev);
+      next.delete(currentChatId);
+      return next;
+    });
+  }, [currentChatId]);
+
+  // Заголовок вкладки: видно, что пришло, не переключаясь на мессенджер
+  useEffect(() => {
+    const base = 'Messenger UP12';
+    document.title = unreadChats.size > 0 ? `(${unreadChats.size}) ${base}` : base;
+  }, [unreadChats]);
 
   useEffect(() => {
     if (!currentUserId) {
@@ -75,6 +96,13 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
               body: isSecret ? 'New secret message' : 'New message',
               tag: `chat-${chatId}`,
               onClick: () => navigate(`/${chatRoute}/${chatId}`),
+            });
+
+            setUnreadChats((prev) => {
+              if (prev.has(chatId)) return prev;
+              const next = new Set(prev);
+              next.add(chatId);
+              return next;
             });
 
             const toastId = `private-message-${chatId}-${Date.now()}`;
