@@ -79,11 +79,22 @@ public class OpenAIService {
             transcriptionExecutor.submit(() -> {
                 try {
                     byte[] wavBytes = convertToWav(phrase);
-                    String transcription = transcribeAudio(wavBytes);
-                    if (isValidTranscription(transcription)) {
-                        sendTranscription(roomId, sessionId, transcription);
+                    // Язык говорящего не меняется в середине разговора: определяем
+                    // его на первой внятной фразе и дальше сообщаем Whisper явно
+                    String known = sessionLanguages.get(bufferKey);
+                    Transcription result = transcribeAudio(wavBytes, known);
+                    if (known == null && result.language != null && phraseMs >= 1200
+                            && result.text != null && result.text.trim().length() >= 8) {
+                        String code = toIsoCode(result.language);
+                        if (code != null) {
+                            sessionLanguages.put(bufferKey, code);
+                            LOGGER.info("Speaker language locked: roomId=" + roomId + ", language=" + code);
+                        }
+                    }
+                    if (isValidTranscription(result.text)) {
+                        sendTranscription(roomId, sessionId, result.text);
                     } else {
-                        LOGGER.warning("Filtered out invalid transcription for roomId: " + roomId + ": " + transcription);
+                        LOGGER.warning("Filtered out invalid transcription for roomId: " + roomId + ": " + result.text);
                     }
                 } catch (Exception e) {
                     LOGGER.severe("Error transcribing phrase for roomId " + roomId + ": " + e.getMessage());
@@ -92,6 +103,28 @@ public class OpenAIService {
         } catch (Exception e) {
             LOGGER.severe("Error processing audio for roomId " + roomId + ": " + e.getMessage());
         }
+    }
+
+    /** Язык каждого говорящего, определённый на первой фразе разговора. */
+    private final java.util.Map<String, String> sessionLanguages = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** Whisper возвращает название языка словом ("russian"), а принимает код ("ru"). */
+    private static String toIsoCode(String whisperLanguage) {
+        if (whisperLanguage == null) return null;
+        String name = whisperLanguage.trim().toLowerCase();
+        if (name.length() == 2) return name; // уже код
+        java.util.Map<String, String> known = java.util.Map.ofEntries(
+                java.util.Map.entry("russian", "ru"), java.util.Map.entry("english", "en"),
+                java.util.Map.entry("ukrainian", "uk"), java.util.Map.entry("french", "fr"),
+                java.util.Map.entry("german", "de"), java.util.Map.entry("spanish", "es"),
+                java.util.Map.entry("italian", "it"), java.util.Map.entry("polish", "pl"),
+                java.util.Map.entry("portuguese", "pt"), java.util.Map.entry("turkish", "tr"),
+                java.util.Map.entry("chinese", "zh"), java.util.Map.entry("japanese", "ja"),
+                java.util.Map.entry("korean", "ko"), java.util.Map.entry("arabic", "ar"),
+                java.util.Map.entry("hindi", "hi"), java.util.Map.entry("dutch", "nl"),
+                java.util.Map.entry("czech", "cs"), java.util.Map.entry("belarusian", "be"),
+                java.util.Map.entry("kazakh", "kk"), java.util.Map.entry("hebrew", "he"));
+        return known.get(name);
     }
 
     /** Нарезка речи на фразы — по одной на каждого говорящего в комнате. */
@@ -106,7 +139,11 @@ public class OpenAIService {
 
     /** Разговоры заканчиваются без уведомления — забытые буферы убираем сами. */
     private void cleanupIdleSegmenters() {
-        segmenters.entrySet().removeIf(e -> e.getValue().isIdle(120000));
+        segmenters.entrySet().removeIf(e -> {
+            if (!e.getValue().isIdle(120000)) return false;
+            sessionLanguages.remove(e.getKey()); // разговор закончился — язык не помним
+            return true;
+        });
     }
 
     // [ДОБАВЛЕНО] Метод для фильтрации транскрипции
@@ -140,17 +177,44 @@ public class OpenAIService {
     }
 
     public String transcribeAudio(byte[] wavAudio) throws IOException {
-        RequestBody body = new MultipartBody.Builder()
+        return transcribeAudio(wavAudio, null).text;
+    }
+
+    /** Результат распознавания: текст и язык, который определил Whisper. */
+    public static class Transcription {
+        public final String text;
+        public final String language; // код вида "russian"/"english" или null
+
+        Transcription(String text, String language) {
+            this.text = text;
+            this.language = language;
+        }
+    }
+
+    /**
+     * Распознавание речи.
+     *
+     * @param language язык говорящего (ISO-639-1, например "ru"); null — пусть
+     *        Whisper определит сам. Указывать важно: на коротких фразах
+     *        автоопределение ошибается — английскую реплику после русского
+     *        разговора модель записывала кириллицей, и переводился уже бред.
+     */
+    public Transcription transcribeAudio(byte[] wavAudio, String language) throws IOException {
+        MultipartBody.Builder builder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", "audio.wav",
                         RequestBody.create(wavAudio, MediaType.parse("audio/wav")))
                 .addFormDataPart("model", "whisper-1")
-                .build();
+                // verbose_json нужен, чтобы узнать определённый язык и запомнить его
+                .addFormDataPart("response_format", "verbose_json");
+        if (language != null && !language.isBlank()) {
+            builder.addFormDataPart("language", language);
+        }
 
         Request request = new Request.Builder()
                 .url("https://api.openai.com/v1/audio/transcriptions")
                 .header("Authorization", "Bearer " + apiKey)
-                .post(body)
+                .post(builder.build())
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
@@ -161,7 +225,9 @@ public class OpenAIService {
             }
             String responseBody = response.body().string();
             ObjectNode json = (ObjectNode) mapper.readTree(responseBody);
-            return json.get("text").asText();
+            String text = json.has("text") ? json.get("text").asText() : "";
+            String detected = json.has("language") ? json.get("language").asText() : null;
+            return new Transcription(text, detected);
         }
     }
 
