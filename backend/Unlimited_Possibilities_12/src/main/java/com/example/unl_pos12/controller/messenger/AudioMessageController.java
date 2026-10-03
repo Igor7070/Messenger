@@ -18,14 +18,14 @@ public class AudioMessageController {
 
     @MessageMapping("/audio-transcription/{roomId}")
     public void handleAudio(@DestinationVariable String roomId, @Payload String message) {
-        System.out.println("Received audio message for roomId " + roomId + ", message length: " + message.length());
+        // Кусок приходит каждые 50 мс — в лог не пишем, иначе он состоит из них одних
         try {
             // NEW: Парсим JSON
             var json = mapper.readTree(message);
             String base64Audio = json.get("audio").asText();
             String sessionId = json.get("sessionId").asText();
             byte[] audioData = Base64.getDecoder().decode(base64Audio);
-            System.out.println("Decoded audio data for roomId " + roomId + ", sessionId " + sessionId + ": " + audioData.length + " bytes");
+
             if (audioData.length > 0) {
                 openAIService.handleAudioMessage(roomId, sessionId, audioData);
             } else {

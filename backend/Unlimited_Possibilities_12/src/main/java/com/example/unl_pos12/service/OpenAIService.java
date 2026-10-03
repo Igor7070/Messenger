@@ -60,7 +60,6 @@ public class OpenAIService {
     }
 
     public void handleAudioMessage(String roomId, String sessionId, byte[] audioData) {
-        LOGGER.info("Handling audio message for roomId: " + roomId + ", sessionId: " + sessionId + ", data length: " + audioData.length);
         if (audioData == null || audioData.length == 0) {
             LOGGER.warning("Empty audio data for roomId: " + roomId);
             return;
@@ -73,7 +72,7 @@ public class OpenAIService {
             if (phrase == null) return; // человек ещё говорит
 
             long phraseMs = phrase.length / 32; // PCM 16 бит, моно, 16 кГц
-            LOGGER.info("Фраза готова: roomId=" + roomId + ", длительность≈" + phraseMs + " мс");
+            LOGGER.info("Phrase ready: roomId=" + roomId + ", sessionId=" + sessionId + ", duration=" + phraseMs + " ms");
 
             // Распознавание — сетевой запрос: не держим на нём поток веб-сокета,
             // иначе звук от собеседника копится и разговор отстаёт.
