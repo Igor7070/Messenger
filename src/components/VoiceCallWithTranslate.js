@@ -497,6 +497,14 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
 
 
   const startAudioCapture = async () => {
+      // Вызывается из двух обработчиков состояния WebRTC, а состояние проходит
+      // и 'connected', и 'completed' — без этой проверки захват запускался
+      // дважды, сервер получал звук в двух копиях, и каждая фраза дважды
+      // распознавалась, переводилась и озвучивалась.
+      if (mediaRecorderRef.current) {
+          console.log('Audio capture already running — skipping second start');
+          return;
+      }
       try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
