@@ -112,6 +112,19 @@ public class OpenAIService {
         }
     }
 
+    /**
+     * Разослать готовый текст участникам звонка.
+     *
+     * Используется бесплатным режимом: телефон распознал речь у себя, платить
+     * за распознавание не нужно, переводит текст получатель — тоже у себя.
+     * Поэтому озвучка на сервере здесь не запускается.
+     */
+    public void publishTranscription(String roomId, String sessionId, String text) {
+        if (isValidTranscription(text)) {
+            sendTranscription(roomId, sessionId, text, false);
+        }
+    }
+
     /** Язык каждого говорящего, определённый на первой фразе разговора. */
     private final java.util.Map<String, String> sessionLanguages = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -269,6 +282,11 @@ public class OpenAIService {
     }
 
     private void sendTranscription(String roomId, String sessionId, String transcription) {
+        sendTranscription(roomId, sessionId, transcription, true);
+    }
+
+    /** @param withServerTts озвучивать ли на сервере (в бесплатном режиме — нет) */
+    private void sendTranscription(String roomId, String sessionId, String transcription, boolean withServerTts) {
         ObjectNode transcriptionMessage = mapper.createObjectNode();
         transcriptionMessage.put("transcription", transcription);
         transcriptionMessage.put("sessionId", sessionId);
@@ -283,7 +301,7 @@ public class OpenAIService {
                 messagingTemplate.convertAndSend("/topic/friend-transcription/" + roomId + "/" + recipientId, messageJson);
                 LOGGER.info("Sent transcription to /topic/friend-transcription/" + roomId + "/" + recipientId + ": " + transcription);
                 // [ДОБАВЛЕНО] Вызываем TTS, если включён
-                sendTTS(roomId, sessionId, recipientId, transcription);
+                if (withServerTts) sendTTS(roomId, sessionId, recipientId, transcription);
             } else {
                 LOGGER.warning("No recipientId found for roomId: " + roomId + ", sessionId: " + sessionId);
             }
