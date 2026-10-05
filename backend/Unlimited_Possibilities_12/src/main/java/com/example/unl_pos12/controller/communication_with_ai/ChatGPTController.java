@@ -126,7 +126,8 @@ public class ChatGPTController {
                 roomId + "_" + userId,
                 request.isTranslationEnabled(),
                 request.getTranslationLanguage() != null ? request.getTranslationLanguage() : "auto",
-                request.isTtsEnabled()
+                request.isTtsEnabled(),
+                request.isLocalTts()
         );
         System.out.println("Saved settings for roomId: " + roomId + ", userId: " + userId +
                 ", translationEnabled: " + request.isTranslationEnabled() +

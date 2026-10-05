@@ -121,7 +121,7 @@ public class OpenAIService {
      */
     public void publishTranscription(String roomId, String sessionId, String text) {
         if (isValidTranscription(text)) {
-            sendTranscription(roomId, sessionId, text, false);
+            sendTranscription(roomId, sessionId, text);
         }
     }
 
@@ -301,7 +301,12 @@ public class OpenAIService {
                 messagingTemplate.convertAndSend("/topic/friend-transcription/" + roomId + "/" + recipientId, messageJson);
                 LOGGER.info("Sent transcription to /topic/friend-transcription/" + roomId + "/" + recipientId + ": " + transcription);
                 // [ДОБАВЛЕНО] Вызываем TTS, если включён
-                if (withServerTts) sendTTS(roomId, sessionId, recipientId, transcription);
+                // Синтезируем на сервере, только если слушатель не умеет сам:
+                // в браузере своей озвучки нет, а телефон в бесплатном режиме
+                // произносит перевод голосом Android — тогда сервер не нужен.
+                boolean recipientSpeaksLocally = Boolean.parseBoolean(
+                        userSettings.getOrDefault("local_tts_" + roomId + "_" + recipientId, "false"));
+                if (!recipientSpeaksLocally) sendTTS(roomId, sessionId, recipientId, transcription);
             } else {
                 LOGGER.warning("No recipientId found for roomId: " + roomId + ", sessionId: " + sessionId);
             }
@@ -410,9 +415,15 @@ public class OpenAIService {
 
     // [ДОБАВЛЕНО] Метод для сохранения настроек в userSettings...
     public void saveUserSettings(String key, boolean translationEnabled, String translationLanguage, boolean ttsEnabled) {
+        saveUserSettings(key, translationEnabled, translationLanguage, ttsEnabled, false);
+    }
+
+    public void saveUserSettings(String key, boolean translationEnabled, String translationLanguage,
+                                 boolean ttsEnabled, boolean localTts) {
         userSettings.put("translation_enabled_" + key, String.valueOf(translationEnabled));
         userSettings.put("translation_language_" + key, translationLanguage);
         userSettings.put("tts_enabled_" + key, String.valueOf(ttsEnabled));
+        userSettings.put("local_tts_" + key, String.valueOf(localTts));
         LOGGER.info("Saved settings for key: " + key + ", translationEnabled: " + translationEnabled +
                 ", translationLanguage: " + translationLanguage + ", ttsEnabled: " + ttsEnabled);
 

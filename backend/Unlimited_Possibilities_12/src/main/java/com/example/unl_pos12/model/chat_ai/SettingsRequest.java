@@ -6,6 +6,8 @@ public class SettingsRequest {
     private boolean translationEnabled;
     private String translationLanguage;
     private boolean ttsEnabled;
+    /** Клиент сам озвучит перевод (бесплатный режим на телефоне) — серверу не нужно. */
+    private boolean localTts;
 
     public String getRoomId() {
         return roomId;
@@ -45,5 +47,13 @@ public class SettingsRequest {
 
     public void setTtsEnabled(boolean ttsEnabled) {
         this.ttsEnabled = ttsEnabled;
+    }
+
+    public boolean isLocalTts() {
+        return localTts;
+    }
+
+    public void setLocalTts(boolean localTts) {
+        this.localTts = localTts;
     }
 }
