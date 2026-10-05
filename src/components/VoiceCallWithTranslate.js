@@ -1094,6 +1094,16 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           >
             {isTranslationEnabled ? 'Translation ON' : 'Translation OFF'}
           </button>
+          {/* Список задаёт СВОЙ язык: на нём распознаётся своя речь и на него
+              переводится речь собеседника — иначе выбирают язык собеседника
+              и распознавание слышит чужой язык */}
+          <span
+            className="voice-call-language-hint"
+            title="You speak this language, and you hear others translated into it"
+            style={{ display: isTranslationEnabled ? 'inline' : 'none', marginLeft: '10px', fontSize: '13px' }}
+          >
+            My language:
+          </span>
           <select
             ref={languageDropdownRef}
             className="voice-call-language-dropdown"
@@ -1124,7 +1134,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
                 setTtsEnabled(newValue);
               }}
             />
-            <label htmlFor="tts-enabled">Enable TTS</label>
+            <label htmlFor="tts-enabled">Speak aloud</label>
           </div>
         </div>
       </div>
