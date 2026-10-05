@@ -135,6 +135,14 @@ public class ChatGPTController {
         return ResponseEntity.ok().build();
     }
 
+    /** Язык, выбранный участником звонка: нужен, чтобы заранее скачать пару перевода. */
+    @GetMapping("/api/settings/language")
+    @ResponseBody
+    public ResponseEntity<String> getCallLanguage(@RequestParam String roomId, @RequestParam String userId) {
+        String language = openAIService.getUserLanguage(roomId, userId);
+        return ResponseEntity.ok(language != null ? language : "auto");
+    }
+
     @PostMapping("/api/tts")
     @ResponseBody
     public ResponseEntity<ObjectNode> generateTTS(@RequestBody ObjectNode request) {

@@ -415,5 +415,27 @@ public class OpenAIService {
         userSettings.put("tts_enabled_" + key, String.valueOf(ttsEnabled));
         LOGGER.info("Saved settings for key: " + key + ", translationEnabled: " + translationEnabled +
                 ", translationLanguage: " + translationLanguage + ", ttsEnabled: " + ttsEnabled);
+
+        // Сообщаем язык второй стороне: по нему собеседник заранее готовит
+        // нужную пару для перевода, а не скачивает её посреди разговора
+        try {
+            int sep = key.lastIndexOf('_');
+            if (sep > 0) {
+                String roomId = key.substring(0, sep);
+                String userId = key.substring(sep + 1);
+                com.fasterxml.jackson.databind.node.ObjectNode msg = mapper.createObjectNode();
+                msg.put("userId", userId);
+                msg.put("language", translationLanguage);
+                messagingTemplate.convertAndSend("/topic/call-language/" + roomId, mapper.writeValueAsString(msg));
+                LOGGER.info("Broadcast call language: room=" + roomId + ", user=" + userId + ", lang=" + translationLanguage);
+            }
+        } catch (Exception e) {
+            LOGGER.warning("Failed to broadcast call language: " + e.getMessage());
+        }
+    }
+
+    /** Язык, выбранный участником звонка (для подготовки пары перевода). */
+    public String getUserLanguage(String roomId, String userId) {
+        return userSettings.get("translation_language_" + roomId + "_" + userId);
     }
 }
