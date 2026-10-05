@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { stompAuthHeaders } from '../authToken';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
@@ -40,6 +40,40 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const transcriptionRef = useRef(null);
   const friendTranscriptionRef = useRef(null);
   const ttsAudioRef = useRef(null); // [ДОБАВЛЕНО] Реф для TTS-аудио
+  const ttsQueueRef = useRef([]);   // очередь озвучек: произносим по одной
+  const ttsPlayingRef = useRef(false);
+
+  /** Проигрывает следующую озвучку из очереди; оригинал приглушён, пока очередь не пуста. */
+  const playNextTts = useCallback(() => {
+    if (ttsPlayingRef.current) return;
+    const url = ttsQueueRef.current.shift();
+    if (!url) {
+      if (remoteAudioRef.current) remoteAudioRef.current.muted = false;
+      return;
+    }
+    const audio = ttsAudioRef.current;
+    if (!audio) return;
+    ttsPlayingRef.current = true;
+    if (remoteAudioRef.current) remoteAudioRef.current.muted = true;
+    audio.src = url;
+    audio.onended = () => {
+      ttsPlayingRef.current = false;
+      URL.revokeObjectURL(url);
+      playNextTts();
+    };
+    audio.onerror = () => {
+      console.error('Error playing TTS audio');
+      ttsPlayingRef.current = false;
+      URL.revokeObjectURL(url);
+      playNextTts();
+    };
+    audio.play().catch((error) => {
+      console.error('Error playing TTS audio:', error);
+      ttsPlayingRef.current = false;
+      URL.revokeObjectURL(url);
+      playNextTts();
+    });
+  }, []);
   // [ДОБАВЛЕНО] Состояния для переключателя перевода, выбранного языка и рефа для выпадающего списка
   const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('auto'); // ИЗМЕНЕНО: 'en' → 'auto'
@@ -326,17 +360,11 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
               }
               const blob = new Blob([arrayBuffer], { type: 'audio/mp3' });
               const url = URL.createObjectURL(blob);
-              ttsAudioRef.current.src = url;
-              ttsAudioRef.current.play().catch((error) => {
-                console.error('Error playing TTS audio:', error);
-              });
-              // [ДОБАВЛЕНО] Приглушаем оригинальный поток
-              remoteAudioRef.current.muted = true;
-              ttsAudioRef.current.onended = () => {
-                console.log('TTS audio playback ended');
-                remoteAudioRef.current.muted = false;
-                URL.revokeObjectURL(url);
-              };
+              // Фразы приходят чаще, чем успевают проговариваться, а проигрыватель
+              // один: раньше каждая новая озвучка обрывала предыдущую на полуслове,
+              // и часть фраз пропадала. Ставим в очередь и произносим по порядку.
+              ttsQueueRef.current.push(url);
+              playNextTts();
             }
           } catch (error) {
             console.error('Error parsing TTS audio JSON:', error);
