@@ -48,13 +48,21 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
     if (ttsPlayingRef.current) return;
     const url = ttsQueueRef.current.shift();
     if (!url) {
-      if (remoteAudioRef.current) remoteAudioRef.current.muted = false;
+      // Оригинал возвращаем не в полную силу, а фоном: перевод звучит после
+      // фразы, и если оба голоса громкие, разговор удваивается
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.muted = false;
+        remoteAudioRef.current.volume = ttsEnabled ? 0.3 : 1.0;
+      }
       return;
     }
     const audio = ttsAudioRef.current;
     if (!audio) return;
     ttsPlayingRef.current = true;
-    if (remoteAudioRef.current) remoteAudioRef.current.muted = true;
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.muted = false;
+      remoteAudioRef.current.volume = 0.12; // почти тишина, но слышно, что человек ещё говорит
+    }
     audio.src = url;
     audio.onended = () => {
       ttsPlayingRef.current = false;
