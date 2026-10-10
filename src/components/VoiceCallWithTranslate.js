@@ -125,6 +125,10 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const [onDeviceMode, setOnDeviceMode] = useState(false);
   const onDeviceModeRef = useRef(onDeviceMode);
   const [modelProgress, setModelProgress] = useState(null);
+  /** Язык собеседника: по нему понятно, какая одна пара моделей нужна. */
+  const peerLanguageRef = useRef(null);
+  /** О какой паре уже спрашивали — чтобы два источника языка не дали два вопроса. */
+  const askedPairRef = useRef(null);
   const languages = [
     { name: 'Auto', code: 'auto', emoji: '🌐' },
     { name: 'Afrikaans', code: 'af', emoji: '🇿🇦' },
@@ -388,6 +392,20 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
           }
         });
 
+        // Язык собеседника: сервер рассылает его, когда тот сохраняет настройки
+        stompClient.current.subscribe(`/topic/call-language/${roomId}`, (message) => {
+          try {
+            const json = JSON.parse(message.body);
+            if (String(json.userId) === String(currentUserId)) return; // своё эхо
+            if (!json.language || json.language === 'auto') return;
+            console.log('Peer chose language:', json.language);
+            peerLanguageRef.current = json.language;
+            ensurePairForPeer(json.language);
+          } catch (error) {
+            console.error('Error parsing peer language:', error);
+          }
+        });
+
         // [ДОБАВЛЕНО] Подписка на TTS-аудио
         stompClient.current.subscribe(`/topic/tts/${roomId}/${currentUserId}`, (message) => {
           console.log('Received TTS audio:', message.body);
@@ -528,6 +546,35 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
     onDeviceModeRef.current = onDeviceMode;
   }, [onDeviceMode]);
 
+  // Собеседник мог сохранить язык до того, как мы подписались на рассылку.
+  // Сервер держит настройки в памяти и узнаёт их, только когда тот войдёт в
+  // звонок, поэтому спрашиваем с повторами, а не один раз.
+  useEffect(() => {
+    const peerId = isCaller ? incomingCall?.recipientId : incomingCall?.callerId;
+    if (!peerId) return undefined;
+    let alive = true;
+    let attempt = 0;
+    const ask = () => {
+      fetch(`https://unlimitedpossibilities12.org/api/settings/language?roomId=${roomId}&userId=${peerId}`)
+        .then((r) => (r.ok ? r.text() : ''))
+        .then((lang) => {
+          if (!alive) return;
+          const value = (lang || '').trim();
+          if (value && value !== 'auto') {
+            console.log('Peer language from server:', value);
+            peerLanguageRef.current = value;
+            ensurePairForPeer(value);
+          } else if (++attempt < 3) {
+            setTimeout(ask, 3000);
+          }
+        })
+        .catch(() => { if (alive && ++attempt < 3) setTimeout(ask, 3000); });
+    };
+    ask();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId]);
+
   // Ход загрузки моделей — одной обновляемой строкой рядом с переключателем
   useEffect(() => localTranslator.onProgress((event) => {
     // Worker присылает {src, tgt, info}, где info.progress — проценты по файлу
@@ -568,6 +615,38 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       });
   }, [roomId, currentUserId, isTranslationEnabled, selectedLanguage, ttsEnabled, onDeviceMode]);
 
+  /**
+   * Готовим перевод для пары «язык собеседника → мой». Качается ровно то, что
+   * нужно для этого разговора: при трёх языках это вдвое меньше прежнего, а при
+   * десяти — не растёт вовсе.
+   */
+  const ensurePairForPeer = useCallback(async (peerLang) => {
+    const target = selectedLanguageRef.current;
+    if (!onDeviceModeRef.current || !peerLang || !target || target === 'auto') return;
+    const dirs = localTranslator.directionsForPair(peerLang, target);
+    if (!dirs.length) return; // тот же язык или язык вне наших моделей
+    const pair = `${peerLang}>${target}`;
+    if (askedPairRef.current === pair) return;
+    askedPairRef.current = pair;
+    if (localTranslator.isPairLoaded(peerLang, target)) return;
+    if (!(await localTranslator.isPairCached(peerLang, target))) {
+      const sizeMb = localTranslator.pairSizeMb(peerLang, target);
+      if (!window.confirm(`Your friend speaks ${peerLang.toUpperCase()}. `
+        + `On-device translation needs about ${sizeMb} MB for this pair, downloaded once. Download now?`)) {
+        return;
+      }
+    }
+    try {
+      await localTranslator.loadPair(peerLang, target);
+      setModelProgress(null);
+      notify('On-device translation is ready.', { toastId: 'on-device-ready' });
+    } catch (error) {
+      console.error('Could not load models for the pair:', error);
+      setModelProgress(null);
+      notify('Could not load the models — translation stays on the server.', { toastId: 'on-device-failed' });
+    }
+  }, [notify]);
+
   /** Включение бесплатного режима: модели нужны заранее, по согласию пользователя. */
   const toggleOnDeviceMode = useCallback(async (checked) => {
     if (!checked) {
@@ -578,6 +657,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         localStorage.setItem('on_device_translate_default', '0');
       } catch { /* приватный режим браузера */ }
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      askedPairRef.current = null;
       return;
     }
     const target = selectedLanguageRef.current;
@@ -586,29 +666,22 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         { toastId: 'on-device-language' });
       return;
     }
-    const cached = await localTranslator.isTargetCached(target);
-    if (!cached) {
-      const sizeMb = localTranslator.directionsForTarget(target).length * localTranslator.DIRECTION_SIZE_MB;
-      // Честно про объём: модели кладутся в кэш браузера один раз
-      if (!window.confirm(`On-device translation needs about ${sizeMb} MB of models, downloaded once. `
-        + 'After that translation and speech are free. Download now?')) return;
-    }
     setOnDeviceMode(true);
+    onDeviceModeRef.current = true; // ensurePairForPeer проверяет именно реф
     try {
       localStorage.setItem(`on_device_translate_${roomId}`, '1');
       localStorage.setItem('on_device_translate_default', '1');
     } catch { /* приватный режим браузера */ }
-    try {
-      await localTranslator.loadForTarget(target);
-      setModelProgress(null);
-      notify('On-device translation is ready.', { toastId: 'on-device-ready' });
-    } catch (error) {
-      console.error('Could not load local models:', error);
-      setModelProgress(null);
-      setOnDeviceMode(false);
-      notify('Could not load the models — translation stays on the server.', { toastId: 'on-device-failed' });
+    // Модели качаем под язык собеседника, а не «все на всякий случай».
+    // Если он ещё не выбрал язык, подготовимся, когда сервер его пришлёт.
+    if (peerLanguageRef.current) {
+      askedPairRef.current = null;
+      await ensurePairForPeer(peerLanguageRef.current);
+    } else {
+      notify('On-device mode is on. Models will be prepared once your friend picks a language.',
+        { toastId: 'on-device-waiting' });
     }
-  }, [roomId, notify]);
+  }, [roomId, notify, ensurePairForPeer]);
 
   const scrollToBottom = (ref) => {
     if (ref.current) {

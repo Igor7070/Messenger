@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { isEnabled, targetLanguage, translateToIfNeeded, directionsForTarget, isDirectionLoaded } from './localTranslator';
+import {
+  isEnabled, targetLanguage, translateToIfNeeded,
+  detectLanguage, isPairLoaded, isPairCached,
+} from './localTranslator';
 
 const cache = new Map(); // `${msgId}|${target}` -> translated | ''
 
@@ -23,11 +26,21 @@ const LocalTranslatedLine = ({ chatId, msgId, text, translated, lang, refreshKey
     const key = `${msgId}|${target}`;
     if (cache.has(key)) { const c = cache.get(key); if (c) setLine(c); return undefined; }
 
-    if (!directionsForTarget(target).every(isDirectionLoaded)) return undefined;
+    // Нужна модель только для пары «язык этого сообщения → мой», а не для всех
+    // языков сразу: иначе одна не скачанная пара глушила перевод остальных
+    const src = detectLanguage(text);
+    if (!src || src === target) return undefined;
 
-    translateToIfNeeded(text, target)
-      .then((r) => { cache.set(key, r || ''); if (alive && r) setLine(r); })
-      .catch(() => { cache.set(key, ''); });
+    (async () => {
+      if (!isPairLoaded(src, target) && !(await isPairCached(src, target))) return;
+      try {
+        const r = await translateToIfNeeded(text, target);
+        cache.set(key, r || '');
+        if (alive && r) setLine(r);
+      } catch {
+        cache.set(key, '');
+      }
+    })();
     return () => { alive = false; };
   }, [chatId, msgId, text, translated, lang, refreshKey]);
 

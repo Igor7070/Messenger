@@ -95,13 +95,26 @@ export const directionsForTarget = (target) => {
   return [...dirs];
 };
 
+/**
+ * Направления ровно для одной пары языков.
+ *
+ * Модель OPUS-MT — это отдельный файл на каждое направление, поэтому «скачать
+ * всё для моего языка» растёт вместе со списком языков: для трёх это два файла,
+ * для десяти было бы девять, почти гигабайт в браузер. А в разговоре нужна одна
+ * пара, и язык собеседника известен заранее — его присылает сервер.
+ */
+export const directionsForPair = (from, to) => {
+  if (!from || !to || from === to) return [];
+  if (!SUPPORTED.some((l) => l.code === from) || !SUPPORTED.some((l) => l.code === to)) return [];
+  return (from === 'en' || to === 'en') ? [`${from}>${to}`] : [`${from}>en`, `en>${to}`];
+};
+
 // ---------- загрузка моделей ----------
 
 export const isDirectionLoaded = (dir) => loaded.has(dir);
 
-/** Загружает (с нашего хостинга, с кэшированием в браузере) все направления для target. */
-export const loadForTarget = async (target) => {
-  for (const dir of directionsForTarget(target)) {
+const loadDirections = async (dirs) => {
+  for (const dir of dirs) {
     if (loaded.has(dir)) continue;
     const [src, tgt] = dir.split('>');
     await call({ type: 'load', src, tgt });
@@ -109,12 +122,13 @@ export const loadForTarget = async (target) => {
   }
 };
 
-/** Есть ли в кэше браузера все файлы для target (без загрузки в память). */
-export const isTargetCached = async (target) => {
+/** Есть ли перечисленные направления в кэше браузера (без загрузки в память). */
+const areDirectionsCached = async (dirs) => {
   try {
+    if (!dirs.length) return true;
     if (!('caches' in window)) return false;
     const cache = await caches.open('transformers-cache');
-    for (const dir of directionsForTarget(target)) {
+    for (const dir of dirs) {
       const [src, tgt] = dir.split('>');
       const url = `${MODELS_BASE}opus-mt-${src}-${tgt}/onnx/encoder_model_quantized.onnx`;
       const hit = await cache.match(new URL(url, window.location.origin).href);
@@ -123,6 +137,16 @@ export const isTargetCached = async (target) => {
     return true;
   } catch { return false; }
 };
+
+/** Одна пара: ровно то, что нужно для разговора с этим собеседником. */
+export const loadPair = (from, to) => loadDirections(directionsForPair(from, to));
+export const isPairLoaded = (from, to) => directionsForPair(from, to).every((d) => loaded.has(d));
+export const isPairCached = (from, to) => areDirectionsCached(directionsForPair(from, to));
+export const pairSizeMb = (from, to) => directionsForPair(from, to).length * DIRECTION_SIZE_MB;
+
+/** Все направления для target — заранее и для любого собеседника. */
+export const loadForTarget = (target) => loadDirections(directionsForTarget(target));
+export const isTargetCached = (target) => areDirectionsCached(directionsForTarget(target));
 
 // ---------- перевод ----------
 
