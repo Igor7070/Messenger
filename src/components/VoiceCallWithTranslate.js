@@ -7,6 +7,9 @@ import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import { useNotification } from '../context/NotificationContext';
 import axios from 'axios'; // NEW: Добавляем импорт axios
+// Те же модели OPUS-MT, что уже переводят секретные чаты: в звонке они избавляют
+// от платного перевода каждой фразы
+import * as localTranslator from '../localTranslation/localTranslator';
 import '../styles/VoiceCallWithTranslate.css';
 
 Chart.register(...registerables);
@@ -42,6 +45,25 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const ttsAudioRef = useRef(null); // [ДОБАВЛЕНО] Реф для TTS-аудио
   const ttsQueueRef = useRef([]);   // очередь озвучек: произносим по одной
   const ttsPlayingRef = useRef(false);
+
+  /** Громкость живого голоса: с озвучкой — фоном, на время самой озвучки тише. */
+  const setRemoteVolume = useCallback((speaking) => {
+    if (!remoteAudioRef.current) return;
+    remoteAudioRef.current.muted = false;
+    remoteAudioRef.current.volume = !ttsEnabledRef.current ? 1.0 : (speaking ? 0.12 : 0.3);
+  }, []);
+
+  /** Произнести перевод голосом браузера — бесплатно, ничего не отправляя. */
+  const speakLocally = useCallback((text, lang) => {
+    if (!text || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    const utterance = new window.SpeechSynthesisUtterance(text);
+    utterance.lang = lang === 'ru' ? 'ru-RU' : lang === 'uk' ? 'uk-UA' : 'en-US';
+    // Очередь ведёт сам speechSynthesis, фразы не обрывают друг друга
+    utterance.onstart = () => setRemoteVolume(true);
+    utterance.onend = () => setRemoteVolume(false);
+    utterance.onerror = () => setRemoteVolume(false);
+    window.speechSynthesis.speak(utterance);
+  }, [setRemoteVolume]);
 
   /** Проигрывает следующую озвучку из очереди; оригинал приглушён, пока очередь не пуста. */
   const playNextTts = useCallback(() => {
@@ -95,6 +117,14 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   // [ДОБАВЛЕНО] Состояние и реф для переключателя TTS
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const ttsEnabledRef = useRef(ttsEnabled);
+  /**
+   * Бесплатный режим: перевод делают модели в браузере, произносит его сам
+   * браузер. Своя речь по-прежнему распознаётся на сервере — бесплатного
+   * распознавания в браузере у нас нет, поэтому звук отправлять продолжаем.
+   */
+  const [onDeviceMode, setOnDeviceMode] = useState(false);
+  const onDeviceModeRef = useRef(onDeviceMode);
+  const [modelProgress, setModelProgress] = useState(null);
   const languages = [
     { name: 'Auto', code: 'auto', emoji: '🌐' },
     { name: 'Afrikaans', code: 'af', emoji: '🇿🇦' },
@@ -320,6 +350,10 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
                 translateTranscription(json.transcription, selectedLanguageRef.current, (translatedText) => {
                   console.log('Translation result:', translatedText); // [ОСТАВЛЕНО] Лог результата
                   const displayText = translatedText || json.transcription;
+                  // В бесплатном режиме сервер нам озвучку не присылает — говорим сами
+                  if (onDeviceModeRef.current && ttsEnabledRef.current) {
+                    speakLocally(displayText, selectedLanguageRef.current);
+                  }
                   setFriendTranscription((prev) => {
                     if (prev === "Friend's Transcription: Waiting..." || prev.startsWith('Error')) {
                       return displayText;
@@ -457,6 +491,11 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
     const savedLanguage = localStorage.getItem(`translation_language_${roomId}`) || 'auto';
     // [ДОБАВЛЕНО] Загрузка ttsEnabled
     const savedTtsEnabled = JSON.parse(localStorage.getItem(`tts_enabled_${roomId}`) || 'false');
+    // Выбор помним как общий, а не только для этой комнаты: иначе с каждым новым
+    // собеседником режим приходилось бы включать заново
+    const savedOnDevice = localStorage.getItem(`on_device_translate_${roomId}`)
+      ?? localStorage.getItem('on_device_translate_default');
+    if (savedOnDevice === '1') setOnDeviceMode(true);
     console.log('Loaded settings on mount:', { savedTranslationEnabled, savedLanguage, savedTtsEnabled }); // [ИЗМЕНЕНО] Добавлен savedTtsEnabled в лог
     // Устанавливаем начальные состояния только если они ещё не были изменены
     setIsTranslationEnabled((prev) => prev || savedTranslationEnabled); // [ОСТАВЛЕНО]
@@ -485,6 +524,18 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
     console.log('Updated ttsEnabledRef:', ttsEnabledRef.current);
   }, [ttsEnabled]);
 
+  useEffect(() => {
+    onDeviceModeRef.current = onDeviceMode;
+  }, [onDeviceMode]);
+
+  // Ход загрузки моделей — одной обновляемой строкой рядом с переключателем
+  useEffect(() => localTranslator.onProgress((event) => {
+    // Worker присылает {src, tgt, info}, где info.progress — проценты по файлу
+    if (event?.info?.status === 'progress' && typeof event.info.progress === 'number') {
+      setModelProgress(Math.min(99, Math.round(event.info.progress)));
+    }
+  }), []);
+
   // [ДОБАВЛЕНО] Отправка настроек на сервер
   useEffect(() => {
     console.log('Sending settings to server:', { roomId, currentUserId, isTranslationEnabled, selectedLanguage, ttsEnabled });
@@ -499,6 +550,9 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         translationEnabled: isTranslationEnabled,
         translationLanguage: selectedLanguage,
         ttsEnabled,
+        // В бесплатном режиме перевод произносит браузер: серверу синтезировать
+        // не нужно, иначе одна фраза прозвучала бы дважды и за деньги
+        localTts: onDeviceMode,
       }),
     })
       .then((response) => {
@@ -512,7 +566,49 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         console.error('Error sending settings:', error);
         notify('Failed to save settings.', { toastId: 'settings-save-failed' });
       });
-  }, [roomId, currentUserId, isTranslationEnabled, selectedLanguage, ttsEnabled]);
+  }, [roomId, currentUserId, isTranslationEnabled, selectedLanguage, ttsEnabled, onDeviceMode]);
+
+  /** Включение бесплатного режима: модели нужны заранее, по согласию пользователя. */
+  const toggleOnDeviceMode = useCallback(async (checked) => {
+    if (!checked) {
+      setOnDeviceMode(false);
+      setModelProgress(null);
+      try {
+        localStorage.setItem(`on_device_translate_${roomId}`, '0');
+        localStorage.setItem('on_device_translate_default', '0');
+      } catch { /* приватный режим браузера */ }
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      return;
+    }
+    const target = selectedLanguageRef.current;
+    if (!target || target === 'auto' || !localTranslator.SUPPORTED.some((l) => l.code === target)) {
+      notify('Pick your language first: on-device translation covers English, Russian and Ukrainian.',
+        { toastId: 'on-device-language' });
+      return;
+    }
+    const cached = await localTranslator.isTargetCached(target);
+    if (!cached) {
+      const sizeMb = localTranslator.directionsForTarget(target).length * localTranslator.DIRECTION_SIZE_MB;
+      // Честно про объём: модели кладутся в кэш браузера один раз
+      if (!window.confirm(`On-device translation needs about ${sizeMb} MB of models, downloaded once. `
+        + 'After that translation and speech are free. Download now?')) return;
+    }
+    setOnDeviceMode(true);
+    try {
+      localStorage.setItem(`on_device_translate_${roomId}`, '1');
+      localStorage.setItem('on_device_translate_default', '1');
+    } catch { /* приватный режим браузера */ }
+    try {
+      await localTranslator.loadForTarget(target);
+      setModelProgress(null);
+      notify('On-device translation is ready.', { toastId: 'on-device-ready' });
+    } catch (error) {
+      console.error('Could not load local models:', error);
+      setModelProgress(null);
+      setOnDeviceMode(false);
+      notify('Could not load the models — translation stays on the server.', { toastId: 'on-device-failed' });
+    }
+  }, [roomId, notify]);
 
   const scrollToBottom = (ref) => {
     if (ref.current) {
@@ -613,6 +709,20 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
     if (!text || !targetLanguage || targetLanguage === 'auto') { // [ДОБАВЛЕНО] Проверка входных данных
       console.warn('Invalid input for translation:', { text, targetLanguage });
       callback(null);
+      return;
+    }
+    if (onDeviceModeRef.current) {
+      // Бесплатный путь: переводят модели в браузере, наружу не уходит ничего
+      localTranslator
+        .translateToIfNeeded(text, targetLanguage)
+        .then((translated) => {
+          console.log('Local translation:', translated);
+          callback(translated); // null означает «текст и так на нужном языке»
+        })
+        .catch((error) => {
+          console.error('Local translation failed, falling back to server:', error.message);
+          callback(null);
+        });
       return;
     }
     const requestBody = {
@@ -1143,6 +1253,24 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
               }}
             />
             <label htmlFor="tts-enabled">Speak aloud</label>
+          </div>
+          <div
+            className="voice-call-tts-controls"
+            style={{ display: isTranslationEnabled ? 'inline-block' : 'none', marginLeft: '10px' }}
+          >
+            <input
+              type="checkbox"
+              id="on-device-translate"
+              checked={onDeviceMode}
+              onChange={(e) => toggleOnDeviceMode(e.target.checked)}
+            />
+            <label
+              htmlFor="on-device-translate"
+              title="Translation and speech happen in your browser. Your own speech is still recognised on the server."
+            >
+              On-device translation (free)
+              {modelProgress !== null ? ` — loading ${modelProgress}%` : ''}
+            </label>
           </div>
         </div>
       </div>
