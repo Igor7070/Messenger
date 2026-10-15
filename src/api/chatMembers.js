@@ -54,6 +54,20 @@ export const acceptInvite = (token) => request(`${API}/invites/${token}/accept`,
 /** Имя — админам, публичность — владельцу. */
 export const updateChat = (chatId, changes) => request(`${API}/chats/${chatId}`, json('PUT', changes));
 
+/**
+ * Картинка группы. Отправляем файлом, без Content-Type: его проставит браузер
+ * вместе с границей multipart, а заданный вручную заголовок её потеряет.
+ */
+export const uploadChatAvatar = async (chatId, file) => {
+  const form = new FormData();
+  form.append('avatar', file);
+  return request(`${API}/chats/${chatId}/avatar`, { method: 'POST', body: form });
+};
+
+/** Полный адрес картинки чата или null, если её нет. */
+export const chatAvatarUrl = (chat) =>
+  chat && chat.avatar ? `https://unlimitedpossibilities12.org${chat.avatar}` : null;
+
 /** Ссылка, которую человек отправляет друзьям. */
 export const inviteLink = (token) =>
   `${window.location.origin}${window.location.pathname}#/invite/${token}`;

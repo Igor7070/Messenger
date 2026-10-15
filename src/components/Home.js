@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import '../styles/Home.css';
 import { getMessages, createChat, createUser, loginUser, deleteChat as deleteChatRequest } from '../api/messages';
 import GroupMembersDialog from './GroupMembersDialog';
-import { acceptInvite } from '../api/chatMembers';
+import { acceptInvite, chatAvatarUrl } from '../api/chatMembers';
 import IncomingCallNotification from './IncomingCallNotification';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
@@ -782,6 +782,14 @@ const Home = () => {
           <ul className="chat-list">
             {filteredChats.map((chat) => (
               <li key={chat.id} onClick={() => goToChat(chat.id)} className="chat-item">
+                {chatAvatarUrl(chat) ? (
+                  <img src={chatAvatarUrl(chat)} alt="" className="chat-avatar-group" />
+                ) : (
+                  // Без картинки — первая буква названия, как у людей в личных чатах
+                  <div className="chat-avatar-group chat-avatar-group-letter">
+                    {(chat.name || '?').trim().charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div className="chat-info">
                   <div className="chat-header">
                     <span className="chat-name-group">{chat.name}</span>

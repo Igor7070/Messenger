@@ -157,3 +157,41 @@
     background: #37474f;
   }
 }
+
+.group-members-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.group-members-head h3 {
+  margin: 0;
+}
+
+.group-members-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.group-members-avatar-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #cfd8dc;
+  color: #37474f;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.group-members-avatar-pick {
+  display: inline-block;
+  margin: 10px 0 0;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-size: 12px;
+  cursor: pointer;
+}

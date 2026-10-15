@@ -895,3 +895,28 @@ input[type="file"]::-webkit-file-upload-button {
   font-size: 13px;
   color: #546e7a;
 }
+
+/* Картинка группы в списке чатов */
+.chat-avatar-group {
+  width: 44px;
+  height: 44px;
+  margin-right: 12px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.chat-avatar-group-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #cfd8dc;
+  color: #37474f;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.chat-item {
+  display: flex;
+  align-items: center;
+}

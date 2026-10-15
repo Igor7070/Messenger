@@ -71,7 +71,32 @@ const GroupMembersDialog = ({ chat, currentUserId, allUsers = [], onClose, onCha
   return (
     <div className="group-members-overlay" onClick={onClose}>
       <div className="group-members-dialog" onClick={(e) => e.stopPropagation()}>
-        <h3>{chat.name}</h3>
+        <div className="group-members-head">
+          {api.chatAvatarUrl(chat) ? (
+            <img src={api.chatAvatarUrl(chat)} alt="" className="group-members-avatar" />
+          ) : (
+            <div className="group-members-avatar group-members-avatar-letter">
+              {(chat.name || '?').trim().charAt(0).toUpperCase()}
+            </div>
+          )}
+          <h3>{chat.name}</h3>
+        </div>
+
+        {canManage && (
+          <label className="group-members-avatar-pick">
+            <input
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+                act(() => api.uploadChatAvatar(chat.id, file), 'Group picture updated');
+              }}
+            />
+            Change picture
+          </label>
+        )}
 
         {loading ? (
           <p className="group-members-note">Loading…</p>
