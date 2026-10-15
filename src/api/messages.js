@@ -23,6 +23,15 @@ export const sendMessage = async (message) => {
     return await response.json();
 };
 
+/**
+ * Удалить чат целиком (групповой — только его создателю; это проверяет сервер,
+ * и правило в интерфейсе должно совпадать, иначе кнопка будет давать 403).
+ */
+export const deleteChat = async (chatId) => {
+    const response = await fetch(`${API_CHATS_URL}/${chatId}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error(`Failed to delete chat: ${response.status}`);
+};
+
 // Добавляем функцию для удаления сообщения
 export const deleteMessage = async (id) => {
     const response = await fetch(`${API_URL}/${id}`, {

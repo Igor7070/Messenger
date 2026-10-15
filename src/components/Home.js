@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
 import { toast } from 'react-toastify';
 import '../styles/Home.css';
-import { getMessages, createChat, createUser, loginUser } from '../api/messages';
+import { getMessages, createChat, createUser, loginUser, deleteChat as deleteChatRequest } from '../api/messages';
 import IncomingCallNotification from './IncomingCallNotification';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
@@ -366,6 +366,29 @@ const Home = () => {
     setNotificationUserId(null);
     setIsLoggedIn(false);
     toast.success('Logged out successfully!');
+  };
+
+  /**
+   * Удалить групповой чат. Кнопку показываем только тому, кому сервер это
+   * разрешит: создателю чата, а для чатов, созданных до появления поля
+   * createdBy, — любому (у них владельца нет).
+   */
+  const canDeleteChat = (chat) => {
+    const me = localStorage.getItem('userId');
+    return !chat.createdBy || String(chat.createdBy) === String(me);
+  };
+
+  const deleteChatHandler = async (chat, event) => {
+    event.stopPropagation(); // иначе щелчок откроет чат
+    if (!window.confirm(`Delete the group chat "${chat.name}" for everyone? This cannot be undone.`)) return;
+    try {
+      await deleteChatRequest(chat.id);
+      setChats((prev) => prev.filter((c) => c.id !== chat.id));
+      toast.success('Group chat deleted');
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      toast.error('Could not delete the chat');
+    }
   };
 
   const createChatHandler = async () => {
@@ -736,6 +759,15 @@ const Home = () => {
                     <span className="chat-timestamp">{formatTimestamp(chat.timestamp)}</span>
                   </div>
                 </div>
+                {canDeleteChat(chat) && (
+                  <button
+                    className="chat-delete-button"
+                    title="Delete this group chat"
+                    onClick={(event) => deleteChatHandler(chat, event)}
+                  >
+                    ×
+                  </button>
+                )}
               </li>
             ))}
           </ul>

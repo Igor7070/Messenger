@@ -838,3 +838,30 @@ input[type="file"]::-webkit-file-upload-button {
 .modal-create-button {
     margin-top: 10px !important;
 }
+
+/* Удаление группового чата: неяркий крестик у правого края строки */
+.chat-item {
+  position: relative;
+}
+
+.chat-delete-button {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #90a4ae;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chat-delete-button:hover {
+  background: rgba(211, 47, 47, 0.12);
+  color: #d32f2f;
+}
