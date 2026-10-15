@@ -49,6 +49,9 @@ export const createInvite = (chatId, ttlHours, maxUses) =>
 export const revokeInvite = (chatId, token) =>
   request(`${API}/chats/${chatId}/invites/${token}`, { method: 'DELETE' });
 
+/** Карточка группы до вступления: имя, картинка, число участников. */
+export const previewInvite = (token) => request(`${API}/invites/${token}`);
+
 export const acceptInvite = (token) => request(`${API}/invites/${token}/accept`, { method: 'POST' });
 
 /** Имя — админам, публичность — владельцу. */

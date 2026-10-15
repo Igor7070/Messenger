@@ -1,0 +1,97 @@
+/* Карточка группы перед вступлением по ссылке. */
+
+.invite-card-wrap {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.invite-status {
+  font-size: 15px;
+  color: #546e7a;
+  text-align: center;
+}
+
+.invite-card {
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+  padding: 28px 20px;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.invite-card h2 {
+  margin: 14px 0 4px;
+  font-size: 20px;
+  word-break: break-word;
+}
+
+.invite-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto;
+  display: block;
+}
+
+.invite-avatar-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #cfd8dc;
+  color: #37474f;
+  font-size: 36px;
+  font-weight: 600;
+}
+
+.invite-meta {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: #78909c;
+}
+
+.invite-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.invite-card button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.invite-join {
+  background: #1565c0;
+  color: #ffffff;
+}
+
+.invite-join:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.invite-cancel {
+  background: #eceff1;
+  color: #37474f;
+}
+
+@media (prefers-color-scheme: dark) {
+  .invite-card {
+    background: #263238;
+    color: #eceff1;
+  }
+
+  .invite-cancel {
+    background: #37474f;
+    color: #eceff1;
+  }
+}
