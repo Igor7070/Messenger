@@ -33,16 +33,45 @@ const isApiUrl = (input) => {
   } catch { return false; }
 };
 
+/**
+ * Токен протух или подписан прежним секретом: дальше работать нечем.
+ *
+ * Без этого страница показывала «Error fetching chats» и оставалась наполовину
+ * живой: список чатов открыт без токена и грузился, а сообщения, звонки и
+ * WebSocket молча получали 401. Человеку неоткуда догадаться, что надо просто
+ * войти заново, — поэтому чистим вход и возвращаем на начальный экран.
+ */
+let sessionExpiredHandled = false;
+const handleExpiredSession = () => {
+  if (sessionExpiredHandled) return; // 401 прилетает сразу по нескольким запросам
+  sessionExpiredHandled = true;
+  setAuthToken(null);
+  try {
+    localStorage.removeItem('userId');
+    localStorage.removeItem('username');
+    localStorage.removeItem('userAvatar');
+  } catch { /* приватный режим */ }
+  try {
+    window.alert('Your session has expired. Please sign in again.');
+  } catch { /* alert может быть заблокирован */ }
+  // На начальный экран: с него и выполняется вход
+  window.location.hash = '#/';
+  window.location.reload();
+};
+
 /** Один раз оборачивает window.fetch, чтобы добавлять Authorization к запросам на бэкенд. */
 export const installFetchAuth = () => {
   if (typeof window === 'undefined' || !window.fetch || window.fetch.__upAuthInstalled) return;
   const original = window.fetch.bind(window);
-  const wrapped = (input, init) => {
+  const wrapped = async (input, init) => {
     const token = getAuthToken();
     if (token && isApiUrl(input)) {
       const headers = new Headers((init && init.headers) || (input instanceof Request ? input.headers : undefined) || {});
       if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
-      return original(input, { ...(init || {}), headers });
+      const response = await original(input, { ...(init || {}), headers });
+      // Токен был, но сервер его не принял — значит, он истёк или подделан
+      if (response.status === 401) handleExpiredSession();
+      return response;
     }
     return original(input, init);
   };
