@@ -865,3 +865,33 @@ input[type="file"]::-webkit-file-upload-button {
   background: rgba(211, 47, 47, 0.12);
   color: #d32f2f;
 }
+
+/* Участники группы: кружок слева от крестика удаления */
+.chat-members-button {
+  position: absolute;
+  top: 50%;
+  right: 36px;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #90a4ae;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chat-members-button:hover {
+  background: rgba(21, 101, 192, 0.12);
+  color: #1565c0;
+}
+
+.create-chat-public {
+  display: block;
+  margin: 6px 0 10px;
+  font-size: 13px;
+  color: #546e7a;
+}

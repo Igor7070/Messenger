@@ -3,6 +3,7 @@ import { HashRouter as Router, Route, Routes, Link, useLocation } from 'react-ro
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Home from './Home';
+import InviteAccept from './InviteAccept';
 import Messenger from './Messenger';
 import UserProfile from './UserProfile';
 import PrivateChat from './PrivateChat';
@@ -105,6 +106,7 @@ const AppContent = () => {
           <PrivateMessageNotificationProvider>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/invite/:token" element={<InviteAccept />} />
               <Route path="/chat/:chatId" element={<Messenger />} />
               <Route path="/user/:userId" element={<UserProfile />} />
               <Route path="/private-chat/:chatId" element={<PrivateChat />} />

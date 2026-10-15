@@ -5,6 +5,8 @@ import Modal from 'react-modal';
 import { toast } from 'react-toastify';
 import '../styles/Home.css';
 import { getMessages, createChat, createUser, loginUser, deleteChat as deleteChatRequest } from '../api/messages';
+import GroupMembersDialog from './GroupMembersDialog';
+import { acceptInvite } from '../api/chatMembers';
 import IncomingCallNotification from './IncomingCallNotification';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
@@ -84,6 +86,10 @@ const sendPublicKeyToServer = async (userId, publicKey) => {
 
 const Home = () => {
   const [chatName, setChatName] = useState('');
+  /** Новая группа закрыта по умолчанию: открытость — осознанный выбор. */
+  const [newChatPublic, setNewChatPublic] = useState(false);
+  /** Чат, для которого открыто окно участников. */
+  const [membersChat, setMembersChat] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [chats, setChats] = useState([]);
@@ -391,13 +397,34 @@ const Home = () => {
     }
   };
 
+  /**
+   * Приглашение, по которому перешли до входа: применяем сразу после него,
+   * иначе ссылка пропадала бы и человек оставался вне группы.
+   */
+  useEffect(() => {
+    if (!currentUserId) return;
+    let pending = null;
+    try { pending = sessionStorage.getItem('pendingInvite'); } catch { /* приватный режим */ }
+    if (!pending) return;
+    try { sessionStorage.removeItem('pendingInvite'); } catch { /* приватный режим */ }
+    acceptInvite(pending)
+      .then((result) => {
+        toast.success(`You joined "${result.name}"`);
+        fetchChats();
+      })
+      .catch(() => toast.error('This invite is no longer valid'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserId]);
+
   const createChatHandler = async () => {
     if (chatName) {
       try {
-        const newChat = await createChat({ name: chatName, private: false });
+        const newChat = await createChat({ name: chatName, private: false, isPublic: newChatPublic });
         setChats([...chats, { ...newChat, lastMessage: null, timestamp: null, unreadCount: 0 }]);
         setChatName('');
-        toast.success('Chat created successfully!');
+        toast.success(newChatPublic
+          ? 'Public group created — anyone can find it'
+          : 'Private group created — invite people from the members list');
       } catch (error) {
         toast.error(error.message || 'Error creating chat');
       }
@@ -737,6 +764,14 @@ const Home = () => {
               Create a group chat
             </button>
           </div>
+          <label className="create-chat-public">
+            <input
+              type="checkbox"
+              checked={newChatPublic}
+              onChange={(e) => setNewChatPublic(e.target.checked)}
+            />
+            Public group — anyone can find and read it
+          </label>
           <input
             type="text"
             value={searchTerm}
@@ -759,6 +794,13 @@ const Home = () => {
                     <span className="chat-timestamp">{formatTimestamp(chat.timestamp)}</span>
                   </div>
                 </div>
+                <button
+                  className="chat-members-button"
+                  title="Members and invites"
+                  onClick={(event) => { event.stopPropagation(); setMembersChat(chat); }}
+                >
+                  ⚇
+                </button>
                 {canDeleteChat(chat) && (
                   <button
                     className="chat-delete-button"
@@ -773,6 +815,16 @@ const Home = () => {
           </ul>
         </div>
       </div>
+
+      {membersChat && (
+        <GroupMembersDialog
+          chat={membersChat}
+          currentUserId={currentUserId}
+          allUsers={users}
+          onClose={() => setMembersChat(null)}
+          onChanged={fetchChats}
+        />
+      )}
 
       {/* === МОДАЛКА === */}
       <Modal
