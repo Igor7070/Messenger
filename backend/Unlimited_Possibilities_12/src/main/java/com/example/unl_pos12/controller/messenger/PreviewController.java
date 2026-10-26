@@ -86,7 +86,7 @@ public class PreviewController {
             // Title
             String title = Optional.ofNullable(doc.selectFirst("meta[property=og:title]"))
                     .map(el -> el.attr("content"))
-                    .orElseGet(() -> doc.title().trim().isEmpty() ? "Без названия" : doc.title());
+                    .orElseGet(() -> doc.title().trim().isEmpty() ? "Untitled" : doc.title());
 
             // Description
             String description = Optional.ofNullable(doc.selectFirst("meta[property=og:description]"))
@@ -112,7 +112,7 @@ public class PreviewController {
             System.err.println("Не удалось получить превью для " + url + ": " + e.getMessage());
             // Возвращаем хоть что-то, чтобы фронт не падал
             return ResponseEntity.ok(Map.of(
-                    "title", "Не удалось загрузить превью",
+                    "title", "Preview unavailable",
                     "description", "",
                     "image", "",
                     "url", url
