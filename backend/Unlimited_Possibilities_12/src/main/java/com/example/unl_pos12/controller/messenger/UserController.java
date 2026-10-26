@@ -169,6 +169,14 @@ public class UserController {
         authz.requireSelf(request, id); // список чатов — только свой
         List<Chat> privateChats = userService.getPrivateChatsByUserId(id);
 
+        // Участники идут вместе со списком: иначе клиент вычисляет собеседника
+        // разбором имени чата («А_Б»), а имя само может содержать «_», и в
+        // списке вместо имени оказывается его обрезок. Отдельных запросов это
+        // не добавляет — в списке и так по строке на чат.
+        for (Chat chat : privateChats) {
+            chat.setParticipants(userService.getMembersOfChat(chat.getId()));
+        }
+
         // Всегда возвращается 200 OK, даже если список пустой
         return ResponseEntity.ok(privateChats);
     }

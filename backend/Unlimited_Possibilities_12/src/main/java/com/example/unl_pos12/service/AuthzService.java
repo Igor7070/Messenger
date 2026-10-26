@@ -2,7 +2,9 @@ package com.example.unl_pos12.service;
 
 import com.example.unl_pos12.config.AuthTokenFilter;
 import com.example.unl_pos12.model.messenger.Chat;
+import com.example.unl_pos12.model.messenger.Message;
 import com.example.unl_pos12.repo.ChatRepository;
+import com.example.unl_pos12.repo.MessageRepository;
 import com.example.unl_pos12.repo.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,12 +32,17 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthzService {
     private final UserRepository userRepository;
     private final ChatRepository chatRepository;
+    private final MessageRepository messageRepository;
+    private final ChatMemberService chatMembers;
     private final boolean enforce;
 
     public AuthzService(UserRepository userRepository, ChatRepository chatRepository,
+                        MessageRepository messageRepository, ChatMemberService chatMembers,
                         @Value("${auth.authz:log}") String mode) {
         this.userRepository = userRepository;
         this.chatRepository = chatRepository;
+        this.messageRepository = messageRepository;
+        this.chatMembers = chatMembers;
         this.enforce = "enforce".equalsIgnoreCase(mode);
         System.out.println("AuthzService: mode=" + (enforce ? "enforce" : "log"));
     }
@@ -49,12 +56,96 @@ public class AuthzService {
         return chat != null && (chat.isPrivate() || Boolean.TRUE.equals(chat.getIsSecret()));
     }
 
-    /** Состоит ли пользователь в чате. Для групповых чатов — всегда true. */
+    /**
+     * Можно ли читать чат: историю, подписку на его топик.
+     *
+     * Чат на двоих — только участнику. Публичная группа — любому вошедшему: в
+     * том и смысл публичности, что её видно и можно прочитать до вступления.
+     * Закрытая группа — только участникам.
+     */
     public boolean isChatMember(long userId, long chatId) {
         Chat chat = chatRepository.findById(chatId).orElse(null);
         if (chat == null) return true; // несуществующий чат пусть отдаёт свой 404 контроллер
-        if (!isOneToOne(chat)) return true;
-        return userRepository.isMemberOfChat(userId, chatId) > 0;
+        if (isOneToOne(chat)) return userRepository.isMemberOfChat(userId, chatId) > 0;
+        if (chatMembers.isPublicGroup(chat)) return true;
+        return chatMembers.isMember(chatId, userId);
+    }
+
+    /**
+     * Можно ли писать в чат.
+     *
+     * В закрытую группу — только участникам. В публичную пишет и тот, кто ещё
+     * не вступил: само сообщение его и зачисляет (см. joinPublicOnWrite),
+     * иначе человек, открывший группу из общего списка, получал бы отказ на
+     * первую же реплику.
+     */
+    public boolean canPostToChat(long userId, long chatId) {
+        return isChatMember(userId, chatId);
+    }
+
+    /** Распоряжаться группой — владельцу и админам. */
+    public void requireChatManager(HttpServletRequest request, Long chatId) {
+        Long me = currentUserId(request);
+        if (me == null || chatId == null) return;
+        Chat chat = chatRepository.findById(chatId).orElse(null);
+        if (chat == null || isOneToOne(chat)) return;
+        if (!chatMembers.canManage(chatId, me)) deny(request, "chat-manager:" + chatId);
+    }
+
+    /**
+     * Правка и удаление сообщения — только его автору.
+     *
+     * Раньше у этих двух действий не было проверки вовсе: зная id, любой
+     * вошедший мог изменить или удалить чужое сообщение в любом чате, включая
+     * приватный и секретный. Чужое удаляют только админы групп, а их у нас
+     * пока нет, поэтому правило простое — свои сообщения.
+     */
+    public void requireMessageAuthor(HttpServletRequest request, Long messageId) {
+        Long me = currentUserId(request);
+        if (me == null || messageId == null) return;
+        if (!isMessageAuthor(me, messageId)) deny(request, "message-author:" + messageId);
+    }
+
+    /**
+     * Тот же вопрос для WebSocket, где нет HttpServletRequest.
+     *
+     * Перехватчик STOMP проверяет лишь членство в чате, а этого мало: в чате на
+     * двоих собеседник оказался бы вправе править и удалять мои сообщения, а в
+     * групповом — любой вошедший, потому что участников у групп нет.
+     */
+    public boolean isMessageAuthor(Long userId, Long messageId) {
+        if (userId == null || messageId == null) return false;
+        Message message = messageRepository.findById(messageId).orElse(null);
+        if (message == null) return true; // нечего защищать — пусть вызывающий решает сам
+        Long authorId = message.getSender() != null ? message.getSender().getId() : null;
+        return authorId != null && authorId.equals(userId);
+    }
+
+    /** Включены ли отказы (иначе нарушения только пишутся в лог). */
+    public boolean isEnforcing() {
+        return enforce;
+    }
+
+    /**
+     * Удаление чата: приватный — участнику, групповой — тому, кто его создал.
+     *
+     * У групп нет участников, поэтому прежняя проверка пропускала всех, и любой
+     * пользователь мог снести любой групповой чат. Для чатов, созданных до
+     * появления поля createdBy, владельца нет — там остаётся прежнее поведение,
+     * иначе их стало бы некому удалить.
+     */
+    public void requireChatOwner(HttpServletRequest request, Long chatId) {
+        Long me = currentUserId(request);
+        if (me == null || chatId == null) return;
+        Chat chat = chatRepository.findById(chatId).orElse(null);
+        if (chat == null) return;
+        if (isOneToOne(chat)) {
+            requireChatAccess(request, chatId);
+            return;
+        }
+        if (chatMembers.isOwner(chatId, me)) return;
+        Long owner = chat.getCreatedBy();
+        if (owner != null && !owner.equals(me)) deny(request, "chat-owner:" + chatId);
     }
 
     private void deny(HttpServletRequest request, String rule) {

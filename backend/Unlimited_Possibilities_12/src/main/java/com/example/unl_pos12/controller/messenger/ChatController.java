@@ -23,14 +23,29 @@ public class ChatController {
     private com.example.unl_pos12.service.AuthzService authz;
     @Autowired
     private UserService userService;
+    @Autowired
+    private com.example.unl_pos12.service.ChatMemberService chatMembers;
 
     @PostMapping
-    public ResponseEntity<?> createChat(@RequestBody Chat chat) {
+    public ResponseEntity<?> createChat(@RequestBody Chat chat,
+                                        jakarta.servlet.http.HttpServletRequest request) {
         System.out.println("Creating chat: " + chat.getName() + ", isPrivate: " + chat.isPrivate());
+        // Создателя берём из токена, а не из тела запроса: иначе его можно подменить
+        Long creator = authz.currentUserId(request);
+        if (creator != null && chat.getCreatedBy() == null) chat.setCreatedBy(creator);
+        // Новая группа закрыта, если клиент явно не попросил обратного
+        boolean group = !chat.isPrivate() && !Boolean.TRUE.equals(chat.getIsSecret());
+        if (group && chat.getIsPublic() == null) chat.setIsPublic(false);
 
         try {
             // Создаем чат
             Chat createdChat = chatService.createChat(chat);
+
+            // Создатель группы сразу становится её владельцем и первым участником:
+            // иначе у новой закрытой группы не было бы ни одного человека внутри
+            if (group && creator != null) {
+                chatMembers.addOwner(createdChat.getId(), creator);
+            }
 
             // Если чат приватный, добавляем его обоим пользователям
             if (chat.isPrivate()) {
@@ -65,15 +80,110 @@ public class ChatController {
         }
     }
 
+    /**
+     * Список групповых чатов: публичные видны всем, закрытые — только своим.
+     * До входа (токена нет) отдаём лишь публичные: с этого экрана логинятся.
+     */
     @GetMapping
-    public List<Chat> getAllChats() {
-        return chatService.getAllChats();
+    public List<Chat> getAllChats(jakarta.servlet.http.HttpServletRequest request) {
+        Long me = authz.currentUserId(request);
+        return chatService.getAllChats().stream()
+                .filter(chat -> chatMembers.isPublicGroup(chat)
+                        || (me != null && chatMembers.isMember(chat.getId(), me)))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Настройки группы: имя — админам, публичность — только владельцу.
+     *
+     * Переименования не было вовсе, а закрыть или открыть группу после создания
+     * было нечем: признак задавался один раз и навсегда.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateChat(@PathVariable Long id,
+                                        @RequestBody Map<String, Object> body,
+                                        jakarta.servlet.http.HttpServletRequest request) {
+        Chat chat = chatService.getChatById(id);
+        if (chat == null) return ResponseEntity.notFound().build();
+        if (chat.isPrivate() || Boolean.TRUE.equals(chat.getIsSecret())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "This is a one-to-one chat"));
+        }
+
+        if (body.containsKey("name")) {
+            authz.requireChatManager(request, id);
+            String name = String.valueOf(body.get("name")).trim();
+            if (name.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Name must not be empty"));
+            }
+            chat.setName(name);
+        }
+
+        if (body.containsKey("isPublic")) {
+            Long me = authz.currentUserId(request);
+            // Открыть группу всем или спрятать — решение владельца, не админа
+            if (me != null && !chatMembers.isOwner(id, me) && !me.equals(chat.getCreatedBy())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("error", "Only the owner can change this"));
+            }
+            chat.setIsPublic(Boolean.valueOf(String.valueOf(body.get("isPublic"))));
+        }
+
+        return ResponseEntity.ok(chatService.saveChat(chat));
+    }
+
+    /**
+     * Картинка группы. Меняют админы и владелец — то же правило, что для имени.
+     *
+     * Кладём рядом с аватарами пользователей и отдаём тем же обработчиком
+     * статики (/avatars/**), чтобы не заводить второе хранилище. Имя файла
+     * строим по номеру чата: так новая картинка заменяет старую, а не копит
+     * мусор при каждой замене.
+     */
+    @PostMapping("/{id}/avatar")
+    public ResponseEntity<?> uploadChatAvatar(@PathVariable Long id,
+                                              @RequestParam("avatar") org.springframework.web.multipart.MultipartFile avatar,
+                                              jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireChatManager(request, id);
+        Chat chat = chatService.getChatById(id);
+        if (chat == null) return ResponseEntity.notFound().build();
+        if (chat.isPrivate() || Boolean.TRUE.equals(chat.getIsSecret())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "This is a one-to-one chat"));
+        }
+        if (avatar == null || avatar.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "No file"));
+        }
+
+        try {
+            java.io.File directory = new java.io.File("src/main/resources/static/avatars/").getAbsoluteFile();
+            if (!directory.exists() && !directory.mkdirs()) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("error", "Cannot create the avatars folder"));
+            }
+            String original = avatar.getOriginalFilename();
+            String extension = (original != null && original.contains("."))
+                    ? original.substring(original.lastIndexOf('.')).toLowerCase()
+                    : ".png";
+            // Расширение берём из имени файла, но только знакомое: иначе в папке
+            // со статикой мог бы оказаться файл с любым расширением
+            if (!extension.matches("\\.(png|jpg|jpeg|webp|gif)")) extension = ".png";
+            String fileName = "group_" + id + extension;
+            avatar.transferTo(new java.io.File(directory, fileName));
+            chat.setAvatar("/avatars/" + fileName);
+            Chat saved = chatService.saveChat(chat);
+            System.out.println("Group avatar saved: " + fileName);
+            return ResponseEntity.ok(saved);
+        } catch (java.io.IOException e) {
+            System.out.println("Error saving group avatar: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Could not save the picture"));
+        }
     }
 
     @DeleteMapping("/{id}")
     public void deleteChat(@PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
-        authz.requireChatAccess(request, id);
+        authz.requireChatOwner(request, id); // групповой чат удаляет только создатель
         chatService.deleteChat(id);
+        chatMembers.forgetChat(id); // участники и приглашения вместе с чатом
     }
 
     @GetMapping("/{id}/messages")
@@ -86,6 +196,21 @@ public class ChatController {
     public Chat getChatById(@PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
         authz.requireChatAccess(request, id);
         return chatService.getChatById(id);
+    }
+
+    /**
+     * Кто состоит в приватном или секретном чате.
+     *
+     * Клиент раньше вычислял собеседника разбором имени чата («А_Б», у
+     * секретного — «А_Б_secret»). Имя пользователя само может содержать «_»,
+     * и тогда разбор давал несуществующее имя: запрос такого пользователя
+     * возвращал 404, переписка не открывалась и выбрасывала на главную.
+     * Здесь участники берутся по связи, имя чата не разбирается вовсе.
+     */
+    @GetMapping("/{id}/participants")
+    public List<User> getParticipants(@PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireChatAccess(request, id);
+        return userService.getMembersOfChat(id);
     }
 
     @GetMapping("/check")

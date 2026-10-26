@@ -76,8 +76,34 @@ public class ChatService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
+    /** Сохранить изменённый чат (имя, публичность). */
+    public Chat saveChat(Chat chat) {
+        return chatRepository.save(chat);
+    }
+
+    /**
+     * Удалить чат вместе с содержимым.
+     *
+     * Одного `deleteById` мало: на чат ссылаются его сообщения и списки
+     * приватных чатов у пользователей, и база отвечала отказом по внешнему
+     * ключу — чат с перепиской удалить было невозможно вовсе.
+     */
+    @Transactional
     public void deleteChat(Long id) {
-        chatRepository.deleteById(id);
+        Chat chat = chatRepository.findById(id).orElse(null);
+        if (chat == null) return;
+
+        messageRepository.deleteByChatId(id);
+
+        // Убираем чат из списков у тех, кто держит его как приватный, иначе
+        // упрёмся в связующую таблицу
+        for (com.example.unl_pos12.model.messenger.User user : userRepository.findMembersOfChat(id)) {
+            user.getPrivateChats().removeIf(c -> c.getId().equals(id));
+            userRepository.save(user);
+        }
+
+        chatRepository.delete(chat);
+        System.out.println("Chat deleted with its messages: " + id);
     }
 
     public List<Message> getMessagesByChatId(Long chatId) {
