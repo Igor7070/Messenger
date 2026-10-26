@@ -4,8 +4,8 @@ import { setAuthToken, applyAxiosAuth } from '../authToken';
 const API_URL = 'https://unlimitedpossibilities12.org/api/messages';
 const API_CHATS_URL = 'https://unlimitedpossibilities12.org/api/chats'; // URL для чатов
 
-export const getMessages = async (chatId) => {
-    const response = await fetch(`${API_CHATS_URL}/${chatId}/messages`);
+export const getMessages = async (chatId, options = {}) => {
+    const response = await fetch(`${API_CHATS_URL}/${chatId}/messages`, options);
     if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to fetch messages: ${errorText}`);
@@ -81,7 +81,11 @@ export const createChat = async (chat) => {
     });
 
     if (!response.ok) {
-        throw new Error('Failed to create chat');
+        // Сервер отвечает 409 и объясняет причину («имя занято»), а на экране
+        // всегда было одно «Failed to create chat» — человек не понимал, что
+        // поправить. Показываем ответ сервера, если он есть.
+        const text = await response.text().catch(() => '');
+        throw new Error(text.trim() || 'Failed to create chat');
     }
 
     const data = await response.json();

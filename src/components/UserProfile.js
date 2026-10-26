@@ -340,7 +340,7 @@ const UserProfile = () => {
                 toast.success(`Navigating to chat with ${user.username}!`);
             } catch (error) {
                 console.error('Ошибка при отправке сообщения:', error);
-                toast.error('Ошибка при отправке сообщения. Попробуйте снова.');
+                toast.error('Could not send the message. Please try again.');
             }
         } else {
             toast.warn('You cannot send a message to yourself.');
@@ -493,7 +493,7 @@ const UserProfile = () => {
                 const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}`);
                 const callerData = await callerResponse.json();
 
-                toast.success(`Защищённый звонок ${user.username}... 🔒`, { autoClose: 3000 });
+                toast.success(`Calling ${user.username} — protected call 🔒`, { autoClose: 3000 });
 
                 navigate(`/secure-call/${roomId}`, {
                     state: {

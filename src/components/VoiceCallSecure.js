@@ -207,8 +207,8 @@ const VoiceCallSecure = () => {
   if (!currentUserId || !roomId) {
     return (
       <div className="voice-call-container">
-        <h2>Ошибка: нет доступа к звонку</h2>
-        <button onClick={() => navigate('/')}>На главную</button>
+        <h2>No access to this call</h2>
+        <button onClick={() => navigate('/')}>Back to chats</button>
       </div>
     );
   }

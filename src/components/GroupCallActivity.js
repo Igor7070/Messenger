@@ -342,7 +342,7 @@ const GroupCallActivity = () => {
         });
         if (!hasActiveConnections) {
           console.error('No offer received within 60 seconds and no active connections, aborting call');
-          toast.error('Не удалось установить звонок: не получен offer');
+          toast.error('Could not set up the call: no offer received');
           endCall();
         } else {
           console.log('Offer timeout skipped due to active connections');

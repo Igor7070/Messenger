@@ -26,6 +26,18 @@ export const stompAuthHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+/**
+ * Вход и регистрация: 401 здесь означает «не тот пароль», а не «сессия
+ * истекла». Без этой оговорки человек с опечаткой в пароле получал бы окно
+ * «Your session has expired» и перезагрузку страницы.
+ */
+const isSignInUrl = (input) => {
+  try {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    return url.includes('/api/users/login') || /\/api\/users(\/create)?$/.test(url.split('?')[0]);
+  } catch { return false; }
+};
+
 const isApiUrl = (input) => {
   try {
     const url = typeof input === 'string' ? input : (input && input.url) || '';
@@ -54,8 +66,8 @@ const handleExpiredSession = () => {
   try {
     window.alert('Your session has expired. Please sign in again.');
   } catch { /* alert может быть заблокирован */ }
-  // На начальный экран: с него и выполняется вход
-  window.location.hash = '#/';
+  // На экран входа: оттуда человек вернётся туда, куда шёл
+  window.location.hash = '#/auth';
   window.location.reload();
 };
 
@@ -70,7 +82,7 @@ export const installFetchAuth = () => {
       if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
       const response = await original(input, { ...(init || {}), headers });
       // Токен был, но сервер его не принял — значит, он истёк или подделан
-      if (response.status === 401) handleExpiredSession();
+      if (response.status === 401 && !isSignInUrl(input)) handleExpiredSession();
       return response;
     }
     return original(input, init);
