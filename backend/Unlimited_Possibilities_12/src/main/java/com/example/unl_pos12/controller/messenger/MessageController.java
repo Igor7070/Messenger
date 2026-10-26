@@ -75,13 +75,17 @@ public class MessageController {
     }
 
     @PutMapping("/{id}")
-    public Message editMessage(@PathVariable Long id, @RequestBody Message message) {
+    public Message editMessage(@PathVariable Long id, @RequestBody Message message,
+                               jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireMessageAuthor(request, id); // чужое сообщение править нельзя
         message.setId(id);
         return messageService.updateMessage(message);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteMessage(@PathVariable Long id) {
+    public void deleteMessage(@PathVariable Long id,
+                              jakarta.servlet.http.HttpServletRequest request) {
+        authz.requireMessageAuthor(request, id); // и удалять тоже
         messageService.deleteMessage(id);
     }
 

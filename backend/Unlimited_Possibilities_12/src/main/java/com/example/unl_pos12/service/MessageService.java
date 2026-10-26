@@ -44,7 +44,8 @@ public class MessageService {
     public Message saveMessage(Message message) {
         //message.setTimestamp(LocalDateTime.now()); // Устанавливаем временную метку
         message.setTimestamp(ZonedDateTime.now());
-        System.out.println("Saving message: " + message.getContent() + " for chatId: " + message.getChat().getId());
+        System.out.println("Saving message: length=" + (message.getContent() != null ? message.getContent().length() : 0)
+                + " for chatId: " + message.getChat().getId());
         return messageRepository.save(message);
     }
 

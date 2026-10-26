@@ -30,7 +30,8 @@ import java.util.regex.Pattern;
  */
 @Component
 public class StompAuthInterceptor implements ChannelInterceptor {
-    private static final String ATTR_USER_ID = "wsUserId";
+    /** Ключ, под которым в сессии STOMP лежит userId из токена. */
+    public static final String ATTR_USER_ID = "wsUserId";
     private static final Pattern CHAT_TOPIC = Pattern.compile("^/topic/chat/(\\d+)(/.*)?$");
     private static final Pattern NOTIF_TOPIC = Pattern.compile("^/topic/notifications/(\\d+)$");
     private static final Pattern CHAT_APP = Pattern.compile("^/app/(?:sendMessage/chat|editMessage|deleteMessage|readMessage|typing)/(\\d+)$");

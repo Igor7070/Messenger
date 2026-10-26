@@ -252,14 +252,17 @@ public class ChatGPTController {
             System.out.println("История сообщений (размер): " +
                     (request.getHistory() != null ? request.getHistory().size() : 0));
             if (request.getHistory() != null && !request.getHistory().isEmpty()) {
-                System.out.println("Последние 3 сообщения (для отладки):");
+                // Саму переписку не печатаем: для отладки довольно того, кто
+                // автор и какой длины реплика
+                System.out.println("Последние 3 сообщения (для отладки, без текста):");
                 int start = Math.max(0, request.getHistory().size() - 3);
                 for (int i = start; i < request.getHistory().size(); i++) {
                     Message msg = request.getHistory().get(i);
                     String sender = msg.getSender() != null && msg.getSender().getUsername() != null
                             ? msg.getSender().getUsername()
                             : "Собеседник";
-                    System.out.println("  " + sender + ": " + msg.getContent());
+                    System.out.println("  " + sender + ": length="
+                            + (msg.getContent() != null ? msg.getContent().length() : 0));
                 }
             }
             System.out.println("Пожелание (preference): " +

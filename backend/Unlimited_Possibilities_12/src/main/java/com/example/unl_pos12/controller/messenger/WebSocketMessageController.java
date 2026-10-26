@@ -23,6 +23,10 @@ import java.util.concurrent.TimeUnit;
 
 @Controller
 public class WebSocketMessageController {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.example.unl_pos12.service.AuthzService authz;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.example.unl_pos12.service.ChatMemberService chatMembers;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.example.unl_pos12.service.PushService pushService;
@@ -53,7 +57,9 @@ public class WebSocketMessageController {
         System.out.println("Received message object: " + message);
         System.out.println("chatId: " + chatId);
         System.out.println("Received clientMessageId: " + message.getClientMessageId());
-        System.out.println("Received message: content=" + message.getContent() +
+        // В журнал — только длина: логи Railway хранятся отдельно от базы и
+        // доступны всем, кто войдёт в аккаунт, а это второй экземпляр переписки
+        System.out.println("Received message: length=" + (message.getContent() != null ? message.getContent().length() : 0) +
                 ", messageType=" + message.getMessageType() +
                 ", from user: " + (message.getSender() != null ? message.getSender().getUsername() : "null"));
         System.out.println("Message from chat: " + message.getChat());
@@ -117,6 +123,7 @@ public class WebSocketMessageController {
         message.setDelivered_status(true); // Устанавливаем статус доставки
         message.setTimestamp(ZonedDateTime.now()); // [ADD] Установка timestamp для нового сообщения
         Message saved = messageService.saveMessage(message, null); // file = null, так как клиент отправляет fileUrl
+        joinPublicGroupOnWrite(saved);
         pushToChatMembers(saved);
         return saved;
     }
@@ -132,6 +139,20 @@ public class WebSocketMessageController {
      *
      * Текста сообщения в push нет: только имя отправителя и id чата.
      */
+    /**
+     * Человек ответил в публичной группе — значит, он в ней состоит.
+     * Без этого он читал бы её из общего списка, но числился посторонним: не
+     * получал бы push и пропал бы из списка участников.
+     */
+    private void joinPublicGroupOnWrite(Message saved) {
+        if (saved == null || saved.getChat() == null || saved.getSender() == null) return;
+        try {
+            chatMembers.joinPublicOnWrite(saved.getChat(), saved.getSender().getId());
+        } catch (Exception e) {
+            System.out.println("joinPublicGroupOnWrite error: " + e.getMessage());
+        }
+    }
+
     private void pushToChatMembers(Message saved) {
         if (pushService == null || saved == null || saved.getChat() == null) return;
         try {
@@ -145,9 +166,19 @@ public class WebSocketMessageController {
             data.put("senderId", String.valueOf(senderId));
             data.put("secret", String.valueOf(secret));
 
+            // Получатели: для чата на двоих — связь privateChats, для группы —
+            // таблица участников. Раньше искали только по privateChats, и
+            // групповые сообщения не вызывали push вовсе.
+            java.util.Set<Long> recipients = new java.util.LinkedHashSet<>();
             for (com.example.unl_pos12.model.messenger.User member : userRepository.findMembersOfChat(chatId)) {
-                if (senderId != null && senderId.equals(member.getId())) continue; // себе не шлём
-                pushService.sendToUser(member.getId(), senderName, "New message", data);
+                recipients.add(member.getId());
+            }
+            for (com.example.unl_pos12.model.messenger.ChatMember member : chatMembers.members(chatId)) {
+                recipients.add(member.getUserId());
+            }
+            for (Long recipient : recipients) {
+                if (senderId != null && senderId.equals(recipient)) continue; // себе не шлём
+                pushService.sendToUser(recipient, senderName, "New message", data);
             }
         } catch (Exception e) {
             System.out.println("pushToChatMembers error: " + e.getMessage());
@@ -156,14 +187,36 @@ public class WebSocketMessageController {
 
     @MessageMapping("/editMessage/{chatId}")
     @SendTo("/topic/chat/{chatId}/messages")
-    public Message editMessage(@DestinationVariable String chatId, Message message) {
+    public Message editMessage(@DestinationVariable String chatId, Message message,
+                               org.springframework.messaging.simp.SimpMessageHeaderAccessor headers) {
         System.out.println("Editing message: " + message.getId());
+        if (!mayChangeMessage(headers, message.getId(), "editMessage")) return null;
         return messageService.updateMessage(message); // Обновляем сообщение в базе данных
+    }
+
+    /**
+     * Своё ли это сообщение. Перехватчик STOMP проверяет только членство в чате,
+     * то есть в групповом чате пропускает всех, а в чате на двоих разрешил бы
+     * собеседнику править мои сообщения. REST-путь уже закрыт, закрываем и этот.
+     */
+    private boolean mayChangeMessage(org.springframework.messaging.simp.SimpMessageHeaderAccessor headers,
+                                     Long messageId, String what) {
+        Long me = null;
+        if (headers != null && headers.getSessionAttributes() != null) {
+            Object v = headers.getSessionAttributes()
+                    .get(com.example.unl_pos12.config.messenger.StompAuthInterceptor.ATTR_USER_ID);
+            if (v instanceof Long) me = (Long) v;
+        }
+        if (authz.isMessageAuthor(me, messageId)) return true;
+        System.out.println("WS-AUTHZ-DENY " + what + " user=" + me + " message=" + messageId);
+        return !authz.isEnforcing(); // в режиме наблюдения только пишем в лог
     }
 
     @MessageMapping("/deleteMessage/{chatId}")
     @SendTo("/topic/chat/{chatId}/messages") // Замените на правильную тему
-    public Message deleteMessage(@DestinationVariable String chatId, Long id) {
+    public Message deleteMessage(@DestinationVariable String chatId, Long id,
+                                 org.springframework.messaging.simp.SimpMessageHeaderAccessor headers) {
+        if (!mayChangeMessage(headers, id, "deleteMessage")) return null;
         messageService.deleteMessage(id);
         Message deletedMessage = new Message();
         deletedMessage.setId(id);
