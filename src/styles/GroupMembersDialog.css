@@ -1,9 +1,15 @@
-/* Окно участников группы: список ролей, приглашения, выход. */
+/*
+  Настройки группы: имя и картинка, участники с ролями, приглашения, выход.
+
+  Окно красилось своими числами и темнело только по настройке системы — у
+  человека со светлой темой Windows посреди тёмного мессенджера открывалась
+  белая карточка. Берём общую палитру из tokens.css, как остальные экраны.
+*/
 
 .group-members-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(2, 6, 23, 0.62);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -16,20 +22,82 @@
   max-width: 460px;
   max-height: 80vh;
   overflow-y: auto;
-  background: #ffffff;
-  border-radius: 12px;
+  background: var(--up-panel);
+  color: var(--up-text);
+  font-family: var(--up-font);
+  border: 1px solid var(--up-border);
+  border-radius: var(--up-radius-lg);
   padding: 20px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
 }
 
-.group-members-dialog h3 {
-  margin: 0 0 12px;
-  font-size: 18px;
+.group-members-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.group-members-head h3 {
+  margin: 0;
+  font-size: var(--up-text-lg);
+}
+
+.group-members-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.group-members-avatar-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--up-surface);
+  color: var(--up-text);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Имя и картинка группы: поле, «Rename» и выбор файла в одну строку */
+.group-members-settings {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0 4px;
+}
+
+.group-members-rename {
+  flex: 1 1 140px;
+  min-width: 0;
+  padding: 7px 10px;
+  font-family: inherit;
+  font-size: var(--up-text-sm);
+  color: var(--up-text);
+  background: var(--up-bg);
+  border: 1px solid var(--up-border-strong);
+  border-radius: var(--up-radius-sm);
+}
+
+.group-members-rename:focus {
+  outline: none;
+  border-color: var(--up-accent-soft);
+}
+
+.group-members-avatar-pick {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: var(--up-radius-sm);
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--up-accent-soft);
+  font-size: var(--up-text-xs);
+  cursor: pointer;
 }
 
 .group-members-list {
   list-style: none;
-  margin: 0 0 12px;
+  margin: 12px 0;
   padding: 0;
 }
 
@@ -37,31 +105,31 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid #eceff1;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--up-border);
 }
 
 .group-members-name {
   flex: 1;
-  font-size: 14px;
+  font-size: var(--up-text-sm);
 }
 
 .group-members-role {
-  font-size: 12px;
+  font-size: var(--up-text-xs);
   padding: 2px 8px;
-  border-radius: 10px;
-  background: #eceff1;
-  color: #546e7a;
+  border-radius: var(--up-radius-pill);
+  background: rgba(148, 163, 184, 0.16);
+  color: var(--up-muted);
 }
 
 .group-members-role.role-owner {
-  background: #fff3e0;
-  color: #e65100;
+  background: rgba(251, 146, 60, 0.18);
+  color: #fdba74;
 }
 
 .group-members-role.role-admin {
-  background: #e3f2fd;
-  color: #1565c0;
+  background: rgba(99, 102, 241, 0.22);
+  color: var(--up-accent-soft);
 }
 
 .group-members-actions {
@@ -72,22 +140,41 @@
 
 .group-members-dialog button {
   border: none;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-  background: #e3f2fd;
-  color: #1565c0;
+  border-radius: var(--up-radius-sm);
+  padding: 5px 12px;
+  font-family: inherit;
+  font-size: var(--up-text-xs);
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--up-accent-soft);
   cursor: pointer;
 }
 
+.group-members-dialog button:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.32);
+}
+
 .group-members-dialog button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: default;
 }
 
 .group-members-dialog button.danger {
-  background: #ffebee;
-  color: #c62828;
+  background: rgba(248, 113, 113, 0.16);
+  color: var(--up-danger);
+}
+
+.group-members-dialog button.danger:hover {
+  background: rgba(248, 113, 113, 0.26);
+}
+
+.group-members-dialog select {
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: var(--up-text-sm);
+  color: var(--up-text);
+  background: var(--up-bg);
+  border: 1px solid var(--up-border-strong);
+  border-radius: var(--up-radius-sm);
 }
 
 .group-members-add,
@@ -110,7 +197,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 14px;
+  font-size: var(--up-text-sm);
   font-weight: 600;
 }
 
@@ -119,79 +206,26 @@
   align-items: center;
   gap: 8px;
   padding: 4px 0;
-  font-size: 13px;
+  font-size: var(--up-text-sm);
 }
 
 .group-members-invite code {
-  background: #f5f5f5;
+  background: rgba(148, 163, 184, 0.12);
   padding: 2px 6px;
   border-radius: 4px;
 }
 
 .group-members-note {
-  font-size: 13px;
-  color: #78909c;
+  font-size: var(--up-text-sm);
+  color: var(--up-muted);
   margin: 4px 0;
 }
 
 .group-members-public {
-  font-size: 14px;
+  font-size: var(--up-text-sm);
 }
 
 .group-members-footer {
   justify-content: space-between;
   margin-top: 16px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .group-members-dialog {
-    background: #263238;
-    color: #eceff1;
-  }
-
-  .group-members-row {
-    border-bottom-color: #37474f;
-  }
-
-  .group-members-invite code {
-    background: #37474f;
-  }
-}
-
-.group-members-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.group-members-head h3 {
-  margin: 0;
-}
-
-.group-members-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.group-members-avatar-letter {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #cfd8dc;
-  color: #37474f;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.group-members-avatar-pick {
-  display: inline-block;
-  margin: 10px 0 0;
-  padding: 4px 10px;
-  border-radius: 6px;
-  background: #e3f2fd;
-  color: #1565c0;
-  font-size: 12px;
-  cursor: pointer;
 }

@@ -1,4 +1,6 @@
 import MessageChecks from './MessageChecks';
+import { findPartner, partnerNameFromChat } from '../api/participants';
+import { isReadFlag, isDeliveredFlag } from '../api/messageFlags';
 import { stompAuthHeaders } from '../authToken';
 import { computeSafetyNumber } from './SafetyNumber';
 import SecretTranslationDialog from '../localTranslation/SecretTranslationDialog';
@@ -127,6 +129,34 @@ const getPublicKey = async (userId, publicKeyId = null) => {
   }
 };
 
+
+/** Разделители дат в ленте секретного чата — как в остальных. */
+const dayKey = (timestamp) => {
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? '' : date.toDateString();
+};
+
+const dayLabel = (timestamp) => {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '';
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (date.toDateString() === today.toDateString()) return 'Today';
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  const sameYear = date.getFullYear() === today.getFullYear();
+  return date.toLocaleDateString([], sameYear
+    ? { day: 'numeric', month: 'long' }
+    : { day: 'numeric', month: 'long', year: 'numeric' });
+};
+
+const startsNewDay = (messages, index) => {
+  const current = dayKey(messages[index]?.timestamp);
+  if (!current) return false;
+  if (index === 0) return true;
+  return current !== dayKey(messages[index - 1]?.timestamp);
+};
+
 const SecretPrivateChat = () => {
   const [messages, setMessages] = useState([]);
   const [content, setContent] = useState('');
@@ -136,6 +166,10 @@ const SecretPrivateChat = () => {
   const [client, setClient] = useState(null);
   const [chatId, setChatId] = useState(null);
   const [chatName, setChatName] = useState('');
+  // Имя чата в ссылке: им пользуется запасной путь определения собеседника,
+  // вызываемый из обработчиков, где состояние могло остаться прежним.
+  const chatNameRef = useRef('');
+  chatNameRef.current = chatName;
   const [displayChatName, setDisplayChatName] = useState('');
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
@@ -162,6 +196,11 @@ const SecretPrivateChat = () => {
   const [partnerKeyChanged, setPartnerKeyChanged] = useState(false);
   // Перевод на устройстве (секретный чат)
   const [showTranslationDialog, setShowTranslationDialog] = useState(false);
+  const [chatMenuOpen, setChatMenuOpen] = useState(false);
+  // Если картинка не открылась (файлы пропадают при переразвёртывании сервера),
+  // показываем кружок с буквой вместо битого значка
+  const [brokenAvatars, setBrokenAvatars] = useState({});
+  const chatMenuRef = useRef(null);
   const [translationRefresh, setTranslationRefresh] = useState(0);
 
   // Запоминает ключ собеседника и поднимает предупреждение, если он изменился
@@ -174,11 +213,49 @@ const SecretPrivateChat = () => {
     if (previous && previous !== key) {
       console.warn(`Partner ${id} public key CHANGED`);
       setPartnerKeyChanged(true);
-      toast.warn('Ключ шифрования собеседника изменился. Сверьте отпечаток ключей.', { autoClose: false });
+      toast.warn('Your contact\'s encryption key has changed. Compare the fingerprint.', { autoClose: false });
     }
     localStorage.setItem(storageKey, key);
   };
   const [partnerAvatar, setPartnerAvatar] = useState(null);
+
+  /*
+    Номер собеседника для отправки и расшифровки.
+
+    Он уже известен — его дают участники чата, — поэтому берём готовый.
+    Раньше каждая отправка, подписка на ключи и расшифровка начинались с
+    разбора имени чата («А_Б_secret») по «_»; у человека с «_» в имени
+    получался обрезок, и всё падало с «Failed to fetch recipient: 404»:
+    сообщение не уходило, картинки не открывались. Разбор имени оставлен
+    запасным путём на случай, когда участников получить не удалось.
+  */
+  /*
+    Время ставим в конец последней строки текста — короткая реплика тогда не
+    занимает отдельную строку под подпись. Когда в чате включён перевод, под
+    текстом появляется вторая строка, и время остаётся отдельной строкой,
+    иначе оно наложилось бы на перевод. Вложения и голосовые — тоже отдельной.
+  */
+  const inlineTime = (msg) =>
+    msg.messageType !== 'audio' && msg.messageType !== 'file' && !msg.fileUrl;
+  const hasLocalTranslation = () => isLocalTranslationEnabled(chatIdParam);
+
+  const partnerRef = useRef(null);
+  const partnerNameRef = useRef('');
+  const resolveRecipientId = async () => {
+    if (partnerRef.current) return partnerRef.current;
+    const partner = await findPartner(chatIdParam, localStorage.getItem('userId'));
+    if (partner) {
+      partnerRef.current = partner.id;
+      partnerNameRef.current = partner.username;
+      return partner.id;
+    }
+    const name = partnerNameFromChat(chatNameRef.current, username);
+    const response = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${name}`);
+    if (!response.ok) throw new Error(`Failed to fetch recipient: ${response.status}`);
+    const recipient = await response.json();
+    partnerRef.current = recipient.id;
+    return recipient.id;
+  };
   const typingTimerRef = useRef(null); // для таймера скрытия
   const messagesEndRef = useRef(null);
   const messageListRef = useRef(null);
@@ -351,22 +428,56 @@ const SecretPrivateChat = () => {
           return;
         }
 
-        const names = chatData.name.replace('_secret', '').split('_');
-        const interlocutorName = names.find((name) => name !== username);
+        /*
+          Собеседника берём из участников чата. Прежде его вычисляли
+          разбором имени («А_Б_secret») по «_», а имя человека само может
+          содержать «_»: разбор давал несуществующее имя, запрос возвращал
+          пустой ответ, разбор ответа падал — и секретная переписка
+          закрывалась с выбросом на главную. Старый путь оставлен запасным.
+        */
+        let interlocutorName;
+        let recipient;
+        const partner = await findPartner(chatIdParam, localStorage.getItem('userId'));
+        if (partner) {
+          interlocutorName = partner.username;
+          recipient = partner;
+        } else {
+          interlocutorName = partnerNameFromChat(chatData.name, username);
+          const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${interlocutorName}`);
+          if (!recipientResponse.ok) {
+            throw new Error(`Could not find "${interlocutorName}"`);
+          }
+          recipient = await recipientResponse.json();
+        }
+        const recipientId = recipient.id;
+
         const normalizedChatName = generateChatName(username, interlocutorName, true);
         setChatName(normalizedChatName);
         setDisplayChatName(`Secret Chat with ${interlocutorName}`);
         setChatId(chatIdParam);
         setCurrentChatId(chatIdParam);
 
-        const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${interlocutorName}`);
-        const recipient = await recipientResponse.json();
-        const recipientId = recipient.id;
-
         setPartnerId(recipientId);
+        partnerRef.current = recipientId;
+        partnerNameRef.current = interlocutorName;
         setPartnerAvatar(recipient.avatar); // предполагается, что в ответе есть поле avatar (строка типа "/uploads/avatars/xxx.jpg")
 
-        const recipientPublicKey = await getPublicKey(recipientId);
+        /*
+          Ключи заводятся при первом входе в приложение. Если собеседник ещё
+          ни разу не заходил, шифровать нечем: сервер отвечает, что открытого
+          ключа нет. Прежде это попадало в общий перехват ошибок, и человека
+          просто выбрасывало на главную без единого слова — объясняем, в чём
+          дело, вместо молчаливого возврата.
+        */
+        let recipientPublicKey;
+        try {
+          recipientPublicKey = await getPublicKey(recipientId);
+        } catch (keyError) {
+          console.warn('No public key for partner yet:', recipientId, keyError);
+          toast.error(`${interlocutorName} has not signed in yet — a secret chat cannot be opened`);
+          navigate('/');
+          return;
+        }
         setPublicKeys(prev => ({ ...prev, [recipientId]: recipientPublicKey }));
         notePartnerKey(recipientId, recipientPublicKey);
 
@@ -586,6 +697,12 @@ const SecretPrivateChat = () => {
     }
 
     let reconnectTimeout;
+    // Ушли с экрана — соединение больше не поднимаем. Отключение приходит
+    // с задержкой, уже после уборки, и прежде оно успевало поставить таймер
+    // переподключения: клиент оживал через две секунды и оставался висеть
+    // навсегда. Такие «зомби» копились с каждым заходом в секретный чат и
+    // занимали соединения, нужные обычным запросам.
+    let closedForGood = false;
     const stompClientInstance = new Client({
       connectHeaders: stompAuthHeaders(),
       webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
@@ -802,13 +919,9 @@ const SecretPrivateChat = () => {
 
         // ← ПОДПИСКА НА ОБНОВЛЕНИЕ КЛЮЧЕЙ
         if (chatName) {
-          const recipientName = chatName.replace('_secret', '').split('_').find((name) => name !== username);
-          if (recipientName) {
+          {
             try {
-              const response = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
-              if (!response.ok) throw new Error(`Failed to fetch recipient: ${response.status}`);
-              const recipient = await response.json();
-              const recipientId = recipient.id;
+              const recipientId = await resolveRecipientId();
 
               stompClientInstance.subscribe(`/topic/publicKey/${recipientId}`, (message) => {
                 try {
@@ -843,8 +956,10 @@ const SecretPrivateChat = () => {
       },
       onDisconnect: () => {
         console.log('WebSocket disconnected in SecretPrivateChat');
+        if (closedForGood) return;
         setClient(null);
         reconnectTimeout = setTimeout(() => {
+          if (closedForGood) return;
           console.log('Reconnecting WebSocket for SecretPrivateChat');
           stompClientInstance.activate();
         }, 2000);
@@ -855,6 +970,7 @@ const SecretPrivateChat = () => {
 
     return () => {
       console.log('Deactivating WebSocket in SecretPrivateChat');
+      closedForGood = true;
       if (stompClientInstance.active) {
         stompClientInstance.deactivate();
       }
@@ -871,7 +987,7 @@ const SecretPrivateChat = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       if (client && client.connected && messages.length > 0) {
-        const unreadMessages = messages.some((msg) => !msg.read);
+        const unreadMessages = messages.some((msg) => !isReadFlag(msg));
         if (unreadMessages) {
           markAllMessagesAsRead(messages);
           clearInterval(interval);
@@ -962,7 +1078,7 @@ const SecretPrivateChat = () => {
   const markAllMessagesAsRead = (updatedMessages) => {
     if (Array.isArray(updatedMessages)) {
       updatedMessages.forEach((msg) => {
-        if (msg.sender.id !== userId && (msg.read === false || msg.read === null)) {
+        if (msg.sender.id !== userId && !isReadFlag(msg)) {
           if (client && client.connected) {
             client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
             setMessages((prevMessages) =>
@@ -1422,13 +1538,8 @@ const SecretPrivateChat = () => {
     if ((content || selectedFile || audioBlob) && userId && keyPair) {
       try {
         // [ADD] Получаем ID получателя
-        const recipientName = chatName.split('_').find((name) => name !== username);
-        const userResponse = await fetch(
-          `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
-        );
-        if (!userResponse.ok) throw new Error('Failed to fetch recipient');
-        const recipient = await userResponse.json();
-        const recipientId = recipient.id;
+        const recipientId = await resolveRecipientId();
+        const recipientName = partnerNameRef.current || partnerNameFromChat(chatName, username);
 
         // [ADD] Генерируем ID временного сообщения
         const clientMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -1768,23 +1879,14 @@ const SecretPrivateChat = () => {
       return;
     }
 
-    const recipientName = chatName.split('_').find((name) => name !== username);
-    if (!recipientName) {
-      console.error('Recipient name not found');
-      toast.error('Failed to find recipient');
-      setMicIconState('mic');
-      return;
-    }
+    const recipientName = partnerNameRef.current || partnerNameFromChat(chatName, username);
 
     // ← ОБЪЯВЛЯЕМ clientMessageId ДО try
     let clientMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     let tempFileUrl = null;
 
     try {
-      const userResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
-      if (!userResponse.ok) throw new Error('Failed to fetch recipient');
-      const recipient = await userResponse.json();
-      const recipientId = recipient.id;
+      const recipientId = await resolveRecipientId();
 
       const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
       const { encryptedFile, nonce, fileNonce, encryptedContent } = await encryptFile(
@@ -1947,20 +2049,7 @@ const SecretPrivateChat = () => {
   // для секретных чатов сам подставляет «New secret message».
   const notifyPartner = async () => {
     try {
-      let recipientId = partnerId;
-      if (!recipientId) {
-        const recipientName = chatName
-          .replace(/_secret$/, '')
-          .split('_')
-          .find((name) => name !== username);
-        const userResponse = await fetch(
-          `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
-        );
-        if (!userResponse.ok) {
-          throw new Error(`Failed to fetch recipient: ${userResponse.status}`);
-        }
-        recipientId = (await userResponse.json()).id;
-      }
+      const recipientId = await resolveRecipientId();
 
       await fetch(`https://unlimitedpossibilities12.org/api/messages/notify`, {
         method: 'POST',
@@ -2043,15 +2132,24 @@ const SecretPrivateChat = () => {
     }
   };
 
+
+  // Меню в шапке закрывается щелчком мимо него
+  useEffect(() => {
+    if (!chatMenuOpen) return undefined;
+    const closeOnOutside = (event) => {
+      if (chatMenuRef.current && !chatMenuRef.current.contains(event.target)) setChatMenuOpen(false);
+    };
+    document.addEventListener('mousedown', closeOnOutside);
+    return () => document.removeEventListener('mousedown', closeOnOutside);
+  }, [chatMenuOpen]);
+
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
     try {
       const date = parseISO(timestamp);
       const kievDate = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Kiev' }));
-      if (isToday(kievDate)) {
-        return format(kievDate, 'HH:mm');
-      }
-      return format(kievDate, 'dd.MM.yy');
+      // В пузыре только время: день обозначает разделитель в ленте
+      return format(kievDate, 'HH:mm');
     } catch (error) {
       console.error('Error formatting timestamp:', error);
       return '';
@@ -2324,7 +2422,7 @@ const SecretPrivateChat = () => {
           ...prevData,
           isReady: false,
           isPlaying: false,
-          error: `Failed to load audio: ${errorMsg}`,
+          error: 'Voice message unavailable',
         },
       };
     });
@@ -2569,10 +2667,7 @@ const SecretPrivateChat = () => {
       if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`);
       const encryptedFileBytes = new Uint8Array(await response.arrayBuffer());
 
-      const recipientName = chatName.split('_').find((name) => name !== username);
-      const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
-      const recipient = await recipientResponse.json();
-      const recipientId = recipient.id;
+      const recipientId = await resolveRecipientId();
 
       const decryptedFileBytes = await decryptFileContent(
         encryptedFileBytes,
@@ -2688,10 +2783,7 @@ const SecretPrivateChat = () => {
 
       if (senderId === userId) {
         // СВОЁ СООБЩЕНИЕ → шифровали на ключ ПОЛУЧАТЕЛЯ
-        const recipientName = chatName.split('_').find(name => name !== username);
-        const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
-        const recipient = await recipientResponse.json();
-        decryptRecipientId = recipient.id;
+        decryptRecipientId = await resolveRecipientId();
         publicKey = publicKeys[decryptRecipientId] || await getPublicKey(decryptRecipientId, publicKeyId);
       } else {
         // ЧУЖОЕ СООБЩЕНИЕ → шифровали на наш ключ, используем ключ ОТПРАВИТЕЛЯ
@@ -2778,18 +2870,7 @@ const SecretPrivateChat = () => {
 
       if (senderId === userId) {
         // Это своё сообщение → шифровали на ключ собеседника (partnerId)
-        const recipientName = chatName.replace('_secret', '').split('_').find((name) => name !== username);
-        if (!recipientName) {
-          throw new Error('Recipient name not found for own image decryption');
-        }
-
-        const recipientResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`);
-        if (!recipientResponse.ok) {
-          throw new Error(`Failed to fetch recipient: ${recipientResponse.status}`);
-        }
-
-        const recipient = await recipientResponse.json();
-        decryptRecipientId = recipient.id;
+        decryptRecipientId = await resolveRecipientId();
 
         // Берём публичный ключ собеседника
         publicKey = publicKeys[decryptRecipientId] || await getPublicKey(decryptRecipientId, publicKeyId);
@@ -2862,6 +2943,57 @@ const SecretPrivateChat = () => {
     });
   }, [messages, decryptedImageBlobs]);
 
+  /**
+   * Защищённый звонок собеседнику.
+   *
+   * Перед соединением стороны подписывают SDP ключами Ed25519 и сверяют
+   * подписи, поэтому сервер не может незаметно встать между собеседниками.
+   * Запускался он только из меню «…» на странице человека — место, где его
+   * никто не искал; в секретном чате он и нужен. Звонок с переводом сюда,
+   * наоборот, не ставим: перевод идёт через сервер.
+   */
+  const startSecureCall = async () => {
+    if (!partnerId) {
+      toast.error('Cannot find who to call');
+      return;
+    }
+    const roomId = `secure-${userId}-${partnerId}-${Date.now()}`;
+    const callerName = localStorage.getItem('username') || 'Unknown';
+    const callRequest = {
+      callerId: Number(userId),
+      recipientId: Number(partnerId),
+      roomId,
+      callerName,
+      type: 'voice_secure',
+    };
+    try {
+      const response = await fetch('https://unlimitedpossibilities12.org/api/webrtc/call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(callRequest),
+      });
+      if (!response.ok) {
+        toast.error('Failed to start the protected call');
+        return;
+      }
+      const partnerName = displayChatName.replace('Secret Chat with ', '');
+      toast.success(`Calling ${partnerName} — protected call`);
+      navigate(`/secure-call/${roomId}`, {
+        state: {
+          incomingCall: callRequest,
+          isCaller: true,
+          currentUserId: Number(userId),
+          callerName,
+          recipientName: partnerName,
+          recipientId: Number(partnerId),
+        },
+      });
+    } catch (error) {
+      console.error('Secure call error:', error);
+      toast.error('Failed to start the protected call');
+    }
+  };
+
   return (
     <div className="secret-chat">
       {/* Большая фиксированная иконка ассистента — только на ПК */}
@@ -2870,23 +3002,6 @@ const SecretPrivateChat = () => {
         <div className="secret-header-content">
           {/* Маленькая иконка ассистента — ТОЛЬКО на мобильных, слева от замка */}
           <AssistantIcon size="small" className="mobile-assistant-icon secret-mobile-assistant-left" />
-          {/* Иконка замка слева */}
-          <span
-            className="secret-chat-indicator"
-            onClick={() => setShowSafetyNumber((v) => !v)}
-            title="Показать отпечаток ключей шифрования"
-            style={{ cursor: 'pointer' }}
-          >
-            {partnerKeyChanged ? '⚠️' : '🔒'}
-          </span>
-          <span
-            className={`secret-translate-toggle${isLocalTranslationEnabled(chatId) && localTargetLanguage(chatId) ? ' on' : ''}`}
-            onClick={() => setShowTranslationDialog(true)}
-            title="On-device translation"
-          >
-            🌐
-          </span>
-
           {/* Аватар + имя + typing — центрировано */}
           <div className="secret-partner-container">
             {/* Круглый аватар с кликабельностью */}
@@ -2895,11 +3010,12 @@ const SecretPrivateChat = () => {
               onClick={() => partnerId && navigate(`/user/${partnerId}`)}
               style={{ cursor: partnerId ? 'pointer' : 'default' }}
             >
-              {partnerAvatar ? (
+              {partnerAvatar && !brokenAvatars.partner ? (
                 <img
                   src={`https://unlimitedpossibilities12.org${partnerAvatar}`}
                   alt="Аватар собеседника"
                   className="secret-partner-avatar"
+                  onError={() => setBrokenAvatars((broken) => ({ ...broken, partner: true }))}
                 />
               ) : (
                 <div className="secret-partner-avatar secret-partner-avatar-placeholder">
@@ -2916,13 +3032,88 @@ const SecretPrivateChat = () => {
               )}
             </div>
 
-            {/* Имя + "печатает…" */}
+            {/* Имя и состояние: метки включённых режимов записаны так же,
+                как в остальных чатах */}
             <div className="secret-partner-text">
-              <div className="secret-partner-name">
+              <div className="partner-name">
                 {displayChatName.replace('Secret Chat with ', '')}
               </div>
-              {isTyping && (
-                <div className="secret-typing-text">{typingName} печатает…</div>
+              <div className="chat-status-line">
+                {isTyping ? (
+                  <span className="chat-status-typing">{typingName} is typing…</span>
+                ) : (
+                  <span className="chat-status-text">
+                    {partnerId && usersStatus[partnerId]?.online ? 'online' : 'offline'}
+                  </span>
+                )}
+                <span className="chat-mode-chip" title="End-to-end encrypted">SECRET</span>
+                {isLocalTranslationEnabled(chatId) && localTargetLanguage(chatId) && (
+                  <span className="chat-mode-chip" title="Messages are translated on your device">
+                    {`→${String(localTargetLanguage(chatId)).toUpperCase()}`}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Справа: отпечаток ключей и меню. Замок важен именно здесь —
+              это единственный способ сверить шифрование. */}
+          <div className="chat-header-actions">
+            {/* Трубка с замком: звонок с проверкой личности собеседника */}
+            <button
+              type="button"
+              className="chat-header-button"
+              title="Protected call"
+              onClick={startSecureCall}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {/* Та же трубка, что в личном чате, только мельче — и замок сверху */}
+                <g transform="translate(-0.6 2.2) scale(0.82)" strokeWidth="2.4">
+                  <path d="M5 4.5h3.5l1.5 4-2 1.5a11 11 0 006 6l1.5-2 4 1.5V19a1.5 1.5 0 01-1.7 1.5C10.8 19.8 4.2 13.2 3.5 6.2A1.5 1.5 0 015 4.5z" />
+                </g>
+                <rect x="15" y="3.8" width="7" height="5.4" rx="1.3" />
+                <path d="M16.8 3.8V2.7a1.7 1.7 0 013.4 0v1.1" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className={`chat-header-button ${partnerKeyChanged ? 'chat-header-button-warn' : ''}`}
+              title="Encryption fingerprint"
+              onClick={() => setShowSafetyNumber((v) => !v)}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
+                <path d="M8.5 10.5V7.5a3.5 3.5 0 017 0v3" />
+              </svg>
+            </button>
+            <div className="chat-header-menu-wrap" ref={chatMenuRef}>
+              <button
+                type="button"
+                className="chat-header-button"
+                title="More"
+                onClick={() => setChatMenuOpen((open) => !open)}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <circle cx="12" cy="5" r="1.8" />
+                  <circle cx="12" cy="12" r="1.8" />
+                  <circle cx="12" cy="19" r="1.8" />
+                </svg>
+              </button>
+              {chatMenuOpen && (
+                <div className="chat-header-menu">
+                  <button type="button" onClick={() => { setChatMenuOpen(false); setShowTranslationDialog(true); }}>
+                    On-device translation…
+                  </button>
+                  <button type="button" onClick={() => { setChatMenuOpen(false); setShowSafetyNumber(true); }}>
+                    Encryption fingerprint
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setChatMenuOpen(false); if (partnerId) navigate(`/user/${partnerId}`); }}
+                  >
+                    View profile
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -2937,20 +3128,20 @@ const SecretPrivateChat = () => {
             <div className="secret-safety-panel" onClick={() => setShowSafetyNumber(false)}>
               {partnerKeyChanged && (
                 <div className="secret-safety-warning">
-                  ⚠️ Ключ собеседника изменился. Если он не переустанавливал приложение и не
-                  входил заново — сверьте отпечаток по другому каналу.
+                  ⚠️ Your contact's key has changed. If they did not reinstall the app or
+                  sign in again, compare the fingerprint over another channel.
                   <button
                     className="secret-safety-dismiss"
                     onClick={(e) => { e.stopPropagation(); setPartnerKeyChanged(false); }}
                   >
-                    Понятно
+                    Got it
                   </button>
                 </div>
               )}
-              <div className="secret-safety-title">Отпечаток ключей шифрования</div>
-              <div className="secret-safety-number">{safetyNumber || 'ключи ещё не загружены'}</div>
+              <div className="secret-safety-title">Encryption fingerprint</div>
+              <div className="secret-safety-number">{safetyNumber || 'keys are not loaded yet'}</div>
               <div className="secret-safety-hint">
-                Должен совпадать с отпечатком на устройстве собеседника.
+                It must match the fingerprint on your contact's device.
               </div>
             </div>
           )}
@@ -2958,8 +3149,13 @@ const SecretPrivateChat = () => {
       </div>
       <div className="secret-message-list" ref={messageListRef}>
         {messages.map((msg, index) => (
+          <React.Fragment key={msg.id}>
+          {startsNewDay(messages, index) && (
+            <div className="private-day-separator">
+              <span>{dayLabel(msg.timestamp)}</span>
+            </div>
+          )}
           <div
-            key={msg.id}
             className={`secret-message ${
               msg.sender.id === userId ? 'secret-current-user' : 'secret-other-user'
             } ${isFirstMessage(msg, index) ? 'first-message' : ''} ${
@@ -2970,7 +3166,7 @@ const SecretPrivateChat = () => {
             <div className="secret-message-wrapper">
               {shouldShowAvatar(msg, index) && (
                 <div className="secret-avatar-container">
-                  {msg.sender.avatar ? (
+                  {msg.sender.avatar && !brokenAvatars[msg.sender.id] ? (
                     <div className="secret-avatar-wrapper">
                       <img
                         src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
@@ -2978,6 +3174,9 @@ const SecretPrivateChat = () => {
                         className="secret-message-avatar"
                         onClick={() => handleAvatarClick(msg.sender.id)}
                         style={{ cursor: 'pointer' }}
+                        onError={() =>
+                          setBrokenAvatars((broken) => ({ ...broken, [msg.sender.id]: true }))
+                        }
                       />
                       {usersStatus[msg.sender.id]?.online && (
                         <span className="status-indicator-online-secretchat"></span>
@@ -3002,6 +3201,9 @@ const SecretPrivateChat = () => {
               <div
                 className={`secret-message-content-container ${
                   shouldShowAvatar(msg, index) ? '' : 'no-avatar'
+                } ${
+                  // Время в углу последней строки — только у простых сообщений
+                  msg.messageType !== 'audio' && msg.messageType !== 'file' && !msg.fileUrl ? 'inline-time' : ''
                 }`}
               >
                 <div className="secret-message-body">
@@ -3105,7 +3307,20 @@ const SecretPrivateChat = () => {
                           const st = parseSecretText(msg.content);
                           return (
                             <>
-                              <span className="secret-message-content">{st.text}</span>
+                              <span className="secret-message-content">
+                                {st.text}
+                                {/* Время — в конце последней строки, если перевода нет */}
+                                {inlineTime(msg) && !hasLocalTranslation() && (
+                                  <span className="private-message-footer inline">
+                                    <span className="secret-message-timestamp">{formatTimestamp(msg.timestamp)}</span>
+                                    {msg.sender.id === userId && (
+                                      <span className="secret-message-status">
+                                        <MessageChecks delivered={isDeliveredFlag(msg)} read={isReadFlag(msg)} />
+                                      </span>
+                                    )}
+                                  </span>
+                                )}
+                              </span>
                               <LocalTranslatedLine
                                 chatId={chatId}
                                 msgId={msg.id}
@@ -3133,7 +3348,17 @@ const SecretPrivateChat = () => {
                                 )}
                                 loading="lazy"
                                 onError={(e) => {
+                                  // Картинка не открылась — обычно файл потерян при
+                                  // переразвёртывании сервера. Прятать её молча нельзя:
+                                  // в пузыре остаётся пустая полоса без объяснения.
                                   e.target.style.display = 'none';
+                                  const box = e.target.parentElement;
+                                  if (box && !box.querySelector('.attachment-unavailable')) {
+                                    const note = document.createElement('span');
+                                    note.className = 'attachment-unavailable';
+                                    note.textContent = 'Image unavailable';
+                                    box.appendChild(note);
+                                  }
                                   console.warn('Ошибка загрузки превью:', msg.fileUrl);
                                 }}
                               />
@@ -3160,19 +3385,23 @@ const SecretPrivateChat = () => {
                         )}
                       </>
                     )}
-                    <div className="secret-message-status">
+                    {/* Время и галочки отдельной строкой — у вложений и там, где есть перевод */}
+                    {(!inlineTime(msg) || hasLocalTranslation()) && (
+                    <div className="private-message-footer">
+                      <div className="secret-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                       {msg.sender.id === userId && (
-                        <>
-                          <MessageChecks delivered={msg.delivered} read={msg.read} />
-                        </>
+                        <div className="secret-message-status">
+                          <MessageChecks delivered={isDeliveredFlag(msg)} read={isReadFlag(msg)} />
+                        </div>
                       )}
                     </div>
-                    <div className="secret-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
+          </React.Fragment>
         ))}
         <div ref={messagesEndRef} />
       </div>
@@ -3308,11 +3537,11 @@ const SecretPrivateChat = () => {
 
             <button
               className="full-screen-download-btn"
-              title="Скачать фото"
+              title="Download the photo"
               onClick={async () => {
                 try {
                   const response = await fetch(fullScreenImage.url);
-                  if (!response.ok) throw new Error('Не удалось загрузить фото');
+                  if (!response.ok) throw new Error('Could not download the photo');
                   const blob = await response.blob();
 
                   const url = URL.createObjectURL(blob);
@@ -3325,7 +3554,7 @@ const SecretPrivateChat = () => {
                   URL.revokeObjectURL(url);
                 } catch (err) {
                   console.error('Ошибка скачивания из полноэкранного:', err);
-                  toast.error('Не удалось скачать фото');
+                  toast.error('Could not download the photo');
                 }
               }}
             >

@@ -250,9 +250,16 @@
     padding-left: 24px;
 }
 
+/*
+  Отступ слева под значки перевода и озвучки больше не нужен: значки давно
+  стоят справа от пузыря, снаружи, — правило, прижимавшее их к левому краю,
+  перекрыто более поздним, и контейнеры встали в общий поток. Резерв же
+  остался и в коротких сообщениях давал широкую пустоту слева от текста,
+  какой нет ни в одном знакомом мессенджере.
+*/
 .sender-name.translate-enabled,
 .sender-name.tts-enabled {
-    padding-left: 28px;
+    padding-left: 0;
 }
 
 .message-content {
@@ -267,7 +274,7 @@
 
 .message-content.translate-enabled,
 .message-content.tts-enabled {
-    padding-left: 28px;
+    padding-left: 0;
 }
 
 .file-link {
@@ -282,7 +289,7 @@
 
 .file-link.translate-enabled,
 .file-link.tts-enabled {
-    padding-left: 28px;
+    padding-left: 0;
 }
 
 .message.current-user .file-link {
@@ -295,22 +302,32 @@
 }
 
 /* Временная метка (timestamp) */
+
+/*
+  Время — служебная пометка, а не часть сообщения.
+
+  Оно было того же цвета и почти того же размера, что и строка перевода, и
+  читалось как её продолжение. Делаем, как принято: время мельче и заметно
+  тусклее текста, перевод, наоборот, ближе к основному. Получается три
+  различимых уровня: текст — перевод — время.
+*/
 .message-timestamp {
-    font-size: 12px;
+    font-size: 11px;
     text-align: right;
     margin-top: 2px;
     font-family: 'Roboto', sans-serif;
     background: transparent !important;
+    letter-spacing: 0.2px;
 }
 
 /* Для ЧУЖИХ сообщений — оставляем как было (нормально видно) */
 .message.other-user .message-timestamp {
-    color: #94a3b8 !important;
+    color: #7a8798 !important;
 }
 
 /* Для СВОИХ сообщений — более светлый и контрастный цвет (как в личном чате) */
 .message.current-user .message-timestamp {
-    color: #e2e8f0 !important;   /* светлый серо-голубой, хорошо видимый на #6366f1 */
+    color: rgba(226, 232, 240, 0.72) !important;   /* видно, но тише текста */
 }
 
 .input-container {
@@ -542,7 +559,7 @@
 
 /* Для ЧУЖИХ сообщений — оставляем как было (нормально видно) */
 .message.other-user .translated-content {
-    color: #94a3b8 !important;
+    color: #cbd5e1 !important; /* ближе к основному тексту, чтобы не путалось со временем */
 }
 
 /* Для СВОИХ сообщений — делаем темнее и контрастнее */
@@ -1025,13 +1042,14 @@
     justify-content: center;
 }
 
-/* Для СВОИХ сообщений — тёмный цвет (как сейчас работает хорошо) */
+/* У своих сообщений тот же светло-фиолетовый значок, что и у чужих:
+   тёмный сливался с синим пузырём и выглядел пропавшим */
 .message.current-user .message-tts-translated-container .message-tts-translated-button {
-    color: #1e2937 !important;
+    color: #a78bfa !important;
 }
 
 .message.current-user .message-tts-translated-container .message-tts-translated-button:hover {
-    color: #02040a !important;
+    color: #c4b5fd !important;
     transform: scale(1.25);
     opacity: 1;
 }
@@ -1821,17 +1839,17 @@
 
     .sender-name.translate-enabled,
     .sender-name.tts-enabled {
-        padding-left: 22px;
+        padding-left: 0;
     }
 
     .message-content.translate-enabled,
     .message-content.tts-enabled {
-        padding-left: 22px;
+        padding-left: 0;
     }
 
     .file-link.translate-enabled,
     .file-link.tts-enabled {
-        padding-left: 22px;
+        padding-left: 0;
     }
 
     .message-tts-container {
@@ -2136,4 +2154,88 @@
     .message.other-user .audio-time {
         color: #e2e8f0 !important;
     }
+}
+/*
+  Время в строке с текстом — так же, как в личной переписке.
+
+  Отдельная строка со временем раздувала короткие сообщения: ширину пузыря
+  задавал не текст, а подпись. Невидимая распорка держит место в последней
+  строке, время садится в правый нижний угол.
+*/
+.message-content-container.inline-time {
+  position: relative;
+  /* Пузырю задан нижний предел размера — он нужен вложениям и плееру, но
+     короткую реплику раздувает и отправляет время под текст. Простым
+     сообщениям предел не нужен: они занимают ровно место текста. */
+  min-width: 0;
+  min-height: 0;
+}
+
+/*
+  Свои сообщения растягивались на всю доступную ширину (width: 100%), и из-за
+  этого ширина пузыря считалась не по содержимому: текста со временем не
+  хватало пары пикселей, и время срывалось на вторую строку. Простому
+  сообщению растягиваться незачем — пусть обжимает текст.
+*/
+.message-content-container.inline-time,
+.message-content-container.inline-time.no-avatar {
+  width: auto !important;
+  /*
+    Предел ширины пузыря был задан долей от родителя, а ширина родителя сама
+    считается по содержимому — получался замкнутый круг, и пузырю не хватало
+    пары пикселей: время срывалось на вторую строку. Ограничение и так есть
+    выше, у самого сообщения, здесь оно лишнее.
+  */
+  max-width: 100% !important;
+}
+
+/* Время прямо в строке: идёт за текстом и прижимается к его низу */
+.message-timestamp.inline {
+    display: inline-block;
+    margin-left: 8px;
+    margin-top: 0;
+    vertical-align: bottom;
+    white-space: nowrap;
+    position: relative;
+    top: 2px;
+}
+
+/*
+  Вложение, которого больше нет на сервере. Подпись в том же духе, что у
+  недоступного голосового: человек видит, что файл не открылся, а не пустое
+  место непонятного происхождения.
+*/
+.attachment-unavailable {
+  display: block;
+  font-style: italic;
+  font-size: 13px;
+  color: #94a3b8;
+  padding: 2px 0;
+}
+
+
+/*
+  Шапка группы открывает её настройки, поэтому ведёт себя как кнопка:
+  курсор-палец, подсветка под мышью и видимая рамка при обходе с клавиатуры.
+*/
+.header-content-clickable {
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 2px 6px;
+  margin-left: -6px;
+  transition: background 0.15s ease;
+}
+
+.header-content-clickable:hover {
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.header-content-clickable:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+/* Картинка группы в шапке — тот же кружок, что и у кружка с буквой */
+.chat-header-group .partner-avatar-container img.partner-avatar {
+  object-fit: cover;
 }

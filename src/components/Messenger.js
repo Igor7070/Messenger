@@ -21,6 +21,9 @@ import useGroupChatTranslationAndSpellCheck from '../hooks/useGroupChatTranslati
 import sodium from 'libsodium-wrappers';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import AiMessageGeneratorDialog from './AiMessageGeneratorDialog';
+import GroupMembersDialog from './GroupMembersDialog';
+import { chatAvatarUrl } from '../api/chatMembers';
+import { getChatById } from '../api/chats';
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
@@ -69,6 +72,64 @@ const sendPublicKeyToServer = async (userId, publicKey) => {
   }
 };
 
+
+/**
+ * Разделители дат в ленте: без них сообщения разных дней идут подряд и
+ * непонятно, где кончился вчерашний разговор.
+ */
+
+/** Сообщение, состоящее из одной ссылки: переводить в нём нечего. */
+/**
+ * Можно ли подвёрстать время в конец последней строки текста.
+ * У голосовых, файлов и превью ссылок своя раскладка — там время остаётся
+ * отдельной строкой, иначе оно наложится на плеер или картинку.
+ */
+const canFitTimeInline = (msg, previews) =>
+  msg.messageType !== 'audio' && !msg.fileUrl && !previews[msg.id];
+
+const isLinkOnly = (text) => {
+  const trimmed = String(text || '').trim();
+  return /^https?:\/\/\S+$/i.test(trimmed);
+};
+
+/**
+ * Есть ли у сообщения перевод, который действительно покажут.
+ *
+ * Поле перевода бывает заполнено пробелами — от прежних попыток перевести или
+ * от выключения перевода. Такой «перевод» рисовался пустой строкой: в пузыре
+ * появлялась полоса пустоты, а время съезжало под неё. У соседних сообщений
+ * без этого следа время оставалось в строке — отсюда разнобой в ленте.
+ */
+const hasTranslation = (msg) =>
+  Boolean(msg.translatedContent && String(msg.translatedContent).trim()) && !isLinkOnly(msg.content);
+
+
+const dayKey = (timestamp) => {
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? '' : date.toDateString();
+};
+
+const dayLabel = (timestamp) => {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '';
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (date.toDateString() === today.toDateString()) return 'Today';
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  const sameYear = date.getFullYear() === today.getFullYear();
+  return date.toLocaleDateString([], sameYear
+    ? { day: 'numeric', month: 'long' }
+    : { day: 'numeric', month: 'long', year: 'numeric' });
+};
+
+const startsNewDay = (messages, index) => {
+  const current = dayKey(messages[index]?.timestamp);
+  if (!current) return false;
+  if (index === 0) return true;
+  return current !== dayKey(messages[index - 1]?.timestamp);
+};
+
 const Messenger = () => {
     const [messages, setMessages] = useState([]);
     const [content, setContent] = useState('');
@@ -84,6 +145,12 @@ const Messenger = () => {
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
     const [chatName, setChatName] = useState('');
+    // Карточка группы целиком: панели участников нужны картинка и признак
+    // публичности, а шапке — картинка вместо кружка с буквой.
+    const [chatInfo, setChatInfo] = useState(null);
+    const [showMembers, setShowMembers] = useState(false);
+    const [knownUsers, setKnownUsers] = useState([]);
+    const [chatAvatarBroken, setChatAvatarBroken] = useState(false);
     const [currentUserId, setCurrentUserId] = useState(null);
 
     const textAreaRef = useRef(null);
@@ -105,6 +172,11 @@ const Messenger = () => {
     const [translationQueue, setTranslationQueue] = useState([]);
     const [isTranslating, setIsTranslating] = useState(false);
     const [showTranslationModal, setShowTranslationModal] = useState(false);
+    const [chatMenuOpen, setChatMenuOpen] = useState(false);
+    // Картинки на сервере пропадают при переразвёртывании: если аватарка не
+    // открылась, показываем кружок с буквой, а не битый значок
+    const [brokenAvatars, setBrokenAvatars] = useState({});
+    const chatMenuRef = useRef(null);
     const [showTranscriptionModal, setShowTranscriptionModal] = useState(false); // ДОБАВЛЕНО: Для модального окна транскрипции
 
     const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
@@ -135,6 +207,10 @@ const Messenger = () => {
     const [isTranscribing, setIsTranscribing] = useState(false);
 
     const [previewData, setPreviewData] = useState({}); // ДОБАВЛЕНО: Кэш превью ссылок
+    // Картинки, которых больше нет на сервере: вместо пустоты показываем подпись
+    const [brokenImages, setBrokenImages] = useState({});
+    /** Короткая обёртка: превью ссылок живут в состоянии компонента. */
+    const inlineTime = (msg) => canFitTimeInline(msg, previewData);
     const [fullScreenImage, setFullScreenImage] = useState(null);
 
     const [openAiDialog, setOpenAiDialog] = useState(false);
@@ -189,15 +265,24 @@ const Messenger = () => {
     }, [messages]);
 
     // Форматирование временной метки
+
+    // Меню в шапке закрывается щелчком мимо него
+    useEffect(() => {
+        if (!chatMenuOpen) return undefined;
+        const closeOnOutside = (event) => {
+            if (chatMenuRef.current && !chatMenuRef.current.contains(event.target)) setChatMenuOpen(false);
+        };
+        document.addEventListener('mousedown', closeOnOutside);
+        return () => document.removeEventListener('mousedown', closeOnOutside);
+    }, [chatMenuOpen]);
+
     const formatTimestamp = (timestamp) => {
         if (!timestamp) return '';
         try {
             const date = parseISO(timestamp);
             const kievDate = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Kiev' }));
-            if (isToday(kievDate)) {
-                return format(kievDate, 'HH:mm');
-            }
-            return format(kievDate, 'dd.MM.yy');
+            // В пузыре только время: день обозначает разделитель в ленте
+            return format(kievDate, 'HH:mm');
         } catch (error) {
             console.error('Error formatting timestamp:', error);
             return '';
@@ -344,8 +429,9 @@ const Messenger = () => {
                   return result;
               });
               setMessages(updatedMessages);
-              const name = await getChatName(chatId);
-              setChatName(name);
+              const chat = await getChatById(chatId);
+              setChatName(chat.name);
+              setChatInfo(chat);
               if (updatedMessages.length > 0) {
                   localStorage.setItem(`last_visit_chat_${chatId}`, updatedMessages[updatedMessages.length - 1].timestamp);
               }
@@ -361,6 +447,28 @@ const Messenger = () => {
 
       initializeChat();
     }, [chatId, setContextUserId, setNotificationUserId, navigate]);
+
+    // Люди для «добавить в группу» — запрашиваем, только когда панель открыта:
+    // на экране переписки этот список не нужен.
+    useEffect(() => {
+      if (!showMembers || knownUsers.length) return;
+      fetch('https://unlimitedpossibilities12.org/api/users')
+        .then((response) => (response.ok ? response.json() : []))
+        .then((people) => setKnownUsers(Array.isArray(people) ? people : []))
+        .catch(() => setKnownUsers([]));
+    }, [showMembers, knownUsers.length]);
+
+    // После правок в панели перечитываем карточку: имя и картинка в шапке
+    // должны смениться сразу, а не после повторного захода в чат.
+    const reloadChatInfo = () => {
+      getChatById(chatId)
+        .then((chat) => {
+          setChatInfo(chat);
+          setChatName(chat.name);
+          setChatAvatarBroken(false);
+        })
+        .catch((error) => console.warn('Could not refresh the group card:', error));
+    };
 
     useEffect(() => {
       if (isTranslationEnabled && translationMode === 'all' && messages.length > 0) {
@@ -391,6 +499,22 @@ const Messenger = () => {
         }
     }, [isTranslationEnabled, isTranscriptionEnabled]);
 
+    /*
+    Настройки перевода и расшифровки держим в ссылке, а не в зависимостях
+    подписки. Прежде соединение пересобиралось ещё дважды сразу после входа в
+    чат — настройки читаются из памяти браузера уже после первого рисования.
+    Каждое лишнее подключение занимает соединение к серверу, а их у браузера
+    на один сайт всего шесть.
+  */
+    const liveRef = useRef({});
+    liveRef.current = {
+        isTranslationEnabled,
+        translationMode,
+        isTranscriptionEnabled,
+        transcriptionMode,
+        isMessageNew,
+    };
+
     useEffect(() => {
         const stompClientInstance = new Client({
             connectHeaders: stompAuthHeaders(),
@@ -400,15 +524,15 @@ const Messenger = () => {
                 stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
                     updateMessages(newMessage);
-                    if (isTranslationEnabled && (translationMode === 'new' || translationMode === 'all') && isMessageNew(newMessage)) {
+                    if (liveRef.current.isTranslationEnabled && (liveRef.current.translationMode === 'new' || liveRef.current.translationMode === 'all') && liveRef.current.isMessageNew(newMessage)) {
                         setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
                     }
                     if (
-                        isTranscriptionEnabled &&
-                        (transcriptionMode === 'new' || transcriptionMode === 'all') &&
+                        liveRef.current.isTranscriptionEnabled &&
+                        (liveRef.current.transcriptionMode === 'new' || liveRef.current.transcriptionMode === 'all') &&
                         newMessage.messageType === 'audio' &&
                         newMessage.fileUrl &&
-                        isMessageNew(newMessage)
+                        liveRef.current.isMessageNew(newMessage)
                     ) {
                         setTranscriptionQueue((prevQueue) => [...prevQueue, newMessage]);
                     }
@@ -425,7 +549,7 @@ const Messenger = () => {
         return () => {
             stompClientInstance.deactivate();
         };
-    }, [chatId, isTranslationEnabled, translationLanguage, translationMode, isMessageNew, isTranscriptionEnabled, transcriptionMode]);
+    }, [chatId]);
 
     useEffect(() => {
         const handleClick = () => {
@@ -1109,7 +1233,7 @@ const Messenger = () => {
                     ...prevData,
                     isReady: false,
                     isPlaying: false,
-                    error: 'Failed to load audio: connection issue',
+                    error: 'Voice message unavailable',
                 },
             };
         });
@@ -1584,69 +1708,120 @@ const Messenger = () => {
     <div className="messenger">
       {/* Большая фиксированная иконка ассистента — только в Messenger на ПК */}
       <AssistantIcon size="large" className="fixed-app-bottom-right" />
+      {/*
+        Шапка групповой переписки: слева кружок с буквой, имя и состояние,
+        справа меню. Четыре эмодзи-кнопки режимов переехали в меню — их
+        включают редко, а место занимали постоянно.
+      */}
       <div className="chat-header-group">
-        <div className="chat-name-mobile">Group Chat: {chatName}</div>
-        <div className="icons-row">
-          <div className="transcription-controls">
-            <button
-              className="transcription-button"
-              onClick={() => setShowTranscriptionModal(true)}
-              data-tooltip={isTranscriptionEnabled ? 'Transcription is ON' : 'Transcription is OFF'}
-              style={{ color: isTranscriptionEnabled ? '#42a5f5' : '#B0BEC5' }}
-            >
-              🎤
-            </button>
-            {isTranscriptionEnabled && <span className="transcription-indicator">ON</span>}
-            <button
-              className="tts-button"
-              onClick={() => {
-                setIsTTSEnabled((prev) => {
-                  const newState = !prev;
-                  localStorage.setItem(`tts_enabled_${chatId}`, newState);
-                  if (!newState) {
-                    if (ttsAudioRef.current) {
-                      ttsAudioRef.current.pause();
-                      ttsAudioRef.current = null;
-                    }
-                  }
-                  return newState;
-                });
-              }}
-              data-tooltip={isTTSEnabled ? 'Text-to-speech is ON' : 'Text-to-speech is OFF'}
-              style={{ color: isTTSEnabled ? '#42a5f5' : '#B0BEC5' }}
-            >
-              🔊
-            </button>
-            {isTTSEnabled && <span className="tts-indicator">ON</span>}
+        {/*
+          Шапка — вход в настройки группы: по ней нажимают, чтобы увидеть
+          участников, сменить имя и картинку, выдать ссылку-приглашение.
+          Раньше всё это открывалось только со страницы контактов, и в самой
+          переписке владелец не мог сделать с чатом ничего.
+        */}
+        <div
+          className="header-content header-content-clickable"
+          role="button"
+          tabIndex={0}
+          title="Group info, members and settings"
+          onClick={() => setShowMembers(true)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setShowMembers(true);
+            }
+          }}
+        >
+          <div className="partner-avatar-container">
+            {chatAvatarUrl(chatInfo) && !chatAvatarBroken ? (
+              <img
+                src={chatAvatarUrl(chatInfo)}
+                alt=""
+                className="partner-avatar"
+                onError={() => setChatAvatarBroken(true)}
+              />
+            ) : (
+              <div className="partner-avatar placeholder">
+                {(chatName || '?').trim().charAt(0).toUpperCase()}
+              </div>
+            )}
           </div>
-          <div className="translation-controls">
+          <div className="partner-info">
+            <div className="partner-name">{chatName}</div>
+            <div className="chat-status-line">
+              <span className="chat-status-text">Group chat</span>
+              {isTranslationEnabled && (
+                <span className="chat-mode-chip" title="Incoming messages are translated">
+                  {translationLanguage && translationLanguage !== 'auto'
+                    ? `→${translationLanguage.toUpperCase()}`
+                    : 'TRANSLATE'}
+                </span>
+              )}
+              {isTranscriptionEnabled && (
+                <span className="chat-mode-chip" title="Voice messages are transcribed">→TEXT</span>
+              )}
+              {isTTSEnabled && (
+                <span className="chat-mode-chip" title="Incoming messages are read aloud">→AUDIO</span>
+              )}
+              {isSpellCheckEnabled && (
+                <span className="chat-mode-chip" title="Your text is corrected before sending">SPELL</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="chat-header-actions">
+          <div className="chat-header-menu-wrap" ref={chatMenuRef}>
             <button
-              className="spellcheck-button"
-              onClick={handleSpellCheckToggle}
-              data-tooltip={isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF'}
-              style={{ color: isSpellCheckEnabled ? '#42a5f5' : '#B0BEC5' }}
+              type="button"
+              className="chat-header-button"
+              title="More"
+              onClick={() => setChatMenuOpen((open) => !open)}
             >
-              ✍️
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <circle cx="12" cy="5" r="1.8" />
+                <circle cx="12" cy="12" r="1.8" />
+                <circle cx="12" cy="19" r="1.8" />
+              </svg>
             </button>
-            {isSpellCheckEnabled && <span className="spellcheck-indicator">SC</span>}
-            <button
-              className="translation-button"
-              onClick={() => setShowTranslationModal(true)}
-              data-tooltip="Toggle translation for messages"
-              style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
-            >
-              🌐
-            </button>
-            {isTranslationEnabled && (
-              <span className="translation-indicator">
-                {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
-              </span>
+            {chatMenuOpen && (
+              <div className="chat-header-menu">
+                <button type="button" onClick={() => { setChatMenuOpen(false); setShowMembers(true); }}>
+                  Group info…
+                </button>
+                <button type="button" onClick={() => { setChatMenuOpen(false); setShowTranslationModal(true); }}>
+                  Translation…
+                </button>
+                <button type="button" onClick={() => { setChatMenuOpen(false); setShowTranscriptionModal(true); }}>
+                  Transcription…
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setChatMenuOpen(false);
+                    setIsTTSEnabled((prev) => {
+                      const newState = !prev;
+                      localStorage.setItem(`tts_enabled_${chatId}`, newState);
+                      if (!newState && ttsAudioRef.current) {
+                        ttsAudioRef.current.pause();
+                        ttsAudioRef.current = null;
+                      }
+                      return newState;
+                    });
+                  }}
+                >
+                  <span>Read aloud</span>
+                  <span className={`chat-menu-switch ${isTTSEnabled ? 'on' : ''}`} />
+                </button>
+                <button type="button" onClick={() => { setChatMenuOpen(false); handleSpellCheckToggle(); }}>
+                  <span>Spellcheck</span>
+                  <span className={`chat-menu-switch ${isSpellCheckEnabled ? 'on' : ''}`} />
+                </button>
+              </div>
             )}
           </div>
         </div>
-        {/* Маленькая иконка ассистента — по центру в ряду */}
-        <AssistantIcon size="header" className="mobile-header-icon" />
-        <div className="chat-name">Group Chat: {chatName}</div>
       </div>
       {showTranslationModal && (
         <TranslationSettingsModal
@@ -1662,36 +1837,19 @@ const Messenger = () => {
           onClose={() => setShowTranscriptionModal(false)}
         />
       )}
-      <div className="user-creation">
-        {!isLoggedIn ? (
-          <>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter username"
-              className="input-username"
-            />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
-              className="input-password"
-            />
-            <button onClick={handleCreateUser} className="create-user-button">Create User</button>
-            <button onClick={handleLogin} className="login-button">Login</button>
-          </>
-        ) : (
-          <button onClick={handleLogout} className="logout-button">Logout</button>
-        )}
-      </div>
+      {/* Вход и выход убраны из окна группового чата: попасть сюда без
+          аккаунта нельзя, а выход лежит в меню профиля */}
       {errorMessage && <div className="error-message">{errorMessage}</div>}
       <div className="message-list" ref={messageListRef}>
         {messages.map((msg, index) => (
           msg.sender ? (
+            <React.Fragment key={msg.id}>
+            {startsNewDay(messages, index) && (
+              <div className="private-day-separator">
+                <span>{dayLabel(msg.timestamp)}</span>
+              </div>
+            )}
             <div
-              key={msg.id}
               className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'} ${
                 msg.messageType === 'audio' ? 'audio-message' : ''
               }`}
@@ -1700,7 +1858,7 @@ const Messenger = () => {
               <div className="message-wrapper">
                 {shouldShowAvatar(msg) && (
                   <div className="avatar-container">
-                    {msg.sender.avatar ? (
+                    {msg.sender.avatar && !brokenAvatars[msg.sender.id] ? (
                       <div className="avatar-wrapper">
                         <img
                           src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
@@ -1708,6 +1866,9 @@ const Messenger = () => {
                           className="message-avatar"
                           onClick={() => handleAvatarClick(msg.sender.id)}
                           style={{ cursor: 'pointer' }}
+                          onError={() =>
+                            setBrokenAvatars((broken) => ({ ...broken, [msg.sender.id]: true }))
+                          }
                         />
                         {usersStatus[msg.sender.id]?.online && (
                           <span className="status-indicator-online-groupchat"></span>
@@ -1729,7 +1890,7 @@ const Messenger = () => {
                     )}
                   </div>
                 )}
-                <div className={`message-content-container ${shouldShowAvatar(msg) ? '' : 'no-avatar'}`}>
+                <div className={`message-content-container ${shouldShowAvatar(msg) ? '' : 'no-avatar'} ${inlineTime(msg) ? 'inline-time' : ''}`}>
                   <div className="message-body">
                     {msg.sender.id !== userId && (
                       <span
@@ -1874,9 +2035,13 @@ const Messenger = () => {
                                     {renderTextWithLinks(
                                         msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent
                                     )}
+                                    {/* Время — в конце последней строки текста */}
+                                    {inlineTime(msg) && !hasTranslation(msg) && (
+                                        <span className="message-timestamp inline">{formatTimestamp(msg.timestamp)}</span>
+                                    )}
                                 </span>
 
-                                {msg.translatedContent && (
+                                {hasTranslation(msg) && (
                                     <span className="translated-content">
                                         {renderTextWithLinks(msg.translatedContent)}
                                     </span>
@@ -1886,17 +2051,26 @@ const Messenger = () => {
                             {/* Превью изображения — показываем только если тип = image и есть fileUrl */}
                             {msg.fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && (
                                 <div className="image-preview-container">
-                                    <img
-                                        src={msg.fileUrl}
-                                        alt="Изображение в сообщении"
-                                        className="message-image-preview"
-                                        onClick={() => openFullScreenImage(msg.fileUrl)}
-                                        loading="lazy"  // ускоряет загрузку списка
-                                        onError={(e) => {
-                                            e.target.style.display = 'none';
-                                            console.warn('Ошибка загрузки изображения:', msg.fileUrl);
-                                        }}
-                                    />
+                                    {/*
+                                      Картинка не открылась — обычно файл потерян при
+                                      переразвёртывании сервера. Раньше её прятали, и в
+                                      пузыре оставалась пустая полоса без объяснения.
+                                    */}
+                                    {brokenImages[msg.id] ? (
+                                        <span className="attachment-unavailable">Image unavailable</span>
+                                    ) : (
+                                        <img
+                                            src={msg.fileUrl}
+                                            alt="Изображение в сообщении"
+                                            className="message-image-preview"
+                                            onClick={() => openFullScreenImage(msg.fileUrl)}
+                                            loading="lazy"
+                                            onError={() => {
+                                                console.warn('Ошибка загрузки превью в групповом чате:', msg.fileUrl);
+                                                setBrokenImages((broken) => ({ ...broken, [msg.id]: true }));
+                                            }}
+                                        />
+                                    )}
                                 </div>
                             )}
 
@@ -1913,18 +2087,12 @@ const Messenger = () => {
                                 </a>
                             )}
 
-                            {/* Обычная ссылка на скачивание — только если НЕ изображение и НЕ аудио */}
-                            {msg.fileUrl && msg.messageType !== 'image' && msg.messageType !== 'audio' && (
-                                <a
-                                    href={msg.fileUrl}
-                                    download
-                                    className={`file-link ${
-                                        isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
-                                    } ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
-                                >
-                                    📥 Download file
-                                </a>
-                            )}
+                            {/*
+                              Второй такой же блок ссылки отсюда убран: его условие
+                              («тип не image и не audio») пересекалось с условием выше,
+                              и у вложений вроде pdf «Download file» показывалось дважды,
+                              а у картинок ссылка висела под самим изображением.
+                            */}
 
                             {/* Превью ссылки (оставляем как было) */}
                             {msg.messageType !== 'audio' && 
@@ -2031,7 +2199,7 @@ const Messenger = () => {
                                 onMouseLeave={hideTooltip}
                                 data-tooltip="Listen to translated message"
                               >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a148c" xmlns="http://www.w3.org/2000/svg">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                                   <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
                                 </svg>
                               </button>
@@ -2039,11 +2207,15 @@ const Messenger = () => {
                         )}
                       </div>
                     )}
-                    <div className="message-timestamp">{formatTimestamp(msg.timestamp)}</div>
+                    {/* Отдельной строкой — у вложений и под переводом */}
+                    {(!inlineTime(msg) || hasTranslation(msg)) && (
+                      <div className="message-timestamp">{formatTimestamp(msg.timestamp)}</div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
+            </React.Fragment>
           ) : null
         ))}
         <div ref={messagesEndRef} />
@@ -2191,7 +2363,7 @@ const Messenger = () => {
               href={fullScreenImage}
               download
               className="full-screen-download-btn"
-              title="Скачать фото"
+              title="Download the photo"
             >
               ↓
             </a>
@@ -2207,6 +2379,15 @@ const Messenger = () => {
           callType={incomingCall.type}
           onAccept={() => acceptCall(navigate)}
           onReject={rejectCall}
+        />
+      )}
+      {showMembers && (
+        <GroupMembersDialog
+          chat={chatInfo || { id: chatId, name: chatName }}
+          currentUserId={currentUserId}
+          allUsers={knownUsers}
+          onClose={() => setShowMembers(false)}
+          onChanged={reloadChatInfo}
         />
       )}
       <AiMessageGeneratorDialog

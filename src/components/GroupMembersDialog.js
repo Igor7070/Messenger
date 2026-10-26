@@ -16,6 +16,10 @@ const GroupMembersDialog = ({ chat, currentUserId, allUsers = [], onClose, onCha
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState('');
   const [isPublic, setIsPublic] = useState(!(chat.isPublic === false));
+  // Имя правится на месте, поэтому держим два значения: что набрано в поле и
+  // что уже сохранено — заголовок и кнопка смотрят на сохранённое.
+  const [name, setName] = useState(chat.name || '');
+  const [title, setTitle] = useState(chat.name || '');
 
   const myRole = members.find((m) => String(m.userId) === String(currentUserId))?.role;
   const isOwner = myRole === 'OWNER';
@@ -53,6 +57,22 @@ const GroupMembersDialog = ({ chat, currentUserId, allUsers = [], onClose, onCha
     }
   };
 
+  /** Имя группы меняют владелец и админы; остальным кнопки не видно. */
+  const rename = async () => {
+    const next = name.trim();
+    if (!next || next === title) return;
+    try {
+      await api.updateChat(chat.id, { name: next });
+      setTitle(next);
+      toast.success('Group renamed');
+      if (onChanged) onChanged();
+    } catch (error) {
+      console.error('Rename failed:', error);
+      toast.error(error.message || 'The server refused this action');
+      setName(title); // возвращаем поле к тому, что на сервере
+    }
+  };
+
   const copyLink = async (token) => {
     const link = api.inviteLink(token);
     try {
@@ -76,26 +96,40 @@ const GroupMembersDialog = ({ chat, currentUserId, allUsers = [], onClose, onCha
             <img src={api.chatAvatarUrl(chat)} alt="" className="group-members-avatar" />
           ) : (
             <div className="group-members-avatar group-members-avatar-letter">
-              {(chat.name || '?').trim().charAt(0).toUpperCase()}
+              {(title || '?').trim().charAt(0).toUpperCase()}
             </div>
           )}
-          <h3>{chat.name}</h3>
+          <h3>{title}</h3>
         </div>
 
         {canManage && (
-          <label className="group-members-avatar-pick">
+          <div className="group-members-settings">
             <input
-              type="file"
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={(e) => {
-                const file = e.target.files && e.target.files[0];
-                if (!file) return;
-                act(() => api.uploadChatAvatar(chat.id, file), 'Group picture updated');
-              }}
+              type="text"
+              className="group-members-rename"
+              value={name}
+              maxLength={60}
+              placeholder="Group name"
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') rename(); }}
             />
-            Change picture
-          </label>
+            <button disabled={!name.trim() || name.trim() === title} onClick={rename}>
+              Rename
+            </button>
+            <label className="group-members-avatar-pick">
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files && e.target.files[0];
+                  if (!file) return;
+                  act(() => api.uploadChatAvatar(chat.id, file), 'Group picture updated');
+                }}
+              />
+              Change picture
+            </label>
+          </div>
         )}
 
         {loading ? (

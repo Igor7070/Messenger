@@ -1,4 +1,6 @@
 import MessageChecks from './MessageChecks';
+import { isReadFlag, isDeliveredFlag } from '../api/messageFlags';
+import { findPartner, partnerNameFromChat } from '../api/participants';
 import { stompAuthHeaders } from '../authToken';
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Client } from '@stomp/stompjs';
@@ -22,6 +24,65 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 import TranscriptionSettingsModal from './TranscriptionSettingsModal';
 import AiMessageGeneratorDialog from './AiMessageGeneratorDialog';
 
+
+/**
+ * Разделители дат в ленте. Без них сообщения разных дней идут подряд, и
+ * непонятно, где кончился вчерашний разговор, — так во всех мессенджерах.
+ */
+
+/** Сообщение, состоящее из одной ссылки: переводить в нём нечего. */
+/**
+ * Можно ли подвёрстать время в конец последней строки текста.
+ *
+ * У голосовых, файлов и превью ссылок своя раскладка — там время остаётся
+ * отдельной строкой, иначе оно наложилось бы на плеер или картинку.
+ */
+const canFitTimeInline = (msg, previews) =>
+  msg.messageType !== 'audio' && !msg.fileUrl && !previews[msg.id];
+
+const isLinkOnly = (text) => {
+  const trimmed = String(text || '').trim();
+  return /^https?:\/\/\S+$/i.test(trimmed);
+};
+
+/**
+ * Есть ли у сообщения перевод, который действительно покажут.
+ *
+ * Поле перевода бывает заполнено пробелами — от прежних попыток перевести или
+ * от выключения перевода. Такой «перевод» рисовался пустой строкой: в пузыре
+ * появлялась полоса пустоты, а время съезжало под неё. У соседних сообщений
+ * без этого следа время оставалось в строке — отсюда разнобой в ленте.
+ */
+const hasTranslation = (msg) =>
+  Boolean(msg.translatedContent && String(msg.translatedContent).trim()) && !isLinkOnly(msg.content);
+
+
+const dayKey = (timestamp) => {
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? '' : date.toDateString();
+};
+
+const dayLabel = (timestamp) => {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '';
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (date.toDateString() === today.toDateString()) return 'Today';
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  const sameYear = date.getFullYear() === today.getFullYear();
+  return date.toLocaleDateString([], sameYear
+    ? { day: 'numeric', month: 'long' }
+    : { day: 'numeric', month: 'long', year: 'numeric' });
+};
+
+const startsNewDay = (messages, index) => {
+  const current = dayKey(messages[index]?.timestamp);
+  if (!current) return false;
+  if (index === 0) return true;
+  return current !== dayKey(messages[index - 1]?.timestamp);
+};
+
 const PrivateChat = () => {
   const [messages, setMessages] = useState([]);
   const [content, setContent] = useState('');
@@ -33,6 +94,13 @@ const PrivateChat = () => {
   const [chatName, setChatName] = useState('');
   const [displayChatName, setDisplayChatName] = useState('');
   const [editingMessageId, setEditingMessageId] = useState(null);
+  // Файлы на сервере пропадают при переразвёртывании: если картинка не
+  // открылась, показываем кружок с буквой, а не битый значок
+  const [brokenAvatars, setBrokenAvatars] = useState({});
+  // Картинки, которых больше нет на сервере: вместо пустоты показываем подпись
+  const [brokenImages, setBrokenImages] = useState({});
+  const [chatMenuOpen, setChatMenuOpen] = useState(false);
+  const chatMenuRef = useRef(null);
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
   const messagesEndRef = useRef(null);
   const messageListRef = useRef(null);
@@ -174,38 +242,43 @@ const PrivateChat = () => {
       try {
         const chatData = await getChatById(chatIdParam);
         setChatName(chatData.name);
-        const names = chatData.name.split('_');
-        const interlocutorName = names.find((name) => name !== username);
-        setDisplayChatName(`Chat with ${interlocutorName}`);
         setChatId(chatIdParam);
         setCurrentChatId(chatIdParam);
 
-        // ────────────────────────────────────────────────────────────────
-        // НАЧАЛО ВСТАВЛЕННОГО БЛОКА — получение аватара и ID собеседника
+        /*
+          Собеседника спрашиваем у сервера, а не вычисляем из имени чата.
+          Имя складывается из имён обоих через «_», а оно само может
+          содержать «_»: тогда разбор давал несуществующее имя, запрос
+          такого человека возвращал 404 и переписка не открывалась.
+          Разбор имени остаётся запасным путём для прежних данных.
+        */
+        let interlocutorName = '';
         try {
-          const partnerResponse = await fetch(
-            `https://unlimitedpossibilities12.org/api/users/by-username/${interlocutorName}`
-          );
-
-          if (partnerResponse.ok) {
-            const partnerData = await partnerResponse.json();
-            setPartnerId(partnerData.id);
-            setPartnerAvatar(partnerData.avatar); // предполагается, что avatar — это строка, например "/uploads/avatars/xxx.jpg"
-            console.log('Аватар и ID собеседника успешно загружены:', {
-              id: partnerData.id,
-              username: partnerData.username,
-              avatar: partnerData.avatar
-            });
+          const partner = await findPartner(chatIdParam, localStorage.getItem('userId'));
+          if (partner) {
+            interlocutorName = partner.username;
+            setPartnerId(partner.id);
+            setPartnerAvatar(partner.avatar);
           } else {
-            console.warn(
-              `Не удалось загрузить данные собеседника "${interlocutorName}", статус: ${partnerResponse.status}`
+            interlocutorName = partnerNameFromChat(chatData.name, username);
+            const partnerResponse = await fetch(
+              `https://unlimitedpossibilities12.org/api/users/by-username/${interlocutorName}`
             );
+            if (partnerResponse.ok) {
+              const partnerData = await partnerResponse.json();
+              setPartnerId(partnerData.id);
+              setPartnerAvatar(partnerData.avatar);
+            } else {
+              console.warn(
+                `Не удалось загрузить данные собеседника "${interlocutorName}", статус: ${partnerResponse.status}`
+              );
+            }
           }
         } catch (fetchError) {
-          console.error('Ошибка при запросе аватара/ID собеседника:', fetchError);
+          console.error('Ошибка при запросе данных собеседника:', fetchError);
+          interlocutorName = interlocutorName || partnerNameFromChat(chatData.name, username);
         }
-        // КОНЕЦ ВСТАВЛЕННОГО БЛОКА
-        // ────────────────────────────────────────────────────────────────
+        setDisplayChatName(`Chat with ${interlocutorName}`);
 
         const initialMessages = await getMessages(chatIdParam);
         const updatedMessages = initialMessages.map((msg) => {
@@ -261,7 +334,7 @@ const PrivateChat = () => {
         }, 0); // Прокрутка после загрузки
       } catch (error) {
         console.error('Ошибка при загрузке данных о чате:', error);
-        toast.error('Не удалось загрузить данные чата');
+        toast.error('Failed to load the conversation');
         navigate('/');
       }
     };
@@ -294,6 +367,26 @@ const PrivateChat = () => {
     }
   }, [isTranslationEnabled, messages, clearTranslations]);
 
+  /*
+    Настройки перевода и расшифровки держим в ссылке, а не в зависимостях
+    подписки. Прежде соединение пересобиралось ещё дважды сразу после входа в
+    чат — настройки читаются из памяти браузера уже после первого рисования.
+    Каждое лишнее подключение занимает соединение к серверу, а их у браузера
+    на один сайт всего шесть.
+  */
+  /** Короткая обёртка: превью ссылок живут в состоянии компонента. */
+  const inlineTime = (msg) => canFitTimeInline(msg, previewData);
+
+  const liveRef = useRef({});
+  liveRef.current = {
+    isTranslationEnabled,
+    translationMode,
+    isTranscriptionEnabled,
+    transcriptionMode,
+    isMessageNew,
+    userId,
+  };
+
   useEffect(() => {
     if (!chatId) return;
 
@@ -309,15 +402,15 @@ const PrivateChat = () => {
           console.log('NewMessage:', newMessage);
           updateMessages(newMessage);
           // Перевод нового сообщения
-          if (isTranslationEnabled && translationMode === 'new' && isMessageNew(newMessage) && newMessage.messageType !== 'audio') {
+          if (liveRef.current.isTranslationEnabled && liveRef.current.translationMode === 'new' && liveRef.current.isMessageNew(newMessage) && newMessage.messageType !== 'audio') {
             setTranslationQueue((prevQueue) => [...prevQueue, newMessage]);
           }
           // Транскрипция нового аудиосообщения
           if (
-            isTranscriptionEnabled &&
-            (transcriptionMode === 'all' || transcriptionMode === 'new') &&
+            liveRef.current.isTranscriptionEnabled &&
+            (liveRef.current.transcriptionMode === 'all' || liveRef.current.transcriptionMode === 'new') &&
             newMessage.messageType === 'audio' &&
-            isMessageNew(newMessage)
+            liveRef.current.isMessageNew(newMessage)
           ) {
             setTranscriptionQueue((prevQueue) => [...prevQueue, newMessage]);
           }
@@ -332,7 +425,7 @@ const PrivateChat = () => {
             const type = data.messageType;
             const sender = data.sender;
 
-            if (sender && sender.id !== userId) { // не показываем себе
+            if (sender && sender.id !== liveRef.current.userId) { // не показываем себе
               if (type === 'TYPING') {
                 setTypingName(sender.username || 'Кто-то');
                 setIsTyping(true);
@@ -364,7 +457,7 @@ const PrivateChat = () => {
       },
       onStompError: (frame) => {
         console.error('STOMP error in PrivateChat:', frame);
-        toast.error('Ошибка протокола STOMP');
+        toast.error('Connection error');
       },
       onDisconnect: () => {
         console.log('WebSocket disconnected in PrivateChat');
@@ -378,12 +471,12 @@ const PrivateChat = () => {
       console.log('Deactivating WebSocket in PrivateChat');
       stompClientInstance.deactivate();
     };
-  }, [chatId, isTranslationEnabled, translationLanguage, translationMode, isMessageNew]);
+  }, [chatId]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (client && client.connected && messages.length > 0) {
-        const unreadMessages = messages.some((msg) => !msg.read);
+        const unreadMessages = messages.some((msg) => !isReadFlag(msg));
         if (unreadMessages) {
           markAllMessagesAsRead(messages);
           clearInterval(interval);
@@ -518,7 +611,7 @@ const PrivateChat = () => {
     console.log('markAllMessagesAsRead is working...');
     if (Array.isArray(updatedMessages)) {
       updatedMessages.forEach((msg) => {
-        if (msg.sender.id !== userId && (msg.read === false || msg.read === null)) {
+        if (msg.sender.id !== userId && !isReadFlag(msg)) {
           if (client && client.connected) {
             client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
             setMessages((prevMessages) =>
@@ -722,17 +815,19 @@ const PrivateChat = () => {
 
             if (statusResponse.ok) {
                 const messageStatus = await statusResponse.json();
-                const recipientName = chatName.split('_').find((name) => name !== username);
-                console.log('recipientName:', recipientName);
+                // Собеседник уже известен из участников чата. Разбор имени
+                // («я_он») оставлен запасным: имя человека может содержать
+                // «_», и тогда уведомление уходило в никуда.
+                let recipientId = partnerId;
+                if (!recipientId) {
+                    const recipientName = partnerNameFromChat(chatName, username);
+                    const userResponse = await fetch(
+                        `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
+                    );
+                    if (userResponse.ok) recipientId = (await userResponse.json()).id;
+                }
 
-                const userResponse = await fetch(
-                    `https://unlimitedpossibilities12.org/api/users/by-username/${recipientName}`
-                );
-
-                if (userResponse.ok) {
-                    const recipient = await userResponse.json();
-                    const recipientId = recipient.id;
-
+                if (recipientId) {
                     console.log('recipientId:', recipientId);
                     console.log('messageStatus.read_status:', messageStatus.read_status);
 
@@ -831,15 +926,80 @@ const PrivateChat = () => {
     }
   };
 
+
+  /**
+   * Звонок собеседнику прямо из переписки. Комната строится из пары номеров.
+   *
+   * Видов три: голос, видео и голос с переводом. Последний раньше запускался
+   * только со страницы человека, хотя звонят из переписки.
+   */
+  const CALL_ROUTES = { voice: 'voice-call', video: 'video-call', translate: 'voice-call-translate' };
+
+  const startCall = async (type) => {
+    if (!partnerId) {
+      toast.error('Cannot find who to call');
+      return;
+    }
+    const kind = CALL_ROUTES[type] ? type : 'voice';
+    const roomId = `room-${userId}-${partnerId}`;
+    const callRequest = {
+      callerId: userId,
+      recipientId: Number(partnerId),
+      roomId,
+      callerName: localStorage.getItem('username') || 'Unknown',
+      type: kind,
+    };
+    try {
+      const response = await fetch('https://unlimitedpossibilities12.org/api/webrtc/call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(callRequest),
+      });
+      if (!response.ok) {
+        toast.error('Failed to start the call');
+        return;
+      }
+      const partnerName = displayChatName.replace('Chat with ', '');
+      toast.success(kind === 'translate'
+        ? `Calling ${partnerName} with translation...`
+        : `Calling ${partnerName}...`);
+      navigate(`/${CALL_ROUTES[kind]}/${roomId}`, {
+        state: {
+          incomingCall: callRequest,
+          isCaller: true,
+          currentUserId: userId,
+          callerName: localStorage.getItem('username') || 'Unknown',
+          recipientName: partnerName,
+        },
+      });
+    } catch (error) {
+      console.error('Call error:', error);
+      toast.error('Failed to start the call');
+    }
+  };
+
+  const startVoiceCall = () => startCall('voice');
+  const startVideoCall = () => startCall('video');
+  const startTranslateCall = () => startCall('translate');
+
+  // Меню в шапке закрывается щелчком мимо него
+  useEffect(() => {
+    if (!chatMenuOpen) return undefined;
+    const closeOnOutside = (event) => {
+      if (chatMenuRef.current && !chatMenuRef.current.contains(event.target)) setChatMenuOpen(false);
+    };
+    document.addEventListener('mousedown', closeOnOutside);
+    return () => document.removeEventListener('mousedown', closeOnOutside);
+  }, [chatMenuOpen]);
+
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
     try {
       const date = parseISO(timestamp);
       const kievDate = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Kiev' }));
-      if (isToday(kievDate)) {
-        return format(kievDate, 'HH:mm');
-      }
-      return format(kievDate, 'dd.MM.yy');
+      // В пузыре нужно только время: день обозначает разделитель в ленте,
+      // а дата в каждом сообщении раньше дублировала его и растила пузырь
+      return format(kievDate, 'HH:mm');
     } catch (error) {
       console.error('Error formatting timestamp:', error);
       return '';
@@ -1175,7 +1335,7 @@ const PrivateChat = () => {
                 ...prevData,
                 isReady: false,
                 isPlaying: false,
-                error: `Failed to load audio: ${errorMsg}`,
+                error: 'Voice message unavailable',
             },
         };
     });
@@ -1687,12 +1847,13 @@ const PrivateChat = () => {
         {/* Новый блок с аватаром и именем — над всем остальным */}
         <div className="header-content">
           <div className="partner-avatar-container">
-            {partnerAvatar ? (
+            {partnerAvatar && !brokenAvatars.partner ? (
               <img
                 src={`https://unlimitedpossibilities12.org${partnerAvatar}`}
                 alt="Аватар"
                 className="partner-avatar"
                 onClick={() => partnerId && navigate(`/user/${partnerId}`)}
+                onError={() => setBrokenAvatars((broken) => ({ ...broken, partner: true }))}
               />
             ) : (
               <div className="partner-avatar placeholder">
@@ -1703,56 +1864,112 @@ const PrivateChat = () => {
 
           <div className="partner-info">
             <div className="partner-name">{displayChatName.replace('Chat with ', '')}</div>
-            {isTyping && (
-              <div className="typing-text">{typingName} is typing…</div>
-            )}
+            {/*
+              Строка состояния: кто перед тобой и что включено в этом чате.
+              Метки появляются только у включённых режимов и записаны одинаково:
+              стрелка там, где одно превращается в другое.
+            */}
+            <div className="chat-status-line">
+              {isTyping ? (
+                <span className="chat-status-typing">{typingName} is typing…</span>
+              ) : (
+                <span className="chat-status-text">
+                  {partnerId && usersStatus[partnerId]?.online ? 'online' : 'offline'}
+                </span>
+              )}
+              {isTranslationEnabled && (
+                <span className="chat-mode-chip" title="Incoming messages are translated">
+                  {translationLanguage && translationLanguage !== 'auto'
+                    ? `→${translationLanguage.toUpperCase()}`
+                    : 'TRANSLATE'}
+                </span>
+              )}
+              {isTranscriptionEnabled && (
+                <span className="chat-mode-chip" title="Voice messages are transcribed">→TEXT</span>
+              )}
+              {isTTSEnabled && (
+                <span className="chat-mode-chip" title="Incoming messages are read aloud">→AUDIO</span>
+              )}
+              {isSpellCheckEnabled && (
+                <span className="chat-mode-chip" title="Your text is corrected before sending">SPELL</span>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ← ВСЁ НИЖЕ ОСТАЁТСЯ ТОЧНО КАК БЫЛО РАНЬШЕ, ничего не трогаем */}
-        <div className="private-icons-row">
-          <div className="private-transcription-controls">
+        {/*
+          В шапке — действия над собеседником: позвонить, видео, меню.
+          Режимы (перевод, транскрипция, озвучка, орфография) переехали в меню:
+          их включают редко, а места занимали постоянно.
+        */}
+        <div className="chat-header-actions">
+          <button type="button" className="chat-header-button" title="Voice call" onClick={startVoiceCall}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <path d="M5 4.5h3.5l1.5 4-2 1.5a11 11 0 006 6l1.5-2 4 1.5V19a1.5 1.5 0 01-1.7 1.5C10.8 19.8 4.2 13.2 3.5 6.2A1.5 1.5 0 015 4.5z" />
+            </svg>
+          </button>
+          <button type="button" className="chat-header-button" title="Video call" onClick={startVideoCall}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="6" width="12" height="12" rx="2.5" />
+              <path d="M15 10.5l6-3v9l-6-3z" />
+            </svg>
+          </button>
+          {/* Глобус рядом с трубкой и камерой читается как «позвонить с переводом» */}
+          <button
+            type="button"
+            className="chat-header-button"
+            title="Call with translation"
+            onClick={startTranslateCall}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              {/* Трубка как у обычного звонка, только мельче, и глобус сверху:
+                  сам по себе глобус читался как «язык», а не как звонок */}
+              <g transform="translate(-0.6 2.2) scale(0.82)" strokeWidth="2.4">
+                <path d="M5 4.5h3.5l1.5 4-2 1.5a11 11 0 006 6l1.5-2 4 1.5V19a1.5 1.5 0 01-1.7 1.5C10.8 19.8 4.2 13.2 3.5 6.2A1.5 1.5 0 015 4.5z" />
+              </g>
+              <g strokeWidth="1.6">
+                <circle cx="18.4" cy="6" r="3.6" />
+                <path d="M14.8 6h7.2" />
+                <path d="M18.4 2.4c1.1 1.1 1.7 2.4 1.7 3.6s-.6 2.5-1.7 3.6c-1.1-1.1-1.7-2.4-1.7-3.6s.6-2.5 1.7-3.6z" />
+              </g>
+            </svg>
+          </button>
+          <div className="chat-header-menu-wrap" ref={chatMenuRef}>
             <button
-              className="private-transcription-button"
-              onClick={() => setShowTranscriptionModal(true)}
-              data-tooltip={isTranscriptionEnabled ? 'Transcription is ON' : 'Transcription is OFF'}
-              style={{ color: isTranscriptionEnabled ? '#42a5f5' : '#B0BEC5' }}
+              type="button"
+              className="chat-header-button"
+              title="More"
+              onClick={() => setChatMenuOpen((open) => !open)}
             >
-              🎤
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <circle cx="12" cy="5" r="1.8" />
+                <circle cx="12" cy="12" r="1.8" />
+                <circle cx="12" cy="19" r="1.8" />
+              </svg>
             </button>
-            {isTranscriptionEnabled && <span className="private-transcription-indicator">ON</span>}
-            <button
-              className="private-tts-button"
-              onClick={handleTTSToggle}
-              data-tooltip={isTTSEnabled ? 'Text-to-Speech is ON' : 'Text-to-Speech is OFF'}
-              style={{ color: isTTSEnabled ? '#42a5f5' : '#B0BEC5' }}
-            >
-              🔊
-            </button>
-            {isTTSEnabled && <span className="private-tts-indicator">ON</span>}
-          </div>
-          <div className="private-translation-controls">
-            <button
-              className="private-spellcheck-button"
-              onClick={handleSpellCheckToggle}
-              data-tooltip={isSpellCheckEnabled ? 'Spell check is ON' : 'Spell check is OFF'}
-              style={{ color: isSpellCheckEnabled ? '#42a5f5' : '#B0BEC5' }}
-            >
-              ✍️
-            </button>
-            {isSpellCheckEnabled && <span className="private-spellcheck-indicator">SC</span>}
-            <button
-              className="private-translation-button"
-              onClick={() => setShowTranslationModal(true)}
-              data-tooltip="Toggle translation for messages"
-              style={{ color: isTranslationEnabled ? '#42a5f5' : '#B0BEC5' }}
-            >
-              🌐
-            </button>
-            {isTranslationEnabled && (
-              <span className="private-translation-indicator">
-                {translationLanguage === 'auto' ? 'AUTO' : translationLanguage.toUpperCase().slice(0, 2)}
-              </span>
+            {chatMenuOpen && (
+              <div className="chat-header-menu">
+                <button type="button" onClick={() => { setChatMenuOpen(false); setShowTranslationModal(true); }}>
+                  Translation…
+                </button>
+                <button type="button" onClick={() => { setChatMenuOpen(false); setShowTranscriptionModal(true); }}>
+                  Transcription…
+                </button>
+                <button type="button" onClick={() => { setChatMenuOpen(false); handleTTSToggle(); }}>
+                  <span>Read aloud</span>
+                  <span className={`chat-menu-switch ${isTTSEnabled ? 'on' : ''}`} />
+                </button>
+                <button type="button" onClick={() => { setChatMenuOpen(false); handleSpellCheckToggle(); }}>
+                  <span>Spellcheck</span>
+                  <span className={`chat-menu-switch ${isSpellCheckEnabled ? 'on' : ''}`} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setChatMenuOpen(false); if (partnerId) navigate(`/user/${partnerId}`); }}
+                >
+                  View profile
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -1780,8 +1997,13 @@ const PrivateChat = () => {
       )}*/}
       <div className="private-message-list" ref={messageListRef}>
         {messages.map((msg, index) => (
+          <React.Fragment key={msg.id}>
+          {startsNewDay(messages, index) && (
+            <div className="private-day-separator">
+              <span>{dayLabel(msg.timestamp)}</span>
+            </div>
+          )}
           <div
-            key={msg.id}
             className={`private-message ${
               msg.sender.id === userId ? 'private-current-user' : 'private-other-user'
             } ${isFirstMessage(msg, index) ? 'first-message' : ''} ${
@@ -1792,7 +2014,7 @@ const PrivateChat = () => {
             <div className="private-message-wrapper">
               {shouldShowAvatar(msg, index) && (
                 <div className="private-avatar-container">
-                  {msg.sender.avatar ? (
+                  {msg.sender.avatar && !brokenAvatars[msg.sender.id] ? (
                     <div className="private-avatar-wrapper">
                       <img
                         src={`https://unlimitedpossibilities12.org${msg.sender.avatar}`}
@@ -1800,6 +2022,9 @@ const PrivateChat = () => {
                         className="private-message-avatar"
                         onClick={() => handleAvatarClick(msg.sender.id)}
                         style={{ cursor: 'pointer' }}
+                        onError={() =>
+                          setBrokenAvatars((broken) => ({ ...broken, [msg.sender.id]: true }))
+                        }
                       />
                       {usersStatus[msg.sender.id]?.online && (
                         <span className="status-indicator-online-privatechat"></span>
@@ -1824,7 +2049,7 @@ const PrivateChat = () => {
               <div
                 className={`private-message-content-container ${
                   shouldShowAvatar(msg, index) ? '' : 'no-avatar'
-                }`}
+                } ${inlineTime(msg) ? 'inline-time' : ''}`}
               >
                 <div className="private-message-body">
                   <div className="private-message-content-wrapper">
@@ -1960,9 +2185,22 @@ const PrivateChat = () => {
                             {renderTextWithLinks(
                               msg.showOriginal || !msg.translatedContent ? msg.content : msg.translatedContent
                             )}
+                            {/* Время — в конце последней строки текста, как в
+                                привычных мессенджерах: короткая реплика не
+                                занимает отдельную строку под подпись. */}
+                            {inlineTime(msg) && !hasTranslation(msg) && (
+                              <span className="private-message-footer inline">
+                                <span className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</span>
+                                {msg.sender.id === userId && (
+                                  <span className="private-message-status">
+                                    <MessageChecks delivered={isDeliveredFlag(msg)} read={isReadFlag(msg)} />
+                                  </span>
+                                )}
+                              </span>
+                            )}
                           </span>
 
-                          {msg.translatedContent && (
+                          {hasTranslation(msg) && (
                             <span className="private-translated-content">
                               {renderTextWithLinks(msg.translatedContent)}
                             </span>
@@ -1972,17 +2210,27 @@ const PrivateChat = () => {
                         {/* Превью изображения — показываем, если fileUrl заканчивается на картинку */}
                         {msg.fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && (
                           <div className="image-preview-container">
-                            <img
-                              src={msg.fileUrl}
-                              alt="Изображение в сообщении"
-                              className="message-image-preview"
-                              onClick={() => openFullScreenImage(msg.fileUrl)}
-                              loading="lazy"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                console.warn('Ошибка загрузки превью в личном чате:', msg.fileUrl);
-                              }}
-                            />
+                        {/*
+                          Картинка не открылась — чаще всего файл потерян при
+                          переразвёртывании сервера. Прежде её просто прятали, и
+                          в пузыре оставалась необъяснимая пустая полоса. Пишем
+                          прямо, как у голосовых: вложение недоступно.
+                        */}
+                            {brokenImages[msg.id] ? (
+                              <span className="attachment-unavailable">Image unavailable</span>
+                            ) : (
+                              <img
+                                src={msg.fileUrl}
+                                alt="Изображение в сообщении"
+                                className="message-image-preview"
+                                onClick={() => openFullScreenImage(msg.fileUrl)}
+                                loading="lazy"
+                                onError={() => {
+                                  console.warn('Ошибка загрузки превью в личном чате:', msg.fileUrl);
+                                  setBrokenImages((broken) => ({ ...broken, [msg.id]: true }));
+                                }}
+                              />
+                            )}
                           </div>
                         )}
 
@@ -2049,14 +2297,23 @@ const PrivateChat = () => {
                         )}
                       </>
                     )}
-                    <div className="private-message-status">
+                    {/*
+                      Время отдельной строкой там, где подвёрстывать его не к чему:
+                      у голосовых, файлов, превью — и под переводом. Прижимать время
+                      к строке перевода оказалось плохо: у коротких переводов оно
+                      сливалось с ними в одну строку, у длинных всё равно съезжало
+                      вниз — выходил разнобой.
+                    */}
+                    {(!inlineTime(msg) || hasTranslation(msg)) && (
+                    <div className="private-message-footer">
+                      <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
                       {msg.sender.id === userId && (
-                        <>
-                          <MessageChecks delivered={msg.delivered} read={msg.read} />
-                        </>
+                        <div className="private-message-status">
+                          <MessageChecks delivered={isDeliveredFlag(msg)} read={isReadFlag(msg)} />
+                        </div>
                       )}
                     </div>
-                    <div className="private-message-timestamp">{formatTimestamp(msg.timestamp)}</div>
+                    )}
                   </div>
                   {/* ДОБАВЛЕНО: Отдельный контейнер для иконки перевода */}
                   {(msg.messageType !== 'audio' || (msg.messageType === 'audio' && isTranscriptionEnabled)) && (
@@ -2124,6 +2381,7 @@ const PrivateChat = () => {
               </div>
             </div>
           </div>
+          </React.Fragment>
         ))}
         <div ref={messagesEndRef} />
       </div>
@@ -2271,7 +2529,7 @@ const PrivateChat = () => {
               href={fullScreenImage}
               download
               className="full-screen-download-btn"
-              title="Скачать фото"
+              title="Download the photo"
             >
               ↓
             </a>

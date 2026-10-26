@@ -438,10 +438,10 @@ const usePrivateChatTranslationAndSpellCheck = ({
                   )
               );
           }
-          toast.success('Audio transcribed successfully');
+          toast.success('Voice message transcribed');
       } catch (error) {
           console.error('Transcription error:', error);
-          toast.error('Failed to transcribe audio');
+          toast.error('Could not transcribe this voice message');
       } finally {
           setIsTranscribing(false);
       }
@@ -519,8 +519,9 @@ const usePrivateChatTranslationAndSpellCheck = ({
                   );
               }
           } catch (error) {
-              console.error('Transcription error for message:', { id: message.id, fileUrl: message.fileUrl, error: error.message });
-              toast.error('Failed to transcribe audio');
+              // Очередь идёт сама: о каждой неудаче человеку сообщать незачем,
+              // иначе при недоступных файлах экран заваливает одинаковыми окнами
+              console.warn('Transcription skipped:', { id: message.id, fileUrl: message.fileUrl, error: error.message });
           } finally {
               setTranscriptionQueue((prevQueue) => prevQueue.slice(1));
               setIsTranscribing(false);

@@ -22,6 +22,20 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
   const errorToastRef = useRef(null);
   const navigate = useNavigate();
 
+  /*
+    Открытый чат, признак «человек уже что-то нажал» и переход держим в
+    ссылках, а не в зависимостях подписки. Раньше соединение с уведомлениями
+    рвалось и поднималось заново при каждом переходе между чатами: за десяток
+    переходов набирались десятки недостроенных сокетов, и это мешало обычным
+    запросам, которым нужно то же соединение к серверу.
+  */
+  const currentChatIdRef = useRef(null);
+  const userInteractedRef = useRef(userInteracted);
+  const navigateRef = useRef(navigate);
+  currentChatIdRef.current = currentChatId;
+  userInteractedRef.current = userInteracted;
+  navigateRef.current = navigate;
+
   // Открыли чат — он больше не «непрочитанный»
   useEffect(() => {
     if (!currentChatId) return;
@@ -76,8 +90,8 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
           const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
           const chatId = chatIdMatch ? chatIdMatch[1] : null;
 
-          if (chatId && chatId !== currentChatId) {
-            if (userInteracted && messageAudioRef.current) {
+          if (chatId && chatId !== currentChatIdRef.current) {
+            if (userInteractedRef.current && messageAudioRef.current) {
               console.log('Attempting to play message audio');
               messageAudioRef.current.play()
                 .then(() => console.log('Message audio played successfully'))
@@ -86,7 +100,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                   toast.warn('Please interact with the page to enable notification sound.');
                 });
             } else {
-              console.log('Audio not played: userInteracted =', userInteracted, 'messageAudioRef =', messageAudioRef?.current);
+              console.log('Audio not played: userInteractedRef.current =', userInteractedRef.current, 'messageAudioRef =', messageAudioRef?.current);
             }
 
             // Вкладка может быть не на виду — тогда показываем уведомление системы.
@@ -95,7 +109,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
             notify(fromMatch ? fromMatch[1] : 'Messenger UP12', {
               body: isSecret ? 'New secret message' : 'New message',
               tag: `chat-${chatId}`,
-              onClick: () => navigate(`/${chatRoute}/${chatId}`),
+              onClick: () => navigateRef.current(`/${chatRoute}/${chatId}`),
             });
 
             setUnreadChats((prev) => {
@@ -106,7 +120,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
             });
 
             const toastId = `private-message-${chatId}-${Date.now()}`;
-            console.log('Calling toast.info:', { notification, toastId, currentChatId, chatId });
+            console.log('Calling toast.info:', { notification, toastId, currentChatId: currentChatIdRef.current, chatId });
             toast.info(notification, {
               autoClose: false,
               toastId,
@@ -135,7 +149,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
                             const exists = text === "Chat exists in user's private chats";
                             if (exists) {
                                 toast.dismiss(toastId);
-                                navigate(`/${chatRoute}/${chatId}`);
+                                navigateRef.current(`/${chatRoute}/${chatId}`);
                                 // Отображение тоста с именем собеседника
                                 toast.success(`Navigating to chat with ${recipientName}!`, {
                                     toastId: `navigate-chat-${chatId}-${Date.now()}`,
@@ -155,7 +169,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
 
                             if (addResponse.ok) {
                                 toast.dismiss(toastId);
-                                navigate(`/${chatRoute}/${chatId}`);
+                                navigateRef.current(`/${chatRoute}/${chatId}`);
                                 // Отображение тоста с именем собеседника
                                 toast.success(`Navigating to chat with ${recipientName}!`, {
                                     toastId: `navigate-chat-${chatId}-${Date.now()}`,
@@ -191,7 +205,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
               toast.update(toastId, { render: notification });
             }, 100);
           } else {
-            console.log('Notification ignored: chatId=', chatId, 'currentChatId=', currentChatId);
+            console.log('Notification ignored: chatId=', chatId, 'currentChatIdRef.current=', currentChatIdRef.current);
           }
         });
       },
@@ -228,7 +242,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
         stompClientRef.current.deactivate();
       }
     };
-  }, [currentUserId, userInteracted, currentChatId, navigate]);
+  }, [currentUserId]);
 
   return (
     <PrivateMessageNotificationContext.Provider value={{ setCurrentUserId, setCurrentChatId }}>

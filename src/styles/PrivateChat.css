@@ -195,8 +195,26 @@
     background: transparent !important;
 }
 
-/* Галочки у своих сообщений — новый подходящий оттенок */
-.private-message.private-current-user .private-message-timestamp,
+
+/*
+  Время — служебная пометка, а не часть сообщения.
+
+  Оно было того же цвета и почти того же размера, что и строка перевода, и
+  читалось как её продолжение. Делаем, как принято: время мельче и заметно
+  тусклее текста, перевод, наоборот, ближе к основному. Получается три
+  различимых уровня: текст — перевод — время.
+*/
+.private-message-timestamp {
+    font-size: 11px;
+    color: #7a8798;
+    letter-spacing: 0.2px;
+}
+
+/* У своих сообщений фон синий — время светлое, но приглушённое */
+.private-message.private-current-user .private-message-timestamp {
+    color: rgba(226, 232, 240, 0.72) !important;
+}
+
 .private-message.private-current-user .private-message-status {
     color: #c7d2fe !important;
 }
@@ -218,9 +236,16 @@
   line-height: 1.4;
 }
 
+/*
+  Отступ слева под значки перевода и озвучки больше не нужен: значки давно
+  стоят справа от пузыря, снаружи, — правило, прижимавшее их к левому краю,
+  перекрыто более поздним, и контейнеры встали в общий поток. Резерв же
+  остался и в коротких сообщениях давал широкую пустоту слева от текста,
+  какой нет ни в одном знакомом мессенджере.
+*/
 .private-message-content.translate-enabled,
 .private-message-content.tts-enabled {
-  padding-left: 28px;
+  padding-left: 0;
 }
 
 .private-file-link {
@@ -235,7 +260,7 @@
 
 .private-file-link.translate-enabled,
 .private-file-link.tts-enabled {
-  padding-left: 28px;
+  padding-left: 18px;
 }
 
 .private-file-link:hover {
@@ -596,7 +621,7 @@
   display: block;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
-  color: #94a3b8;
+  color: #cbd5e1; /* ближе к основному тексту, чтобы не путалось со временем */
   margin-bottom: 4px;
   line-height: 1.4;
 }
@@ -1061,8 +1086,8 @@
   border: none;
   cursor: pointer;
   padding: 2px;
-  color: #1e2937 !important;
-  opacity: 0.95;
+  color: #a78bfa !important;
+  opacity: 0.9;
   transition: color 0.3s ease, transform 0.2s ease;
   line-height: 1;
   z-index: 101;
@@ -1073,14 +1098,8 @@
   justify-content: center;
 }
 
-.private-message.private-current-user .private-message-tts-translated-container .private-message-tts-translated-button {
-  color: #111827 !important;
-}
-
-.private-message.private-current-user .private-message-tts-translated-container .private-message-tts-translated-button:hover {
-  color: #02040a !important;
-  transform: scale(1.25) !important;
-}
+/* Отдельного цвета для своих сообщений нет: действует общее правило,
+   поэтому значок выглядит одинаково с обеих сторон */
 
 .private-message-content-container:has(.private-message-tts-translated-container) {
   min-height: 65px;
@@ -1517,15 +1536,16 @@
     display: none !important;
 }
 
-/* Для СВОИХ сообщений — тёмная иконка */
+/* У своих сообщений тот же светло-фиолетовый значок, что и у чужих:
+   прежний тёмный сливался с синим пузырём */
 .private-message.private-current-user .private-message-tts-translated-container .private-message-tts-translated-button {
-  color: #111827 !important;
-  opacity: 0.95 !important;
+  color: #a78bfa !important;
+  opacity: 0.9 !important;
 }
 
 .private-message.private-current-user .private-message-tts-translated-container .private-message-tts-translated-button:hover {
-  color: #02040a !important;
-  transform: scale(1.25) !important;
+  color: #c4b5fd !important;
+  transform: scale(1.2) !important;
 }
 
 /* Для ЧУЖИХ сообщений — светло-фиолетовая иконка (как было раньше) */
@@ -1912,12 +1932,12 @@
 
     .private-message-content.translate-enabled,
     .private-message-content.tts-enabled {
-        padding-left: 22px;
+        padding-left: 0;
     }
 
     .private-file-link.translate-enabled,
     .private-file-link.tts-enabled {
-        padding-left: 22px;
+        padding-left: 18px;
     }
 
     .private-message-tts-container {
@@ -2176,4 +2196,67 @@
   .private-message.private-current-user.private-audio-message .private-message-translate-container .private-message-translate-button {
       position: static !important;
   }
+}
+/*
+  Время в строке с текстом, как в привычных мессенджерах.
+
+  Раньше оно стояло отдельной строкой под сообщением: пузырь из двух букв
+  получался втрое выше и вчетверо шире нужного, и ширину задавал не текст, а
+  подпись со временем. Теперь невидимая распорка держит место в последней
+  строке, а само время садится в правый нижний угол пузыря — короткие реплики
+  занимают ровно столько, сколько занимают.
+
+  Голосовых, файлов и превью ссылок это не касается: у них своя раскладка,
+  там время остаётся отдельной строкой.
+*/
+.private-message-content-container.inline-time {
+  position: relative;
+  /* Пузырю задан нижний предел размера — он нужен вложениям и плееру, но
+     короткую реплику раздувает и отправляет время под текст. Простым
+     сообщениям предел не нужен: они занимают ровно место текста. */
+  min-width: 0;
+  min-height: 0;
+}
+
+/*
+  Свои сообщения растягивались на всю доступную ширину (width: 100%), и из-за
+  этого ширина пузыря считалась не по содержимому: текста со временем не
+  хватало пары пикселей, и время срывалось на вторую строку. Простому
+  сообщению растягиваться незачем — пусть обжимает текст.
+*/
+.private-message-content-container.inline-time,
+.private-message-content-container.inline-time.no-avatar {
+  width: auto !important;
+  /*
+    Предел ширины пузыря был задан долей от родителя, а ширина родителя сама
+    считается по содержимому — получался замкнутый круг, и пузырю не хватало
+    пары пикселей: время срывалось на вторую строку. Ограничение и так есть
+    выше, у самого сообщения, здесь оно лишнее.
+  */
+  max-width: 100% !important;
+}
+
+/* Время прямо в строке: идёт за текстом и прижимается к его низу */
+.private-message-footer.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  vertical-align: bottom;
+  white-space: nowrap;
+  position: relative;
+  top: 2px;
+}
+
+/*
+  Вложение, которого больше нет на сервере. Подпись в том же духе, что у
+  недоступного голосового: человек видит, что файл не открылся, а не пустое
+  место непонятного происхождения.
+*/
+.attachment-unavailable {
+  display: block;
+  font-style: italic;
+  font-size: 13px;
+  color: #94a3b8;
+  padding: 2px 0;
 }
