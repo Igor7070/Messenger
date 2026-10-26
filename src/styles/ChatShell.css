@@ -1,0 +1,652 @@
+/* Каркас из двух колонок. Высота считается от окна, прокрутка — внутри колонок. */
+
+.up-shell {
+  display: flex;
+  min-height: 0;
+  height: calc(100vh - 120px);
+  overflow: hidden;
+  background: var(--up-bg);
+  border-top: 1px solid var(--up-border);
+}
+
+.up-shell-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  /* Вбок колонка не ездит: широкое содержимое ужимается, а не растягивает её */
+  overflow-x: hidden;
+  background: var(--up-bg);
+}
+
+/*
+  Экраны переписки писались как отдельные страницы: своя ширина, поля и тень.
+  Внутри каркаса они занимают колонку целиком, иначе выглядят плитой, которая
+  плавает посреди правой части.
+*/
+.up-shell-content .messenger,
+.up-shell-content .private-chat,
+.up-shell-content .secret-chat {
+  max-width: none !important;
+  width: auto !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  min-height: 100%;
+}
+
+.up-shell-placeholder {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--up-muted);
+  font-family: var(--up-font);
+  font-size: var(--up-text-md);
+}
+
+/* Узкий экран: колонки не помещаются рядом, поэтому видна одна */
+@media (max-width: 900px) {
+  .up-shell {
+    height: calc(100vh - 90px);
+    border: none;
+    border-radius: 0;
+  }
+
+  .up-shell .up-list {
+    width: 100%;
+    border-right: none;
+  }
+
+  .up-shell-open .up-list {
+    display: none;
+  }
+
+  .up-shell:not(.up-shell-open) .up-shell-content {
+    display: none;
+  }
+}
+
+/*
+  Общий контейнер страницы рассчитан на 1000px — для двух колонок этого мало.
+  На экранах мессенджера даём ему развернуться, не трогая остальные страницы.
+
+  Заодно он занимает ровно высоту окна и не прокручивается сам: прокрутка
+  должна быть внутри колонок, иначе у страницы появляется вторая полоса и
+  уезжает всё разом — список, переписка и шапка.
+*/
+.app.app-messenger {
+  /*
+    Мессенджер занимает окно целиком: стеклянная рамка с подложкой — приём для
+    страницы-витрины, где внутри лежит карточка, а вокруг виден фон. Здесь
+    содержимое и есть весь экран, поэтому рамка только съедала место и клала
+    лишний слой размытия поверх тёмного интерфейса.
+  */
+  max-width: none !important;
+  width: 100% !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+  background: var(--up-bg) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/*
+  Шапка сайта с «To Main» и «To Home» — наследство страницы-витрины: занимала
+  90px по всей ширине ради двух ссылок, дублировала заголовок колонки, а «To
+  Home» вёл на список, который и так открыт. Выход на сайт переехал в меню «⋮».
+*/
+.app.app-messenger .header-container {
+  display: none !important;
+}
+
+.app.app-messenger .header-container {
+  flex: 0 0 auto;
+}
+
+.app.app-messenger .up-shell {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+/*
+  Экран переписки писался с жёсткой высотой ленты (480px) и своей шириной:
+  внутри колонки это оставляло пустоту под полем ввода и давало горизонтальную
+  полосу. Здесь он растягивается по колонке, а широкое содержимое — картинки,
+  карточки ссылок — ужимается по ширине.
+*/
+.up-shell-content .messenger,
+.up-shell-content .private-chat,
+.up-shell-content .secret-chat {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.up-shell-content .message-list {
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 0;
+}
+
+.up-shell-content img,
+.up-shell-content video,
+.up-shell-content iframe {
+  max-width: 100%;
+}
+
+/* Пока открыт мессенджер, страница не прокручивается — только колонки внутри */
+body.up-no-scroll {
+  overflow: hidden !important;
+}
+
+/*
+  Ленты сообщений писались с жёсткой высотой (480–540px): внутри колонки это
+  оставляло пустое поле под строкой ввода. Пусть занимают всё, что осталось.
+*/
+.up-shell-content .private-message-list,
+.up-shell-content .secret-message-list {
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 0;
+}
+
+/*
+  Плавающий кружок ассистента внутри переписки больше не нужен: ассистент
+  закреплён строкой в списке слева и всегда под рукой, а кружок перекрывал
+  последнее сообщение.
+*/
+.up-shell-content .fixed-app-bottom-right {
+  display: none !important;
+}
+
+/* ========== экран переписки внутри каркаса ========== */
+
+/*
+  Шапка переписки была плашкой со скруглением и полями — наследство страницы.
+  Делаем её плоской строкой во всю ширину: слева аватар и имя, справа значки.
+*/
+.up-shell-content .private-chat-name,
+.up-shell-content .secret-chat-name,
+.up-shell-content .chat-header-group {
+  display: flex !important;
+  align-items: center;
+  gap: var(--up-space-3);
+  margin: 0 !important;
+  padding: 10px 16px !important;
+  border-radius: 0 !important;
+  border: none !important;
+  border-bottom: 1px solid var(--up-border) !important;
+  background: var(--up-panel) !important;
+  box-shadow: none !important;
+}
+
+.up-shell-content .header-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Значки режимов уезжают вправо, как кнопки звонка в телеграме */
+.up-shell-content .private-icons-row,
+.up-shell-content .secret-icons-row {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* Разделитель дня: тот же приём, что у всех — пилюля по центру ленты */
+.private-day-separator {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 2px;
+}
+
+.private-day-separator span {
+  padding: 3px 12px;
+  border-radius: var(--up-radius-pill);
+  background: rgba(148, 163, 184, 0.16);
+  color: #cbd5e1;
+  font-size: var(--up-text-xs);
+}
+
+/*
+  Карточка ссылки занимала половину колонки. Ограничиваем ширину и высоту
+  картинки — ссылка должна дополнять сообщение, а не замещать его.
+*/
+.up-shell-content .link-preview-card,
+.up-shell-content .link-preview,
+.up-shell-content .message-link-preview {
+  max-width: 320px;
+}
+
+.up-shell-content .link-preview-card img,
+.up-shell-content .link-preview img,
+.up-shell-content .message-link-preview img {
+  max-height: 170px;
+  object-fit: cover;
+}
+
+/* Плавающий кружок ассистента внутри переписки не нужен: он есть строкой в списке */
+.up-shell-content .assistant-icon,
+.up-shell-content .assistant-icon-wrapper,
+.up-shell-content .fixed-app-bottom-right {
+  display: none !important;
+}
+
+/* Время и галочки — одной строкой у нижнего края пузыря */
+.private-message-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.up-shell-content .private-message-timestamp,
+.up-shell-content .private-message-status {
+  margin-top: 0 !important;
+  line-height: 1;
+}
+
+/* Имя собеседника — слева, а не по центру колонки */
+.up-shell-content .header-content {
+  justify-content: flex-start !important;
+  text-align: left;
+}
+
+/*
+  Значки режимов в шапке были выставлены по-старому: строка с display:contents,
+  а сами кнопки прибиты к левому краю через position:absolute. В плоской шапке
+  это наложилось на аватар и имя. Возвращаем их в обычный поток справа.
+*/
+.up-shell-content .private-icons-row,
+.up-shell-content .secret-icons-row {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.up-shell-content .private-transcription-controls,
+.up-shell-content .secret-transcription-controls,
+.up-shell-content .private-translation-controls,
+.up-shell-content .secret-translation-controls {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  height: auto !important;
+}
+
+/* ===== шапка переписки: действия справа, состояние под именем ===== */
+
+.up-shell-content .partner-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.up-shell-content .partner-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--up-text);
+  line-height: 1.2;
+}
+
+.chat-status-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--up-muted);
+  font-weight: 400;
+}
+
+.chat-status-typing {
+  color: var(--up-accent-soft);
+}
+
+/* Метки включённых режимов: одна форма записи, бирюза — наши возможности */
+.chat-mode-chip {
+  padding: 1px 6px 2px;
+  border-radius: 7px;
+  background: rgba(34, 211, 238, 0.16);
+  color: var(--up-feature-soft);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.chat-header-button {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.chat-header-button:hover {
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.chat-header-menu-wrap {
+  position: relative;
+}
+
+.chat-header-menu {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  z-index: 40;
+  min-width: 232px;
+  padding: 6px 0;
+  border-radius: 14px;
+  background: var(--up-surface);
+  border: 1px solid #2e3b52;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-header-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 14px;
+  border: none;
+  background: transparent;
+  color: var(--up-text);
+  font-size: 14.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-header-menu button:hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+/* Переключатель в строке меню — тот же вид, что в андроидном меню */
+.chat-menu-switch {
+  width: 36px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: var(--up-radius-pill);
+  background: #475569;
+  position: relative;
+  transition: background 0.15s ease;
+}
+
+.chat-menu-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  transition: transform 0.15s ease;
+}
+
+.chat-menu-switch.on {
+  background: var(--up-feature);
+}
+
+.chat-menu-switch.on::after {
+  transform: translateX(16px);
+  background: #0f172a;
+}
+
+/* Секретный чат: шапка выстроена так же, как в остальных */
+.up-shell-content .secret-header-content {
+  display: flex !important;
+  align-items: center;
+  gap: var(--up-space-3);
+  width: 100%;
+}
+
+.up-shell-content .secret-partner-container {
+  display: flex;
+  align-items: center;
+  gap: var(--up-space-3);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.up-shell-content .secret-partner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Изменившийся ключ собеседника — повод для внимания, а не украшение */
+.chat-header-button-warn {
+  color: #fca5a5 !important;
+}
+
+/*
+  Шапка секретного чата центрировала содержимое и держала поля по 40px под
+  старую иконку справа. В каркасе она должна стоять так же, как в остальных
+  чатах: содержимое слева, действия справа, одинаковые поля.
+*/
+.up-shell-content .secret-header-content {
+  justify-content: flex-start !important;
+  padding: 0 !important;
+}
+
+.up-shell-content .secret-partner-container {
+  gap: var(--up-space-3) !important;
+}
+
+/* Перевод под сообщением — отдельной строкой, а не вперемешку с текстом */
+.up-shell-content .secret-message-translation,
+.up-shell-content .private-message-translation,
+.up-shell-content .message-translation {
+  display: block;
+  margin-top: 2px;
+}
+
+/* Время в пузырях выровнено по правому краю во всех трёх чатах */
+.up-shell-content .secret-message-timestamp,
+.up-shell-content .message-timestamp,
+.up-shell-content .private-message-timestamp {
+  margin-top: 0 !important;
+  line-height: 1;
+}
+
+/*
+  Перевод под сообщением: значок и текст одной строкой, с отбивкой от
+  оригинала. Ширину пузыря задаём единую, иначе соседние сообщения прыгают
+  по ширине вслед за длиной перевода.
+*/
+.up-shell-content .secret-local-translation {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin-top: 3px;
+  padding-top: 3px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.secret-local-translation-mark {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  opacity: 0.75;
+}
+
+.up-shell-content .secret-message-content-container,
+.up-shell-content .private-message-content-container,
+.up-shell-content .message-content-container {
+  max-width: 460px;
+}
+
+/*
+  Перевод под оригиналом должен читаться как перевод, а не как второе
+  сообщение: отделён чертой, приглушён и чуть мельче. Раньше обе строки шли
+  одинаковым шрифтом и цветом, и было непонятно, где что.
+*/
+.up-shell-content .private-translated-content,
+.up-shell-content .translated-content,
+.up-shell-content .secret-translated-content {
+  display: block !important;
+  margin: 3px 0 0 !important;
+  padding-top: 3px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  color: #a8b6c8 !important;
+  font-size: 13px !important;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.up-shell-content .private-message.private-current-user .private-translated-content,
+.up-shell-content .message.current-user .translated-content {
+  color: #c7d2fe !important;
+  border-top-color: rgba(199, 210, 254, 0.3);
+}
+
+/*
+  Кнопки «перевести» и «озвучить» у каждого сообщения стояли столбиком внутри
+  пузыря, сдвигали текст и ломали выравнивание. Показываем их по наведении,
+  сбоку от пузыря.
+*/
+.up-shell-content .private-message-actions-container,
+.up-shell-content .message-actions-container,
+.up-shell-content .secret-message-actions-container {
+  position: absolute;
+  top: 2px;
+  left: auto;
+  right: -30px;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.up-shell-content .private-message:hover .private-message-actions-container,
+.up-shell-content .message:hover .message-actions-container,
+.up-shell-content .secret-message:hover .secret-message-actions-container {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* У своих сообщений пузырь прижат к правому краю — кнопки уходят влево */
+.up-shell-content .private-message.private-current-user .private-message-actions-container,
+.up-shell-content .message.current-user .message-actions-container,
+.up-shell-content .secret-message.secret-current-user .secret-message-actions-container {
+  right: auto;
+  left: -30px;
+}
+
+/* Недоступное голосовое — обычное состояние, а не ошибка: без красного */
+.up-shell-content .private-audio-error,
+.up-shell-content .audio-error,
+.up-shell-content .secret-audio-error {
+  color: var(--up-muted) !important;
+  font-style: italic;
+}
+
+/*
+  Кнопки у сообщения лежат за пределами пузыря, а наведение считалось только
+  по самому пузырю: стоило повести мышь к ним — они исчезали. Расширяем строку
+  сообщения с той стороны, где они стоят, чтобы путь к ним оставался внутри
+  области наведения.
+*/
+.up-shell-content .private-message.private-other-user,
+.up-shell-content .message.other-user,
+.up-shell-content .secret-message.secret-other-user {
+  padding-right: 36px;
+}
+
+.up-shell-content .private-message.private-current-user,
+.up-shell-content .message.current-user,
+.up-shell-content .secret-message.secret-current-user {
+  padding-left: 36px;
+}
+
+/*
+  Цвет кнопок был разным у своих и чужих сообщений: на синем пузыре своя
+  иконка озвучки сливалась с фоном. Делаем один приглушённый цвет для обеих
+  сторон и общий акцент при наведении.
+*/
+.up-shell-content .private-message-actions-container button,
+.up-shell-content .message-actions-container button,
+.up-shell-content .secret-message-actions-container button,
+.up-shell-content .private-message-tts-button,
+.up-shell-content .private-message-translate-button,
+.up-shell-content .private-message-transcription-button {
+  position: static !important;
+  color: #cbd5e1 !important;
+  opacity: 0.9 !important;
+  font-size: 14px !important;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.up-shell-content .private-message-actions-container button:hover,
+.up-shell-content .message-actions-container button:hover,
+.up-shell-content .secret-message-actions-container button:hover {
+  color: var(--up-accent-soft) !important;
+  opacity: 1 !important;
+}
+
+/*
+  Кнопка «озвучить перевод» была покрашена в цвет тёмной поверхности
+  (#1e2937, а у своих сообщений почти чёрный), да и значок рисовался чёрной
+  заливкой — на тёмном пузыре он исчезал, хотя и нажимался. Приводим к общему
+  виду остальных кнопок у сообщения.
+*/
+.up-shell-content .private-message-tts-translated-button,
+.up-shell-content .message-tts-translated-button,
+.up-shell-content .secret-message-tts-translated-button,
+.up-shell-content .private-message.private-current-user .private-message-tts-translated-button,
+.up-shell-content .message.current-user .message-tts-translated-button,
+.up-shell-content .secret-message.secret-current-user .secret-message-tts-translated-button {
+  color: #cbd5e1 !important;
+  opacity: 0.9;
+}
+
+.up-shell-content .private-message-tts-translated-button:hover,
+.up-shell-content .message-tts-translated-button:hover,
+.up-shell-content .secret-message-tts-translated-button:hover {
+  color: var(--up-accent-soft) !important;
+  opacity: 1;
+}
+
+/* Значок без своей заливки берёт цвет кнопки, а не чёрный по умолчанию */
+.up-shell-content .private-message-tts-translated-button svg,
+.up-shell-content .message-tts-translated-button svg,
+.up-shell-content .secret-message-tts-translated-button svg,
+.up-shell-content .private-message-tts-button svg,
+.up-shell-content .message-tts-button svg {
+  fill: currentColor;
+}

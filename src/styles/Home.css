@@ -682,6 +682,17 @@ h2 {
   padding-left: 24px;
 }
 
+/* Выход отделён чертой: действие другого рода, чем переходы выше */
+.profile-dropdown-logout {
+  margin-top: 6px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  color: #fca5a5;
+}
+
+.profile-dropdown-logout:hover {
+  color: #fecaca;
+}
+
 /* Стили для фото аватара */
 .avatar-image {
   width: 100%;

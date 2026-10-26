@@ -1,0 +1,94 @@
+/*
+  Токены оформления.
+
+  До сих пор каждый экран красился своими числами: 89 разных цветов и 27
+  размеров шрифта по файлам. Новые части интерфейса берут значения отсюда,
+  старые переводим по мере того, как до них доходим.
+
+  Правило цвета: индиго — действия и акцент, бирюза — наши особенности
+  (секретные чаты, перевод).
+*/
+
+:root {
+  --up-bg: #0f172a;
+  --up-panel: #131e33;
+  --up-surface: #1e2937;
+  --up-surface-2: #17233c;
+  --up-selected: #1b2846;
+
+  --up-text: #e2e8f0;
+  --up-muted: #94a3b8;
+  --up-faint: #64748b;
+
+  --up-accent: #6366f1;
+  --up-accent-strong: #4f46e5;
+  --up-accent-soft: #818cf8;
+  --up-feature: #22d3ee;
+  --up-feature-soft: #67e8f9;
+  --up-online: #22c55e;
+  --up-danger: #fca5a5;
+
+  --up-border: rgba(148, 163, 184, 0.14);
+  --up-border-strong: rgba(148, 163, 184, 0.3);
+
+  --up-radius-sm: 8px;
+  --up-radius: 12px;
+  --up-radius-lg: 16px;
+  --up-radius-pill: 999px;
+
+  --up-space-1: 4px;
+  --up-space-2: 8px;
+  --up-space-3: 12px;
+  --up-space-4: 16px;
+  --up-space-5: 20px;
+  --up-space-6: 24px;
+
+  --up-font: system-ui, "Segoe UI", Roboto, sans-serif;
+  --up-text-lg: 19px;
+  --up-text-md: 15px;
+  --up-text-sm: 13.5px;
+  --up-text-xs: 11.5px;
+
+  --up-list-width: 360px;
+}
+
+/*
+  Всплывающие сообщения. Библиотека рисует их светлыми карточками — посреди
+  тёмного мессенджера это выглядит чужеродно. Приводим к общей палитре:
+  поверхность как у карточек, цветом помечена только полоска слева.
+*/
+.Toastify__toast {
+  background: var(--up-surface) !important;
+  color: var(--up-text) !important;
+  border: 1px solid #2e3b52;
+  border-radius: var(--up-radius) !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5) !important;
+  font-family: var(--up-font);
+  font-size: var(--up-text-sm);
+  border-left: 3px solid var(--up-accent);
+}
+
+.Toastify__toast--error {
+  border-left-color: #f87171;
+}
+
+.Toastify__toast--success {
+  border-left-color: #4ade80;
+}
+
+.Toastify__toast--warning {
+  border-left-color: #fbbf24;
+}
+
+.Toastify__toast--info {
+  border-left-color: var(--up-feature);
+}
+
+.Toastify__close-button {
+  color: var(--up-muted) !important;
+  opacity: 0.8;
+}
+
+.Toastify__progress-bar {
+  background: rgba(148, 163, 184, 0.45) !important;
+}

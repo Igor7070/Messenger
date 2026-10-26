@@ -1,0 +1,156 @@
+/* Экран входа и регистрации. Те же цвета, что на телефоне, чтобы два клиента
+   выглядели одним продуктом. */
+
+.auth-wrap {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 24px 24px;
+  border-radius: 20px;
+  background: #1e2937;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+}
+
+.auth-title {
+  margin: 0;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.auth-subtitle {
+  margin: 6px 0 20px;
+  text-align: center;
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 11px 0;
+  border: none;
+  border-radius: 10px;
+  background: #172033;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-tab-active {
+  background: #6366f1;
+  color: #ffffff;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 13px 14px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 10px;
+  background: #172033;
+  color: #e2e8f0;
+  font-size: 15px;
+  font-family: inherit;
+}
+
+.auth-input::placeholder {
+  color: #94a3b8;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.auth-textarea {
+  resize: vertical;
+}
+
+/* Поле пароля с «глазком»: кнопка лежит поверх правого края поля */
+.auth-password {
+  position: relative;
+}
+
+.auth-password .auth-input {
+  padding-right: 44px;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  top: 10px;
+  right: 8px;
+  padding: 4px 6px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.auth-file {
+  display: block;
+  margin-bottom: 14px;
+  padding: 11px 14px;
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 13.5px;
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-file input {
+  display: none;
+}
+
+.auth-submit {
+  padding: 14px 0;
+  margin-top: 4px;
+  border: none;
+  border-radius: 12px;
+  background: #6366f1;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.auth-submit:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.auth-switch {
+  margin-top: 16px;
+  padding: 6px;
+  border: none;
+  background: transparent;
+  color: #22d3ee;
+  font-size: 14px;
+  cursor: pointer;
+}

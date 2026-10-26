@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { stompAuthHeaders } from '../authToken';
 import { useNavigate } from 'react-router-dom';
-import Modal from 'react-modal';
 import { toast } from 'react-toastify';
 import '../styles/Home.css';
-import { getMessages, createChat, createUser, loginUser, deleteChat as deleteChatRequest } from '../api/messages';
+import { getMessages, createChat, deleteChat as deleteChatRequest } from '../api/messages';
 import GroupMembersDialog from './GroupMembersDialog';
 import { acceptInvite, chatAvatarUrl } from '../api/chatMembers';
 import IncomingCallNotification from './IncomingCallNotification';
@@ -18,71 +17,6 @@ import { useAssistant } from '../context/AssistantContext';
 import AssistantChatWindow from '../components/AssistantChatWindow';
 import AssistantIcon from './AssistantIcon';
 import { format, isToday, parseISO } from 'date-fns';
-import sodium from 'libsodium-wrappers';
-
-const KEYSTORE_ALIAS = 'secret_chat_key';
-
-const generateAndSaveKeys = async (userId) => {
-  try {
-    console.log(`Starting key generation for userId: ${userId}`);
-    await sodium.ready;
-    const alias = `${KEYSTORE_ALIAS}_${userId}`;
-    const existingKey = localStorage.getItem(alias);
-    console.log(`Existing private key for ${alias}: ${existingKey ? 'found' : 'not found'}`);
-    if (!existingKey) {
-      console.log('Generating new key pair...');
-      const { publicKey, privateKey } = sodium.crypto_box_keypair();
-      const privateKeyBase64 = sodium.to_base64(privateKey);
-      const publicKeyBase64 = sodium.to_base64(publicKey).trim(); // Удаляем лишние пробелы
-      console.log(`Generated keys - Public: ${publicKeyBase64}, Private: ${privateKeyBase64}`);
-      localStorage.setItem(alias, privateKeyBase64);
-      console.log(`Private key saved to localStorage for ${alias}`);
-      await sendPublicKeyToServer(userId, publicKeyBase64);
-      console.log(`Keys generated and saved for userId: ${userId}`);
-    } else {
-      console.log(`Private key already exists for userId: ${userId}, skipping generation`);
-      // Проверяем, есть ли публичный ключ на сервере
-      try {
-        const response = await fetch(`https://unlimitedpossibilities12.org/api/public_keys/${userId}`);
-        if (!response.ok) {
-          console.log(`Public key not found for userId: ${userId}, re-uploading...`);
-          const storedKeyPair = JSON.parse(localStorage.getItem(`keyPair_${userId}`));
-          if (storedKeyPair?.publicKey) {
-            await sendPublicKeyToServer(userId, storedKeyPair.publicKey);
-          }
-        }
-      } catch (error) {
-        console.error(`Error checking public key for userId: ${userId}`, error);
-      }
-    }
-  } catch (error) {
-    console.error('Error generating keys:', error);
-    toast.error('Failed to initialize encryption keys');
-  }
-};
-
-const sendPublicKeyToServer = async (userId, publicKey) => {
-  try {
-    console.log(`Uploading public key for userId: ${userId}, key: ${publicKey}`);
-    const response = await fetch(`https://unlimitedpossibilities12.org/api/public_keys`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId, publicKey }),
-    });
-    const responseText = await response.text();
-    console.log(`Public key upload response: status=${response.status}, statusText=${response.statusText}, body=${responseText}`);
-    if (!response.ok) {
-      console.error(`Failed to upload public key: ${responseText}`);
-      throw new Error(`Failed to upload public key: ${response.status} - ${responseText}`);
-    }
-    console.log(`Public key uploaded successfully for userId: ${userId}`);
-  } catch (error) {
-    console.error('Error uploading public key:', error);
-    toast.error(`Failed to upload public key: ${error.message}`);
-  }
-};
 
 const Home = () => {
   const [chatName, setChatName] = useState('');
@@ -94,14 +28,7 @@ const Home = () => {
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [chats, setChats] = useState([]);
   const [users, setUsers] = useState([]);
-  const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [bio, setBio] = useState('');
-  const [avatar, setAvatar] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [loginUsername, setLoginUsername] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('users'); // 'users' или 'chats'
   const messageClient = useRef(null);
@@ -333,34 +260,6 @@ const Home = () => {
     }
   };
 
-  const loginUserHandler = async () => {
-    try {
-      const user = await loginUser({ username: loginUsername, password: loginPassword });
-      const userId = Number(user.id);
-      localStorage.setItem('userId', String(userId));
-      localStorage.setItem('username', user.username);
-
-      // Сохраняем аватар, если он есть
-      if (user.avatar) {
-        localStorage.setItem('userAvatar', user.avatar);
-        console.log('Аватар сохранён в localStorage:', user.avatar);
-      }
-
-      setCurrentUserId(userId);
-      setContextUserId(userId);
-      setNotificationUserId(userId);
-      setLoginUsername('');
-      setLoginPassword('');
-      setIsLoggedIn(true);
-      await generateAndSaveKeys(userId); // Добавлено генерация ключей
-      initializeWebSocket(userId, user.username);
-      sendOnlineStatus();
-      toast.success('Login successful!');
-    } catch (error) {
-      toast.error(error.message || 'Error logging in');
-    }
-  };
-
   const logoutUser = () => {
     disconnectWebSocket();
     localStorage.removeItem('userId');
@@ -372,6 +271,8 @@ const Home = () => {
     setNotificationUserId(null);
     setIsLoggedIn(false);
     toast.success('Logged out successfully!');
+    // Без аккаунта смотреть тут нечего — отправляем ко входу
+    navigate('/auth', { replace: true });
   };
 
   /**
@@ -433,40 +334,6 @@ const Home = () => {
     }
   };
 
-  const createUserHandler = async () => {
-    const formData = new FormData();
-    formData.append('username', username);
-    formData.append('password', password);
-    formData.append('bio', bio);
-    if (avatar) {
-      formData.append('avatar', avatar);
-    }
-
-    try {
-      const response = await fetch('https://unlimitedpossibilities12.org/api/users/create', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const newUser = await response.json();
-        setUsers([...users, newUser]);
-        setModalIsOpen(false);
-        setUsername('');
-        setPassword('');
-        setBio('');
-        setAvatar(null);
-        await generateAndSaveKeys(newUser.id); // Добавлено
-        toast.success('User created successfully!');
-      } else {
-        const errorMessage = await response.text();
-        toast.error(errorMessage);
-      }
-    } catch (error) {
-      toast.error('Error creating user');
-    }
-  };
-
   const goToChat = (chatId) => {
     /*if (!isLoggedIn || currentUserId === null) {
       toast.error('You need to create an account or log in');
@@ -474,14 +341,6 @@ const Home = () => {
       return;
     }*/
     navigate(`/chat/${chatId}`);
-  };
-
-  const openModal = () => {
-    setUsername('');
-    setPassword('');
-    setBio('');
-    setAvatar(null);
-    setModalIsOpen(true);
   };
 
   const filteredChats = chats
@@ -522,34 +381,6 @@ const Home = () => {
   return (
     <>
     <div className="home-container">
-      <div className="login-container-home">
-        {isLoggedIn ? (
-          <button onClick={logoutUser} className="logout-button-home">
-            Logout
-          </button>
-        ) : (
-          <>
-            <input
-              type="text"
-              value={loginUsername}
-              onChange={(e) => setLoginUsername(e.target.value)}
-              placeholder="Username"
-              className="login-input-home"
-            />
-            <input
-              type="password"
-              value={loginPassword}
-              onChange={(e) => setLoginPassword(e.target.value)}
-              placeholder="Password"
-              className="login-input-home"
-            />
-            <button onClick={loginUserHandler} className="login-button-home">
-              Login
-            </button>
-          </>
-        )}
-      </div>
-
       {/* === Аватар текущего пользователя в левом верхнем углу (только когда авторизован) === */}
       {isLoggedIn && currentUserId && (
         <div className="current-user-avatar-container" ref={profileMenuRef}>
@@ -640,14 +471,25 @@ const Home = () => {
                 </div>
 
                 {/* Calls */}
-                <div 
-                  className="profile-dropdown-item" 
+                <div
+                  className="profile-dropdown-item"
                   onClick={() => {
                     setShowProfileMenu(false);
                     navigate('/calls');
                   }}
                 >
                   📞 Calls
+                </div>
+
+                {/* Выход — здесь, а не в шапке списка чатов, как было раньше */}
+                <div
+                  className="profile-dropdown-item profile-dropdown-logout"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    logoutUser();
+                  }}
+                >
+                  🚪 Log out
                 </div>
               </div>
             </div>
@@ -702,9 +544,6 @@ const Home = () => {
           {/* Заголовок — только на ПК */}
           <h2 className="home-users-h2 desktop-only">Users</h2>
 
-          <button type="button" onClick={openModal} className="create-user-button-main">
-            Create a new user
-          </button>
           <input
             type="text"
             value={userSearchTerm}
@@ -834,50 +673,6 @@ const Home = () => {
         />
       )}
 
-      {/* === МОДАЛКА === */}
-      <Modal
-        isOpen={modalIsOpen}
-        onRequestClose={() => setModalIsOpen(false)}
-        className="modal"
-        overlayClassName="modal-overlay"
-      >
-        <h2 className="modal-title">Create User</h2>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Enter username"
-          className="modal-input"
-          required
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Enter password"
-          className="modal-input"
-          required
-        />
-        <textarea
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          placeholder="Tell us about yourself (optional)"
-          rows={3}
-          className="modal-textarea"
-          maxLength={244}
-        />
-        <input
-          type="file"
-          onChange={(e) => setAvatar(e.target.files[0])}
-          className="modal-file-input"
-        />
-        <button type="button" onClick={createUserHandler} className="modal-create-button">
-          Create User
-        </button>
-        <button onClick={() => setModalIsOpen(false)} className="modal-close-button">
-          Close
-        </button>
-      </Modal>
     </div>
      {/* Иконка ассистента — только на телефоне, вне контейнера */}
     {window.innerWidth <= 800 && (

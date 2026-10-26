@@ -1,0 +1,271 @@
+/* Левая колонка каркаса: список разговоров. Значения — из tokens.css. */
+
+.up-list {
+  width: var(--up-list-width);
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--up-panel);
+  border-right: 1px solid var(--up-border);
+  font-family: var(--up-font);
+}
+
+.up-list-header {
+  display: flex;
+  align-items: center;
+  gap: var(--up-space-2);
+  padding: var(--up-space-4) var(--up-space-4) var(--up-space-3);
+}
+
+.up-list-avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 50%;
+  background: #334155;
+  color: var(--up-text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.up-list-title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: var(--up-text-lg);
+  font-weight: 700;
+  color: var(--up-text);
+}
+
+.up-list-icon-button {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.up-list-icon-button:hover {
+  background: rgba(148, 163, 184, 0.14);
+}
+
+/* Меню привязано к кнопке, а не всплывает посреди экрана */
+.up-list-menu-wrap {
+  position: relative;
+}
+
+.up-list-menu {
+  position: absolute;
+  top: 38px;
+  right: 0;
+  z-index: 30;
+  min-width: 216px;
+  padding: 6px 0;
+  border-radius: 14px;
+  background: var(--up-surface);
+  border: 1px solid #2e3b52;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+}
+
+.up-list-menu button {
+  padding: 11px 14px;
+  border: none;
+  background: transparent;
+  color: var(--up-text);
+  font-size: 14.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.up-list-menu button:hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.up-list-search {
+  padding: 0 var(--up-space-3) var(--up-space-2);
+}
+
+.up-list-search input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid var(--up-border-strong);
+  border-radius: var(--up-radius-sm);
+  background: var(--up-surface-2);
+  color: var(--up-text);
+  font-size: var(--up-text-sm);
+}
+
+.up-list-search input:focus {
+  outline: none;
+  border-color: var(--up-accent);
+}
+
+.up-list-items {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.up-list-empty {
+  margin: var(--up-space-5);
+  color: var(--up-muted);
+  font-size: var(--up-text-sm);
+  text-align: center;
+}
+
+/* Строка разговора: плоская, во всю ширину, без карточки */
+.up-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 14px;
+  border: none;
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--up-text);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.up-row:hover {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.up-row-active {
+  background: var(--up-selected);
+  border-left-color: var(--up-accent);
+}
+
+.up-row-avatar {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.up-row-avatar-assistant {
+  background: #312e81;
+}
+
+.up-row-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.up-row-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.up-row-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--up-text-md);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Бирюза закреплена за нашими особенностями: секретность и перевод */
+.up-row-badge {
+  flex: 0 0 auto;
+  padding: 1px 5px 2px;
+  border-radius: 6px;
+  background: rgba(34, 211, 238, 0.16);
+  color: var(--up-feature-soft);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.up-row-time {
+  flex: 0 0 auto;
+  color: var(--up-muted);
+  font-size: var(--up-text-xs);
+}
+
+.up-row-preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--up-muted);
+  font-size: var(--up-text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.up-row-unread {
+  flex: 0 0 auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: var(--up-radius-pill);
+  background: var(--up-accent);
+  color: #ffffff;
+  font-size: var(--up-text-xs);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.up-list-footer {
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--up-border);
+}
+
+.up-list-new {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 0;
+  border: none;
+  border-radius: var(--up-radius-sm);
+  background: var(--up-accent);
+  color: #ffffff;
+  font-size: var(--up-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.up-list-new:hover {
+  background: var(--up-accent-strong);
+}
+
+/* Метка сборки внизу меню: по ней видно, свежая ли страница открыта */
+.up-list-menu-build {
+  margin: 4px 0 0;
+  padding: 6px 12px 2px;
+  border-top: 1px solid var(--up-border);
+  color: var(--up-faint);
+  font-size: var(--up-text-xs);
+  white-space: nowrap;
+}

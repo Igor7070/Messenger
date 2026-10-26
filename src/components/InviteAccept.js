@@ -31,7 +31,7 @@ const InviteAccept = () => {
         sessionStorage.setItem('pendingInvite', token);
       } catch { /* приватный режим */ }
       setStatus('Please sign in first — the invite will be applied right after.');
-      setTimeout(() => navigate('/'), 1500);
+      setTimeout(() => navigate('/auth', { state: { from: `/invite/${token}` } }), 1200);
       return;
     }
 
@@ -55,6 +55,9 @@ const InviteAccept = () => {
     setJoining(true);
     acceptInvite(token)
       .then((result) => {
+        // Запас на случай, если сюда пришли после входа: иначе главный экран
+        // применил бы то же приглашение второй раз
+        try { sessionStorage.removeItem('pendingInvite'); } catch { /* приватный режим */ }
         toast.success(`You joined "${result.name}"`);
         navigate(`/chat/${result.chatId}`);
       })
