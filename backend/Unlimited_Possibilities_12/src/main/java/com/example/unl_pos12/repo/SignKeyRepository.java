@@ -9,4 +9,6 @@ import java.util.Optional;
 @Repository
 public interface SignKeyRepository extends JpaRepository<SignKey, Long> {
     Optional<SignKey> findByUserId(Long userId);
+
+    void deleteByUserId(Long userId);
 }

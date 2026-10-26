@@ -1,11 +1,21 @@
 package com.example.unl_pos12.service;
 
+import com.example.unl_pos12.controller.handler.InvalidCredentialsException;
+import com.example.unl_pos12.controller.handler.UsernameTakenException;
 import com.example.unl_pos12.model.messenger.Chat;
+import com.example.unl_pos12.model.messenger.ChatMember;
 import com.example.unl_pos12.model.messenger.User;
+import com.example.unl_pos12.repo.CallRepository;
+import com.example.unl_pos12.repo.ChatMemberRepository;
 import com.example.unl_pos12.repo.ChatRepository;
 import com.example.unl_pos12.repo.MessageRepository;
+import com.example.unl_pos12.repo.PublicKeyHistoryRepository;
+import com.example.unl_pos12.repo.PublicKeyRepository;
+import com.example.unl_pos12.repo.PushTokenRepository;
+import com.example.unl_pos12.repo.SignKeyRepository;
 import com.example.unl_pos12.repo.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,14 +45,33 @@ public class UserService {
     private ChatRepository chatRepository;
     @Autowired
     private MessageRepository messageRepository;
+    @Autowired
+    private ChatMemberRepository chatMemberRepository;
+    @Autowired
+    private ChatMemberService chatMemberService;
+    @Autowired
+    private PublicKeyRepository publicKeyRepository;
+    @Autowired
+    private PublicKeyHistoryRepository publicKeyHistoryRepository;
+    @Autowired
+    private SignKeyRepository signKeyRepository;
+    @Autowired
+    private PushTokenRepository pushTokenRepository;
+    @Autowired
+    private CallRepository callRepository;
 
     public User createUser(User user) {
         String errorMessage = "";
+        String username = user.getUsername() == null ? "" : user.getUsername().trim();
+        if (username.isEmpty()) {
+            throw new RuntimeException("Username is required");
+        }
+        user.setUsername(username);
         // Проверка на существование пользователя
-        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
-            errorMessage = "User already exists";
+        if (userRepository.findByUsername(username).isPresent()) {
+            errorMessage = "This username is already taken";
             System.out.println(errorMessage);
-            throw new RuntimeException(errorMessage);
+            throw new UsernameTakenException(errorMessage);
         }
         // Проверка на валидность пароля
         if (!isValidPassword(user.getPassword())) {
@@ -51,7 +80,16 @@ public class UserService {
             throw new RuntimeException(errorMessage);
         }
         user.setPassword(PASSWORD_ENCODER.encode(user.getPassword()));
-        return userRepository.save(user);
+        try {
+            return userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            // Та же регистрация пришла дважды почти одновременно: проверка выше
+            // успела отработать у обеих, а уникальность имени держит база.
+            // Вторая попытка получает отказ здесь, и пары учётных записей с
+            // одним именем больше не появляется.
+            System.out.println("Username taken (race on insert): " + username);
+            throw new UsernameTakenException("This username is already taken");
+        }
     }
 
     public User loginUser(String username, String password) {
@@ -76,8 +114,8 @@ public class UserService {
         }
         {
             errorMessage = "Invalid username or password";
-            System.out.println(errorMessage);
-            throw new RuntimeException(errorMessage);
+            System.out.println("Login refused: " + username);
+            throw new InvalidCredentialsException(errorMessage);
         }
     }
 
@@ -108,6 +146,18 @@ public class UserService {
 
     private boolean isValidPassword(String password) {
         return password.length() >= 9 && password.matches(".*[a-zA-Z].*") && password.matches(".*\\d.*");
+    }
+
+    /**
+     * Участники приватного или секретного чата — по связи, а не по имени.
+     *
+     * Имя такого чата складывается из имён собеседников через «_», и клиент
+     * вычислял собеседника разбором этой строки. Имя пользователя само может
+     * содержать «_», и тогда разбор давал несуществующее имя: переписка не
+     * открывалась вовсе.
+     */
+    public List<User> getMembersOfChat(Long chatId) {
+        return userRepository.findMembersOfChat(chatId);
     }
 
     public List<Chat> getPrivateChatsByUserId(Long userId) {
@@ -182,16 +232,67 @@ public class UserService {
         return false; // Пользователь или чат не найден
     }
 
+    /**
+     * Удаление учётки вместе со всем, что к ней привязано.
+     *
+     * Раньше чистились только сообщения, а ключи шифрования, их история, метки
+     * для уведомлений и членство в группах оставались в базе навсегда: после
+     * каждой удалённой учётки копился мусор. Журнал звонков вдобавок связан с
+     * пользователем внешним ключом — у того, кто звонил, удаление вообще не
+     * прошло бы.
+     */
     @Transactional // Эта аннотация позволяет выполнять операции в транзакции
     public boolean deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            return false;
+        }
+
+        // Личные и секретные чаты держатся на связи user <-> chat, а не на
+        // списке участников: запоминаем их до удаления, чтобы потом проверить,
+        // остался ли у переписки хоть один хозяин
+        List<Long> personalChats = new java.util.ArrayList<>();
+        User leaving = userRepository.findById(id).orElse(null);
+        if (leaving != null) {
+            for (Chat chat : leaving.getPrivateChats()) {
+                personalChats.add(chat.getId());
+            }
+        }
+
         // Сначала удаляем все сообщения, отправленные пользователем
         messageRepository.deleteBySenderId(id);
 
-        if (userRepository.existsById(id)) {
-            userRepository.deleteById(id);
-            return true;
+        // Из групп выходим по-человечески: если уходит владелец, права
+        // переходят к админу или самому давнему участнику — иначе группа
+        // осталась бы без хозяина, и её некому было бы ни настроить, ни удалить
+        for (ChatMember membership : chatMemberRepository.findByUserId(id)) {
+            Long chatId = membership.getChatId();
+            chatMemberService.leave(chatId, id);
+            // Группа, из которой ушёл последний участник, никому не видна и
+            // никому не принадлежит — держать её в базе незачем
+            if (chatMemberRepository.countByChatId(chatId) == 0) {
+                messageRepository.deleteByChatId(chatId);
+                chatRepository.deleteById(chatId);
+            }
         }
-        return false;
+
+        callRepository.deleteAll(callRepository.findByUserId(id));
+        publicKeyRepository.deleteByUserId(id);
+        publicKeyHistoryRepository.deleteByUserId(id);
+        signKeyRepository.deleteByUserId(id);
+        pushTokenRepository.deleteByUserId(id);
+
+        userRepository.deleteById(id);
+        userRepository.flush();
+
+        // Переписка, которую не держит больше никто, никому не видна —
+        // раньше такие оставались в базе навсегда
+        for (Long chatId : personalChats) {
+            if (userRepository.countOwnersOfChat(chatId) == 0) {
+                messageRepository.deleteByChatId(chatId);
+                chatRepository.deleteById(chatId);
+            }
+        }
+        return true;
     }
 
     @Transactional

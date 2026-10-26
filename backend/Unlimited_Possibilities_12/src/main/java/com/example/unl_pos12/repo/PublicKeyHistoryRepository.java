@@ -10,4 +10,7 @@ import java.util.Optional;
 public interface PublicKeyHistoryRepository extends JpaRepository<PublicKeyHistory, Long> {
     PublicKeyHistory findByUserIdAndValidUntilIsNull(Long userId);
     Optional<PublicKeyHistory> findById(Long id); // [CHANGE] Изменено с PublicKeyHistory на Optional<PublicKeyHistory>
+
+    /** История ключей удалённой учётки. */
+    void deleteByUserId(Long userId);
 }
