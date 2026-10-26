@@ -245,6 +245,25 @@ const ChatList = () => {
     }
   };
 
+  /**
+   * Выход из учётной записи. Раньше он жил только на странице контактов, в
+   * выпадающем списке под аватаром, — из основной оболочки выйти было нечем.
+   */
+  const signOut = () => {
+    setMenuOpen(false);
+    if (!window.confirm('Sign out of this account?')) return;
+    try {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('username');
+      localStorage.removeItem('userAvatar');
+    } catch {
+      /* приватный режим */
+    }
+    navigate('/auth', { replace: true });
+    window.location.reload(); // сбрасываем сокеты и состояние контекстов
+  };
+
   const joinByLink = async () => {
     setMenuOpen(false);
     const link = window.prompt('Paste the invite link');
@@ -279,14 +298,53 @@ const ChatList = () => {
   return (
     <aside className="up-list">
       <header className="up-list-header">
-        <button
-          type="button"
-          className="up-list-avatar"
-          title="My profile"
-          onClick={() => currentUserId && navigate(`/user/${currentUserId}`)}
-        >
-          {(currentUsername || '?').charAt(0).toUpperCase()}
-        </button>
+        {/*
+          Кружок с аватаром — вход в меню: именно по нему жмут, когда ищут
+          «всё про меня». Раньше он вёл прямо в профиль, а разделы (люди,
+          звонки, новая группа) прятались под «тремя точками» справа, и их
+          не находили. Теперь вход один.
+        */}
+        <div className="up-list-menu-wrap" ref={menuRef}>
+          <button
+            type="button"
+            className="up-list-avatar"
+            title="Menu"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {(currentUsername || '?').charAt(0).toUpperCase()}
+          </button>
+          {menuOpen && (
+            <div className="up-list-menu up-list-menu-left">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  if (currentUserId) navigate(`/user/${currentUserId}`);
+                }}
+              >
+                My profile
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); navigate('/contacts'); }}
+              >
+                People
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); navigate('/calls'); }}
+              >
+                Calls
+              </button>
+              <button type="button" onClick={newGroup}>New group</button>
+              <button type="button" onClick={joinByLink}>Join by invite link</button>
+              <button type="button" className="up-list-menu-danger" onClick={signOut}>
+                Sign out
+              </button>
+              <p className="up-list-menu-build">Build {BUILD_STAMP}</p>
+            </div>
+          )}
+        </div>
         <h2 className="up-list-title">Chats</h2>
         <button
           type="button"
@@ -299,36 +357,6 @@ const ChatList = () => {
             <path d="M20 20l-3.5-3.5" />
           </svg>
         </button>
-        <div className="up-list-menu-wrap" ref={menuRef}>
-          <button
-            type="button"
-            className="up-list-icon-button"
-            title="More"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <circle cx="12" cy="5" r="1.8" />
-              <circle cx="12" cy="12" r="1.8" />
-              <circle cx="12" cy="19" r="1.8" />
-            </svg>
-          </button>
-          {menuOpen && (
-            <div className="up-list-menu">
-              <button type="button" onClick={newGroup}>New group</button>
-              <button type="button" onClick={joinByLink}>Join by invite link</button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  navigate('/calls');
-                }}
-              >
-                Calls
-              </button>
-              <p className="up-list-menu-build">Build {BUILD_STAMP}</p>
-            </div>
-          )}
-        </div>
       </header>
 
       {searchOpen && (

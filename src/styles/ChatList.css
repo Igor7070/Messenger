@@ -269,3 +269,18 @@
   font-size: var(--up-text-xs);
   white-space: nowrap;
 }
+
+/* Меню у кружка профиля раскрывается вправо: кнопка стоит слева в шапке */
+.up-list-menu-left {
+  right: auto;
+  left: 0;
+}
+
+/* Выход — действие, после которого придётся входить заново: помечаем цветом */
+.up-list-menu button.up-list-menu-danger {
+  color: var(--up-danger);
+}
+
+.up-list-menu button.up-list-menu-danger:hover {
+  background: rgba(248, 113, 113, 0.14);
+}
