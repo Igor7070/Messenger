@@ -25,6 +25,7 @@ import TranscriptionSettingsModal from './TranscriptionSettingsModal';
 import AiMessageGeneratorDialog from './AiMessageGeneratorDialog';
 import { getCachedPreview, loadPreview } from '../utils/linkPreviewCache';
 import { isMissingAttachment, rememberMissingAttachment } from '../utils/missingAttachments';
+import { loadCachedMessages, cacheMessages } from '../utils/messageCache';
 
 
 /**
@@ -245,6 +246,13 @@ const PrivateChat = () => {
         return;
       }
 
+      // Сохранённый хвост переписки — на экран сразу, иначе первую секунду
+      // смотреть не на что. Ответ сервера придёт следом и заменит список.
+      const cached = loadCachedMessages(chatIdParam);
+      if (cached.length > 0) {
+        setMessages(cached);
+      }
+
       try {
         const chatData = await getChatById(chatIdParam);
         setChatName(chatData.name);
@@ -318,6 +326,7 @@ const PrivateChat = () => {
         });
 
         setMessages(updatedMessages);
+        cacheMessages(chatIdParam, updatedMessages);
         if (isTranslationEnabled && translationMode === 'all') {
           translateExistingMessages();
         }

@@ -26,6 +26,7 @@ import { chatAvatarUrl } from '../api/chatMembers';
 import { getChatById } from '../api/chats';
 import { getCachedPreview, loadPreview } from '../utils/linkPreviewCache';
 import { isMissingAttachment, rememberMissingAttachment } from '../utils/missingAttachments';
+import { loadCachedMessages, cacheMessages } from '../utils/messageCache';
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
@@ -390,6 +391,13 @@ const Messenger = () => {
                   console.log('Guest mode: reading group chat allowed');
               }
 
+              // Сохранённый хвост переписки — на экран сразу, иначе первую
+              // секунду смотреть не на что; ответ сервера заменит список
+              const cached = loadCachedMessages(chatId);
+              if (cached.length > 0) {
+                  setMessages(cached);
+              }
+
               // Загружаем сообщения
               const initialMessages = await getMessages(chatId);
               const updatedMessages = initialMessages.map((msg) => {
@@ -431,6 +439,7 @@ const Messenger = () => {
                   return result;
               });
               setMessages(updatedMessages);
+              cacheMessages(chatId, updatedMessages);
               const chat = await getChatById(chatId);
               setChatName(chat.name);
               setChatInfo(chat);
