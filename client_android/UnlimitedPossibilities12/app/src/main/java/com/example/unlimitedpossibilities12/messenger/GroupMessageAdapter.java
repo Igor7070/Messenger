@@ -516,7 +516,6 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
 
         public void bind(Message message, int position) {
             bindDaySeparator(position); // дата дня над первым сообщением дня
-            itemView.post(this::applyFooterLayout); // время рядом с текстом, когда влезает
             // Реализация метода bind остаётся без изменений, как в предоставленном коде
             User sender = message.getSender();
             boolean isSentByCurrentUser = sender.getId() == currentUserId;
@@ -529,6 +528,9 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             // ЯВНО скрываем image_preview в начале bind — чтобы старое превью не оставалось
             imagePreview.setVisibility(View.GONE);
             imagePreview.setOnClickListener(null); // убираем старый обработчик
+            // Отменяем загрузку от прошлого сообщения, иначе чужая картинка
+            // успевает мелькнуть в переиспользованной вьюхе
+            Glide.with(context).clear(imagePreview);
 
             // Установка выравнивания и фона
             ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) messageContainer.getLayoutParams();
@@ -1035,36 +1037,44 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                     // Изображение — превью
                     fileLinkContainer.setVisibility(View.GONE);
                     audioContainer.setVisibility(View.GONE);
-                    imagePreview.setVisibility(View.VISIBLE);
-
                     // Файл мог пропасть с сервера: вместо красного знака во всю
-                    // ширину показываем строку «Image unavailable»
-                    attachmentUnavailable.setVisibility(View.GONE);
-                    Glide.with(context)
-                            .load(fileUrl)
-                            .placeholder(R.drawable.bg_message_image_placeholder)
-                            .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
-                                @Override
-                                public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e,
-                                                            Object model,
-                                                            com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
-                                                            boolean isFirstResource) {
-                                    imagePreview.setVisibility(View.GONE);
-                                    attachmentUnavailable.setVisibility(View.VISIBLE);
-                                    return false;
-                                }
+                    // ширину показываем строку «Image unavailable». Про уже
+                    // пропавшие помним — иначе заглушка мелькает при каждом входе.
+                    boolean knownMissing = MissingAttachments.isMissing(context, fileUrl);
+                    imagePreview.setVisibility(knownMissing ? View.GONE : View.VISIBLE);
+                    attachmentUnavailable.setVisibility(knownMissing ? View.VISIBLE : View.GONE);
 
-                                @Override
-                                public boolean onResourceReady(android.graphics.drawable.Drawable resource,
-                                                               Object model,
-                                                               com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
-                                                               com.bumptech.glide.load.DataSource dataSource,
-                                                               boolean isFirstResource) {
-                                    attachmentUnavailable.setVisibility(View.GONE);
-                                    return false;
-                                }
-                            })
-                            .into(imagePreview);
+                    if (!knownMissing) {
+                        Glide.with(context)
+                                .load(fileUrl)
+                                .placeholder(R.drawable.bg_message_image_placeholder)
+                                .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                                    @Override
+                                    public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                                Object model,
+                                                                com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                                boolean isFirstResource) {
+                                        MissingAttachments.remember(context, fileUrl);
+                                        imagePreview.setVisibility(View.GONE);
+                                        attachmentUnavailable.setVisibility(View.VISIBLE);
+                                        applyFooterLayout();
+                                        return false;
+                                    }
+
+                                    @Override
+                                    public boolean onResourceReady(android.graphics.drawable.Drawable resource,
+                                                                   Object model,
+                                                                   com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                                   com.bumptech.glide.load.DataSource dataSource,
+                                                                   boolean isFirstResource) {
+                                        MissingAttachments.forget(context, fileUrl);
+                                        attachmentUnavailable.setVisibility(View.GONE);
+                                        applyFooterLayout();
+                                        return false;
+                                    }
+                                })
+                                .into(imagePreview);
+                    }
 
                     imagePreview.setOnClickListener(v -> {
                         Intent intent = new Intent(context, FullScreenMessageImageActivity.class);
@@ -1220,6 +1230,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                                         });
 
                                         makeUrlClickable(url);
+                                        applyFooterLayout(); // пузырь стал выше — пересчитываем подвал
 
                                         Log.d(TAG, "Group preview успешно загружено → msg " + msgId);
                                     });
@@ -1247,6 +1258,8 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 contentTextView.setHighlightColor(Color.parseColor("#40BB86FC"));
             }
             // =========================================================
+            // Подвал считаем до отрисовки, иначе лента дёргается
+            applyFooterLayout();
         }
 
 
@@ -1336,7 +1349,16 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 return;
             }
             BubbleFooter.reserveBelow(column, false, base, footerHeight);
-            footer.post(() -> BubbleFooter.applyTail(last, footer.getWidth() + 12 * density));
+            // Меряем подвал здесь же: если отложить на следующий кадр, пузырь
+            // успевает показаться без хвоста и перестраивается на глазах.
+            int unspecified = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+            footer.measure(unspecified, unspecified);
+            int footerWidth = footer.getMeasuredWidth();
+            if (footerWidth > 0) {
+                BubbleFooter.applyTail(last, footerWidth + 12 * density);
+            } else {
+                footer.post(() -> BubbleFooter.applyTail(last, footer.getWidth() + 12 * density));
+            }
         }
 
         /** Последняя видимая строка пузыря: транскрипция, перевод или сам текст. */

@@ -279,7 +279,6 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
 
         public void bind(Message message, int position) {
             bindDaySeparator(position); // дата дня над первым сообщением дня
-            itemView.post(this::applyFooterLayout); // время рядом с текстом, когда влезает
             User sender = message.getSender();
             boolean isSentByCurrentUser = sender.getId() == adapter.currentUserId;
             Log.d(TAG, "Binding message id=" + message.getId() + ", fileUrl=" + message.getFileUrl() +
@@ -682,6 +681,8 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 timestampTextView.setVisibility(View.GONE);
                 Log.w(TAG, "Message at position " + position + ": timestamp is null or empty");
             }
+            // Подвал считаем до отрисовки, иначе лента дёргается
+            applyFooterLayout();
         }
 
         private void setupAudioPlayer(String filePath, Message message) {
@@ -1375,7 +1376,16 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 return;
             }
             BubbleFooter.reserveBelow(column, false, base, footerHeight);
-            footer.post(() -> BubbleFooter.applyTail(last, footer.getWidth() + 12 * density));
+            // Меряем подвал здесь же: если отложить на следующий кадр, пузырь
+            // успевает показаться без хвоста и перестраивается на глазах.
+            int unspecified = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+            footer.measure(unspecified, unspecified);
+            int footerWidth = footer.getMeasuredWidth();
+            if (footerWidth > 0) {
+                BubbleFooter.applyTail(last, footerWidth + 12 * density);
+            } else {
+                footer.post(() -> BubbleFooter.applyTail(last, footer.getWidth() + 12 * density));
+            }
         }
 
         /** Последняя видимая строка пузыря: транскрипция, перевод или сам текст. */

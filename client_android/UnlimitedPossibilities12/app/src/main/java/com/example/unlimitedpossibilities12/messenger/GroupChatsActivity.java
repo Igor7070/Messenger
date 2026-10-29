@@ -947,7 +947,7 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                     }
 
                     messageAdapter.updateMessages(messages);
-                    scrollToBottom();
+                    jumpToBottom();
                     updateLastVisitTime();
                     Log.d(TAG, "Messages fetched: count=" + messages.size());
 
@@ -1136,6 +1136,16 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                 translateNextMessage();
             });
         });
+    }
+
+    /**
+     * Сразу в конец переписки — так открывается чат. Плавная прокрутка через
+     * весь список выглядит рывком: лента успевает промелькнуть серединой.
+     */
+    private void jumpToBottom() {
+        if (messages.size() > 0) {
+            messageList.scrollToPosition(messages.size() - 1);
+        }
     }
 
     private void scrollToBottom() {

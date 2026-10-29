@@ -1099,7 +1099,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                         }
                     }
                     messageAdapter.updateMessages(messages);
-                    scrollToBottom();
+                    jumpToBottom();
                     markAllMessagesAsRead();
                     scheduleStatusCheck();
                     Log.d(TAG, "Messages fetched: count=" + messages.size());
@@ -1463,6 +1463,16 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                 handler.postDelayed(() -> checkMessageStatus(message, retryCount + 1), 3000);
             }
         });
+    }
+
+    /**
+     * Сразу в конец переписки — так открывается чат. Плавная прокрутка через
+     * весь список выглядит рывком: лента успевает промелькнуть серединой.
+     */
+    private void jumpToBottom() {
+        if (messages.size() > 0) {
+            messageList.scrollToPosition(messages.size() - 1);
+        }
     }
 
     private void scrollToBottom() {

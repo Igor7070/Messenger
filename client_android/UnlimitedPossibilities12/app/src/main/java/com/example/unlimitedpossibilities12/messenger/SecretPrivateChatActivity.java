@@ -1438,7 +1438,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                         messages.add(msg);
                     }
                     messageAdapter.updateMessages(messages);
-                    scrollToBottom();
+                    jumpToBottom();
                     markAllMessagesAsRead();
                     scheduleStatusCheck();
                 } else {
@@ -2051,6 +2051,16 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                     Log.e(TAG, "Error fetching recipient by username: " + t.getMessage());
                 }
             });
+        }
+    }
+
+    /**
+     * Сразу в конец переписки — так открывается чат. Плавная прокрутка через
+     * весь список выглядит рывком: лента успевает промелькнуть серединой.
+     */
+    private void jumpToBottom() {
+        if (messages.size() > 0) {
+            messageList.scrollToPosition(messages.size() - 1);
         }
     }
 
