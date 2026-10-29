@@ -24,6 +24,7 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 import TranscriptionSettingsModal from './TranscriptionSettingsModal';
 import AiMessageGeneratorDialog from './AiMessageGeneratorDialog';
 import { getCachedPreview, loadPreview } from '../utils/linkPreviewCache';
+import { isMissingAttachment, rememberMissingAttachment } from '../utils/missingAttachments';
 
 
 /**
@@ -221,9 +222,13 @@ const PrivateChat = () => {
     setIsTranscribing, // ДОБАВЛЕНО
   });
 
-  const scrollToBottom = () => {
+  // Первый раз — сразу в конец: плавная прокрутка через всю переписку
+  // проматывает её на глазах. Плавно уезжаем только к новым сообщениям.
+  const didInitialScroll = useRef(false);
+
+  const scrollToBottom = (smooth = true) => {
     if (messagesEndRef.current && messageListRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
     }
   };
 
@@ -331,7 +336,8 @@ const PrivateChat = () => {
         setTranscriptionMode(localStorage.getItem(`transcription_mode_${chatIdParam}`) || 'selective');
 
         setTimeout(() => {
-          scrollToBottom();
+          scrollToBottom(false);
+          didInitialScroll.current = true;
         }, 0); // Прокрутка после загрузки
       } catch (error) {
         console.error('Ошибка при загрузке данных о чате:', error);
@@ -502,7 +508,8 @@ const PrivateChat = () => {
   useEffect(() => {
     if (messages.length > 0) {
       setTimeout(() => {
-        scrollToBottom();
+        scrollToBottom(didInitialScroll.current);
+        didInitialScroll.current = true;
       }, 0); // setTimeout для выполнения после рендера
     }
   }, [messages.length]);
@@ -2208,7 +2215,7 @@ const PrivateChat = () => {
                           в пузыре оставалась необъяснимая пустая полоса. Пишем
                           прямо, как у голосовых: вложение недоступно.
                         */}
-                            {brokenImages[msg.id] ? (
+                            {brokenImages[msg.id] || isMissingAttachment(msg.fileUrl) ? (
                               <span className="attachment-unavailable">Image unavailable</span>
                             ) : (
                               <img
@@ -2219,6 +2226,7 @@ const PrivateChat = () => {
                                 loading="lazy"
                                 onError={() => {
                                   console.warn('Ошибка загрузки превью в личном чате:', msg.fileUrl);
+                                  rememberMissingAttachment(msg.fileUrl);
                                   setBrokenImages((broken) => ({ ...broken, [msg.id]: true }));
                                 }}
                               />

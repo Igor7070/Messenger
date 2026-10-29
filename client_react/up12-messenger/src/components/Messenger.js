@@ -25,6 +25,7 @@ import GroupMembersDialog from './GroupMembersDialog';
 import { chatAvatarUrl } from '../api/chatMembers';
 import { getChatById } from '../api/chats';
 import { getCachedPreview, loadPreview } from '../utils/linkPreviewCache';
+import { isMissingAttachment, rememberMissingAttachment } from '../utils/missingAttachments';
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
@@ -2049,7 +2050,7 @@ const Messenger = () => {
                                       переразвёртывании сервера. Раньше её прятали, и в
                                       пузыре оставалась пустая полоса без объяснения.
                                     */}
-                                    {brokenImages[msg.id] ? (
+                                    {brokenImages[msg.id] || isMissingAttachment(msg.fileUrl) ? (
                                         <span className="attachment-unavailable">Image unavailable</span>
                                     ) : (
                                         <img
@@ -2060,6 +2061,7 @@ const Messenger = () => {
                                             loading="lazy"
                                             onError={() => {
                                                 console.warn('Ошибка загрузки превью в групповом чате:', msg.fileUrl);
+                                                rememberMissingAttachment(msg.fileUrl);
                                                 setBrokenImages((broken) => ({ ...broken, [msg.id]: true }));
                                             }}
                                         />

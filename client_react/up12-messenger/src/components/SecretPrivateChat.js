@@ -669,7 +669,10 @@ const SecretPrivateChat = () => {
         );
 
         setMessages(decryptedMessages);
-        setTimeout(scrollToBottom, 0);
+        setTimeout(() => {
+          scrollToBottom(false);
+          didInitialScroll.current = true;
+        }, 0);
       } catch (error) {
         console.error('Error fetching chat data:', error);
         toast.error('Failed to load chat');
@@ -1010,7 +1013,10 @@ const SecretPrivateChat = () => {
   // Прокрутка к последнему сообщению
   useEffect(() => {
     if (messages.length > 0) {
-      setTimeout(() => scrollToBottom(), 0);
+      setTimeout(() => {
+        scrollToBottom(didInitialScroll.current);
+        didInitialScroll.current = true;
+      }, 0);
     }
   }, [messages.length]);
 
@@ -1065,9 +1071,13 @@ const SecretPrivateChat = () => {
     };
   }, [contextMenu.visible]);
 
-  const scrollToBottom = () => {
+  // Первый раз — сразу в конец: плавная прокрутка через всю переписку
+  // проматывает её на глазах. Плавно уезжаем только к новым сообщениям.
+  const didInitialScroll = useRef(false);
+
+  const scrollToBottom = (smooth = true) => {
     if (messagesEndRef.current && messageListRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
     }
   };
 
