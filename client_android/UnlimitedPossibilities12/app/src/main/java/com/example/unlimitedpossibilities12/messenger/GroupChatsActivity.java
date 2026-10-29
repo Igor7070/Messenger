@@ -505,7 +505,6 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         }
 
         chatId = getIntent().getLongExtra("chatId", -1);
-        showCachedMessages(); // переписка на экране, пока идут запросы
         username = getSharedPreferences("prefs", MODE_PRIVATE).getString("username", "");
         currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
 
@@ -536,6 +535,13 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         GroupChatTranslationAndSpellCheckHelper.updateTranscriptionIndicator(this, transcriptionIndicator, isTranscriptionEnabled);
         updateHeaderStatus();
         GroupChatTranslationAndSpellCheckHelper.updateTranscriptionIcon(this, transcriptionIconView, isTranscriptionEnabled);
+
+        // Настройки чата известны — показываем сохранённую переписку в том виде,
+        // в каком её вернёт сервер, иначе лента подрастёт и прыгнет вверх
+        messageAdapter.setTranslationEnabled(isTranslationEnabled);
+        messageAdapter.setTTSEnabled(isTTSEnabled);
+        messageAdapter.setTranscriptionEnabled(isTranscriptionEnabled);
+        showCachedMessages();
 
         if (chatId == -1 || username.isEmpty()) {
             Log.e(TAG, "Invalid parameters: chatId=" + chatId + ", username=" + username);
