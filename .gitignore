@@ -25,3 +25,6 @@ replay_pid*.log
 # Служебное
 .DS_Store
 Thumbs.db
+
+# Личные настройки Claude Code для этого проекта (разрешения конкретной машины)
+.claude/settings.local.json
