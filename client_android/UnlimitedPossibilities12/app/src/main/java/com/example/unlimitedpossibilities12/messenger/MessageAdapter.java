@@ -152,6 +152,13 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         Log.d(TAG, "Transcription enabled set to: " + enabled);
     }
 
+
+    /** Первая буква имени для кружка-заглушки. */
+    private static String initialOf(String name) {
+        return (name == null || name.trim().isEmpty())
+                ? "?" : name.trim().substring(0, 1).toUpperCase();
+    }
+
     @Override
     public int getItemCount() {
         return messages.size();
@@ -641,8 +648,10 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                             .load("https://unlimitedpossibilities12.org" + avatarUrl)
                             .apply(new RequestOptions()
                                     .circleCrop()
-                                    .placeholder(R.drawable.ic_default_avatar)
-                                    .error(R.drawable.ic_default_avatar))
+                                    // Файл аватара мог пропасть с сервера — тогда
+                                    // кружок с буквой, а не безликий серый
+                                    .placeholder(new LetterAvatarDrawable(initialOf(sender.getUsername())))
+                                    .error(new LetterAvatarDrawable(initialOf(sender.getUsername()))))
                             .into(avatarImageView);
                 } else {
                     String initial = TextUtils.isEmpty(sender.getUsername()) ? "?" : sender.getUsername().substring(0, 1).toUpperCase();

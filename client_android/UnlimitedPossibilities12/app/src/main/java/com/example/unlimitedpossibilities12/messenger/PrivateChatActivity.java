@@ -1000,8 +1000,10 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                                     Glide.with(PrivateChatActivity.this)
                                             .load("https://unlimitedpossibilities12.org" + avatarUrl)
                                             .apply(new RequestOptions().circleCrop()
-                                                    .placeholder(R.drawable.ic_default_avatar)
-                                                    .error(R.drawable.ic_default_avatar))
+                                                    .placeholder(new LetterAvatarDrawable(
+                                                            partnerName.isEmpty() ? "?" : partnerName.substring(0, 1).toUpperCase()))
+                                                    .error(new LetterAvatarDrawable(
+                                                            partnerName.isEmpty() ? "?" : partnerName.substring(0, 1).toUpperCase())))
                                             .into(partnerAvatar);
                                 } else {
                                     // Если аватара нет — первая буква (как в адаптере)
