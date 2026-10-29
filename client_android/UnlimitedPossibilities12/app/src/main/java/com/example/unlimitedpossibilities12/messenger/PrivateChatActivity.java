@@ -270,6 +270,12 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         // Свой номер известен из настроек — иначе первые мгновения все сообщения
         // выглядят чужими и переписка потом перестраивается на глазах
         currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
+        // Подмена ячейки не должна мигать и дёргать соседей: статусы доставки
+        // приходят следом за сообщениями, и каждая такая правка была заметна
+        if (messageList.getItemAnimator() instanceof androidx.recyclerview.widget.SimpleItemAnimator) {
+            ((androidx.recyclerview.widget.SimpleItemAnimator) messageList.getItemAnimator())
+                    .setSupportsChangeAnimations(false);
+        }
         messageAdapter = new MessageAdapter(this, messages, currentUserId, this, isTranslationEnabled, isTranscriptionEnabled);
         messageList.setAdapter(messageAdapter);
 
@@ -415,6 +421,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         }
 
         chatId = getIntent().getLongExtra("chatId", -1);
+        showCachedMessages(); // переписка на экране, пока идут запросы
         username = getSharedPreferences("prefs", MODE_PRIVATE).getString("username", "");
         currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
 
@@ -982,25 +989,34 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         }
     }
 
-    private void fetchChatData() {
-        Log.d(TAG, "Fetching chat data for chatId=" + chatId);
-        // Сохранённый хвост переписки — на экран сразу, иначе первую секунду
-        // смотреть не на что. Ответ сервера придёт следом и заменит список.
-        if (messages.isEmpty()) {
-            List<Message> cached = MessageCache.load(this, chatId);
-            if (!cached.isEmpty()) {
-                for (Message cachedMessage : cached) {
-                    if (cachedMessage.getChat() == null) {
-                        cachedMessage.setChat(new Chat(chatId, chatName));
-                    }
-                }
-                messages.addAll(cached);
-                messageAdapter.updateMessages(messages);
-                jumpToBottom();
-                Log.d(TAG, "Показали сохранённые сообщения: " + cached.size());
+    /** Первая загрузка идёт из onCreate — onResume сразу после неё не нужен. */
+    private boolean chatDataRequested = false;
+
+    /**
+     * Сохранённый хвост переписки — на экран сразу, не дожидаясь сети: иначе
+     * первую секунду смотреть не на что. Ответ сервера придёт следом и
+     * заменит список.
+     */
+    private void showCachedMessages() {
+        if (!messages.isEmpty() || chatId == -1) return;
+
+        List<Message> cached = MessageCache.load(this, chatId);
+        if (cached.isEmpty()) return;
+
+        for (Message cachedMessage : cached) {
+            if (cachedMessage.getChat() == null) {
+                cachedMessage.setChat(new Chat(chatId, chatName));
             }
         }
+        messages.addAll(cached);
+        messageAdapter.updateMessages(messages);
+        jumpToBottom();
+        Log.d(TAG, "Показали сохранённые сообщения: " + cached.size());
+    }
 
+    private void fetchChatData() {
+        chatDataRequested = true;
+        Log.d(TAG, "Fetching chat data for chatId=" + chatId);
         apiService.getChatById(chatId).enqueue(new Callback<Chat>() {
             @Override
             public void onResponse(Call<Chat> call, Response<Chat> response) {
@@ -2143,7 +2159,9 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         serviceIntent.putExtra("chatId", chatId);
         startService(serviceIntent);
         scheduleStatusCheck();
-        fetchChatData(); // Обновляем сообщения при разворачивании
+        if (chatDataRequested) {
+            fetchChatData(); // при возвращении в чат обновляем переписку
+        }
         // ← Перерегистрируем typing-ресивер КАЖДЫЙ раз при показе активности
         registerTypingReceiver();
         Log.d(TAG, "Typing receiver перерегистрирован в onResume для chatId=" + chatId);
