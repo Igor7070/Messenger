@@ -1320,6 +1320,11 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     String url = extractFirstUrl(text);
                     if (url != null) {
 
+                        // Разобранное превью помним между входами в чат
+                        if (message.getPreviewData() == null) {
+                            message.setPreviewData(LinkPreviewCache.get(context, url));
+                        }
+
                         // ──────────────── КЭШ ────────────────
                         if (message.getPreviewData() != null) {
                             Message.LinkPreviewData data = message.getPreviewData();
@@ -1362,28 +1367,12 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
 
                             new Thread(() -> {
                                 try {
-                                    org.jsoup.nodes.Document doc = org.jsoup.Jsoup.connect(url)
-                                            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                                            .timeout(10000)
-                                            .get();
+                                    Message.LinkPreviewData fetched = LinkPreviewCache.fetch(context, url);
+                                    if (fetched == null) throw new Exception("превью не получено");
 
-                                    String title = doc.selectFirst("meta[property=og:title]") != null ?
-                                            doc.selectFirst("meta[property=og:title]").attr("content") : doc.title();
-
-                                    String desc = doc.selectFirst("meta[property=og:description]") != null ?
-                                            doc.selectFirst("meta[property=og:description]").attr("content") : "";
-
-                                    if (desc.isEmpty()) {
-                                        desc = doc.selectFirst("meta[name=description]") != null ?
-                                                doc.selectFirst("meta[name=description]").attr("content") : "";
-                                    }
-
-                                    String imageUrl = doc.selectFirst("meta[property=og:image]") != null ?
-                                            doc.selectFirst("meta[property=og:image]").attr("content") : "";
-
-                                    final String fTitle = title;
-                                    final String fDesc = desc;
-                                    final String fImageUrl = imageUrl;
+                                    final String fTitle = fetched.title;
+                                    final String fDesc = fetched.description;
+                                    final String fImageUrl = fetched.imageUrl;
 
                                     ((Activity) context).runOnUiThread(() -> {
                                         // Самая важная проверка!

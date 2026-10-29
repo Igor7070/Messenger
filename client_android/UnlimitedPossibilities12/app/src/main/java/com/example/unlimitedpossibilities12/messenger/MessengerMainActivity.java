@@ -84,6 +84,12 @@ public class MessengerMainActivity extends AppCompatActivity {
     private GroupCallRequest incomingGroupCall;
     private boolean isBound = false;
     private boolean shouldRefreshChats = false; // Флаг для управления обновлением чатов
+    // Связь подводит на первом запросе чаще, чем кажется: холодный старт сервера,
+    // переключение с Wi-Fi на мобильную сеть. Пробуем ещё раз, а не сдаёмся.
+    private static final int CHATS_MAX_ATTEMPTS = 4;
+    private int chatsFetchAttempt = 0;
+    private boolean chatsFetchScheduled = false;
+    private int usersFetchAttempt = 0;
     private com.google.android.material.floatingactionbutton.FloatingActionButton createGroupCallButton; //Переменные для вкладки Calls и FAB
     private BroadcastReceiver callReceiver, notificationReceiver, chatUpdatedReceiver, messageReceiver, endCallReceiver, userStatusReceiver;
     private RecyclerView callsRecyclerView;
@@ -906,11 +912,20 @@ public class MessengerMainActivity extends AppCompatActivity {
      * ответят оба.
      */
     private void fetchChats() {
+        chatsFetchScheduled = false;
         List<Chat> collected = java.util.Collections.synchronizedList(new ArrayList<>());
         AtomicInteger pending = new AtomicInteger(2);
+        AtomicInteger failed = new AtomicInteger(0);
 
         Runnable finishOne = () -> {
             if (pending.decrementAndGet() != 0) return;
+            if (failed.get() > 0) {
+                // Чаты никуда не делись — не дошёл запрос. То, что уже на экране,
+                // оставляем, и пробуем загрузить снова.
+                retryChatsLater();
+                return;
+            }
+            chatsFetchAttempt = 0;
             chatsList.clear();
             chatsList.addAll(collected);
             runOnUiThread(() -> {
@@ -929,6 +944,7 @@ public class MessengerMainActivity extends AppCompatActivity {
                     Log.d(TAG, "Group chats: " + collected.size());
                 } else {
                     Log.e(TAG, "Failed to fetch chats: code=" + response.code());
+                    failed.incrementAndGet();
                 }
                 finishOne.run();
             }
@@ -936,6 +952,7 @@ public class MessengerMainActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<List<Chat>> call, Throwable t) {
                 Log.e(TAG, "Error fetching chats: " + t.getMessage());
+                failed.incrementAndGet();
                 finishOne.run();
             }
         });
@@ -953,6 +970,7 @@ public class MessengerMainActivity extends AppCompatActivity {
                     Log.d(TAG, "Private chats: " + response.body().size());
                 } else {
                     Log.e(TAG, "Failed to fetch private chats: code=" + response.code());
+                    failed.incrementAndGet();
                 }
                 finishOne.run();
             }
@@ -960,9 +978,36 @@ public class MessengerMainActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<List<Chat>> call, Throwable t) {
                 Log.e(TAG, "Error fetching private chats: " + t.getMessage());
+                failed.incrementAndGet();
                 finishOne.run();
             }
         });
+    }
+
+    /**
+     * Повторная попытка загрузить список: 1.5, 3, 6, 12 секунд. Если и после
+     * этого пусто — говорим человеку о связи, а не делаем вид, что чатов нет.
+     */
+    private void retryChatsLater() {
+        if (chatsFetchScheduled) return;
+
+        if (chatsFetchAttempt >= CHATS_MAX_ATTEMPTS) {
+            chatsFetchAttempt = 0;
+            runOnUiThread(() -> {
+                if (chatsList.isEmpty()) {
+                    Toast.makeText(MessengerMainActivity.this,
+                            "Couldn't load chats. Check your connection", Toast.LENGTH_SHORT).show();
+                }
+            });
+            return;
+        }
+
+        long delay = 1500L * (1L << chatsFetchAttempt);
+        chatsFetchAttempt++;
+        chatsFetchScheduled = true;
+        Log.d(TAG, "Список чатов не загрузился, повтор через " + delay + " мс");
+        new android.os.Handler(android.os.Looper.getMainLooper())
+                .postDelayed(this::fetchChats, delay);
     }
 
     /**
@@ -1305,12 +1350,31 @@ public class MessengerMainActivity extends AppCompatActivity {
         }
     }
 
+    /** Список людей тоже не должен молча оставаться пустым из-за одной осечки. */
+    private void retryUsersLater() {
+        if (usersFetchAttempt >= CHATS_MAX_ATTEMPTS) {
+            usersFetchAttempt = 0;
+            runOnUiThread(() -> {
+                if (usersList.isEmpty()) {
+                    Toast.makeText(MessengerMainActivity.this,
+                            "Couldn't load contacts. Check your connection", Toast.LENGTH_SHORT).show();
+                }
+            });
+            return;
+        }
+        long delay = 1500L * (1L << usersFetchAttempt);
+        usersFetchAttempt++;
+        new android.os.Handler(android.os.Looper.getMainLooper())
+                .postDelayed(this::fetchUsers, delay);
+    }
+
     private void fetchUsers() {
         apiService.getUsers().enqueue(new Callback<List<User>>() {
             @Override
             public void onResponse(Call<List<User>> call, Response<List<User>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     Log.d(TAG, "Users received: " + response.body().size());
+                    usersFetchAttempt = 0;
                     usersList.clear();
                     usersList.addAll(response.body());
 
@@ -1320,14 +1384,14 @@ public class MessengerMainActivity extends AppCompatActivity {
                     });
                 } else {
                     Log.e(TAG, "Failed to fetch users: " + response.code());
-                    Toast.makeText(MessengerMainActivity.this, "Failed to fetch users", Toast.LENGTH_SHORT).show();
+                    retryUsersLater();
                 }
             }
 
             @Override
             public void onFailure(Call<List<User>> call, Throwable t) {
                 Log.e(TAG, "Error fetching users: " + t.getMessage());
-                Toast.makeText(MessengerMainActivity.this, "Error fetching users", Toast.LENGTH_SHORT).show();
+                retryUsersLater();
             }
         });
     }
@@ -1891,6 +1955,8 @@ public class MessengerMainActivity extends AppCompatActivity {
         if (shouldRefreshChats) {
             fetchChats(); // Обновляем чаты при возвращении, если флаг установлен
             shouldRefreshChats = false; // Сбрасываем флаг после обновления
+        } else if (chatsList.isEmpty()) {
+            fetchChats(); // в прошлый раз не загрузилось — пробуем снова
         }
         if (callsContainer.getVisibility() == View.VISIBLE) {
             fetchCalls(); // Обновляем звонки, если открыта вкладка Calls
