@@ -883,6 +883,23 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
 
     private void fetchChatData() {
         Log.d(TAG, "Fetching chat data for chatId=" + chatId);
+        // Сохранённый хвост переписки — на экран сразу, иначе первую секунду
+        // смотреть не на что. Ответ сервера придёт следом и заменит список.
+        if (messages.isEmpty()) {
+            List<Message> cached = MessageCache.load(this, chatId);
+            if (!cached.isEmpty()) {
+                for (Message cachedMessage : cached) {
+                    if (cachedMessage.getChat() == null) {
+                        cachedMessage.setChat(new Chat(chatId, chatName));
+                    }
+                }
+                messages.addAll(cached);
+                messageAdapter.updateMessages(messages);
+                jumpToBottom();
+                Log.d(TAG, "Показали сохранённые сообщения: " + cached.size());
+            }
+        }
+
         apiService.getChatById(chatId).enqueue(new Callback<Chat>() {
             @Override
             public void onResponse(Call<Chat> call, Response<Chat> response) {
@@ -948,6 +965,7 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
 
                     messageAdapter.updateMessages(messages);
                     jumpToBottom();
+                    MessageCache.save(getApplicationContext(), chatId, messages);
                     updateLastVisitTime();
                     Log.d(TAG, "Messages fetched: count=" + messages.size());
 
@@ -960,13 +978,16 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                         }
                     }
 
-                    // Добавлено: запуск перевода при включённом isTranslationEnabled
-                    if (isTranslationEnabled) {
-                        GroupChatTranslationAndSpellCheckHelper.translateExistingMessages(
-                                GroupChatsActivity.this, messages, isTranslationEnabled, translationLanguage,
-                                chatId, translationQueue, messageAdapter, () -> translateNextMessage()
-                        );
-                    }
+                    // Перевод ищет вьюхи по номеру позиции — ждём, пока лента
+                    // перерисуется под новый список
+                    messageList.post(() -> {
+                        if (isTranslationEnabled) {
+                            GroupChatTranslationAndSpellCheckHelper.translateExistingMessages(
+                                    GroupChatsActivity.this, messages, isTranslationEnabled, translationLanguage,
+                                    chatId, translationQueue, messageAdapter, () -> translateNextMessage()
+                            );
+                        }
+                    });
                 } else {
                     Log.e(TAG, "Failed to fetch messages: code=" + response.code());
                     Toast.makeText(GroupChatsActivity.this, "Failed to fetch messages", Toast.LENGTH_SHORT).show();

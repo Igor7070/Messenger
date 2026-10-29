@@ -975,6 +975,23 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
 
     private void fetchChatData() {
         Log.d(TAG, "Fetching chat data for chatId=" + chatId);
+        // Сохранённый хвост переписки — на экран сразу, иначе первую секунду
+        // смотреть не на что. Ответ сервера придёт следом и заменит список.
+        if (messages.isEmpty()) {
+            List<Message> cached = MessageCache.load(this, chatId);
+            if (!cached.isEmpty()) {
+                for (Message cachedMessage : cached) {
+                    if (cachedMessage.getChat() == null) {
+                        cachedMessage.setChat(new Chat(chatId, chatName));
+                    }
+                }
+                messages.addAll(cached);
+                messageAdapter.updateMessages(messages);
+                jumpToBottom();
+                Log.d(TAG, "Показали сохранённые сообщения: " + cached.size());
+            }
+        }
+
         apiService.getChatById(chatId).enqueue(new Callback<Chat>() {
             @Override
             public void onResponse(Call<Chat> call, Response<Chat> response) {
@@ -1100,22 +1117,27 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                     }
                     messageAdapter.updateMessages(messages);
                     jumpToBottom();
+                    MessageCache.save(getApplicationContext(), chatId, messages);
                     markAllMessagesAsRead();
                     scheduleStatusCheck();
                     Log.d(TAG, "Messages fetched: count=" + messages.size());
-                    // Добавлено: Запуск перевода при включённом isTranslationEnabled
-                    if (isTranslationEnabled && translationMode != TranslationSettingsFragment.TranslationMode.SELECTIVELY) {
-                        List<Message> translatedMessages = new ArrayList<>();
-                        PrivateChatTranslationAndSpellCheckHelper.translateExistingMessages(
-                                PrivateChatActivity.this, messages, isTranslationEnabled, translationLanguage,
-                                translationMode == TranslationSettingsFragment.TranslationMode.NEW_ONLY,
-                                chatId, translationQueue, messageAdapter, () ->
-                                        PrivateChatTranslationAndSpellCheckHelper.translateNextMessage(
-                                                translationQueue, isTranslating, () -> translateNextMessage(),
-                                                messageAdapter, messages, PrivateChatActivity.this, translatedMessages
-                                        )
-                        );
-                    }
+                    // Перевод ищет вьюхи по номеру позиции, поэтому ждём, пока
+                    // лента перерисуется под новый список: иначе он успевает
+                    // попасть в пузырь соседнего сообщения
+                    messageList.post(() -> {
+                        if (isTranslationEnabled && translationMode != TranslationSettingsFragment.TranslationMode.SELECTIVELY) {
+                            List<Message> translatedMessages = new ArrayList<>();
+                            PrivateChatTranslationAndSpellCheckHelper.translateExistingMessages(
+                                    PrivateChatActivity.this, messages, isTranslationEnabled, translationLanguage,
+                                    translationMode == TranslationSettingsFragment.TranslationMode.NEW_ONLY,
+                                    chatId, translationQueue, messageAdapter, () ->
+                                            PrivateChatTranslationAndSpellCheckHelper.translateNextMessage(
+                                                    translationQueue, isTranslating, () -> translateNextMessage(),
+                                                    messageAdapter, messages, PrivateChatActivity.this, translatedMessages
+                                            )
+                            );
+                        }
+                    });
                 } else {
                     Log.e(TAG, "Failed to fetch messages: code=" + response.code() + ", message=" + response.message());
                     Toast.makeText(PrivateChatActivity.this, "Failed to fetch messages", Toast.LENGTH_SHORT).show();
