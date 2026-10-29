@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="CustomMaterialCard" parent="Widget.MaterialComponents.CardView">
+        <item name="shapeAppearance">@null</item>
+        <item name="cardCornerRadius">24dp</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <style name="FullScreenDialog" parent="Theme.MaterialComponents.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowAnimationStyle">@style/DialogAnimation</item>
+    </style>
+
+    <style name="DialogAnimation">
+        <item name="android:windowEnterAnimation">@anim/slide_up</item>
+        <item name="android:windowExitAnimation">@anim/slide_down</item>
+    </style>
+
+    <!-- Тема для диалога (если нужно) -->
+    <style name="AppTheme.Dialog" parent="Theme.MaterialComponents.Light.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowAnimationStyle">@style/DialogAnimation</item>
+    </style>
+
+    <!-- Стиль анимации -->
+    <style name="DialogAnimation_create_new_user">
+        <item name="android:windowEnterAnimation">@anim/dialog_enter</item>
+        <item name="android:windowExitAnimation">@anim/dialog_exit</item>
+    </style>
+
+    <!-- Стиль для диалога в светлой теме -->
+    <style name="AppTheme.Dialog.Light" parent="Theme.MaterialComponents.Light.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:background">@color/dialog_background_light</item>
+        <item name="colorPrimary">@color/accent_gold_light</item>
+        <item name="colorAccent">@color/accent_green_light</item>
+        <item name="android:textColorPrimary">@color/text_primary_light</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowElevation">12dp</item>
+    </style>
+
+    <style name="DialogLoginAnimation">
+        <item name="android:windowEnterAnimation">@anim/dialog_login_enter</item>
+        <item name="android:windowExitAnimation">@anim/dialog_login_exit</item>
+    </style>
+
+    <!-- [ДОБАВЛЕНО] Стили для ttsSwitch -->
+    <style name="SwitchTts">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@android:color/black</item>
+    </style>
+
+    <!-- Добавлено: Стиль для диалогового окна -->
+    <style name="DialogStyle" parent="Theme.MaterialComponents.Light.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@style/DialogAnimation</item>
+    </style>
+
+    <style name="DialogAnimation2">
+        <item name="android:windowEnterAnimation">@android:anim/fade_in</item>
+        <item name="android:windowExitAnimation">@android:anim/fade_out</item>
+    </style>
+
+    <!-- Цвета для вкладки Calls -->
+    <color name="call_item_background">#FFFFFF</color>
+    <color name="call_text_primary">#212121</color>
+    <color name="call_text_secondary">#757575</color>
+    <color name="call_border">#E0E0E0</color>
+    <color name="call_avatar_border">#B0BEC5</color>
+    <color name="call_outgoing_arrow">#4CAF50</color>
+    <color name="call_incoming_arrow">#0288D1</color>
+    <color name="call_redial_button">#0288D1</color>
+    <color name="call_redial_button_hover">#0277BD</color>
+    <color name="call_delete_button">#F44336</color>
+    <color name="call_delete_button_hover">#D32F2F</color>
+    <color name="light_gray">#E0E0E0</color>
+
+    <!-- Стили для элементов списка звонков -->
+    <style name="CallItem">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@color/call_item_background</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:elevation">4dp</item>
+        <item name="android:backgroundTint">@null</item>
+        <item name="android:clipToOutline">true</item>
+        <item name="android:outlineProvider">background</item>
+        <item name="android:background">@drawable/rounded_rectangle</item>
+    </style>
+
+    <style name="CallSelectionCheckbox">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:buttonTint">@color/call_delete_button</item>
+        <item name="android:padding">8dp</item>
+    </style>
+
+    <style name="CallAvatar">
+        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:background">@color/call_avatar_border</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_marginBottom">4dp</item>
+        <item name="android:clipToOutline">true</item>
+        <item name="android:outlineProvider">background</item>
+        <item name="android:background">@drawable/circle_background</item>
+    </style>
+
+    <style name="CallName">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/call_text_primary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:maxWidth">60dp</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="CallDetails">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+    </style>
+
+    <style name="CallStatus">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/call_text_primary</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="CallType">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/call_text_secondary</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="CallTimestamp">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/call_text_secondary</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:layout_marginTop">2dp</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="CallArrow">
+        <item name="android:layout_width">24dp</item>
+        <item name="android:layout_height">24dp</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:layout_marginEnd">8dp</item>
+    </style>
+
+    <style name="CallButton">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:background">@drawable/circle_background</item>
+        <item name="android:elevation">2dp</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:padding">6dp</item>
+    </style>
+
+    <style name="CallDeleteButton">
+        <item name="android:layout_width">28dp</item>
+        <item name="android:layout_height">28dp</item>
+        <item name="android:background">@drawable/circle_background</item>
+        <item name="android:src">@android:drawable/ic_menu_delete</item>
+        <item name="android:tint">@android:color/white</item>
+        <item name="android:layout_margin">0dp</item>
+        <item name="android:padding">6dp</item>
+    </style>
+
+    <!-- Современная тёмная тема для AI-диалога (как в передовых мессенджерах 2026) -->
+    <style name="AIAssistDialogTheme" parent="Theme.Material3.Dark.Dialog.Alert">
+        <!-- Полупрозрачный тёмный фон с градиентом в layout -->
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.65</item> <!-- чуть темнее -->
+        <item name="colorPrimary">#BB86FC</item>           <!-- светлый фиолетовый акцент -->
+        <item name="colorPrimaryVariant">#3700B3</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorSurface">#121212</item>           <!-- тёмная поверхность -->
+        <item name="colorOnSurface">#FFFFFF</item>
+        <item name="android:windowMinWidthMajor">90%</item>
+        <item name="android:windowMinWidthMinor">90%</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.AIDialog</item>
+    </style>
+
+    <!-- Красивые крупные закругления -->
+    <style name="ShapeAppearanceOverlay.AIDialog" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">32dp</item> <!-- очень плавные углы -->
+    </style>
+
+    <!-- Стиль для неактивного поля ввода (затемнённое) -->
+    <style name="DisabledTextInputStyle" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/grey_600</item>
+        <item name="boxBackgroundColor">@color/grey_900</item>
+        <item name="hintTextColor">@color/grey_500_1</item>
+        <item name="android:textColor">@color/grey_500</item>
+    </style>
+
+    <!-- Тёмное меню для PopupMenu -->
+    <style name="CustomPopupMenu" parent="Widget.Material3.PopupMenu">
+        <item name="android:popupBackground">#1E293B</item>
+        <item name="android:textColor">#E2E8F0</item>
+        <item name="itemTextColor">#E2E8F0</item>
+        <item name="itemIconTint">#94A3B8</item>
+
+        <item name="android:dropDownVerticalOffset">8dp</item>
+        <item name="overlapAnchor">false</item>
+    </style>
+
+    <!-- Обёртка-тема: PopupMenu берёт стиль отсюда, иначе рисуется светлым
+         системным меню посреди тёмного экрана -->
+    <style name="CustomPopupTheme" parent="Theme.Material3.Dark">
+        <item name="popupMenuStyle">@style/CustomPopupMenu</item>
+        <item name="android:textColorPrimary">#E2E8F0</item>
+        <item name="android:colorBackground">#1E293B</item>
+    </style>
+
+    <!-- Дополнительно: стиль для пунктов меню (чтобы был ripple-эффект в тёмных тонах) -->
+    <style name="CustomPopupMenuItem" parent="Widget.MaterialComponents.PopupMenu.ListPopupWindow">
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:textColor">#E2E8F0</item>
+    </style>
+
+    <!-- Кастомный стиль для BottomNavigationView без белой обводки -->
+    <style name="CustomBottomNavigationView" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="itemRippleColor">@android:color/transparent</item>
+        <item name="itemBackground">@color/bottom_nav_item_background</item>
+        <item name="itemShapeAppearanceOverlay">@style/BottomNavItemShape</item>
+        <item name="android:background">@color/bottom_nav_background</item>
+    </style>
+
+    <style name="BottomNavItemShape">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">48dp</item>
+    </style>
+
+    <style name="CircleImageStyle">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="MaterialAlertDialog_Dark" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="android:background">@drawable/dialog_dark_background</item>
+    </style>
+
+    <!--
+      Тёмные системные окна приложения.
+
+      По умолчанию AlertDialog берёт светлую тему: посреди тёмного списка
+      выскакивал белый прямоугольник. Здесь задаются поверхность, текст и
+      акцент — те же, что в остальном интерфейсе.
+    -->
+    <style name="AlertDialog.UP12" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="colorSurface">#1E2937</item>
+        <item name="colorOnSurface">#E2E8F0</item>
+        <item name="colorOnSurfaceVariant">#94A3B8</item>
+        <item name="colorPrimary">#818CF8</item>
+        <item name="android:textColorPrimary">#E2E8F0</item>
+        <item name="android:textColorSecondary">#94A3B8</item>
+        <item name="android:textColorAlertDialogListItem">#E2E8F0</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.UP12.Dialog</item>
+    </style>
+
+    <style name="ShapeAppearance.UP12.Dialog" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+</resources>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Основной фон -->
+    <color name="personal_chats_background">#F5F5F5</color> <!-- Светло-серый для светлой темы -->
+    <color name="personal_chats_background_dark">#121212</color> <!-- Темный фон для темной темы -->
+
+    <!-- Цвет карточки чата -->
+    <color name="personal_chats_card_background">#FFFFFF</color>
+    <color name="personal_chats_card_background_dark">#1C2526</color>
+
+    <!-- Акцентный цвет для интерактивных элементов -->
+    <color name="personal_chats_accent">#007BFF</color> <!-- Синий акцент -->
+    <color name="personal_chats_accent_pressed">#005BFF</color> <!-- Темнее при нажатии -->
+
+    <!-- Цвет текста -->
+    <color name="personal_chats_text_primary">#212121</color>
+    <color name="personal_chats_text_primary_dark">#E0E0E0</color>
+    <color name="personal_chats_text_secondary">#757575</color>
+    <color name="personal_chats_text_secondary_dark">#B0B0B0</color>
+
+    <!-- Цвет индикатора непрочитанных сообщений -->
+    <color name="personal_chats_unread_indicator">#FF5722</color>
+</resources>

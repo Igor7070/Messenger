@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="colorPrimary">#FF4FC3F7</color> <!-- Светло-голубой для тёмной темы -->
+    <color name="colorPrimaryDark">#FF0277BD</color>
+    <color name="colorAccent">#FF26A69A</color>
+    <color name="sent_message_background">#2A5F9E</color>
+    <color name="received_message_background">#172033</color>
+    <color name="delivery_indicator">#94A3B8</color>
+    <color name="read_indicator">#34D399</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0BEC5</color>
+    <color name="text_primary1">#263238</color>
+    <color name="text_secondary1">#37474F</color>
+    <color name="file_link_background">#37474F</color>
+    <color name="background_light">#121212</color>
+    <color name="accent">#4FC3F7</color>
+    <color name="accent_gradient_end">#26A69A</color>
+    <color name="card_background">#1C2526</color>
+    <color name="bio_card_background">#263238</color>
+    <color name="profile_gradient_end">#263238</color>
+    <color name="bio_card_background1">#B0BEC5</color> <!-- Новый цвет для bio_card -->
+    <color name="profile_gradient_start1">#ECEFF1</color> <!-- Начало градиента -->
+    <color name="profile_gradient_end1">#CFD8DC</color> <!-- Конец градиента -->
+    <color name="avatar_border_start">#0097A7</color>
+    <color name="button_background_color">#0288D1</color>
+    <color name="sent_message_accent">#67E8F9</color>
+    <color name="seekbar_background">#CBD5E1</color>
+    <color name="link_sent">#4FC3F7</color>        <!-- для своих сообщений - светло-голубой -->
+    <color name="link_received">#BB86FC</color>   <!-- для чужих - фиолетовый -->
+
+    <!-- Цвета для светлой темы -->
+    <color name="dialog_background_light">#E3F2FD</color> <!-- Серо-голубой для стильного фона диалога -->
+    <color name="text_primary_light">#212121</color>
+    <color name="text_hint_light">#757575</color>
+    <color name="text_hint_active_light">#424242</color>
+    <color name="text_input_background_light">#FFFFFF</color>
+    <color name="accent_gold_light">#FFA000</color>
+    <color name="accent_green_light">#4CAF50</color>
+    <color name="accent_gray_light">#B0BEC5</color>
+    <color name="text_input_stroke_light">#FFA000</color>
+
+    <!-- Цвета для диалогового окна перевода (Тёмная тема) -->
+    <color name="translate_text_primary">#E2E8F0</color>      <!-- Основной светлый текст -->
+    <color name="translate_text_secondary">#CBD5E1</color>   <!-- Второстепенный текст -->
+    <color name="translate_text_hint">#94A3B8</color>         <!-- Подсказки и метки -->
+    <color name="translate_accent">#38BDF8</color>            <!-- Акцент (приятный голубой) -->
+    <color name="translate_accent_light">#67E8F9</color>
+    <color name="translate_accent_dark">#0EA5E9</color>
+    <color name="translate_background_card">#1E2937</color>   <!-- Фон карточки -->
+    <color name="translate_background_light">#334155</color>   <!-- Фон спиннера -->
+    <color name="translate_border_light">#475569</color>
+    <color name="translate_spinner_dropdown_background">#1E2937</color>
+
+    <!-- tts -->
+    <color name="tts_accent">#0288D1</color>
+    <color name="grey_500">#757575</color>
+
+    <color name="grey_900">#121212</color>
+    <color name="grey_600">#757575</color>
+    <color name="grey_500_1">#9E9E9E</color>
+
+    <color name="green_500">#22C55E</color>
+</resources>

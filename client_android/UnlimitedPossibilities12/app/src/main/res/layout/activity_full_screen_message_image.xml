@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <!-- Изображение на весь экран -->
+    <ImageView
+        android:id="@+id/full_message_image_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        android:contentDescription="Full screen message image" />
+
+    <!-- Иконка скачивания слева сверху -->
+    <ImageButton
+        android:id="@+id/download_message_image_button"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_download"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:layout_margin="16dp"
+        android:tint="@android:color/white"
+        android:contentDescription="Download message image"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true" />
+</RelativeLayout>

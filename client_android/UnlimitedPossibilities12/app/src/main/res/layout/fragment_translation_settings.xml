@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:background="#0F172A">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_container"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="#1E2937">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Заголовок -->
+            <TextView
+                android:id="@+id/title_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Translation Settings"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="#E2E8F0"
+                android:layout_marginBottom="24dp" />
+
+            <!-- Чекбокс -->
+            <CheckBox
+                android:id="@+id/enable_translation1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Enable Translation"
+                android:textSize="18sp"
+                android:textColor="#E2E8F0"
+                app:buttonTint="#67E8F9"
+                android:layout_marginBottom="20dp" />
+
+            <!-- RadioGroup -->
+            <RadioGroup
+                android:id="@+id/translation_mode_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="20dp">
+
+                <RadioButton
+                    android:id="@+id/translate_all"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Translate all messages"
+                    android:textSize="18sp"
+                    android:textColor="#E2E8F0"
+                    app:buttonTint="#67E8F9" />
+
+                <RadioButton
+                    android:id="@+id/translate_new_only"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Translate only new messages"
+                    android:textSize="18sp"
+                    android:textColor="#E2E8F0"
+                    app:buttonTint="#67E8F9" />
+
+                <RadioButton
+                    android:id="@+id/translate_selectively"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Translate selectively"
+                    android:textSize="18sp"
+                    android:textColor="#E2E8F0"
+                    app:buttonTint="#67E8F9" />
+            </RadioGroup>
+
+            <!-- Метка языка -->
+            <TextView
+                android:id="@+id/language_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Language"
+                android:textSize="16sp"
+                android:textColor="#94A3B8"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Spinner -->
+            <Spinner
+                android:spinnerMode="dropdown"
+                android:dropDownVerticalOffset="0dp"
+                android:dropDownHeight="320dp"
+                android:popupBackground="@drawable/spinner_dropdown_background_translate"
+                android:id="@+id/language_spinner1"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="@drawable/spinner_background_dark"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:layout_marginBottom="24dp" />
+
+            <!-- Кнопки -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="end">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/cancel_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Cancel"
+                    android:textSize="16sp"
+                    android:textColor="#94A3B8"
+                    app:backgroundTint="@android:color/transparent"
+                    app:rippleColor="#334155"
+                    android:layout_marginEnd="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/save_button1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Save"
+                    android:textSize="16sp"
+                    android:textColor="#FFFFFF"
+                    app:backgroundTint="#38BDF8"
+                    app:cornerRadius="12dp"
+                    app:rippleColor="#4FD1E5" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</androidx.constraintlayout.widget.ConstraintLayout>

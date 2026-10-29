@@ -1,0 +1,155 @@
+<style>
+    html, body {
+        height: 100%; /* Задает высоту для html и body */
+        margin: 0; /* Убирает отступы по умолчанию */
+    }
+
+    body {
+        display: flex;
+        flex-direction: column; /* Устанавливает вертикальное расположение элементов */
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f2f2f2;
+        padding-top: 0px; /* увеличена верхняя отступ, чтобы учесть высоту шапки */
+    }
+
+    header {
+        background-color: #d0c1e3; /* изменен цвет шапки на светло-серый */
+        border-bottom: 1px solid #dee2e6;
+        padding: 10px 0; /* добавлен отступ сверху и снизу */
+        margin-bottom: 30px; /* добавлен отступ снизу */
+    }
+
+    .header-container {
+        max-width: 1200px; /* ограничена ширина контейнера шапки */
+        margin: 0 auto; /* центрирование контейнера */
+        /*padding: 0 20px; /* Добавим немного внутреннего отступа для мобильных устройств */
+    }
+
+    .header-title {
+        font-family: 'Roboto', sans-serif; /* Применение нового шрифта */
+        font-size: 30px;
+        color: goldenrod !important;
+    }
+
+    .light-maroon-bg {
+        background-color: #d0c1e3;
+        padding: 10px 15px;
+    }
+
+    .light-maroon-bg a.btn {
+        color: #343a40;
+    }
+
+    .clear-db-btn {
+        font-family: 'Roboto', sans-serif;
+        font-weight: 500; /* Полужирный шрифт */
+        font-size: 16px; /* Уменьшенный размер текста */
+        color: #333; /* Темно-серый цвет текста */
+        background-color: #d75b5b; /* Умеренно светлый красный фон */
+        border: none; /* Без рамки */
+        padding: 8px 16px; /* Уменьшенные отступы */
+        border-radius: 8px; /* Скругленные углы */
+        transition: background-color 0.3s; /* Плавный переход */
+    }
+
+    .clear-db-btn:hover {
+        background-color: #e06e6e; /* Легкий оттенок при наведении */
+    }
+
+    .clear-db-btn {
+        position: relative; /* Установите относительное позиционирование */
+        top: 7px; /* Сдвиньте кнопку на 10 пикселей вверх */
+    }
+
+    /* Медиа-запрос для мобильных устройств */
+    @media (max-width: 1080px) {
+        .header-container {
+            padding: 0 25px; /* Уменьшаем отступы для мобильных устройств */
+        }
+
+        .header-title {
+            font-size: 24px; /* Уменьшаем размер шрифта заголовка */
+        }
+
+        .link-secondary {
+            display: block; /* Ссылки отображаются в блоках, чтобы занимали всю ширину */
+            margin: 5px 0; /* Вертикальный отступ между ссылками */
+        }
+
+        .clear-db-btn {
+            /*width: 100%; /* Кнопка занимает всю ширину */
+            /*margin-top: 10px; /* Отступ сверху */
+            top: -1px;
+        }
+
+        .btn {
+            /*width: 100%; /* Кнопки занимают всю ширину */
+            /*margin-top: 4px; /* Отступ сверху для кнопок */
+        }
+    }
+</style>
+
+<header>
+    <div class="header-container">
+        <div class="row flex-nowrap align-items-start" style="padding-top: 5px;">
+            <div class="col-4" style="padding-left: 0px;">
+                <a class="link-secondary" href="/">На главную</a>
+                <div style="margin-top: 5px;"> <!-- Контейнер для кнопок -->
+                    <a class="link-secondary" href="/convenient_job_search">К поиску работы</a>
+                </div>
+                <button id="clear-db-btn" class="btn clear-db-btn">
+                    Очистка БД
+                </button>
+            </div>
+            <div class="col-4 text-center" style="white-space: nowrap;">
+                <span class="header-title text-body-emphasis text-decoration-none">Поиск работы</span>
+            </div>
+            <div class="col-4 d-flex justify-content-end align-items-center" style="padding-right: 0px;">
+                <div class="d-flex flex-column align-items-end">
+                    <a class="btn btn-sm btn-outline-secondary" href="/convenient_job_search/job_search_history">Список вакансий всех запросов</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="#" id="delete-history-btn" style="margin-top: 5px;">Удалить историю поиска вакансий</a>
+                    <a href="/login" id="google-auth-btn" class="btn btn-sm btn-outline-secondary" style="margin-top: 5px; text-decoration: none; display: inline-flex; align-items: center;">
+                        <span style="color: #4285F4;">G</span>
+                        <span style="color: #EA4335;">o</span>
+                        <span style="color: #FBBC05;">o</span>
+                        <span style="color: #4285F4;">g</span>
+                        <span style="color: #34A853;">l</span>
+                        <span style="color: #4285F4;">e</span>
+                        <span style="color: #000;">&nbsp;</span>
+                        <span style="color: #000;">&nbsp;</span>
+                        <span>авторизация</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<script>
+    document.getElementById('clear-db-btn').addEventListener('click', function() {
+        // Запрос пароля
+        const password = prompt("Введите пароль для очистки БД:");
+        if (password === "unlpos12") {
+            // Если пароль верный, отправляем запрос на сервер
+            fetch('/convenient_job_search/full_clear_database', {
+                method: 'DELETE' // или 'POST', если вы используете этот метод
+            })
+                .then(response => {
+                    if (response.ok) {
+                        alert("База данных успешно очищена!");
+                    } else {
+                        alert("Ошибка при очистке базы данных.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Ошибка:", error);
+                    alert("Произошла ошибка при очистке базы данных.");
+                });
+        } else {
+            alert("Введен неверный пароль.");
+        }
+    });
+</script>

@@ -1,0 +1,252 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <title th:text="${title}"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet"> <!-- Подключение шрифта -->
+        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+        <style>
+            html, body {
+                height: 100%; /* Задает высоту для html и body */
+                margin: 0; /* Убирает отступы по умолчанию */
+                display: flex;
+                flex-direction: column; /* Расположение элементов в колонку */
+                background-image: url('/images/background_job_search_3.jpg'); /* Путь к изображению */
+                background-size: cover; /* Масштабирует изображение, чтобы покрыть весь фон */
+                background-position: center; /* Центрирует изображение */
+            }
+
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f2f2f2;
+                padding-top: 0px; /* увеличена верхняя отступ, чтобы учесть высоту шапки */
+                overflow: hidden; /* Убираем прокрутку */
+            }
+
+            h2 {
+                text-align: center;
+                margin-bottom: 30px;
+                color: #ffffff; /* Белый цвет для заголовка */
+                text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8); /* Тень для лучшего контраста */
+            }
+
+            .p1 {
+                margin-left: 20px;
+                color: #ffffff; /* Белый цвет текста */
+                text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8); /* Тень текста для лучшего контраста */
+            }
+
+            .p1 span {
+                /*background-color: rgba(0, 0, 0, 0.6); /* Полупрозрачный черный фон */
+                padding: 10px 5px; /* 10px сверху и снизу, 5px слева и справа */
+                border-radius: 5px; /* Скругление углов */
+                display: inline; /* Фон растягивается только до длины текста */
+            }
+
+            .light-maroon-bg a.btn {
+                color: #343a40;
+            }
+
+            .fireworks {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none; /* Чтобы не мешать кликам */
+                display: none; /* Скрываем по умолчанию */
+            }
+
+            .firework {
+                position: absolute;
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                opacity: 0;
+                animation: launch 1s forwards, explode 0.5s forwards 1s; /* Взрыв через 1 секунду после запуска */
+            }
+
+            @keyframes launch {
+                0% {
+                    transform: translateY(0); /* Начинаем с низа экрана */
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateY(-100vh); /* Взлет до верхней границы экрана */
+                    opacity: 1;
+                }
+            }
+
+            @keyframes explode {
+                0% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+                100% {
+                    opacity: 0;
+                    transform: scale(3) translateY(-100vh); /* Увеличиваем масштаб и остаемся на месте */
+                }
+            }
+
+            .particle {
+                position: absolute;
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                opacity: 0;
+                animation: particle-explode 0.5s forwards; /* Анимация разлета частиц */
+            }
+
+            @keyframes particle-explode {
+                0% {
+                    transform: translate(0, 0);
+                    opacity: 1;
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(var(--x), var(--y)); /* Разлетаемся в стороны */
+                }
+            }
+
+            footer {
+                margin-top: auto; /* Отодвигает футер вниз */
+                background-color: #d0c1e3; /* Цвет фона футера */
+                text-align: center; /* Центрируем текст в футере */
+            }
+        </style>
+    </head>
+
+    <body>
+        <!-- Включаем header -->
+        <div th:replace="~{job_search/header.html}"></div>
+
+        <h2>Подтверждение</h2>
+        <p class="p1" style="margin-left: 20px;">
+            <span style="background-color: rgba(0, 0, 0, 0.6); border-radius: 5px;">
+                <span th:text="${message}"></span>
+            </span>
+        </p>
+        <p class="p1" style="margin-left: 20px;">
+            <span style="background-color: rgba(0, 0, 0, 0.6); border-radius: 5px;">
+                <span>Идентификатор вакансии: </span><span th:text="${vacancyId}"></span>
+            </span>
+        </p>
+        <p class="p1" style="margin-left: 20px;">
+            <span style="background-color: rgba(0, 0, 0, 0.6); border-radius: 5px;">
+                <span>URL страницы откуда отправка резюме: </span><span th:text="${submitPageUrl}"></span>
+            </span>
+        </p>
+
+        <div class="fireworks" id="fireworks"></div>
+
+        <!-- Включаем футер -->
+        <div th:replace="~{job_search/footer.html}"></div>
+
+        <div id="notification" class="alert alert-success" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 900px; text-align: center; font-size: 24px;">
+            <strong>Успех!</strong> <span id="notification-message">История поиска вакансий очищена.</span>
+        </div>
+
+        <script>
+            document.getElementById("delete-history-btn").addEventListener("click", function(event) {
+                event.preventDefault(); // Предотвращаем переход по ссылке
+
+                fetch('/convenient_job_search/delete_search_history', {
+                    method: 'DELETE',
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.text();
+                        } else {
+                            throw new Error('Ошибка при удалении истории поиска');
+                        }
+                    })
+                    .then(message => {
+                        // Показываем уведомление
+                        const notification = document.getElementById("notification");
+                        const messageSpan = document.getElementById("notification-message");
+                        messageSpan.innerHTML = message; // обновляем текст уведомления
+                        notification.style.display = "block";
+
+                        // Скрываем уведомление через 5 секунд
+                        setTimeout(() => {
+                            notification.style.display = "none";
+                        }, 5000);
+                    })
+                    .catch(error => {
+                        // Показываем ошибку
+                        const notification = document.getElementById("notification");
+                        notification.className = "alert alert-danger"; // Меняем стиль на ошибку
+                        const messageSpan = document.getElementById("notification-message");
+                        messageSpan.innerHTML = error.message; // обновляем текст уведомления
+                        notification.style.display = "block";
+
+                        // Скрываем уведомление через 5 секунд
+                        setTimeout(() => {
+                            notification.style.display = "none";
+                        }, 5000);
+                    });
+            });
+
+            document.addEventListener("DOMContentLoaded", function() {
+                const message = /*[[${message}]]*/ "Ваше резюме успешно отправлено!"; // Получите сообщение из сервера
+                if (message === "Ваше резюме успешно отправлено!") {
+                    const fireworksContainer = document.getElementById("fireworks");
+                    fireworksContainer.style.display = "block"; // Показываем контейнер
+
+                    // Функция для создания "фейерверков"
+                    function createFirework() {
+                        for (let i = 0; i < 10; i++) { // Создаем пучок из 10 фейерверков
+                            const firework = document.createElement("div");
+                            firework.className = "firework";
+                            firework.style.left = (Math.random() * 100) + "vw"; // Случайная позиция по горизонтали
+                            firework.style.bottom = "0"; // Начинаем с низа экрана
+                            firework.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`; // Яркий цвет
+
+                            // Задаем анимацию
+                            firework.style.animation = `launch 1s forwards, explode 0.5s forwards 1s`; // Взрыв с задержкой
+                            fireworksContainer.appendChild(firework);
+
+                            // Создание частиц
+                            for (let j = 0; j < 20; j++) { // 20 частиц для каждого фейерверка
+                                const particle = document.createElement("div");
+                                particle.className = "particle";
+                                particle.style.background = firework.style.background; // Цвет частицы совпадает с фейерверком
+
+                                // Задаем случайные направления разлета
+                                const angle = Math.random() * 2 * Math.PI; // Случайный угол
+                                const radius = Math.random() * 100; // Случайное расстояние
+                                const x = Math.cos(angle) * radius;
+                                const y = Math.sin(angle) * radius;
+
+                                particle.style.setProperty('--x', `${x}px`);
+                                particle.style.setProperty('--y', `${y}px`);
+
+                                // Анимация разлета частиц
+                                particle.style.animation = `particle-explode 0.5s forwards ${Math.random() * 0.5}s`;
+                                particle.style.left = firework.style.left; // Позиция появления частицы
+                                particle.style.bottom = 'calc(100vh - 10px)'; // Позиция появления чуть ниже верхней границы
+                                fireworksContainer.appendChild(particle);
+                            }
+                        }
+
+                        // Удаляем элементы после анимации
+                        setTimeout(() => {
+                            const fireworks = document.querySelectorAll('.firework');
+                            fireworks.forEach(firework => firework.remove());
+                            const particles = document.querySelectorAll('.particle');
+                            particles.forEach(particle => particle.remove());
+                        }, 2500); // Увеличиваем время удаления, чтобы анимация завершилась
+                    }
+
+                    // Запускаем фейерверки
+                    const interval = setInterval(createFirework, 300);
+                    setTimeout(() => {
+                        clearInterval(interval); // Останавливаем через 7 секунд
+                        fireworksContainer.style.display = "none"; // Скрываем контейнер
+                    }, 7000);
+                }
+            });
+        </script>
+    </body>
+</html>

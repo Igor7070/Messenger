@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="2dp"
+    android:paddingEnd="8dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
+
+    <!-- ==================== АВАТАР ДЛЯ ВХОДЯЩИХ СООБЩЕНИЙ ==================== -->
+    <ImageView
+        android:id="@+id/message_avatar"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        android:background="@android:color/transparent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="4dp"
+        android:contentDescription="Avatar" />
+
+    <!-- ==================== ВХОДЯЩЕЕ СООБЩЕНИЕ ==================== -->
+    <LinearLayout
+        android:id="@+id/bubble_incoming"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_message_incoming"
+        android:padding="12dp"
+        app:layout_constraintStart_toEndOf="@id/message_avatar"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_max="280dp"
+        app:layout_constraintHorizontal_bias="0.0"
+        android:layout_marginStart="6dp">
+
+        <!-- Аудиосообщение (входящее) -->
+        <LinearLayout
+            android:id="@+id/incoming_audio_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone"
+            android:paddingVertical="8dp">
+
+            <ImageView
+                android:id="@+id/incoming_audio_play"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:src="@drawable/ic_play"
+                android:tint="#E2E8F0"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Play" />
+
+            <SeekBar
+                android:id="@+id/incoming_audio_seekbar"
+                android:layout_width="160dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:progressTint="#67E8F9" />
+
+            <TextView
+                android:id="@+id/incoming_audio_duration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0:00"
+                android:textColor="#E2E8F0"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Изображение -->
+        <ImageView
+            android:id="@+id/incoming_image"
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:background="@drawable/bg_message_image_placeholder"
+            android:contentDescription="Image" />
+
+        <!-- Подпись к изображению -->
+        <TextView
+            android:id="@+id/message_caption_in"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#E2E8F0"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
+
+        <!-- Текст -->
+        <TextView
+            android:id="@+id/message_text_in"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#E2E8F0"
+            android:textSize="16sp"
+            android:lineSpacingExtra="2dp" />
+
+        <TextView
+            android:id="@+id/message_translation_in"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#94A3B8"
+            android:textStyle="italic"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/message_time_in"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="#94A3B8"
+            android:layout_gravity="end"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
+
+    <!-- ==================== ИСХОДЯЩЕЕ СООБЩЕНИЕ ==================== -->
+    <LinearLayout
+        android:id="@+id/bubble_outgoing"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_message_outgoing"
+        android:padding="12dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_max="280dp"
+        app:layout_constraintHorizontal_bias="1.0">
+
+        <!-- Аудиосообщение (исходящее) -->
+        <LinearLayout
+            android:id="@+id/outgoing_audio_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone"
+            android:paddingVertical="8dp">
+
+            <ImageView
+                android:id="@+id/outgoing_audio_play"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:src="@drawable/ic_play"
+                android:tint="#FFFFFF"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Play" />
+
+            <SeekBar
+                android:id="@+id/outgoing_audio_seekbar"
+                android:layout_width="160dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:progressTint="#67E8F9" />
+
+            <TextView
+                android:id="@+id/outgoing_audio_duration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0:00"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Изображение -->
+        <ImageView
+            android:id="@+id/outgoing_image"
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:background="@drawable/bg_message_image_placeholder"
+            android:contentDescription="Image" />
+
+        <!-- Подпись к изображению -->
+        <TextView
+            android:id="@+id/message_caption_out"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#B0C4FF"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
+
+        <!-- Текст -->
+        <TextView
+            android:id="@+id/message_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:lineSpacingExtra="2dp" />
+
+        <TextView
+            android:id="@+id/message_translation_out"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#C7D2FE"
+            android:textStyle="italic"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/message_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="#B0C4FF"
+            android:layout_gravity="end"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "771644042850",
+    "project_id": "messenger-up12",
+    "storage_bucket": "messenger-up12.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:771644042850:android:5658d0f6aca1ca837aab3b",
+        "android_client_info": {
+          "package_name": "org.unlimitedpossibilities12.messenger"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2pMkft4Zx0USJqWiTcyJMUc0SvXg4eiY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

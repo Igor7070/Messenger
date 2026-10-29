@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Метка возможности рядом с именем чата: «SECRET», «→EN».
+     Бирюза закреплена за нашими особенностями, индиго — за действиями. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#2922D3EE" />
+    <corners android:radius="7dp" />
+</shape>

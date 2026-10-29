@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F172A">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Toolbar -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="#1E2A44"
+            android:paddingEnd="2dp"
+            app:contentInsetStart="0dp"
+            app:contentInsetEnd="0dp">
+
+            <TextView
+                android:id="@+id/toolbar_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Messenger UP12"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#E2E8F0"
+                android:layout_gravity="center" />
+
+            <!-- Настройки mesh — по запросу, экран не занимает -->
+            <ImageView
+                android:id="@+id/mesh_settings_button"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="end|center_vertical"
+                android:layout_marginEnd="38dp"
+                android:src="@drawable/ic_mesh"
+                android:padding="7dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Mesh relay settings"
+                android:tint="#94A3B8" />
+
+            <ImageView
+                android:id="@+id/offline_mode_button"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="end|center_vertical"
+                android:src="@drawable/ic_offline_mode_active"
+                android:padding="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Offline mode"
+                android:tint="#60A5FA" />
+        </androidx.appcompat.widget.Toolbar>
+
+        <!-- Основной контент -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Блок никнейма + аватар (кликабельный) -->
+            <LinearLayout
+                android:id="@+id/nickname_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="?attr/selectableItemBackground"
+                android:padding="8dp"
+                android:layout_marginBottom="20dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/iv_avatar"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/default_avatar_offline"
+                    android:contentDescription="Avatar" />
+
+                <TextView
+                    android:id="@+id/tv_nickname"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Your name"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#60A5FA"
+                    android:layout_marginStart="12dp"
+                    android:drawableEnd="@drawable/ic_edit"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Offline mode"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="#E2E8F0"
+                android:gravity="center"
+                android:layout_marginBottom="20dp"/>
+
+            <!-- Недавние чаты -->
+            <LinearLayout
+                android:id="@+id/recent_chats_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Recent chats"
+                    android:textSize="18sp"
+                    android:textColor="#94A3B8"
+                    android:layout_marginBottom="8dp"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recent_chats_recycler"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:background="#1E2937"
+                    android:padding="8dp"
+                    android:clipToPadding="false"
+                    android:nestedScrollingEnabled="true"
+                    android:scrollbars="vertical"/>
+            </LinearLayout>
+
+            <!-- Разделитель -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#334155"
+                android:layout_marginVertical="16dp"/>
+
+            <!-- Устройства рядом -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Nearby devices"
+                android:textSize="18sp"
+                android:textColor="#94A3B8"
+                android:layout_marginBottom="12dp"/>
+
+            <!-- Список найденных устройств -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/offline_users_recycler"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="#1E2937"
+                android:padding="8dp"
+                android:clipToPadding="false"/>
+
+            <!-- Кнопки управления -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp"
+                android:gravity="center">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_advertise"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Make me visible"
+                    app:cornerRadius="12dp"
+                    android:layout_marginEnd="8dp"
+                    style="@style/Widget.Material3.Button.TonalButton" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_discover"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Find devices"
+                    app:cornerRadius="12dp"
+                    android:layout_marginStart="8dp" />
+
+            </LinearLayout>
+
+
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

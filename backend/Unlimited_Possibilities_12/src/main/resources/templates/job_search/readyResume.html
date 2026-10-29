@@ -1,0 +1,177 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <title th:text="${title}"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet"> <!-- Подключение шрифта -->
+        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+        <style>
+            html, body {
+                height: 100%; /* Задает высоту для html и body */
+                margin: 0; /* Убирает отступы по умолчанию */
+                display: flex;
+                flex-direction: column; /* Расположение элементов в колонку */
+                background-image: url('/images/background_job_search_2.jpg'); /* Путь к изображению */
+                background-size: cover; /* Масштабирует изображение, чтобы покрыть весь фон */
+                background-position: center; /* Центрирует изображение */
+            }
+
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f2f2f2;
+                padding-top: 0px; /* увеличена верхняя отступ, чтобы учесть высоту шапки */
+            }
+
+            h2 {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+
+            .light-maroon-bg {
+                background-color: #d0c1e3;
+                padding: 10px 15px;
+            }
+
+            .light-maroon-bg a.btn {
+                color: #343a40;
+            }
+
+            /* Новый стиль для центрирования ссылки */
+            .centered-link {
+                display: flex;
+                justify-content: center;
+                margin-top: 20px; /* Отступ сверху */
+
+            }
+
+            .centered-link a {
+                position: relative; /* Для размещения псевдоэлементов */
+                /*color: #007bff; /* Цвет текста */
+                color: #0056b3;
+                text-decoration: underline; /* Подчеркивание текста */
+                padding: 10px 20px; /* Отступы вокруг текста */
+                background-color: rgba(255, 255, 255, 0.7); /* Полупрозрачный фон */
+                border-radius: 5px; /* Скругление углов */
+                transition: background-color 0.3s; /* Плавный переход фона при наведении */
+            }
+
+            .centered-link a:hover {
+                background-color: rgba(255, 255, 255, 0.9); /* Увеличение непрозрачности при наведении */
+            }
+
+            @keyframes blink {
+                0%, 20%, 100% { opacity: 0; }
+                40%, 60% { opacity: 1; }
+            }
+
+            .dot {
+                color: #007bff; /* Цвет точек */
+                margin: 0 5px; /* Отступ между точками */
+                font-size: 48px; /* Размер точек */
+            }
+
+            .loading-message {
+                font-size: 40px; /* Размер шрифта для сообщения */
+                font-weight: bold; /* Полужирный шрифт */
+                color: #333; /* Цвет текста */
+                margin-top: 20px; /* Отступ сверху */
+            }
+
+            footer {
+                margin-top: auto; /* Отодвигает футер вниз */
+                background-color: #d0c1e3; /* Цвет фона футера */
+                text-align: center; /* Центрируем текст в футере */
+            }
+        </style>
+    </head>
+
+    <body>
+        <!-- Включаем header -->
+        <div th:replace="~{job_search/header.html}"></div>
+
+        <h2>Ваше резюме готово!</h2>
+
+        <div class="centered-link">
+             <a th:href="@{/convenient_job_search/readyResume/file_resume(fileName=${resumeFile})}" download>Скачать резюме</a>
+        </div>
+
+        <div class="text-center" style="margin-top: 20px;">
+            <form action="/convenient_job_search/readyResume/upload" method="post" onsubmit="return validateForm()">
+                <input type="hidden" name="vacancyId" th:value="${vacancyId}">
+                <input type="hidden" name="resumeFile" th:value="${resumeFile}">
+                <button type="submit" style="background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                    Отправить резюме
+                </button>
+            </form>
+        </div>
+
+        <div class="text-center" style="margin-top: 20px;">
+            <p style="margin-left: 0;">Имя файла: <span th:text="${resumeFile}"></span></p>
+        </div>
+
+        <div id="notification" class="alert alert-success" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 900px; text-align: center; font-size: 24px;">
+            <strong>Успех!</strong> <span id="notification-message">История поиска вакансий очищена.</span>
+        </div>
+
+        <div id="loading" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.4); z-index: 9999; text-align: center; padding-top: 20%;">
+            <div style="font-size: 48px;">
+                <span class="dot" style="animation: blink 1s infinite;">&#8226;</span>
+                <span class="dot" style="animation: blink 1s infinite 0.2s;">&#8226;</span>
+                <span class="dot" style="animation: blink 1s infinite 0.4s;">&#8226;</span>
+            </div>
+            <p class="loading-message">Отправка резюме работодателю.</p>
+        </div>
+
+        <script>
+            function validateForm() {
+                // Показать индикатор загрузки
+                document.getElementById("loading").style.display = "block";
+                return true; // отправка формы
+            }
+
+            document.getElementById("delete-history-btn").addEventListener("click", function(event) {
+                event.preventDefault(); // Предотвращаем переход по ссылке
+
+                fetch('/convenient_job_search/delete_search_history', {
+                    method: 'DELETE',
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.text();
+                        } else {
+                            throw new Error('Ошибка при удалении истории поиска');
+                        }
+                    })
+                    .then(message => {
+                        // Показываем уведомление
+                        const notification = document.getElementById("notification");
+                        const messageSpan = document.getElementById("notification-message");
+                        messageSpan.innerHTML = message; // обновляем текст уведомления
+                        notification.style.display = "block";
+
+                        // Скрываем уведомление через 5 секунд
+                        setTimeout(() => {
+                            notification.style.display = "none";
+                        }, 5000);
+                    })
+                    .catch(error => {
+                        // Показываем ошибку
+                        const notification = document.getElementById("notification");
+                        notification.className = "alert alert-danger"; // Меняем стиль на ошибку
+                        const messageSpan = document.getElementById("notification-message");
+                        messageSpan.innerHTML = error.message; // обновляем текст уведомления
+                        notification.style.display = "block";
+
+                        // Скрываем уведомление через 5 секунд
+                        setTimeout(() => {
+                            notification.style.display = "none";
+                        }, 5000);
+                    });
+            });
+        </script>
+
+        <!-- Включаем футер -->
+        <div th:replace="~{job_search/footer.html}"></div>
+    </body>
+</html>

@@ -1,0 +1,175 @@
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/textDataCreateResume"
+            android:text="Введите данные для создания резюме"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_gravity="center"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <CheckBox
+            android:id="@+id/enableAI"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Подключить ИИ для создания резюме"/>
+
+        <EditText
+            android:id="@+id/fullName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Ваше полное имя"/>
+
+        <TextView
+            android:id="@+id/textContactData"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Контактные данные"
+            android:textSize="18sp"
+            android:layout_marginTop="16dp"/>
+
+        <EditText
+            android:id="@+id/email"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="example@mail.com"
+            android:inputType="textEmailAddress"/>
+
+        <EditText
+            android:id="@+id/phone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="+7 (999) 999-99-99"/>
+
+        <EditText
+            android:id="@+id/city"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Ваш город"/>
+
+        <TextView
+            android:id="@+id/textObjective"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Объектив"
+            android:textSize="18sp"
+            android:layout_marginTop="16dp"/>
+
+        <EditText
+            android:id="@+id/objective"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Ваша цель"/>
+
+        <TextView
+            android:id="@+id/textEducation"
+            android:text="Образование"
+            android:textSize="18sp"
+            android:layout_marginTop="16dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <EditText
+            android:id="@+id/educationCount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Введите количество учебных заведений" />
+
+        <LinearLayout
+            android:id="@+id/educationFields"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"/>
+
+        <TextView
+            android:id="@+id/textWorkExpeience"
+            android:text="Опыт работы"
+            android:textSize="18sp"
+            android:layout_marginTop="16dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <EditText
+            android:id="@+id/workCount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Введите количество мест работы" />
+
+        <LinearLayout
+            android:id="@+id/workFields"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"/>
+
+        <TextView
+            android:id="@+id/textSkillsAndExperience"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Навыки и опыт"
+            android:textSize="18sp"
+            android:layout_marginTop="16dp"/>
+
+        <!-- Ввод языков -->
+        <EditText
+            android:id="@+id/languages"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Введите языки, которыми вы владеете"/>
+
+        <!-- Ввод навыков -->
+        <EditText
+            android:id="@+id/skills"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Опишите ваши навыки и способности"
+            android:inputType="textMultiLine"
+            android:minLines="3"
+            android:gravity="top|start"/>
+
+        <!-- Ввод достижений -->
+        <EditText
+            android:id="@+id/achievements"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Укажите ваши личные достижения или награды, если есть"
+            android:inputType="textMultiLine"
+            android:minLines="3"
+            android:gravity="top|start"/>
+
+        <Button
+            android:id="@+id/createResumeButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Создать резюме"
+            android:layout_marginTop="16dp"/>
+
+        <ProgressBar
+            android:id="@+id/progressBarCreateResume"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/waitingCreateResumeText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:text="Подождите немного, выполняется процесс создания резюме..."
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:padding="16dp"/>
+    </LinearLayout>
+</ScrollView>

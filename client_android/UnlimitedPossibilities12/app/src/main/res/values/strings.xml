@@ -1,0 +1,58 @@
+<resources>
+    <string name="app_name">Unlimited Possibilities12</string>
+
+    <string name="default_web_client_id">700417838593-m7o2cpuriob059nre37ckgb2u8d8rtld.apps.googleusercontent.com</string>
+
+    <string-array name="cities_array">
+        <item>Выберите город</item>
+        <item>Киев</item>
+        <item>Харьков</item>
+        <item>Одесса</item>
+        <item>Днепропетровск</item>
+    </string-array>
+
+    <string-array name="languages_array">
+        <item>Выберите язык</item>
+        <item>Русский</item>
+        <item>Украинский</item>
+        <item>Английский</item>
+    </string-array>
+
+    <string-array name="timeframes_array">
+        <item>Выберите диапазон</item>
+        <item>1 день</item>
+        <item>3 дня</item>
+        <item>7 дней</item>
+        <item>14 дней</item>
+        <item>30 дней</item>
+    </string-array>
+
+    <string name="bio_title">About me</string>
+    <string name="select_avatar">Select New Avatar</string>
+    <string name="update_profile">Update Profile</string>
+    <string name="personal_chats">Personal Chats</string>
+    <string name="send_message">Send Message</string>
+    <string name="call">Voice Call</string>
+    <string name="video_call">Video Call</string>
+    <string name="incoming_voice_call">Incoming voice call from %s</string>
+    <string name="incoming_video_call">Incoming video call from %s</string>
+    <string name="voice_call_accepted">Voice call accepted</string>
+    <string name="video_call_accepted">Video call accepted</string>
+    <string name="voice_call_cancelled">The voice call was cancelled.</string>
+    <string name="video_call_cancelled">The video call was cancelled.</string>
+    <string name="call_rejected">Call rejected</string>
+    <string name="translate_call">Translate Call</string>
+    <string name="open_secret_chat">Open Secret Chat</string>
+
+    <string name="personal_chats_title">Personal Chats</string>
+    <string name="new_chat">New Chat</string>
+
+    <string name="incoming_group_call">Incoming group call from %1$s</string>
+    <string name="group_call_accepted">Group call accepted</string>
+
+    <string name="call_deleted">Call deleted successfully</string>
+    <string name="call_delete_failed">Failed to delete call</string>
+    <string name="call_fetch_failed">Failed to fetch calls</string>
+    <string name="call_error">Error fetching calls</string>
+    <string name="redial_not_implemented">Redial not implemented yet</string>
+</resources>

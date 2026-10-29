@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/dialog_background">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select Users for Group Call"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:paddingBottom="8dp" />
+
+    <EditText
+        android:id="@+id/search_users_edit_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Search users..."
+        android:padding="12dp"
+        android:background="@drawable/edit_text_dark_background"
+        android:textColor="#E2E8F0"
+        android:textColorHint="#94A3B8"
+        android:layout_marginBottom="8dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/users_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="8dp"
+        android:maxHeight="400dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/start_call_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Start a group call"
+        app:cornerRadius="8dp"
+        android:enabled="false" />
+</LinearLayout>

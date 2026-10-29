@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_container"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="6dp"
+        app:cardBackgroundColor="@color/translate_background_card">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:id="@+id/title_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Transcription Settings"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@color/translate_text_primary"
+                android:layout_marginBottom="20dp" />
+
+            <CheckBox
+                android:id="@+id/enable_transcription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Enable Transcription"
+                android:textSize="18sp"
+                android:textColor="@color/translate_text_secondary"
+                app:buttonTint="@color/translate_accent"
+                android:layout_marginBottom="16dp" />
+
+            <RadioGroup
+                android:id="@+id/transcription_mode_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="16dp">
+
+                <RadioButton
+                    android:id="@+id/transcribe_all"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Transcribe all audio messages"
+                    android:textSize="18sp"
+                    android:textColor="@color/translate_text_secondary"
+                    app:buttonTint="@color/translate_accent" />
+
+                <RadioButton
+                    android:id="@+id/transcribe_new_only"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Transcribe only new audio messages"
+                    android:textSize="18sp"
+                    android:textColor="@color/translate_text_secondary"
+                    app:buttonTint="@color/translate_accent" />
+
+                <RadioButton
+                    android:id="@+id/transcribe_selectively"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Transcribe selectively"
+                    android:textSize="18sp"
+                    android:textColor="@color/translate_text_secondary"
+                    app:buttonTint="@color/translate_accent" />
+            </RadioGroup>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="end">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/cancel_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Cancel"
+                    android:textSize="16sp"
+                    android:textColor="@color/translate_accent"
+                    app:backgroundTint="@android:color/transparent"
+                    app:rippleColor="@color/translate_accent_light"
+                    android:layout_marginEnd="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/save_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Save"
+                    android:textSize="16sp"
+                    android:textColor="@android:color/white"
+                    app:backgroundTint="@color/translate_accent"
+                    app:cornerRadius="12dp"
+                    app:rippleColor="@color/translate_accent_dark" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</androidx.constraintlayout.widget.ConstraintLayout>

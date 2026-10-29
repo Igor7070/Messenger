@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/gradient_voice_call_background">
+
+    <!-- Заголовок -->
+    <TextView
+        android:id="@+id/call_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="Voice communication with User"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Таймер -->
+    <TextView
+        android:id="@+id/call_timer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="00:00"
+        android:textColor="#E0E0E0"
+        android:textSize="18sp"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/call_title" />
+
+    <!-- Время начала и текущее время -->
+    <LinearLayout
+        android:id="@+id/time_container"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="16dp"
+        android:orientation="vertical"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/call_timer">
+
+        <TextView
+            android:id="@+id/start_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Start: --:--"
+            android:textColor="#B0B0B0"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/current_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Current: --:--"
+            android:textColor="#B0B0B0"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- График -->
+    <com.example.unlimitedpossibilities12.messenger.CallWaveformView
+        android:id="@+id/waveform_view"
+        android:layout_width="0dp"
+        android:layout_height="100dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/time_container" />
+
+    <!-- Заголовок для твоего текста -->
+    <TextView
+        android:id="@+id/your_voice_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:text="Your Voice"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/waveform_view" />
+
+    <!-- Текст твоего голоса -->
+    <ScrollView
+        android:id="@+id/transcription_scroll_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintVertical_weight="1"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="8dp"
+        android:background="#80000000"
+        android:maxHeight="120dp"
+        android:minHeight="120dp"
+        android:overScrollMode="ifContentScrolls"
+        android:padding="8dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/your_voice_label"
+        app:layout_constraintBottom_toTopOf="@id/friend_voice_label">
+
+        <TextView
+            android:id="@+id/transcription_text_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Transcription: Waiting..."
+            android:textColor="#E0E0E0"
+            android:textSize="16sp" />
+    </ScrollView>
+
+    <!-- Заголовок для текста собеседника -->
+    <TextView
+        android:id="@+id/friend_voice_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:text="Friend's Voice"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/transcription_scroll_view"
+        app:layout_constraintBottom_toTopOf="@id/friend_transcription_scroll_view" />
+
+    <!-- Текст голоса собеседника -->
+    <ScrollView
+        android:id="@+id/friend_transcription_scroll_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintVertical_weight="1"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="8dp"
+        android:background="#80000000"
+        android:maxHeight="120dp"
+        android:minHeight="120dp"
+        android:overScrollMode="ifContentScrolls"
+        android:padding="8dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/friend_voice_label"
+        app:layout_constraintBottom_toTopOf="@id/translation_container">
+
+        <TextView
+            android:id="@+id/friend_transcription_text_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Friend's Transcription: Waiting..."
+            android:textColor="#E0E0E0"
+            android:textSize="16sp" />
+    </ScrollView>
+
+    <!-- Контейнер для Switch и Spinner -->
+    <LinearLayout
+        android:id="@+id/translation_container"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/friend_transcription_scroll_view"
+        app:layout_constraintBottom_toTopOf="@id/language_hint">
+
+        <Switch
+            android:id="@+id/translation_switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Translate speech"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:layout_marginEnd="8dp" />
+
+        <Spinner
+                android:spinnerMode="dropdown"
+                android:dropDownVerticalOffset="0dp"
+                android:popupBackground="@drawable/spinner_dropdown_background_translate"
+            android:id="@+id/language_spinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@android:drawable/spinner_background"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Главное недоразумение: список языков задаёт СВОЙ язык, а не чужой.
+         На нём распознаётся твоя речь и на него переводится речь собеседника. -->
+    <TextView
+        android:id="@+id/language_hint"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="4dp"
+        android:text="Language above is YOUR language: you speak it, and you hear others in it"
+        android:textColor="#B0BEC5"
+        android:textSize="12sp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/translation_container"
+        app:layout_constraintBottom_toTopOf="@id/on_device_switch" />
+
+    <!-- Режим перевода: бесплатно на устройстве или качественнее через сервер -->
+    <Switch
+        android:id="@+id/on_device_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:text="On-device translation (free)"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/language_hint"
+        app:layout_constraintBottom_toTopOf="@id/tts_switch"
+        app:layout_goneMarginTop="8dp" />
+
+    <!-- Switch для TTS -->
+    <Switch
+        android:id="@+id/tts_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:text="Speak translation aloud"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:visibility="gone"
+        style="@style/SwitchTts"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/on_device_switch"
+        app:layout_constraintBottom_toTopOf="@id/end_call_button"
+        app:layout_goneMarginTop="8dp" />
+
+    <!-- Кнопка завершения звонка -->
+    <Button
+        android:id="@+id/end_call_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="#D32F2F"
+        android:drawableLeft="@drawable/ic_end_call"
+        android:drawablePadding="8dp"
+        android:text="End Call"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tts_switch"
+        app:layout_goneMarginTop="16dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

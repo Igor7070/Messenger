@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Экран входа. Показывается при запуске тем, у кого нет живой сессии; вошедшие
+  попадают сразу в чаты и этого экрана не видят.
+
+  Содержимое скрыто до решения: пока проверяем сохранённую сессию, виден только
+  индикатор — иначе форма входа мелькала бы у тех, кто уже вошёл.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F172A">
+
+    <ScrollView
+        android:id="@+id/auth_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:visibility="invisible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="48dp"
+            android:paddingBottom="32dp">
+
+            <ImageView
+                android:layout_width="88dp"
+                android:layout_height="88dp"
+                android:src="@mipmap/ic_launcher_round"
+                android:contentDescription="Messenger UP12" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Messenger UP12"
+                android:textColor="#E2E8F0"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/auth_subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Sign in to continue"
+                android:textColor="#94A3B8"
+                android:textSize="14.5sp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                app:cardBackgroundColor="#1E2937"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="12dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="24dp">
+
+                    <!-- Переключатель «Войти / Регистрация»: один экран, две вкладки -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="20dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/auth_tab_sign_in"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:text="Sign in"
+                            android:textSize="14sp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/auth_tab_sign_up"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
+                            android:text="Sign up"
+                            android:textSize="14sp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            app:cornerRadius="10dp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="14dp"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        app:boxBackgroundColor="#172033"
+                        app:boxStrokeColor="#6366F1"
+                        app:hintTextColor="#94A3B8"
+                        app:startIconDrawable="@drawable/user_icon"
+                        app:startIconTint="#94A3B8">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/auth_username"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Username"
+                            android:inputType="text"
+                            android:imeOptions="actionNext"
+                            android:textColor="#E2E8F0"
+                            android:textColorHint="#94A3B8" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="14dp"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        app:boxBackgroundColor="#172033"
+                        app:boxStrokeColor="#6366F1"
+                        app:hintTextColor="#94A3B8"
+                        app:startIconDrawable="@drawable/lock_icon"
+                        app:startIconTint="#94A3B8"
+                        app:endIconMode="password_toggle"
+                        app:endIconTint="#94A3B8">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/auth_password"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Password"
+                            android:inputType="textPassword"
+                            android:imeOptions="actionDone"
+                            android:textColor="#E2E8F0"
+                            android:textColorHint="#94A3B8" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Поля ниже нужны только при регистрации -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/auth_bio_layout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="14dp"
+                        android:visibility="gone"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        app:boxBackgroundColor="#172033"
+                        app:boxStrokeColor="#6366F1"
+                        app:hintTextColor="#94A3B8"
+                        app:startIconDrawable="@drawable/info_icon"
+                        app:startIconTint="#94A3B8">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/auth_bio"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="About me (optional)"
+                            android:inputType="textMultiLine"
+                            android:maxLines="3"
+                            android:textColor="#E2E8F0"
+                            android:textColorHint="#94A3B8" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/auth_avatar_button"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="6dp"
+                        android:visibility="gone"
+                        android:text="Choose a photo (optional)"
+                        android:textColor="#94A3B8"
+                        app:icon="@drawable/camera_icon"
+                        app:iconTint="#94A3B8" />
+
+                    <TextView
+                        android:id="@+id/auth_avatar_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+                        android:visibility="gone"
+                        android:gravity="center"
+                        android:textColor="#22D3EE"
+                        android:textSize="12.5sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/auth_submit"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="6dp"
+                        android:text="Sign in"
+                        android:textSize="16sp"
+                        android:textColor="#FFFFFF"
+                        app:backgroundTint="#6366F1"
+                        app:cornerRadius="12dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:id="@+id/auth_switch_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:padding="6dp"
+                android:text="No account yet? Sign up"
+                android:textColor="#22D3EE"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Один индикатор на два случая: проверка сохранённой сессии и отправка формы -->
+    <FrameLayout
+        android:id="@+id/auth_progress"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CC0F172A"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ProgressBar
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
+            android:indeterminateTint="#6366F1" />
+    </FrameLayout>
+</FrameLayout>

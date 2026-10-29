@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="16dp">
+
+    <Button
+        android:id="@+id/downloadButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Скачать резюме"
+        android:textSize="18sp" /> <!-- Увеличенный размер текста -->
+
+    <Button
+        android:id="@+id/google_sign_in_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Авторизация в Google"
+        android:textSize="18sp"
+        android:layout_centerInParent="true" />
+
+    <TextView
+        android:id="@+id/sign_in_instruction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Для того чтобы отправить резюме работодателю, вам необходимо авторизироваться..."
+        android:textSize="16sp"
+        android:textColor="#333333"
+        android:textAlignment="center"
+        android:layout_marginTop="12dp" />
+</LinearLayout>

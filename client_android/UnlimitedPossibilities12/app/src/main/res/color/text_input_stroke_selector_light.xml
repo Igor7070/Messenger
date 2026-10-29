@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true" android:color="#FFA000" /> <!-- Мягкий золотистый при фокусе -->
+    <item android:state_hovered="true" android:color="#FFB300" /> <!-- Чуть ярче при наведении -->
+    <item android:color="#757575" /> <!-- Серый в неактивном состоянии -->
+</selector>

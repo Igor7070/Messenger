@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp">
+
+
+    <!-- Разделитель дня: дата стоит один раз над первым сообщением дня, а не
+         в каждом сообщении. Пока дата была у каждого, лента занимала вдвое
+         больше экрана, и время приходилось читать целиком. -->
+    <TextView
+        android:id="@+id/day_separator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="3dp"
+        android:background="@drawable/day_separator_background"
+        android:textSize="12sp"
+        android:textColor="#94A3B8"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Аватар (только для полученных сообщений) -->
+    <ImageView
+        android:id="@+id/avatar_image_view"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="User avatar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/day_separator"
+        android:visibility="gone" />
+
+    <!-- Индикатор статуса (зеленый кружок) -->
+    <View
+        android:id="@+id/status_indicator"
+        android:layout_width="10dp"
+        android:layout_height="10dp"
+        android:background="@drawable/status_circle"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/avatar_image_view"
+        app:layout_constraintEnd_toEndOf="@id/avatar_image_view"
+        android:layout_marginEnd="-1dp"
+        android:layout_marginBottom="-1dp" />
+
+    <!-- Placeholder для выравнивания -->
+    <View
+        android:id="@+id/avatar_placeholder"
+        android:layout_width="32dp"
+        android:layout_height="0dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/day_separator"
+        android:visibility="gone" />
+
+    <!-- Контейнер сообщения -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/message_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="9dp"
+        android:layout_marginEnd="8dp"
+        style="@style/CustomMaterialCard"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp"
+        app:strokeWidth="0dp"
+        app:cardBackgroundColor="#172033"
+        app:layout_constrainedWidth="true"
+        app:layout_constraintStart_toEndOf="@id/avatar_image_view"
+        app:layout_constraintTop_toBottomOf="@id/day_separator">
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:id="@+id/bubble_column"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:background="@null">
+
+            <!-- Содержимое сообщения -->
+            <TextView
+                android:id="@+id/content_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxWidth="240dp"
+                android:maxLines="10"
+                android:ellipsize="end"
+                android:textSize="16sp"
+                android:textColor="#E2E8F0"
+                android:breakStrategy="simple" />
+
+            <!-- Превью ссылки -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/link_preview_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginHorizontal="4dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="3dp"
+                app:cardBackgroundColor="#1E293B"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <ImageView
+                        android:id="@+id/preview_image"
+                        android:layout_width="match_parent"
+                        android:layout_height="160dp"
+                        android:scaleType="centerCrop"
+                        android:contentDescription="Ссылка превью"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/preview_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="12dp"
+                        android:paddingBottom="6dp"
+                        android:textSize="15.5sp"
+                        android:textStyle="bold"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        android:textColor="#E2E8F0" />
+
+                    <TextView
+                        android:id="@+id/preview_description"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingHorizontal="12dp"
+                        android:paddingBottom="8dp"
+                        android:textSize="14sp"
+                        android:maxLines="3"
+                        android:ellipsize="end"
+                        android:textColor="#CBD5E1" />
+
+                    <TextView
+                        android:id="@+id/preview_url"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingHorizontal="12dp"
+                        android:paddingBottom="10dp"
+                        android:textSize="12.5sp"
+                        android:textColor="#94A3B8" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Переведённое сообщение -->
+            <TextView
+                android:id="@+id/translated_content_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:maxWidth="240dp"
+                android:maxLines="10"
+                android:ellipsize="end"
+                android:textSize="14sp"
+                android:textStyle="italic"
+                android:textColor="#94A3B8"
+                android:visibility="gone" />
+
+            <!-- Превью изображения: фиксированная ширина, высота по пропорциям
+                 снимка (adjustViewBounds), без обрезки в квадрат. Ширина совпадает
+                 с maxWidth текста, чтобы пузырь с фото был такого же размера. -->
+            <ImageView
+                android:id="@+id/image_preview"
+                android:layout_width="240dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:adjustViewBounds="true"
+                android:maxHeight="320dp"
+                android:minHeight="120dp"
+                android:scaleType="fitCenter"
+                android:background="#0F172A"
+                android:contentDescription="Image preview"
+                android:visibility="gone"
+                android:clickable="true"
+                android:focusable="true" />
+
+
+            <!-- Вложение не открылось: файлы на сервере пропадают при
+                 переразвёртывании. Прежде на их месте рисовался красный знак
+                 во всю ширину пузыря — теперь строка текста, как в вебе. -->
+            <TextView
+                android:id="@+id/attachment_unavailable"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Image unavailable"
+                android:textSize="14sp"
+                android:textStyle="italic"
+                android:textColor="#94A3B8"
+                android:visibility="gone" />
+
+            <!-- Ссылка на файл -->
+            <TextView
+                android:id="@+id/file_link_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📄 Download file"
+                android:textSize="14sp"
+                android:textColor="#60A5FA"
+                android:layout_marginTop="4dp"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:background="@drawable/file_link_background"
+                android:visibility="gone" />
+
+            <!-- Аудио контейнер -->
+            <LinearLayout
+                android:id="@+id/audio_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:layout_marginTop="4dp"
+                android:padding="4dp">
+
+                <LinearLayout
+                    android:id="@+id/audio_icons_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_gravity="end"
+                    android:layout_marginBottom="4dp">
+
+                    <ImageView
+                        android:id="@+id/translate_icon_audio"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_globe"
+                        app:tint="#67E8F9"
+                        android:layout_marginEnd="4dp"
+                        android:visibility="gone" />
+
+                    <ImageView
+                        android:id="@+id/tts_icon_audio"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_tts"
+                        app:tint="#94A3B8"
+                        android:layout_marginEnd="4dp"
+                        android:visibility="gone" />
+
+                    <ImageView
+                        android:id="@+id/tts_translated_icon_audio"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_tts"
+                        app:tint="#C4B5FD"
+                        android:layout_marginEnd="4dp"
+                        android:visibility="gone" />
+
+                    <ImageView
+                        android:id="@+id/transcription_icon"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_transcription"
+                        app:tint="#67E8F9"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:id="@+id/play_pause_button"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_play"
+                        android:contentDescription="Play/Pause Audio"
+                        android:layout_marginEnd="8dp" />
+
+                    <SeekBar
+                        android:id="@+id/audio_seek_bar"
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:minHeight="4dp"
+                        android:maxHeight="4dp"
+                        android:progress="0"
+                        android:thumb="@drawable/seekbar_thumb"
+                        android:progressTint="#67E8F9"
+                        android:backgroundTint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/audio_current_time_text_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="0:00"
+                        android:textColor="#E2E8F0"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/audio_duration_text_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:text="/ 0:00"
+                        android:textColor="#94A3B8"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/transcribed_content_text_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:maxWidth="240dp"
+                    android:maxLines="10"
+                    android:ellipsize="end"
+                    android:textSize="14sp"
+                    android:textStyle="italic"
+                    android:textColor="#94A3B8"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+
+
+
+        </LinearLayout>
+
+        <!-- Подвал пузыря: значки режимов, галочки доставки и время в одной
+             строке. Раньше значки занимали отдельную строку сверху, а время
+             — отдельную снизу, и каждый пузырь был на две строки выше. -->
+        <LinearLayout
+            android:id="@+id/message_footer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="10dp">
+
+            <ImageView
+                android:id="@+id/tts_icon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_tts"
+                android:contentDescription="Text-to-Speech original"
+                app:tint="#94A3B8"
+                android:layout_marginEnd="6dp"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/tts_translated_icon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_tts_translated"
+                android:contentDescription="Text-to-Speech translated"
+                app:tint="#C4B5FD"
+                android:layout_marginEnd="6dp"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/translate_icon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_globe"
+                android:contentDescription="Translate message"
+                app:tint="#67E8F9"
+                android:layout_marginEnd="6dp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/indicators_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/delivery_indicator"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_delivered"
+                    android:contentDescription="Delivered"
+                    android:visibility="gone" />
+
+                <ImageView
+                    android:id="@+id/read_indicator"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_read"
+                    android:contentDescription="Read"
+                    android:layout_marginStart="-11dp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/timestamp_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:textSize="12sp"
+                android:textColor="#94A3B8"
+                android:visibility="gone" />
+
+        </LinearLayout>
+        </FrameLayout>
+    </com.google.android.material.card.MaterialCardView>
+</androidx.constraintlayout.widget.ConstraintLayout>

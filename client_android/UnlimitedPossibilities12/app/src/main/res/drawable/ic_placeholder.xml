@@ -1,0 +1,20 @@
+<!-- res/drawable/ic_placeholder.xml -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Фон -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M0,0h100v100h-100z"/>
+
+    <!-- Текст "Loading" (опционально) -->
+    <path
+        android:fillColor="#757575"
+        android:pathData="M30,45 L70,45 L70,55 L30,55 Z"/>
+    <path
+        android:fillColor="#757575"
+        android:pathData="M35,60 L65,60 L65,70 L35,70 Z"/>
+</vector>

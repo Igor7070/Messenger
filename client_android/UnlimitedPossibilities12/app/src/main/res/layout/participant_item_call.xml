@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_marginEnd="8dp">
+
+    <FrameLayout
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/circle_background_calls">
+
+        <ImageView
+            android:id="@+id/participant_avatar_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/participant_avatar_text"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="A"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="visible" />
+
+        <ImageView
+            android:id="@+id/selection_checkmark"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_checkmark"
+            android:tint="@color/call_delete_button"
+            android:background="@drawable/circle_background"
+            android:backgroundTint="#FFFFFF"
+            android:visibility="gone"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="2dp" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/participant_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="60dp"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:text="Name"
+        android:textSize="13sp"
+        android:textColor="#E2E8F0"
+        android:gravity="center" />
+</LinearLayout>

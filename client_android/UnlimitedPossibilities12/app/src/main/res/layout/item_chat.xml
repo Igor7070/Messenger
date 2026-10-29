@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Строка списка разговоров.
+
+  Прежде это была карточка с тенью и радиусом 16dp: одна строка занимала около
+  100dp, на экран помещалось четыре чата, а время и счётчик непрочитанных были
+  прижаты к одному углу и налезали друг на друга. Теперь плоская строка 72dp,
+  как в любом мессенджере: имя и время сверху, сообщение и счётчик снизу.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="10dp">
+
+    <!-- Картинка чата -->
+    <ImageView
+        android:id="@+id/chat_icon_view"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="Chat picture"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <!-- Картинки нет — кружок с первой буквой, цвет подбирается по имени -->
+    <TextView
+        android:id="@+id/chat_icon_letter"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:background="@drawable/bg_letter_avatar"
+        android:gravity="center"
+        android:textColor="#FFFFFF"
+        android:textSize="21sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="@id/chat_icon_view"
+        app:layout_constraintTop_toTopOf="@id/chat_icon_view" />
+
+    <!-- Зелёная точка «в сети» у личных чатов -->
+    <View
+        android:id="@+id/chat_online_dot"
+        android:layout_width="13dp"
+        android:layout_height="13dp"
+        android:background="@drawable/status_circle"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@id/chat_icon_view"
+        app:layout_constraintBottom_toBottomOf="@id/chat_icon_view" />
+
+    <!-- Имя -->
+    <TextView
+        android:id="@+id/chat_name_text_view"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="#E2E8F0"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@id/chat_icon_view"
+        app:layout_constraintEnd_toStartOf="@id/chat_badge"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintHorizontal_bias="0" />
+
+    <!-- Метка возможности: SECRET у секретного чата, →EN при автопереводе -->
+    <TextView
+        android:id="@+id/chat_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="7dp"
+        android:background="@drawable/bg_chat_badge"
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="1dp"
+        android:textColor="#67E8F9"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:visibility="gone"
+        app:layout_constraintStart_toEndOf="@id/chat_name_text_view"
+        app:layout_constraintEnd_toStartOf="@id/timestamp_text_view"
+        app:layout_constraintTop_toTopOf="@id/chat_name_text_view"
+        app:layout_constraintBottom_toBottomOf="@id/chat_name_text_view"
+        app:layout_constraintHorizontal_bias="0" />
+
+    <!-- Время последнего сообщения -->
+    <TextView
+        android:id="@+id/timestamp_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:maxLines="1"
+        android:textColor="#94A3B8"
+        android:textSize="12sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/chat_name_text_view"
+        app:layout_constraintBottom_toBottomOf="@id/chat_name_text_view" />
+
+    <!-- Последнее сообщение -->
+    <TextView
+        android:id="@+id/last_message_text_view"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="3dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="#94A3B8"
+        android:textSize="14sp"
+        app:layout_constraintStart_toEndOf="@id/chat_icon_view"
+        app:layout_constraintEnd_toStartOf="@id/unread_count_view"
+        app:layout_constraintTop_toBottomOf="@id/chat_name_text_view" />
+
+    <!-- Счётчик непрочитанных -->
+    <TextView
+        android:id="@+id/unread_count_view"
+        android:layout_width="wrap_content"
+        android:layout_height="22dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/unread_badge_background"
+        android:gravity="center"
+        android:minWidth="22dp"
+        android:paddingHorizontal="7dp"
+        android:textColor="#FFFFFF"
+        android:textSize="12.5sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/last_message_text_view"
+        app:layout_constraintBottom_toBottomOf="@id/last_message_text_view" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F172A">
+
+    <!-- Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#1E2937"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="0dp"
+            android:paddingEnd="12dp">
+
+            <!-- Аватар -->
+            <ImageView
+                android:id="@+id/partner_avatar"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_profile_placeholder"
+                android:contentDescription="Avatar" />
+
+            <!-- Имя и статус -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="12dp">
+
+                <TextView
+                    android:id="@+id/chat_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Chat with ..."
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#E2E8F0" />
+
+                <TextView
+                    android:id="@+id/status_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Connecting..."
+                    android:textSize="13sp"
+                    android:textColor="#FFCC00" />
+            </LinearLayout>
+
+            <!-- Кнопка звонка -->
+            <ImageView
+                android:id="@+id/btn_call_offline"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_call_offline"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Call"
+                app:tint="#4ADE80" />
+
+            <!-- Перевод на устройстве (работает без интернета, пакеты скачиваются заранее) -->
+            <ImageView
+                android:id="@+id/btn_translate_offline"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_globe"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="On-device translation"
+                app:tint="#94A3B8" />
+        </LinearLayout>
+    </androidx.appcompat.widget.Toolbar>
+
+    <!-- Статус подключения (новый) -->
+    <TextView
+        android:id="@+id/connection_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Connecting..."
+        android:textColor="#FFCC00"
+        android:textSize="14sp"
+        android:padding="8dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Список сообщений -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/chat_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:padding="8dp"
+        android:clipToPadding="false"
+        android:background="#0F172A"
+        app:layout_constraintTop_toBottomOf="@id/connection_status"
+        app:layout_constraintBottom_toTopOf="@id/input_container"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Превью прикреплённого изображения -->
+    <LinearLayout
+        android:id="@+id/attachment_preview_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#1E2937"
+        android:padding="8dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/input_container"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/attachment_preview"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:scaleType="centerCrop"
+            android:background="#2A3A4F"
+            android:contentDescription="Preview" />
+
+        <ImageView
+            android:id="@+id/btn_remove_attachment"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_close"
+            android:tint="#FF5252"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="12dp" />
+
+    </LinearLayout>
+
+    <!-- Поле ввода -->
+    <RelativeLayout
+        android:id="@+id/input_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#1E2937"
+        android:padding="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <EditText
+            android:id="@+id/message_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:padding="12dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="60dp"
+            android:hint="Enter your message..."
+            android:textColor="#E2E8F0"
+            android:textColorHint="#94A3B8"
+            android:background="@drawable/edit_text_dark_background"
+            android:textSize="16sp"
+            android:drawableStart="@drawable/ic_attachment"
+            android:drawableTint="#94A3B8"
+            android:drawablePadding="8dp" />
+
+        <!-- Иконка микрофона (будет по умолчанию) -->
+        <ImageView
+            android:id="@+id/mic_icon"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_mic"
+            android:tint="#94A3B8"
+            android:scaleType="centerInside"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Voice message" />
+
+        <!-- Иконка отправки (появляется только при вводе текста) -->
+        <ImageView
+            android:id="@+id/send_icon"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_send"
+            android:tint="#67E8F9"
+            android:scaleType="centerInside"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="12dp"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Send" />
+
+    </RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

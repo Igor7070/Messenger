@@ -1,0 +1,366 @@
+package com.example.unl_pos12.controller.messenger;
+
+import com.example.unl_pos12.model.messenger.Call;
+import com.example.unl_pos12.model.messenger.CallRequest;
+import com.example.unl_pos12.model.messenger.GroupCallRequest;
+import com.example.unl_pos12.model.messenger.signal.SignalMessage;
+import com.example.unl_pos12.service.CallService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
+
+@RestController
+@RequestMapping("/api/webrtc")
+public class WebRTCController {
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.example.unl_pos12.service.PushService pushService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.example.unl_pos12.service.UserService userService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    private CallService callService;
+
+    private final ConcurrentHashMap<String, CallRequestInfo> pendingCalls = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(1);
+
+    // Класс для хранения информации о звонке
+    private static class CallRequestInfo {
+        String roomId;
+        String callerId; // или initiatorId для групповых звонков
+        String recipientId; // null для групповых звонков
+        String[] recipientIds; // null для обычных звонков
+        String callType;
+        LocalDateTime timestamp;
+        boolean responded; // Флаг ответа (accept/reject)
+        boolean accepted; // Флаг принятия звонка
+        ScheduledFuture<?> timeoutTask; // Для отмены таймаута
+
+        CallRequestInfo(String roomId, String callerId, String recipientId, String[] recipientIds, String callType, ScheduledFuture<?> timeoutTask) {
+            this.roomId = roomId;
+            this.callerId = callerId;
+            this.recipientId = recipientId;
+            this.recipientIds = recipientIds;
+            this.callType = callType;
+            this.timestamp = LocalDateTime.now();
+            this.responded = false;
+            this.accepted = false;
+            this.timeoutTask = timeoutTask;
+        }
+    }
+
+    @MessageMapping("/signal/{roomId}")
+    public void signal(@DestinationVariable String roomId, SignalMessage signalMessage) {
+        System.out.println("Method signal is working...");
+        System.out.println("roomId in method signal: " + roomId);
+        System.out.println(String.format("Received signal from: %s, type: %s, sdp: %s, iceCandidate: %s",
+                signalMessage.getFrom(), signalMessage.getSignal().getType(),
+                signalMessage.getSignal().getSdp(), signalMessage.getSignal().getIceCandidate()));
+
+        String signalType = signalMessage.getSignal().getType();
+        String from = signalMessage.getFrom();
+        String key = roomId + "-" + from;
+        CallRequestInfo callInfo = pendingCalls.get(key);
+
+        if ("acceptCall".equals(signalType)) {
+            if (callInfo != null) {
+                callInfo.responded = true;
+                callInfo.accepted = true;
+                if (callInfo.timeoutTask != null) {
+                    callInfo.timeoutTask.cancel(false);
+                    System.out.println("Timeout cancelled for userId: " + from);
+                }
+            }
+        } else if ("rejectCall".equals(signalType)) {
+            if (callInfo != null) {
+                callInfo.responded = true;
+                if (callInfo.timeoutTask != null) {
+                    callInfo.timeoutTask.cancel(false);
+                    System.out.println("Timeout cancelled for userId: " + from);
+                }
+            }
+        } else if ("endCall".equals(signalType)) {
+            System.out.println("Processing endCall for roomId: " + roomId + ", pendingCalls: " + pendingCalls.keySet());
+            pendingCalls.forEach((k, info) -> {
+                if (k.startsWith(roomId + "-") && !info.accepted && !info.responded) {
+                    // ИЗМЕНЕНО: Используем info.recipientId вместо k.split("-")[1]
+                    String recipientId = info.recipientId != null ? info.recipientId : k.split("-")[1];
+                    saveMissedCall(info, recipientId);
+                    System.out.println("Missed call saved for userId: " + recipientId + " due to endCall");
+                    if (info.timeoutTask != null) {
+                        info.timeoutTask.cancel(false);
+                        System.out.println("Timeout cancelled for userId: " + recipientId + " due to endCall");
+                    }
+                }
+            });
+            pendingCalls.entrySet().removeIf(entry -> entry.getKey().startsWith(roomId + "-"));
+            System.out.println("Pending calls cleared for roomId: " + roomId);
+        }
+
+        messagingTemplate.convertAndSend("/topic/room/" + roomId, signalMessage);
+        System.out.println("Method signal worked success.");
+    }
+
+    @PostMapping("/call")
+    public ResponseEntity<String> initiateCall(@RequestBody CallRequest callRequest) {
+        System.out.println("Method initiateCall is working...");
+        System.out.println("callRequest: " + callRequest);
+        System.out.println("callRequest.getRecipientId(): " + callRequest.getRecipientId());
+
+        // Разрешаем любые типы звонков: voice, video, translate, voice_secure и т.д.
+        if (callRequest.getType() == null || callRequest.getType().trim().isEmpty()) {
+            System.out.println("Call type is missing, defaulting to 'voice'");
+            callRequest.setType("voice");
+        } else {
+            System.out.println("Accepted call type: " + callRequest.getType());
+        }
+
+        String key = callRequest.getRoomId() + "-" + callRequest.getRecipientId();
+        ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {}, 0, TimeUnit.SECONDS); // Пустой таймер для совместимости
+        pendingCalls.put(key, new CallRequestInfo(
+                callRequest.getRoomId(),
+                callRequest.getCallerId(),
+                callRequest.getRecipientId(),
+                null,
+                callRequest.getType().equals("translate") ? "translated" : callRequest.getType(),
+                timeoutTask
+        ));
+
+        System.out.println("Added to pendingCalls: key=" + key + ", callInfo=" + pendingCalls.get(key));
+
+        messagingTemplate.convertAndSend("/topic/calls/" + callRequest.getRecipientId(), callRequest);
+        messagingTemplate.convertAndSend("/topic/room/" + callRequest.getRoomId(), callRequest);
+        pushIncomingCall(callRequest);
+        System.out.println("Method initiateCall worked success.");
+        return ResponseEntity.ok("Call initiated");
+    }
+
+    /**
+     * Push о входящем звонке: будит телефон получателя, если приложение закрыто
+     * и постоянного соединения нет. Данных о разговоре в push нет — только кто
+     * звонит и в какую комнату, остальное клиент получает по сигнализации.
+     */
+    private void pushIncomingCall(CallRequest callRequest) {
+        if (pushService == null || callRequest == null) return;
+        try {
+            Long recipientId = Long.valueOf(callRequest.getRecipientId());
+            String callerName = "Incoming call";
+            try {
+                callerName = userService.getUserById(Long.valueOf(callRequest.getCallerId())).getUsername();
+            } catch (Exception ignored) {
+            }
+            java.util.Map<String, String> data = new java.util.HashMap<>();
+            data.put("type", "call");
+            data.put("callerId", callRequest.getCallerId());
+            data.put("roomId", callRequest.getRoomId());
+            data.put("callType", callRequest.getType());
+            data.put("callerName", callerName);
+            pushService.sendToUser(recipientId, callerName, "Incoming call", data);
+        } catch (Exception e) {
+            System.out.println("pushIncomingCall error: " + e.getMessage());
+        }
+    }
+
+    @MessageMapping("/call/{recipientId}")
+    @SendTo("/topic/calls/{recipientId}")
+    public CallRequest handleCallMessage(@DestinationVariable String recipientId, @Payload CallRequest callRequest) {
+        System.out.println("Received message for /app/call/" + recipientId + ": " + callRequest);
+        if ("endCall".equals(callRequest.getType())) {
+            System.out.println("Ignoring endCall message for /app/call/" + recipientId);
+            return callRequest;
+        }
+        // Звонки идут двумя путями — через REST и через этот; push нужен на обоих,
+        // иначе вызов не разбудит телефон с закрытым приложением
+        if (callRequest.getRecipientId() == null) callRequest.setRecipientId(recipientId);
+        pushIncomingCall(callRequest);
+
+        String key = callRequest.getRoomId() + "-" + recipientId;
+        ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {}, 0, TimeUnit.SECONDS); // Пустой таймер для совместимости
+        pendingCalls.put(key, new CallRequestInfo(
+                callRequest.getRoomId(),
+                callRequest.getCallerId(),
+                recipientId,
+                null,
+                callRequest.getType().equals("translate") ? "translated" : callRequest.getType(),
+                timeoutTask
+        ));
+
+        return callRequest;
+    }
+
+    @PostMapping("/groupCall")
+    public ResponseEntity<String> initiateGroupCall(@RequestBody GroupCallRequest groupCallRequest) {
+        System.out.println("Method initiateGroupCall is working...");
+        System.out.println("groupCallRequest: " + groupCallRequest);
+
+        if (groupCallRequest.getType() == null) {
+            System.out.println("Invalid or missing call type, defaulting to 'group'");
+            groupCallRequest.setType("group");
+        }
+
+        for (String recipientId : groupCallRequest.getRecipientIds()) {
+            String key = groupCallRequest.getRoomId() + "-" + recipientId;
+            ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {}, 0, TimeUnit.SECONDS); // Пустой таймер для совместимости
+            pendingCalls.put(key, new CallRequestInfo(
+                    groupCallRequest.getRoomId(),
+                    groupCallRequest.getInitiatorId(),
+                    null,
+                    groupCallRequest.getRecipientIds().toArray(new String[0]),
+                    groupCallRequest.getType(),
+                    timeoutTask
+            ));
+        }
+
+        for (String recipientId : groupCallRequest.getRecipientIds()) {
+            messagingTemplate.convertAndSend("/topic/groupCalls/" + recipientId, groupCallRequest);
+            pushGroupCall(groupCallRequest, recipientId);
+        }
+        messagingTemplate.convertAndSend("/topic/room/" + groupCallRequest.getRoomId(), groupCallRequest);
+        System.out.println("Method initiateGroupCall worked success.");
+        return ResponseEntity.ok("Group call initiated");
+    }
+
+    /** Push о групповом вызове: без него участник с закрытым приложением ничего не узнает. */
+    private void pushGroupCall(GroupCallRequest request, String recipientId) {
+        if (pushService == null || request == null || recipientId == null) return;
+        try {
+            String initiatorName = "Group call";
+            try {
+                initiatorName = userService.getUserById(Long.valueOf(request.getInitiatorId())).getUsername();
+            } catch (Exception ignored) {
+            }
+            java.util.Map<String, String> data = new java.util.HashMap<>();
+            data.put("type", "call");
+            data.put("callType", "group");
+            data.put("callerId", request.getInitiatorId());
+            data.put("roomId", request.getRoomId());
+            data.put("callerName", initiatorName);
+            if (request.getRecipientIds() != null) {
+                data.put("recipientIds", String.join(",", request.getRecipientIds()));
+            }
+            pushService.sendToUser(Long.valueOf(recipientId), initiatorName, "Incoming group call", data);
+        } catch (Exception e) {
+            System.out.println("pushGroupCall error: " + e.getMessage());
+        }
+    }
+
+    @MessageMapping("/groupCall/{recipientId}")
+    @SendTo("/topic/groupCalls/{recipientId}")
+    public GroupCallRequest handleGroupCallMessage(@DestinationVariable String recipientId, @Payload GroupCallRequest groupCallRequest) {
+        System.out.println("Received message for /app/groupCall/" + recipientId + ": " + groupCallRequest);
+        if ("endCall".equals(groupCallRequest.getType())) {
+            System.out.println("Ignoring endCall message for /app/groupCall/" + recipientId);
+            return groupCallRequest;
+        }
+        pushGroupCall(groupCallRequest, recipientId); // разбудить телефон, если приложение закрыто
+
+        String key = groupCallRequest.getRoomId() + "-" + recipientId;
+        ScheduledFuture<?> timeoutTask = scheduler.schedule(() -> {}, 0, TimeUnit.SECONDS); // Пустой таймер для совместимости
+        pendingCalls.put(key, new CallRequestInfo(
+                groupCallRequest.getRoomId(),
+                groupCallRequest.getInitiatorId(),
+                null,
+                groupCallRequest.getRecipientIds().toArray(new String[0]),
+                groupCallRequest.getType(),
+                timeoutTask
+        ));
+
+        return groupCallRequest;
+    }
+
+    @MessageMapping("/groupSignal/{roomId}")
+    public void groupSignal(@DestinationVariable String roomId, SignalMessage signalMessage) {
+        System.out.println("Method groupSignal is working...");
+        System.out.println("roomId in method groupSignal: " + roomId);
+        System.out.println(String.format("Received group signal from: %s, to: %s, type: %s, sdp: %s, iceCandidate: %s",
+                signalMessage.getFrom(), signalMessage.getTo(), signalMessage.getSignal().getType(),
+                signalMessage.getSignal().getSdp(), signalMessage.getSignal().getIceCandidate()));
+
+        String signalType = signalMessage.getSignal().getType();
+        String from = signalMessage.getFrom();
+        String key = roomId + "-" + from;
+        CallRequestInfo callInfo = pendingCalls.get(key);
+
+        if ("acceptCall".equals(signalType)) {
+            if (callInfo != null) {
+                callInfo.responded = true;
+                callInfo.accepted = true;
+                if (callInfo.timeoutTask != null) {
+                    callInfo.timeoutTask.cancel(false);
+                    System.out.println("Timeout cancelled for userId: " + from);
+                }
+            }
+        } else if ("rejectCall".equals(signalType)) {
+            if (callInfo != null) {
+                callInfo.responded = true;
+                if (callInfo.timeoutTask != null) {
+                    callInfo.timeoutTask.cancel(false);
+                    System.out.println("Timeout cancelled for userId: " + from);
+                }
+            }
+        } else if ("endCall".equals(signalType)) {
+            System.out.println("Processing endCall for roomId: " + roomId + ", pendingCalls: " + pendingCalls.keySet());
+            pendingCalls.forEach((k, info) -> {
+                if (k.startsWith(roomId + "-") && !info.accepted && !info.responded) {
+                    // ИЗМЕНЕНО: Используем info.recipientId вместо k.split("-")[1]
+                    String recipientId = info.recipientId != null ? info.recipientId : k.split("-")[1];
+                    saveMissedCall(info, recipientId);
+                    System.out.println("Missed call saved for userId: " + recipientId + " due to endCall");
+                    if (info.timeoutTask != null) {
+                        info.timeoutTask.cancel(false);
+                        System.out.println("Timeout cancelled for userId: " + recipientId + " due to endCall");
+                    }
+                }
+            });
+            pendingCalls.entrySet().removeIf(entry -> entry.getKey().startsWith(roomId + "-"));
+            System.out.println("Pending calls cleared for roomId: " + roomId);
+        }
+
+        messagingTemplate.convertAndSend("/topic/room/" + roomId, signalMessage);
+        System.out.println("Method groupSignal worked success.");
+    }
+
+    private void saveMissedCall(CallRequestInfo callInfo, String recipientId) {
+        try {
+            Call call = new Call();
+            call.setCaller(callInfo.callerId);
+            call.setDirection("incoming");
+            call.setStatus("missed");
+            call.setCallType(callInfo.callType);
+            //call.setTimestamp(callInfo.timestamp);
+            call.setTimestamp(ZonedDateTime.now(ZoneId.of("Europe/Kiev")).toLocalDateTime());
+            call.setRoomId(callInfo.roomId);
+
+            if ("group".equals(callInfo.callType)) {
+                call.setParticipants(new ArrayList<>(List.of(callInfo.recipientIds)));
+            } else {
+                call.setReceiver(recipientId);
+            }
+
+            // ДОБАВЛЕНО: Лог для отладки
+            System.out.println("Saving missed call: callerId=" + callInfo.callerId + ", recipientId=" + recipientId + ", callType=" + callInfo.callType);
+            callService.createCall(call, Long.parseLong(recipientId));
+            System.out.println("Missed call saved for userId: " + recipientId + ", callType: " + callInfo.callType);
+        } catch (Exception e) {
+            System.err.println("Error saving missed call for userId: " + recipientId + ": " + e.getMessage());
+        }
+    }
+}

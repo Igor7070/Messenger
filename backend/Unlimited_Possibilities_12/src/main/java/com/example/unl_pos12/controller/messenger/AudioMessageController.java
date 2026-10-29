@@ -1,0 +1,40 @@
+package com.example.unl_pos12.controller.messenger;
+
+import com.example.unl_pos12.service.OpenAIService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.stereotype.Controller;
+
+import java.util.Base64;
+
+@Controller
+public class AudioMessageController {
+    @Autowired
+    private OpenAIService openAIService;
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    @MessageMapping("/audio-transcription/{roomId}")
+    public void handleAudio(@DestinationVariable String roomId, @Payload String message) {
+        // Кусок приходит каждые 50 мс — в лог не пишем, иначе он состоит из них одних
+        try {
+            // NEW: Парсим JSON
+            var json = mapper.readTree(message);
+            String base64Audio = json.get("audio").asText();
+            String sessionId = json.get("sessionId").asText();
+            byte[] audioData = Base64.getDecoder().decode(base64Audio);
+
+            if (audioData.length > 0) {
+                // Язык говорящего, если он выбран в интерфейсе звонка
+                String spokenLanguage = json.has("spokenLanguage") ? json.get("spokenLanguage").asText() : null;
+                openAIService.handleAudioMessage(roomId, sessionId, audioData, spokenLanguage);
+            } else {
+                System.out.println("Empty audio data for roomId " + roomId);
+            }
+        } catch (Exception e) {
+            System.out.println("Error processing audio message for roomId " + roomId + ": " + e.getMessage());
+        }
+    }
+}

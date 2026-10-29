@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Озвучить перевод: тот же динамик, что и у оригинала, но мельче и с
+    глобусом в правом верхнем углу. Прежде оба значка были одинаковыми и
+    различались только оттенком — на телефоне это не читалось.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Динамик, ужатый и сдвинутый вниз, чтобы освободить угол под глобус -->
+    <group
+        android:scaleX="0.8"
+        android:scaleY="0.8"
+        android:translateX="-0.4"
+        android:translateY="3.2">
+        <path
+            android:fillColor="#757575"
+            android:pathData="M3,9v6h4l5,5V4l-5,5H3zM16.5,12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-0.73,2.5-2.25,2.5-4.02z" />
+    </group>
+    <!-- Глобус: окружность, экватор и меридиан -->
+    <path
+        android:strokeColor="#757575"
+        android:strokeWidth="1.4"
+        android:fillColor="#00000000"
+        android:pathData="M18.4,5.6m-3.4,0a3.4,3.4 0,1 1,6.8 0a3.4,3.4 0,1 1,-6.8 0" />
+    <path
+        android:strokeColor="#757575"
+        android:strokeWidth="1.4"
+        android:fillColor="#00000000"
+        android:pathData="M15,5.6h6.8" />
+    <path
+        android:strokeColor="#757575"
+        android:strokeWidth="1.4"
+        android:fillColor="#00000000"
+        android:pathData="M18.4,2.2c1.1,1 1.6,2.2 1.6,3.4s-0.5,2.4 -1.6,3.4c-1.1,-1 -1.6,-2.2 -1.6,-3.4s0.5,-2.4 1.6,-3.4z" />
+</vector>

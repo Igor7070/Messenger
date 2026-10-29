@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Корень намеренно НЕ CardView: он включает clipToOutline, из-за чего
+    SurfaceViewRenderer внутри показывает чёрный прямоугольник вместо видео.
+    Подробности — в комментарии к @drawable/bg_video_participant.
+    Локальное видео (local_video_view в activity_group_call.xml) работало именно
+    потому, что лежит в обычном FrameLayout, а не в карточке.
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:background="@drawable/bg_video_participant">
+
+    <TextView
+        android:id="@+id/username_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:paddingBottom="4dp"/>
+
+    <FrameLayout
+        android:id="@+id/video_container"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:background="#000000">
+
+        <!-- У SurfaceViewRenderer НЕ должно быть непрозрачного background:
+             собственный фон рисуется поверх пробитого отверстия и закрывает
+             видео. Чёрный фон даёт родительский video_container. -->
+        <org.webrtc.SurfaceViewRenderer
+            android:id="@+id/video_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"/>
+
+        <TextView
+            android:id="@+id/no_video_text"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#000000"
+            android:text="No Video"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:visibility="visible"/>
+
+        <Button
+            android:id="@+id/toggle_camera_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="top|end"
+            android:text="📷"
+            android:textSize="24sp"
+            android:backgroundTint="#FF4444"
+            android:visibility="gone"/>
+    </FrameLayout>
+</LinearLayout>

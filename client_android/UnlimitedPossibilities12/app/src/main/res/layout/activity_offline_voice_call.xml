@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F172A">
+
+    <!-- Аватар -->
+    <ImageView
+        android:id="@+id/call_avatar"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginTop="80dp"
+        android:src="@drawable/default_avatar_offline"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Имя -->
+    <TextView
+        android:id="@+id/call_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Name"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/call_avatar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Статус -->
+    <TextView
+        android:id="@+id/call_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Calling..."
+        android:textColor="#94A3B8"
+        android:textSize="16sp"
+        app:layout_constraintTop_toBottomOf="@id/call_name"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Таймер -->
+    <TextView
+        android:id="@+id/call_timer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="00:00"
+        android:textColor="#4ADE80"
+        android:textSize="18sp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/call_status"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Ряд кнопок: Принять + Сброс -->
+    <LinearLayout
+        android:id="@+id/call_main_buttons"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="64dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Принять (только входящий) -->
+        <ImageButton
+            android:id="@+id/btn_accept_call"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_marginEnd="40dp"
+            android:background="@drawable/circle_dark_button_offline"
+            android:src="@drawable/ic_call_offline"
+            android:scaleType="centerInside"
+            android:padding="18dp"
+            android:visibility="gone"
+            android:contentDescription="Accept"
+            app:tint="#4ADE80" />
+
+        <!-- Сброс -->
+        <ImageButton
+            android:id="@+id/btn_end_call"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:background="@drawable/circle_red_button_offline"
+            android:src="@drawable/ic_call_end_offline"
+            android:scaleType="centerInside"
+            android:padding="18dp"
+            android:contentDescription="Decline"
+            app:tint="#FFFFFF" />
+    </LinearLayout>
+
+    <!-- Микрофон -->
+    <ImageButton
+        android:id="@+id/btn_mute"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/circle_dark_button_offline"
+        android:src="@drawable/ic_mic"
+        android:scaleType="centerInside"
+        android:padding="14dp"
+        android:contentDescription="Microphone"
+        app:layout_constraintBottom_toTopOf="@id/call_main_buttons"
+        app:layout_constraintEnd_toStartOf="@id/btn_speaker"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:tint="#FFFFFF" />
+
+    <!-- Динамик -->
+    <ImageButton
+        android:id="@+id/btn_speaker"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/circle_dark_button_offline"
+        android:src="@drawable/ic_volume_up"
+        android:scaleType="centerInside"
+        android:padding="14dp"
+        android:contentDescription="Speaker"
+        app:layout_constraintBottom_toTopOf="@id/call_main_buttons"
+        app:layout_constraintStart_toEndOf="@id/btn_mute"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="#FFFFFF" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

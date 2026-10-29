@@ -1,0 +1,291 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <title th:text="${title} + ' ' + ${title2}"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet"> <!-- Подключение шрифта -->
+        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+        <style>
+            html, body {
+                height: 100%; /* Задает высоту для html и body */
+                margin: 0; /* Убирает отступы по умолчанию */
+                display: flex;
+                flex-direction: column; /* Расположение элементов в колонку */
+                background-image: url('/images/background_job_search_1.jpg'); /* Путь к изображению */
+                background-size: cover; /* Масштабирует изображение, чтобы покрыть весь фон */
+                background-position: center; /* Центрирует изображение */
+            }
+
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f2f2f2;
+                padding-top: 0px; /* увеличена верхняя отступ, чтобы учесть высоту шапки */
+            }
+
+            .container {
+                /*background-color: yellowgreen;*/
+                background-color:  #3CB371;
+                padding: 40px;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                max-width: 600px;
+                margin: 20px auto;
+                flex: 1; /* Заставляет контейнер занимать всё доступное пространство */
+            }
+
+            @media (max-width: 1080px) {
+                .container {
+                    max-height: 35vh; /* Устанавливаем максимальную высоту контейнера */
+                    overflow-y: auto; /* Добавляем прокрутку, если содержимое превышает высоту */
+                }
+            }
+
+            h2 {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+
+            .form-group {
+                margin-bottom: 20px;
+            }
+
+            .form-check {
+                display: inline-block;
+                margin-right: 20px;
+            }
+
+            .form-group label {
+                height: 1.5em; /* Установите нужную высоту для меток */
+                line-height: 1.5; /* Центрируем текст по вертикали */
+            }
+            .form-group .form-control {
+                height: calc(2.25rem + 2px); /* Установите нужную высоту */
+            }
+
+            .btn-primary {
+                display: block;
+                margin: 0 auto;
+            }
+
+            .light-maroon-bg {
+                background-color: #d0c1e3;
+                padding: 10px 15px;
+            }
+
+            .light-maroon-bg a.btn {
+                color: #343a40;
+            }
+
+            @keyframes blink {
+                0%, 20%, 100% { opacity: 0; }
+                40%, 60% { opacity: 1; }
+            }
+
+            .dot {
+                color: #007bff; /* Цвет точек */
+                margin: 0 5px; /* Отступ между точками */
+                font-size: 48px; /* Размер точек */
+            }
+
+            .loading-message {
+                font-size: 40px; /* Размер шрифта для сообщения */
+                font-weight: bold; /* Полужирный шрифт */
+                color: #333; /* Цвет текста */
+                margin-top: 20px; /* Отступ сверху */
+            }
+
+            #authMessage {
+                display: none;
+                background-color: #4CAF50; /* Зеленый фон */
+                color: white; /* Белый текст */
+                padding: 15px;
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+            }
+
+            footer {
+                margin-top: auto; /* Отодвигает футер вниз */
+                background-color: #d0c1e3; /* Цвет фона футера */
+                text-align: center; /* Центрируем текст в футере */
+            }
+        </style>
+    </head>
+
+    <body>
+        <!-- Включаем header -->
+        <div th:replace="~{job_search/header.html}"></div>
+
+        <div id="jobSearchContainer" class="container mt-5">
+            <h1 class="text-center">Поиск вакансий</h1>
+            <form th:action="@{/convenient_job_search/search_result}" method="post" onsubmit="return validateForm()">
+                <div class="form-group">
+                    <label>Выберите сайт вакансий:</label>
+                    <div class="d-flex justify-content-between">
+                        <div class="form-check" style="margin-left: 20px; border: 1px solid black; border-radius: 10px; padding: 10px; width: 100%; display: flex; flex-direction: column; align-items: center;">
+                            <span>Work.ua</span>
+                            <input class="form-check-input" type="checkbox" name="work-ua" id="work-ua" style="margin-top: 2px; margin-left: auto; margin-right: auto;">
+                            <label style="margin-top: 10px; text-align: center; width: 100%;">Укажите верхнее предельное число вакансий:</label>
+                            <input type="number" class="form-control" name="max-vacancies-work" placeholder="Число вакансий" style="margin-top: 50px; width: 80%;">
+                        </div>
+                        <div class="form-check" style="margin-right: 20px; border: 1px solid black; border-radius: 10px; padding: 10px; width: 100%; display: flex; flex-direction: column; align-items: center;">
+                            <span>Rabota.ua</span>
+                            <input class="form-check-input" type="checkbox" name="rabota-ua" id="rabota-ua" style="margin-top: 2px; margin-left: auto; margin-right: auto;">
+                            <label style="margin-top: 10px; text-align: center; width: 100%;">Укажите верхнее предельное число вакансий:</label>
+                            <input type="number" class="form-control" name="max-vacancies-rabota" placeholder="Число вакансий" style="margin-top: 50px; width: 80%;">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputPosition">Должность:</label>
+                    <input type="text" class="form-control" id="inputPosition" name="inputPosition" placeholder="Должность">
+                </div>
+
+                <div class="form-group">
+                    <div class="d-flex">
+                        <div class="me-2" style="flex: 1;">
+                            <label for="city-select" class="d-block mt-5">Выберите город:</label>
+                            <select class="form-control" id="city-select" name="city">
+                                <option value="">Выберите город</option>
+                                <option value="kiev">Киев</option>
+                                <option value="kharkiv">Харьков</option>
+                                <option value="odesa">Одесса</option>
+                                <option value="dnipro">Днепропетровск</option>
+                            </select>
+                        </div>
+                        <div class="mx-2" style="flex: 1;">
+                            <label for="language-select" class="d-block mt-5">Выберите язык:</label>
+                            <select class="form-control" id="language-select" name="language">
+                                <option value="">Выберите язык</option>
+                                <option value="ru">Русский</option>
+                                <option value="uk">Украинский</option>
+                                <option value="en">Английский</option>
+                            </select>
+                        </div>
+                        <div class="ms-2" style="flex: 1;">
+                            <label for="timeframe-select" class="d-block mb-5">Выберите диапазон времени для Work.Ua:</label>
+                            <select class="form-control" id="timeframe-select" name="timeframe">
+                                <option value="">Выберите диапазон</option>
+                                <option value="1">1 день</option>
+                                <option value="3">3 дня</option>
+                                <option value="7">7 дней</option>
+                                <option value="14">14 дней</option>
+                                <option value="30">30 дней</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Поиск</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="loading" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.4); z-index: 9999; text-align: center; padding-top: 20%;">
+            <div style="font-size: 48px;">
+                <span class="dot" style="animation: blink 1s infinite;">&#8226;</span>
+                <span class="dot" style="animation: blink 1s infinite 0.2s;">&#8226;</span>
+                <span class="dot" style="animation: blink 1s infinite 0.4s;">&#8226;</span>
+            </div>
+            <p class="loading-message">Выполняется поиск вакансий. Подождите немного, процесс может занять до нескольких минут.</p>
+        </div>
+
+        <div id="notification" class="alert alert-success" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 900px; text-align: center; font-size: 24px;">
+            <strong>Успех!</strong> <span id="notification-message">История поиска вакансий очищена.</span>
+        </div>
+
+        <div id="authMessage">Авторизация прошла успешно!</div>
+
+        <script>
+            function validateForm() {
+                const positionInput = document.getElementById('inputPosition');
+                const workUaChecked = document.getElementById('work-ua').checked;
+                const rabotaUaChecked = document.getElementById('rabota-ua').checked;
+
+                // Если ни одна галочка не выбрана, просто отправляем форму
+                if (!workUaChecked && !rabotaUaChecked) {
+                    return true; // форма будет отправлена
+                }
+
+                // Если поле "Должность" не заполнено
+                if (!positionInput.value) {
+                    positionInput.setCustomValidity('Заполните должность'); // Устанавливаем сообщение об ошибке
+                    positionInput.reportValidity(); // Отображаем стандартное сообщение
+                    return false; // предотвращает отправку формы
+                } else {
+                    positionInput.setCustomValidity(''); // Сбрасываем сообщение об ошибке
+                }
+                // Показать индикатор загрузки
+                document.getElementById("loading").style.display = "block";
+                return true; // отправка формы
+            }
+
+            // Сбрасываем сообщение об ошибке при вводе текста
+            document.getElementById('inputPosition').addEventListener('input', function() {
+                this.setCustomValidity('');
+            });
+
+            document.getElementById("delete-history-btn").addEventListener("click", function(event) {
+                event.preventDefault(); // Предотвращаем переход по ссылке
+
+                fetch('/convenient_job_search/delete_search_history', {
+                    method: 'DELETE',
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.text();
+                        } else {
+                            console.error('Ошибка HTTP:', response.status);
+                            throw new Error('Ошибка при удалении истории поиска');
+                        }
+                    })
+                    .then(message => {
+                        // Показываем уведомление
+                        const notification = document.getElementById("notification");
+                        const messageSpan = document.getElementById("notification-message");
+                        messageSpan.innerHTML = message; // обновляем текст уведомления
+                        notification.style.display = "block";
+
+                        // Скрываем уведомление через 5 секунд
+                        setTimeout(() => {
+                            notification.style.display = "none";
+                        }, 5000);
+                    })
+                    .catch(error => {
+                        // Показываем ошибку
+                        const notification = document.getElementById("notification");
+                        notification.className = "alert alert-danger"; // Меняем стиль на ошибку
+                        const messageSpan = document.getElementById("notification-message");
+                        messageSpan.innerHTML = error.message; // обновляем текст уведомления
+                        notification.style.display = "block";
+
+                        // Скрываем уведомление через 5 секунд
+                        setTimeout(() => {
+                            notification.style.display = "none";
+                        }, 5000);
+                    });
+            });
+
+            // Функция для отображения сообщения
+            function showAuthMessage() {
+                const params = new URLSearchParams(window.location.search);
+                if (params.has('authSuccess')) {
+                    const messageDiv = document.getElementById('authMessage');
+                    messageDiv.style.display = 'block'; // Показываем сообщение
+                    setTimeout(() => {
+                        messageDiv.style.display = 'none'; // Скрываем сообщение через 5 секунд
+                    }, 5000);
+                }
+            }
+
+            // Вызываем функцию при загрузке страницы
+            window.onload = showAuthMessage;
+        </script>
+
+        <!-- Включаем футер -->
+        <div th:replace="~{job_search/footer.html}"></div>
+    </body>
+</html>

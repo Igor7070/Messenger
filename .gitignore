@@ -1,23 +1,27 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Общий для всего проекта: бэкенд, веб-клиент и Android в одном репозитории.
+# Здесь только то, что относится ко всем трём; у каждой части свой .gitignore
+# с подробностями.
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Сборки и зависимости — пересоздаются из исходников
+**/node_modules/
+**/target/
+**/build/
+**/.gradle/
+**/out/
+**/dist/
 
-# testing
-/coverage
+# Локальные настройки машины, а не проекта
+**/local.properties
+*.iml
+.idea/
+.vscode/
 
-# production
-/build
+# Журналы и снимки экрана с перепиской: личные данные, в репозитории им не место
+files and logs/
+*.log
+hs_err_pid*.log
+replay_pid*.log
 
-# misc
+# Служебное
 .DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+Thumbs.db

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+
+    <path
+        android:fillColor="#757575"
+        android:pathData="M480,120 L520,200 L600,240 L520,280 L480,360 L440,280 L360,240 L440,200 Z" /> <!-- центральная звезда -->
+
+    <path
+        android:fillColor="#757575"
+        android:pathData="M240,480 L300,520 L340,600 L380,520 L440,480 L380,440 L340,360 L300,440 Z" />
+
+    <path
+        android:fillColor="#757575"
+        android:pathData="M720,480 L660,520 L620,600 L580,520 L520,480 L580,440 L620,360 L660,440 Z" />
+
+    <path
+        android:fillColor="#757575"
+        android:pathData="M480,840 L520,760 L600,720 L520,680 L480,600 L440,680 L360,720 L440,760 Z" />
+</vector>

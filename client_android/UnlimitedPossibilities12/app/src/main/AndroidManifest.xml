@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.unlimitedpossibilities12">
+
+    <!-- Разрешение на доступ в интернет -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.GET_TASKS" />
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
+    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
+    <!-- === Permissions for Offline P2P (Nearby Connections) === -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.UnlimitedPossibilities12"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:name=".api.App"
+        tools:targetApi="31">
+
+        <meta-data
+            android:name="com.google.android.gms.auth.api.signin.ApiKey"
+            android:value="@string/default_web_client_id" />
+
+        <!-- Добавлено FileProvider -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
+
+        <!-- Запуск приложения: экран входа, а вошедших он сразу пропускает в чаты -->
+        <activity
+            android:name=".messenger.AuthActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Прежняя стартовая страница с разделами. Осталась в проекте, но
+             больше не открывается при запуске: мессенджер должен начинаться
+             со своего экрана. -->
+        <activity
+            android:name=".mainPage.WebViewMainPageActivity"
+            android:exported="true" />
+
+        <activity android:name=".job_search.MainActivity"></activity> <!-- Добавленная строка -->
+        <activity android:name=".job_search.VacancyListActivity"></activity>
+        <activity android:name=".job_search.ResumeActivity" />
+        <activity android:name=".job_search.DownloadResumeActivity"></activity>
+        <activity android:name=".job_search.ResumeSendActivity"></activity>
+        <activity android:name=".job_search.ResumeStatusSendActivity"></activity>
+        <activity android:name=".communication_with_ai.ChatWithAIActivity"></activity>
+        <activity android:name=".messenger.MessengerMainActivity" />
+        <activity android:name=".messenger.UserProfileActivity" />
+        <activity android:name=".messenger.VoiceCallActivity" />
+        <activity android:name=".messenger.PrivateChatActivity" />
+        <activity android:name=".messenger.PersonalChatsActivity" />
+        <activity android:name=".messenger.GroupChatsActivity" />
+        <activity android:name=".messenger.VideoCallActivity" />
+        <activity android:name=".messenger.VoiceCallWithTranslateActivity" />
+        <activity android:name=".messenger.GroupCallActivity" />
+        <activity android:name=".messenger.SecureVoiceCallActivity" />
+        <activity android:name=".messenger.FullScreenMessageImageActivity" />
+        <activity
+            android:name=".messenger.FullScreenImageActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+        <activity
+            android:name="com.example.unlimitedpossibilities12.messenger.SecretPrivateChatActivity"
+            android:exported="false" />
+        <!-- Оффлайн режим -->
+        <activity
+            android:name=".messenger.offline.OfflineModeActivity"
+            android:exported="false"
+            android:parentActivityName=".messenger.MessengerMainActivity"
+            android:screenOrientation="portrait" />
+        <!-- Оффлайн чат -->
+        <activity
+            android:name=".messenger.offline.OfflineChatActivity"
+            android:exported="false"
+            android:parentActivityName=".messenger.offline.OfflineModeActivity"
+            android:screenOrientation="portrait" />
+        <!-- Оффлайн голосовой звонок -->
+        <activity
+            android:name=".messenger.offline.OfflineVoiceCallActivity"
+            android:exported="false"
+            android:parentActivityName=".messenger.offline.OfflineChatActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+        <!-- Полноэкранный просмотр изображения в оффлайн режиме -->
+        <activity
+            android:name=".messenger.offline.FullScreenImageOfflineActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+        <!-- Регистрация сервиса -->
+        <!-- Push-уведомления: будят приложение, когда оно закрыто -->
+        <service
+            android:name=".messenger.notife.PushMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".messenger.notife.CallService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="phoneCall" />
+
+        <!-- Регистрация BroadcastReceiver -->
+        <receiver
+            android:name=".messenger.notife.CallActionReceiver"
+            android:enabled="true"
+            android:exported="false" />
+    </application>
+
+</manifest>

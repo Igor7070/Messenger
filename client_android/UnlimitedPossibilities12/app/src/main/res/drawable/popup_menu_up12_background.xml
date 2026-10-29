@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Подложка выпадающего меню: тот же тон, что у карточек, и тонкая рамка,
+     чтобы меню отделялось от списка, а не сливалось с ним. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#1E2937" />
+    <corners android:radius="14dp" />
+    <stroke
+        android:width="1dp"
+        android:color="#2E3B52" />
+</shape>

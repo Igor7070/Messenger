@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Меню «ещё» в шапке списка разговоров — то, что раньше занимало место полями
+  над списком: создание группы, вход по ссылке и офлайн-режим.
+
+  У офлайн-режима справа переключатель: он показывает состояние, а нажатие
+  открывает экран режима, где его и включают.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="248dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/popup_menu_up12_background"
+    android:paddingVertical="6dp">
+
+    <LinearLayout
+        android:id="@+id/menu_new_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="11dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_group_add"
+            android:tint="#94A3B8"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="New group"
+            android:textColor="#E2E8F0"
+            android:textSize="14.5sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/menu_join_link"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="11dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_link"
+            android:tint="#94A3B8"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="Join by invite link"
+            android:textColor="#E2E8F0"
+            android:textSize="14.5sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/menu_offline"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="9dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/menu_offline_icon"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_offline_mode"
+            android:tint="#94A3B8"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:text="Offline mode"
+            android:textColor="#E2E8F0"
+            android:textSize="14.5sp" />
+
+        <!-- Состояние режима. Включается на его экране, поэтому здесь
+             переключатель не перехватывает нажатие. -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/menu_offline_switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="false"
+            android:focusable="false"
+            android:duplicateParentState="true"
+            app:thumbTint="#E2E8F0"
+            app:trackTint="#475569"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+    </LinearLayout>
+
+</LinearLayout>
