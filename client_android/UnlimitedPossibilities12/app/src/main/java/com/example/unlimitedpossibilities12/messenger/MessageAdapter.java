@@ -97,6 +97,11 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         void onDelete(Message message);
     }
 
+    /** Чьи сообщения адаптер считает своими. */
+    public int getCurrentUserId() {
+        return currentUserId;
+    }
+
     public MessageAdapter(Context context, List<Message> messages, int currentUserId, OnMessageActionListener listener, boolean isTranslationEnabled, boolean isTranscriptionEnabled) {
         this.context = context;
         this.messages = messages != null ? new ArrayList<>(messages) : new ArrayList<>();

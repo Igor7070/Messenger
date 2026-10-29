@@ -93,6 +93,11 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         void onDelete(Message message);
     }
 
+    /** Чьи сообщения адаптер считает своими. */
+    public int getCurrentUserId() {
+        return currentUserId;
+    }
+
     public GroupMessageAdapter(Context context, List<Message> messages, int currentUserId, OnMessageActionListener listener, boolean isTranslationEnabled, boolean isTTSEnabled, boolean isTranscriptionEnabled) {
         this.context = context;
         this.messages = messages != null ? new ArrayList<>(messages) : new ArrayList<>();

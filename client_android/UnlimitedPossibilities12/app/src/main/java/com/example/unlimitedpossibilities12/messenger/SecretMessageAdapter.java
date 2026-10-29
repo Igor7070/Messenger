@@ -96,6 +96,11 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
         void onDelete(Message message);
     }
 
+    /** Чьи сообщения адаптер считает своими. */
+    public int getCurrentUserId() {
+        return currentUserId;
+    }
+
     public SecretMessageAdapter(Context context, List<Message> messages, int currentUserId, OnMessageActionListener listener, ApiService apiService) {
         this.context = context;
         this.activity = (SecretPrivateChatActivity) context;

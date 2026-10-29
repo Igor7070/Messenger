@@ -267,7 +267,10 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setStackFromEnd(true);
         messageList.setLayoutManager(layoutManager);
-        messageAdapter = new MessageAdapter(this, messages, -1, this, isTranslationEnabled, isTranscriptionEnabled);
+        // Свой номер известен из настроек — иначе первые мгновения все сообщения
+        // выглядят чужими и переписка потом перестраивается на глазах
+        currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
+        messageAdapter = new MessageAdapter(this, messages, currentUserId, this, isTranslationEnabled, isTranscriptionEnabled);
         messageList.setAdapter(messageAdapter);
 
         // Иконка ассистента — по центру панели иконок
@@ -765,8 +768,14 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                     // Исправлено: Синхронизация isTranslationEnabled перед созданием адаптера
                     SharedPreferences prefs = getSharedPreferences("chat_prefs", MODE_PRIVATE);
                     isTranslationEnabled = prefs.getBoolean("translation_enabled_" + chatId, false);
-                    messageAdapter = new MessageAdapter(PrivateChatActivity.this, messages, currentUserId, PrivateChatActivity.this, isTranslationEnabled, isTranscriptionEnabled);
-                    messageList.setAdapter(messageAdapter);
+                    // Пересоздаём только если номер и правда другой: иначе лента
+                    // перерисовывается впустую
+                    if (messageAdapter == null || messageAdapter.getCurrentUserId() != currentUserId) {
+                        messageAdapter = new MessageAdapter(PrivateChatActivity.this, messages, currentUserId, PrivateChatActivity.this, isTranslationEnabled, isTranscriptionEnabled);
+                        messageList.setAdapter(messageAdapter);
+                    } else {
+                        messageAdapter.setTranslationEnabled(isTranslationEnabled);
+                    }
                     fetchChatData();
                 } else {
                     Log.e(TAG, "Failed to validate user: code=" + response.code());

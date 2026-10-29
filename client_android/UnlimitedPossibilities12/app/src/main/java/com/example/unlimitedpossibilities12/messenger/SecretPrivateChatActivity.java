@@ -256,6 +256,9 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         if (messageList.getItemAnimator() instanceof androidx.recyclerview.widget.SimpleItemAnimator) {
             ((androidx.recyclerview.widget.SimpleItemAnimator) messageList.getItemAnimator()).setSupportsChangeAnimations(false);
         }
+        // Свой номер известен из настроек — иначе первые мгновения все сообщения
+        // выглядят чужими и переписка потом перестраивается на глазах
+        currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
         messageAdapter = new SecretMessageAdapter(this, messages, currentUserId, this, apiService);
         messageList.setAdapter(messageAdapter);
 
@@ -1183,8 +1186,12 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                             .putInt("userId", currentUserId)
                             .putString("username", username)
                             .apply();
-                    messageAdapter = new SecretMessageAdapter(SecretPrivateChatActivity.this, messages, currentUserId, SecretPrivateChatActivity.this, apiService);
-                    messageList.setAdapter(messageAdapter);
+                    // Пересоздаём только если номер и правда другой: иначе лента
+                    // перерисовывается впустую
+                    if (messageAdapter == null || messageAdapter.getCurrentUserId() != currentUserId) {
+                        messageAdapter = new SecretMessageAdapter(SecretPrivateChatActivity.this, messages, currentUserId, SecretPrivateChatActivity.this, apiService);
+                        messageList.setAdapter(messageAdapter);
+                    }
                     fetchChatData();
                 } else {
                     Log.e(TAG, "Failed to validate user: code=" + response.code());

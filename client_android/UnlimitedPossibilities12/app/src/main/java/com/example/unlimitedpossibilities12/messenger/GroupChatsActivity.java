@@ -229,7 +229,10 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         layoutManager = new LinearLayoutManager(this);
         layoutManager.setStackFromEnd(true);
         messageList.setLayoutManager(layoutManager);
-        messageAdapter = new GroupMessageAdapter(this, messages, -1, this, isTranslationEnabled, isTTSEnabled, isTranscriptionEnabled);
+        // Свой номер известен из настроек — иначе первые мгновения все сообщения
+        // выглядят чужими и переписка потом перестраивается на глазах
+        currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
+        messageAdapter = new GroupMessageAdapter(this, messages, currentUserId, this, isTranslationEnabled, isTTSEnabled, isTranscriptionEnabled);
         messageList.setAdapter(messageAdapter);
 
         // Инициализация AI-иконки и обновление
@@ -743,8 +746,12 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                             .putInt("userId", currentUserId)
                             .putString("username", username)
                             .apply();
-                    messageAdapter = new GroupMessageAdapter(GroupChatsActivity.this, messages, currentUserId, GroupChatsActivity.this, isTranslationEnabled, isTTSEnabled, isTranscriptionEnabled);
-                    messageList.setAdapter(messageAdapter);
+                    // Пересоздаём только если номер и правда другой: иначе лента
+                    // перерисовывается впустую
+                    if (messageAdapter == null || messageAdapter.getCurrentUserId() != currentUserId) {
+                        messageAdapter = new GroupMessageAdapter(GroupChatsActivity.this, messages, currentUserId, GroupChatsActivity.this, isTranslationEnabled, isTTSEnabled, isTranscriptionEnabled);
+                        messageList.setAdapter(messageAdapter);
+                    }
                     fetchChatData();
                 } else {
                     Log.e(TAG, "Failed to validate user: code=" + response.code());
