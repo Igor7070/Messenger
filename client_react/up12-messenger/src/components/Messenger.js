@@ -24,6 +24,7 @@ import AiMessageGeneratorDialog from './AiMessageGeneratorDialog';
 import GroupMembersDialog from './GroupMembersDialog';
 import { chatAvatarUrl } from '../api/chatMembers';
 import { getChatById } from '../api/chats';
+import { getCachedPreview, loadPreview } from '../utils/linkPreviewCache';
 
 const getChatName = async (chatId) => {
     const response = await fetch(`https://unlimitedpossibilities12.org/api/chats/${chatId}`);
@@ -1603,62 +1604,54 @@ const Messenger = () => {
         return parts.length > 0 ? parts : text;
     };
 
-    // Загрузка превью ссылок через бэкенд + передаём "хороший" User-Agent
-    // Это заставит бэкенд использовать facebookexternalhit (самый надёжный для всех сайтов)
+    // Превью ссылок: известные берём из кэша, остальные спрашиваем у бэкенда
     useEffect(() => {
+        let cancelled = false;
+
         const loadPreviews = async () => {
-            const newPreviews = { ...previewData };
+            const known = {};
+            const missing = [];
 
             for (const msg of messages) {
-                if (
-                    newPreviews[msg.id] || 
-                    msg.messageType === 'audio' ||
-                    msg.fileUrl || 
-                    !msg.content
-                ) {
+                if (previewData[msg.id] || msg.messageType === 'audio' || msg.fileUrl || !msg.content) {
                     continue;
                 }
 
                 const url = extractFirstUrl(msg.content);
                 if (!url) continue;
 
-                try {
-                    const previewUrl = `https://unlimitedpossibilities12.org/api/preview?url=${encodeURIComponent(url)}&ua=facebookexternalhit&_t=${Date.now()}`;
-
-                    const res = await fetch(previewUrl);
-
-                    if (!res.ok) {
-                        console.warn(`Превью не загрузилось для ${url}, статус: ${res.status}`);
-                        continue;
-                    }
-
-                    const data = await res.json();
-
-                    if (data.title || data.description || data.image) {
-                        newPreviews[msg.id] = {
-                            title: data.title || 'Без названия',
-                            description: data.description || '',
-                            imageUrl: data.image || '',
-                            url: url,
-                        };
-                        console.log(`✅ Превью успешно загружено для сообщения ${msg.id} (${url})`);
-                    } else {
-                        console.log(`⚠️ Превью пришло пустым для ${url}`);
-                    }
-                } catch (err) {
-                    console.warn(`❌ Ошибка загрузки превью для ${url}:`, err);
-                }
+                const cached = getCachedPreview(url);
+                if (cached) known[msg.id] = cached;
+                else missing.push({ id: msg.id, url });
             }
 
-            if (Object.keys(newPreviews).length > Object.keys(previewData).length) {
-                setPreviewData(newPreviews);
+            // Что уже знаем — показываем сразу, не дожидаясь сети
+            if (Object.keys(known).length > 0 && !cancelled) {
+                setPreviewData((prev) => ({ ...known, ...prev }));
+            }
+
+            if (missing.length === 0) return;
+
+            // Спрашиваем разом: одна медленная ссылка больше не держит остальные
+            const loaded = await Promise.all(
+                missing.map(async ({ id, url }) => {
+                    const data = await loadPreview(url);
+                    return data ? [id, data] : null;
+                })
+            );
+
+            if (cancelled) return;
+
+            const fresh = Object.fromEntries(loaded.filter(Boolean));
+            if (Object.keys(fresh).length > 0) {
+                setPreviewData((prev) => ({ ...prev, ...fresh }));
             }
         };
 
-        // Минимальная задержка — 120 мс (почти незаметно, но стабильно)
-        const timer = setTimeout(loadPreviews, 140);
-        return () => clearTimeout(timer);
-
+        loadPreviews();
+        return () => {
+            cancelled = true;
+        };
     }, [messages]);
 
     const openFullScreenImage = (fileUrl) => {
