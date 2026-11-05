@@ -533,6 +533,11 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
             // ЯВНО скрываем image_preview в начале bind — чтобы старое превью не оставалось
             imagePreview.setVisibility(View.GONE);
             imagePreview.setOnClickListener(null); // убираем старый обработчик
+            // Точка «в сети» живёт у края аватара: без него её показывать негде,
+            // а от прошлого сообщения в этой же вьюхе она уезжала к краю экрана
+            statusIndicator.setVisibility(View.GONE);
+            // Подпись о пропавшем вложении тоже принадлежит прошлому сообщению
+            if (attachmentUnavailable != null) attachmentUnavailable.setVisibility(View.GONE);
             // Отменяем загрузку от прошлого сообщения, иначе чужая картинка
             // успевает мелькнуть в переиспользованной вьюхе
             Glide.with(context).clear(imagePreview);
@@ -734,14 +739,21 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                         });
                         durationPlayer.setOnErrorListener((mp, what, extra) -> {
                             Log.e(TAG, "Error fetching duration for message id=" + message.getId() + ": what=" + what + ", extra=" + extra);
-                            MissingAttachments.remember(context, fileUrl);
-                            if (boundMessageId == message.getId()) {
-                                audioContainer.setVisibility(View.GONE);
-                                attachmentUnavailable.setText("Voice message unavailable");
-                                attachmentUnavailable.setVisibility(View.VISIBLE);
-                                applyFooterLayout();
-                            }
                             mp.release();
+                            // Плеер мог споткнуться на чём угодно. Говорим, что
+                            // записи нет, только если её и правда нет на сервере.
+                            final long askedFor = message.getId();
+                            new Thread(() -> {
+                                if (!isGoneFromServer(fileUrl)) return;
+                                MissingAttachments.remember(context, fileUrl);
+                                ((Activity) context).runOnUiThread(() -> {
+                                    if (boundMessageId != askedFor) return;
+                                    audioContainer.setVisibility(View.GONE);
+                                    attachmentUnavailable.setText("Voice message unavailable");
+                                    attachmentUnavailable.setVisibility(View.VISIBLE);
+                                    applyFooterLayout();
+                                });
+                            }).start();
                             return true;
                         });
                         durationPlayer.prepareAsync();
@@ -1750,6 +1762,26 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
     }
 
     // ДОБАВЛЕНО: Превью ссылок — находит первую ссылку в тексте
+    /** Отвечает ли сервер, что файла по адресу больше нет. Только из фона. */
+    private static boolean isGoneFromServer(String url) {
+        try {
+            java.net.HttpURLConnection connection =
+                    (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+            connection.setRequestMethod("HEAD");
+            connection.setConnectTimeout(7000);
+            connection.setReadTimeout(7000);
+            try {
+                int code = connection.getResponseCode();
+                return code == 404 || code == 410 || code == 500;
+            } finally {
+                connection.disconnect();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Не удалось проверить " + url + ": " + e.getMessage());
+            return false;
+        }
+    }
+
     private String extractFirstUrl(String text) {
         if (TextUtils.isEmpty(text)) return null;
 

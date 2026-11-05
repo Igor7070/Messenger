@@ -293,6 +293,9 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             // ЯВНО скрываем image_preview в начале bind — чтобы старое превью не оставалось
             imagePreview.setVisibility(View.GONE);
             imagePreview.setOnClickListener(null);
+            // Точка «в сети» живёт у края аватара: без него её показывать негде,
+            // а от прошлого сообщения в этой же вьюхе она уезжала к краю экрана
+            statusIndicator.setVisibility(View.GONE);
             translatedContentTextView.setVisibility(View.GONE);
             // Установка выравнивания и фона
             ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) messageContainer.getLayoutParams();
@@ -387,7 +390,8 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 }
                 Long senderId = (long) sender.getId();
                 Boolean isOnline = adapter.userStatuses.get(senderId);
-                boolean isVisible = isOnline != null && isOnline;
+                boolean isVisible = isOnline != null && isOnline
+                        && avatarImageView.getVisibility() == View.VISIBLE;
                 statusIndicator.setVisibility(isVisible ? View.VISIBLE : View.GONE);
                 Log.d(TAG, "Setting status indicator for userId=" + senderId + ", isOnline=" + isOnline +
                         ", visibility=" + (isVisible ? "VISIBLE" : "GONE") + ", messageId=" + message.getId());

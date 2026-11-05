@@ -533,6 +533,9 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             // ЯВНО скрываем image_preview в начале bind — чтобы старое превью не оставалось
             imagePreview.setVisibility(View.GONE);
             imagePreview.setOnClickListener(null); // убираем старый обработчик
+            // Точка «в сети» живёт у края аватара: без него её показывать негде,
+            // а от прошлого сообщения в этой же вьюхе она уезжала к краю экрана
+            statusIndicator.setVisibility(View.GONE);
             // Отменяем загрузку от прошлого сообщения, иначе чужая картинка
             // успевает мелькнуть в переиспользованной вьюхе
             Glide.with(context).clear(imagePreview);
@@ -619,7 +622,8 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 Long senderId = (long) sender.getId();
                 Boolean isOnline = userStatuses.get(senderId);
                 boolean isVisible = isOnline != null && isOnline;
-                statusIndicator.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+                boolean withAvatar = avatarImageView.getVisibility() == View.VISIBLE;
+                statusIndicator.setVisibility(isVisible && withAvatar ? View.VISIBLE : View.GONE);
             } else {
                 statusIndicator.setVisibility(View.GONE);
             }
