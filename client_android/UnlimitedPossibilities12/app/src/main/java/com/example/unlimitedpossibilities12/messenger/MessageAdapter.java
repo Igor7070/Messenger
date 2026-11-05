@@ -702,34 +702,54 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     Log.d("MessageAdapter", "audioContainer visibility for message id=" + message.getId() + ": " + (audioContainer.getVisibility() == View.VISIBLE ? "VISIBLE" : "GONE"));
                 });
                 playPauseButton.setImageResource(R.drawable.ic_play);
-                audioCurrentTimeTextView.setText("0:00");
-                audioDurationTextView.setText("/ 0:00");
+                // Пока не играет — показываем только длительность, как в
+                // телефонных мессенджерах; «текущее / общее» появится при
+                // прослушивании
+                audioCurrentTimeTextView.setVisibility(View.GONE);
+                audioDurationTextView.setText("…");
                 audioSeekBar.setProgress(0);
                 audioSeekBar.setEnabled(false);
 
-                // Асинхронное получение длительности аудиофайла
-                MediaPlayer durationPlayer = new MediaPlayer();
-                try {
-                    durationPlayer.setDataSource(fileUrl);
-                    durationPlayer.setOnPreparedListener(mp -> {
-                        int duration = mp.getDuration();
-                        int durationSec = duration / 1000;
-                        audioDurationTextView.setText("/ " + String.format("%d:%02d", durationSec / 60, durationSec % 60));
-                        audioSeekBar.setMax(duration);
-                        mp.release();
-                        Log.d(TAG, "Duration fetched for message id=" + message.getId() + ": " + duration + "ms");
-                    });
-                    durationPlayer.setOnErrorListener((mp, what, extra) -> {
-                        Log.e(TAG, "Error fetching duration for message id=" + message.getId() + ": what=" + what + ", extra=" + extra);
-                        audioDurationTextView.setText("/ 0:00");
-                        mp.release();
-                        return true;
-                    });
-                    durationPlayer.prepareAsync();
-                } catch (IOException e) {
-                    Log.e(TAG, "Error setting data source for duration of message id=" + message.getId() + ": " + e.getMessage());
-                    audioDurationTextView.setText("/ 0:00");
-                    durationPlayer.release();
+                // Запись могла пропасть с сервера вместе с остальными файлами:
+                // мёртвый плеер с нулями честнее заменить строкой
+                final boolean voiceGone = MissingAttachments.isMissing(context, fileUrl);
+                audioContainer.setVisibility(voiceGone ? View.GONE : View.VISIBLE);
+                if (voiceGone) {
+                    attachmentUnavailable.setText("Voice message unavailable");
+                    attachmentUnavailable.setVisibility(View.VISIBLE);
+                } else {
+                    // Асинхронное получение длительности аудиофайла
+                    MediaPlayer durationPlayer = new MediaPlayer();
+                    try {
+                        durationPlayer.setDataSource(fileUrl);
+                        durationPlayer.setOnPreparedListener(mp -> {
+                            int duration = mp.getDuration();
+                            int durationSec = duration / 1000;
+                            audioDurationTextView.setText(String.format("%d:%02d", durationSec / 60, durationSec % 60));
+                            audioSeekBar.setMax(duration);
+                            mp.release();
+                            MissingAttachments.forget(context, fileUrl);
+                            applyFooterLayout();
+                            Log.d(TAG, "Duration fetched for message id=" + message.getId() + ": " + duration + "ms");
+                        });
+                        durationPlayer.setOnErrorListener((mp, what, extra) -> {
+                            Log.e(TAG, "Error fetching duration for message id=" + message.getId() + ": what=" + what + ", extra=" + extra);
+                            MissingAttachments.remember(context, fileUrl);
+                            if (boundMessageId == message.getId()) {
+                                audioContainer.setVisibility(View.GONE);
+                                attachmentUnavailable.setText("Voice message unavailable");
+                                attachmentUnavailable.setVisibility(View.VISIBLE);
+                                applyFooterLayout();
+                            }
+                            mp.release();
+                            return true;
+                        });
+                        durationPlayer.prepareAsync();
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error setting data source for duration of message id=" + message.getId() + ": " + e.getMessage());
+                        audioDurationTextView.setText("0:00");
+                        durationPlayer.release();
+                    }
                 }
 
                 // Обработчик кнопки Play/Pause
@@ -781,7 +801,8 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                                                 int currentPosition = mediaPlayer.getCurrentPosition();
                                                 audioSeekBar.setProgress(currentPosition);
                                                 int currentSec = currentPosition / 1000;
-                                                audioCurrentTimeTextView.setText(String.format("%d:%02d", currentSec / 60, currentSec % 60));
+                                                audioCurrentTimeTextView.setVisibility(View.VISIBLE);
+                                                audioCurrentTimeTextView.setText(String.format("%d:%02d /", currentSec / 60, currentSec % 60));
                                                 seekBarHandler.postDelayed(this, 100);
                                             }
                                         }
@@ -792,7 +813,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                                 mediaPlayer.setOnCompletionListener(mp -> {
                                     playPauseButton.setImageResource(R.drawable.ic_play);
                                     audioSeekBar.setProgress(0);
-                                    audioCurrentTimeTextView.setText("0:00");
+                                    audioCurrentTimeTextView.setVisibility(View.GONE);
                                     currentPosition = 0;
                                     isPrepared = false; // Сбрасываем флаг подготовки
                                     seekBarHandler.removeCallbacks(seekBarUpdater);
@@ -804,7 +825,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                                     Toast.makeText(context, "Error playing audio", Toast.LENGTH_SHORT).show();
                                     playPauseButton.setImageResource(R.drawable.ic_play);
                                     audioSeekBar.setProgress(0);
-                                    audioCurrentTimeTextView.setText("0:00");
+                                    audioCurrentTimeTextView.setVisibility(View.GONE);
                                     currentPosition = 0;
                                     isPrepared = false; // Сбрасываем флаг подготовки
                                     seekBarHandler.removeCallbacks(seekBarUpdater);
@@ -817,7 +838,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                                 Toast.makeText(context, "Cannot play audio", Toast.LENGTH_SHORT).show();
                                 playPauseButton.setImageResource(R.drawable.ic_play);
                                 audioSeekBar.setProgress(0);
-                                audioCurrentTimeTextView.setText("0:00");
+                                audioCurrentTimeTextView.setVisibility(View.GONE);
                                 currentPosition = 0;
                                 isPrepared = false; // Сбрасываем флаг подготовки
                             }
@@ -832,7 +853,8 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                         if (fromUser && mediaPlayer != null && mediaPlayer.isPlaying()) {
                             mediaPlayer.seekTo(progress);
                             int currentSec = progress / 1000;
-                            audioCurrentTimeTextView.setText(String.format("%d:%02d", currentSec / 60, currentSec % 60));
+                            audioCurrentTimeTextView.setVisibility(View.VISIBLE);
+                            audioCurrentTimeTextView.setText(String.format("%d:%02d /", currentSec / 60, currentSec % 60));
                             Log.d(TAG, "SeekBar changed by user for message id=" + message.getId() + ", progress=" + progress);
                         }
                     }
