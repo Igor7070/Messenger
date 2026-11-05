@@ -173,6 +173,12 @@ public class PrivateChatTranslationAndSpellCheckHelper {
                                 return;
                             }
                             MessageAdapter.MessageViewHolder holder = (MessageAdapter.MessageViewHolder) recyclerView.findViewHolderForAdapterPosition(position);
+                            // Вьюха по номеру позиции может принадлежать уже другому
+                            // сообщению — тогда писать в неё нельзя
+                            if (holder != null && !holder.isBoundTo(message.getId())) {
+                                Log.w(TAG, "Пропускаем чужую вьюху: ждали сообщение " + message.getId());
+                                holder = null;
+                            }
                             if (holder != null) {
                                 if ("audio".equalsIgnoreCase(message.getMessageType())) {
                                     // Для аудиосообщений: устанавливаем перевод в contentTextView, скрываем translatedContentTextView

@@ -479,6 +479,11 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         }
 
         // Добавлено: Публичные методы для обновления UI
+        /** Привязан ли холдер именно к этому сообщению. */
+        public boolean isBoundTo(long messageId) {
+            return boundMessageId == messageId;
+        }
+
         public void setTranslatedContentText(String text) {
             int position = getAdapterPosition();
             if (position != RecyclerView.NO_POSITION) {
@@ -498,11 +503,13 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
             } else {
                 Log.w(TAG, "setTranslatedContentText called with invalid position");
             }
+            applyFooterLayout(); // текст сменился — хвост под подвал надо дописать заново
         }
 
         public void setContentText(String text) {
             contentTextView.setText(text);
             contentTextView.setVisibility(View.VISIBLE);
+            applyFooterLayout(); // текст сменился — хвост под подвал надо дописать заново
             Log.d(TAG, "Set content text: " + text);
         }
 
@@ -513,6 +520,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
 
         public void hideTranslatedContentTextView() {
             translatedContentTextView.setVisibility(View.GONE);
+            applyFooterLayout(); // строка пропала — подвал пересчитываем
             Log.d(TAG, "hideTranslatedContentTextView called for message id=" +
                     (getAdapterPosition() != RecyclerView.NO_POSITION ? messages.get(getAdapterPosition()).getId() : "unknown"));
         }
@@ -538,6 +546,9 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
             statusIndicator.setVisibility(View.GONE);
             // Подпись о пропавшем вложении тоже принадлежит прошлому сообщению
             if (attachmentUnavailable != null) attachmentUnavailable.setVisibility(View.GONE);
+            // И строка расшифровки: у текстового сообщения её быть не должно, а
+            // оставшись от аудио, она забирала себе хвост под подвал
+            if (transcribedContentTextView != null) transcribedContentTextView.setVisibility(View.GONE);
             // Отменяем загрузку от прошлого сообщения, иначе чужая картинка
             // успевает мелькнуть в переиспользованной вьюхе
             Glide.with(context).clear(imagePreview);
@@ -1079,6 +1090,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     // ширину показываем строку «Image unavailable». Про уже
                     // пропавшие помним — иначе заглушка мелькает при каждом входе.
                     boolean knownMissing = MissingAttachments.isMissing(context, fileUrl);
+                    attachmentUnavailable.setText("Image unavailable");
                     imagePreview.setVisibility(knownMissing ? View.GONE : View.VISIBLE);
                     attachmentUnavailable.setVisibility(knownMissing ? View.VISIBLE : View.GONE);
 
@@ -1094,6 +1106,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                                                                 boolean isFirstResource) {
                                         MissingAttachments.remember(context, fileUrl);
                                         imagePreview.setVisibility(View.GONE);
+                                        attachmentUnavailable.setText("Image unavailable");
                                         attachmentUnavailable.setVisibility(View.VISIBLE);
                                         applyFooterLayout();
                                         return false;

@@ -505,12 +505,14 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         public void setTranslatedContentText(String text) {
             translatedContentTextView.setText(text);
             translatedContentTextView.setVisibility(View.VISIBLE);
+            applyFooterLayout(); // текст сменился — хвост под подвал надо дописать заново
             Log.d(TAG, "Set translated content text: " + text);
         }
 
         public void setContentText(String text) {
             contentTextView.setText(text);
             contentTextView.setVisibility(View.VISIBLE);
+            applyFooterLayout(); // текст сменился — хвост под подвал надо дописать заново
             Log.d(TAG, "Set content text: " + text);
         }
 
@@ -1050,6 +1052,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                     // ширину показываем строку «Image unavailable». Про уже
                     // пропавшие помним — иначе заглушка мелькает при каждом входе.
                     boolean knownMissing = MissingAttachments.isMissing(context, fileUrl);
+                    attachmentUnavailable.setText("Image unavailable");
                     imagePreview.setVisibility(knownMissing ? View.GONE : View.VISIBLE);
                     attachmentUnavailable.setVisibility(knownMissing ? View.VISIBLE : View.GONE);
 

@@ -15,6 +15,10 @@ import android.widget.TextView;
  */
 public final class BubbleFooter {
 
+    /** Неразрывный пробел: в отличие от обычного, он не отбрасывается при измерении строки. */
+    private static final char FILLER_CHAR = ' ';
+    private static final String FILLER = String.valueOf(FILLER_CHAR);
+
     private BubbleFooter() {
     }
 
@@ -31,14 +35,17 @@ public final class BubbleFooter {
             text.setText(raw);
             return;
         }
-        float space = text.getPaint().measureText(" ");
+        // Обычные пробелы в конце строки Android при измерении отбрасывает, и
+        // пузырь не становится шире — подвал ложится прямо на текст. Неразрывный
+        // пробел считается обычным символом, поэтому ширина растёт как надо.
+        float space = text.getPaint().measureText(FILLER);
         if (space <= 0) {
             text.setText(raw);
             return;
         }
         int count = (int) Math.ceil(width / space);
         StringBuilder tail = new StringBuilder(count);
-        for (int i = 0; i < count; i++) tail.append(' ');
+        for (int i = 0; i < count; i++) tail.append(FILLER);
         text.setText(raw + tail.toString());
     }
 
@@ -46,7 +53,7 @@ public final class BubbleFooter {
     public static CharSequence stripTail(CharSequence value) {
         if (value == null) return "";
         int end = value.length();
-        while (end > 0 && value.charAt(end - 1) == ' ') end--;
+        while (end > 0 && (value.charAt(end - 1) == ' ' || value.charAt(end - 1) == FILLER_CHAR)) end--;
         return value.subSequence(0, end);
     }
 
