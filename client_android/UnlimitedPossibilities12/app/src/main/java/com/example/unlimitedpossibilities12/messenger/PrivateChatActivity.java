@@ -954,8 +954,10 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                 case 5: if (spellCheckIconView != null) spellCheckIconView.performClick(); return true;
                 case 6:
                     if (partnerId != -1) {
+                        // Профиль ждёт число: со строкой getIntExtra отдавал -1
+                        // и экран открывался с ошибкой вместо собеседника
                         Intent profile = new Intent(PrivateChatActivity.this, UserProfileActivity.class);
-                        profile.putExtra("userId", String.valueOf(partnerId));
+                        profile.putExtra("userId", (int) partnerId);
                         startActivity(profile);
                     }
                     return true;
