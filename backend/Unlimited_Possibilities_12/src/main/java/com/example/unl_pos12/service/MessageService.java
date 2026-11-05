@@ -189,6 +189,25 @@ public class MessageService {
         return savedMessage;
     }
 
+    /**
+     * Пометить прочитанными сообщения чата, написанные не этим человеком.
+     *
+     * @return только те сообщения, статус которых изменился — их и рассылаем
+     */
+    public List<Message> markChatRead(Long chatId, Long readerId) {
+        List<Message> changed = new java.util.ArrayList<>();
+        for (Message message : messageRepository.findByChatId(chatId)) {
+            if (message.getSender() == null || message.getSender().getId().equals(readerId)) continue;
+            if (Boolean.TRUE.equals(message.getRead_status())) continue;
+            message.setRead_status(true);
+            changed.add(messageRepository.save(message));
+        }
+        if (!changed.isEmpty()) {
+            System.out.println("Marked as read on opening chat " + chatId + ": " + changed.size() + " message(s)");
+        }
+        return changed;
+    }
+
     public Message markAsRead(Long messageId) {
         Message message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new RuntimeException("Message not found"));

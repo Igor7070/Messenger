@@ -25,6 +25,10 @@ public class ChatController {
     private UserService userService;
     @Autowired
     private com.example.unl_pos12.service.ChatMemberService chatMembers;
+    @Autowired
+    private com.example.unl_pos12.service.MessageService messageService;
+    @Autowired
+    private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
 
     @PostMapping
     public ResponseEntity<?> createChat(@RequestBody Chat chat,
@@ -189,6 +193,17 @@ public class ChatController {
     @GetMapping("/{id}/messages")
     public List<Message> getMessagesByChatId(@PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
         authz.requireChatAccess(request, id); // историю приватного/секретного чата — только участнику
+
+        // Открыл переписку — значит прочитал. Раньше отметку слал клиент, и
+        // стоило его списку разойтись с базой, она не уходила вовсе: у
+        // отправителя навсегда оставалась одна галочка.
+        Long reader = authz.currentUserId(request);
+        if (reader != null) {
+            for (Message updated : messageService.markChatRead(id, reader)) {
+                messagingTemplate.convertAndSend("/topic/chat/" + id + "/messages", updated);
+            }
+        }
+
         return chatService.getMessagesByChatId(id);
     }
 
