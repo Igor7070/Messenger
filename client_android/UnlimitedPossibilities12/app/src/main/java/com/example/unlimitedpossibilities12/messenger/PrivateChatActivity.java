@@ -22,6 +22,7 @@ import android.provider.OpenableColumns;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -1428,6 +1429,13 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     }
 
     private void checkMessageStatus(Message message, int retryCount) {
+        // Поиск идёт по тексту сообщения. У голосовой записи и файла текста
+        // нет, и пустой запрос находит чужое сообщение — его статус попадал в
+        // наш пузырь. Для таких сообщений статус приходит по сокету.
+        if (TextUtils.isEmpty(message.getContent())) {
+            Log.d(TAG, "Пропускаем проверку по тексту: у сообщения id=" + message.getId() + " его нет");
+            return;
+        }
         if (retryCount >= 3) {
             Log.e(TAG, "Max retries reached for message: " + message.getContent());
             runOnUiThread(() -> Toast.makeText(PrivateChatActivity.this, "Unable to verify message delivery", Toast.LENGTH_SHORT).show());
