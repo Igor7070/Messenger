@@ -29,6 +29,16 @@ public class PreviewController {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
+     * Ключ YouTube Data API: берётся из переменной окружения YOUTUBE_API_KEY.
+     *
+     * Без него остаётся прежний порядок — oEmbed, затем страница видео. Но
+     * YouTube отвечает отказом и на то, и на другое, когда спрашивают с адреса
+     * дата-центра, поэтому для веб-клиента название берём здесь.
+     */
+    @org.springframework.beans.factory.annotation.Value("${youtube.api.key:}")
+    private String youtubeApiKey;
+
+    /**
      * ID видео состоит ровно из 11 символов [A-Za-z0-9_-].
      * Покрывает youtu.be/ID, /watch?v=ID, /embed/ID, /shorts/ID, /live/ID, /v/ID.
      */
@@ -189,6 +199,31 @@ public class PreviewController {
                 }
             } catch (Exception pageError) {
                 System.err.println("Страница видео тоже недоступна: " + pageError.getMessage());
+            }
+        }
+
+        // Последняя надежда — официальный YouTube Data API. Он отвечает с
+        // любого адреса, но требует ключ.
+        if ("YouTube".equals(result.get("title")) && !youtubeApiKey.isBlank()) {
+            try {
+                String answer = Jsoup.connect("https://www.googleapis.com/youtube/v3/videos"
+                                + "?part=snippet&id=" + videoId + "&key=" + youtubeApiKey)
+                        .ignoreContentType(true)
+                        .timeout(10000)
+                        .execute()
+                        .body();
+
+                JsonNode snippet = OBJECT_MAPPER.readTree(answer).path("items").path(0).path("snippet");
+                String title = snippet.path("title").asText("");
+                if (!title.isEmpty()) {
+                    result.put("title", title);
+                    String channel = snippet.path("channelTitle").asText("");
+                    String description = snippet.path("description").asText("");
+                    result.put("description", !description.isEmpty() ? description : channel);
+                    System.out.println("YouTube Data API: title=" + title);
+                }
+            } catch (Exception apiError) {
+                System.err.println("YouTube Data API не ответил: " + apiError.getMessage());
             }
         }
 
