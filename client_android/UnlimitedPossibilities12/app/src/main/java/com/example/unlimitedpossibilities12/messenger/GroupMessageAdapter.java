@@ -296,10 +296,12 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
 
         // Сохраняем переводы и транскрипции из старого списка
         Map<Long, String> translationMap = new HashMap<>();
+        Map<Long, String> languageMap = new HashMap<>();
         Map<Long, String> transcriptionMap = new HashMap<>();
         for (Message oldMessage : messages) {
             if (oldMessage.getTranslatedContent() != null && !oldMessage.getTranslatedContent().isEmpty()) {
                 translationMap.put(oldMessage.getId(), oldMessage.getTranslatedContent());
+                languageMap.put(oldMessage.getId(), oldMessage.getTranslationLanguage());
             }
             if (oldMessage.getTranscribedContent() != null && !oldMessage.getTranscribedContent().isEmpty()) {
                 transcriptionMap.put(oldMessage.getId(), oldMessage.getTranscribedContent());
@@ -308,8 +310,15 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
 
         // Обновляем новый список, сохраняя переводы и транскрипции, и устанавливаем showOriginal = false для аудиосообщений
         for (Message newMessage : newMessages) {
-            if (translationMap.containsKey(newMessage.getId())) {
+            // Перевод из прежнего списка подставляем, только если с сервера
+            // его не прислали: иначе старый перевод (а он может быть на
+            // прежнем языке чата) затирал свежий, и в хинди-чате висел
+            // английский
+            boolean fresh = newMessage.getTranslatedContent() != null
+                    && !newMessage.getTranslatedContent().isEmpty();
+            if (!fresh && translationMap.containsKey(newMessage.getId())) {
                 newMessage.setTranslatedContent(translationMap.get(newMessage.getId()));
+                newMessage.setTranslationLanguage(languageMap.get(newMessage.getId()));
             }
             if (transcriptionMap.containsKey(newMessage.getId())) {
                 newMessage.setTranscribedContent(transcriptionMap.get(newMessage.getId()));
