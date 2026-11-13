@@ -17,6 +17,7 @@ import TranslationSettingsModal from './TranslationSettingsModal';
 import TranscriptionSettingsModal from './TranscriptionSettingsModal'; // ДОБАВЛЕНО: Импорт модального окна для транскрипции
 import AssistantIcon from './AssistantIcon';
 import { translateMessage, saveTranslation } from '../api/messages';
+import AudioWaveform from './AudioWaveform';
 import useGroupChatTranslationAndSpellCheck from '../hooks/useGroupChatTranslationAndSpellCheck';
 import sodium from 'libsodium-wrappers';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -1994,30 +1995,34 @@ const Messenger = () => {
                                 }}
                                 disabled={!audioProgress[msg.id]?.isReady}
                               >
-                                {audioProgress[msg.id]?.isPlaying ? '⏸' : '▶'}
+                                {audioProgress[msg.id]?.isPlaying ? (
+                                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                                    <rect x="6" y="5" width="4" height="14" rx="1.2" fill="currentColor" />
+                                    <rect x="14" y="5" width="4" height="14" rx="1.2" fill="currentColor" />
+                                  </svg>
+                                ) : (
+                                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                                    <path d="M8 5.5v13l11-6.5z" fill="currentColor" />
+                                  </svg>
+                                )}
                               </button>
-                              <div
-                                className="audio-progress-bar"
+                              <AudioWaveform
+                                url={msg.fileUrl}
+                                progress={
+                                  audioProgress[msg.id]?.duration && audioProgress[msg.id]?.duration !== Infinity
+                                    ? (audioProgress[msg.id].currentTime || 0) / audioProgress[msg.id].duration
+                                    : 0
+                                }
                                 onClick={(e) => handleSeek(msg.id, e)}
                                 onMouseDown={(e) => handleDragStart(msg.id, e)}
                                 style={{ cursor: audioProgress[msg.id]?.duration === 0 ? 'not-allowed' : 'pointer' }}
-                              >
-                                <div
-                                  className="audio-progress"
-                                  style={{
-                                    width: `${
-                                      audioProgress[msg.id]?.duration && audioProgress[msg.id]?.isReady && audioProgress[msg.id]?.duration !== 0
-                                        ? (audioProgress[msg.id].currentTime / audioProgress[msg.id].duration) * 100
-                                        : 0
-                                    }%`,
-                                  }}
-                                >
-                                  <div className="audio-progress-thumb"></div>
-                                </div>
-                              </div>
+                              />
                               <span className="audio-time">
-                                {formatAudioTime(audioProgress[msg.id]?.currentTime || 0)} /{' '}
-                                {formatAudioTime(audioProgress[msg.id]?.duration || 0)}
+                                {formatAudioTime(
+                                  audioProgress[msg.id]?.isPlaying || audioProgress[msg.id]?.currentTime
+                                    ? audioProgress[msg.id].currentTime
+                                    : audioProgress[msg.id]?.duration || 0
+                                )}
                               </span>
                             </div>
                           )}

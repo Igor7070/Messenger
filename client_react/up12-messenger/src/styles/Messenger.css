@@ -2239,3 +2239,80 @@
 .chat-header-group .partner-avatar-container img.partner-avatar {
   object-fit: cover;
 }
+
+
+/* ===== Голосовое сообщение: кнопка-кружок и звуковая волна ===== */
+
+/* Кнопка как в телефонных мессенджерах: синий кружок, значок внутри белый */
+.audio-play-pause {
+    background-color: #2f6fe4 !important;
+    border: none;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff !important;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.audio-play-pause:hover:not(:disabled) {
+    background-color: #2560c8 !important;
+}
+
+.audio-play-pause:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Волна вместо полоски: столбики по громкости записи */
+.audio-waveform {
+    flex: 1;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.audio-wave-bar {
+    flex: 1;
+    min-width: 2px;
+    border-radius: 2px;
+    background-color: #64748b;
+    transition: background-color 0.1s linear;
+}
+
+/* Прослушанная часть подсвечена */
+.audio-wave-bar.played {
+    background-color: #67e8f9;
+}
+
+/* У своих пузырей фон синий — там волна белая */
+.message.current-user .audio-wave-bar {
+    background-color: rgba(255, 255, 255, 0.45);
+}
+
+.message.current-user .audio-wave-bar.played {
+    background-color: #ffffff;
+}
+
+/* Подпись времени одна: длина записи, а при прослушивании счётчик */
+.audio-time {
+    min-width: 42px;
+}
+
+/* Плеер сидит прямо на пузыре, как в телефонных мессенджерах: без
+   внутренней коробки с собственным фоном и тенью */
+.audio-controls,
+.message.current-user .audio-controls,
+.message.other-user .audio-controls {
+    background-color: transparent !important;
+    box-shadow: none;
+    padding: 2px 0;
+}
