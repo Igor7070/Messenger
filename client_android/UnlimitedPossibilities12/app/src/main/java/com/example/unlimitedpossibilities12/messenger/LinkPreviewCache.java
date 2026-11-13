@@ -127,8 +127,12 @@ public final class LinkPreviewCache {
         data.imageUrl = videoId == null ? "" : "https://i.ytimg.com/vi/" + videoId + "/hqdefault.jpg";
 
         try {
+            // Спрашиваем по канонической ссылке: с хвостом вроде «?si=…»,
+            // который YouTube добавляет при «Поделиться», oEmbed отвечает
+            // ошибкой, и заголовок остаётся просто «YouTube».
+            String asked = videoId == null ? url : "https://www.youtube.com/watch?v=" + videoId;
             String oembed = "https://www.youtube.com/oembed?url="
-                    + URLEncoder.encode(url, "UTF-8") + "&format=json";
+                    + URLEncoder.encode(asked, "UTF-8") + "&format=json";
             JSONObject json = new JSONObject(readUrl(oembed));
 
             String title = json.optString("title");

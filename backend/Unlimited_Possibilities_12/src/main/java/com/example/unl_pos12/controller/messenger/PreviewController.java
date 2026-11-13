@@ -134,8 +134,12 @@ public class PreviewController {
         result.put("description", "");
 
         try {
+            // Спрашиваем по канонической ссылке: с хвостом вроде «?si=…»,
+            // который YouTube добавляет при «Поделиться», oEmbed отвечает
+            // ошибкой, и заголовок остаётся просто «YouTube».
+            String asked = "https://www.youtube.com/watch?v=" + videoId;
             String json = Jsoup.connect("https://www.youtube.com/oembed?format=json&url="
-                            + URLEncoder.encode(url, StandardCharsets.UTF_8))
+                            + URLEncoder.encode(asked, StandardCharsets.UTF_8))
                     .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
                     .ignoreContentType(true)
                     .timeout(7000)
