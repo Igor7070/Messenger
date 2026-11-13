@@ -162,7 +162,34 @@ public class PreviewController {
 
         } catch (Exception e) {
             System.err.println("YouTube oEmbed недоступен для " + url + ": " + e.getMessage()
-                    + " — отдаём превью только с миниатюрой");
+                    + " — пробуем прочитать саму страницу видео");
+        }
+
+        // У ролика с запрещённым встраиванием oEmbed отвечает отказом. Тогда
+        // читаем страницу: получится — возьмём настоящее название, не выйдет
+        // (YouTube часто не отдаёт её серверным адресам) — останется миниатюра.
+        if ("YouTube".equals(result.get("title"))) {
+            try {
+                Document page = Jsoup.connect("https://www.youtube.com/watch?v=" + videoId)
+                        .userAgent("Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 "
+                                + "(KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36")
+                        .referrer("https://www.google.com/")
+                        .timeout(10000)
+                        .followRedirects(true)
+                        .get();
+
+                Element title = page.selectFirst("meta[property=og:title]");
+                if (title != null && !title.attr("content").isEmpty()) {
+                    result.put("title", title.attr("content"));
+                    Element description = page.selectFirst("meta[property=og:description]");
+                    if (description != null && !description.attr("content").isEmpty()) {
+                        result.put("description", description.attr("content"));
+                    }
+                    System.out.println("YouTube: название взято со страницы видео: " + result.get("title"));
+                }
+            } catch (Exception pageError) {
+                System.err.println("Страница видео тоже недоступна: " + pageError.getMessage());
+            }
         }
 
         return result;
