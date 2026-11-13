@@ -525,7 +525,25 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     (getAdapterPosition() != RecyclerView.NO_POSITION ? messages.get(getAdapterPosition()).getId() : "unknown"));
         }
 
+        /** Пока привязка не закончилась, подвал считать рано: строки ещё
+
+         * меняются, и пузырь успел бы показаться то шире, то уже. */
+
+        private boolean binding;
+
+
         public void bind(Message message, int position) {
+            binding = true;
+            try {
+                bindContents(message, position);
+            } finally {
+                // Подвал считаем один раз, когда все строки уже на местах
+                binding = false;
+                applyFooterLayout();
+            }
+        }
+
+        private void bindContents(Message message, int position) {
             bindDaySeparator(position); // дата дня над первым сообщением дня
             User sender = message.getSender();
             boolean isSentByCurrentUser = sender.getId() == currentUserId;
@@ -1529,8 +1547,6 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 Log.d(TAG, "Ссылка для чужого сообщения установлена в #BB86FC");
             }
             // =========================================================
-            // Подвал считаем до отрисовки, иначе лента дёргается
-            applyFooterLayout();
         }
 
         // Вспомогательные методы для проверки дат
@@ -1586,6 +1602,9 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
          * колонке добавляется запас снизу, и подвал стоит под содержимым.
          */
         private void applyFooterLayout() {
+            // Внутри привязки строки ещё переставляются: хвост, посчитанный на
+            // полпути, успевал попасть в отрисовку, и пузырь на глазах сужался
+            if (binding) return;
             View column = itemView.findViewById(R.id.bubble_column);
             final View footer = itemView.findViewById(R.id.message_footer);
             if (column == null || footer == null) return;
@@ -1601,9 +1620,14 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     || (attachmentUnavailable != null && attachmentUnavailable.getVisibility() == View.VISIBLE);
 
             final TextView last = lastVisibleText();
-            if (last != null) last.setText(BubbleFooter.stripTail(last.getText()));
+
+            // Хвост держит только последняя строка: забытый у соседней
+            // делал пузырь шире, и он потом на глазах сужался
+            BubbleFooter.keepTailOnly(last, contentTextView, translatedContentTextView, transcribedContentTextView);
 
             if (hasMedia || last == null) {
+                // Здесь хвост не нужен — подвал встанет под содержимым
+                if (last != null) last.setText(BubbleFooter.stripTail(last.getText()));
                 BubbleFooter.reserveBelow(column, true, base, footerHeight);
                 return;
             }
