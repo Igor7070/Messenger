@@ -68,12 +68,32 @@ public class ChatGPTController {
         return ResponseEntity.ok(result);
     }
 
+    /** Регулярка ссылки: http(s), www или голый домен вроде youtu.be/xxx. */
+    private static final java.util.regex.Pattern LINK = java.util.regex.Pattern.compile(
+            "(https?://|www\\.)\\S+|\\b[a-zA-Z0-9-]+\\.[a-zA-Z]{2,}(/\\S*)?");
+
+    /**
+     * Остались ли в тексте слова, если убрать ссылки.
+     *
+     * Сообщение из одной ссылки переводить и править незачем: модель на такой
+     * запрос отвечает отказом, и этот отказ попадал в переписку вместо текста.
+     */
+    private static boolean onlyLinks(String text) {
+        if (text == null) return false;
+        String withoutLinks = LINK.matcher(text).replaceAll(" ");
+        return withoutLinks.replaceAll("[\\s\\p{Punct}]+", "").isEmpty() && !text.trim().isEmpty();
+    }
+
     @PostMapping("/api/translate")
     @ResponseBody
     public ResponseEntity<String> translateMessage(@RequestBody MessageRequest request) {
         System.out.println("Translate message: " + request.getPrompt());
         if (request.getTargetLanguage() == null || request.getPrompt() == null) {
             return ResponseEntity.badRequest().body("Prompt and targetLanguage are required");
+        }
+        if (onlyLinks(request.getPrompt())) {
+            System.out.println("Текст состоит из одной ссылки — отдаём как есть");
+            return ResponseEntity.ok(request.getPrompt());
         }
         String prompt = String.format("Translate the following text to %s and return only the translated phrase in double quotes: \"%s\"",
                 request.getTargetLanguage().equals("auto") ? "English" : request.getTargetLanguage(),
@@ -105,6 +125,10 @@ public class ChatGPTController {
         System.out.println("Spell check message: " + request.getPrompt());
         if (request.getPrompt() == null || request.getPrompt().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Prompt is required");
+        }
+        if (onlyLinks(request.getPrompt())) {
+            System.out.println("Текст состоит из одной ссылки — исправлять нечего");
+            return ResponseEntity.ok(request.getPrompt());
         }
         String prompt = String.format("Correct the spelling and grammar of the following text and return only the corrected text in double quotes: \"%s\"",
                 request.getPrompt());
