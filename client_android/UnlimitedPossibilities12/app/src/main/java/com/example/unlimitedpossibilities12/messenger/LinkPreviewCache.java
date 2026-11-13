@@ -145,6 +145,19 @@ public final class LinkPreviewCache {
             Log.w(TAG, "oEmbed не ответил для " + url + ": " + e.getMessage());
             if (videoId == null) return null;
         }
+
+        // У ролика с запрещённым встраиванием oEmbed отвечает отказом, и
+        // название остаётся заглушкой. Тогда читаем саму страницу: телефону
+        // YouTube её отдаёт, в отличие от серверных адресов.
+        if ("YouTube".equals(data.title)) {
+            Message.LinkPreviewData fromPage = fromPage(url);
+            if (fromPage != null && !TextUtils.isEmpty(fromPage.title)
+                    && !"YouTube".equals(fromPage.title)) {
+                data.title = fromPage.title;
+                if (!TextUtils.isEmpty(fromPage.description)) data.description = fromPage.description;
+                Log.d(TAG, "Название взято со страницы видео: " + data.title);
+            }
+        }
         return data;
     }
 
