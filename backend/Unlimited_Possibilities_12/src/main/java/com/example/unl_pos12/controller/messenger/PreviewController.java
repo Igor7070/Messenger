@@ -211,10 +211,11 @@ public class PreviewController {
 
         // Последняя надежда — официальный YouTube Data API. Он отвечает с
         // любого адреса, но требует ключ.
-        if ("YouTube".equals(result.get("title")) && !youtubeApiKey.isBlank()) {
+        String apiKey = youtubeKey();
+        if ("YouTube".equals(result.get("title")) && !apiKey.isBlank()) {
             try {
                 String answer = Jsoup.connect("https://www.googleapis.com/youtube/v3/videos"
-                                + "?part=snippet&id=" + videoId + "&key=" + youtubeApiKey)
+                                + "?part=snippet&id=" + videoId + "&key=" + apiKey)
                         .ignoreContentType(true)
                         .timeout(10000)
                         .execute()
