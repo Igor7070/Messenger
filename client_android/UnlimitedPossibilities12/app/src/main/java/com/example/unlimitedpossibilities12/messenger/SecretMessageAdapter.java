@@ -204,7 +204,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
         LinearLayout audioContainer;
         ImageView playPauseButton;
         TextView audioDurationTextView;
-        SeekBar audioSeekBar;
+        WaveformSeekBar audioSeekBar;
         TextView audioCurrentTimeTextView;
         private final Handler seekBarHandler = new Handler();
         private Runnable seekBarUpdater;
@@ -715,12 +715,25 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             audioCurrentTimeTextView.setText("0:00");
             audioDurationTextView.setText("/ 0:00");
             audioSeekBar.setProgress(0);
+
+            // Звуковая волна вместо полоски: цвета под свой или чужой
+            // пузырь, сама волна из кэша, а если её ещё не считали —
+            // посчитаем в фоне и дорисуем, когда будет готова
+            final boolean ownVoice = message.getSender() != null
+                    && message.getSender().getId() == adapter.currentUserId;
+            final String waveUrl = filePath;
+            audioSeekBar.setWaveColors(ownVoice ? 0xFFFFFFFF : 0xFF67E8F9,
+                    ownVoice ? 0x66FFFFFF : 0xFF64748B);
+            audioSeekBar.setTag(R.id.audio_seek_bar, waveUrl);
+            audioSeekBar.setLevels(Waveforms.cached(adapter.context, waveUrl));
+            Waveforms.load(adapter.context, waveUrl, levels -> {
+                if (waveUrl.equals(audioSeekBar.getTag(R.id.audio_seek_bar))) {
+                    audioSeekBar.setLevels(levels);
+                }
+            });
             audioSeekBar.setEnabled(false);
 
             playPauseButton.setColorFilter(ContextCompat.getColor(context, R.color.sent_message_accent));
-            audioSeekBar.setProgressBackgroundTintList(ColorStateList.valueOf(
-                    ContextCompat.getColor(context, R.color.seekbar_background)
-            ));
 
             MediaPlayer durationPlayer = new MediaPlayer();
             try {

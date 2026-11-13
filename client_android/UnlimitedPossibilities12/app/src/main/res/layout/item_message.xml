@@ -246,22 +246,18 @@
                         android:contentDescription="Play/Pause Audio"
                         android:layout_marginEnd="10dp" />
 
-                    <SeekBar
+                    <!-- Звуковая волна: тот же SeekBar, только нарисован столбиками -->
+                    <com.example.unlimitedpossibilities12.messenger.WaveformSeekBar
                         android:id="@+id/audio_seek_bar"
-                        android:layout_width="120dp"
-                        android:layout_height="wrap_content"
-                        android:minHeight="4dp"
-                        android:maxHeight="4dp"
-                        android:progress="0"
-                        android:thumb="@drawable/seekbar_thumb"
-                        android:progressTint="#67E8F9"
-                        android:backgroundTint="#64748B" />
+                        android:layout_width="100dp"
+                        android:layout_height="26dp"
+                        android:progress="0" />
 
                     <TextView
                         android:id="@+id/audio_current_time_text_view"
+                        android:maxLines="1"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:minWidth="46dp"
                         android:gravity="end"
                         android:layout_marginStart="8dp"
                         android:text="0:00"
@@ -270,6 +266,7 @@
 
                     <TextView
                         android:id="@+id/audio_duration_text_view"
+                        android:maxLines="1"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:minWidth="46dp"

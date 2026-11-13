@@ -344,7 +344,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         ImageView translateIcon;
         TextView audioDurationTextView;
         // Добавлено: SeekBar и TextView для текущего времени
-        SeekBar audioSeekBar;
+        WaveformSeekBar audioSeekBar;
         TextView audioCurrentTimeTextView;
         ImageView ttsIcon; // Иконка TTS для оригинального контента
         private Handler seekBarHandler = new Handler(); // Handler для обновления прогресса SeekBar
@@ -750,6 +750,21 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 audioSeekBar.setProgress(0);
                 audioSeekBar.setEnabled(false);
 
+                // Звуковая волна вместо полоски: цвета под свой или чужой
+                // пузырь, сама волна из кэша, а если её ещё не считали —
+                // посчитаем в фоне и дорисуем, когда будет готова
+                final boolean ownVoice = isSentByCurrentUser;
+                final String waveUrl = fileUrl;
+                audioSeekBar.setWaveColors(ownVoice ? 0xFFFFFFFF : 0xFF67E8F9,
+                        ownVoice ? 0x66FFFFFF : 0xFF64748B);
+                audioSeekBar.setTag(R.id.audio_seek_bar, waveUrl);
+                audioSeekBar.setLevels(Waveforms.cached(context, waveUrl));
+                Waveforms.load(context, waveUrl, levels -> {
+                    if (waveUrl.equals(audioSeekBar.getTag(R.id.audio_seek_bar))) {
+                        audioSeekBar.setLevels(levels);
+                    }
+                });
+
                 // Длину записи, если её уже мерили, показываем сразу: иначе при
                 // каждой привязке время подмигивало многоточием
                 int knownDuration = AudioDurations.get(context, fileUrl);
@@ -940,9 +955,6 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                         }
                     }
                 });
-                audioSeekBar.setProgressBackgroundTintList(ColorStateList.valueOf(
-                        ContextCompat.getColor(context, R.color.seekbar_background) // цвет пустой части
-                ));
 
                 // **ДОБАВЛЕНО/ИЗМЕНЕНО**: Обработка иконок в аудиосообщениях
                 if (transcriptionIcon != null && translateIconAudio != null && ttsIconAudio != null && ttsTranslatedIconAudio != null) {

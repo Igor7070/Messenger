@@ -354,7 +354,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         ImageView ttsIcon;
         ImageView ttsTranslatedIcon;
         TextView audioDurationTextView;
-        SeekBar audioSeekBar;
+        WaveformSeekBar audioSeekBar;
         TextView audioCurrentTimeTextView;
         ImageView transcriptionIcon;
         TextView transcribedContentTextView;
@@ -938,6 +938,21 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 audioSeekBar.setProgress(0);
                 audioSeekBar.setEnabled(false);
 
+                // Звуковая волна вместо полоски: цвета под свой или чужой
+                // пузырь, сама волна из кэша, а если её ещё не считали —
+                // посчитаем в фоне и дорисуем, когда будет готова
+                final boolean ownVoice = isSentByCurrentUser;
+                final String waveUrl = fileUrl;
+                audioSeekBar.setWaveColors(ownVoice ? 0xFFFFFFFF : 0xFF67E8F9,
+                        ownVoice ? 0x66FFFFFF : 0xFF64748B);
+                audioSeekBar.setTag(R.id.audio_seek_bar, waveUrl);
+                audioSeekBar.setLevels(Waveforms.cached(context, waveUrl));
+                Waveforms.load(context, waveUrl, levels -> {
+                    if (waveUrl.equals(audioSeekBar.getTag(R.id.audio_seek_bar))) {
+                        audioSeekBar.setLevels(levels);
+                    }
+                });
+
                 // Длину записи, если её уже мерили, показываем сразу: иначе при
                 // каждой привязке время подмигивало многоточием
                 int knownDuration = AudioDurations.get(context, fileUrl);
@@ -1001,9 +1016,6 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 }
 
                 playPauseButton.setColorFilter(ContextCompat.getColor(context, R.color.sent_message_accent));
-                audioSeekBar.setProgressBackgroundTintList(ColorStateList.valueOf(
-                        ContextCompat.getColor(context, R.color.seekbar_background)
-                ));
 
                 // Обработчик кнопки Play/Pause
                 playPauseButton.setOnClickListener(v -> {
