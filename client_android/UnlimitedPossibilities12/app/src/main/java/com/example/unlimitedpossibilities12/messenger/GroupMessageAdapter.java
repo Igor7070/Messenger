@@ -889,34 +889,72 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                     Log.d(TAG, "audioContainer visibility for message id=" + message.getId() + ": " + (audioContainer.getVisibility() == View.VISIBLE ? "VISIBLE" : "GONE"));
                 });
                 playPauseButton.setImageResource(R.drawable.ic_play);
-                audioCurrentTimeTextView.setText("0:00");
-                audioDurationTextView.setText("/ 0:00");
+                // Пока не играет — показываем только длительность; «текущее / общее»
+                // появится при прослушивании
+                audioCurrentTimeTextView.setVisibility(View.GONE);
                 audioSeekBar.setProgress(0);
                 audioSeekBar.setEnabled(false);
 
-                // Асинхронное получение длительности аудиофайла
-                MediaPlayer durationPlayer = new MediaPlayer();
-                try {
-                    durationPlayer.setDataSource(fileUrl);
-                    durationPlayer.setOnPreparedListener(mp -> {
-                        int duration = mp.getDuration();
-                        int durationSec = duration / 1000;
-                        audioDurationTextView.setText("/ " + String.format("%d:%02d", durationSec / 60, durationSec % 60));
-                        audioSeekBar.setMax(duration);
-                        mp.release();
-                        Log.d(TAG, "Duration fetched for message id=" + message.getId() + ": " + duration + "ms");
-                    });
-                    durationPlayer.setOnErrorListener((mp, what, extra) -> {
-                        Log.e(TAG, "Error fetching duration for message id=" + message.getId() + ": what=" + what + ", extra=" + extra);
-                        audioDurationTextView.setText("/ 0:00");
-                        mp.release();
-                        return true;
-                    });
-                    durationPlayer.prepareAsync();
-                } catch (IOException e) {
-                    Log.e(TAG, "Error setting data source for duration of message id=" + message.getId() + ": " + e.getMessage());
-                    audioDurationTextView.setText("/ 0:00");
-                    durationPlayer.release();
+                // Длину записи, если её уже мерили, показываем сразу: иначе при
+                // каждой привязке время подмигивало многоточием
+                int knownDuration = AudioDurations.get(context, fileUrl);
+                if (knownDuration > 0) {
+                    audioDurationTextView.setText(String.format("%d:%02d",
+                            knownDuration / 1000 / 60, knownDuration / 1000 % 60));
+                    audioSeekBar.setMax(knownDuration);
+                } else {
+                    audioDurationTextView.setText("…");
+                }
+
+                // Запись могла пропасть с сервера вместе с остальными файлами:
+                // мёртвый плеер с нулями честнее заменить строкой
+                final boolean voiceGone = MissingAttachments.isMissing(context, fileUrl);
+                audioContainer.setVisibility(voiceGone ? View.GONE : View.VISIBLE);
+                if (voiceGone) {
+                    attachmentUnavailable.setText("Voice message unavailable");
+                    attachmentUnavailable.setVisibility(View.VISIBLE);
+                } else if (knownDuration <= 0) {
+                    // Асинхронное получение длительности аудиофайла
+                    MediaPlayer durationPlayer = new MediaPlayer();
+                    try {
+                        durationPlayer.setDataSource(fileUrl);
+                        durationPlayer.setOnPreparedListener(mp -> {
+                            int duration = mp.getDuration();
+                            int durationSec = duration / 1000;
+                            audioDurationTextView.setText(String.format("%d:%02d", durationSec / 60, durationSec % 60));
+                            audioSeekBar.setMax(duration);
+                            mp.release();
+                            AudioDurations.put(context, fileUrl, duration);
+                            MissingAttachments.forget(context, fileUrl);
+                            applyFooterLayout();
+                            Log.d(TAG, "Duration fetched for message id=" + message.getId() + ": " + duration + "ms");
+                        });
+                        durationPlayer.setOnErrorListener((mp, what, extra) -> {
+                            Log.e(TAG, "Error fetching duration for message id=" + message.getId() + ": what=" + what + ", extra=" + extra);
+                            mp.release();
+                            // Плеер мог споткнуться на чём угодно. Говорим, что
+                            // записи нет, только если её и правда нет на сервере.
+                            final long askedFor = message.getId();
+                            new Thread(() -> {
+                                if (!isGoneFromServer(fileUrl)) return;
+                                MissingAttachments.remember(context, fileUrl);
+                                AudioDurations.forget(context, fileUrl);
+                                ((Activity) context).runOnUiThread(() -> {
+                                    if (boundMessageId != askedFor) return;
+                                    audioContainer.setVisibility(View.GONE);
+                                    attachmentUnavailable.setText("Voice message unavailable");
+                                    attachmentUnavailable.setVisibility(View.VISIBLE);
+                                    applyFooterLayout();
+                                });
+                            }).start();
+                            return true;
+                        });
+                        durationPlayer.prepareAsync();
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error setting data source for duration of message id=" + message.getId() + ": " + e.getMessage());
+                        audioDurationTextView.setText("0:00");
+                        durationPlayer.release();
+                    }
                 }
 
                 playPauseButton.setColorFilter(ContextCompat.getColor(context, R.color.sent_message_accent));
@@ -1492,6 +1530,26 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         }
         stopCurrentTTS();
         Log.d(TAG, "TTS stopped on detach from RecyclerView");
+    }
+
+    /** Отвечает ли сервер, что файла по адресу больше нет. Только из фона. */
+    private static boolean isGoneFromServer(String url) {
+        try {
+            java.net.HttpURLConnection connection =
+                    (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+            connection.setRequestMethod("HEAD");
+            connection.setConnectTimeout(7000);
+            connection.setReadTimeout(7000);
+            try {
+                int code = connection.getResponseCode();
+                return code == 404 || code == 410 || code == 500;
+            } finally {
+                connection.disconnect();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Не удалось проверить " + url + ": " + e.getMessage());
+            return false;
+        }
     }
 
     // ДОБАВЛЕНО: Находит первую ссылку в тексте
