@@ -271,6 +271,23 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         return messages.size();
     }
 
+    /**
+     * Перерисовать одно сообщение.
+     *
+     * Перевод и расшифровка приходят по одному, и на каждую из них список
+     * перерисовывался целиком — при включённых режимах лента тряслась на
+     * каждый ответ. Трогаем только тот пузырь, который изменился.
+     */
+    public void refreshMessage(Message message) {
+        if (message == null) return;
+        for (int i = 0; i < messages.size(); i++) {
+            if (messages.get(i) != null && messages.get(i).getId() == message.getId()) {
+                notifyItemChanged(i);
+                return;
+            }
+        }
+    }
+
     public void updateMessages(List<Message> newMessages) {
         if (newMessages == null) {
             newMessages = new ArrayList<>();
@@ -502,6 +519,11 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             });
         }
 
+        /** Привязан ли холдер именно к этому сообщению. */
+        public boolean isBoundTo(long messageId) {
+            return boundMessageId == messageId;
+        }
+
         public void setTranslatedContentText(String text) {
             translatedContentTextView.setText(text);
             translatedContentTextView.setVisibility(View.VISIBLE);
@@ -538,6 +560,9 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             // Точка «в сети» живёт у края аватара: без него её показывать негде,
             // а от прошлого сообщения в этой же вьюхе она уезжала к краю экрана
             statusIndicator.setVisibility(View.GONE);
+            // И строка расшифровки: у текстового сообщения её быть не должно, а
+            // оставшись от аудио, она забирала себе хвост под подвал
+            if (transcribedContentTextView != null) transcribedContentTextView.setVisibility(View.GONE);
             // Значки аудио живут в подвале рядом с обычными: у текстового
             // сообщения их быть не должно
             if (transcriptionIcon != null) transcriptionIcon.setVisibility(View.GONE);

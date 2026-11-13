@@ -202,7 +202,7 @@ public class GroupChatTranslationAndSpellCheckHelper {
                                 }
                             });
                     ((android.app.Activity) context).runOnUiThread(() -> {
-                        messageAdapter.notifyDataSetChanged();
+                        messageAdapter.refreshMessage(message); // трогаем только этот пузырь
                         Log.d(TAG, "UI updated for message id=" + message.getId() + ", showOriginal=" + message.isShowOriginal());
                         translateNextMessage.run();
                     });
@@ -385,12 +385,12 @@ public class GroupChatTranslationAndSpellCheckHelper {
                             translateMessage(context, message, translationLanguage, chatId, messageAdapter, () -> {
                                 Log.d(TAG, "Translation completed for transcribed message id=" + message.getId());
                                 message.setShowOriginal(false); // Показываем перевод сразу
-                                messageAdapter.notifyDataSetChanged();
+                                messageAdapter.refreshMessage(message);
                                 onComplete.run();
                             });
                         } else {
                             message.setShowOriginal(true); // Показываем оригинал, если перевод выключен
-                            messageAdapter.notifyDataSetChanged();
+                            messageAdapter.refreshMessage(message);
                             onComplete.run();
                         }
                     } else {
