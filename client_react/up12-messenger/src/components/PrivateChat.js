@@ -294,7 +294,10 @@ const PrivateChat = () => {
         }
         setDisplayChatName(`Chat with ${interlocutorName}`);
 
-        const initialMessages = await getMessages(chatIdParam);
+        const wantedLanguage = localStorage.getItem(`translation_enabled_${chatIdParam}`) === 'true'
+          ? (localStorage.getItem(`translation_language_${chatIdParam}`) || null)
+          : null;
+        const initialMessages = await getMessages(chatIdParam, {}, wantedLanguage);
         const updatedMessages = initialMessages.map((msg) => {
           const translationKey = `translation_${chatIdParam}_${msg.id}`;
           const transcriptionKey = `transcription_${chatIdParam}_${msg.id}`;
@@ -306,7 +309,14 @@ const PrivateChat = () => {
             read: msg.read_status,
             showOriginal: msg.messageType === 'audio' && savedTranscription && JSON.parse(savedTranscription).translatedContent ? false : true, // Оригинал для текстовых с переводом
           };
-          if (savedTranslation) {
+          // Перевод с сервера на наш язык — он общий для всех устройств
+          // и участников; местная копия только про запас
+          const serverHasOurs = !!msg.translatedContent && !!wantedLanguage
+            && (msg.translationLanguage || '').toLowerCase() === wantedLanguage.toLowerCase();
+          if (serverHasOurs) {
+            result.translatedContent = msg.translatedContent;
+            result.translationLanguage = msg.translationLanguage;
+          } else if (savedTranslation) {
             const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
             result.translatedContent = translatedContent;
             result.translationLanguage = translationLanguage;

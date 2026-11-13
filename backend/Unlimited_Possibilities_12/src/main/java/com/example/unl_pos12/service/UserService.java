@@ -46,6 +46,8 @@ public class UserService {
     @Autowired
     private MessageRepository messageRepository;
     @Autowired
+    private com.example.unl_pos12.repo.MessageTranslationRepository translationRepository;
+    @Autowired
     private ChatMemberRepository chatMemberRepository;
     @Autowired
     private ChatMemberService chatMemberService;
@@ -200,6 +202,7 @@ public class UserService {
         }
 
         // Сначала удаляем все сообщения, связанные с чатом
+        translationRepository.deleteByChatId(chatId);
         messageRepository.deleteByChatId(chatId);
         // Если чат не найден у ни одного пользователя, удаляем его из базы
         chatRepository.deleteById(chatId); // Удаляем чат по ID
@@ -270,6 +273,7 @@ public class UserService {
             // Группа, из которой ушёл последний участник, никому не видна и
             // никому не принадлежит — держать её в базе незачем
             if (chatMemberRepository.countByChatId(chatId) == 0) {
+                translationRepository.deleteByChatId(chatId);
                 messageRepository.deleteByChatId(chatId);
                 chatRepository.deleteById(chatId);
             }
@@ -288,6 +292,7 @@ public class UserService {
         // раньше такие оставались в базе навсегда
         for (Long chatId : personalChats) {
             if (userRepository.countOwnersOfChat(chatId) == 0) {
+                translationRepository.deleteByChatId(chatId);
                 messageRepository.deleteByChatId(chatId);
                 chatRepository.deleteById(chatId);
             }

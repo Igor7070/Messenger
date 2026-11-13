@@ -136,6 +136,15 @@ public interface ApiService {
     @GET("chats/{chatId}/messages")
     Call<List<Message>> getMessagesByChatId(@Path("chatId") long chatId);
 
+    /**
+     * То же самое, но сервер сразу подставит перевод на нужный язык.
+     * Переводы хранятся по языкам, поэтому чужой (скажем, английский в
+     * французском чате) не придёт и платить за повторный перевод не надо.
+     */
+    @GET("chats/{chatId}/messages")
+    Call<List<Message>> getMessagesByChatId(@Path("chatId") long chatId,
+                                            @Query("language") String language);
+
     @GET("messages/{messageId}")
     Call<Message> getMessageById(@Path("messageId") long messageId);
 

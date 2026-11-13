@@ -4,8 +4,11 @@ import { setAuthToken, applyAxiosAuth } from '../authToken';
 const API_URL = 'https://unlimitedpossibilities12.org/api/messages';
 const API_CHATS_URL = 'https://unlimitedpossibilities12.org/api/chats'; // URL для чатов
 
-export const getMessages = async (chatId, options = {}) => {
-    const response = await fetch(`${API_CHATS_URL}/${chatId}/messages`, options);
+// Переводы сервер хранит по языкам: попросив свой, получаем готовый
+// и не заказываем его заново — и чужой язык в чат не попадёт
+export const getMessages = async (chatId, options = {}, language = null) => {
+    const query = language ? `?language=${encodeURIComponent(language)}` : '';
+    const response = await fetch(`${API_CHATS_URL}/${chatId}/messages${query}`, options);
     if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to fetch messages: ${errorText}`);

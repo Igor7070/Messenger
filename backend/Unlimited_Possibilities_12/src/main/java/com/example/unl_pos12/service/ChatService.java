@@ -20,6 +20,8 @@ public class ChatService {
     private UserRepository userRepository;
     @Autowired
     private MessageRepository messageRepository;
+    @Autowired
+    private com.example.unl_pos12.repo.MessageTranslationRepository translationRepository;
 
     @Transactional
     public Chat createChat(Chat chat) {
@@ -57,6 +59,7 @@ public class ChatService {
         // Для секретного чата чистый лист важен: старую переписку не поднимаем.
         System.out.println("Chat " + chat.getName() + " is orphaned (id=" + existing.getId()
                 + "), deleting it before creating a fresh one");
+        translationRepository.deleteByChatId(existing.getId());
         messageRepository.deleteByChatId(existing.getId());
         chatRepository.delete(existing);
         chatRepository.flush();
@@ -93,6 +96,7 @@ public class ChatService {
         Chat chat = chatRepository.findById(id).orElse(null);
         if (chat == null) return;
 
+        translationRepository.deleteByChatId(id);
         messageRepository.deleteByChatId(id);
 
         // Убираем чат из списков у тех, кто держит его как приватный, иначе

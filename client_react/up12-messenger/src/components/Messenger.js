@@ -399,7 +399,10 @@ const Messenger = () => {
               }
 
               // Загружаем сообщения
-              const initialMessages = await getMessages(chatId);
+              const wantedLanguage = translationEnabled
+                  ? (localStorage.getItem(`translation_language_${chatId}`) || null)
+                  : null;
+              const initialMessages = await getMessages(chatId, {}, wantedLanguage);
               const updatedMessages = initialMessages.map((msg) => {
                   const translationKey = `translation_${chatId}_${msg.id}`;
                   const transcriptionKey = `transcription_${chatId}_${msg.id}`;
@@ -411,8 +414,15 @@ const Messenger = () => {
                       read: msg.read_status,
                       showOriginal: true, // По умолчанию показываем оригинал
                   };
+                  // Перевод с сервера на наш язык — он общий для всех
+                  // устройств и участников; местная копия только про запас
+                  const serverHasOurs = !!msg.translatedContent && !!wantedLanguage
+                      && (msg.translationLanguage || '').toLowerCase() === wantedLanguage.toLowerCase();
                   // Загружаем переводы для текстовых сообщений, если перевод включён
-                  if (translationEnabled && savedTranslation && msg.messageType !== 'audio') {
+                  if (translationEnabled && serverHasOurs && msg.messageType !== 'audio') {
+                      result.translatedContent = msg.translatedContent;
+                      result.translationLanguage = msg.translationLanguage;
+                  } else if (translationEnabled && savedTranslation && msg.messageType !== 'audio') {
                       const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
                       result.translatedContent = translatedContent;
                       result.translationLanguage = translationLanguage;

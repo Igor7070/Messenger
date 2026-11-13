@@ -5,7 +5,9 @@ import com.example.unl_pos12.model.chat_ai.MessageRequest;
 import com.example.unl_pos12.model.chat_ai.SettingsRequest;
 import com.example.unl_pos12.model.messenger.Message;
 import com.example.unl_pos12.model.messenger.TranslationUpdateRequest;
+import com.example.unl_pos12.model.messenger.MessageTranslation;
 import com.example.unl_pos12.repo.MessageRepository;
+import com.example.unl_pos12.repo.MessageTranslationRepository;
 import com.example.unl_pos12.service.OpenAIService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -33,6 +35,8 @@ public class ChatGPTController {
     private OpenAIService openAIService;
     @Autowired
     private MessageRepository messageRepository;
+    @Autowired
+    private MessageTranslationRepository translationRepository;
 
     @GetMapping("/communicating_with_a_advanced_ai_model")
     public String chatGPT(HttpSession session, Model model) {
@@ -113,8 +117,21 @@ public class ChatGPTController {
         if (message == null) {
             return ResponseEntity.notFound().build();
         }
+        String language = request.getTargetLanguage();
+        if (language != null && !language.isBlank()) {
+            // Перевод живёт отдельной строкой на каждый язык: иначе участники
+            // с разными языками затирали друг друга, и на новом устройстве
+            // человек видел чужой перевод вместо своего
+            MessageTranslation translation = translationRepository
+                    .findByMessageIdAndLanguage(messageId, language)
+                    .orElseGet(() -> new MessageTranslation(messageId, language, null));
+            translation.setText(request.getTranslatedContent());
+            translationRepository.save(translation);
+        }
+
+        // Старое поле пока заполняем тоже — его читают прежние версии клиентов
         message.setTranslatedContent(request.getTranslatedContent());
-        message.setTranslationLanguage(request.getTargetLanguage());
+        message.setTranslationLanguage(language);
         messageRepository.save(message);
         return ResponseEntity.ok().build();
     }

@@ -23,6 +23,8 @@ public class MessageService {
     @Autowired
     private MessageRepository messageRepository;
     @Autowired
+    private com.example.unl_pos12.repo.MessageTranslationRepository translationRepository;
+    @Autowired
     private FileMetadataRepository fileMetadataRepository; // [ADD] Внедряем FileMetadataRepository
     @Autowired
     private PublicKeyHistoryRepository publicKeyHistoryRepository; // [CHANGE]
@@ -54,6 +56,7 @@ public class MessageService {
     }
 
     public void deleteMessage(Long id) {
+        translationRepository.deleteByMessageId(id); // переводы живут отдельно — убираем вместе с сообщением
         messageRepository.deleteById(id);
     }
 

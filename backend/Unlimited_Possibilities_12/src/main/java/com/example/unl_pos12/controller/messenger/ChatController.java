@@ -2,6 +2,7 @@ package com.example.unl_pos12.controller.messenger;
 
 import com.example.unl_pos12.model.messenger.Chat;
 import com.example.unl_pos12.model.messenger.Message;
+import com.example.unl_pos12.model.messenger.MessageTranslation;
 import com.example.unl_pos12.model.messenger.User;
 import com.example.unl_pos12.service.ChatService;
 import com.example.unl_pos12.service.UserService;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,10 @@ public class ChatController {
     private com.example.unl_pos12.service.MessageService messageService;
     @Autowired
     private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+    @Autowired
+    private com.example.unl_pos12.repo.MessageTranslationRepository translationRepository;
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
 
     @PostMapping
     public ResponseEntity<?> createChat(@RequestBody Chat chat,
@@ -191,7 +197,9 @@ public class ChatController {
     }
 
     @GetMapping("/{id}/messages")
-    public List<Message> getMessagesByChatId(@PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
+    public List<Message> getMessagesByChatId(@PathVariable Long id,
+                                             @RequestParam(name = "language", required = false) String language,
+                                             jakarta.servlet.http.HttpServletRequest request) {
         authz.requireChatAccess(request, id); // историю приватного/секретного чата — только участнику
 
         // Открыл переписку — значит прочитал. Раньше отметку слал клиент, и
@@ -204,7 +212,46 @@ public class ChatController {
             }
         }
 
-        return chatService.getMessagesByChatId(id);
+        return withTranslations(chatService.getMessagesByChatId(id), language);
+    }
+
+    /**
+     * Подставляет сообщениям перевод на язык, который просит клиент.
+     *
+     * В самом сообщении перевод лежит один на всех — у кого чат на
+     * французском, у кого на английском, и последний перевод затирал
+     * предыдущий. Теперь переводы хранятся по языкам отдельно: берём нужный,
+     * а чужой убираем, чтобы в французском чате не всплывал английский.
+     * Сообщения правим только в памяти — отсоединяем их, чтобы правка
+     * случайно не ушла в базу.
+     */
+    private List<Message> withTranslations(List<Message> messages, String language) {
+        if (language == null || language.isBlank() || messages == null || messages.isEmpty()) {
+            return messages;
+        }
+        List<Long> ids = new ArrayList<>();
+        for (Message message : messages) {
+            if (message.getId() != null) ids.add(message.getId());
+        }
+        Map<Long, String> byMessage = new HashMap<>();
+        if (!ids.isEmpty()) {
+            for (MessageTranslation translation :
+                    translationRepository.findByMessageIdInAndLanguage(ids, language)) {
+                byMessage.put(translation.getMessageId(), translation.getText());
+            }
+        }
+        for (Message message : messages) {
+            entityManager.detach(message);
+            String text = byMessage.get(message.getId());
+            if (text != null && !text.isBlank()) {
+                message.setTranslatedContent(text);
+                message.setTranslationLanguage(language);
+            } else if (!language.equalsIgnoreCase(message.getTranslationLanguage())) {
+                message.setTranslatedContent(null);
+                message.setTranslationLanguage(null);
+            }
+        }
+        return messages;
     }
 
     @GetMapping("/{id}")

@@ -1102,7 +1102,10 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
             }
         });
 
-        apiService.getMessagesByChatId(chatId).enqueue(new Callback<List<Message>>() {
+        // Перевод на наш язык сервер подставит сам: он хранит переводы по
+        // языкам, так что чужой не придёт, а свой не придётся заказывать заново
+        String wantedLanguage = isTranslationEnabled ? translationLanguage : null;
+        apiService.getMessagesByChatId(chatId, wantedLanguage).enqueue(new Callback<List<Message>>() {
             @Override
             public void onResponse(Call<List<Message>> call, Response<List<Message>> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -1124,7 +1127,13 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                         SharedPreferences prefs = getSharedPreferences("chat_prefs", MODE_PRIVATE);
                         for (Message message : messages) {
                             // Восстановление переводов
-                            if (isTranslationEnabled) {
+                            // Сервер уже прислал перевод на наш язык — местная
+                            // копия нужна только когда его там ещё нет
+                            boolean serverHasOurs = message.getTranslatedContent() != null
+                                    && !message.getTranslatedContent().isEmpty()
+                                    && translationLanguage != null
+                                    && translationLanguage.equalsIgnoreCase(message.getTranslationLanguage());
+                            if (isTranslationEnabled && !serverHasOurs) {
                                 String translationKey = "translation_" + chatId + "_" + message.getId();
                                 if (prefs.contains(translationKey)) {
                                     String savedTranslation = prefs.getString(translationKey, null);
