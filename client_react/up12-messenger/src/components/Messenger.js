@@ -426,6 +426,11 @@ const Messenger = () => {
                       const { translatedContent, translationLanguage } = JSON.parse(savedTranslation);
                       result.translatedContent = translatedContent;
                       result.translationLanguage = translationLanguage;
+                      // Старый перевод лежал только в браузере — отдаём серверу,
+                      // чтобы он стал общим для всех устройств и участников
+                      if (translatedContent && translationLanguage) {
+                          saveTranslation(msg.id, translatedContent, translationLanguage).catch(() => {});
+                      }
                   } else {
                       result.translatedContent = null; // Явно сбрасываем перевод
                       result.translationLanguage = null; // Явно сбрасываем язык

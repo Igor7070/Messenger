@@ -1023,6 +1023,24 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         Log.d(TAG, "Показали сохранённые сообщения: " + cached.size());
     }
 
+
+    /** Отдаёт серверу перевод, который до сих пор лежал только здесь. */
+    private void shareTranslation(long messageId, String text, String language) {
+        if (text == null || text.isEmpty() || language == null || language.isEmpty()) return;
+        apiService.saveTranslation(messageId, new TranslationUpdateRequest(text, language))
+                .enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(Call<Void> call, Response<Void> response) {
+                        Log.d(TAG, "Перевод сообщения " + messageId + " отдан серверу: " + response.code());
+                    }
+
+                    @Override
+                    public void onFailure(Call<Void> call, Throwable t) {
+                        Log.w(TAG, "Перевод сообщения " + messageId + " отдать не вышло: " + t.getMessage());
+                    }
+                });
+    }
+
     private void fetchChatData() {
         chatDataRequested = true;
         Log.d(TAG, "Fetching chat data for chatId=" + chatId);
@@ -1142,6 +1160,10 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                                         message.setTranslatedContent(savedTranslation);
                                         message.setTranslationLanguage(savedLanguage);
                                         Log.d(TAG, "Restored translation for message id=" + message.getId() + ": " + savedTranslation);
+                                    // Старые переводы лежали только на телефоне. Раз уж
+                                    // достали — отдаём серверу, чтобы они стали общими
+                                    // для всех устройств и участников
+                                    shareTranslation(message.getId(), savedTranslation, savedLanguage);
                                     }
                                 }
                             }
