@@ -64,6 +64,14 @@ public final class LinkPreviewCache {
             data.description = json.optString("description");
             data.imageUrl = json.optString("imageUrl");
             data.url = json.optString("url", url);
+
+            // Заглушку, записанную когда название узнать не удалось, держать
+            // не стоит: спросим заново — может, теперь получится
+            if (isStub(data)) {
+                store(context).edit().remove(url).apply();
+                return null;
+            }
+
             MEMORY.put(url, data);
             return data;
         } catch (Exception e) {
@@ -72,10 +80,19 @@ public final class LinkPreviewCache {
         }
     }
 
+    /** Превью без названия: одна картинка и слово «YouTube» вместо заголовка. */
+    private static boolean isStub(Message.LinkPreviewData data) {
+        return data == null || (TextUtils.isEmpty(data.description)
+                && (TextUtils.isEmpty(data.title) || "YouTube".equals(data.title)));
+    }
+
     /** Запомнить разобранное превью. */
     public static void put(Context context, String url, Message.LinkPreviewData data) {
         if (data == null) return;
         MEMORY.put(url, data);
+
+        // Заглушку не храним: в следующий раз название может найтись
+        if (isStub(data)) return;
 
         try {
             SharedPreferences prefs = store(context);

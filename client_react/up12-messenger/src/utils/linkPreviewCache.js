@@ -28,6 +28,13 @@ export function getCachedPreview(url) {
       return null;
     }
 
+    // Заглушку, записанную когда сервер не смог узнать название, держать не
+    // стоит: спросим заново — может, теперь ответит
+    if (isStub(saved.data)) {
+      localStorage.removeItem(PREFIX + url);
+      return null;
+    }
+
     MEMORY.set(url, saved.data);
     return saved.data;
   } catch {
@@ -35,10 +42,18 @@ export function getCachedPreview(url) {
   }
 }
 
+/** Превью без названия: одна картинка и слово «YouTube» вместо заголовка. */
+function isStub(data) {
+  return !data || (!data.description && (!data.title || data.title === 'YouTube' || data.title === 'Untitled'));
+}
+
 /** Запомнить превью. */
 export function cachePreview(url, data) {
   if (!data) return;
   MEMORY.set(url, data);
+
+  // Заглушку не храним: в следующий раз сервер может узнать название
+  if (isStub(data)) return;
 
   try {
     const keys = Object.keys(localStorage).filter((key) => key.startsWith(PREFIX));
