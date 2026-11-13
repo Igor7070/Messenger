@@ -38,6 +38,13 @@ public class PreviewController {
     @org.springframework.beans.factory.annotation.Value("${youtube.api.key:}")
     private String youtubeApiKey;
 
+    /** Ключ из настроек, а если его там нет — прямо из переменной окружения. */
+    private String youtubeKey() {
+        if (youtubeApiKey != null && !youtubeApiKey.isBlank()) return youtubeApiKey;
+        String fromEnv = System.getenv("YOUTUBE_API_KEY");
+        return fromEnv == null ? "" : fromEnv.trim();
+    }
+
     /**
      * ID видео состоит ровно из 11 символов [A-Za-z0-9_-].
      * Покрывает youtu.be/ID, /watch?v=ID, /embed/ID, /shorts/ID, /live/ID, /v/ID.
