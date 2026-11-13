@@ -205,7 +205,6 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
         ImageView playPauseButton;
         TextView audioDurationTextView;
         WaveformSeekBar audioSeekBar;
-        TextView audioCurrentTimeTextView;
         private final Handler seekBarHandler = new Handler();
         private Runnable seekBarUpdater;
         private final SecretMessageAdapter adapter;
@@ -231,7 +230,6 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             playPauseButton = itemView.findViewById(R.id.play_pause_button);
             audioDurationTextView = itemView.findViewById(R.id.audio_duration_text_view);
             audioSeekBar = itemView.findViewById(R.id.audio_seek_bar);
-            audioCurrentTimeTextView = itemView.findViewById(R.id.audio_current_time_text_view);
             imagePreview = itemView.findViewById(R.id.image_preview);
 
             // Обработчик долгого клика
@@ -710,10 +708,18 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             }
         }
 
+        /** Длина записи: во время прослушивания на её месте идёт счётчик. */
+        private int voiceDurationMs;
+
+        /** Подпись времени у голосового: «0:31» — и длина, и счётчик. */
+        private void showVoiceTime(int millis) {
+            int sec = Math.max(0, millis) / 1000;
+            audioDurationTextView.setText(String.format("%d:%02d", sec / 60, sec % 60));
+        }
+
         private void setupAudioPlayer(String filePath, Message message) {
             playPauseButton.setImageResource(R.drawable.ic_play);
-            audioCurrentTimeTextView.setText("0:00");
-            audioDurationTextView.setText("/ 0:00");
+            showVoiceTime(voiceDurationMs);
             audioSeekBar.setProgress(0);
 
             // Звуковая волна вместо полоски: цвета под свой или чужой
@@ -740,22 +746,22 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 durationPlayer.setDataSource(filePath);
                 durationPlayer.setOnPreparedListener(mp -> {
                     int duration = mp.getDuration();
-                    int durationSec = duration / 1000;
-                    audioDurationTextView.setText("/ " + String.format("%d:%02d", durationSec / 60, durationSec % 60));
+                    voiceDurationMs = duration;
+                    showVoiceTime(duration);
                     audioSeekBar.setMax(duration);
                     mp.release();
                     Log.d(TAG, "Duration fetched for message id=" + message.getId() + ": " + duration + "ms");
                 });
                 durationPlayer.setOnErrorListener((mp, what, extra) -> {
                     Log.e(TAG, "Error fetching duration for message id=" + message.getId() + ": what=" + what + ", extra=" + extra);
-                    audioDurationTextView.setText("/ 0:00");
+                    showVoiceTime(voiceDurationMs);
                     mp.release();
                     return true;
                 });
                 durationPlayer.prepareAsync();
             } catch (IOException e) {
                 Log.e(TAG, "Error setting data source for duration of message id=" + message.getId() + ": " + e.getMessage());
-                audioDurationTextView.setText("/ 0:00");
+                showVoiceTime(voiceDurationMs);
                 durationPlayer.release();
             }
 
@@ -790,16 +796,12 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                                 int duration = mp.getDuration();
                                 audioSeekBar.setMax(duration);
                                 audioSeekBar.setEnabled(true);
-                                int durationSec = duration / 1000;
-                                if (audioDurationTextView.getText().toString().equals("/ 0:00")) {
-                                    audioDurationTextView.setText("/ " + String.format("%d:%02d", durationSec / 60, durationSec % 60));
-                                }
+                                voiceDurationMs = duration;
                                 seekBarUpdater = () -> {
                                     if (adapter.mediaPlayer != null && adapter.mediaPlayer.isPlaying()) {
                                         int currentPos = adapter.mediaPlayer.getCurrentPosition();
                                         audioSeekBar.setProgress(currentPos);
-                                        int currentSec = currentPos / 1000;
-                                        audioCurrentTimeTextView.setText(String.format("%d:%02d", currentSec / 60, currentSec % 60));
+                                        showVoiceTime(currentPos);
                                         seekBarHandler.postDelayed(seekBarUpdater, 100);
                                     }
                                 };
@@ -809,7 +811,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                             adapter.mediaPlayer.setOnCompletionListener(mp -> {
                                 playPauseButton.setImageResource(R.drawable.ic_play);
                                 audioSeekBar.setProgress(0);
-                                audioCurrentTimeTextView.setText("0:00");
+                                showVoiceTime(voiceDurationMs);
                                 adapter.currentPosition = 0;
                                 adapter.isPrepared = false;
                                 seekBarHandler.removeCallbacks(seekBarUpdater);
@@ -821,7 +823,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                                 Toast.makeText(adapter.context, "Error playing audio", Toast.LENGTH_SHORT).show();
                                 playPauseButton.setImageResource(R.drawable.ic_play);
                                 audioSeekBar.setProgress(0);
-                                audioCurrentTimeTextView.setText("0:00");
+                                showVoiceTime(voiceDurationMs);
                                 adapter.currentPosition = 0;
                                 adapter.isPrepared = false;
                                 seekBarHandler.removeCallbacks(seekBarUpdater);
@@ -834,7 +836,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                             Toast.makeText(adapter.context, "Cannot play audio", Toast.LENGTH_SHORT).show();
                             playPauseButton.setImageResource(R.drawable.ic_play);
                             audioSeekBar.setProgress(0);
-                            audioCurrentTimeTextView.setText("0:00");
+                            showVoiceTime(voiceDurationMs);
                             adapter.currentPosition = 0;
                             adapter.isPrepared = false;
                         }
@@ -847,8 +849,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     if (fromUser && adapter.mediaPlayer != null && adapter.mediaPlayer.isPlaying()) {
                         adapter.mediaPlayer.seekTo(progress);
-                        int currentSec = progress / 1000;
-                        audioCurrentTimeTextView.setText(String.format("%d:%02d", currentSec / 60, currentSec % 60));
+                        showVoiceTime(progress);
                         Log.d(TAG, "SeekBar changed by user for message id=" + message.getId() + ", progress=" + progress);
                     }
                 }

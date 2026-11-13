@@ -355,7 +355,6 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         ImageView ttsTranslatedIcon;
         TextView audioDurationTextView;
         WaveformSeekBar audioSeekBar;
-        TextView audioCurrentTimeTextView;
         ImageView transcriptionIcon;
         TextView transcribedContentTextView;
         ImageView translateIconAudio;
@@ -396,7 +395,6 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             playPauseButton = itemView.findViewById(R.id.play_pause_button);
             audioDurationTextView = itemView.findViewById(R.id.audio_duration_text_view);
             audioSeekBar = itemView.findViewById(R.id.audio_seek_bar);
-            audioCurrentTimeTextView = itemView.findViewById(R.id.audio_current_time_text_view);
             translateIcon = itemView.findViewById(R.id.translate_icon);
             ttsIcon = itemView.findViewById(R.id.tts_icon);
             ttsTranslatedIcon = itemView.findViewById(R.id.tts_translated_icon);
@@ -932,9 +930,8 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                     Log.d(TAG, "audioContainer visibility for message id=" + message.getId() + ": " + (audioContainer.getVisibility() == View.VISIBLE ? "VISIBLE" : "GONE"));
                 });
                 playPauseButton.setImageResource(R.drawable.ic_play);
-                // Пока не играет — показываем только длительность; «текущее / общее»
-                // появится при прослушивании
-                audioCurrentTimeTextView.setVisibility(View.GONE);
+                // Как в телефонных мессенджерах: в подписи стоит длина
+                // записи, а при прослушивании на её месте идёт счётчик
                 audioSeekBar.setProgress(0);
                 audioSeekBar.setEnabled(false);
 
@@ -956,9 +953,9 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 // Длину записи, если её уже мерили, показываем сразу: иначе при
                 // каждой привязке время подмигивало многоточием
                 int knownDuration = AudioDurations.get(context, fileUrl);
+                voiceDurationMs = knownDuration;
                 if (knownDuration > 0) {
-                    audioDurationTextView.setText(String.format("%d:%02d",
-                            knownDuration / 1000 / 60, knownDuration / 1000 % 60));
+                    showVoiceTime(knownDuration);
                     audioSeekBar.setMax(knownDuration);
                 } else {
                     audioDurationTextView.setText("…");
@@ -979,7 +976,8 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                         durationPlayer.setOnPreparedListener(mp -> {
                             int duration = mp.getDuration();
                             int durationSec = duration / 1000;
-                            audioDurationTextView.setText(String.format("%d:%02d", durationSec / 60, durationSec % 60));
+                            voiceDurationMs = duration;
+                            showVoiceTime(duration);
                             audioSeekBar.setMax(duration);
                             mp.release();
                             AudioDurations.put(context, fileUrl, duration);
@@ -1049,18 +1047,14 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                                     int duration = mp.getDuration();
                                     audioSeekBar.setMax(duration);
                                     audioSeekBar.setEnabled(true);
-                                    int durationSec = duration / 1000;
-                                    if (audioDurationTextView.getText().toString().equals("/ 0:00")) {
-                                        audioDurationTextView.setText("/ " + String.format("%d:%02d", durationSec / 60, durationSec % 60));
-                                    }
+                                    voiceDurationMs = duration;
                                     seekBarUpdater = new Runnable() {
                                         @Override
                                         public void run() {
                                             if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                                                 int currentPosition = mediaPlayer.getCurrentPosition();
                                                 audioSeekBar.setProgress(currentPosition);
-                                                int currentSec = currentPosition / 1000;
-                                                audioCurrentTimeTextView.setText(String.format("%d:%02d", currentSec / 60, currentSec % 60));
+                                                showVoiceTime(currentPosition);
                                                 seekBarHandler.postDelayed(this, 100);
                                             }
                                         }
@@ -1071,7 +1065,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                                 mediaPlayer.setOnCompletionListener(mp -> {
                                     playPauseButton.setImageResource(R.drawable.ic_play);
                                     audioSeekBar.setProgress(0);
-                                    audioCurrentTimeTextView.setText("0:00");
+                                    showVoiceTime(voiceDurationMs);
                                     currentPosition = 0;
                                     isPrepared = false;
                                     seekBarHandler.removeCallbacks(seekBarUpdater);
@@ -1083,7 +1077,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                                     Toast.makeText(context, "Error playing audio", Toast.LENGTH_SHORT).show();
                                     playPauseButton.setImageResource(R.drawable.ic_play);
                                     audioSeekBar.setProgress(0);
-                                    audioCurrentTimeTextView.setText("0:00");
+                                    showVoiceTime(voiceDurationMs);
                                     currentPosition = 0;
                                     isPrepared = false;
                                     seekBarHandler.removeCallbacks(seekBarUpdater);
@@ -1096,7 +1090,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                                 Toast.makeText(context, "Cannot play audio", Toast.LENGTH_SHORT).show();
                                 playPauseButton.setImageResource(R.drawable.ic_play);
                                 audioSeekBar.setProgress(0);
-                                audioCurrentTimeTextView.setText("0:00");
+                                showVoiceTime(voiceDurationMs);
                                 currentPosition = 0;
                                 isPrepared = false;
                             }
@@ -1110,8 +1104,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                         if (fromUser && mediaPlayer != null && mediaPlayer.isPlaying()) {
                             mediaPlayer.seekTo(progress);
-                            int currentSec = progress / 1000;
-                            audioCurrentTimeTextView.setText(String.format("%d:%02d", currentSec / 60, currentSec % 60));
+                            showVoiceTime(progress);
                             currentPosition = progress;
                             Log.d(TAG, "SeekBar changed by user for message id=" + message.getId() + ", progress=" + progress);
                         }
@@ -1436,6 +1429,15 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
          * пузырей с картинкой, файлом или звуком хвост не помогает — там
          * колонке добавляется запас снизу, и подвал стоит под содержимым.
          */
+        /** Длина записи: во время прослушивания на её месте идёт счётчик. */
+        private int voiceDurationMs;
+
+        /** Подпись времени у голосового: «0:31» — и длина, и счётчик. */
+        private void showVoiceTime(int millis) {
+            int sec = Math.max(0, millis) / 1000;
+            audioDurationTextView.setText(String.format("%d:%02d", sec / 60, sec % 60));
+        }
+
         private void applyFooterLayout() {
             // Внутри привязки строки ещё переставляются: хвост, посчитанный на
             // полпути, успевал попасть в отрисовку, и пузырь на глазах сужался
