@@ -7,7 +7,6 @@
     android:layout_marginHorizontal="8dp"
     android:layout_marginVertical="4dp">
 
-
     <!-- Разделитель дня: дата стоит один раз над первым сообщением дня -->
     <TextView
         android:id="@+id/day_separator"
@@ -198,7 +197,6 @@
                 android:clickable="true"
                 android:focusable="true" />
 
-
             <!-- Вложение не открылось: файлы на сервере пропадают при
                  переразвёртывании. Прежде на их месте рисовался красный знак
                  во всю ширину пузыря — теперь строка текста, как в вебе. -->
@@ -237,49 +235,7 @@
                 android:layout_marginTop="4dp"
                 android:padding="4dp">
 
-                <LinearLayout
-                    android:id="@+id/audio_icons_container"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_gravity="end"
-                    android:layout_marginBottom="4dp">
-
-                    <ImageView
-                        android:id="@+id/translate_icon_audio"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_globe"
-                        app:tint="#67E8F9"
-                        android:layout_marginEnd="4dp"
-                        android:visibility="gone" />
-
-                    <ImageView
-                        android:id="@+id/tts_icon_audio"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_tts"
-                        app:tint="#94A3B8"
-                        android:layout_marginEnd="4dp"
-                        android:visibility="gone" />
-
-                    <ImageView
-                        android:id="@+id/tts_translated_icon_audio"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_tts"
-                        app:tint="#C4B5FD"
-                        android:layout_marginEnd="4dp"
-                        android:visibility="gone" />
-
-                    <ImageView
-                        android:id="@+id/transcription_icon"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_transcription"
-                        app:tint="#67E8F9"
-                        android:visibility="gone" />
-                </LinearLayout>
+                
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -289,11 +245,14 @@
 
                     <ImageView
                         android:id="@+id/play_pause_button"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_play_circle"
+                        android:padding="9dp"
                         android:src="@drawable/ic_play"
+                        app:tint="#FFFFFF"
                         android:contentDescription="Play/Pause Audio"
-                        android:layout_marginEnd="8dp" />
+                        android:layout_marginEnd="10dp" />
 
                     <SeekBar
                         android:id="@+id/audio_seek_bar"
@@ -344,9 +303,6 @@
 
             </LinearLayout>
 
-
-
-
         </LinearLayout>
 
         <!-- Подвал пузыря: значки режимов и время в одной строке -->
@@ -389,6 +345,41 @@
                 android:contentDescription="Translate message"
                 app:tint="#67E8F9"
                 android:layout_marginEnd="6dp"
+                android:visibility="gone" />
+
+                <ImageView
+                android:id="@+id/translate_icon_audio"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_globe"
+                app:tint="#67E8F9"
+                android:layout_marginEnd="4dp"
+                android:visibility="gone" />
+
+                <ImageView
+                android:id="@+id/tts_icon_audio"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_tts"
+                app:tint="#94A3B8"
+                android:layout_marginEnd="4dp"
+                android:visibility="gone" />
+
+                <ImageView
+                android:id="@+id/tts_translated_icon_audio"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_tts"
+                app:tint="#C4B5FD"
+                android:layout_marginEnd="4dp"
+                android:visibility="gone" />
+
+                <ImageView
+                android:id="@+id/transcription_icon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_transcription"
+                app:tint="#67E8F9"
                 android:visibility="gone" />
 
             <TextView

@@ -538,6 +538,13 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             // Точка «в сети» живёт у края аватара: без него её показывать негде,
             // а от прошлого сообщения в этой же вьюхе она уезжала к краю экрана
             statusIndicator.setVisibility(View.GONE);
+            // Значки аудио живут в подвале рядом с обычными: у текстового
+            // сообщения их быть не должно
+            if (transcriptionIcon != null) transcriptionIcon.setVisibility(View.GONE);
+            if (translateIconAudio != null) translateIconAudio.setVisibility(View.GONE);
+            if (ttsIconAudio != null) ttsIconAudio.setVisibility(View.GONE);
+            if (ttsTranslatedIconAudio != null) ttsTranslatedIconAudio.setVisibility(View.GONE);
+
             // Отменяем загрузку от прошлого сообщения, иначе чужая картинка
             // успевает мелькнуть в переиспользованной вьюхе
             Glide.with(context).clear(imagePreview);

@@ -546,6 +546,13 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
             statusIndicator.setVisibility(View.GONE);
             // Подпись о пропавшем вложении тоже принадлежит прошлому сообщению
             if (attachmentUnavailable != null) attachmentUnavailable.setVisibility(View.GONE);
+            // Значки аудио живут в подвале рядом с обычными: у текстового
+            // сообщения их быть не должно
+            if (transcriptionIcon != null) transcriptionIcon.setVisibility(View.GONE);
+            if (translateIconAudio != null) translateIconAudio.setVisibility(View.GONE);
+            if (ttsIconAudio != null) ttsIconAudio.setVisibility(View.GONE);
+            if (ttsTranslatedIconAudio != null) ttsTranslatedIconAudio.setVisibility(View.GONE);
+
             // И строка расшифровки: у текстового сообщения её быть не должно, а
             // оставшись от аудио, она забирала себе хвост под подвал
             if (transcribedContentTextView != null) transcribedContentTextView.setVisibility(View.GONE);
