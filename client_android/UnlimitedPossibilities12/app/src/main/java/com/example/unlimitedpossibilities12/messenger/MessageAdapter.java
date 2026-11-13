@@ -722,9 +722,19 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 // телефонных мессенджерах; «текущее / общее» появится при
                 // прослушивании
                 audioCurrentTimeTextView.setVisibility(View.GONE);
-                audioDurationTextView.setText("…");
                 audioSeekBar.setProgress(0);
                 audioSeekBar.setEnabled(false);
+
+                // Длину записи, если её уже мерили, показываем сразу: иначе при
+                // каждой привязке время подмигивало многоточием
+                int knownDuration = AudioDurations.get(context, fileUrl);
+                if (knownDuration > 0) {
+                    audioDurationTextView.setText(String.format("%d:%02d",
+                            knownDuration / 1000 / 60, knownDuration / 1000 % 60));
+                    audioSeekBar.setMax(knownDuration);
+                } else {
+                    audioDurationTextView.setText("…");
+                }
 
                 // Запись могла пропасть с сервера вместе с остальными файлами:
                 // мёртвый плеер с нулями честнее заменить строкой
@@ -733,7 +743,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 if (voiceGone) {
                     attachmentUnavailable.setText("Voice message unavailable");
                     attachmentUnavailable.setVisibility(View.VISIBLE);
-                } else {
+                } else if (knownDuration <= 0) {
                     // Асинхронное получение длительности аудиофайла
                     MediaPlayer durationPlayer = new MediaPlayer();
                     try {
@@ -744,6 +754,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                             audioDurationTextView.setText(String.format("%d:%02d", durationSec / 60, durationSec % 60));
                             audioSeekBar.setMax(duration);
                             mp.release();
+                            AudioDurations.put(context, fileUrl, duration);
                             MissingAttachments.forget(context, fileUrl);
                             applyFooterLayout();
                             Log.d(TAG, "Duration fetched for message id=" + message.getId() + ": " + duration + "ms");
@@ -757,6 +768,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                             new Thread(() -> {
                                 if (!isGoneFromServer(fileUrl)) return;
                                 MissingAttachments.remember(context, fileUrl);
+                                AudioDurations.forget(context, fileUrl);
                                 ((Activity) context).runOnUiThread(() -> {
                                     if (boundMessageId != askedFor) return;
                                     audioContainer.setVisibility(View.GONE);
