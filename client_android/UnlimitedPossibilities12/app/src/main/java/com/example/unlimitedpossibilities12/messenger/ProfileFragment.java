@@ -2,13 +2,13 @@ package com.example.unlimitedpossibilities12.messenger;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -22,6 +22,10 @@ import androidx.fragment.app.Fragment;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.example.unlimitedpossibilities12.R;
@@ -43,15 +47,26 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+/**
+ * Свой профиль (вкладка Profile).
+ *
+ * Порядок теперь такой же, как в профиле собеседника: снимок во весь
+ * верх, имя и присутствие поверх него, ряд плиток, карточка сведений.
+ * Снимок выбирается кружком с камерой и уходит на сервер сразу, описание —
+ * по карандашу в карточке; ярких кнопок «Update Profile» и «Personal Chats»
+ * больше нет: свои чаты стали плиткой, выход и удаление учётной записи
+ * живут в трёх точках шапки.
+ */
 public class ProfileFragment extends Fragment {
 
     private static final String TAG = "ProfileFragment";
 
-    private TextView usernameTextView, avatarTextView, bioTextView, statusTextView;
-    private ImageView avatarImageView, menuButton, bioEditIcon;
-    private EditText bioEditText;
-    private com.google.android.material.button.MaterialButton updateButton, personalChatsButton, avatarInputButton;
-    private LinearLayout currentUserButtons;
+    private TextView usernameTextView, avatarTextView, bioTextView, statusTextView, usernameHandle;
+    private ImageView avatarImageView, bioEditIcon, avatarInputButton;
+    /** Плитки действий и точка присутствия — обычные вьюхи, не кнопки. */
+    private View statusIndicator, personalChatsButton, inviteTile, assistantTile;
+    private androidx.core.widget.NestedScrollView profileScroll;
+    private View bioCard;
 
     private ApiService apiService;
     private int currentUserId;
@@ -82,6 +97,11 @@ public class ProfileFragment extends Fragment {
             currentUserId = getArguments().getInt("currentUserId", -1);
         }
 
+        // Режим ставим до появления клавиатуры: иначе система сдвигает окно
+        // вверх, и карточка сведений остаётся под клавиатурой
+        requireActivity().getWindow().setSoftInputMode(
+                android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+
         initViews(view);
         if (currentUserId != -1) {
             loadUserData();
@@ -93,32 +113,42 @@ public class ProfileFragment extends Fragment {
         avatarImageView = view.findViewById(R.id.avatar_image_view);
         avatarTextView = view.findViewById(R.id.avatar_text_view);
         bioTextView = view.findViewById(R.id.bio_text_view);
-        bioEditText = view.findViewById(R.id.bio_edit_text);
         bioEditIcon = view.findViewById(R.id.bio_edit_icon);
         avatarInputButton = view.findViewById(R.id.avatar_input_button);
-        updateButton = view.findViewById(R.id.update_button);
         personalChatsButton = view.findViewById(R.id.personal_chats_button);
-        currentUserButtons = view.findViewById(R.id.current_user_buttons);
-        //menuButton = view.findViewById(R.id.menu_button);
+        inviteTile = view.findViewById(R.id.invite_tile);
+        assistantTile = view.findViewById(R.id.assistant_tile);
         statusTextView = view.findViewById(R.id.status_text_view);
+        statusIndicator = view.findViewById(R.id.status_indicator);
+        usernameHandle = view.findViewById(R.id.username_handle);
+        profileScroll = view.findViewById(R.id.profile_scroll);
+        bioCard = view.findViewById(R.id.bio_card);
 
         avatarInputButton.setOnClickListener(v -> openFilePicker());
-        updateButton.setOnClickListener(v -> handleUpdateUser());
         personalChatsButton.setOnClickListener(v -> handlePersonalChats());
         bioEditIcon.setOnClickListener(v -> startBioEditing());
+        // Описание правится и по самой строке, а не только по карандашу
+        bioTextView.setOnClickListener(v -> startBioEditing());
+
+        // Пригласить — то же системное окно «поделиться», что на экране людей
+        inviteTile.setOnClickListener(v -> {
+            if (requireActivity() instanceof MessengerMainActivity) {
+                ((MessengerMainActivity) requireActivity()).shareInvite();
+            }
+        });
+
+        // Ассистент нужен из любого места, здесь он — третья плитка
+        assistantTile.setOnClickListener(v -> {
+            if (requireActivity() instanceof MessengerMainActivity) {
+                ((MessengerMainActivity) requireActivity()).openAssistant();
+            }
+        });
         ImageView profileMenuButton = requireActivity().findViewById(R.id.profile_menu_button);
         if (profileMenuButton != null) {
             profileMenuButton.setVisibility(View.VISIBLE);
             profileMenuButton.setOnClickListener(v -> showSettingsMenu());
         }
 
-        bioEditText.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                saveBio();
-                return true;
-            }
-            return false;
-        });
     }
 
     private void loadUserData() {
@@ -141,11 +171,24 @@ public class ProfileFragment extends Fragment {
     }
 
     private void displayUserData() {
-        if (currentUser == null) return;
+        if (currentUser == null || !isAdded()) return;
 
-        usernameTextView.setText(currentUser.getUsername());
-        bioTextView.setText(currentUser.getBio() != null && !currentUser.getBio().isEmpty()
-                ? currentUser.getBio() : "No bio yet");
+        String name = currentUser.getUsername() == null ? "" : currentUser.getUsername();
+        usernameTextView.setText(name);
+        usernameHandle.setText("@" + name);
+
+        // Своя страница открыта — значит мы в сети; раньше строка присутствия
+        // вообще никогда не заполнялась
+        statusTextView.setText("Online");
+        statusIndicator.setVisibility(View.VISIBLE);
+
+        String bio = currentUser.getBio();
+        boolean hasBio = bio != null && !bio.trim().isEmpty();
+        bioTextView.setText(hasBio ? bio : getString(R.string.profile_no_bio));
+        bioTextView.setTextColor(hasBio ? 0xFFE2E8F0 : 0xFF64748B);
+
+        String letter = name.isEmpty() ? "?" : name.substring(0, 1).toUpperCase();
+        avatarTextView.setText(letter);
 
         // Аватар + обработчик открытия полного изображения
         if (currentUser.getAvatar() != null && !currentUser.getAvatar().isEmpty()) {
@@ -156,11 +199,29 @@ public class ProfileFragment extends Fragment {
                     .load(avatarUrl)
                     .diskCacheStrategy(DiskCacheStrategy.NONE)
                     .skipMemoryCache(true)
-                    .circleCrop()
+                    .centerCrop()
                     .transition(DrawableTransitionOptions.withCrossFade())
-                    .into(avatarImageView);
+                    .listener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model,
+                                                    Target<Drawable> target, boolean isFirstResource) {
+                            // Снимок может не открыться — тогда буква имени,
+                            // а не пустой тёмный прямоугольник во весь верх
+                            if (!isAdded()) return true;
+                            avatarImageView.setImageDrawable(null);
+                            avatarTextView.setVisibility(View.VISIBLE);
+                            return true;
+                        }
 
-            avatarTextView.setVisibility(View.GONE);
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model,
+                                                       Target<Drawable> target, DataSource dataSource,
+                                                       boolean isFirstResource) {
+                            if (isAdded()) avatarTextView.setVisibility(View.GONE);
+                            return false;
+                        }
+                    })
+                    .into(avatarImageView);
 
             // ←←← КЛИК ПО АВАТАРУ ←←←
             avatarImageView.setOnClickListener(v -> {
@@ -172,29 +233,55 @@ public class ProfileFragment extends Fragment {
 
         } else {
             // Заглушка с первой буквой
-            avatarTextView.setText(currentUser.getUsername().substring(0, 1).toUpperCase());
+            avatarImageView.setImageDrawable(null);
             avatarTextView.setVisibility(View.VISIBLE);
 
-            // Клик по заглушке тоже открывает FullScreen (можно показать просто имя)
-            avatarImageView.setOnClickListener(v -> {
-                Intent intent = new Intent(requireContext(), FullScreenImageActivity.class);
-                intent.putExtra("username", currentUser.getUsername());
-                startActivity(intent);
-            });
+            // Снимка нет — открывать нечего, снимок выбирается кружком с камерой
+            avatarImageView.setOnClickListener(null);
         }
     }
 
+    /**
+     * Правка описания отдельным окном: в самой карточке клавиатура
+     * закрывала строку почти целиком — этот экран система не сжимает, а сдвигает.
+     */
     private void startBioEditing() {
-        bioTextView.setVisibility(View.GONE);
-        bioEditText.setVisibility(View.VISIBLE);
-        bioEditText.setText(bioTextView.getText());
-        bioEditText.requestFocus();
+        if (!isAdded()) return;
+
+        View content = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_edit_bio, null, false);
+        EditText input = content.findViewById(R.id.bio_input);
+
+        String bio = currentUser == null || currentUser.getBio() == null ? "" : currentUser.getBio();
+        input.setText(bio);
+        input.setSelection(bio.length());
+
+        androidx.appcompat.app.AlertDialog dialog =
+                new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setView(content)
+                        .create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(
+                    new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setSoftInputMode(
+                    android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        }
+
+        content.findViewById(R.id.bio_cancel).setOnClickListener(v -> dialog.dismiss());
+        content.findViewById(R.id.bio_save).setOnClickListener(v -> {
+            saveBio(input.getText().toString().trim());
+            dialog.dismiss();
+        });
+
+        dialog.show();
+        input.requestFocus();
     }
 
-    private void saveBio() {
-        bioEditText.setVisibility(View.GONE);
-        bioTextView.setVisibility(View.VISIBLE);
-        bioTextView.setText(bioEditText.getText());
+    private void saveBio(String typed) {
+        if (currentUser != null) currentUser.setBio(typed);
+
+        bioTextView.setText(typed.isEmpty() ? getString(R.string.profile_no_bio) : typed);
+        bioTextView.setTextColor(typed.isEmpty() ? 0xFF64748B : 0xFFE2E8F0);
 
         // Сразу сохраняем на сервер
         handleUpdateUser();
@@ -209,13 +296,9 @@ public class ProfileFragment extends Fragment {
     private void handleUpdateUser() {
         if (currentUser == null) return;
 
-        // Правильно определяем текущее био
-        String bioText;
-        if (bioEditText.getVisibility() == View.VISIBLE) {
-            bioText = bioEditText.getText().toString().trim();
-        } else {
-            bioText = bioTextView.getText().toString().trim();
-        }
+        // Берём само описание: в строке может стоять подсказка,
+        // и прежде она уходила на сервер как описание
+        String bioText = currentUser.getBio() == null ? "" : currentUser.getBio().trim();
 
         RequestBody bioBody = RequestBody.create(MediaType.parse("text/plain"), bioText);
 
@@ -240,12 +323,6 @@ public class ProfileFragment extends Fragment {
             public void onResponse(Call<User> call, Response<User> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     newAvatarUri = null;
-
-                    // Скрываем поле редактирования, если оно было открыто
-                    if (bioEditText.getVisibility() == View.VISIBLE) {
-                        bioEditText.setVisibility(View.GONE);
-                        bioTextView.setVisibility(View.VISIBLE);
-                    }
 
                     Toast.makeText(requireContext(), "Profile updated successfully!", Toast.LENGTH_SHORT).show();
 
@@ -356,13 +433,18 @@ public class ProfileFragment extends Fragment {
         if (requestCode == 101 && resultCode == requireActivity().RESULT_OK && data != null) {
             newAvatarUri = data.getData();
             if (newAvatarUri != null) {
-                Glide.with(this).load(newAvatarUri).circleCrop().into(avatarImageView);
+                avatarTextView.setVisibility(View.GONE);
+                Glide.with(this).load(newAvatarUri).centerCrop().into(avatarImageView);
+                // Снимок уходит сразу: отдельной кнопки «обновить» больше нет
+                handleUpdateUser();
             }
         }
     }
 
     @Override
     public void onDestroyView() {
+        requireActivity().getWindow().setSoftInputMode(
+                android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_UNSPECIFIED);
         ImageView profileMenuButton = requireActivity().findViewById(R.id.profile_menu_button);
         if (profileMenuButton != null) {
             profileMenuButton.setVisibility(View.GONE);

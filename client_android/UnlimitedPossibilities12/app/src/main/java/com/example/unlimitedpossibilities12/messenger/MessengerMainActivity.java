@@ -1052,7 +1052,7 @@ public class MessengerMainActivity extends AppCompatActivity {
         return assistant;
     }
 
-    private void openAssistant() {
+    void openAssistant() {
         new AssistantChatDialogFragment().show(getSupportFragmentManager(), "AssistantChatDialog");
     }
 
@@ -1463,7 +1463,7 @@ public class MessengerMainActivity extends AppCompatActivity {
      * Приглашение: отдаём системному окну «поделиться» ссылку на мессенджер.
      * Ничего никуда не уходит само — человек сам выбирает, кому отправить.
      */
-    private void shareInvite() {
+    void shareInvite() {
         String me = getSharedPreferences("prefs", MODE_PRIVATE).getString("username", null);
         String text = (me != null && !me.isEmpty() ? me + " invites you to UP12 Messenger" : "Join me in UP12 Messenger")
                 + "\nhttps://igor7070.github.io/Messenger";

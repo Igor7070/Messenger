@@ -49,6 +49,14 @@
     <string name="tile_translate">Translate</string>
     <string name="profile_about">About</string>
     <string name="profile_username">Username</string>
+    <!-- Короткие подписи под значками в своём профиле -->
+    <string name="tile_my_chats">My chats</string>
+    <string name="tile_invite">Invite</string>
+    <string name="tile_assistant">Assistant</string>
+    <string name="profile_bio_hint">A few words about you</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="profile_no_bio">Tap the pencil to add a few words</string>
     <string name="open_secret_chat">Open Secret Chat</string>
 
     <string name="personal_chats_title">Personal Chats</string>
