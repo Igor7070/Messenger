@@ -2084,7 +2084,7 @@ const Messenger = () => {
                                     ) : (
                                         <img
                                             src={msg.fileUrl}
-                                            alt="Изображение в сообщении"
+                                            alt="Image in the message"
                                             className="message-image-preview"
                                             onClick={() => openFullScreenImage(msg.fileUrl)}
                                             loading="lazy"
@@ -2130,7 +2130,7 @@ const Messenger = () => {
                                     {previewData[msg.id].imageUrl && (
                                         <img
                                             src={previewData[msg.id].imageUrl}
-                                            alt="Превью"
+                                            alt="Link preview"
                                             style={{
                                                 width: '100%',
                                                 height: '140px',

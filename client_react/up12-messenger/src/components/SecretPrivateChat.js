@@ -3024,7 +3024,7 @@ const SecretPrivateChat = () => {
               {partnerAvatar && !brokenAvatars.partner ? (
                 <img
                   src={`https://unlimitedpossibilities12.org${partnerAvatar}`}
-                  alt="Аватар собеседника"
+                  alt="Contact avatar"
                   className="secret-partner-avatar"
                   onError={() => setBrokenAvatars((broken) => ({ ...broken, partner: true }))}
                 />
@@ -3355,7 +3355,7 @@ const SecretPrivateChat = () => {
                               <img
                                 key={decryptedImageBlobs[msg.id] || msg.fileUrl}   // ← ЭТО САМОЕ ГЛАВНОЕ
                                 src={decryptedImageBlobs[msg.id] || msg.fileUrl}
-                                alt="Изображение в сообщении"
+                                alt="Image in the message"
                                 className="message-image-preview"
                                 onClick={() => openFullScreenImage(
                                   decryptedImageBlobs[msg.id] || msg.fileUrl,
