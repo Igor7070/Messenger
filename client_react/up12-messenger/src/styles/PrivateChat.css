@@ -2330,9 +2330,10 @@
 
 /* Плеер сидит прямо на пузыре, как в телефонных мессенджерах */
 .private-audio-controls,
-.private-current-user .private-audio-controls,
-.private-other-user .private-audio-controls {
+.private-message.private-current-user .private-audio-controls,
+.private-message.private-other-user .private-audio-controls {
     background-color: transparent !important;
-    box-shadow: none;
-    padding: 2px 0;
+    box-shadow: none !important;
+    padding: 2px 0 !important;
+    border-radius: 0;
 }

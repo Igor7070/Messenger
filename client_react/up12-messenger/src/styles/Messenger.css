@@ -2313,6 +2313,7 @@
 .message.current-user .audio-controls,
 .message.other-user .audio-controls {
     background-color: transparent !important;
-    box-shadow: none;
-    padding: 2px 0;
+    box-shadow: none !important;
+    padding: 2px 0 !important;
+    border-radius: 0;
 }
