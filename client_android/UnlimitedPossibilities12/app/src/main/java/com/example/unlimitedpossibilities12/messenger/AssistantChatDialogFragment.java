@@ -761,7 +761,7 @@ public class AssistantChatDialogFragment extends DialogFragment {
             Log.d("TTS_DEBUG", "Файл создан: размер = " + temp.length() + " байт, путь = " + temp.getAbsolutePath());
 
             if (temp.length() < 100) {
-                Toast.makeText(requireContext(), "The file is too small (" + temp.length() + " байт)", Toast.LENGTH_LONG).show();
+                Toast.makeText(requireContext(), "The file is too small (" + temp.length() + " bytes)", Toast.LENGTH_LONG).show();
                 temp.delete();
                 return;
             }

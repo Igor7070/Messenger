@@ -48,7 +48,7 @@ public class FullScreenMessageImageActivity extends AppCompatActivity {
                         .into(fullImageView);
                 Log.d("FullScreen", "Загружено из локального файла: " + localPath);
             } else {
-                Toast.makeText(this, "Локальный файл не найден", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Local file not found", Toast.LENGTH_SHORT).show();
                 finish();
                 return;
             }
@@ -72,7 +72,7 @@ public class FullScreenMessageImageActivity extends AppCompatActivity {
                 if (file.exists()) {
                     saveToDownloads(file, "downloaded_image.jpg", "image/jpeg");
                 } else {
-                    Toast.makeText(this, "Локальный файл не найден", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Local file not found", Toast.LENGTH_SHORT).show();
                 }
             } else if (imageUrl != null && !imageUrl.isEmpty()) {
                 try {
@@ -82,7 +82,7 @@ public class FullScreenMessageImageActivity extends AppCompatActivity {
                     Toast.makeText(this, "Cannot download image", Toast.LENGTH_SHORT).show();
                 }
             } else {
-                Toast.makeText(this, "Нет данных для скачивания", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Nothing to download", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -106,17 +106,17 @@ public class FullScreenMessageImageActivity extends AppCompatActivity {
                             out.write(buffer, 0, bytesRead);
                         }
                     }
-                    Toast.makeText(this, "Фото сохранено в Downloads", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "Photo saved to Downloads", Toast.LENGTH_LONG).show();
                     Log.d("FullScreen", "Сохранено в Downloads: " + fileName);
                 } else {
-                    Toast.makeText(this, "Не удалось создать файл в Downloads", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Could not create the file in Downloads", Toast.LENGTH_SHORT).show();
                 }
             } else {
                 // Для старых версий Android — просто тост (или реализуй старый способ)
-                Toast.makeText(this, "Сохранение в Downloads доступно с Android 10+", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Saving to Downloads needs Android 10 or newer", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
-            Toast.makeText(this, "Ошибка сохранения: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Could not save: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             Log.e("FullScreen", "Ошибка сохранения в Downloads", e);
         }
     }

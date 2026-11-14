@@ -91,7 +91,7 @@
                     android:textColor="#94A3B8"
                     android:textSize="12sp"
                     android:visibility="gone"
-                    android:text="печатает…" />
+                    android:text="typing…" />
             </LinearLayout>
 
             <!-- Ассистент остаётся отдельной кнопкой: им будут пользоваться

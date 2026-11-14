@@ -189,10 +189,21 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
         if (timestamp == null || timestamp.isEmpty()) return "";
         try {
             long millis = Instant.parse(timestamp).toEpochMilli();
-            int flags = DateUtils.isToday(millis)
-                    ? DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_ABBREV_ALL
-                    : DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_ABBREV_ALL;
-            return DateUtils.formatDateTime(context, millis, flags);
+            // Системный формат брал язык телефона, и в английском списке
+            // чатов появлялось «11 сент.». Пишем сами, по-английски.
+            java.time.ZonedDateTime when = java.time.Instant.ofEpochMilli(millis)
+                    .atZone(java.time.ZoneId.systemDefault());
+            java.time.ZonedDateTime now = java.time.ZonedDateTime.now(when.getZone());
+            String pattern;
+            if (DateUtils.isToday(millis)) {
+                pattern = "HH:mm";
+            } else if (when.getYear() == now.getYear()) {
+                pattern = "d MMM";
+            } else {
+                pattern = "d MMM yyyy";
+            }
+            return when.format(java.time.format.DateTimeFormatter
+                    .ofPattern(pattern, java.util.Locale.ENGLISH));
         } catch (DateTimeParseException e) {
             Log.e(TAG, "Error parsing timestamp: " + timestamp + ", error: " + e.getMessage());
             return "";

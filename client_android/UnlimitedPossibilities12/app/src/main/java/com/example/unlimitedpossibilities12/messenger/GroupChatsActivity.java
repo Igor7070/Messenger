@@ -1998,7 +1998,7 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                             if (sendBtn != null) sendBtn.setVisibility(View.VISIBLE);
                         } else {
                             Log.e("AI_DEBUG", "buttons_container == null — кнопки не покажутся");
-                            Toast.makeText(GroupChatsActivity.this, "Ошибка: контейнер кнопок не найден", Toast.LENGTH_LONG).show();
+                            Toast.makeText(GroupChatsActivity.this, "Error: button container not found", Toast.LENGTH_LONG).show();
                         }
                     } else {
                         Toast.makeText(GroupChatsActivity.this, "Failed to generate (code " + response.code() + ")", Toast.LENGTH_LONG).show();

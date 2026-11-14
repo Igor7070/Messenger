@@ -1279,7 +1279,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                                     Intent browserIntent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(data.url));
                                     context.startActivity(browserIntent);
                                 } catch (Exception e) {
-                                    Toast.makeText(context, "Не удалось открыть ссылку", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(context, "Could not open the link", Toast.LENGTH_SHORT).show();
                                 }
                             });
 
@@ -1339,7 +1339,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                                                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url));
                                                 context.startActivity(browserIntent);
                                             } catch (Exception e) {
-                                                Toast.makeText(context, "Не удалось открыть ссылку", Toast.LENGTH_SHORT).show();
+                                                Toast.makeText(context, "Could not open the link", Toast.LENGTH_SHORT).show();
                                             }
                                         });
 
@@ -1383,7 +1383,9 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             if (isSameDay(time, now)) return "Today";
             if (isYesterday(time, now)) return "Yesterday";
             String pattern = time.getYear() == now.getYear() ? "d MMMM" : "d MMMM yyyy";
-            return time.format(DateTimeFormatter.ofPattern(pattern, Locale.getDefault()));
+            // Язык системы здесь не годится: «Today» и «Yesterday» рядом
+            // по-английски, и дата должна быть на том же языке
+            return time.format(DateTimeFormatter.ofPattern(pattern, Locale.ENGLISH));
         }
 
         /** Время сообщения в киевской зоне или null, если метки нет. */

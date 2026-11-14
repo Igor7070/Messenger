@@ -749,10 +749,10 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
     private void showSafetyNumberDialog() {
         String number = computeSafetyNumber();
         new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Отпечаток ключей шифрования")
-                .setMessage((number != null ? number : "Ключи ещё не загружены")
-                        + "\n\nДолжен совпадать с отпечатком на устройстве собеседника. "
-                        + "Если не совпадает — сообщения могут читать третьи лица.")
+                .setTitle("Encryption fingerprint")
+                .setMessage((number != null ? number : "The keys have not loaded yet")
+                        + "\n\nIt must match the fingerprint on your contact's device. "
+                        + "If it does not, someone else may be reading the messages.")
                 .setPositiveButton("OK", null)
                 .show();
     }
@@ -3583,7 +3583,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
     private void showTypingIndicator(String name) {
         currentTypingName = name;
         if (tvTyping != null) {
-            tvTyping.setText(name + " печатает…");
+            tvTyping.setText(name + " is typing…");
             tvTyping.setVisibility(View.VISIBLE);
             Log.d(TAG, "Showing typing: " + name);
         }
@@ -3615,7 +3615,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
 
                         if (senderId != currentUserId) {
                             if ("TYPING".equals(type)) {
-                                showTypingIndicator(name != null ? name : "Собеседник");
+                                showTypingIndicator(name != null ? name : "Your contact");
                                 if (typingHideRunnable != null) {
                                     typingHandler.removeCallbacks(typingHideRunnable);
                                 }

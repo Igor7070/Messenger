@@ -575,7 +575,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                         // Тёмная плашка в цвет пузыря, а не белый ic_placeholder
                         imagePreview.setImageResource(R.drawable.bg_message_image_placeholder);
                         imagePreview.setOnClickListener(v ->
-                                Toast.makeText(context, "Изображение ещё загружается...", Toast.LENGTH_SHORT).show());
+                                Toast.makeText(context, "The image is still loading…", Toast.LENGTH_SHORT).show());
                         // fileUrl у сообщения секретного чата всегда пустой (сервер его
                         // обнуляет, настоящая ссылка приходит из file_metadata по id),
                         // поэтому по нему ничего не решаем — просто запускаем загрузку.
@@ -1338,7 +1338,9 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             if (isSameDay(time, now)) return "Today";
             if (isYesterday(time, now)) return "Yesterday";
             String pattern = time.getYear() == now.getYear() ? "d MMMM" : "d MMMM yyyy";
-            return time.format(DateTimeFormatter.ofPattern(pattern, Locale.getDefault()));
+            // Язык системы здесь не годится: «Today» и «Yesterday» рядом
+            // по-английски, и дата должна быть на том же языке
+            return time.format(DateTimeFormatter.ofPattern(pattern, Locale.ENGLISH));
         }
 
         /** Время сообщения в киевской зоне или null, если метки нет. */

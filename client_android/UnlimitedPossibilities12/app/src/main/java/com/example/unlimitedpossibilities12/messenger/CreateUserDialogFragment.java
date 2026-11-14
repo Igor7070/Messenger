@@ -114,7 +114,7 @@ public class CreateUserDialogFragment extends DialogFragment {
         String bio = bioEditText.getText().toString().trim();
 
         if (username.isEmpty() || password.isEmpty()) {
-            Toast.makeText(getActivity(), "Имя пользователя и пароль обязательны", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity(), "Username and password are required", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -134,7 +134,7 @@ public class CreateUserDialogFragment extends DialogFragment {
                 RequestBody avatarBody = RequestBody.create(MediaType.parse("image/*"), bytes);
                 avatarPart = MultipartBody.Part.createFormData("avatar", "avatar.jpg", avatarBody);
             } catch (IOException e) {
-                Toast.makeText(getActivity(), "Ошибка загрузки аватара: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), "Could not upload the avatar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 return;
             }
         }
@@ -151,15 +151,15 @@ public class CreateUserDialogFragment extends DialogFragment {
                     }
                     dismiss();
                 } else {
-                    Log.e("CreateUserDialog", "Не удалось создать пользователя: " + response.code());
-                    Toast.makeText(getActivity(), "Не удалось создать пользователя: " + response.code(), Toast.LENGTH_SHORT).show();
+                    Log.e("CreateUserDialog", "Could not create the user: " + response.code());
+                    Toast.makeText(getActivity(), "Could not create the user: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<User> call, Throwable t) {
-                Log.e("CreateUserDialog", "Ошибка создания пользователя: " + t.getMessage());
-                Toast.makeText(getActivity(), "Ошибка создания пользователя: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e("CreateUserDialog", "Error creating the user: " + t.getMessage());
+                Toast.makeText(getActivity(), "Error creating the user: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

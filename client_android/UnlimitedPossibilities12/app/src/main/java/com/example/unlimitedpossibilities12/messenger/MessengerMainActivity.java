@@ -272,7 +272,7 @@ public class MessengerMainActivity extends AppCompatActivity {
         usersRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         usersAdapter = new UsersAdapter(user -> {
-            Toast.makeText(this, "Переход к " + user.getUsername(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Opening chat with " + user.getUsername(), Toast.LENGTH_SHORT).show();
         });
         chatsAdapter = new ChatsAdapter(chat -> {
             if (chat.getId() == ChatsAdapter.ASSISTANT_ID) {
