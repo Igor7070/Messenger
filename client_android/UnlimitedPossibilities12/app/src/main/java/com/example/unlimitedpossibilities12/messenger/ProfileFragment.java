@@ -64,7 +64,7 @@ public class ProfileFragment extends Fragment {
     private TextView usernameTextView, avatarTextView, bioTextView, statusTextView, usernameHandle;
     private ImageView avatarImageView, bioEditIcon, avatarInputButton;
     /** Плитки действий и точка присутствия — обычные вьюхи, не кнопки. */
-    private View statusIndicator, personalChatsButton, inviteTile, assistantTile;
+    private View statusIndicator, settingsTile, inviteTile, assistantTile;
     private androidx.core.widget.NestedScrollView profileScroll;
     private View bioCard;
 
@@ -115,7 +115,7 @@ public class ProfileFragment extends Fragment {
         bioTextView = view.findViewById(R.id.bio_text_view);
         bioEditIcon = view.findViewById(R.id.bio_edit_icon);
         avatarInputButton = view.findViewById(R.id.avatar_input_button);
-        personalChatsButton = view.findViewById(R.id.personal_chats_button);
+        settingsTile = view.findViewById(R.id.settings_tile);
         inviteTile = view.findViewById(R.id.invite_tile);
         assistantTile = view.findViewById(R.id.assistant_tile);
         statusTextView = view.findViewById(R.id.status_text_view);
@@ -125,7 +125,7 @@ public class ProfileFragment extends Fragment {
         bioCard = view.findViewById(R.id.bio_card);
 
         avatarInputButton.setOnClickListener(v -> openFilePicker());
-        personalChatsButton.setOnClickListener(v -> handlePersonalChats());
+        settingsTile.setOnClickListener(v -> openSettings());
         bioEditIcon.setOnClickListener(v -> startBioEditing());
         // Описание правится и по самой строке, а не только по карандашу
         bioTextView.setOnClickListener(v -> startBioEditing());
@@ -344,10 +344,12 @@ public class ProfileFragment extends Fragment {
         });
     }
 
-    private void handlePersonalChats() {
-        Intent intent = new Intent(requireContext(), PersonalChatsActivity.class);
-        intent.putExtra("currentUserId", currentUserId);
-        startActivity(intent);
+    /**
+     * Настройки приложения. На этом месте раньше были «Personal Chats» —
+     * второй список тех же личных переписок, что и на вкладке чатов.
+     */
+    private void openSettings() {
+        startActivity(new Intent(requireContext(), SettingsActivity.class));
     }
 
     private void showSettingsMenu() {

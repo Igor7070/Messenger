@@ -33,7 +33,6 @@ import com.example.unlimitedpossibilities12.api.GroupCallRequest;
 import com.example.unlimitedpossibilities12.api.User;
 import com.example.unlimitedpossibilities12.messenger.GroupCallActivity;
 import com.example.unlimitedpossibilities12.messenger.MessengerMainActivity;
-import com.example.unlimitedpossibilities12.messenger.PersonalChatsActivity;
 import com.example.unlimitedpossibilities12.messenger.PrivateChatActivity;
 import com.example.unlimitedpossibilities12.messenger.SecretPrivateChatActivity;
 import com.example.unlimitedpossibilities12.messenger.UserProfileActivity;
@@ -794,6 +793,11 @@ public class CallService extends Service {
     }
 
     private void showNotification(String notificationText, long chatId) {
+        // Уведомления о сообщениях можно выключить в настройках (звонки остаются)
+        if (!com.example.unlimitedpossibilities12.messenger.AppSettings.messageNotifications(this)) {
+            Log.d(TAG, "Уведомления о сообщениях выключены — пропускаем");
+            return;
+        }
         // То же сообщение может прийти и push-ом — показываем один раз
         if (!markNotified("chat:" + chatId, 6000)) {
             Log.d(TAG, "Уведомление уже показано (push) — пропускаем");
@@ -829,7 +833,9 @@ public class CallService extends Service {
 
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         manager.notify(notificationId, notification);
-        playNotificationSound();
+        if (com.example.unlimitedpossibilities12.messenger.AppSettings.notificationSound(this)) {
+            playNotificationSound();
+        }
         Log.d(TAG, "Notification shown for chatId=" + chatId + ": " + notificationText);
     }
 
@@ -1057,8 +1063,7 @@ public class CallService extends Service {
 
         if (currentActivity != null && !currentActivity.isFinishing() && !currentActivity.isDestroyed()) {
             if (currentActivity instanceof MessengerMainActivity ||
-                    currentActivity instanceof UserProfileActivity ||
-                    currentActivity instanceof PersonalChatsActivity) {
+                    currentActivity instanceof UserProfileActivity) {
                 LocalBroadcastManager.getInstance(currentActivity).sendBroadcast(intent);
                 Log.d(TAG, "Sent local broadcast to show call dialog in " + currentActivity.getClass().getSimpleName());
             } else {

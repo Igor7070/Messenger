@@ -72,7 +72,8 @@ public class TranslationSettingsFragment extends DialogFragment {
         SharedPreferences prefs = requireContext().getSharedPreferences("chat_prefs", Context.MODE_PRIVATE);
         long chatId = getArguments() != null ? getArguments().getLong("chatId", -1) : -1;
         boolean isTranslationEnabled = prefs.getBoolean("translation_enabled_" + chatId, false);
-        String savedLanguage = prefs.getString("translation_language_" + chatId, "auto");
+        String savedLanguage = prefs.getString("translation_language_" + chatId,
+                AppSettings.defaultTranslationLanguage(requireContext()));
         TranslationMode translationMode = TranslationMode.valueOf(prefs.getString("translation_mode_" + chatId, TranslationMode.ALL.name()));
 
         enableTranslation.setChecked(isTranslationEnabled);

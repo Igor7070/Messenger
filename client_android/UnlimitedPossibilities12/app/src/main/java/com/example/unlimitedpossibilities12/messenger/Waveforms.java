@@ -112,6 +112,15 @@ public final class Waveforms {
         prefs(context).edit().remove(url).apply();
     }
 
+    /** Забыть все волны сразу — очистка памяти в настройках. */
+    public static void clearCache(Context context) {
+        if (context == null) return;
+        synchronized (MEMORY) {
+            MEMORY.clear();
+        }
+        prefs(context).edit().clear().apply();
+    }
+
     private static SharedPreferences prefs(Context context) {
         return context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }

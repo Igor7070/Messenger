@@ -472,7 +472,9 @@ public class PrivateChatTranslationAndSpellCheckHelper {
                         SharedPreferences prefsTranslate = context.getSharedPreferences("chat_prefs", Context.MODE_PRIVATE);
                         boolean isTranslationEnabled = prefsTranslate.getBoolean("translation_enabled_" + chatId, false);
                         String translationModeStr = prefsTranslate.getString("translation_mode_" + chatId, "ALL");
-                        String translationLanguage = prefsTranslate.getString("translation_language_" + chatId, "auto");
+                        String translationLanguage = prefsTranslate.getString("translation_language_" + chatId,
+                                com.example.unlimitedpossibilities12.messenger.AppSettings
+                                        .defaultTranslationLanguage(context));
                         TranslationSettingsFragment.TranslationMode translationMode;
                         try {
                             translationMode = TranslationSettingsFragment.TranslationMode.valueOf(translationModeStr);

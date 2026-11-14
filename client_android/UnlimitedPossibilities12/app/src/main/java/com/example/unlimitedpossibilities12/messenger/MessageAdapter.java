@@ -963,7 +963,8 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     long chatId = message.getChat() != null ? message.getChat().getId() : -1;
                     boolean isTranslationEnabledLocal = prefs.getBoolean("translation_enabled_" + chatId, false);
                     boolean isTTSEnabledLocal = prefs.getBoolean("tts_enabled_" + chatId, false);
-                    String translationLanguage = prefs.getString("translation_language_" + chatId, "auto");
+                    String translationLanguage = prefs.getString("translation_language_" + chatId,
+                            AppSettings.defaultTranslationLanguage(context));
                     String translationModeStr = prefs.getString("translation_mode_" + chatId, "ALL");
                     // **ИЗМЕНЕНО**: Финальная инициализация translationMode с использованием временной переменной
                     final TranslationSettingsFragment.TranslationMode translationMode;
@@ -1304,7 +1305,8 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
 
             boolean isTranslationEnabledLocal = prefs.getBoolean("translation_enabled_" + chatId, false);
             boolean isTTSEnabledLocal = prefs.getBoolean("tts_enabled_" + chatId, false);
-            translationLanguage = prefs.getString("translation_language_" + chatId, "auto");
+            translationLanguage = prefs.getString("translation_language_" + chatId,
+                    AppSettings.defaultTranslationLanguage(context));
             String translationModeStr = prefs.getString("translation_mode_" + chatId, "ALL");
             try {
                 translationMode = TranslationSettingsFragment.TranslationMode.valueOf(translationModeStr);

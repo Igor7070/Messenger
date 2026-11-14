@@ -134,6 +134,11 @@ public class PushMessagingService extends FirebaseMessagingService {
     }
 
     private void showNotification(long chatId, boolean secret, String title, String body) {
+        // Уведомления о сообщениях можно выключить в настройках
+        if (!com.example.unlimitedpossibilities12.messenger.AppSettings.messageNotifications(this)) {
+            Log.d(TAG, "Уведомления о сообщениях выключены — пропускаем");
+            return;
+        }
         createChannel();
 
         Intent intent = new Intent(this, secret ? SecretPrivateChatActivity.class : PrivateChatActivity.class);
@@ -148,7 +153,8 @@ public class PushMessagingService extends FirebaseMessagingService {
                 .setContentText(body)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setDefaults(com.example.unlimitedpossibilities12.messenger.AppSettings.notificationSound(this)
+                        ? NotificationCompat.DEFAULT_ALL : 0)
                 .setContentIntent(pendingIntent)
                 .build();
 

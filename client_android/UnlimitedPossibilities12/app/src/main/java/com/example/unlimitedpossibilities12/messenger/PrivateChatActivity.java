@@ -427,7 +427,8 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
 
         // Загрузка настроек перевода
         isTranslationEnabled = prefs.getBoolean("translation_enabled_" + chatId, false);
-        translationLanguage = prefs.getString("translation_language_" + chatId, "auto");
+        translationLanguage = prefs.getString("translation_language_" + chatId,
+                AppSettings.defaultTranslationLanguage(this));
         translationMode = TranslationSettingsFragment.TranslationMode.valueOf(
                 prefs.getString("translation_mode_" + chatId, TranslationSettingsFragment.TranslationMode.ALL.name())
         );
@@ -1288,7 +1289,8 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                 isTTSEnabled = prefs.getBoolean("tts_enabled_" + chatId, false);
                 isTranslationEnabled = prefs.getBoolean("translation_enabled_" + chatId, false);
                 isTranscriptionEnabled = prefs.getBoolean("transcription_enabled_" + chatId, false);
-                translationLanguage = prefs.getString("translation_language_" + chatId, "auto");
+                translationLanguage = prefs.getString("translation_language_" + chatId,
+                AppSettings.defaultTranslationLanguage(this));
                 String translationModeStr = prefs.getString("translation_mode_" + chatId, "ALL");
                 try {
                     translationMode = TranslationSettingsFragment.TranslationMode.valueOf(translationModeStr);

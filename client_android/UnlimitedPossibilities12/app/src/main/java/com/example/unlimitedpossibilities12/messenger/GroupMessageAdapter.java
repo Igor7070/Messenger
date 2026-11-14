@@ -693,7 +693,8 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             final boolean isTranslationEnabledLocal = (context instanceof GroupChatsActivity) ?
                     ((GroupChatsActivity) context).isTranslationEnabled() : isTranslationEnabled;
             final boolean isTTSEnabledLocal = prefs.getBoolean("tts_enabled_" + chatId, isTTSEnabled);
-            final String translationLanguage = prefs.getString("translation_language_" + chatId, "auto");
+            final String translationLanguage = prefs.getString("translation_language_" + chatId,
+                    AppSettings.defaultTranslationLanguage(context));
             final String translationModeStr = prefs.getString("translation_mode_" + chatId, "ALL");
             final TranslationSettingsFragment.TranslationMode translationMode;
             TranslationSettingsFragment.TranslationMode tempMode = null;

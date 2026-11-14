@@ -511,7 +511,8 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         // Изменено: загрузка настроек перевода и орфографии
         SharedPreferences prefs = getSharedPreferences("chat_prefs", MODE_PRIVATE);
         isTranslationEnabled = prefs.getBoolean("translation_enabled_" + chatId, false);
-        translationLanguage = prefs.getString("translation_language_" + chatId, "auto");
+        translationLanguage = prefs.getString("translation_language_" + chatId,
+                AppSettings.defaultTranslationLanguage(this));
         translationMode = TranslationSettingsFragment.TranslationMode.valueOf(
                 prefs.getString("translation_mode_" + chatId, TranslationSettingsFragment.TranslationMode.ALL.name())
         );

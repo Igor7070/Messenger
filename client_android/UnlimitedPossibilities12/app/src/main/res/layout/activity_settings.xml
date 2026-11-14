@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Настройки приложения.
+
+  Прежде единого экрана не было: уведомления никак не приглушались, язык
+  перевода выбирался заново в каждой переписке, а офлайн-режим жил в
+  выпадающем меню списка чатов. Разделы собраны карточками, как сведения
+  в профиле.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F172A"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/settings_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#1E2A44"
+        android:paddingEnd="8dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/settings_back"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Back"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back"
+                app:tint="#E2E8F0" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/settings_title"
+                android:textColor="#E2E8F0"
+                android:textSize="21sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </androidx.appcompat.widget.Toolbar>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="24dp">
+
+            <!-- Уведомления -->
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/settings_notifications" />
+
+            <androidx.cardview.widget.CardView style="@style/SettingsCard">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:id="@+id/row_message_notifications"
+                        style="@style/SettingsRow">
+
+                        <LinearLayout style="@style/SettingsRowText">
+
+                            <TextView
+                                style="@style/SettingsRowTitle"
+                                android:text="@string/settings_message_notifications" />
+
+                            <TextView
+                                style="@style/SettingsRowSubtitle"
+                                android:text="@string/settings_message_notifications_hint" />
+                        </LinearLayout>
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/switch_message_notifications"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:clickable="false"
+                            android:focusable="false" />
+                    </LinearLayout>
+
+                    <View style="@style/SettingsDivider" />
+
+                    <LinearLayout
+                        android:id="@+id/row_notification_sound"
+                        style="@style/SettingsRow">
+
+                        <LinearLayout style="@style/SettingsRowText">
+
+                            <TextView
+                                style="@style/SettingsRowTitle"
+                                android:text="@string/settings_sound" />
+
+                            <TextView
+                                style="@style/SettingsRowSubtitle"
+                                android:text="@string/settings_sound_hint" />
+                        </LinearLayout>
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/switch_notification_sound"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:clickable="false"
+                            android:focusable="false" />
+                    </LinearLayout>
+
+                    <View style="@style/SettingsDivider" />
+
+                    <LinearLayout
+                        android:id="@+id/row_system_notifications"
+                        style="@style/SettingsRow">
+
+                        <LinearLayout style="@style/SettingsRowText">
+
+                            <TextView
+                                style="@style/SettingsRowTitle"
+                                android:text="@string/settings_system_notifications" />
+
+                            <TextView
+                                style="@style/SettingsRowSubtitle"
+                                android:text="@string/settings_system_notifications_hint" />
+                        </LinearLayout>
+
+                        <ImageView style="@style/SettingsChevron" />
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Переписка -->
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/settings_chats" />
+
+            <androidx.cardview.widget.CardView style="@style/SettingsCard">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:id="@+id/row_translation_language"
+                        style="@style/SettingsRow">
+
+                        <LinearLayout style="@style/SettingsRowText">
+
+                            <TextView
+                                style="@style/SettingsRowTitle"
+                                android:text="@string/settings_translation_language" />
+
+                            <TextView
+                                android:id="@+id/value_translation_language"
+                                style="@style/SettingsRowSubtitle" />
+                        </LinearLayout>
+
+                        <ImageView style="@style/SettingsChevron" />
+                    </LinearLayout>
+
+                    <View style="@style/SettingsDivider" />
+
+                    <LinearLayout
+                        android:id="@+id/row_offline_mode"
+                        style="@style/SettingsRow">
+
+                        <LinearLayout style="@style/SettingsRowText">
+
+                            <TextView
+                                style="@style/SettingsRowTitle"
+                                android:text="@string/settings_offline_mode" />
+
+                            <TextView
+                                android:id="@+id/value_offline_mode"
+                                style="@style/SettingsRowSubtitle" />
+                        </LinearLayout>
+
+                        <ImageView style="@style/SettingsChevron" />
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Память -->
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/settings_storage" />
+
+            <androidx.cardview.widget.CardView style="@style/SettingsCard">
+
+                <LinearLayout
+                    android:id="@+id/row_clear_cache"
+                    style="@style/SettingsRow">
+
+                    <LinearLayout style="@style/SettingsRowText">
+
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="@string/settings_clear_cache" />
+
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="@string/settings_clear_cache_hint" />
+                    </LinearLayout>
+
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- О приложении -->
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/settings_about" />
+
+            <androidx.cardview.widget.CardView style="@style/SettingsCard">
+
+                <LinearLayout style="@style/SettingsRow">
+
+                    <LinearLayout style="@style/SettingsRowText">
+
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="@string/app_title" />
+
+                        <TextView
+                            android:id="@+id/value_version"
+                            style="@style/SettingsRowSubtitle" />
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

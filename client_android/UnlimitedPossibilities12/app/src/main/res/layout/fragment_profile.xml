@@ -140,7 +140,7 @@
             app:layout_constraintEnd_toEndOf="parent">
 
             <LinearLayout
-                android:id="@+id/personal_chats_button"
+                android:id="@+id/settings_tile"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -155,15 +155,15 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/ic_group_chats"
-                    android:contentDescription="@string/tile_my_chats"
+                    android:src="@drawable/ic_settings"
+                    android:contentDescription="@string/tile_settings"
                     app:tint="#A5B4FC" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="@string/tile_my_chats"
+                    android:text="@string/tile_settings"
                     android:textSize="12sp"
                     android:textColor="#E2E8F0" />
             </LinearLayout>

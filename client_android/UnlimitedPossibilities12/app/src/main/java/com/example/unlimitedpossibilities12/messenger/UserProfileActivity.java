@@ -83,7 +83,7 @@ public class UserProfileActivity extends AppCompatActivity {
     private View statusIndicator;
     private EditText bioEditText;
     private ImageView avatarImageView, menuButton, bioEditIcon;
-    private Button updateButton, personalChatsButton, avatarInputButton;
+    private Button updateButton, avatarInputButton;
     /** Плитки действий: это не кнопки, а значок с подписью. */
     private View sendMessageButton, callButton, videoCallButton;
     private LinearLayout currentUserButtons;
@@ -140,7 +140,6 @@ public class UserProfileActivity extends AppCompatActivity {
         bioEditText = findViewById(R.id.bio_edit_text);
         avatarInputButton = findViewById(R.id.avatar_input_button);
         updateButton = findViewById(R.id.update_button);
-        personalChatsButton = findViewById(R.id.personal_chats_button);
         currentUserButtons = findViewById(R.id.current_user_buttons);
         sendMessageButton = findViewById(R.id.send_message_button);
         callButton = findViewById(R.id.call_button);
@@ -208,7 +207,6 @@ public class UserProfileActivity extends AppCompatActivity {
         findViewById(R.id.back_button).setOnClickListener(v -> finish());
         avatarInputButton.setOnClickListener(v -> openFilePicker());
         updateButton.setOnClickListener(v -> handleUpdateUser());
-        personalChatsButton.setOnClickListener(v -> handlePersonalChats());
         sendMessageButton.setOnClickListener(v -> handleSendMessage());
         callButton.setOnClickListener(v -> handleCall());
         videoCallButton.setOnClickListener(v -> handleVideoCall());
@@ -639,12 +637,6 @@ public class UserProfileActivity extends AppCompatActivity {
                 Toast.makeText(UserProfileActivity.this, "Error updating user: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    private void handlePersonalChats() {
-        Intent intent = new Intent(this, PersonalChatsActivity.class);
-        intent.putExtra("currentUserId", currentUserId);
-        startActivity(intent);
     }
 
     private void handleSendMessage() {

@@ -86,9 +86,9 @@
         <activity android:name=".communication_with_ai.ChatWithAIActivity"></activity>
         <activity android:name=".messenger.MessengerMainActivity" />
         <activity android:name=".messenger.UserProfileActivity" />
+        <activity android:name=".messenger.SettingsActivity" />
         <activity android:name=".messenger.VoiceCallActivity" />
         <activity android:name=".messenger.PrivateChatActivity" />
-        <activity android:name=".messenger.PersonalChatsActivity" />
         <activity android:name=".messenger.GroupChatsActivity" />
         <activity android:name=".messenger.VideoCallActivity" />
         <activity android:name=".messenger.VoiceCallWithTranslateActivity" />
