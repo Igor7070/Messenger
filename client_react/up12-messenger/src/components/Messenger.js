@@ -424,6 +424,30 @@ const Messenger = () => {
                   setMessages(cached);
               }
 
+              // Расшифровки речи лежат отдельно от сообщений — достаём их тем же
+              // заходом, иначе строки под плеером появляются секундой позже и
+              // сдвигают ленту
+              const savedSpeech = {};
+              cached.forEach((msg) => {
+                if (msg.messageType !== 'audio') return;
+                const saved = localStorage.getItem(`transcription_${chatId}_${msg.id}`);
+                if (!saved) return;
+                try {
+                  const data = JSON.parse(saved);
+                  savedSpeech[msg.id] = {
+                    content: data.content,
+                    translatedContent: data.translatedContent || null,
+                    translationLanguage: data.translationLanguage || null,
+                  };
+                } catch (e) {
+                  // битая запись — покажем, когда ответит сервер
+                }
+              });
+              if (Object.keys(savedSpeech).length) {
+                setTranscribedContentMap((prev) => ({ ...savedSpeech, ...prev }));
+              }
+
+
               // Загружаем сообщения
               const wantedLanguage = translationEnabled
                   ? (localStorage.getItem(`translation_language_${chatId}`) || null)

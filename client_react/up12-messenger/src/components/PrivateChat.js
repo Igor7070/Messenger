@@ -119,16 +119,21 @@ const PrivateChat = () => {
   const { setCurrentUserId: setNotificationUserId, setCurrentChatId } = usePrivateMessageNotification();
   const [currentUserId, setCurrentUserId] = useState(null);
 
-  const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
-  const [translationLanguage, setTranslationLanguage] = useState('auto');
-  const [translationMode, setTranslationMode] = useState('selective'); // Добавляем режим перевода
+  // Настройки читаем сразу: от них зависит, что показать в первом же кадре
+  const [isTranslationEnabled, setIsTranslationEnabled] = useState(
+    () => localStorage.getItem(`translation_enabled_${chatIdParam}`) === 'true');
+  const [translationLanguage, setTranslationLanguage] = useState(
+    () => localStorage.getItem(`translation_language_${chatIdParam}`) || 'auto');
+  const [translationMode, setTranslationMode] = useState(
+    () => localStorage.getItem(`translation_mode_${chatIdParam}`) || 'selective');
   const [translationQueue, setTranslationQueue] = useState([]);
   const [isTranslating, setIsTranslating] = useState(false);
   const [showTranslationModal, setShowTranslationModal] = useState(false);
 
   const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(false);
 
-  const [isTTSEnabled, setIsTTSEnabled] = useState(false); // Состояние для включения/выключения озвучивания
+  const [isTTSEnabled, setIsTTSEnabled] = useState(
+    () => localStorage.getItem(`tts_enabled_${chatIdParam}`) === 'true');
   
   // Состояния для аудиозаписи
   const [isRecording, setIsRecording] = useState(false);
@@ -152,8 +157,10 @@ const PrivateChat = () => {
   // ДОБАВЛЕНО: Состояние для отслеживания перетаскивания
   const [isDragging, setIsDragging] = useState(null); // msgId, если перетаскивание активно
 
-  const [isTranscriptionEnabled, setIsTranscriptionEnabled] = useState(false);
-  const [transcriptionMode, setTranscriptionMode] = useState('selective');
+  const [isTranscriptionEnabled, setIsTranscriptionEnabled] = useState(
+    () => localStorage.getItem(`transcription_enabled_${chatIdParam}`) === 'true');
+  const [transcriptionMode, setTranscriptionMode] = useState(
+    () => localStorage.getItem(`transcription_mode_${chatIdParam}`) || 'selective');
   const [showTranscriptionModal, setShowTranscriptionModal] = useState(false);
 
   // ДОБАВЛЕНО: Состояние для транскрибированного контента
@@ -278,6 +285,30 @@ const PrivateChat = () => {
       if (cached.length > 0) {
         setMessages(cached);
       }
+
+      // Расшифровки речи лежат отдельно от сообщений — достаём их тем же
+      // заходом, иначе строки под плеером появляются секундой позже и
+      // сдвигают ленту
+      const savedSpeech = {};
+      cached.forEach((msg) => {
+        if (msg.messageType !== 'audio') return;
+        const saved = localStorage.getItem(`transcription_${chatIdParam}_${msg.id}`);
+        if (!saved) return;
+        try {
+          const data = JSON.parse(saved);
+          savedSpeech[msg.id] = {
+            content: data.content,
+            translatedContent: data.translatedContent || null,
+            translationLanguage: data.translationLanguage || null,
+          };
+        } catch (e) {
+          // битая запись — покажем, когда ответит сервер
+        }
+      });
+      if (Object.keys(savedSpeech).length) {
+        setTranscribedContentMap((prev) => ({ ...savedSpeech, ...prev }));
+      }
+
 
       try {
         const chatData = await getChatById(chatIdParam);
