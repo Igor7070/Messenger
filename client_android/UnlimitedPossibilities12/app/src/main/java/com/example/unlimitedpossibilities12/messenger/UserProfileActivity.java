@@ -83,7 +83,9 @@ public class UserProfileActivity extends AppCompatActivity {
     private View statusIndicator;
     private EditText bioEditText;
     private ImageView avatarImageView, menuButton, bioEditIcon;
-    private Button updateButton, personalChatsButton, sendMessageButton, callButton, videoCallButton, avatarInputButton;
+    private Button updateButton, personalChatsButton, avatarInputButton;
+    /** Плитки действий: это не кнопки, а значок с подписью. */
+    private View sendMessageButton, callButton, videoCallButton;
     private LinearLayout currentUserButtons;
     private ApiService apiService;
     private int currentUserId, userId;
@@ -98,7 +100,7 @@ public class UserProfileActivity extends AppCompatActivity {
     private boolean isUserOnline = false;
     private BroadcastReceiver callReceiver, notificationReceiver, endCallReceiver, userStatusReceiver;
     // ADDED: Кнопка для вызова с переводом
-    private Button translateCallButton;
+    private View translateCallButton;
 
     private ServiceConnection connection = new ServiceConnection() {
         @Override
@@ -189,6 +191,11 @@ public class UserProfileActivity extends AppCompatActivity {
 
         // Получение параметров
         currentUserId = getIntent().getIntExtra("currentUserId", -1);
+        if (currentUserId == -1) {
+            // Из меню чата нас открывают без своего идентификатора — берём
+            // его оттуда же, откуда берут остальные экраны
+            currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
+        }
         userId = getIntent().getIntExtra("userId", -1);
 
         // Загрузка данных пользователя
@@ -314,25 +321,8 @@ public class UserProfileActivity extends AppCompatActivity {
         statusTextView.setText(online ? "Online" : "Offline");
         statusIndicator.setVisibility(online ? View.VISIBLE : View.GONE);
 
-        if (userId == currentUserId) {
-            // === СВОЙ ПРОФИЛЬ ===
-            statusTextView.setVisibility(View.GONE);           // Скрываем текст
-            // statusTextView.setLayoutParams(...) не трогаем — чтобы не было прыжка
-        } else {
-            // === ЧУЖОЙ ПРОФИЛЬ ===
-            statusTextView.setVisibility(View.VISIBLE);
-
-            // Позиционируем текст под именем только для чужого профиля
-            statusTextView.setLayoutParams(new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.WRAP_CONTENT,
-                    FrameLayout.LayoutParams.WRAP_CONTENT,
-                    Gravity.CENTER_HORIZONTAL | Gravity.TOP
-            ) {{
-                topMargin = (int) (44 * getResources().getDisplayMetrics().density); // 44dp
-            }});
-
-            statusTextView.requestLayout();
-        }
+        // Строка статуса стоит под именем по разметке — двигать её не нужно
+        statusTextView.setVisibility(View.VISIBLE);
 
         // Логирование (оставил для отладки)
         Log.d(TAG, "Updated status for userId: " + userId +
@@ -375,6 +365,8 @@ public class UserProfileActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     user = response.body();
                     usernameTextView.setText(user.getUsername());
+                    TextView usernameHandle = findViewById(R.id.username_handle);
+                    if (usernameHandle != null) usernameHandle.setText("@" + user.getUsername());
                     // Сбрасываем анимации и устанавливаем видимость для био
                     bioTextView.clearAnimation();
                     bioEditText.clearAnimation();
@@ -388,6 +380,7 @@ public class UserProfileActivity extends AppCompatActivity {
                     if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
                         String avatarUrl = "https://unlimitedpossibilities12.org" + user.getAvatar() + "?t=" + System.currentTimeMillis();
                         avatarTextView.setText(user.getUsername().substring(0, 1).toUpperCase());
+                        if (isFinishing() || isDestroyed()) return; // экран уже закрыли — грузить некуда
                         Glide.with(UserProfileActivity.this)
                                 .load(avatarUrl)
                                 .diskCacheStrategy(DiskCacheStrategy.NONE)
@@ -428,6 +421,7 @@ public class UserProfileActivity extends AppCompatActivity {
                             startActivity(intent);
                         });
                     } else {
+                        if (isFinishing() || isDestroyed()) return; // экран уже закрыли — грузить некуда
                         Glide.with(UserProfileActivity.this)
                                 .load(R.drawable.default_messenger_avatar)
                                 .circleCrop()
@@ -443,11 +437,7 @@ public class UserProfileActivity extends AppCompatActivity {
                         });
                     }
 
-                    // Управление отступами и видимостью
-                    ConstraintLayout.LayoutParams avatarParams = (ConstraintLayout.LayoutParams) findViewById(R.id.avatar_card).getLayoutParams();
-                    TextView statusTextView = findViewById(R.id.status_text_view);
-                    ConstraintLayout.LayoutParams containerParams = (ConstraintLayout.LayoutParams) findViewById(R.id.username_container).getLayoutParams();
-
+                    // Что показывать: свою страницу правят, чужую — читают
                     if (userId == currentUserId) {
                         currentUserButtons.setVisibility(View.VISIBLE);
                         avatarInputButton.setVisibility(View.VISIBLE);
@@ -457,7 +447,7 @@ public class UserProfileActivity extends AppCompatActivity {
                             bioTextView.animate().alpha(0f).setDuration(200).withEndAction(() -> {
                                 bioTextView.setVisibility(View.GONE);
                                 bioEditText.setVisibility(View.VISIBLE);
-                                bioEditText.animate().alpha(1f).setDuration(200).start();
+                                bioEditText.setAlpha(1f);
                             }).start();
                         });
                         bioEditText.setOnEditorActionListener((v, actionId, event) -> {
@@ -467,45 +457,23 @@ public class UserProfileActivity extends AppCompatActivity {
                                     bioTextView.setText(bioEditText.getText());
                                     bioTextView.setVisibility(View.VISIBLE);
                                     bioTextView.setAlpha(1f);
-                                    bioTextView.animate().alpha(1f).setDuration(200).start();
                                 }).start();
                                 return true;
                             }
                             return false;
                         });
-                        // Скрываем статус и минимизируем отступы
-                        statusTextView.setVisibility(View.GONE);
-                        statusIndicator.setVisibility(View.VISIBLE);
-                        // Устанавливаем начальный статус индикатора
-                        if (isBound && callService != null && callService.getStompClient() != null && callService.getStompClient().isConnected()) {
+                        updateUserStatus(true);
+                        if (isBound && callService != null && callService.getStompClient() != null
+                                && callService.getStompClient().isConnected()) {
                             callService.requestUserStatus(currentUserId);
                         }
-                        avatarParams.topMargin = 0; // 0dp для текущего пользователя
-                        containerParams.topMargin = 0; // Без изменений для текущего пользователя
-                        findViewById(R.id.avatar_card).setLayoutParams(avatarParams);
-                        findViewById(R.id.username_container).setLayoutParams(containerParams);
-                        Log.d(TAG, "Removed status and set avatar margin to 0dp, container margin to 0dp for current user, userId: " + userId);
                     } else {
-                        sendMessageButton.setVisibility(View.VISIBLE);
-                        findViewById(R.id.call_buttons_container).setVisibility(View.VISIBLE);
-                        findViewById(R.id.translate_call_container).setVisibility(View.VISIBLE);
-                        menuButton.setVisibility(View.VISIBLE); // [Добавлено] Показываем кнопку
+                        findViewById(R.id.actions_row).setVisibility(View.VISIBLE);
+                        menuButton.setVisibility(View.VISIBLE);
                         updateUserStatus(user.isOnline());
                         statusTextView.setVisibility(View.VISIBLE);
-                        statusTextView.setLayoutParams(new FrameLayout.LayoutParams(
-                                FrameLayout.LayoutParams.WRAP_CONTENT,
-                                FrameLayout.LayoutParams.WRAP_CONTENT,
-                                Gravity.CENTER_HORIZONTAL | Gravity.TOP
-                        ) {{
-                            topMargin = (int) (44 * getResources().getDisplayMetrics().density); // 44dp
-                        }});
-                        avatarParams.topMargin = (int) (2 * getResources().getDisplayMetrics().density); // 2dp
-                        containerParams.topMargin = (int) (-16 * getResources().getDisplayMetrics().density); // -16dp
-                        findViewById(R.id.avatar_card).setLayoutParams(avatarParams);
-                        findViewById(R.id.username_container).setLayoutParams(containerParams);
-                        Log.d(TAG, "Set initial status from REST API for userId: " + userId + ", online: " + user.isOnline() +
-                                ", container topMargin: -4dp");
-                        if (isBound && callService != null && callService.getStompClient() != null && callService.getStompClient().isConnected()) {
+                        if (isBound && callService != null && callService.getStompClient() != null
+                                && callService.getStompClient().isConnected()) {
                             callService.requestUserStatus(userId);
                         }
                     }

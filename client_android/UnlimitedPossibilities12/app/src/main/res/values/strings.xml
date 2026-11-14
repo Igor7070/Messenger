@@ -42,6 +42,13 @@
     <string name="video_call_cancelled">The video call was cancelled.</string>
     <string name="call_rejected">Call rejected</string>
     <string name="translate_call">Translate Call</string>
+    <!-- Короткие подписи под значками в профиле собеседника -->
+    <string name="tile_message">Message</string>
+    <string name="tile_call">Call</string>
+    <string name="tile_video">Video</string>
+    <string name="tile_translate">Translate</string>
+    <string name="profile_about">About</string>
+    <string name="profile_username">Username</string>
     <string name="open_secret_chat">Open Secret Chat</string>
 
     <string name="personal_chats_title">Personal Chats</string>

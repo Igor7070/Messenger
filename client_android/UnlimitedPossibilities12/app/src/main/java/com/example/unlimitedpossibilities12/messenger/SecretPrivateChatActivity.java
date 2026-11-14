@@ -1290,6 +1290,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                                 ImageView partnerAvatar = findViewById(R.id.partner_avatar);
                                 if (partnerAvatar != null) {
                                     if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
+                                        if (isFinishing() || isDestroyed()) return; // экран уже закрыли — грузить некуда
                                         Glide.with(SecretPrivateChatActivity.this)
                                                 .load("https://unlimitedpossibilities12.org" + avatarUrl)
                                                 .apply(new RequestOptions()

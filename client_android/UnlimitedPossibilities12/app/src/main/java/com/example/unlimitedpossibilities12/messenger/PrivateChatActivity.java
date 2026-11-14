@@ -1066,6 +1066,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                                 String avatarUrl = response.body().getAvatar();
                                 ImageView partnerAvatar = findViewById(R.id.partner_avatar);
                                 if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
+                                    if (isFinishing() || isDestroyed()) return; // экран уже закрыли — грузить некуда
                                     Glide.with(PrivateChatActivity.this)
                                             .load("https://unlimitedpossibilities12.org" + avatarUrl)
                                             .apply(new RequestOptions().circleCrop()
