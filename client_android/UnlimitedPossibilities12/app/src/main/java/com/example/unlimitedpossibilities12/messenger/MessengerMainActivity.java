@@ -69,6 +69,8 @@ public class MessengerMainActivity extends AppCompatActivity {
     private android.widget.CheckBox publicGroupCheckBox;
     private Toolbar toolbar;
     private TextView titleTextView;
+    /** «Пригласить» на экране людей: до этого экран был только для чтения. */
+    private com.google.android.material.floatingactionbutton.FloatingActionButton inviteButton;
     private TextView toolbarTitle; // название раздела в шапке
     private LinearLayout usersContainer, chatsContainer;
     private List<User> usersList = new ArrayList<>();
@@ -163,6 +165,8 @@ public class MessengerMainActivity extends AppCompatActivity {
         loginButton = findViewById(R.id.login_button);
         logoutButton = findViewById(R.id.logout_button);
         titleTextView = findViewById(R.id.title_text_view);
+        inviteButton = findViewById(R.id.invite_button);
+        if (inviteButton != null) inviteButton.setOnClickListener(v -> shareInvite());
         usersContainer = findViewById(R.id.users_container);
         chatsContainer = findViewById(R.id.chats_container);
         usersRecyclerView = findViewById(R.id.users_recycler_view);
@@ -658,13 +662,15 @@ public class MessengerMainActivity extends AppCompatActivity {
             navUsersText.setTextColor(accent);
             navUsersIcon.setColorFilter(accent);
 
-            titleTextView.setVisibility(View.VISIBLE);
+            // Название экрана живёт в шапке: второй крупной надписи не нужно
+            titleTextView.setVisibility(View.GONE);
             usersContainer.setVisibility(View.VISIBLE);
             chatsContainer.setVisibility(View.GONE);
             callsContainer.setVisibility(View.GONE);
             if (fragmentContainer != null) fragmentContainer.setVisibility(View.GONE);
             if (profileMenuButton != null) profileMenuButton.setVisibility(View.GONE); // Скрываем
             createGroupCallButton.setVisibility(View.GONE);
+            if (inviteButton != null) inviteButton.setVisibility(View.VISIBLE);
             titleTextView.setText("Contacts");
             if (toolbarTitle != null) toolbarTitle.setText("Contacts");
 
@@ -680,24 +686,28 @@ public class MessengerMainActivity extends AppCompatActivity {
             if (fragmentContainer != null) fragmentContainer.setVisibility(View.GONE);
             if (profileMenuButton != null) profileMenuButton.setVisibility(View.GONE); // Скрываем
             createGroupCallButton.setVisibility(View.GONE);
+            if (inviteButton != null) inviteButton.setVisibility(View.GONE);
             if (toolbarTitle != null) toolbarTitle.setText("Chats");
 
         } else if (selectedTab == 2) { // Calls
             navCallsText.setTextColor(accent);
             navCallsIcon.setColorFilter(accent);
 
-            titleTextView.setVisibility(View.VISIBLE);
+            // Название экрана живёт в шапке: второй крупной надписи не нужно
+            titleTextView.setVisibility(View.GONE);
             usersContainer.setVisibility(View.GONE);
             chatsContainer.setVisibility(View.GONE);
             callsContainer.setVisibility(View.VISIBLE);
             if (fragmentContainer != null) fragmentContainer.setVisibility(View.GONE);
             if (profileMenuButton != null) profileMenuButton.setVisibility(View.GONE); // Скрываем
             createGroupCallButton.setVisibility(View.VISIBLE);
+            if (inviteButton != null) inviteButton.setVisibility(View.GONE);
             titleTextView.setText("Calls");
             if (toolbarTitle != null) toolbarTitle.setText("Calls");
             fetchCalls();
 
         } else if (selectedTab == 3) { // Profile
+            if (inviteButton != null) inviteButton.setVisibility(View.GONE);
             navProfileText.setTextColor(accent);
             navProfileIcon.setColorFilter(accent);
             if (toolbarTitle != null) toolbarTitle.setText("Profile");
@@ -1447,6 +1457,20 @@ public class MessengerMainActivity extends AppCompatActivity {
 
     private void filterChats(String term) {
         chatsAdapter.filter(term);
+    }
+
+    /**
+     * Приглашение: отдаём системному окну «поделиться» ссылку на мессенджер.
+     * Ничего никуда не уходит само — человек сам выбирает, кому отправить.
+     */
+    private void shareInvite() {
+        String me = getSharedPreferences("prefs", MODE_PRIVATE).getString("username", null);
+        String text = (me != null && !me.isEmpty() ? me + " invites you to UP12 Messenger" : "Join me in UP12 Messenger")
+                + "\nhttps://igor7070.github.io/Messenger";
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TEXT, text);
+        startActivity(Intent.createChooser(intent, "Invite to UP12"));
     }
 
     public int getCurrentUserId() {

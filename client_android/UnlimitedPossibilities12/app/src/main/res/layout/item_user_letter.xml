@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Буква над группой имён: список людей читается по алфавиту, как в
+     телефонной книге. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/letter_text_view"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="14dp"
+    android:paddingBottom="4dp"
+    android:textColor="#818CF8"
+    android:textSize="13sp"
+    android:textStyle="bold" />
