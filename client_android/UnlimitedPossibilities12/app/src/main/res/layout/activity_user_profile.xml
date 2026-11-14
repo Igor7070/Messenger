@@ -415,6 +415,7 @@
         android:layout_height="40dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_menu"
+        app:tint="#E2E8F0"
         android:contentDescription="Menu"
         android:padding="8dp"
         android:scaleType="fitCenter"
