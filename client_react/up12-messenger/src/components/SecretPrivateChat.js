@@ -707,32 +707,50 @@ const SecretPrivateChat = () => {
             return { ...msg, delivered: msg.delivered_status, read: msg.read_status };
         };
 
-        // Сначала на экран — сама лента: пустой экран на время расшифровки
-        // выглядел как зависание, а потом всё появлялось разом и прыгало
-        setMessages(initialMessages.map((msg) => ({
-          ...msg,
-          delivered: msg.delivered_status,
-          read: msg.read_status,
-          _decrypting: true,
+        // Разбираем всю переписку, прежде чем показать хоть что-то: по
+        // одному сообщения появлялись рывками и расползались
+        const decryptedMessages = await Promise.all(initialMessages.map(async (msg) => {
+          try {
+            return await decryptOne(msg);
+          } catch (e) {
+            console.error(`Не удалось разобрать сообщение ${msg.id}:`, e);
+            return { ...msg, delivered: msg.delivered_status, read: msg.read_status };
+          }
+        }));
+
+        // Снимки — тем же заходом, а не отдельным кругом после показа
+        const looksLikeImage = (msg) =>
+          msg.messageType === 'file' && msg.fileUrl && !msg.fileUrl.startsWith('blob:') &&
+          (msg.contentType?.startsWith('image/') ||
+            (msg.fileName && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileName)));
+
+        const pictures = await Promise.all(
+          decryptedMessages.filter(looksLikeImage).map(async (msg) => {
+            try {
+              return await decryptImageForPreview(
+                msg.id, msg.fileUrl, msg.nonce, msg.publicKeyId || null, msg.sender.id
+              );
+            } catch (e) {
+              console.warn(`Снимок ${msg.id} разобрать не вышло:`, e);
+              return null;
+            }
+          })
+        );
+
+        // И ждём, пока браузер их раскодирует: иначе снимок дорисовывается
+        // уже на экране и пузырь подпрыгивает
+        await Promise.all(pictures.filter(Boolean).map((url) => new Promise((done) => {
+          const picture = new Image();
+          picture.onload = done;
+          picture.onerror = done;
+          picture.src = url;
         })));
+
+        setMessages(decryptedMessages);
         setTimeout(() => {
           scrollToBottom(false);
           didInitialScroll.current = true;
         }, 0);
-
-        // Дальше подставляем разобранное по мере готовности, не трогая
-        // остальные пузыри
-        await Promise.all(initialMessages.map(async (msg) => {
-          let ready;
-          try {
-            ready = await decryptOne(msg);
-          } catch (e) {
-            console.error(`Не удалось разобрать сообщение ${msg.id}:`, e);
-            ready = { ...msg, delivered: msg.delivered_status, read: msg.read_status };
-          }
-          setMessages((prev) => prev.map((m) => (m.id === ready.id ? { ...ready, _decrypting: false } : m)));
-          scrollToBottom(false);
-        }));
       } catch (error) {
         console.error('Error fetching chat data:', error);
         toast.error('Failed to load chat');
@@ -3409,7 +3427,6 @@ const SecretPrivateChat = () => {
                                   decryptedImageBlobs[msg.id] || msg.fileUrl,
                                   msg.fileName || 'photo.jpg'   // ← оригинальное имя с расширением!
                                 )}
-                                loading="lazy"
                                 onError={(e) => {
                                   // Картинка не открылась — обычно файл потерян при
                                   // переразвёртывании сервера. Прятать её молча нельзя:
