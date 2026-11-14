@@ -465,6 +465,9 @@ const SecretPrivateChat = () => {
       if (!chatIdParam || !username || !keyPair) return;
 
       try {
+        // Сообщения не ждут ни собеседника, ни ключей — запрос уходит сразу,
+        // иначе лента появляется только через пару секунд
+        const messagesPromise = getMessages(chatIdParam);
         const chatData = await getChatById(chatIdParam);
         if (!chatData.isSecret) {
           toast.error('This is not a secret chat');
@@ -525,7 +528,7 @@ const SecretPrivateChat = () => {
         setPublicKeys(prev => ({ ...prev, [recipientId]: recipientPublicKey }));
         notePartnerKey(recipientId, recipientPublicKey);
 
-        const initialMessages = await getMessages(chatIdParam);
+        const initialMessages = await messagesPromise;
         const senderIds = [...new Set(initialMessages.map(m => m.sender.id))];
         const keyPromises = senderIds
           .filter(id => id !== userId && !publicKeys[id])
@@ -533,8 +536,9 @@ const SecretPrivateChat = () => {
         const newKeys = await Promise.all(keyPromises);
         setPublicKeys(prev => ({ ...prev, ...Object.fromEntries(newKeys.map(k => [k.senderId, k.publicKey])) }));
 
-        const decryptedMessages = await Promise.all(
-          initialMessages.map(async (msg) => {
+        // Разбираем каждое сообщение по отдельности: лента должна
+        // показаться сразу, а не ждать, пока расшифруется всё
+        const decryptOne = async (msg) => {
             // === ТЕКСТ ===
             if (msg.messageType === 'text' && msg.encryptedContent && msg.nonce) {
               if (msg.sender.id === userId) {
@@ -701,14 +705,34 @@ const SecretPrivateChat = () => {
             }
 
             return { ...msg, delivered: msg.delivered_status, read: msg.read_status };
-          })
-        );
+        };
 
-        setMessages(decryptedMessages);
+        // Сначала на экран — сама лента: пустой экран на время расшифровки
+        // выглядел как зависание, а потом всё появлялось разом и прыгало
+        setMessages(initialMessages.map((msg) => ({
+          ...msg,
+          delivered: msg.delivered_status,
+          read: msg.read_status,
+          _decrypting: true,
+        })));
         setTimeout(() => {
           scrollToBottom(false);
           didInitialScroll.current = true;
         }, 0);
+
+        // Дальше подставляем разобранное по мере готовности, не трогая
+        // остальные пузыри
+        await Promise.all(initialMessages.map(async (msg) => {
+          let ready;
+          try {
+            ready = await decryptOne(msg);
+          } catch (e) {
+            console.error(`Не удалось разобрать сообщение ${msg.id}:`, e);
+            ready = { ...msg, delivered: msg.delivered_status, read: msg.read_status };
+          }
+          setMessages((prev) => prev.map((m) => (m.id === ready.id ? { ...ready, _decrypting: false } : m)));
+          scrollToBottom(false);
+        }));
       } catch (error) {
         console.error('Error fetching chat data:', error);
         toast.error('Failed to load chat');
@@ -3240,9 +3264,12 @@ const SecretPrivateChat = () => {
               >
                 <div className="secret-message-body">
                   <div className="secret-message-content-wrapper">
-                    {msg.messageType === 'audio' && msg.fileUrl ? (
+                    {msg.messageType === 'audio' ? (
                       <div className="secret-audio-message-container">
                         <div className="secret-audio-player-wrapper">
+                          {/* Играется только расшифрованная запись: по
+                              исходному адресу лежит шифртекст */}
+                          {decryptedAudioBlobs[msg.id]?.blobUrl && (
                           <audio
                             ref={(el) => {
                               if (el && audioRefs.current[msg.id] !== el) {
@@ -3250,7 +3277,7 @@ const SecretPrivateChat = () => {
                                 console.log(`Audio ref set for msg ${msg.id}, readyState: ${el?.readyState}`);
                               }
                             }}
-                            src={decryptedAudioBlobs[msg.id]?.blobUrl || msg.fileUrl} // Fallback: decrypted или original (encrypted/temp)
+                            src={decryptedAudioBlobs[msg.id].blobUrl}
                             onTimeUpdate={() => handleTimeUpdate(msg.id, audioRefs.current[msg.id])}
                             onLoadedMetadata={() => handleLoadedMetadata(msg.id, audioRefs.current[msg.id])}
                             onCanPlay={() => handleCanPlay(msg.id)}
@@ -3275,9 +3302,9 @@ const SecretPrivateChat = () => {
                             className="secret-audio-player"
                             preload="auto"
                           >
-                            <source src={decryptedAudioBlobs[msg.id]?.blobUrl || msg.fileUrl} type={msg.fileUrl?.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'} />
                             Your browser does not support the audio element.
                           </audio>
+                          )}
                           {audioProgress[msg.id]?.error ? (
                             <span className="secret-audio-error">{audioProgress[msg.id].error}</span>
                           ) : (
@@ -3302,7 +3329,7 @@ const SecretPrivateChat = () => {
                                     },
                                   }));
                                 }}
-                                disabled={!audioProgress[msg.id]?.isReady}
+                                disabled={!decryptedAudioBlobs[msg.id]?.blobUrl || !audioProgress[msg.id]?.isReady}
                               >
                                 {audioProgress[msg.id]?.isPlaying ? (
                                   <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
