@@ -1145,6 +1145,31 @@ const SecretPrivateChat = () => {
   // проматывает её на глазах. Плавно уезжаем только к новым сообщениям.
   const didInitialScroll = useRef(false);
 
+  // Пока человек у последнего сообщения, лента держится за низ: превью
+  // ссылки, снимок или ответ сервера подрастают — и без этого низ уезжал,
+  // а потом всё рывком вставало на место
+  useEffect(() => {
+    const list = messageListRef.current;
+    if (!list) return undefined;
+
+    let pinned = true;
+    const nearBottom = () => list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+    const remember = () => { pinned = nearBottom(); };
+    const keepDown = () => { if (pinned) list.scrollTop = list.scrollHeight; };
+
+    list.addEventListener('scroll', remember, { passive: true });
+    // Картинки и превью меняют высоту уже после вставки в разметку
+    list.addEventListener('load', keepDown, true);
+    const watcher = new MutationObserver(keepDown);
+    watcher.observe(list, { childList: true, subtree: true, characterData: true });
+
+    return () => {
+      list.removeEventListener('scroll', remember);
+      list.removeEventListener('load', keepDown, true);
+      watcher.disconnect();
+    };
+  }, []);
+
   const scrollToBottom = (smooth = true) => {
     if (messagesEndRef.current && messageListRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
