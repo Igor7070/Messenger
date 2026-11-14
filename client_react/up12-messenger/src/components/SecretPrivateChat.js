@@ -93,6 +93,15 @@ const fetchPublicKeyWithRetry = async (recipientId, retries = 3, delay = 2000) =
 
 const getPublicKey = async (userId, publicKeyId = null) => {
   console.log(`Fetching public key for userId: ${userId}, publicKeyId: ${publicKeyId}`);
+  if (publicKeyId) {
+    // Исторические ключи не меняются — если уже забирали, второй раз не ходим
+    try {
+      const saved = localStorage.getItem(`history_key_${publicKeyId}`);
+      if (saved) return saved;
+    } catch (e) {
+      // хранилище недоступно — просто сходим на сервер
+    }
+  }
   try {
     const url = publicKeyId
       ? `https://unlimitedpossibilities12.org/api/public_keys/history/${publicKeyId}` // [ADD] Новый эндпоинт
@@ -184,6 +193,23 @@ const SecretPrivateChat = () => {
   const [isDragging, setIsDragging] = useState(null);
   const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
   const [publicKeys, setPublicKeys] = useState({}); // Хранит публичные ключи участников чата
+
+  /**
+   * Ключ, которым шифровали именно это сообщение.
+   *
+   * У сообщения свой publicKeyId: собеседник мог сменить ключ, и старое
+   * сообщение расшифровывается только прежним. Память держим под текущий
+   * ключ человека и историческим её не портим — иначе соседние сообщения
+   * перестают открываться, и выходит «то работает, то нет».
+   */
+  const keyForMessage = async (ownerId, publicKeyId) => {
+    if (publicKeyId) return await getPublicKey(ownerId, publicKeyId);
+    const known = publicKeys[ownerId];
+    if (known) return known;
+    const fetched = await getPublicKey(ownerId, null);
+    setPublicKeys((prev) => ({ ...prev, [ownerId]: fetched }));
+    return fetched;
+  };
   const [keyPair, setKeyPair] = useState(null); // Локальная пара ключей пользователя
   const [sentMessagesCache, setSentMessagesCache] = useState({}); // Кэш отправленных сообщений: { clientMessageId: content }
   const [processedMessages, setProcessedMessages] = useState(new Set());
@@ -256,6 +282,23 @@ const SecretPrivateChat = () => {
     const recipient = await response.json();
     partnerRef.current = recipient.id;
     return recipient.id;
+  };
+
+  /**
+   * Ключ, которым открывается это сообщение.
+   *
+   * Чужое шифровали на наш ключ — открываем ключом отправителя, тем
+   * самым, что был при отправке (publicKeyId сообщения). Своё шифровали
+   * на ключ собеседника, а publicKeyId у него наш собственный, и брать
+   * ключ по нему нельзя: пара не сойдётся.
+   */
+  const keyToOpen = async (message) => {
+    const senderId = message?.sender?.id;
+    if (senderId === userId) {
+      const partnerId = await resolveRecipientId();
+      return await keyForMessage(partnerId, null);
+    }
+    return await keyForMessage(senderId, message?.publicKeyId);
   };
   const typingTimerRef = useRef(null); // для таймера скрытия
   const messagesEndRef = useRef(null);
@@ -534,11 +577,7 @@ const SecretPrivateChat = () => {
               // Расшифровка метаданных
               if (msg.encryptedContent && msg.nonce) {
                 try {
-                  let publicKey = publicKeys[msg.sender.id];
-                  if (!publicKey || msg.publicKeyId) {
-                    publicKey = await getPublicKey(msg.sender.id, msg.publicKeyId);
-                    setPublicKeys(p => ({ ...p, [msg.sender.id]: publicKey }));
-                  }
+                  const publicKey = await keyToOpen(msg);
                   const decryptedMeta = await decryptMessage(
                     msg.encryptedContent,
                     msg.nonce,
@@ -598,11 +637,7 @@ const SecretPrivateChat = () => {
               // --- МЕТАДАННЫЕ ---
               if (msg.encryptedContent && msg.nonce) {
                 try {
-                  let publicKey = publicKeys[msg.sender.id];
-                  if (!publicKey || msg.publicKeyId) {
-                    publicKey = await getPublicKey(msg.sender.id, msg.publicKeyId);
-                    setPublicKeys(p => ({ ...p, [msg.sender.id]: publicKey }));
-                  }
+                  const publicKey = await keyToOpen(msg);
 
                   const decryptedMeta = await decryptMessage(
                     msg.encryptedContent,
@@ -761,11 +796,7 @@ const SecretPrivateChat = () => {
               const cleanedEncryptedContent = newMessage.encryptedContent.replace(/\n/g, '');
               const cleanedNonce = newMessage.nonce.replace(/\n/g, '');
 
-              let publicKey = publicKeys[newMessage.sender.id];
-              if (!publicKey || newMessage.publicKeyId) {
-                publicKey = await getPublicKey(newMessage.sender.id, newMessage.publicKeyId);
-                setPublicKeys((prev) => ({ ...prev, [newMessage.sender.id]: publicKey }));
-              }
+              const publicKey = await keyToOpen(newMessage);
 
               const decryptedContent = await decryptMessage(
                 cleanedEncryptedContent,
@@ -801,11 +832,7 @@ const SecretPrivateChat = () => {
               let caption = '';
 
               if (newMessage.encryptedContent && newMessage.nonce) {  // Now has for audio
-                let publicKey = publicKeys[newMessage.sender.id];
-                if (!publicKey || newMessage.publicKeyId) {
-                  publicKey = await getPublicKey(newMessage.sender.id, newMessage.publicKeyId);
-                  setPublicKeys((prev) => ({ ...prev, [newMessage.sender.id]: publicKey }));
-                }
+                const publicKey = await keyToOpen(newMessage);
 
                 const decryptedMetadata = await decryptMessage(
                   newMessage.encryptedContent,
@@ -1432,10 +1459,12 @@ const SecretPrivateChat = () => {
     if (senderId === userId) {
         // === СВОЙ ФАЙЛ — ключ получателя ===
         // Эту логику не трогаем, она работает
+        // Ключ собеседника, и именно текущий: publicKeyId у сообщения —
+        // наш собственный, по нему пара не сойдётся
         publicKey = publicKeys[recipientId];
-        if (!publicKey && publicKeyId) {
-            console.log(`[OWN FILE] Fetching public key for recipientId=${recipientId}, publicKeyId=${publicKeyId}`);
-            publicKey = await getPublicKey(recipientId, publicKeyId);
+        if (!publicKey) {
+            console.log(`[OWN FILE] Fetching current public key for recipientId=${recipientId}`);
+            publicKey = await getPublicKey(recipientId);
             setPublicKeys((prev) => ({ ...prev, [recipientId]: publicKey }));
         }
     } else {
@@ -2715,12 +2744,7 @@ const SecretPrivateChat = () => {
 
       // === Расшифровка метаданных ===
       if (msg.encryptedContent && msg.nonce) {
-        let senderPublicKey = publicKeys[msg.sender.id];
-        if (!senderPublicKey) {
-          console.log(`[downloadFile] Public key missing for senderId=${msg.sender.id}, fetching...`);
-          senderPublicKey = await getPublicKey(msg.sender.id, msg.publicKeyId);
-          setPublicKeys((prev) => ({ ...prev, [msg.sender.id]: senderPublicKey }));
-        }
+        const senderPublicKey = await keyToOpen(msg);
 
         const decryptedMeta = await decryptMessage(
           msg.encryptedContent,
@@ -2740,12 +2764,7 @@ const SecretPrivateChat = () => {
       const encrypted = new Uint8Array(await res.arrayBuffer());
 
       // === ГАРАНТИРОВАННАЯ ЗАГРУЗКА КЛЮЧА ПЕРЕД РАСШИФРОВКОЙ ===
-      let senderPublicKey = publicKeys[msg.sender.id];
-      if (!senderPublicKey) {
-        console.log(`[downloadFile] Forcing public key fetch for senderId=${msg.sender.id}`);
-        senderPublicKey = await getPublicKey(msg.sender.id, publicKeyId);
-        setPublicKeys((prev) => ({ ...prev, [msg.sender.id]: senderPublicKey }));
-      }
+      const senderPublicKey = await keyToOpen(msg);
 
       const decrypted = await decryptFileContent(
         encrypted,
@@ -2795,14 +2814,15 @@ const SecretPrivateChat = () => {
       if (senderId === userId) {
         // СВОЁ СООБЩЕНИЕ → шифровали на ключ ПОЛУЧАТЕЛЯ
         decryptRecipientId = await resolveRecipientId();
-        publicKey = publicKeys[decryptRecipientId] || await getPublicKey(decryptRecipientId, publicKeyId);
+        // publicKeyId здесь наш, отправителя: своё сообщение открывается
+        // ключом собеседника
+        publicKey = await keyForMessage(decryptRecipientId, null);
       } else {
         // ЧУЖОЕ СООБЩЕНИЕ → шифровали на наш ключ, используем ключ ОТПРАВИТЕЛЯ
-        publicKey = publicKeys[senderId] || await getPublicKey(senderId, publicKeyId);
+        publicKey = await keyForMessage(senderId, publicKeyId);
         decryptRecipientId = userId;
       }
 
-      setPublicKeys(prev => ({ ...prev, [decryptRecipientId]: publicKey }));
 
       const decryptedBytes = await decryptFileContent(
         encryptedBytes,
@@ -2884,19 +2904,20 @@ const SecretPrivateChat = () => {
         decryptRecipientId = await resolveRecipientId();
 
         // Берём публичный ключ собеседника
-        publicKey = publicKeys[decryptRecipientId] || await getPublicKey(decryptRecipientId, publicKeyId);
+        // publicKeyId здесь наш, отправителя: своё сообщение открывается
+        // ключом собеседника
+        publicKey = await keyForMessage(decryptRecipientId, null);
         console.log(`Own image: using partnerId=${decryptRecipientId} as recipient for decryption (publicKeyId=${publicKeyId || 'current'})`);
       } else {
         // Входящее сообщение → шифровали на наш ключ
         decryptRecipientId = userId;
 
         // Берём публичный ключ отправителя
-        publicKey = publicKeys[senderId] || await getPublicKey(senderId, publicKeyId);
+        publicKey = await keyForMessage(senderId, publicKeyId);
         console.log(`Incoming image: using userId=${userId} as recipient for decryption (senderId=${senderId}, publicKeyId=${publicKeyId || 'current'})`);
       }
 
       // Обновляем кэш публичных ключей
-      setPublicKeys(prev => ({ ...prev, [decryptRecipientId]: publicKey }));
 
       // 4. Расшифровываем содержимое файла
       const decryptedBytes = await decryptFileContent(
