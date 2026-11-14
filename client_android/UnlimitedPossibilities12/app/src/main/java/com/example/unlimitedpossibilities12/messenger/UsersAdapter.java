@@ -44,11 +44,35 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UserViewHold
 
         if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
             String avatarUrl = "https://unlimitedpossibilities12.org" + user.getAvatar() + "?t=" + System.currentTimeMillis();
+            holder.avatarTextView.setText(user.getUsername().substring(0, 1).toUpperCase());
             Glide.with(holder.itemView.getContext())
                     .load(avatarUrl)
                     .diskCacheStrategy(DiskCacheStrategy.NONE)
                     .skipMemoryCache(true)
                     .circleCrop()
+                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                    Object model,
+                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                    boolean isFirstResource) {
+                            // Снимка на сервере может не быть — тогда буква имени,
+                            // а не пустое место рядом со сдвинутой строкой
+                            holder.avatarImageView.setImageDrawable(null);
+                            holder.avatarTextView.setVisibility(View.VISIBLE);
+                            return true;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(android.graphics.drawable.Drawable resource,
+                                                       Object model,
+                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                       com.bumptech.glide.load.DataSource dataSource,
+                                                       boolean isFirstResource) {
+                            holder.avatarTextView.setVisibility(View.GONE);
+                            return false;
+                        }
+                    })
                     .into(holder.avatarImageView);
             holder.avatarTextView.setVisibility(View.GONE);
         } else {

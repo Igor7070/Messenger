@@ -198,6 +198,7 @@ public class UserProfileActivity extends AppCompatActivity {
         findViewById(android.R.id.content).setOnClickListener(v -> userInteracted = true);
 
         // Логика кнопок
+        findViewById(R.id.back_button).setOnClickListener(v -> finish());
         avatarInputButton.setOnClickListener(v -> openFilePicker());
         updateButton.setOnClickListener(v -> handleUpdateUser());
         personalChatsButton.setOnClickListener(v -> handlePersonalChats());
@@ -386,12 +387,37 @@ public class UserProfileActivity extends AppCompatActivity {
                     // Загрузка аватара
                     if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
                         String avatarUrl = "https://unlimitedpossibilities12.org" + user.getAvatar() + "?t=" + System.currentTimeMillis();
+                        avatarTextView.setText(user.getUsername().substring(0, 1).toUpperCase());
                         Glide.with(UserProfileActivity.this)
                                 .load(avatarUrl)
                                 .diskCacheStrategy(DiskCacheStrategy.NONE)
                                 .skipMemoryCache(true)
                                 .circleCrop()
                                 .transition(DrawableTransitionOptions.withCrossFade())
+                                .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                                    @Override
+                                    public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                                Object model,
+                                                                com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                                boolean isFirstResource) {
+                                        // Снимка на сервере может не быть: показываем букву имени,
+                                        // как в списке чатов, а не пустой круг
+                                        Log.w(TAG, "Аватар не открылся: " + avatarUrl);
+                                        avatarImageView.setImageDrawable(null);
+                                        avatarTextView.setVisibility(View.VISIBLE);
+                                        return true;
+                                    }
+
+                                    @Override
+                                    public boolean onResourceReady(android.graphics.drawable.Drawable resource,
+                                                                   Object model,
+                                                                   com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                                   com.bumptech.glide.load.DataSource dataSource,
+                                                                   boolean isFirstResource) {
+                                        avatarTextView.setVisibility(View.GONE);
+                                        return false;
+                                    }
+                                })
                                 .into(avatarImageView);
                         avatarTextView.setVisibility(View.GONE);
 
@@ -510,13 +536,15 @@ public class UserProfileActivity extends AppCompatActivity {
         if (userId == currentUserId) {
             menuItems.add(new PopupMenuItem("Delete account", null, Color.parseColor("#E2E8F0")));
         } else {
-            menuItems.add(new PopupMenuItem("Open Secret Chat",
+            // Оба пункта про одно и то же — закрытую связь, и выглядеть
+            // должны одинаково: один значок, один цвет, слова без аббревиатур
+            menuItems.add(new PopupMenuItem("Secret chat",
                     ContextCompat.getDrawable(this, R.drawable.ic_lock),
                     Color.parseColor("#E2E8F0")));
 
-            menuItems.add(new PopupMenuItem("Secure Call (E2EE)",
-                    ContextCompat.getDrawable(this, R.drawable.ic_secure_call),
-                    Color.parseColor("#4ADE80"))); // салатовый
+            menuItems.add(new PopupMenuItem("Encrypted call",
+                    ContextCompat.getDrawable(this, R.drawable.ic_lock),
+                    Color.parseColor("#E2E8F0")));
         }
 
         PopupMenuAdapter adapter = new PopupMenuAdapter(this, menuItems);
@@ -527,9 +555,9 @@ public class UserProfileActivity extends AppCompatActivity {
 
             if ("Delete account".equals(title)) {
                 showDeleteAccountDialog();
-            } else if ("Open Secret Chat".equals(title)) {
+            } else if ("Secret chat".equals(title)) {
                 handleSecretChat();
-            } else if ("Secure Call (E2EE)".equals(title)) {
+            } else if ("Encrypted call".equals(title)) {
                 handleSecureCall();
             }
             listPopupWindow.dismiss();
