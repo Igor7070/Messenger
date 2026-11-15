@@ -85,8 +85,9 @@ public class IncomingCallDialogFragment extends DialogFragment {
         TextView callerNameTextView = view.findViewById(R.id.caller_name_text_view);
         ImageView callTypeIcon = view.findViewById(R.id.call_type_icon);
         ImageView callIcon = view.findViewById(R.id.call_icon);
-        MaterialButton acceptButton = view.findViewById(R.id.accept_button);
-        MaterialButton rejectButton = view.findViewById(R.id.reject_button);
+        ImageView acceptButton = view.findViewById(R.id.accept_button);
+        ImageView rejectButton = view.findViewById(R.id.reject_button);
+        View silenceButton = view.findViewById(R.id.silence_button);
 
         // Установка заголовка и иконки типа звонка
         String callType, callerName, avatarUrl = null;
@@ -96,23 +97,23 @@ public class IncomingCallDialogFragment extends DialogFragment {
             avatarUrl = callRequest.getCallerAvatar();
             switch (callType) {
                 case "video":
-                    callTitleTextView.setText("Incoming Video Call");
+                    callTitleTextView.setText(R.string.call_incoming_video);
                     callTypeIcon.setImageResource(R.drawable.ic_video_call);
                     callTypeIcon.setColorFilter(Color.parseColor("#0288D1")); // Синий цвет для контраста
                     break;
                 case "translate":
-                    callTitleTextView.setText("Incoming Voice Call Translation");
+                    callTitleTextView.setText(R.string.call_incoming_translated);
                     callTypeIcon.setImageResource(R.drawable.ic_translate_call);
                     callTypeIcon.setColorFilter(Color.parseColor("#0288D1")); // Синий цвет для контраста
                     break;
                 case "voice_secure":
-                    callTitleTextView.setText("Incoming Secure Call (E2EE)");
+                    callTitleTextView.setText(R.string.call_incoming_secure);
                     callTypeIcon.setImageResource(R.drawable.ic_lock); // ← иконка с замком
                     callTypeIcon.setColorFilter(Color.parseColor("#00C853")); // зелёный — как в Signal
                     break;
                 case "voice":
                 default:
-                    callTitleTextView.setText("Incoming Voice Call");
+                    callTitleTextView.setText(R.string.call_incoming_voice);
                     callTypeIcon.setImageResource(android.R.drawable.stat_sys_phone_call);
                     callTypeIcon.setColorFilter(Color.parseColor("#0288D1")); // Синий цвет для контраста
                     break;
@@ -120,12 +121,13 @@ public class IncomingCallDialogFragment extends DialogFragment {
         } else {
             callType = "group";
             callerName = groupCallRequest.getInitiatorName() != null ? groupCallRequest.getInitiatorName() : "User " + groupCallRequest.getInitiatorId();
-            callTitleTextView.setText("Incoming Group Call");
+            callTitleTextView.setText(R.string.call_incoming_group);
             callTypeIcon.setImageResource(R.drawable.ic_group_call); // Используйте свою иконку для группового звонка
             callTypeIcon.setColorFilter(Color.parseColor("#0288D1")); // Синий цвет для контраста
         }
 
-        callerNameTextView.setText("From " + callerName);
+        // Имя идёт первым и без предлога: вид звонка подписан ниже
+        callerNameTextView.setText(callerName);
 
         // Создаем плейсхолдер с первой буквой имени
         String firstLetter = callerName.substring(0, 1).toUpperCase();
@@ -225,6 +227,14 @@ public class IncomingCallDialogFragment extends DialogFragment {
             onReject.run();
             dismissAllowingStateLoss();
         });
+
+        // Приглушить звонок, не отвечая и не отклоняя
+        if (silenceButton != null) {
+            silenceButton.setOnClickListener(v -> {
+                com.example.unlimitedpossibilities12.messenger.notife.CallService.silenceRinging();
+                silenceButton.setVisibility(View.INVISIBLE);
+            });
+        }
 
         // Прозрачный фон
         if (getDialog() != null && getDialog().getWindow() != null) {

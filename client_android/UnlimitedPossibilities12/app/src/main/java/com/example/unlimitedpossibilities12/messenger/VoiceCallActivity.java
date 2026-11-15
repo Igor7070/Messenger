@@ -77,7 +77,13 @@ public class VoiceCallActivity extends AppCompatActivity {
     private boolean isWaiting = false;
     private String userName;
     private boolean terminationInitiator = false;
-    private Button endCallButton;
+    private android.widget.ImageView endCallButton, muteButton, speakerButton, minimizeButton;
+    private android.widget.ImageView callAvatarImage;
+    private TextView callAvatarText, callStatus, muteLabel, speakerLabel;
+    /** Микрофон выключен — звонок идёт, но нас не слышно. */
+    private boolean micMuted = false;
+    private boolean speakerOn = true;
+    private boolean callConnected = false;
     private CallService callService;
     private boolean isBound = false;
     private Handler statsHandler;
@@ -92,16 +98,10 @@ public class VoiceCallActivity extends AppCompatActivity {
     //переменные для управления таймером, временем начала и данными графика
     private TextView callTitle;
     private TextView callTimer;
-    private TextView startTime;
-    private TextView currentTime;
-    private CallWaveformView waveformView;
+
     private Handler timerHandler;
     private Runnable timerRunnable;
-    private Handler timeHandler;
-    private Runnable timeRunnable;
     private long callStartTime;
-    private Handler currentTimeHandler;
-    private Runnable currentTimeRunnable;
 
     private ServiceConnection connection = new ServiceConnection() {
         @Override
@@ -155,13 +155,20 @@ public class VoiceCallActivity extends AppCompatActivity {
         // Инициализация UI
         callTitle = findViewById(R.id.call_title);
         callTimer = findViewById(R.id.call_timer);
-        startTime = findViewById(R.id.start_time);
-        currentTime = findViewById(R.id.current_time);
-        waveformView = findViewById(R.id.waveform_view);
+        callStatus = findViewById(R.id.call_status);
+        callAvatarImage = findViewById(R.id.call_avatar_image);
+        callAvatarText = findViewById(R.id.call_avatar_text);
         endCallButton = findViewById(R.id.end_call_button);
+        muteButton = findViewById(R.id.mute_button);
+        muteLabel = findViewById(R.id.mute_label);
+        speakerButton = findViewById(R.id.speaker_button);
+        speakerLabel = findViewById(R.id.speaker_label);
+        minimizeButton = findViewById(R.id.minimize_button);
 
         // Установка заголовка
-        callTitle.setText("Voice communication with " + recipientName);
+        // Главное на экране — собеседник, а не фраза про звонок
+        callTitle.setText(recipientName != null ? recipientName : "Unknown");
+        showPartner();
 
         // Инициализация таймера
         timerHandler = new Handler(Looper.getMainLooper());
@@ -172,39 +179,20 @@ public class VoiceCallActivity extends AppCompatActivity {
                 long duration = System.currentTimeMillis() - callStartTime;
                 int minutes = (int) (duration / 1000) / 60;
                 int seconds = (int) (duration / 1000) % 60;
-                callTimer.setText(String.format("%02d:%02d", minutes, seconds));
+                if (callConnected) {
+                    callTimer.setText(String.format("%02d:%02d", minutes, seconds));
+                }
                 timerHandler.postDelayed(this, 1000);
             }
         };
         timerHandler.post(timerRunnable);
 
-        // Инициализация времени
-        timeHandler = new Handler(Looper.getMainLooper());
-        final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+        // Прежде тут шли отладочные строки «Start:» и «Current:» и график
+        // уровня звука: человеку во время разговора они ничего не давали
 
-        // Handler для текущего времени (каждую секунду)
-        currentTimeHandler = new Handler(Looper.getMainLooper());
-        currentTimeRunnable = new Runnable() {
-            @Override
-            public void run() {
-                currentTime.setText("Current: " + sdf.format(new Date()));
-                currentTimeHandler.postDelayed(this, 1000); // Каждую секунду
-            }
-        };
-        currentTimeHandler.post(currentTimeRunnable);
-
-        // Handler для времени начала и графика (каждые 5 секунд)
-        timeRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (startTime.getText().toString().startsWith("Start: --")) {
-                    startTime.setText("Start: " + sdf.format(new Date(callStartTime)));
-                }
-                waveformView.updateAmplitude(); // Обновляем график
-                timeHandler.postDelayed(this, 5000); // Каждые 5 секунд
-            }
-        };
-        timeHandler.post(timeRunnable);
+        muteButton.setOnClickListener(v -> toggleMic());
+        speakerButton.setOnClickListener(v -> toggleSpeaker());
+        minimizeButton.setOnClickListener(v -> minimizeCall());
 
         // Анимация кнопки
         endCallButton.setOnClickListener(v -> {
@@ -221,6 +209,10 @@ public class VoiceCallActivity extends AppCompatActivity {
         int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL);
         audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, maxVolume, 0);
         Log.d(TAG, "VOICE_CALL volume set to max: " + maxVolume);
+
+        // Динамик сразу включён — кнопка должна показывать это с первой секунды
+        speakerButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFE2E8F0));
+        speakerButton.setImageTintList(android.content.res.ColorStateList.valueOf(0xFF0F172A));
 
         // Настройка рингтона
         ringtonePlayer = new MediaPlayer();
@@ -432,6 +424,7 @@ public class VoiceCallActivity extends AppCompatActivity {
             public void onIceConnectionChange(PeerConnection.IceConnectionState newState) {
                 Log.d(TAG, "IceConnectionState: " + newState);
                 if (newState == PeerConnection.IceConnectionState.CONNECTED || newState == PeerConnection.IceConnectionState.COMPLETED) {
+                    markConnected();
                     peerConnection.getStats(statsReport -> {
                         RTCStatsReport report = statsReport;
                         for (RTCStats stats : report.getStatsMap().values()) {
@@ -711,6 +704,138 @@ public class VoiceCallActivity extends AppCompatActivity {
         sendSignal(createSignalJson("ready", null));
     }
 
+    /** Снимок собеседника, а если его нет — буква имени на цветном кружке. */
+    private void showPartner() {
+        String name = recipientName != null && !recipientName.isEmpty() ? recipientName : "?";
+        callAvatarText.setText(name.substring(0, 1).toUpperCase(Locale.getDefault()));
+        callAvatarText.setBackgroundTintList(
+                android.content.res.ColorStateList.valueOf(colorForName(name)));
+
+        int id;
+        try {
+            id = Integer.parseInt(recipientId);
+        } catch (Exception e) {
+            return;
+        }
+        com.example.unlimitedpossibilities12.api.ApiClient.getApiService().getUserById(id)
+                .enqueue(new retrofit2.Callback<com.example.unlimitedpossibilities12.api.User>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<com.example.unlimitedpossibilities12.api.User> call,
+                                           retrofit2.Response<com.example.unlimitedpossibilities12.api.User> response) {
+                        if (isFinishing() || isDestroyed()) return;
+                        if (!response.isSuccessful() || response.body() == null) return;
+                        String avatar = response.body().getAvatar();
+                        if (avatar == null || avatar.isEmpty()) return;
+
+                        com.bumptech.glide.Glide.with(VoiceCallActivity.this)
+                                .load("https://unlimitedpossibilities12.org" + avatar)
+                                .circleCrop()
+                                .into(callAvatarImage);
+                        callAvatarText.setVisibility(android.view.View.GONE);
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<com.example.unlimitedpossibilities12.api.User> call, Throwable t) {
+                        Log.e(TAG, "Could not load partner avatar: " + t.getMessage());
+                    }
+                });
+    }
+
+    private int colorForName(String name) {
+        int[] colors = {0xFF6366F1, 0xFF0D9488, 0xFF8B5CF6, 0xFF0EA5E9, 0xFFDB2777, 0xFF475569};
+        int hash = 0;
+        for (int i = 0; i < name.length(); i++) hash = hash * 31 + name.charAt(i);
+        return colors[Math.abs(hash) % colors.length];
+    }
+
+    /** Соединение установлено: вместо «Connecting…» идёт время разговора. */
+    private void markConnected() {
+        runOnUiThread(() -> {
+            if (callConnected || isFinishing() || isDestroyed()) return;
+            callConnected = true;
+            callStartTime = System.currentTimeMillis();
+            callStatus.setText(R.string.call_ongoing);
+            callTimer.setVisibility(android.view.View.VISIBLE);
+        });
+    }
+
+    /** Выключить микрофон: раньше этого нельзя было сделать вовсе. */
+    private void toggleMic() {
+        micMuted = !micMuted;
+        if (localAudioTrack != null) localAudioTrack.setEnabled(!micMuted);
+
+        muteButton.setImageResource(micMuted ? R.drawable.ic_mic_off_offline : R.drawable.ic_mic_white);
+        muteButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                micMuted ? 0xFFE2E8F0 : 0xFF1E293B));
+        muteButton.setImageTintList(android.content.res.ColorStateList.valueOf(
+                micMuted ? 0xFF0F172A : 0xFFE2E8F0));
+        muteLabel.setText(micMuted ? R.string.call_unmute : R.string.call_mute);
+        if (callStatus != null && callConnected) {
+            callStatus.setText(micMuted ? R.string.call_muted_note : R.string.call_ongoing);
+        }
+        Log.d(TAG, "Microphone " + (micMuted ? "muted" : "unmuted"));
+    }
+
+    private void toggleSpeaker() {
+        speakerOn = !speakerOn;
+        if (audioManager != null) audioManager.setSpeakerphoneOn(speakerOn);
+
+        speakerButton.setImageResource(speakerOn ? R.drawable.ic_volume_up : R.drawable.ic_volume_off_offline);
+        speakerButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                speakerOn ? 0xFFE2E8F0 : 0xFF1E293B));
+        speakerButton.setImageTintList(android.content.res.ColorStateList.valueOf(
+                speakerOn ? 0xFF0F172A : 0xFFE2E8F0));
+        Log.d(TAG, "Speaker " + (speakerOn ? "on" : "off"));
+    }
+
+    /**
+     * Свернуть разговор. Звонок продолжается, а вернуться в него можно по
+     * уведомлению — прежде уведомление вело в список чатов.
+     */
+    private void minimizeCall() {
+        showOngoingCallNotification();
+        moveTaskToBack(true);
+    }
+
+    private void showOngoingCallNotification() {
+        android.app.NotificationManager manager =
+                (android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (manager == null) return;
+
+        String channelId = "OngoingCallChannel";
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            android.app.NotificationChannel channel = new android.app.NotificationChannel(
+                    channelId, "Ongoing call", android.app.NotificationManager.IMPORTANCE_LOW);
+            channel.setDescription("The call you are on right now");
+            manager.createNotificationChannel(channel);
+        }
+
+        android.content.Intent intent = new android.content.Intent(this, VoiceCallActivity.class);
+        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+                | android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        android.app.PendingIntent pending = android.app.PendingIntent.getActivity(
+                this, 101, intent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+
+        androidx.core.app.NotificationCompat.Builder builder =
+                new androidx.core.app.NotificationCompat.Builder(this, channelId)
+                        .setSmallIcon(android.R.drawable.stat_sys_phone_call)
+                        .setContentTitle(recipientName != null ? recipientName : "Call")
+                        .setContentText(getString(R.string.call_back_to_call))
+                        .setOngoing(true)
+                        .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW)
+                        .setContentIntent(pending);
+        manager.notify(ONGOING_CALL_NOTIFICATION, builder.build());
+    }
+
+    private void hideOngoingCallNotification() {
+        android.app.NotificationManager manager =
+                (android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (manager != null) manager.cancel(ONGOING_CALL_NOTIFICATION);
+    }
+
+    private static final int ONGOING_CALL_NOTIFICATION = 7701;
+
     private void endCall() {
         if (isCallEnded) {
             Log.d(TAG, "Call already ended, skipping...");
@@ -725,18 +850,6 @@ public class VoiceCallActivity extends AppCompatActivity {
             timerHandler = null;
             timerRunnable = null;
             Log.d(TAG, "Timer stopped.");
-        }
-        if (timeHandler != null && timeRunnable != null) {
-            timeHandler.removeCallbacks(timeRunnable);
-            timeHandler = null;
-            timeRunnable = null;
-            Log.d(TAG, "Time updates stopped.");
-        }
-        if (currentTimeHandler != null && currentTimeRunnable != null) {
-            currentTimeHandler.removeCallbacks(currentTimeRunnable);
-            currentTimeHandler = null;
-            currentTimeRunnable = null;
-            Log.d(TAG, "Current time updates stopped.");
         }
 
         // Отправка сигнала завершения
@@ -879,8 +992,16 @@ public class VoiceCallActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        // Экран снова перед глазами — напоминание о звонке ни к чему
+        hideOngoingCallNotification();
+    }
+
+    @Override
     protected void onDestroy() {
         com.example.unlimitedpossibilities12.messenger.notife.CallService.setCallInProgress(false);
+        hideOngoingCallNotification();
         super.onDestroy();
         if (!isCallEnded) {
             endCall();

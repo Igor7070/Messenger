@@ -1188,6 +1188,12 @@ public class CallService extends Service {
         Log.d(TAG, "Call notification shown for roomId: " + roomId + ", type: " + (callRequest instanceof CallRequest ? ((CallRequest) callRequest).getType() : "group") + ", icon: " + icon);
     }
 
+    /** Приглушить звонок, не отвечая и не отклоняя: кнопка в окне входящего. */
+    public static void silenceRinging() {
+        CallService service = activeInstance;
+        if (service != null) service.stopCallSound();
+    }
+
     public void playCallSound() {
         if (isCallSoundPlaying) {
             Log.d(TAG, "Call sound already playing, skipping");

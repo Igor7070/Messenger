@@ -1,98 +1,208 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+  Разговор.
+
+  Прежде здесь стояли обрезанный заголовок «Voice communication with …»,
+  отладочные строки «Start:» и «Current:», график уровня звука с осью в
+  шестьдесят секунд и одна-единственная кнопка «End Call»: ни отключить
+  микрофон, ни переключить динамик, ни свернуть звонок было нельзя.
+
+  Теперь экран устроен как в телефоне: собеседник в середине, под ним
+  состояние и время разговора, внизу ряд круглых кнопок и красный сброс.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/gradient_voice_call_background">
 
-    <!-- Заголовок -->
+    <!-- Свернуть: звонок продолжается, экран уходит из-под рук -->
+    <ImageView
+        android:id="@+id/minimize_button"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_margin="12dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/call_minimize"
+        android:focusable="true"
+        android:padding="10dp"
+        android:src="@drawable/ic_chevron_down"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:tint="#CBD5E1" />
+
+    <!-- Собеседник -->
+    <FrameLayout
+        android:id="@+id/avatar_card"
+        android:layout_width="140dp"
+        android:layout_height="140dp"
+        android:layout_marginTop="40dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0.18">
+
+        <ImageView
+            android:id="@+id/call_avatar_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop" />
+
+        <TextView
+            android:id="@+id/call_avatar_text"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/circle_background"
+            android:gravity="center"
+            android:textColor="#FFFFFF"
+            android:textSize="52sp"
+            android:textStyle="bold" />
+    </FrameLayout>
+
     <TextView
         android:id="@+id/call_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginHorizontal="24dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:textColor="#F1F5F9"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/avatar_card"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Состояние: «Connecting…», затем время разговора -->
+    <TextView
+        android:id="@+id/call_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
-        android:text="Voice communication with User"
-        android:textColor="#E2E8F0"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_marginTop="6dp"
+        android:text="@string/call_connecting"
+        android:textColor="#94A3B8"
+        android:textSize="16sp"
+        app:layout_constraintTop_toBottomOf="@id/call_title"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Таймер -->
     <TextView
         android:id="@+id/call_timer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="2dp"
         android:text="00:00"
-        android:textColor="#F1F5F9"
-        android:textSize="42sp"
-        android:textStyle="bold"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/call_title" />
+        android:textColor="#CBD5E1"
+        android:textSize="18sp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/call_status"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Время начала и текущее время -->
+    <!-- Кнопки разговора -->
     <LinearLayout
-        android:id="@+id/time_container"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="16dp"
-        android:orientation="vertical"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/call_timer">
-
-        <TextView
-            android:id="@+id/start_time"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Start: --:--"
-            android:textColor="#94A3B8"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/current_time"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Current: --:--"
-            android:textColor="#94A3B8"
-            android:textSize="16sp" />
-    </LinearLayout>
-
-    <!-- График -->
-    <com.example.unlimitedpossibilities12.messenger.CallWaveformView
-        android:id="@+id/waveform_view"
-        android:layout_width="0dp"
-        android:layout_height="100dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="32dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/time_container" />
-
-    <!-- Кнопка завершения звонка -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/end_call_button"
+        android:id="@+id/call_controls"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="48dp"
-        android:text="End Call"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        app:cornerRadius="12dp"
-        app:backgroundTint="#EF4444"
-        app:icon="@drawable/ic_end_call"
-        app:iconTint="#FFFFFF"
-        app:iconPadding="8dp"
+        android:layout_marginBottom="56dp"
+        android:gravity="center"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="14dp"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/speaker_button"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:background="@drawable/circle_background"
+                android:backgroundTint="#1E293B"
+                android:clickable="true"
+                android:contentDescription="@string/call_speaker"
+                android:focusable="true"
+                android:padding="18dp"
+                android:src="@drawable/ic_volume_up"
+                app:tint="#E2E8F0" />
+
+            <TextView
+                android:id="@+id/speaker_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/call_speaker"
+                android:textColor="#CBD5E1"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="14dp"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/mute_button"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:background="@drawable/circle_background"
+                android:backgroundTint="#1E293B"
+                android:clickable="true"
+                android:contentDescription="@string/call_mute"
+                android:focusable="true"
+                android:padding="18dp"
+                android:src="@drawable/ic_mic_white"
+                app:tint="#E2E8F0" />
+
+            <TextView
+                android:id="@+id/mute_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/call_mute"
+                android:textColor="#CBD5E1"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="14dp"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/end_call_button"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:background="@drawable/circle_background"
+                android:backgroundTint="#DC2626"
+                android:clickable="true"
+                android:contentDescription="@string/call_end"
+                android:focusable="true"
+                android:padding="16dp"
+                android:src="@drawable/ic_call_end_down"
+                app:tint="#FFFFFF" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/call_end"
+                android:textColor="#CBD5E1"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
