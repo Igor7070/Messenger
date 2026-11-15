@@ -87,6 +87,7 @@
         <activity android:name=".messenger.MessengerMainActivity" />
         <activity android:name=".messenger.UserProfileActivity" />
         <activity android:name=".messenger.SettingsActivity" />
+        <activity android:name=".messenger.GroupProfileActivity" />
         <activity android:name=".messenger.VoiceCallActivity" />
         <activity android:name=".messenger.PrivateChatActivity" />
         <activity android:name=".messenger.GroupChatsActivity" />

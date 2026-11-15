@@ -82,6 +82,16 @@
     <string name="calls_empty">No calls yet. Ring someone from their profile or with the button below.</string>
     <string name="calls_menu_call">Call someone</string>
     <string name="calls_menu_group">Group call</string>
+    <!-- Сведения о группе -->
+    <string name="tile_add_member">Add</string>
+    <string name="tile_invite_link">Invite</string>
+    <string name="group_members">Members</string>
+    <plurals name="group_members_count">
+        <item quantity="one">%1$d member</item>
+        <item quantity="other">%1$d members</item>
+    </plurals>
+    <string name="group_public">Public group</string>
+    <string name="group_private">Private group</string>
     <string name="profile_no_bio">Tap the pencil to add a few words</string>
     <string name="open_secret_chat">Open Secret Chat</string>
 

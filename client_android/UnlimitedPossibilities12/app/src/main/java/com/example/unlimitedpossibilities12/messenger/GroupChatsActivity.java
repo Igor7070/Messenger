@@ -211,6 +211,21 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         if (videoCallButton != null) videoCallButton.setVisibility(View.GONE);
         ImageView overflowButton = findViewById(R.id.toolbar_overflow);
         if (overflowButton != null) overflowButton.setOnClickListener(this::showChatMenu);
+
+        // Нажатие на название или снимок группы открывает сведения о ней:
+        // раньше шапка не делала ничего
+        View.OnClickListener openGroupProfile = v -> {
+            Intent profile = new Intent(this, GroupProfileActivity.class);
+            profile.putExtra("chatId", chatId);
+            profile.putExtra("chatName", chatNameTextView.getText().toString());
+            startActivity(profile);
+        };
+        chatNameTextView.setOnClickListener(openGroupProfile);
+        View headerAvatar = findViewById(R.id.partner_avatar);
+        if (headerAvatar != null) {
+            headerAvatar.setClickable(true);
+            headerAvatar.setOnClickListener(openGroupProfile);
+        }
         View avatarDot = findViewById(R.id.partner_status_dot);
         if (avatarDot != null) avatarDot.setVisibility(View.GONE);
         inputMessage = findViewById(R.id.input_message);

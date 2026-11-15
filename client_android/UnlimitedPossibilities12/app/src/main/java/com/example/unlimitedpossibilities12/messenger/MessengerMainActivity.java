@@ -732,21 +732,15 @@ public class MessengerMainActivity extends AppCompatActivity {
      * а у чатов, созданных до появления поля createdBy, владельца нет — их может
      * удалить любой, иначе они остались бы навсегда.
      */
-    /** Действия над группой: участники с приглашениями и удаление. */
+    /** Сведения о группе: участники, приглашения, выход и удаление. */
     private void showGroupMenu(Chat chat) {
-        String[] actions = {"Members and invites", "Delete group chat"};
-        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.AlertDialog_UP12)
-                .setTitle(chat.getName())
-                .setItems(actions, (dialog, which) -> {
-                    if (which == 0) {
-                        GroupMembersDialogFragment.newInstance(chat, currentUserId)
-                                .show(getSupportFragmentManager(), "group-members");
-                    } else {
-                        confirmDeleteGroupChat(chat);
-                    }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+        Intent intent = new Intent(this, GroupProfileActivity.class);
+        intent.putExtra("chatId", chat.getId());
+        intent.putExtra("chatName", chat.getName());
+        intent.putExtra("currentUserId", currentUserId);
+        // Там группу могли переименовать, покинуть или удалить — список устареет
+        shouldRefreshChats = true;
+        startActivity(intent);
     }
 
     /**
