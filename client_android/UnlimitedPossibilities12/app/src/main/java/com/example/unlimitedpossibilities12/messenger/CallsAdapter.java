@@ -3,16 +3,15 @@ package com.example.unlimitedpossibilities12.messenger;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
@@ -30,6 +29,7 @@ import com.example.unlimitedpossibilities12.api.User;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -40,25 +40,54 @@ import java.util.UUID;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class CallsAdapter extends RecyclerView.Adapter<CallsAdapter.CallViewHolder> {
+/**
+ * Список звонков.
+ *
+ * Прежде строка была карточкой с тенью: самым крупным в ней стояло слово
+ * «Completed», имя собеседника пряталось подписью под аватаром, вид звонка
+ * печатался прямо из базы («Voice_with_translate Call»), а дата всегда шла
+ * полностью, даже у сегодняшнего звонка. Теперь строка плоская, как в чатах
+ * и контактах: имя, под ним направление и вид звонка, время у края,
+ * пропущенные — красным, а дни разделены заголовками.
+ */
+public class CallsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+
+    private static final int TYPE_DATE = 0;
+    private static final int TYPE_CALL = 1;
+
+    private static final int COLOR_MUTED = 0xFF94A3B8;
+    private static final int COLOR_MISSED = 0xFFF87171;
+
+    /** Та же палитра кружков, что в списках чатов и людей. */
+    private static final int[] AVATAR_COLORS = {
+            0xFF6366F1, 0xFF0D9488, 0xFF8B5CF6, 0xFF0EA5E9, 0xFFDB2777, 0xFF475569
+    };
+
     private List<Call> calls = new ArrayList<>();
     private List<User> users = new ArrayList<>();
+    /** Что показываем: заголовок дня (String) либо сам звонок (Call). */
+    private final List<Object> rows = new ArrayList<>();
+
     private int currentUserId;
     private String currentUsername;
     private final OnCallActionListener listener;
     private boolean isSelectionMode = false;
-    private final Set<Integer> selectedPositions = new HashSet<>();
-    private View actionBar;
-    private ImageView deleteSelectedButton;
+    /** Выделение держим по номерам звонков: позиции в списке сдвигаются. */
+    private final Set<Long> selectedCallIds = new HashSet<>();
+    private final View actionBar;
+    private final ImageView deleteSelectedButton;
     private final ApiService apiService;
 
     public interface OnCallActionListener {
         void onDeleteCall(long callId);
+
         void onRedialCall(Call call);
+
         void onDeleteSelectedCalls(List<Long> callIds);
     }
 
-    public CallsAdapter(int currentUserId, String currentUsername, OnCallActionListener listener, View actionBar, ApiService apiService) {
+    public CallsAdapter(int currentUserId, String currentUsername, OnCallActionListener listener,
+                        View actionBar, ApiService apiService) {
         this.currentUserId = currentUserId;
         this.currentUsername = currentUsername;
         this.listener = listener;
@@ -70,13 +99,7 @@ public class CallsAdapter extends RecyclerView.Adapter<CallsAdapter.CallViewHold
 
     private void setupActionBar() {
         deleteSelectedButton.setOnClickListener(v -> {
-            List<Long> selectedCallIds = new ArrayList<>();
-            for (int position : selectedPositions) {
-                if (position < calls.size()) {
-                    selectedCallIds.add(calls.get(position).getId());
-                }
-            }
-            listener.onDeleteSelectedCalls(selectedCallIds);
+            listener.onDeleteSelectedCalls(new ArrayList<>(selectedCallIds));
             exitSelectionMode();
         });
     }
@@ -84,10 +107,10 @@ public class CallsAdapter extends RecyclerView.Adapter<CallsAdapter.CallViewHold
     public void updateCalls(List<Call> newCalls, List<User> users) {
         this.calls = new ArrayList<>(newCalls);
         this.users = new ArrayList<>(users);
-        selectedPositions.clear();
+        selectedCallIds.clear();
         isSelectionMode = false;
         updateActionBarVisibility();
-        notifyDataSetChanged();
+        rebuild();
     }
 
     public boolean isSelectionMode() {
@@ -96,7 +119,7 @@ public class CallsAdapter extends RecyclerView.Adapter<CallsAdapter.CallViewHold
 
     public void exitSelectionMode() {
         isSelectionMode = false;
-        selectedPositions.clear();
+        selectedCallIds.clear();
         updateActionBarVisibility();
         notifyDataSetChanged();
     }
@@ -107,249 +130,376 @@ public class CallsAdapter extends RecyclerView.Adapter<CallsAdapter.CallViewHold
     }
 
     private void updateActionBarVisibility() {
-        actionBar.setVisibility(isSelectionMode && !selectedPositions.isEmpty() ? View.VISIBLE : View.GONE);
+        boolean deleting = isSelectionMode && !selectedCallIds.isEmpty();
+        actionBar.setVisibility(deleting ? View.VISIBLE : View.GONE);
+
+        // Пока выделяем звонки, кнопка «позвонить» уступает место корзине:
+        // иначе две круглые кнопки стоят одна над другой
+        View root = actionBar.getRootView();
+        View newCallButton = root.findViewById(R.id.create_group_call_button);
+        View callsContainer = root.findViewById(R.id.calls_container);
+        boolean onCallsTab = callsContainer != null && callsContainer.getVisibility() == View.VISIBLE;
+        if (newCallButton != null && (deleting || onCallsTab)) {
+            newCallButton.setVisibility(deleting ? View.INVISIBLE : View.VISIBLE);
+        }
+    }
+
+    /** Собирает показываемый список: над каждой группой звонков — свой день. */
+    private void rebuild() {
+        rows.clear();
+        String currentHeader = null;
+        for (Call call : calls) {
+            String header = dateHeader(parseTimestamp(call.getTimestamp()));
+            if (header != null && !header.equals(currentHeader)) {
+                rows.add(header);
+                currentHeader = header;
+            }
+            rows.add(call);
+        }
+        notifyDataSetChanged();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return rows.get(position) instanceof Call ? TYPE_CALL : TYPE_DATE;
+    }
+
+    @Override
+    public int getItemCount() {
+        return rows.size();
     }
 
     @NonNull
     @Override
-    public CallViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.call_item, parent, false);
-        return new CallViewHolder(view);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        if (viewType == TYPE_DATE) {
+            return new DateViewHolder(inflater.inflate(R.layout.item_call_date, parent, false));
+        }
+        return new CallViewHolder(inflater.inflate(R.layout.call_item, parent, false));
     }
 
     @Override
-    public void onBindViewHolder(@NonNull CallViewHolder holder, int position) {
-        Call call = calls.get(position);
-        boolean isGroup = call.getCallType().equals("group");
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
+        Object row = rows.get(position);
 
-        // Установка участников
-        holder.participantsContainer.removeAllViews();
-        if (isGroup) {
-            List<String> participantIds = call.getParticipants();
-            int participantsPerRow = 2;
-
-            for (int i = 0; i < participantIds.size(); i += participantsPerRow) {
-                LinearLayout row = new LinearLayout(holder.itemView.getContext());
-                row.setLayoutParams(new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT));
-                row.setOrientation(LinearLayout.HORIZONTAL);
-                row.setPadding(0, 0, 0, 4);
-
-                for (int j = i; j < Math.min(i + participantsPerRow, participantIds.size()); j++) {
-                    User user = getUserById(Integer.parseInt(participantIds.get(j)));
-                    addParticipantView(row, user, j == 0 && isSelectionMode && selectedPositions.contains(position));
-                }
-
-                holder.participantsContainer.addView(row);
-            }
-        } else {
-            int otherUserId = call.getDirection().equals("outgoing") ? Integer.parseInt(call.getReceiver()) : Integer.parseInt(call.getCaller());
-            User user = getUserById(otherUserId);
-            addParticipantView(holder.participantsContainer, user, isSelectionMode && selectedPositions.contains(position));
+        if (row instanceof String) {
+            ((DateViewHolder) viewHolder).date.setText((String) row);
+            return;
         }
 
-        // Установка стрелки направления
-        holder.directionArrow.setImageResource(call.getDirection().equals("outgoing") ?
-                android.R.drawable.arrow_up_float : android.R.drawable.arrow_down_float);
-        holder.directionArrow.setColorFilter(call.getDirection().equals("outgoing") ?
-                holder.itemView.getContext().getResources().getColor(R.color.call_outgoing_arrow) :
-                holder.itemView.getContext().getResources().getColor(R.color.call_incoming_arrow));
+        final Call call = (Call) row;
+        final CallViewHolder holder = (CallViewHolder) viewHolder;
+        final Context context = holder.itemView.getContext();
 
-        // Установка деталей звонка
-        holder.status.setText(capitalize(call.getStatus()));
-        holder.callType.setText(capitalize(call.getCallType()) + " Call");
-        holder.timestamp.setText(formatTimestamp(call.getTimestamp()));
+        boolean isGroup = "group".equals(call.getCallType());
+        boolean missed = "missed".equals(call.getStatus()) || "rejected".equals(call.getStatus());
 
-        // Обработчики
-        holder.redialButton.setOnClickListener(v -> {
+        // Имя: для группового звонка заголовком идёт сам звонок, а имена — ниже
+        holder.name.setText(isGroup ? "Group call" : usernameOf(otherUserId(call)));
+        holder.subtitle.setText(subtitleFor(call, isGroup, missed));
+        holder.subtitle.setTextColor(missed ? COLOR_MISSED : COLOR_MUTED);
+
+        holder.directionArrow.setImageResource("outgoing".equals(call.getDirection())
+                ? R.drawable.ic_call_made : R.drawable.ic_call_received);
+        holder.directionArrow.setColorFilter(missed ? COLOR_MISSED : COLOR_MUTED);
+
+        holder.time.setText(timeLabel(parseTimestamp(call.getTimestamp())));
+
+        bindAvatars(holder, call, isGroup);
+
+        holder.checkmark.setVisibility(
+                isSelectionMode && selectedCallIds.contains(call.getId()) ? View.VISIBLE : View.GONE);
+        holder.itemView.setSelected(selectedCallIds.contains(call.getId()));
+
+        holder.redialButton.setVisibility(isSelectionMode ? View.GONE : View.VISIBLE);
+        holder.redialButton.setOnClickListener(v -> redial(context, call));
+
+        holder.itemView.setOnClickListener(v -> {
             if (isSelectionMode) {
-                toggleSelection(position, holder);
-            } else {
-                if (currentUserId == -1) {
-                    Toast.makeText(holder.itemView.getContext(), "You need to log in to make a call", Toast.LENGTH_SHORT).show();
-                    Log.d("CallsAdapter", "Unauthorized user attempted to redial call: id=" + call.getId());
-                    return;
-                }
-
-                if (call.getCallType().equals("group")) {
-                    // Групповой вызов
-                    List<String> participantIds = new ArrayList<>(call.getParticipants());
-                    participantIds.remove(String.valueOf(currentUserId)); // Удаляем текущего пользователя
-                    if (participantIds.isEmpty()) {
-                        Toast.makeText(holder.itemView.getContext(), "No participants available for group call", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    String roomId = UUID.randomUUID().toString();
-                    Intent intent = new Intent(holder.itemView.getContext(), GroupCallActivity.class);
-                    intent.putStringArrayListExtra("selectedUsersIds", new ArrayList<>(participantIds));
-                    intent.putExtra("initiatorId", currentUserId);
-                    intent.putExtra("initiatorName", currentUsername);
-                    intent.putExtra("roomId", roomId);
-                    intent.putExtra("isInitiator", true);
-                    holder.itemView.getContext().startActivity(intent);
-                    Toast.makeText(holder.itemView.getContext(), "Starting group call...", Toast.LENGTH_SHORT).show();
-                    Log.d("CallsAdapter", "Initiating group call with roomId: " + roomId);
-                } else {
-                    // Индивидуальный вызов
-                    int recipientId = call.getDirection().equals("outgoing") ? Integer.parseInt(call.getReceiver()) : Integer.parseInt(call.getCaller());
-                    User recipient = getUserById(recipientId);
-                    String recipientName = recipient != null ? recipient.getUsername() : "Unknown";
-                    String roomId = UUID.randomUUID().toString();
-                    String originalCallType = call.getCallType();
-                    final String callType = "voice_with_translate".equals(originalCallType) || "translated".equals(originalCallType) ? "translate" : originalCallType;
-                    if ("voice_with_translate".equals(originalCallType) || "translated".equals(originalCallType)) {
-                        Log.d("CallsAdapter", "Converted callType from " + originalCallType + " to translate for call id: " + call.getId());
-                    }
-                    CallRequest requestBody = new CallRequest(currentUserId, recipientId, roomId, recipientName, callType);
-                    Log.d("CallsAdapter", "Initiating " + callType + " call with roomId: " + roomId);
-
-                    apiService.initiateCall(requestBody).enqueue(new Callback<Void>() {
-                        @Override
-                        public void onResponse(retrofit2.Call<Void> call, Response<Void> response) {
-                            if (response.isSuccessful()) {
-                                Intent intent;
-                                switch (callType) {
-                                    case "video":
-                                        intent = new Intent(holder.itemView.getContext(), VideoCallActivity.class);
-                                        Log.d("CallsAdapter", "Starting VideoCallActivity for roomId: " + roomId);
-                                        break;
-                                    case "translate":
-                                        intent = new Intent(holder.itemView.getContext(), VoiceCallWithTranslateActivity.class);
-                                        Log.d("CallsAdapter", "Starting VoiceCallWithTranslateActivity for roomId: " + roomId);
-                                        break;
-                                    case "voice":
-                                        intent = new Intent(holder.itemView.getContext(), VoiceCallActivity.class);
-                                        Log.d("CallsAdapter", "Starting VoiceCallActivity for roomId: " + roomId);
-                                        break;
-                                    default:
-                                        intent = new Intent(holder.itemView.getContext(), VoiceCallActivity.class);
-                                        Log.w("CallsAdapter", "Unknown call type: " + callType + ", defaulting to VoiceCallActivity for roomId: " + roomId);
-                                        break;
-                                }
-                                intent.putExtra("currentUserId", String.valueOf(currentUserId));
-                                intent.putExtra("recipientId", String.valueOf(recipientId));
-                                intent.putExtra("roomId", roomId);
-                                intent.putExtra("callerName", currentUsername);
-                                intent.putExtra("recipientName", recipientName);
-                                intent.putExtra("isCaller", true);
-                                holder.itemView.getContext().startActivity(intent);
-                                Toast.makeText(holder.itemView.getContext(), "Calling " + recipientName + "...", Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(holder.itemView.getContext(), "Failed to initiate " + callType + " call: " + response.code(), Toast.LENGTH_SHORT).show();
-                                Log.e("CallsAdapter", "Failed to initiate " + callType + " call: " + response.code());
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(retrofit2.Call<Void> call, Throwable t) {
-                            Toast.makeText(holder.itemView.getContext(), "Error initiating " + callType + " call: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                            Log.e("CallsAdapter", "Error initiating " + callType + " call: " + t.getMessage());
-                        }
-                    });
-                }
+                toggleSelection(call, position);
+                return;
             }
+            if (isGroup) {
+                redial(context, call);
+                return;
+            }
+            // Обычный звонок: открываем человека, как из списка людей
+            Intent intent = new Intent(context, UserProfileActivity.class);
+            intent.putExtra("currentUserId", currentUserId);
+            intent.putExtra("userId", otherUserId(call));
+            context.startActivity(intent);
         });
 
         holder.itemView.setOnLongClickListener(v -> {
             if (!isSelectionMode) {
                 isSelectionMode = true;
-                toggleSelection(position, holder);
-                updateActionBarVisibility();
+                toggleSelection(call, position);
                 notifyDataSetChanged();
                 return true;
             }
             return false;
         });
+    }
 
-        holder.itemView.setOnClickListener(v -> {
-            if (isSelectionMode) {
-                toggleSelection(position, holder);
+    // ---------- содержимое строки ----------
+
+    /** «Outgoing · Voice call», «Missed · Video call», имена для группового. */
+    private String subtitleFor(Call call, boolean isGroup, boolean missed) {
+        String direction = missed
+                ? ("rejected".equals(call.getStatus()) ? "Declined" : "Missed")
+                : ("outgoing".equals(call.getDirection()) ? "Outgoing" : "Incoming");
+
+        if (isGroup) {
+            return direction + " · " + participantNames(call);
+        }
+        return direction + " · " + callTypeLabel(call.getCallType());
+    }
+
+    /** Вид звонка по-человечески: в базе лежит «voice_with_translate». */
+    private String callTypeLabel(String callType) {
+        if (callType == null) return "Call";
+        switch (callType) {
+            case "voice":
+                return "Voice call";
+            case "video":
+                return "Video call";
+            case "voice_with_translate":
+            case "translated":
+            case "translate":
+                return "Translated call";
+            case "secure":
+            case "encrypted":
+                return "Encrypted call";
+            case "group":
+                return "Group call";
+            default:
+                return capitalize(callType.replace('_', ' ')) + " call";
+        }
+    }
+
+    /** Кого звали: до трёх имён, остальные — числом. */
+    private String participantNames(Call call) {
+        List<String> names = new ArrayList<>();
+        List<String> participants = call.getParticipants();
+        if (participants == null) return "";
+
+        for (String id : participants) {
+            if (String.valueOf(currentUserId).equals(id)) continue;
+            names.add(usernameOf(parseId(id)));
+        }
+        if (names.isEmpty()) return "";
+        if (names.size() <= 3) return android.text.TextUtils.join(", ", names);
+
+        return android.text.TextUtils.join(", ", names.subList(0, 3))
+                + " and " + (names.size() - 3) + " more";
+    }
+
+    private void bindAvatars(CallViewHolder holder, Call call, boolean isGroup) {
+        List<Integer> ids = new ArrayList<>();
+        if (isGroup) {
+            if (call.getParticipants() != null) {
+                for (String id : call.getParticipants()) {
+                    if (String.valueOf(currentUserId).equals(id)) continue;
+                    ids.add(parseId(id));
+                }
+            }
+        } else {
+            ids.add(otherUserId(call));
+        }
+
+        int first = ids.isEmpty() ? -1 : ids.get(0);
+        loadAvatar(holder.avatarImage, holder.avatarText, first);
+
+        // Второй кружок позади первого — только когда звавших было больше одного
+        if (ids.size() > 1) {
+            holder.avatarBack.setVisibility(View.VISIBLE);
+            loadAvatar(holder.avatarBack, null, ids.get(1));
+        } else {
+            holder.avatarBack.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * Снимок, а если его нет или он не открылся — буква имени на цветном
+     * кружке. Для заднего кружка подписи нет, там остаётся цветной круг.
+     */
+    private void loadAvatar(ImageView image, @Nullable TextView letterView, int userId) {
+        User user = getUserById(userId);
+        String username = user != null && user.getUsername() != null ? user.getUsername() : "?";
+        String letter = username.isEmpty() ? "?" : username.substring(0, 1).toUpperCase(Locale.getDefault());
+        int color = colorFor(username);
+
+        if (letterView != null) {
+            letterView.setText(letter);
+            letterView.setBackgroundTintList(ColorStateList.valueOf(color));
+        } else {
+            image.setBackgroundTintList(ColorStateList.valueOf(color));
+        }
+
+        if (user != null && user.getAvatar() != null && !user.getAvatar().isEmpty()) {
+            String avatarUrl = "https://unlimitedpossibilities12.org" + user.getAvatar();
+            Glide.with(image.getContext())
+                    .load(avatarUrl)
+                    .circleCrop()
+                    .listener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model,
+                                                    Target<Drawable> target, boolean isFirstResource) {
+                            image.setImageDrawable(null);
+                            if (letterView != null) letterView.setVisibility(View.VISIBLE);
+                            return true;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model,
+                                                       Target<Drawable> target, DataSource dataSource,
+                                                       boolean isFirstResource) {
+                            if (letterView != null) letterView.setVisibility(View.GONE);
+                            return false;
+                        }
+                    })
+                    .into(image);
+            if (letterView != null) letterView.setVisibility(View.GONE);
+        } else {
+            image.setImageDrawable(null);
+            if (letterView != null) letterView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    // ---------- выделение ----------
+
+    private void toggleSelection(Call call, int position) {
+        if (selectedCallIds.contains(call.getId())) {
+            selectedCallIds.remove(call.getId());
+        } else {
+            selectedCallIds.add(call.getId());
+        }
+        notifyItemChanged(position);
+        updateActionBarVisibility();
+        if (selectedCallIds.isEmpty() && isSelectionMode) {
+            isSelectionMode = false;
+            notifyDataSetChanged();
+        }
+    }
+
+    // ---------- повторный звонок ----------
+
+    private void redial(Context context, Call call) {
+        if (currentUserId == -1) {
+            Toast.makeText(context, "You need to log in to make a call", Toast.LENGTH_SHORT).show();
+            Log.d("CallsAdapter", "Unauthorized user attempted to redial call: id=" + call.getId());
+            return;
+        }
+
+        if ("group".equals(call.getCallType())) {
+            List<String> participantIds = new ArrayList<>(call.getParticipants());
+            participantIds.remove(String.valueOf(currentUserId));
+            if (participantIds.isEmpty()) {
+                Toast.makeText(context, "No participants available for group call", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String roomId = UUID.randomUUID().toString();
+            Intent intent = new Intent(context, GroupCallActivity.class);
+            intent.putStringArrayListExtra("selectedUsersIds", new ArrayList<>(participantIds));
+            intent.putExtra("initiatorId", currentUserId);
+            intent.putExtra("initiatorName", currentUsername);
+            intent.putExtra("roomId", roomId);
+            intent.putExtra("isInitiator", true);
+            context.startActivity(intent);
+            Toast.makeText(context, "Starting group call...", Toast.LENGTH_SHORT).show();
+            Log.d("CallsAdapter", "Initiating group call with roomId: " + roomId);
+            return;
+        }
+
+        int recipientId = otherUserId(call);
+        String recipientName = usernameOf(recipientId);
+        String roomId = UUID.randomUUID().toString();
+        String originalCallType = call.getCallType();
+        final String callType = "voice_with_translate".equals(originalCallType)
+                || "translated".equals(originalCallType) ? "translate" : originalCallType;
+
+        CallRequest requestBody = new CallRequest(currentUserId, recipientId, roomId, recipientName, callType);
+        Log.d("CallsAdapter", "Initiating " + callType + " call with roomId: " + roomId);
+
+        apiService.initiateCall(requestBody).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(retrofit2.Call<Void> call2, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    Intent intent;
+                    switch (callType) {
+                        case "video":
+                            intent = new Intent(context, VideoCallActivity.class);
+                            break;
+                        case "translate":
+                            intent = new Intent(context, VoiceCallWithTranslateActivity.class);
+                            break;
+                        case "voice":
+                            intent = new Intent(context, VoiceCallActivity.class);
+                            break;
+                        default:
+                            intent = new Intent(context, VoiceCallActivity.class);
+                            Log.w("CallsAdapter", "Unknown call type: " + callType
+                                    + ", defaulting to VoiceCallActivity for roomId: " + roomId);
+                            break;
+                    }
+                    intent.putExtra("currentUserId", String.valueOf(currentUserId));
+                    intent.putExtra("recipientId", String.valueOf(recipientId));
+                    intent.putExtra("roomId", roomId);
+                    intent.putExtra("callerName", currentUsername);
+                    intent.putExtra("recipientName", recipientName);
+                    intent.putExtra("isCaller", true);
+                    context.startActivity(intent);
+                    Toast.makeText(context, "Calling " + recipientName + "...", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(context, "Failed to initiate " + callType + " call: "
+                            + response.code(), Toast.LENGTH_SHORT).show();
+                    Log.e("CallsAdapter", "Failed to initiate " + callType + " call: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<Void> call2, Throwable t) {
+                Toast.makeText(context, "Error initiating " + callType + " call: "
+                        + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e("CallsAdapter", "Error initiating " + callType + " call: " + t.getMessage());
             }
         });
     }
 
-    private void toggleSelection(int position, CallViewHolder holder) {
-        if (selectedPositions.contains(position)) {
-            selectedPositions.remove(position);
-        } else {
-            selectedPositions.add(position);
-        }
-        notifyItemChanged(position);
-        updateActionBarVisibility();
+    // ---------- мелочи ----------
+
+    private int otherUserId(Call call) {
+        String id = "outgoing".equals(call.getDirection()) ? call.getReceiver() : call.getCaller();
+        return parseId(id);
     }
 
-    private void addParticipantView(LinearLayout container, User user, boolean showCheckmark) {
-        LayoutInflater inflater = LayoutInflater.from(container.getContext());
-        View participantView = inflater.inflate(R.layout.participant_item_call, container, false);
-
-        ImageView avatarImage = participantView.findViewById(R.id.participant_avatar_image);
-        TextView avatarText = participantView.findViewById(R.id.participant_avatar_text);
-        TextView name = participantView.findViewById(R.id.participant_name);
-        ImageView checkmark = participantView.findViewById(R.id.selection_checkmark);
-
-        String username = user != null ? user.getUsername() : "Unknown";
-        name.setText(username);
-
-        if (user != null && user.getAvatar() != null && !user.getAvatar().isEmpty()) {
-            String avatarUrl = "https://unlimitedpossibilities12.org" + user.getAvatar();
-            Log.d("CallsAdapter", "Loading avatar for user " + username + ": " + avatarUrl);
-            avatarImage.setVisibility(View.VISIBLE);
-            avatarText.setVisibility(View.GONE);
-            Glide.with(container.getContext())
-                    .load(avatarUrl)
-                    .circleCrop()
-                    .placeholder(R.drawable.circle_background)
-                    .error(R.drawable.circle_background)
-                    .listener(new RequestListener<Drawable>() {
-                        @Override
-                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                            Log.e("CallsAdapter", "Glide load failed for URL: " + avatarUrl + ", error: " + (e != null ? e.getMessage() : "unknown"));
-                            avatarImage.setVisibility(View.GONE);
-                            avatarText.setVisibility(View.VISIBLE);
-                            avatarText.setText(username.charAt(0) + "");
-                            return false;
-                        }
-
-                        @Override
-                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                            Log.d("CallsAdapter", "Glide load successful for URL: " + avatarUrl);
-                            return false;
-                        }
-                    })
-                    .into(avatarImage);
-        } else {
-            Log.d("CallsAdapter", "No avatar for user " + username + ", showing initial");
-            avatarImage.setVisibility(View.GONE);
-            avatarText.setVisibility(View.VISIBLE);
-            avatarText.setText(username.charAt(0) + "");
-            avatarText.setBackgroundTintList(ColorStateList.valueOf(generateColorForUser(user != null ? user.getId() : 0)));
+    private int parseId(String id) {
+        try {
+            return Integer.parseInt(id);
+        } catch (Exception e) {
+            return -1;
         }
-
-        checkmark.setVisibility(showCheckmark ? View.VISIBLE : View.GONE);
-        container.addView(participantView);
     }
 
-    private int generateColorForUser(int userId) {
-        int[] colors = {
-                Color.parseColor("#3F51B5"), // Синий
-                Color.parseColor("#FF5722"), // Оранжевый
-                Color.parseColor("#4CAF50"), // Зеленый
-                Color.parseColor("#E91E63")  // Розовый
-        };
-        return colors[Math.abs(userId % colors.length)];
+    private String usernameOf(int id) {
+        User user = getUserById(id);
+        return user != null && user.getUsername() != null ? user.getUsername() : "Unknown";
     }
 
     private User getUserById(int id) {
         for (User user : users) {
-            if (user.getId() == id) {
-                Log.d("CallsAdapter", "Found user: " + user.getUsername() + ", Avatar: " + user.getAvatar());
-                return user;
-            }
+            if (user.getId() == id) return user;
         }
-        Log.w("CallsAdapter", "User not found for id: " + id + ", returning Unknown user");
-        return new User(id, "Unknown", null);
+        return null;
+    }
+
+    private int colorFor(String name) {
+        if (name == null || name.isEmpty()) return AVATAR_COLORS[0];
+        int hash = 0;
+        for (int i = 0; i < name.length(); i++) hash = hash * 31 + name.charAt(i);
+        return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
     }
 
     private String capitalize(String str) {
@@ -357,58 +507,92 @@ public class CallsAdapter extends RecyclerView.Adapter<CallsAdapter.CallViewHold
         return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
-    private String formatTimestamp(String timestamp) {
-        if (timestamp == null || timestamp.isEmpty()) {
-            Log.e("CallsAdapter", "Timestamp is null or empty");
-            return "Unknown";
-        }
-
-        Log.d("CallsAdapter", "Parsing timestamp: " + timestamp);
-        try {
-            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", Locale.US);
-            inputFormat.setLenient(true);
-            Date date = inputFormat.parse(timestamp);
-
-            if (date == null) {
-                Log.e("CallsAdapter", "Failed to parse timestamp: " + timestamp);
-                return "Unknown";
-            }
-
-            SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.US);
-            return outputFormat.format(date);
-        } catch (Exception e) {
-            Log.e("CallsAdapter", "Error parsing timestamp: " + timestamp + ", error: " + e.getMessage());
-            try {
-                SimpleDateFormat altInputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
-                altInputFormat.setLenient(true);
-                Date date = altInputFormat.parse(timestamp);
-                SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault());
-                return outputFormat.format(date);
-            } catch (Exception altE) {
-                Log.e("CallsAdapter", "Error parsing alternative timestamp: " + timestamp + ", error: " + altE.getMessage());
-                return "Unknown";
-            }
-        }
+    /** В строке только часы: какой это день, говорит заголовок над группой. */
+    private String timeLabel(Date date) {
+        if (date == null) return "";
+        return new SimpleDateFormat("HH:mm", Locale.ENGLISH).format(date);
     }
 
-    @Override
-    public int getItemCount() {
-        return calls.size();
+    /** Заголовок дня: «Today», «Yesterday», день недели, затем полная дата. */
+    private String dateHeader(Date date) {
+        if (date == null) return null;
+
+        Calendar now = Calendar.getInstance();
+        Calendar then = Calendar.getInstance();
+        then.setTime(date);
+
+        if (isSameDay(date, now.getTime())) return "Today";
+
+        now.add(Calendar.DAY_OF_YEAR, -1);
+        if (isSameDay(date, now.getTime())) return "Yesterday";
+
+        now.add(Calendar.DAY_OF_YEAR, -5);
+        if (date.after(now.getTime())) {
+            return new SimpleDateFormat("EEEE", Locale.ENGLISH).format(date);
+        }
+
+        Calendar today = Calendar.getInstance();
+        if (then.get(Calendar.YEAR) == today.get(Calendar.YEAR)) {
+            return new SimpleDateFormat("d MMMM", Locale.ENGLISH).format(date);
+        }
+        return new SimpleDateFormat("d MMMM yyyy", Locale.ENGLISH).format(date);
+    }
+
+    private boolean isSameDay(Date left, Date right) {
+        Calendar a = Calendar.getInstance();
+        Calendar b = Calendar.getInstance();
+        a.setTime(left);
+        b.setTime(right);
+        return a.get(Calendar.YEAR) == b.get(Calendar.YEAR)
+                && a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR);
+    }
+
+    /** Сервер отдаёт время и с долями секунды, и без них. */
+    private Date parseTimestamp(String timestamp) {
+        if (timestamp == null || timestamp.isEmpty()) return null;
+
+        String[] patterns = {
+                "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+                "yyyy-MM-dd'T'HH:mm:ss.SSS",
+                "yyyy-MM-dd'T'HH:mm:ss"
+        };
+        for (String pattern : patterns) {
+            try {
+                SimpleDateFormat format = new SimpleDateFormat(pattern, Locale.US);
+                format.setLenient(true);
+                Date date = format.parse(timestamp);
+                if (date != null) return date;
+            } catch (Exception ignored) {
+            }
+        }
+        Log.e("CallsAdapter", "Error parsing timestamp: " + timestamp);
+        return null;
     }
 
     static class CallViewHolder extends RecyclerView.ViewHolder {
-        LinearLayout participantsContainer;
-        ImageView directionArrow, redialButton;
-        TextView status, callType, timestamp;
+        ImageView avatarImage, avatarBack, directionArrow, redialButton, checkmark;
+        TextView avatarText, name, subtitle, time;
 
         CallViewHolder(View itemView) {
             super(itemView);
-            participantsContainer = itemView.findViewById(R.id.call_participants_container);
+            avatarImage = itemView.findViewById(R.id.call_avatar_image);
+            avatarBack = itemView.findViewById(R.id.call_avatar_back);
+            avatarText = itemView.findViewById(R.id.call_avatar_text);
             directionArrow = itemView.findViewById(R.id.call_direction_arrow);
             redialButton = itemView.findViewById(R.id.call_redial_button);
-            status = itemView.findViewById(R.id.call_status);
-            callType = itemView.findViewById(R.id.call_type);
-            timestamp = itemView.findViewById(R.id.call_timestamp);
+            checkmark = itemView.findViewById(R.id.selection_checkmark);
+            name = itemView.findViewById(R.id.call_name);
+            subtitle = itemView.findViewById(R.id.call_subtitle);
+            time = itemView.findViewById(R.id.call_time);
+        }
+    }
+
+    static class DateViewHolder extends RecyclerView.ViewHolder {
+        TextView date;
+
+        DateViewHolder(View itemView) {
+            super(itemView);
+            date = itemView.findViewById(R.id.call_date_text_view);
         }
     }
 }

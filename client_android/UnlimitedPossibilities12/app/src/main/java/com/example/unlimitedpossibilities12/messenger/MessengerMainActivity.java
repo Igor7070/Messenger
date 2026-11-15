@@ -95,6 +95,8 @@ public class MessengerMainActivity extends AppCompatActivity {
     private com.google.android.material.floatingactionbutton.FloatingActionButton createGroupCallButton; //Переменные для вкладки Calls и FAB
     private BroadcastReceiver callReceiver, notificationReceiver, chatUpdatedReceiver, messageReceiver, endCallReceiver, userStatusReceiver;
     private RecyclerView callsRecyclerView;
+    /** Надпись вместо пустого списка звонков: прежде экран просто пустовал. */
+    private TextView callsEmptyView;
     private CallsAdapter callsAdapter;
     private List<com.example.unlimitedpossibilities12.api.Call> callsList = new ArrayList<>();
     private LinearLayout callsContainer;
@@ -315,6 +317,7 @@ public class MessengerMainActivity extends AppCompatActivity {
 
         callsContainer = findViewById(R.id.calls_container);
         callsRecyclerView = findViewById(R.id.calls_recycler_view);
+        callsEmptyView = findViewById(R.id.calls_empty_view);
         callsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         actionBar = findViewById(R.id.action_bar);
         callsAdapter = new CallsAdapter(currentUserId, getSharedPreferences("prefs", MODE_PRIVATE).getString("username", "Unknown"), new CallsAdapter.OnCallActionListener() {
@@ -354,6 +357,7 @@ public class MessengerMainActivity extends AppCompatActivity {
                     boolean finalHasErrors = hasErrors;
                     runOnUiThread(() -> {
                         callsAdapter.updateCalls(callsList, usersList);
+                    updateCallsEmptyState();
                         Toast.makeText(MessengerMainActivity.this, finalHasErrors ? "Error deleting some calls" : "Selected calls deleted", Toast.LENGTH_SHORT).show();
                     });
                 }).start();
@@ -404,28 +408,9 @@ public class MessengerMainActivity extends AppCompatActivity {
         Intent serviceIntent = new Intent(this, CallService.class);
         bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE);
 
-        // Изменено: Открытие диалога выбора пользователей при клике на FAB
-        createGroupCallButton.setOnClickListener(v -> {
-            if (currentUserId == -1) {
-                Toast.makeText(MessengerMainActivity.this, "You need to log in to start a group call", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            GroupCallUserSelectionDialogFragment dialog = GroupCallUserSelectionDialogFragment.newInstance(currentUserId);
-            dialog.setOnStartGroupCallListener((selectedUsers, initiatorId, initiatorName) -> {
-                Intent intent = new Intent(MessengerMainActivity.this, GroupCallActivity.class);
-                ArrayList<String> selectedUsersIds = new ArrayList<>();
-                for (User user : selectedUsers) {
-                    selectedUsersIds.add(String.valueOf(user.getId()));
-                }
-                intent.putStringArrayListExtra("selectedUsersIds", selectedUsersIds);
-                intent.putExtra("initiatorId", initiatorId);
-                intent.putExtra("initiatorName", initiatorName);
-                intent.putExtra("isInitiator", true);
-                intent.putExtra("roomId", UUID.randomUUID().toString());
-                startActivity(intent);
-            });
-            dialog.show(getSupportFragmentManager(), "GroupCallUserSelectionDialog");
-        });
+        // Кнопка на экране звонков спрашивает, какой звонок начать: прежде она
+        // вела сразу в групповой, а обычный с этого экрана начать было нельзя
+        createGroupCallButton.setOnClickListener(v -> showCallsMenu());
 
         callReceiver = new BroadcastReceiver() {
             @Override
@@ -1872,6 +1857,62 @@ public class MessengerMainActivity extends AppCompatActivity {
         }
     }
 
+    /** Меню кнопки на экране звонков. */
+    private void showCallsMenu() {
+        if (createGroupCallButton == null) return;
+        View content = getLayoutInflater().inflate(R.layout.popup_menu_calls, null);
+        android.widget.PopupWindow popup = buildMenu(content);
+
+        content.findViewById(R.id.menu_call_someone).setOnClickListener(v -> {
+            popup.dismiss();
+            // Звонок начинается с человека — отправляем в список людей
+            showUsers();
+            highlightTabs(0);
+            Toast.makeText(this, "Pick a person to call", Toast.LENGTH_SHORT).show();
+        });
+
+        content.findViewById(R.id.menu_group_call).setOnClickListener(v -> {
+            popup.dismiss();
+            startGroupCall();
+        });
+
+        content.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        int lift = -(content.getMeasuredHeight() + createGroupCallButton.getHeight()
+                + (int) (8 * getResources().getDisplayMetrics().density));
+        popup.showAsDropDown(createGroupCallButton, 0, lift, android.view.Gravity.END);
+    }
+
+    /** Выбор участников и начало группового звонка. */
+    private void startGroupCall() {
+        if (currentUserId == -1) {
+            Toast.makeText(MessengerMainActivity.this, "You need to log in to start a group call", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        GroupCallUserSelectionDialogFragment dialog = GroupCallUserSelectionDialogFragment.newInstance(currentUserId);
+        dialog.setOnStartGroupCallListener((selectedUsers, initiatorId, initiatorName) -> {
+            Intent intent = new Intent(MessengerMainActivity.this, GroupCallActivity.class);
+            ArrayList<String> selectedUsersIds = new ArrayList<>();
+            for (User user : selectedUsers) {
+                selectedUsersIds.add(String.valueOf(user.getId()));
+            }
+            intent.putStringArrayListExtra("selectedUsersIds", selectedUsersIds);
+            intent.putExtra("initiatorId", initiatorId);
+            intent.putExtra("initiatorName", initiatorName);
+            intent.putExtra("isInitiator", true);
+            intent.putExtra("roomId", UUID.randomUUID().toString());
+            startActivity(intent);
+        });
+        dialog.show(getSupportFragmentManager(), "GroupCallUserSelectionDialog");
+    }
+
+    /** Показываем либо список звонков, либо надпись, что их нет. */
+    private void updateCallsEmptyState() {
+        if (callsEmptyView == null) return;
+        boolean empty = callsList.isEmpty();
+        callsEmptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
+        callsRecyclerView.setVisibility(empty ? View.GONE : View.VISIBLE);
+    }
+
     private void fetchCalls() {
         if (currentUserId == -1) {
             Toast.makeText(MessengerMainActivity.this, "You need to log in to view calls", Toast.LENGTH_SHORT).show();
@@ -1885,6 +1926,7 @@ public class MessengerMainActivity extends AppCompatActivity {
                     callsList.addAll(response.body());
                     Collections.sort(callsList, (a, b) -> b.getTimestamp().compareTo(a.getTimestamp()));
                     callsAdapter.updateCalls(callsList, usersList);
+                    updateCallsEmptyState();
                     Log.d(TAG, "Calls fetched: " + callsList.size());
                 } else {
                     Toast.makeText(MessengerMainActivity.this, "Failed to fetch calls", Toast.LENGTH_SHORT).show();
@@ -1911,6 +1953,7 @@ public class MessengerMainActivity extends AppCompatActivity {
                 if (response.isSuccessful()) {
                     callsList.removeIf(c -> c.getId() == callId);
                     callsAdapter.updateCalls(callsList, usersList);
+                    updateCallsEmptyState();
                     Toast.makeText(MessengerMainActivity.this, "Call deleted successfully", Toast.LENGTH_SHORT).show();
                     Log.d(TAG, "Call deleted: id=" + callId);
                 } else {

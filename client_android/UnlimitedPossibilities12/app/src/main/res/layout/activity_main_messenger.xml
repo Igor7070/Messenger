@@ -308,20 +308,33 @@
                 android:id="@+id/calls_container"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_marginHorizontal="-16dp"
                 android:orientation="vertical"
-                android:visibility="gone"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingTop="16dp">
+                android:visibility="gone">
 
+                <!-- Строки звонков сами держат свои поля, как в списке чатов -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/calls_recycler_view"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
                     android:clipToPadding="false"
-                    android:paddingBottom="80dp"
+                    android:paddingBottom="88dp"
                     android:background="#0F172A" />
+
+                <!-- Раньше при отсутствии звонков экран был просто пустым -->
+                <TextView
+                    android:id="@+id/calls_empty_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:paddingHorizontal="40dp"
+                    android:paddingBottom="88dp"
+                    android:text="@string/calls_empty"
+                    android:textColor="#64748B"
+                    android:textSize="15sp"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <!-- Свой профиль идёт во всю ширину: отступы этого столбца
@@ -374,7 +387,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_margin="20dp"
-            android:src="@drawable/ic_group_call"
+            android:src="@drawable/ic_call_add"
             app:backgroundTint="#6366F1"
             app:tint="#FFFFFF"
             app:elevation="8dp"
@@ -517,30 +530,36 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Action Bar -->
-        <LinearLayout
-            android:id="@+id/action_bar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:background="@drawable/rounded_rectangle"
-            android:padding="8dp"
-            android:elevation="12dp"
-            android:visibility="gone"
-            android:layout_gravity="bottom">
 
-            <ImageView
-                android:id="@+id/delete_selected_button"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:src="@android:drawable/ic_menu_delete"
-                android:tint="@android:color/white"
-                android:background="@drawable/circle_background"
-                android:backgroundTint="@color/call_delete_button"
-                android:padding="12dp" />
-        </LinearLayout>
+    </LinearLayout>
 
+    <!--
+      Полоса удаления выделенных звонков. Прежде это была белая полоса
+      во всю ширину под нижней панелью — единственное светлое пятно в
+      тёмном приложении. Теперь кружок над панелью, как плавающая кнопка.
+    -->
+    <LinearLayout
+        android:id="@+id/action_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="88dp"
+        android:elevation="12dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/delete_selected_button"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/circle_background"
+            android:backgroundTint="#DC2626"
+            android:contentDescription="Delete selected calls"
+            android:padding="16dp"
+            android:src="@android:drawable/ic_menu_delete"
+            android:tint="#FFFFFF" />
     </LinearLayout>
 
     <!-- Assistant Icon -->

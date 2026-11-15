@@ -78,6 +78,10 @@
     <string name="settings_cache_cleared">Cache cleared</string>
     <string name="settings_about">About</string>
     <string name="settings_version">Version %1$s</string>
+    <!-- Экран звонков -->
+    <string name="calls_empty">No calls yet. Ring someone from their profile or with the button below.</string>
+    <string name="calls_menu_call">Call someone</string>
+    <string name="calls_menu_group">Group call</string>
     <string name="profile_no_bio">Tap the pencil to add a few words</string>
     <string name="open_secret_chat">Open Secret Chat</string>
 
