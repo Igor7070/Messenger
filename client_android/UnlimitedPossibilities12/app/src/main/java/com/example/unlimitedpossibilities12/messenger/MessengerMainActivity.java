@@ -479,6 +479,8 @@ public class MessengerMainActivity extends AppCompatActivity {
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.d(TAG, "Received END_CALL broadcast with intent: " + intent.toString());
+                // Звонок закончился — в списке появилась новая запись
+                refreshCallsSoon();
                 String roomId = intent.getStringExtra("roomId");
                 Log.d(TAG, "END_CALL for roomId: " + roomId + ", incomingCall: " + (incomingCall != null ? incomingCall.getRoomId() : "null"));
                 if (roomId == null) {
@@ -1795,6 +1797,7 @@ public class MessengerMainActivity extends AppCompatActivity {
 
         incomingCall = null;
         Log.d(TAG, "Call rejected");
+        refreshCallsSoon();
     }
 
     private void acceptGroupCall() {
@@ -1911,6 +1914,28 @@ public class MessengerMainActivity extends AppCompatActivity {
         boolean empty = callsList.isEmpty();
         callsEmptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
         callsRecyclerView.setVisibility(empty ? View.GONE : View.VISIBLE);
+    }
+
+    /**
+     * Обновить список звонков, пока вкладка открыта.
+     *
+     * Запись о звонке появляется на сервере в тот же момент, что и сообщение
+     * об окончании звонка, поэтому спрашиваем дважды: сразу и чуть позже.
+     * До этого пропущенный звонок появлялся в списке, только если уйти на
+     * другую вкладку и вернуться.
+     */
+    private void refreshCallsSoon() {
+        if (callsContainer == null || callsContainer.getVisibility() != View.VISIBLE) return;
+
+        android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
+        for (int delay : new int[]{400, 2000}) {
+            handler.postDelayed(() -> {
+                if (!isFinishing() && !isDestroyed()
+                        && callsContainer.getVisibility() == View.VISIBLE) {
+                    fetchCalls();
+                }
+            }, delay);
+        }
     }
 
     private void fetchCalls() {
