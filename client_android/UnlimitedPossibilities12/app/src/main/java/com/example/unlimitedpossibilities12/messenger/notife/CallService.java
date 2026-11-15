@@ -185,14 +185,14 @@ public class CallService extends Service {
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             if (checkSelfPermission("android.permission.MANAGE_OWN_CALLS") == PackageManager.PERMISSION_GRANTED) {
-                startForeground(NOTIFICATION_ID, createNotification("Call Service Running"), ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL);
+                startForeground(NOTIFICATION_ID, createNotification(IDLE_TEXT), ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL);
                 Log.d(TAG, "Foreground Service started with phoneCall type");
             } else {
                 Log.e(TAG, "MANAGE_OWN_CALLS permission not granted, stopping service");
                 stopSelf();
             }
         } else {
-            startForeground(NOTIFICATION_ID, createNotification("Call Service Running"));
+            startForeground(NOTIFICATION_ID, createNotification(IDLE_TEXT));
         }
     }
 
@@ -490,12 +490,73 @@ public class CallService extends Service {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Messenger UP12 Call Service")
+                .setContentTitle("UP12 Messenger")
                 .setContentText(content)
                 .setSmallIcon(android.R.drawable.presence_online)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
                 .build();
+    }
+
+    // ---------- уведомление во время разговора ----------
+
+    /**
+     * Пока идёт звонок, уведомление службы показывает сам звонок: имя
+     * собеседника и кнопки. Прежде рядом висели два уведомления — служебное
+     * «Call Service Running» и отдельное про звонок.
+     */
+    public static final String ACTION_CALL_MUTE = "com.example.unlimitedpossibilities12.CALL_MUTE";
+    public static final String ACTION_CALL_HANGUP = "com.example.unlimitedpossibilities12.CALL_HANGUP";
+
+    private static final String IDLE_TEXT = "Connected — ready for calls";
+
+    /** Показать идущий звонок в уведомлении службы. */
+    public static void showOngoingCall(android.content.Context context, String partnerName,
+                                       boolean muted, Class<?> callScreen) {
+        android.app.NotificationManager manager =
+                (android.app.NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
+        if (manager == null) return;
+
+        CallService service = activeInstance;
+        if (service != null) service.createNotificationChannel();
+
+        Intent open = new Intent(context, callScreen);
+        open.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        PendingIntent openCall = PendingIntent.getActivity(context, 201, open,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        PendingIntent mute = PendingIntent.getBroadcast(context, 202,
+                new Intent(ACTION_CALL_MUTE).setPackage(context.getPackageName()),
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        PendingIntent hangup = PendingIntent.getBroadcast(context, 203,
+                new Intent(ACTION_CALL_HANGUP).setPackage(context.getPackageName()),
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        Notification notification = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setContentTitle(partnerName != null && !partnerName.isEmpty() ? partnerName : "Call")
+                .setContentText(muted
+                        ? context.getString(R.string.call_muted_note)
+                        : context.getString(R.string.call_back_to_call))
+                .setSmallIcon(android.R.drawable.stat_sys_phone_call)
+                .setContentIntent(openCall)
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .addAction(muted ? R.drawable.ic_mic_off_offline : R.drawable.ic_mic_white,
+                        context.getString(muted ? R.string.call_unmute : R.string.call_mute), mute)
+                .addAction(R.drawable.ic_call_end_down, context.getString(R.string.call_end), hangup)
+                .build();
+
+        manager.notify(NOTIFICATION_ID, notification);
+    }
+
+    /** Звонок кончился — уведомление службы возвращается к спокойному виду. */
+    public static void showIdleNotification(android.content.Context context) {
+        CallService service = activeInstance;
+        android.app.NotificationManager manager =
+                (android.app.NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
+        if (service == null || manager == null) return;
+        manager.notify(NOTIFICATION_ID, service.createNotification(IDLE_TEXT));
     }
 
     private void createNotificationChannel() {

@@ -190,6 +190,9 @@ public class VoiceCallActivity extends AppCompatActivity {
         // Прежде тут шли отладочные строки «Start:» и «Current:» и график
         // уровня звука: человеку во время разговора они ничего не давали
 
+        registerNotificationActions();
+        updateCallNotification();
+
         muteButton.setOnClickListener(v -> toggleMic());
         speakerButton.setOnClickListener(v -> toggleSpeaker());
         minimizeButton.setOnClickListener(v -> minimizeCall());
@@ -773,6 +776,7 @@ public class VoiceCallActivity extends AppCompatActivity {
         if (callStatus != null && callConnected) {
             callStatus.setText(micMuted ? R.string.call_muted_note : R.string.call_ongoing);
         }
+        updateCallNotification();
         Log.d(TAG, "Microphone " + (micMuted ? "muted" : "unmuted"));
     }
 
@@ -793,48 +797,47 @@ public class VoiceCallActivity extends AppCompatActivity {
      * уведомлению — прежде уведомление вело в список чатов.
      */
     private void minimizeCall() {
-        showOngoingCallNotification();
+        updateCallNotification();
         moveTaskToBack(true);
     }
 
-    private void showOngoingCallNotification() {
-        android.app.NotificationManager manager =
-                (android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        if (manager == null) return;
-
-        String channelId = "OngoingCallChannel";
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            android.app.NotificationChannel channel = new android.app.NotificationChannel(
-                    channelId, "Ongoing call", android.app.NotificationManager.IMPORTANCE_LOW);
-            channel.setDescription("The call you are on right now");
-            manager.createNotificationChannel(channel);
-        }
-
-        android.content.Intent intent = new android.content.Intent(this, VoiceCallActivity.class);
-        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
-                | android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        android.app.PendingIntent pending = android.app.PendingIntent.getActivity(
-                this, 101, intent,
-                android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
-
-        androidx.core.app.NotificationCompat.Builder builder =
-                new androidx.core.app.NotificationCompat.Builder(this, channelId)
-                        .setSmallIcon(android.R.drawable.stat_sys_phone_call)
-                        .setContentTitle(recipientName != null ? recipientName : "Call")
-                        .setContentText(getString(R.string.call_back_to_call))
-                        .setOngoing(true)
-                        .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW)
-                        .setContentIntent(pending);
-        manager.notify(ONGOING_CALL_NOTIFICATION, builder.build());
+    /**
+     * Уведомление о звонке — это то же уведомление службы: пока идёт
+     * разговор, оно показывает собеседника и кнопки, а не служебную строку.
+     * Прежде рядом висели два уведомления, и ни на одном не было кнопок.
+     */
+    private void updateCallNotification() {
+        com.example.unlimitedpossibilities12.messenger.notife.CallService.showOngoingCall(
+                this, recipientName, micMuted, VoiceCallActivity.class);
     }
 
     private void hideOngoingCallNotification() {
-        android.app.NotificationManager manager =
-                (android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        if (manager != null) manager.cancel(ONGOING_CALL_NOTIFICATION);
+        com.example.unlimitedpossibilities12.messenger.notife.CallService.showIdleNotification(this);
     }
 
-    private static final int ONGOING_CALL_NOTIFICATION = 7701;
+    /** Кнопки в уведомлении: «заглушить» и «завершить» без открытия экрана. */
+    private final android.content.BroadcastReceiver notificationActions = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context context, android.content.Intent intent) {
+            String action = intent.getAction();
+            if (com.example.unlimitedpossibilities12.messenger.notife.CallService.ACTION_CALL_MUTE.equals(action)) {
+                toggleMic();
+            } else if (com.example.unlimitedpossibilities12.messenger.notife.CallService.ACTION_CALL_HANGUP.equals(action)) {
+                endCall();
+            }
+        }
+    };
+
+    private void registerNotificationActions() {
+        android.content.IntentFilter filter = new android.content.IntentFilter();
+        filter.addAction(com.example.unlimitedpossibilities12.messenger.notife.CallService.ACTION_CALL_MUTE);
+        filter.addAction(com.example.unlimitedpossibilities12.messenger.notife.CallService.ACTION_CALL_HANGUP);
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(notificationActions, filter, android.content.Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(notificationActions, filter);
+        }
+    }
 
     private void endCall() {
         if (isCallEnded) {
@@ -994,14 +997,19 @@ public class VoiceCallActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Экран снова перед глазами — напоминание о звонке ни к чему
-        hideOngoingCallNotification();
+        // Уведомление остаётся на весь разговор, но пусть совпадает с экраном
+        updateCallNotification();
     }
 
     @Override
     protected void onDestroy() {
         com.example.unlimitedpossibilities12.messenger.notife.CallService.setCallInProgress(false);
         hideOngoingCallNotification();
+        try {
+            unregisterReceiver(notificationActions);
+        } catch (Exception ignored) {
+            // приёмника могло и не быть, если экран не успел подняться
+        }
         super.onDestroy();
         if (!isCallEnded) {
             endCall();
