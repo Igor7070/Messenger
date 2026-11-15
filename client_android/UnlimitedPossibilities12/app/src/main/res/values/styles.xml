@@ -272,6 +272,12 @@
       акцент — те же, что в остальном интерфейсе.
     -->
     <style name="AlertDialog.UP12" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <!--
+          Без этого Material подмешивает в тёмную поверхность акцент «по
+          высоте», и окно выходит светлее и синее заданного: вместо #1E2937
+          на экране было #2C3753.
+        -->
+        <item name="elevationOverlayEnabled">false</item>
         <item name="colorSurface">#1E2937</item>
         <item name="colorOnSurface">#E2E8F0</item>
         <item name="colorOnSurfaceVariant">#94A3B8</item>
