@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Запоминаем прежний отступ экрана, пока сверху висит полоска разговора -->
+    <item name="ongoing_call_shift" type="id" />
+</resources>

@@ -109,6 +109,11 @@ public class App extends Application {
             @Override
             public void onActivityResumed(Activity activity) {
                 currentActivity = activity;
+                // Идёт разговор — поверх экрана едет полоска с именем и временем.
+                // На самих экранах звонка она не нужна.
+                if (!activity.getClass().getSimpleName().contains("Call")) {
+                    com.example.unlimitedpossibilities12.messenger.OngoingCallBar.attach(activity);
+                }
                 Log.d(TAG, "Activity resumed: " + activity.getClass().getSimpleName());
             }
 

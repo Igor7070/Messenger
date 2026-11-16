@@ -211,6 +211,7 @@ public class GroupCallActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         com.example.unlimitedpossibilities12.messenger.notife.CallService.setCallInProgress(true); // идёт звонок — соединение держим
+        rememberOngoingCall(initiatorName);
         setContentView(R.layout.activity_group_call);
 
         // Запрещаем поворот экрана
@@ -2592,6 +2593,7 @@ public class GroupCallActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         com.example.unlimitedpossibilities12.messenger.notife.CallService.setCallInProgress(false);
+        com.example.unlimitedpossibilities12.messenger.notife.OngoingCall.clear();
         super.onDestroy();
         if (!isCallEnded) {
             endCall();
@@ -2628,5 +2630,34 @@ public class GroupCallActivity extends AppCompatActivity {
         } catch (InterruptedException e) {
             executor.shutdownNow();
         }
+    }
+
+    /** Экран, на который возвращаемся, свернув разговор. */
+    private Class<? extends android.app.Activity> callReturnScreen;
+
+    /** Запомнить разговор и экран возврата — для полоски поверх приложения. */
+    private void rememberOngoingCall(String partner) {
+        android.app.Activity previous = ((com.example.unlimitedpossibilities12.api.App) getApplication())
+                .getCurrentActivity();
+        callReturnScreen = previous != null && previous != this
+                ? previous.getClass() : MessengerMainActivity.class;
+        com.example.unlimitedpossibilities12.messenger.notife.OngoingCall
+                .start(GroupCallActivity.class, partner);
+    }
+
+    /**
+     * «Назад» сворачивает разговор, а не кладёт трубку: экран остаётся жить
+     * позади, а сверху едет полоска, по которой в него возвращаются.
+     */
+    @Override
+    public void onBackPressed() {
+        if (!com.example.unlimitedpossibilities12.messenger.notife.OngoingCall.isActive()) {
+            super.onBackPressed();
+            return;
+        }
+        android.content.Intent back = new android.content.Intent(this,
+                callReturnScreen != null ? callReturnScreen : MessengerMainActivity.class);
+        back.addFlags(android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        startActivity(back);
     }
 }

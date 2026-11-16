@@ -197,6 +197,14 @@ public class VoiceCallActivity extends AppCompatActivity {
         speakerButton.setOnClickListener(v -> toggleSpeaker());
         minimizeButton.setOnClickListener(v -> minimizeCall());
 
+        // Куда возвращаться, свернув разговор: на тот экран, с которого звонили
+        android.app.Activity previous = ((com.example.unlimitedpossibilities12.api.App) getApplication())
+                .getCurrentActivity();
+        returnScreen = previous != null && !(previous instanceof VoiceCallActivity)
+                ? previous.getClass() : MessengerMainActivity.class;
+        com.example.unlimitedpossibilities12.messenger.notife.OngoingCall
+                .start(VoiceCallActivity.class, recipientName);
+
         // Анимация кнопки
         endCallButton.setOnClickListener(v -> {
             v.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).withEndAction(() -> {
@@ -757,6 +765,7 @@ public class VoiceCallActivity extends AppCompatActivity {
             if (callConnected || isFinishing() || isDestroyed()) return;
             callConnected = true;
             callStartTime = System.currentTimeMillis();
+            com.example.unlimitedpossibilities12.messenger.notife.OngoingCall.connected();
             callStatus.setText(R.string.call_ongoing);
             callTimer.setVisibility(android.view.View.VISIBLE);
         });
@@ -798,8 +807,31 @@ public class VoiceCallActivity extends AppCompatActivity {
      */
     private void minimizeCall() {
         updateCallNotification();
-        moveTaskToBack(true);
+        Intent back = new Intent(this, returnScreen != null ? returnScreen : MessengerMainActivity.class);
+        // Экран звонка остаётся жить позади: создать его заново значит оборвать
+        // разговор, поэтому мы не закрываем его, а поднимаем наверх прежний экран
+        back.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        startActivity(back);
     }
+
+    /**
+     * «Назад» сворачивает разговор, а не кладёт трубку.
+     *
+     * Прежде кнопка закрывала экран, а вместе с ним обрывался и звонок:
+     * продолжить разговор можно было, только свернув приложение. Теперь экран
+     * остаётся позади, а сверху едет полоска, возвращающая в разговор.
+     */
+    @Override
+    public void onBackPressed() {
+        if (isCallEnded) {
+            super.onBackPressed();
+            return;
+        }
+        minimizeCall();
+    }
+
+    /** Экран, на который возвращаемся, свернув разговор. */
+    private Class<? extends android.app.Activity> returnScreen;
 
     /**
      * Уведомление о звонке — это то же уведомление службы: пока идёт
@@ -1003,6 +1035,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        com.example.unlimitedpossibilities12.messenger.notife.OngoingCall.clear();
         com.example.unlimitedpossibilities12.messenger.notife.CallService.setCallInProgress(false);
         hideOngoingCallNotification();
         try {
