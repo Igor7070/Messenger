@@ -3051,45 +3051,43 @@ const SecretPrivateChat = () => {
    * никто не искал; в секретном чате он и нужен. Звонок с переводом сюда,
    * наоборот, не ставим: перевод идёт через сервер.
    */
-  const startSecureCall = async () => {
+  // Звонок из секретного чата — обычный: подпись теперь в каждом звонке,
+  // отдельного «защищённого» больше нет
+  const startCallFromHeader = async (type) => {
     if (!partnerId) {
       toast.error('Cannot find who to call');
       return;
     }
-    const roomId = `secure-${userId}-${partnerId}-${Date.now()}`;
+    const roomId = `room-${userId}-${partnerId}`;
     const callerName = localStorage.getItem('username') || 'Unknown';
     const callRequest = {
       callerId: Number(userId),
       recipientId: Number(partnerId),
       roomId,
       callerName,
-      type: 'voice_secure',
+      type,
     };
+    const partner = partnerNameRef.current || 'the other side';
     try {
       const response = await fetch('https://unlimitedpossibilities12.org/api/webrtc/call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(callRequest),
       });
-      if (!response.ok) {
-        toast.error('Failed to start the protected call');
-        return;
-      }
-      const partnerName = displayChatName.replace('Secret Chat with ', '');
-      toast.success(`Calling ${partnerName} — protected call`);
-      navigate(`/voice-call/${roomId}`, {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      navigate(`/${type === 'video' ? 'video-call' : 'voice-call'}/${roomId}`, {
         state: {
           incomingCall: callRequest,
           isCaller: true,
           currentUserId: Number(userId),
           callerName,
-          recipientName: partnerName,
-          recipientId: Number(partnerId),
+          recipientName: partner,
         },
       });
+      toast.success(`Calling ${partner}…`);
     } catch (error) {
-      console.error('Secure call error:', error);
-      toast.error('Failed to start the protected call');
+      console.error('Не удалось начать звонок:', error);
+      toast.error('Failed to start the call');
     }
   };
 
@@ -3158,33 +3156,44 @@ const SecretPrivateChat = () => {
           {/* Справа: отпечаток ключей и меню. Замок важен именно здесь —
               это единственный способ сверить шифрование. */}
           <div className="chat-header-actions">
-            {/* Трубка с замком: звонок с проверкой личности собеседника */}
+            {/* Трубка и камера — те же, что в обычной переписке: звонок из
+                секретного чата ничем не отличается, подпись есть в каждом */}
             <button
               type="button"
               className="chat-header-button"
-              title="Protected call"
-              onClick={startSecureCall}
+              title="Voice call"
+              onClick={() => startCallFromHeader('voice')}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                {/* Та же трубка, что в личном чате, только мельче — и замок сверху */}
-                <g transform="translate(-0.6 2.2) scale(0.82)" strokeWidth="2.4">
-                  <path d="M5 4.5h3.5l1.5 4-2 1.5a11 11 0 006 6l1.5-2 4 1.5V19a1.5 1.5 0 01-1.7 1.5C10.8 19.8 4.2 13.2 3.5 6.2A1.5 1.5 0 015 4.5z" />
-                </g>
-                <rect x="15" y="3.8" width="7" height="5.4" rx="1.3" />
-                <path d="M16.8 3.8V2.7a1.7 1.7 0 013.4 0v1.1" />
+                <path d="M5 4.5h3.5l1.5 4-2 1.5a11 11 0 006 6l1.5-2 4 1.5V19a1.5 1.5 0 01-1.7 1.5C10.8 19.8 4.2 13.2 3.5 6.2A1.5 1.5 0 015 4.5z" />
               </svg>
             </button>
             <button
               type="button"
-              className={`chat-header-button ${partnerKeyChanged ? 'chat-header-button-warn' : ''}`}
-              title="Encryption fingerprint"
-              onClick={() => setShowSafetyNumber((v) => !v)}
+              className="chat-header-button"
+              title="Video call"
+              onClick={() => startCallFromHeader('video')}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
-                <path d="M8.5 10.5V7.5a3.5 3.5 0 017 0v3" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M15 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1v-3.5l5 4v-11z" />
               </svg>
             </button>
+            {/* Замок остаётся на виду только тогда, когда есть о чём
+                предупредить: ключ собеседника сменился. В остальное время
+                отпечаток живёт в меню, как и перевод. */}
+            {partnerKeyChanged && (
+              <button
+                type="button"
+                className="chat-header-button chat-header-button-warn"
+                title="The key has changed — compare the fingerprint"
+                onClick={() => setShowSafetyNumber((v) => !v)}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
+                  <path d="M8.5 10.5V7.5a3.5 3.5 0 017 0v3" />
+                </svg>
+              </button>
+            )}
             <div className="chat-header-menu-wrap" ref={chatMenuRef}>
               <button
                 type="button"

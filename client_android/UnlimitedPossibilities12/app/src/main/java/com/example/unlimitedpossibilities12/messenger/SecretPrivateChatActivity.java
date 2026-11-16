@@ -226,17 +226,19 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         tvTyping = findViewById(R.id.tv_typing);
 
         // Иконка ассистента в левом краю тулбара
-        ImageView secureCallIcon = findViewById(R.id.secure_call_icon);
-        if (secureCallIcon != null) secureCallIcon.setOnClickListener(v -> startSecureCall());
+        // Звонки из секретного чата — обычные: подпись теперь в каждом звонке,
+        // и отдельного «защищённого» больше нет
+        ImageView voiceCallButton = findViewById(R.id.toolbar_voice_call);
+        if (voiceCallButton != null) voiceCallButton.setOnClickListener(v -> startCallFromHeader("voice"));
 
-        ImageView translateIcon = findViewById(R.id.translate_icon);
-        if (translateIcon != null) {
-            translateIcon.setOnClickListener(v -> new SecretTranslationDialogFragment(chatId, (enabled, src, tgt) -> {
-                localTranslationCache.clear();
-                updateTranslateIconTint();
-                messageAdapter.notifyDataSetChanged(); // перерисовать с переводом/без
-            }).show(getSupportFragmentManager(), "SecretTranslation"));
-        }
+        ImageView videoCallButton = findViewById(R.id.toolbar_video_call);
+        if (videoCallButton != null) videoCallButton.setOnClickListener(v -> startCallFromHeader("video"));
+
+        ImageView overflowButton = findViewById(R.id.toolbar_overflow);
+        if (overflowButton != null) overflowButton.setOnClickListener(this::showSecretChatMenu);
+
+        chatStatusTextView = findViewById(R.id.chat_status_text_view);
+        updateSecretStatusLine();
         ImageView assistantIcon = findViewById(R.id.assistant_icon);
         if (assistantIcon != null) {
             assistantIcon.setOnClickListener(v -> {
@@ -263,7 +265,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         messageList.setAdapter(messageAdapter);
 
         chatId = getIntent().getLongExtra("chatId", -1);
-        updateTranslateIconTint(); // только теперь известен chatId — настройки перевода читаются по нему
+        updateSecretStatusLine(); // только теперь известен chatId — настройки перевода читаются по нему
         username = getSharedPreferences("prefs", MODE_PRIVATE).getString("username", "");
         currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
 
@@ -744,6 +746,60 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
             Log.e(TAG, "Failed to compute safety number: " + e.getMessage());
             return null;
         }
+    }
+
+    /** Строка состояния под именем: как в обычном чате, плюс метки чата. */
+    private TextView chatStatusTextView;
+
+    private void updateSecretStatusLine() {
+        if (chatStatusTextView == null) return;
+        Boolean online = messageAdapter != null ? messageAdapter.getUserOnlineStatus(partnerId) : null;
+        StringBuilder line = new StringBuilder(online != null && online ? "online" : "offline");
+        line.append(" · SECRET");
+        String target = LocalTranslator.targetLanguage(this, chatId);
+        if (LocalTranslator.isEnabled(this, chatId) && target != null) {
+            line.append(" · →").append(target.toUpperCase(java.util.Locale.getDefault()));
+        }
+        chatStatusTextView.setText(line.toString());
+    }
+
+    /**
+     * Меню переписки. Перевод живёт здесь, как и в обычном чате: прежде он был
+     * глобусом в шапке — единственным местом в приложении, где его прятали
+     * иначе. Отпечаток ключей тоже здесь, а не только на маленьком замке.
+     */
+    private void showSecretChatMenu(View anchor) {
+        android.widget.PopupMenu menu = new android.widget.PopupMenu(
+                new android.view.ContextThemeWrapper(this, R.style.CustomPopupTheme), anchor);
+        boolean translating = LocalTranslator.isEnabled(this, chatId)
+                && LocalTranslator.targetLanguage(this, chatId) != null;
+        menu.getMenu().add(0, 1, 0, translating ? "On-device translation: on" : "On-device translation…");
+        menu.getMenu().add(0, 2, 1, "Encryption fingerprint");
+        menu.getMenu().add(0, 3, 2, "View profile");
+        menu.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case 1:
+                    new SecretTranslationDialogFragment(chatId, (enabled, src, tgt) -> {
+                        localTranslationCache.clear();
+                        updateSecretStatusLine();
+                        messageAdapter.notifyDataSetChanged(); // перерисовать с переводом/без
+                    }).show(getSupportFragmentManager(), "SecretTranslation");
+                    return true;
+                case 2:
+                    showSafetyNumberDialog();
+                    return true;
+                case 3:
+                    if (partnerId != -1) {
+                        Intent profile = new Intent(this, UserProfileActivity.class);
+                        profile.putExtra("userId", (int) partnerId);
+                        startActivity(profile);
+                    }
+                    return true;
+                default:
+                    return false;
+            }
+        });
+        menu.show();
     }
 
     private void showSafetyNumberDialog() {
@@ -1471,7 +1527,16 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
      * сюда не ставим: перевод идёт через сервер, а это противоречит замыслу
      * секретного чата.
      */
+    /** Звонок из секретного чата: такой же, как из обычного. */
+    private void startCallFromHeader(String type) {
+        startSecureCall(type);
+    }
+
     private void startSecureCall() {
+        startSecureCall("voice");
+    }
+
+    private void startSecureCall(String type) {
         if (currentUserId == -1 || partnerId == -1 || partnerUsername == null) {
             Toast.makeText(this, "Cannot find who to call", Toast.LENGTH_SHORT).show();
             return;
@@ -1737,12 +1802,6 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
 
     // ===== Перевод на устройстве (секретный чат) =====
 
-    private void updateTranslateIconTint() {
-        ImageView icon = findViewById(R.id.translate_icon);
-        if (icon == null) return;
-        boolean on = LocalTranslator.isEnabled(this, chatId) && LocalTranslator.targetLanguage(this, chatId) != null;
-        icon.setColorFilter(Color.parseColor(on ? "#67E8F9" : "#94A3B8"));
-    }
 
     /**
      * Исходящий текст: если перевод включён и пакеты на месте — переводим на
@@ -3653,6 +3712,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
             Boolean isOnline = messageAdapter.getUserOnlineStatus(partnerId);
             boolean visible = isOnline != null && isOnline;
             statusIndicator.setVisibility(visible ? View.VISIBLE : View.GONE);
+            updateSecretStatusLine();
             Log.d(TAG, "Updated partner status indicator in toolbar: partnerId=" + partnerId + ", online=" + visible);
         }
     }
