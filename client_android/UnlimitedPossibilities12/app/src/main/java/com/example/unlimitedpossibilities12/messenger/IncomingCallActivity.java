@@ -46,6 +46,10 @@ public class IncomingCallActivity extends AppCompatActivity {
             return;
         }
 
+        Log.d(TAG, "Входящий: " + (callRequest != null
+                ? callRequest.getCallerName() + ", снимок=" + callRequest.getCallerAvatar()
+                : "групповой"));
+
         IncomingCallDialogFragment dialog = callRequest != null
                 ? new IncomingCallDialogFragment(callRequest, this::accept, this::reject)
                 : new IncomingCallDialogFragment(groupCallRequest, this::accept, this::reject);

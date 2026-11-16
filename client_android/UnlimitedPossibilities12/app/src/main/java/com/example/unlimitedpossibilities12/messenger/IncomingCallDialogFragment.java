@@ -49,7 +49,10 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class IncomingCallDialogFragment extends DialogFragment {
-    private static final String TAG = "IncomingCallDialog"; // [Добавлено]: TAG для логирования
+    private static final String TAG = "IncomingCallDialog";
+
+    /** Снимок пробуем дотянуть второй раз, если сеть ещё не проснулась. */
+    private boolean avatarRetried = false; // [Добавлено]: TAG для логирования
     private CallRequest callRequest;
     private GroupCallRequest groupCallRequest;
     private Runnable onAccept, onReject;
@@ -149,14 +152,46 @@ public class IncomingCallDialogFragment extends DialogFragment {
 
         // Загрузка аватара
         if (callRequest != null && avatarUrl != null && !avatarUrl.isEmpty()) {
-            String fullAvatarUrl = "https://unlimitedpossibilities12.org" + avatarUrl + "?t=" + System.currentTimeMillis();
+            final String retryUrl = "https://unlimitedpossibilities12.org" + avatarUrl;
+            // Снимок берём из кэша и без метки времени: на звонке, разбудившем
+            // телефон, сеть поднимается не сразу, и свежая загрузка не успевала —
+            // вместо лица была буква. Та же картинка уже лежит у уведомления.
+            String fullAvatarUrl = "https://unlimitedpossibilities12.org" + avatarUrl;
             Glide.with(this)
                     .load(fullAvatarUrl)
-                    .diskCacheStrategy(DiskCacheStrategy.NONE)
-                    .skipMemoryCache(true)
                     .circleCrop()
                     .placeholder(placeholderDrawable)
                     .transition(DrawableTransitionOptions.withCrossFade())
+                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(com.bumptech.glide.load.engine.GlideException e, Object model,
+                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                    boolean isFirstResource) {
+                            Log.w(TAG, "снимок не загрузился: " + (e != null ? e.getMessage() : "?"));
+                            // Сеть после пробуждения поднимается с запозданием — пробуем ещё раз
+                            if (!avatarRetried) {
+                                avatarRetried = true;
+                                callIcon.postDelayed(() -> {
+                                    if (isAdded()) {
+                                        Glide.with(IncomingCallDialogFragment.this)
+                                                .load(retryUrl)
+                                                .circleCrop()
+                                                .placeholder(callIcon.getDrawable())
+                                                .into(callIcon);
+                                    }
+                                }, 1500);
+                            }
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model,
+                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                       com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                            Log.d(TAG, "снимок на экране");
+                            return false;
+                        }
+                    })
                     .into(callIcon);
         } else if (groupCallRequest != null) {
             // Устанавливаем плейсхолдер сразу для группового вызова
