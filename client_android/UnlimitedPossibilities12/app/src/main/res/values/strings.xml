@@ -125,6 +125,13 @@
     <string name="call_security_explained">Voice and video in this call are encrypted between your devices; the server only passes the connection details.\n\nThe code below is the same on both phones. Read it aloud once: if it matches, nobody has slipped in between you.</string>
     <string name="call_security_no_code">The code appears once both sides have exchanged keys.</string>
     <string name="call_security_unverified_note">The other side did not sign the connection, so we could not confirm who answered. The call is still encrypted.</string>
+    <string name="call_security_new_device">Encrypted · new device</string>
+    <string name="call_security_confirmed">Encrypted · confirmed by you</string>
+    <string name="call_security_changed">The key of a known device has changed</string>
+    <string name="call_security_changed_note">This device called you before with a different key. That happens after a reinstall — but it is also how an attempt to listen in would look. Compare the code aloud before you say anything private.</string>
+    <string name="call_security_new_device_note">You have not spoken to this device before, so there was nothing to compare against. Read the code aloud once, and any later swap will show.</string>
+    <string name="call_security_match">The codes match</string>
+    <string name="call_security_confirmed_note">You have confirmed this device by code. If its key ever changes, you will be warned.</string>
     <string name="call_back_to_call">Tap to return to the call</string>
     <string name="call_muted_note">Your microphone is off</string>
     <string name="profile_no_bio">Tap the pencil to add a few words</string>

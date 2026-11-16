@@ -676,8 +676,9 @@ public class VoiceCallActivity extends AppCompatActivity {
     private boolean checkSignature(String sdp, JSONObject signal) {
         if (callGuard == null) return false;
         String signature = signal.optString("signature", null);
+        String senderDevice = signal.optString("deviceId", null);
         com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State state =
-                callGuard.verify(sdp, signature);
+                callGuard.verify(sdp, signature, senderDevice);
         runOnUiThread(this::updateSecurityLine);
         if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.FAILED) {
             Log.e(TAG, "Подпись собеседника не сошлась — прекращаем разговор");
@@ -697,7 +698,10 @@ public class VoiceCallActivity extends AppCompatActivity {
                 signal.put("sdp", sdp.description);
                 // Подписываем описание: по подписи собеседник узнаёт, что это мы
                 String signature = callGuard != null ? callGuard.sign(sdp.description) : null;
-                if (signature != null) signal.put("signature", signature);
+                if (signature != null) {
+                    signal.put("signature", signature);
+                    signal.put("deviceId", callGuard.deviceId());
+                }
             } else if (data instanceof IceCandidate) {
                 IceCandidate candidate = (IceCandidate) data;
                 JSONObject iceCandidate = new JSONObject();
@@ -760,44 +764,85 @@ public class VoiceCallActivity extends AppCompatActivity {
         TextView text = findViewById(R.id.call_security_text);
         ImageView icon = findViewById(R.id.call_security_icon);
         if (text == null || icon == null || callGuard == null) return;
+        int color;
+        int label;
         switch (callGuard.state()) {
+            case CONFIRMED:
+                label = R.string.call_security_confirmed;
+                color = 0xFF34D399;
+                break;
             case VERIFIED:
-                text.setText(R.string.call_security_verified);
-                text.setTextColor(0xFF34D399);
-                icon.setColorFilter(0xFF34D399);
+                label = R.string.call_security_verified;
+                color = 0xFF34D399;
+                break;
+            case NEW_DEVICE:
+                // Новое устройство — обычное дело, тревожить незачем
+                label = R.string.call_security_new_device;
+                color = 0xFF94A3B8;
+                break;
+            case CHANGED:
+                label = R.string.call_security_changed;
+                color = 0xFFFBBF24;
                 break;
             case FAILED:
-                text.setText(R.string.call_security_failed);
-                text.setTextColor(0xFFF87171);
-                icon.setColorFilter(0xFFF87171);
+                label = R.string.call_security_failed;
+                color = 0xFFF87171;
                 break;
-            case UNVERIFIED:
-                text.setText(R.string.call_security_encrypted);
-                text.setTextColor(0xFF94A3B8);
-                icon.setColorFilter(0xFF94A3B8);
+            case ENCRYPTED:
+                label = R.string.call_security_encrypted;
+                color = 0xFF94A3B8;
                 break;
             default:
-                text.setText(R.string.call_security_checking);
-                text.setTextColor(0xFF94A3B8);
-                icon.setColorFilter(0xFF94A3B8);
+                label = R.string.call_security_checking;
+                color = 0xFF94A3B8;
         }
+        text.setText(label);
+        text.setTextColor(color);
+        icon.setColorFilter(color);
     }
 
-    /** Отпечаток разговора — код, одинаковый у обеих сторон. */
+    /** Код разговора и то, что с ним делать. */
     private void showFingerprint() {
         if (callGuard == null) return;
         String code = callGuard.fingerprint();
-        StringBuilder message = new StringBuilder(getString(R.string.call_security_explained));
-        message.append("\n\n");
-        message.append(code != null ? code : getString(R.string.call_security_no_code));
-        if (callGuard.state() == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.UNVERIFIED) {
+        String digits = callGuard.fingerprintDigits();
+        com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State state = callGuard.state();
+
+        StringBuilder message = new StringBuilder();
+        if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.CHANGED) {
+            message.append(getString(R.string.call_security_changed_note)).append("\n\n");
+        } else if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.CONFIRMED) {
+            message.append(getString(R.string.call_security_confirmed_note)).append("\n\n");
+        } else if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.NEW_DEVICE) {
+            message.append(getString(R.string.call_security_new_device_note)).append("\n\n");
+        } else {
+            message.append(getString(R.string.call_security_explained)).append("\n\n");
+        }
+        if (code != null) {
+            message.append(code).append("\n").append(digits);
+        } else {
+            message.append(getString(R.string.call_security_no_code));
+        }
+        if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.ENCRYPTED) {
             message.append("\n\n").append(getString(R.string.call_security_unverified_note));
         }
-        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.AlertDialog_UP12)
-                .setTitle(R.string.call_security_title)
-                .setMessage(message.toString())
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
+
+        androidx.appcompat.app.AlertDialog.Builder builder =
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.AlertDialog_UP12)
+                        .setTitle(R.string.call_security_title)
+                        .setMessage(message.toString())
+                        .setNegativeButton(android.R.string.ok, null);
+        if (code != null) {
+            // Сверили вслух — запоминаем, и дальше подмена будет видна
+            builder.setPositiveButton(R.string.call_security_match, (dialog, which) -> {
+                if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.CHANGED) {
+                    callGuard.acceptChangedKey();
+                }
+                callGuard.confirmByCode();
+                updateSecurityLine();
+            });
+        }
+        builder.show();
     }
 
     /** Подпись не сошлась — разговор прекращаем, собеседник не тот. */

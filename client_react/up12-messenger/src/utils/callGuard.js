@@ -2,39 +2,85 @@ import * as sodium from 'libsodium-wrappers';
 
 // Подпись звонка: подтверждаем, что по ту сторону именно собеседник.
 //
-// Звук и видео в звонке шифрует сам WebRTC, сервер их не слышит. Открытой
-// оставалась установка связи: тот, кто держит сигнализацию, мог подменить
-// ключи и слушать разговор. Поэтому каждая сторона подписывает своё описание
+// Звук и видео шифрует сам WebRTC, сервер их не слышит. Открытой оставалась
+// установка связи: тот, кто передаёт служебные сообщения, мог подменить ключи
+// и слушать разговор. Поэтому каждая сторона подписывает своё описание
 // соединения ключом Ed25519, а другая проверяет подпись.
 //
-// Раньше это жило в отдельном «защищённом звонке», который надо было выбрать
-// вручную. Теперь это есть в каждом голосовом и видеозвонке — и в браузере, и
-// на телефоне, причём формат подписи у них общий.
+// Ключ заводится на каждое устройство отдельно — иначе телефон и браузер
+// затирали бы ключи друг друга, и собеседник видел бы «ключ сменился» при
+// каждом переходе с одного на другое.
 //
-// Ключ собеседника берём только у сервера: ключ из самого сообщения проверять
-// бессмысленно — кто подменил сообщение, тот приложит и свой ключ. Враньё
-// самого сервера ловится отпечатком, который обе стороны сверяют вслух.
+// Ключ знакомого устройства запоминается: новое устройство — спокойная
+// отметка, тот же ключ — подтверждено, другой ключ у знакомого устройства —
+// предупреждение. Сервер раздаёт ключи, поэтому его враньё ловится не
+// подписью, а кодом из обоих ключей: он одинаков у обеих сторон, и сверенный
+// вслух код запоминается как «подтверждено вами».
 
 const API = 'https://unlimitedpossibilities12.org/api/sign_keys';
+const DEVICES_API = 'https://unlimitedpossibilities12.org/api/device_keys';
+const TRUST_PREFIX = 'call_trust_';
 
 export const CallSecurity = {
   CHECKING: 'checking',
+  ENCRYPTED: 'encrypted',
+  NEW_DEVICE: 'new-device',
   VERIFIED: 'verified',
-  UNVERIFIED: 'unverified',
+  CONFIRMED: 'confirmed',
+  CHANGED: 'changed',
   FAILED: 'failed',
+};
+
+// Буквы кода: тот же набор, что и в приложении на телефоне
+const EMOJI = [
+  '🐶', '🐱', '🦊', '🐻', '🐼', '🐨', '🦁', '🐷',
+  '🐸', '🐵', '🦉', '🦆', '🐢', '🐳', '🐬', '🐝',
+  '🦋', '🌻', '🌲', '🍏', '🍋', '🍓', '🍉', '🍇',
+  '🥕', '🍄', '🍞', '🧀', '🍕', '🍔', '🍟', '🍩',
+  '🍪', '☕', '🍵', '⚽', '🏀', '🎾', '🎸', '🎺',
+  '🎻', '🥁', '🚗', '🚕', '🚲', '✈', '🚀', '⛵',
+  '⌚', '💡', '🔑', '🔔', '🎁', '📷', '📚', '✏',
+  '⭐', '🌈', '☀', '🌙', '❄', '🔥', '💧', '🍀',
+];
+
+const read = (key) => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const write = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* приватное окно — обойдёмся без памяти */
+  }
+};
+
+/** Постоянная метка устройства; живёт столько же, сколько данные сайта. */
+const deviceIdFor = () => {
+  let id = read('call_device_id');
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random())).replace(/-/g, '');
+    write('call_device_id', id);
+  }
+  return id;
 };
 
 export async function createCallGuard(currentUserId, partnerId) {
   await sodium.ready;
 
+  const deviceId = deviceIdFor();
   const storageKey = `secure_sign_${currentUserId}`;
   let pair = null;
   try {
-    pair = JSON.parse(localStorage.getItem(storageKey) || 'null');
+    pair = JSON.parse(read(storageKey) || 'null');
     // Ключи прежнего «защищённого звонка» подходят: берём их, чтобы у тех,
-    // кто им пользовался, отпечаток не сменился на пустом месте
+    // кто им пользовался, код не сменился на пустом месте
     if (!pair) {
-      const legacy = JSON.parse(localStorage.getItem(`signKeyPair_${currentUserId}`) || 'null');
+      const legacy = JSON.parse(read(`signKeyPair_${currentUserId}`) || 'null');
       if (legacy && legacy.publicKey && legacy.privateKey) pair = legacy;
     }
   } catch {
@@ -46,66 +92,104 @@ export async function createCallGuard(currentUserId, partnerId) {
       publicKey: sodium.to_base64(keys.publicKey),
       privateKey: sodium.to_base64(keys.privateKey),
     };
+    write(storageKey, JSON.stringify(pair));
+  }
+
+  // Свой ключ кладём на сервер: по нему собеседник нас проверит
+  const publish = async (url, body) => {
     try {
-      localStorage.setItem(storageKey, JSON.stringify(pair));
-    } catch {
-      /* ключи не сохранились — звонок всё равно подпишем */
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) console.warn('Ключ не принят сервером:', url, response.status);
+    } catch (error) {
+      console.warn('Ключ не ушёл на сервер:', url, error);
     }
-  }
+  };
+  await publish(DEVICES_API, { userId: String(currentUserId), deviceId, publicKey: pair.publicKey });
+  // Прежний общий слот — для ещё не обновлённых собеседников
+  publish(API, { userId: String(currentUserId), publicKey: pair.publicKey });
 
-  // Свой открытый ключ кладём на сервер, чтобы собеседник мог нас проверить.
-  // Ждём ответа: без этого собеседник сверяет подпись со старым ключом.
+  // Устройства собеседника
+  const partnerDevices = new Map();
   try {
-    const published = await fetch(API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: String(currentUserId), publicKey: pair.publicKey }),
-    });
-    if (!published.ok) {
-      console.warn('Открытый ключ не принят сервером:', published.status);
-    }
-  } catch (error) {
-    console.warn('Открытый ключ не ушёл на сервер:', error);
-  }
-
-  let partnerPublicKey = null;
-  try {
-    const response = await fetch(`${API}/${partnerId}`);
+    const response = await fetch(`${DEVICES_API}/${partnerId}`);
     if (response.ok) {
-      const data = await response.json();
-      partnerPublicKey = data.publicKey || null;
+      const devices = await response.json();
+      devices.forEach((device) => partnerDevices.set(device.deviceId, device.publicKey));
     }
   } catch {
-    /* ключа нет — разговор пойдёт как неподтверждённый */
+    /* список не пришёл — звонок пойдёт как неподтверждённый */
+  }
+  if (partnerDevices.size === 0) {
+    try {
+      const response = await fetch(`${API}/${partnerId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.publicKey) partnerDevices.set('legacy', data.publicKey);
+      }
+    } catch {
+      /* ключа нет вовсе */
+    }
   }
 
   let state = CallSecurity.CHECKING;
+  let partnerPublicKey = null;
+  let partnerDeviceId = null;
+
+  const trustKey = () => `${TRUST_PREFIX}key_${partnerId}_${partnerDeviceId}`;
+  const confirmedKey = () => `${TRUST_PREFIX}confirmed_${partnerId}_${partnerDeviceId}`;
 
   const sign = (sdp) => {
     try {
-      const signature = sodium.crypto_sign_detached(
-        sodium.from_string(sdp),
-        sodium.from_base64(pair.privateKey)
+      return sodium.to_base64(
+        sodium.crypto_sign_detached(sodium.from_string(sdp), sodium.from_base64(pair.privateKey))
       );
-      return sodium.to_base64(signature);
     } catch (error) {
       console.warn('Не удалось подписать описание соединения:', error);
       return null;
     }
   };
 
-  const verify = (sdp, signature) => {
-    if (!signature || !partnerPublicKey) {
-      state = CallSecurity.UNVERIFIED;
+  // Что мы знали об этом устройстве раньше: запомненный ключ и есть защита
+  // от сервера — подменить ключ он может только один раз, и это будет видно
+  const rememberAndJudge = (keyB64) => {
+    const known = read(trustKey());
+    if (!known) {
+      write(trustKey(), keyB64);
+      return CallSecurity.NEW_DEVICE;
+    }
+    if (known !== keyB64) return CallSecurity.CHANGED;
+    return read(confirmedKey()) === 'true' ? CallSecurity.CONFIRMED : CallSecurity.VERIFIED;
+  };
+
+  const verify = (sdp, signature, senderDeviceId) => {
+    if (!signature) {
+      state = CallSecurity.ENCRYPTED;
+      return state;
+    }
+    let device = senderDeviceId;
+    let keyB64 = device ? partnerDevices.get(device) : null;
+    if (!keyB64 && partnerDevices.size === 1) {
+      // Старый клиент без метки устройства — у него ключ один
+      [device] = [...partnerDevices.keys()];
+      keyB64 = partnerDevices.get(device);
+    }
+    if (!keyB64) {
+      state = CallSecurity.ENCRYPTED;
       return state;
     }
     try {
+      partnerPublicKey = keyB64;
+      partnerDeviceId = device;
       const valid = sodium.crypto_sign_verify_detached(
         sodium.from_base64(signature),
         sodium.from_string(sdp),
-        sodium.from_base64(partnerPublicKey)
+        sodium.from_base64(keyB64)
       );
-      state = valid ? CallSecurity.VERIFIED : CallSecurity.FAILED;
+      state = valid ? rememberAndJudge(keyB64) : CallSecurity.FAILED;
     } catch (error) {
       console.warn('Подпись не разобрана:', error);
       state = CallSecurity.FAILED;
@@ -113,8 +197,7 @@ export async function createCallGuard(currentUserId, partnerId) {
     return state;
   };
 
-  // Код, одинаковый у обеих сторон: порядок ключей не зависит от того, кто звонил
-  const fingerprint = async () => {
+  const fingerprintHash = async () => {
     if (!partnerPublicKey) return null;
     try {
       const mine = sodium.from_base64(pair.publicKey);
@@ -134,24 +217,56 @@ export async function createCallGuard(currentUserId, partnerId) {
       joined.set(first, 0);
       joined.set(second, first.length);
       // SHA-256 берём у браузера: в сборке libsodium его может не быть
-      const digest = await crypto.subtle.digest('SHA-256', joined);
-      const hash = new Uint8Array(digest);
-      let code = '';
-      for (let i = 0; i < 12; i += 1) {
-        if (i > 0 && i % 4 === 0) code += ' ';
-        code += String(hash[i] % 10);
-      }
-      return code;
+      return new Uint8Array(await crypto.subtle.digest('SHA-256', joined));
     } catch (error) {
       return null;
     }
   };
 
+  // Код разговора: шесть значков, одинаковых у обеих сторон
+  const fingerprint = async () => {
+    const hash = await fingerprintHash();
+    if (!hash) return null;
+    const parts = [];
+    for (let i = 0; i < 6; i += 1) parts.push(EMOJI[hash[i] & 0x3f]);
+    return parts.join(' ');
+  };
+
+  const fingerprintDigits = async () => {
+    const hash = await fingerprintHash();
+    if (!hash) return null;
+    let code = '';
+    for (let i = 0; i < 12; i += 1) {
+      if (i > 0 && i % 4 === 0) code += ' ';
+      code += String(hash[i] % 10);
+    }
+    return code;
+  };
+
+  /** Человек сверил код вслух: с этой минуты подмена будет видна. */
+  const confirmByCode = () => {
+    if (!partnerPublicKey) return;
+    write(trustKey(), partnerPublicKey);
+    write(confirmedKey(), 'true');
+    state = CallSecurity.CONFIRMED;
+  };
+
+  /** Ключ сменился, но человек сверил код заново — принимаем новый. */
+  const acceptChangedKey = () => {
+    if (!partnerPublicKey) return;
+    write(trustKey(), partnerPublicKey);
+    write(confirmedKey(), 'false');
+    state = CallSecurity.VERIFIED;
+  };
+
   return {
+    deviceId,
     sign,
     verify,
     fingerprint,
+    fingerprintDigits,
+    confirmByCode,
+    acceptChangedKey,
     state: () => state,
-    hasPartnerKey: () => Boolean(partnerPublicKey),
   };
 }

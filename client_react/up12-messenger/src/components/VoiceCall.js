@@ -13,6 +13,43 @@ import '../styles/VoiceCall.css';
 
 Chart.register(...registerables);
 
+
+// Подпись под замком на экране звонка
+const securityLabel = (state) => {
+  switch (state) {
+    case CallSecurity.CONFIRMED:
+      return 'Encrypted \u00b7 confirmed by you';
+    case CallSecurity.VERIFIED:
+      return 'Encrypted \u00b7 verified';
+    case CallSecurity.NEW_DEVICE:
+      return 'Encrypted \u00b7 new device';
+    case CallSecurity.CHANGED:
+      return 'The key of a known device has changed';
+    case CallSecurity.FAILED:
+      return 'Could not verify the other side';
+    case CallSecurity.ENCRYPTED:
+      return 'Encrypted';
+    default:
+      return 'Checking the connection\u2026';
+  }
+};
+
+// Что человеку делать с этим кодом
+const securityExplanation = (state) => {
+  switch (state) {
+    case CallSecurity.CHANGED:
+      return 'This device called you before with a different key. That happens after a reinstall — but it is also how an attempt to listen in would look. Compare the code aloud before you say anything private.';
+    case CallSecurity.CONFIRMED:
+      return 'You have confirmed this device by code. If its key ever changes, you will be warned.';
+    case CallSecurity.NEW_DEVICE:
+      return 'You have not spoken to this device before, so there was nothing to compare against. Read the code aloud once, and any later swap will show.';
+    case CallSecurity.ENCRYPTED:
+      return 'The other side did not sign the connection, so we could not confirm who answered. The call is still encrypted.';
+    default:
+      return 'Voice and video in this call are encrypted between the devices; the server only passes the connection details. The code below is the same on both sides — read it aloud once, and nobody can slip in between you.';
+  }
+};
+
 const VoiceCall = ({ recipientId }) => {
   const navigate = useNavigate();
   const notify = useNotification();
@@ -349,7 +386,7 @@ const VoiceCall = ({ recipientId }) => {
 
       sendSignal({
         from: currentUserId,
-        signal: { type: offer.type, sdp: offer.sdp, signature: signSdp(offer.sdp) },
+        signal: { type: offer.type, sdp: offer.sdp, signature: signSdp(offer.sdp), deviceId: myDeviceId() },
         roomId,
       });
 
@@ -374,14 +411,14 @@ const VoiceCall = ({ recipientId }) => {
           console.log('Handling offer...');
           if (peerConnectionRef.current && !isCaller) {
             console.log('Received offer SDP:', signalMessage.signal.sdp);
-            if (verifySdp(signalMessage.signal.sdp, signalMessage.signal.signature)) return;
+            if (verifySdp(signalMessage.signal.sdp, signalMessage.signal.signature, signalMessage.signal.deviceId)) return;
             await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
             const answer = await peerConnectionRef.current.createAnswer();
             await peerConnectionRef.current.setLocalDescription(answer);
             console.log('Sending answer:', answer);
             sendSignal({
               from: currentUserId,
-              signal: { type: 'answer', sdp: answer.sdp, signature: signSdp(answer.sdp) },
+              signal: { type: 'answer', sdp: answer.sdp, signature: signSdp(answer.sdp), deviceId: myDeviceId() },
             });
             // NEW: Устанавливаем hasNotifiedAcceptCall при получении offer
             hasNotifiedAcceptCall.current = true;
@@ -396,7 +433,7 @@ const VoiceCall = ({ recipientId }) => {
               console.log('Cannot set remote description: Already has a remote description.');
             } else {
               console.log('Setting remote answer SDP:', signalMessage.signal.sdp);
-              if (verifySdp(signalMessage.signal.sdp, signalMessage.signal.signature)) return;
+              if (verifySdp(signalMessage.signal.sdp, signalMessage.signal.signature, signalMessage.signal.deviceId)) return;
               await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
             }
           }
@@ -598,13 +635,24 @@ const VoiceCall = ({ recipientId }) => {
   const [callSecurity, setCallSecurity] = useState(CallSecurity.CHECKING);
   const [showFingerprint, setShowFingerprint] = useState(false);
   const [fingerprintCode, setFingerprintCode] = useState(null);
+  const [fingerprintDigits, setFingerprintDigits] = useState(null);
 
-  // Отпечаток считается асинхронно — показываем его, когда он готов
+  // Код считается асинхронно — показываем его, когда он готов
   const toggleFingerprint = async () => {
     setShowFingerprint((shown) => !shown);
     if (!fingerprintCode && callGuardRef.current) {
       setFingerprintCode(await callGuardRef.current.fingerprint());
+      setFingerprintDigits(await callGuardRef.current.fingerprintDigits());
     }
+  };
+
+  // Сверили вслух — запоминаем, и дальше подмена будет видна
+  const confirmCodes = () => {
+    const guard = callGuardRef.current;
+    if (!guard) return;
+    if (guard.state() === CallSecurity.CHANGED) guard.acceptChangedKey();
+    guard.confirmByCode();
+    setCallSecurity(guard.state());
   };
 
   useEffect(() => {
@@ -629,12 +677,13 @@ const VoiceCall = ({ recipientId }) => {
   }, [currentUserId, recipientId, incomingCall, isCaller]);
 
   const signSdp = (sdp) => (callGuardRef.current ? callGuardRef.current.sign(sdp) : null);
+  const myDeviceId = () => (callGuardRef.current ? callGuardRef.current.deviceId : null);
 
   // Возвращает true, если разговор надо прервать: подпись не сошлась
-  const verifySdp = (sdp, signature) => {
+  const verifySdp = (sdp, signature, senderDeviceId) => {
     const guard = callGuardRef.current;
     if (!guard) return false;
-    const state = guard.verify(sdp, signature);
+    const state = guard.verify(sdp, signature, senderDeviceId);
     setCallSecurity(state);
     if (state === CallSecurity.FAILED) {
       console.error('Подпись собеседника не сошлась — прекращаем разговор');
@@ -673,21 +722,20 @@ const VoiceCall = ({ recipientId }) => {
         onClick={toggleFingerprint}
       >
         <span className="call-security-lock">&#128274;</span>
-        {callSecurity === CallSecurity.VERIFIED && 'Encrypted \u00b7 verified'}
-        {callSecurity === CallSecurity.FAILED && 'Could not verify the other side'}
-        {callSecurity === CallSecurity.UNVERIFIED && 'Encrypted'}
-        {callSecurity === CallSecurity.CHECKING && 'Checking the connection\u2026'}
+        {securityLabel(callSecurity)}
       </button>
       {showFingerprint && (
         <div className="call-fingerprint">
-          <p>
-            Voice and video in this call are encrypted between the devices; the server only
-            passes the connection details. The code below is the same on both sides — read it
-            aloud once, and nobody can slip in between you.
-          </p>
+          <p>{securityExplanation(callSecurity)}</p>
           <div className="call-fingerprint-code">
             {fingerprintCode || 'The code appears once both sides have exchanged keys.'}
           </div>
+          {fingerprintDigits && <div className="call-fingerprint-digits">{fingerprintDigits}</div>}
+          {fingerprintCode && (
+            <button type="button" className="call-fingerprint-confirm" onClick={confirmCodes}>
+              The codes match
+            </button>
+          )}
         </div>
       )}
 
