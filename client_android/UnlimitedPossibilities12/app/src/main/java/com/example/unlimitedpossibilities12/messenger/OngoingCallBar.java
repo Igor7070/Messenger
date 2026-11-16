@@ -41,7 +41,7 @@ public final class OngoingCallBar {
         if (root == null) return;
 
         View existing = root.findViewWithTag(TAG_BAR);
-        if (!OngoingCall.isActive()) {
+        if (!OngoingCall.isActive() || OngoingCall.isWindowed()) {
             if (existing != null) removeBar(root, existing);
             return;
         }
@@ -131,7 +131,8 @@ public final class OngoingCallBar {
             @Override
             public void run() {
                 if (bar.getParent() == null) return;
-                if (!OngoingCall.isActive()) {
+                if (!OngoingCall.isActive() || OngoingCall.isWindowed()) {
+                    // Окошко с собеседником уже на экране — второй указатель ни к чему
                     removeBar((ViewGroup) bar.getParent(), bar);
                     return;
                 }

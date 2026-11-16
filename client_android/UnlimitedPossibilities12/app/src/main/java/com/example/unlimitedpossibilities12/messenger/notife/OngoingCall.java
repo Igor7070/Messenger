@@ -19,6 +19,8 @@ public final class OngoingCall {
     private static volatile Class<? extends Activity> screen;
     private static volatile String partnerName;
     private static volatile long startedAt;
+    /** Разговор уехал в окошко поверх других приложений: полоска тогда лишняя. */
+    private static volatile boolean windowed;
 
     private OngoingCall() {}
 
@@ -34,9 +36,19 @@ public final class OngoingCall {
         if (startedAt == 0) startedAt = System.currentTimeMillis();
     }
 
+    /** Разговор уехал в окошко поверх других приложений (или вернулся). */
+    public static void setWindowed(boolean value) {
+        windowed = value;
+    }
+
+    public static boolean isWindowed() {
+        return windowed;
+    }
+
     /** Разговор закончился. */
     public static void clear() {
         screen = null;
+        windowed = false;
         partnerName = null;
         startedAt = 0;
     }

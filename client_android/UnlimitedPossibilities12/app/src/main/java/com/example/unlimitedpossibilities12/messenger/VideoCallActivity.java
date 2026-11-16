@@ -1,5 +1,6 @@
 package com.example.unlimitedpossibilities12.messenger;
 
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -134,6 +135,8 @@ public class VideoCallActivity extends AppCompatActivity {
     private boolean callConnected = false;
     private VideoTrack remoteVideoTrack;
     private final Handler hideControlsHandler = new Handler(Looper.getMainLooper());
+    private static final String ACTION_PIP_MUTE = "com.example.unlimitedpossibilities12.PIP_MUTE";
+    private static final String ACTION_PIP_END = "com.example.unlimitedpossibilities12.PIP_END";
     private Handler timerHandler;
     private Runnable timerRunnable;
     private Handler timeHandler;
@@ -223,6 +226,15 @@ public class VideoCallActivity extends AppCompatActivity {
         minimizeButton.setOnClickListener(v -> onBackPressed());
         localVideoCard.setOnClickListener(v -> swapVideos());
         findViewById(R.id.video_call_root).setOnClickListener(v -> toggleControls());
+
+        android.content.IntentFilter pipFilter = new android.content.IntentFilter();
+        pipFilter.addAction(ACTION_PIP_MUTE);
+        pipFilter.addAction(ACTION_PIP_END);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(pipActions, pipFilter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(pipActions, pipFilter);
+        }
 
         timerHandler = new Handler(Looper.getMainLooper());
         callStartTime = System.currentTimeMillis();
@@ -1252,6 +1264,10 @@ public class VideoCallActivity extends AppCompatActivity {
         setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         // Свёрнутый разговор оставлял свои поверхности на экране: список чатов
         // под ним оказывался закрыт чёрным. Убираем их, пока экран не на виду.
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O
+                && isInPictureInPictureMode()) {
+            return; // в окошке собеседника видно, поверхности нужны
+        }
         localVideoView.setVisibility(View.GONE);
         remoteVideoView.setVisibility(View.GONE);
     }
@@ -1265,6 +1281,11 @@ public class VideoCallActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        try {
+            unregisterReceiver(pipActions);
+        } catch (Exception ignored) {
+            // приёмника могло и не быть, если экран не успел подняться
+        }
         com.example.unlimitedpossibilities12.messenger.notife.OngoingCall.clear();
         com.example.unlimitedpossibilities12.messenger.notife.CallService.setCallInProgress(false);
         super.onDestroy();
@@ -1284,8 +1305,10 @@ public class VideoCallActivity extends AppCompatActivity {
     }
 
     /**
-     * «Назад» сворачивает разговор, а не кладёт трубку: экран остаётся жить
-     * позади, а сверху едет полоска, по которой в него возвращаются.
+     * «Назад» сворачивает разговор, а не кладёт трубку: собеседник уезжает в
+     * окошко поверх других приложений, а если телефон так не умеет — разговор
+     * просто остаётся жить в своей стопке экранов, и вернуться в него можно по
+     * зелёной полоске.
      */
     @Override
     public void onBackPressed() {
@@ -1293,9 +1316,88 @@ public class VideoCallActivity extends AppCompatActivity {
             super.onBackPressed();
             return;
         }
-        // Разговор продолжается в своей стопке экранов, а она уходит назад
+        if (enterPipIfPossible()) return;
         moveTaskToBack(true);
     }
+
+    /** Ушли на домашний экран во время разговора — тоже сжимаемся в окошко. */
+    @Override
+    protected void onUserLeaveHint() {
+        super.onUserLeaveHint();
+        if (!isCallEnded && com.example.unlimitedpossibilities12.messenger.notife.OngoingCall.isActive()) {
+            enterPipIfPossible();
+        }
+    }
+
+    /** Окошко поверх других приложений. false — телефон так не умеет. */
+    private boolean enterPipIfPossible() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return false;
+        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) return false;
+        try {
+            return enterPictureInPictureMode(pipParams());
+        } catch (Exception e) {
+            Log.w(TAG, "Не удалось свернуть в окошко: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** Размер окошка и кнопки под ним: заглушить и положить трубку. */
+    private android.app.PictureInPictureParams pipParams() {
+        android.app.PictureInPictureParams.Builder builder =
+                new android.app.PictureInPictureParams.Builder()
+                        .setAspectRatio(new android.util.Rational(9, 16));
+        builder.setActions(java.util.Arrays.asList(
+                pipAction(micMuted ? R.drawable.ic_mic_off_offline : R.drawable.ic_mic_white,
+                        getString(R.string.call_mute), ACTION_PIP_MUTE, 1),
+                pipAction(R.drawable.ic_call_end_down,
+                        getString(R.string.call_end), ACTION_PIP_END, 2)));
+        return builder.build();
+    }
+
+    private android.app.RemoteAction pipAction(int icon, String title, String action, int requestCode) {
+        Intent intent = new Intent(action).setPackage(getPackageName());
+        PendingIntent pending = PendingIntent.getBroadcast(this, requestCode, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        return new android.app.RemoteAction(
+                android.graphics.drawable.Icon.createWithResource(this, icon), title, title, pending);
+    }
+
+    /**
+     * В окошке остаётся только собеседник: заголовок, кнопки и своё видео в нём
+     * не поместятся, а управление даёт сама система.
+     */
+    @Override
+    public void onPictureInPictureModeChanged(boolean inPip, android.content.res.Configuration newConfig) {
+        super.onPictureInPictureModeChanged(inPip, newConfig);
+        com.example.unlimitedpossibilities12.messenger.notife.OngoingCall.setWindowed(inPip);
+        if (inPip) {
+            hideControls();
+            localVideoCard.setVisibility(View.GONE);
+            // В окошке крупное имя и подпись не помещаются — остаётся снимок
+            partnerNameText.setVisibility(View.GONE);
+            noVideoStatus.setVisibility(View.GONE);
+        } else {
+            localVideoCard.setVisibility(View.VISIBLE);
+            partnerNameText.setVisibility(View.VISIBLE);
+            noVideoStatus.setVisibility(View.VISIBLE);
+            showControls();
+        }
+    }
+
+    /** Кнопки окошка приходят сюда. */
+    private final android.content.BroadcastReceiver pipActions = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (ACTION_PIP_MUTE.equals(intent.getAction())) {
+                toggleMic();
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    setPictureInPictureParams(pipParams());
+                }
+            } else if (ACTION_PIP_END.equals(intent.getAction())) {
+                endCall();
+            }
+        }
+    };
 
     // ---------- управление разговором ----------
 

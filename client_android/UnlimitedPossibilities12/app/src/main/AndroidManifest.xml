@@ -112,9 +112,13 @@
             android:taskAffinity="org.unlimitedpossibilities12.messenger.call" />
         <activity android:name=".messenger.PrivateChatActivity" />
         <activity android:name=".messenger.GroupChatsActivity" />
+        <!-- Видеозвонок умеет сжиматься в окошко поверх других приложений -->
         <activity
             android:name=".messenger.VideoCallActivity"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden"
             android:launchMode="singleTask"
+            android:resizeableActivity="true"
+            android:supportsPictureInPicture="true"
             android:taskAffinity="org.unlimitedpossibilities12.messenger.call" />
         <activity
             android:name=".messenger.VoiceCallWithTranslateActivity"
