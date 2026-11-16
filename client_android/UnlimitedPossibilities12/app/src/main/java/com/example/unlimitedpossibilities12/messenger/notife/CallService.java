@@ -559,6 +559,23 @@ public class CallService extends Service {
         manager.notify(NOTIFICATION_ID, service.createNotification(IDLE_TEXT));
     }
 
+    /** Отдельный канал для входящих: служебный был тихим, и звонок уезжал в «без звука». */
+    private static final String INCOMING_CHANNEL_ID = "IncomingCallsChannel";
+
+    private void createIncomingCallChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(INCOMING_CHANNEL_ID, "Incoming calls",
+                    NotificationManager.IMPORTANCE_HIGH);
+            channel.setDescription("A call is ringing right now");
+            // Мелодию и дрожание даёт сам звонок, иначе будет звучать дважды
+            channel.setSound(null, null);
+            channel.enableVibration(false);
+            channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) manager.createNotificationChannel(channel);
+        }
+    }
+
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Call Service",
@@ -1223,13 +1240,37 @@ public class CallService extends Service {
         PendingIntent rejectPendingIntent = PendingIntent.getBroadcast(this, 1, rejectIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle(title)
-                .setContentText("From " + callerName)
+        // Звонок сам выходит на экран: иначе телефон звонил, но ответить можно
+        // было, только раскрыв шторку и найдя уведомление
+        Intent screenIntent = new Intent(this, com.example.unlimitedpossibilities12.messenger.IncomingCallActivity.class);
+        screenIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        screenIntent.putExtra("notificationId", notificationId);
+        if (callRequest instanceof CallRequest) {
+            screenIntent.putExtra("callRequest", (CallRequest) callRequest);
+        } else if (callRequest instanceof GroupCallRequest) {
+            screenIntent.putExtra("groupCallRequest", (GroupCallRequest) callRequest);
+        }
+        PendingIntent screenPendingIntent = PendingIntent.getActivity(this, 2, screenIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        createIncomingCallChannel();
+
+        androidx.core.app.Person caller = new androidx.core.app.Person.Builder()
+                .setName(callerName)
+                .setImportant(true)
+                .build();
+
+        Notification notification = new NotificationCompat.Builder(this, INCOMING_CHANNEL_ID)
+                .setStyle(NotificationCompat.CallStyle.forIncomingCall(
+                        caller, rejectPendingIntent, acceptPendingIntent))
+                .setContentTitle(callerName)
+                .setContentText(title)
                 .setSmallIcon(icon)
-                .addAction(android.R.drawable.ic_menu_call, "Accept", acceptPendingIntent)
-                .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Reject", rejectPendingIntent)
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setFullScreenIntent(screenPendingIntent, true)
+                .setContentIntent(screenPendingIntent)
                 .setAutoCancel(true)
+                .setOngoing(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .build();
 
