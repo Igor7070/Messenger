@@ -197,7 +197,10 @@ public class PushMessagingService extends FirebaseMessagingService {
         String token = prefs.getString(KEY_TOKEN, null);
         int userId = context.getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
         if (token == null || userId <= 0) return;
-        if (String.valueOf(userId).equals(prefs.getString(KEY_SENT_FOR_USER, null))) return;
+        // Раньше здесь стояло «для этого человека уже отправляли — выходим». Если сервер
+        // по любой причине терял запись (чистка базы, удаление токена по ошибке FCM),
+        // телефон больше никогда его не присылал — и звонки при закрытом приложении
+        // не доходили вовсе. Теперь шлём при каждом запуске: сервер пишет токен поверх.
 
         new Thread(() -> {
             try {

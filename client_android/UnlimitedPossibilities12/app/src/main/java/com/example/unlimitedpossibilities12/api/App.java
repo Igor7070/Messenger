@@ -25,6 +25,16 @@ public class App extends Application {
         super.onCreate();
         AuthToken.init(this); // токен доступа к API
 
+        // Устройство заново объявляет себя серверу при каждом запуске. Прежде
+        // push-токен отправлялся только при входе в учётную запись: если сервер
+        // терял запись, телефон молчал, и звонки при закрытом приложении не
+        // доходили вовсе — их некуда было послать.
+        int savedUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
+        if (savedUserId > 0) {
+            com.example.unlimitedpossibilities12.messenger.notife.PushMessagingService
+                    .registerCurrentToken(this);
+        }
+
         // Делаем верхнюю статус-бар тёмной во всём приложении
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {

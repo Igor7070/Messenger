@@ -108,9 +108,18 @@ public class PushService {
      */
     @Transactional
     public void sendToUser(Long userId, String title, String body, Map<String, String> data) {
-        if (!ready || userId == null) return;
+        if (!ready || userId == null) {
+            System.out.println("PushService: push выключены или нет получателя (ready=" + ready + ")");
+            return;
+        }
         List<PushToken> tokens = repository.findByUserId(userId);
-        if (tokens.isEmpty()) return;
+        if (tokens.isEmpty()) {
+            // Раньше здесь был молчаливый выход, и по журналу было не отличить
+            // «некому слать» от «отправили, но не дошло»
+            System.out.println("PushService: нет ни одного устройства для userId=" + userId);
+            return;
+        }
+        System.out.println("PushService: устройств для userId=" + userId + ": " + tokens.size());
 
         Map<String, String> payload = new HashMap<>(data != null ? data : Map.of());
         payload.put("title", title != null ? title : "Messenger UP12");
