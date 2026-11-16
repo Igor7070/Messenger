@@ -495,7 +495,7 @@ public class CallService extends Service {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("UP12 Messenger")
                 .setContentText(content)
-                .setSmallIcon(android.R.drawable.presence_online)
+                .setSmallIcon(R.drawable.ic_stat_up12)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
                 .build();
