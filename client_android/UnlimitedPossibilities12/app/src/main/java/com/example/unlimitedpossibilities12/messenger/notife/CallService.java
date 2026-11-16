@@ -112,10 +112,8 @@ public class CallService extends Service {
         try {
             if (((App) getApplication()).isAppInForeground()) return;
             if (!com.example.unlimitedpossibilities12.messenger.notife.PushAvailability.isAvailable(this)) return;
-            Log.d(TAG, "Звонок завершён, приложение в фоне — останавливаем сервис");
-            sendOfflineStatus();
-            stopHeartbeat();
-            stopSelf();
+            Log.d(TAG, "Звонок завершён, приложение в фоне — возвращаемся ко сну");
+            goToSleepForPush();
         } catch (Exception e) {
             Log.w(TAG, "stopIfIdleInBackground: " + e.getMessage());
         }
@@ -193,6 +191,72 @@ public class CallService extends Service {
             }
         } else {
             startForeground(NOTIFICATION_ID, createNotification(IDLE_TEXT));
+        }
+    }
+
+    /** Спит ли служба: приложение закрыто, доставку ведут push. */
+    private boolean sleeping = false;
+
+    /**
+     * Уход в сон, пока приложение закрыто.
+     *
+     * Одного stopSelf мало: экраны остаются привязанными к службе, пока система
+     * их не уничтожит, и служба живёт дальше — вместе со своим уведомлением в
+     * строке состояния. Поэтому сами рвём соединение, снимаем уведомление и
+     * уходим с переднего плана; разбудит нас push о звонке или сообщении.
+     */
+    private void goToSleepForPush() {
+        Log.d(TAG, "Засыпаем — доставку берут push");
+        sleeping = true;
+        sendOfflineStatus();
+        stopHeartbeat();
+        releaseSocket();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE);
+        } else {
+            stopForeground(true);
+        }
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        if (manager != null) manager.cancel(NOTIFICATION_ID);
+        stopSelf();
+    }
+
+    /** Возвращаемся к работе: снова на переднем плане и на связи. */
+    private void wakeFromSleep() {
+        Log.d(TAG, "Просыпаемся — поднимаем соединение");
+        sleeping = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, createNotification(IDLE_TEXT),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL);
+        } else {
+            startForeground(NOTIFICATION_ID, createNotification(IDLE_TEXT));
+        }
+        currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
+        if (currentUserId != -1 && stompClient == null) {
+            setupWebSocket();
+            startHeartbeat();
+            sendOnlineStatus();
+        }
+    }
+
+    /** Закрыть соединение и все подписки, не трогая саму службу. */
+    private void releaseSocket() {
+        try {
+            for (Disposable subscription : messageSubscriptions) {
+                subscription.dispose();
+            }
+            messageSubscriptions.clear();
+            subscribedChatIds.clear();
+            if (typingSubscription != null && !typingSubscription.isDisposed()) {
+                typingSubscription.dispose();
+                typingSubscription = null;
+            }
+            if (stompClient != null) {
+                stompClient.disconnect();
+                stompClient = null;
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Не удалось закрыть соединение: " + e.getMessage());
         }
     }
 
@@ -332,6 +396,13 @@ public class CallService extends Service {
             String action = intent.getAction();
             Log.d(TAG, "onStartCommand with action: " + action + ", extraAction: " + extraAction);
 
+            // Служба могла заснуть, пока приложение было закрыто. Экраны остаются
+            // привязанными к ней, поэтому onCreate второй раз не позовут — будим
+            // её здесь сами, иначе не будет ни уведомления, ни соединения.
+            if (sleeping && !"APP_BACKGROUND_STOP".equals(extraAction)) {
+                wakeFromSleep();
+            }
+
             if ("UPDATE_USER".equals(extraAction)) {
                 int newUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
                 if (newUserId != -1 && newUserId != currentUserId) {
@@ -359,6 +430,10 @@ public class CallService extends Service {
                     stopCallSound();
                     sendSignal("rejectCall", roomId);
                     saveRejectedCall(callRequest, groupCallRequest); // Добавляем вызов
+                    // Звонок, отклонённый из уведомления, не открывает экран разговора,
+                    // и отметку «идёт звонок» снять было некому: служба оставалась
+                    // в строке состояния до следующего запуска приложения
+                    setCallInProgress(false);
                     Log.d(TAG, "Received REJECT_CALL command for roomId: " + roomId);
                 } else {
                     Log.e(TAG, "roomId is null for REJECT_CALL");
@@ -375,10 +450,7 @@ public class CallService extends Service {
             } else if ("APP_BACKGROUND_STOP".equals(extraAction)) {
                 // Ушли в фон и push работают: отдаём доставку им, соединение гасим
                 if (!callInProgress) {
-                    Log.d(TAG, "Останавливаем сервис — доставку берут push");
-                    sendOfflineStatus();
-                    stopHeartbeat();
-                    stopSelf();
+                    goToSleepForPush();
                 } else {
                     Log.d(TAG, "Идёт звонок — сервис не останавливаем");
                 }
@@ -687,6 +759,9 @@ public class CallService extends Service {
                                     Log.d(TAG, "Sent END_CALL broadcast for roomId: " + roomId);
                                     stopCallSound();
                                     hasSentAcceptCall = false;
+                                    // Разговор не начался, а звонящий отбился — отметку
+                                    // снимаем здесь, иначе служба считала бы звонок живым
+                                    setCallInProgress(false);
                                     if (!isAppInForeground()) {
                                         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                                         manager.cancelAll();
