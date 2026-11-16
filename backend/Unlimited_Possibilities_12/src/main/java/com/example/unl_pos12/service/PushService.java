@@ -130,7 +130,16 @@ public class PushService {
         // другим участникам не должна ждать Firebase.
         List<String> tokenValues = new java.util.ArrayList<>();
         for (PushToken t : tokens) tokenValues.add(t.getToken());
-        sender.submit(() -> deliver(userId, tokenValues, payload));
+        // submit() прячет любую ошибку внутрь Future, и отправка падала молча:
+        // в журнале обрывалось на «устройств для userId=…» и ничего дальше
+        sender.execute(() -> {
+            try {
+                deliver(userId, tokenValues, payload);
+            } catch (Throwable error) {
+                System.out.println("PushService: отправка сорвалась: " + error);
+                error.printStackTrace();
+            }
+        });
     }
 
     private final java.util.concurrent.ExecutorService sender =
@@ -165,6 +174,7 @@ public class PushService {
                             .setPriority(com.google.firebase.messaging.AndroidConfig.Priority.HIGH)
                             .build())
                     .build();
+            System.out.println("PushService: отправляем userId=" + userId);
             String id = FirebaseMessaging.getInstance().send(message);
             System.out.println("PushService: отправлено userId=" + userId + ", id=" + id);
             return true;
