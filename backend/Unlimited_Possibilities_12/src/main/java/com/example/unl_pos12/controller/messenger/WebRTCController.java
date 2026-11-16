@@ -163,8 +163,13 @@ public class WebRTCController {
         try {
             Long recipientId = Long.valueOf(callRequest.getRecipientId());
             String callerName = "Incoming call";
+            String callerAvatar = null;
             try {
-                callerName = userService.getUserById(Long.valueOf(callRequest.getCallerId())).getUsername();
+                com.example.unl_pos12.model.messenger.User caller =
+                        userService.getUserById(Long.valueOf(callRequest.getCallerId()));
+                callerName = caller.getUsername();
+                // Снимок звонящего: без него на экране входящего была одна буква имени
+                callerAvatar = caller.getAvatar();
             } catch (Exception ignored) {
             }
             java.util.Map<String, String> data = new java.util.HashMap<>();
@@ -173,6 +178,7 @@ public class WebRTCController {
             data.put("roomId", callRequest.getRoomId());
             data.put("callType", callRequest.getType());
             data.put("callerName", callerName);
+            if (callerAvatar != null && !callerAvatar.isEmpty()) data.put("callerAvatar", callerAvatar);
             pushService.sendToUser(recipientId, callerName, "Incoming call", data);
         } catch (Exception e) {
             System.out.println("pushIncomingCall error: " + e.getMessage());

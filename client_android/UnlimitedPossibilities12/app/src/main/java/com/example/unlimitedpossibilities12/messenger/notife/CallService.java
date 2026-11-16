@@ -403,6 +403,9 @@ public class CallService extends Service {
                 pushCall.setCallerId(intent.getIntExtra("callerId", -1));
                 pushCall.setRoomId(intent.getStringExtra("roomId"));
                 pushCall.setType(intent.getStringExtra("callType"));
+                // Имя и снимок приходят в push: без них на экране была одна буква
+                pushCall.setCallerName(intent.getStringExtra("callerName"));
+                pushCall.setCallerAvatar(intent.getStringExtra("callerAvatar"));
                 callInProgress = true;
                 Log.d(TAG, "Входящий звонок из push: roomId=" + pushCall.getRoomId());
                 handleIncomingCall(pushCall);
@@ -1286,6 +1289,53 @@ public class CallService extends Service {
         }
 
         manager.notify(notificationId, notification);
+
+        // Снимок звонящего подгружаем следом: уведомление должно появиться сразу,
+        // а картинка приедет через мгновение и заменит букву имени
+        String avatarPath = callRequest instanceof CallRequest
+                ? ((CallRequest) callRequest).getCallerAvatar() : null;
+        if (avatarPath != null && !avatarPath.isEmpty()) {
+            final String avatarUrl = "https://unlimitedpossibilities12.org" + avatarPath;
+            final String name = callerName;
+            final int shownId = notificationId;
+            final int smallIcon = icon;
+            final String text = title;
+            new Thread(() -> {
+                try {
+                    android.graphics.Bitmap photo = com.bumptech.glide.Glide.with(getApplicationContext())
+                            .asBitmap()
+                            .load(avatarUrl)
+                            .circleCrop()
+                            .submit(256, 256)
+                            .get();
+
+                    androidx.core.app.Person withPhoto = new androidx.core.app.Person.Builder()
+                            .setName(name)
+                            .setIcon(androidx.core.graphics.drawable.IconCompat.createWithBitmap(photo))
+                            .setImportant(true)
+                            .build();
+
+                    Notification withAvatar = new NotificationCompat.Builder(this, INCOMING_CHANNEL_ID)
+                            .setStyle(NotificationCompat.CallStyle.forIncomingCall(
+                                    withPhoto, rejectPendingIntent, acceptPendingIntent))
+                            .setContentTitle(name)
+                            .setContentText(text)
+                            .setSmallIcon(smallIcon)
+                            .setLargeIcon(photo)
+                            .setCategory(NotificationCompat.CATEGORY_CALL)
+                            .setFullScreenIntent(screenPendingIntent, true)
+                            .setContentIntent(screenPendingIntent)
+                            .setAutoCancel(true)
+                            .setOngoing(true)
+                            .setPriority(NotificationCompat.PRIORITY_HIGH)
+                            .build();
+                    manager.notify(shownId, withAvatar);
+                } catch (Exception e) {
+                    Log.w(TAG, "Снимок звонящего не загрузился: " + e.getMessage());
+                }
+            }).start();
+        }
+
         playCallSound();
         Log.d(TAG, "Call notification shown for roomId: " + roomId + ", type: " + (callRequest instanceof CallRequest ? ((CallRequest) callRequest).getType() : "group") + ", icon: " + icon);
     }

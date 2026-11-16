@@ -76,6 +76,8 @@ public class PushMessagingService extends FirebaseMessagingService {
                 callIntent.putExtra("recipientIds", data.get("recipientIds"));
             } else {
                 callIntent.putExtra("callerId", (int) parseLong(data.get("callerId"), -1));
+                callIntent.putExtra("callerName", data.get("callerName"));
+                callIntent.putExtra("callerAvatar", data.get("callerAvatar"));
             }
             callIntent.putExtra("roomId", data.get("roomId"));
             callIntent.putExtra("callType", data.get("callType"));
