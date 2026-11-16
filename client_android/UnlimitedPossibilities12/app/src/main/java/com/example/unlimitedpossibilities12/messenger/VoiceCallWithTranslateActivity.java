@@ -20,6 +20,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.Switch;
@@ -114,7 +115,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
     private boolean isWaiting = false;
     private String userName;
     private boolean terminationInitiator = false;
-    private Button endCallButton;
+    private View endCallButton;
     private CallService callService;
     private boolean isBound = false;
     private Handler statsHandler;
@@ -129,9 +130,15 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
 
     private TextView callTitle;
     private TextView callTimer;
-    private TextView startTime;
-    private TextView currentTime;
-    private CallWaveformView waveformView;
+    // Снимок собеседника и состояние разговора — как на остальных экранах звонка
+    private ImageView callAvatarImage;
+    private TextView callAvatarText;
+    private ImageView muteButton;
+    private ImageView speakerButton;
+    private View translationPanel;
+    private boolean micMuted = false;
+    private boolean speakerOn = true;
+    private com.example.unlimitedpossibilities12.messenger.notife.CallGuard callGuard;
     private Handler timerHandler;
     private Runnable timerRunnable;
     private Handler timeHandler;
@@ -243,10 +250,21 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
 
         callTitle = findViewById(R.id.call_title);
         callTimer = findViewById(R.id.call_timer);
-        startTime = findViewById(R.id.start_time);
-        currentTime = findViewById(R.id.current_time);
-        waveformView = findViewById(R.id.waveform_view);
         endCallButton = findViewById(R.id.end_call_button);
+        callAvatarImage = findViewById(R.id.call_avatar_image);
+        callAvatarText = findViewById(R.id.call_avatar_text);
+        muteButton = findViewById(R.id.mute_button);
+        speakerButton = findViewById(R.id.speaker_button);
+        translationPanel = findViewById(R.id.translation_panel);
+
+        muteButton.setOnClickListener(v -> toggleMic());
+        speakerButton.setOnClickListener(v -> toggleSpeaker());
+        findViewById(R.id.minimize_button).setOnClickListener(v -> onBackPressed());
+        // Настройки перевода открываются кнопкой: прежде они занимали треть экрана
+        findViewById(R.id.translate_button).setOnClickListener(v ->
+                translationPanel.setVisibility(
+                        translationPanel.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
+        findViewById(R.id.call_security).setOnClickListener(v -> showFingerprint());
         transcriptionTextView = findViewById(R.id.transcription_text_view);
         // NEW: Инициализация новых элементов UI
         translationSwitch = findViewById(R.id.translation_switch);
@@ -273,7 +291,10 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
             sendSettingsToServer(); // [ДОБАВЛЕНО] Отправка настроек
         });
 
-        callTitle.setText("Voice communication with " + recipientName);
+        String partner = recipientName != null && !recipientName.isEmpty() ? recipientName : "?";
+        callTitle.setText(partner);
+        showPartnerAvatar(partner);
+        setupCallGuard();
 
         timerHandler = new Handler(Looper.getMainLooper());
         callStartTime = System.currentTimeMillis();
@@ -289,30 +310,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
         };
         timerHandler.post(timerRunnable);
 
-        timeHandler = new Handler(Looper.getMainLooper());
-        final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-
-        currentTimeHandler = new Handler(Looper.getMainLooper());
-        currentTimeRunnable = new Runnable() {
-            @Override
-            public void run() {
-                currentTime.setText("Current time: " + sdf.format(new Date()));
-                currentTimeHandler.postDelayed(this, 1000);
-            }
-        };
-        currentTimeHandler.postDelayed(currentTimeRunnable, 1000);
-
-        timeRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (startTime.getText().toString().startsWith("Start: --")) {
-                    startTime.setText("Start: " + sdf.format(new Date(callStartTime)));
-                }
-                waveformView.updateAmplitude();
-                timeHandler.postDelayed(this, 5000);
-            }
-        };
-        timeHandler.post(timeRunnable);
+        // Часы «Start»/«Current time» и полоса графика убраны: это была отладка
 
         endCallButton.setOnClickListener(v -> {
             v.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).withEndAction(() -> {
@@ -324,6 +322,8 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
         audioManager.setSpeakerphoneOn(true);
+        speakerOn = true;
+        paintButton(speakerButton, true);
         int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL);
         audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, maxVolume, 0);
         Log.d(TAG, "VOICE_CALL volume set to max: " + maxVolume);
@@ -381,7 +381,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
             } else {
                 selectedLanguageCode = null;
                 editor.remove("translation_language_" + roomId);
-                friendTranscriptionTextView.setText("Friend's Transcription: Waiting..."); // [ДОБАВЛЕНО] Сброс текста
+                friendTranscriptionTextView.setText(getString(R.string.call_translate_listening)); // [ДОБАВЛЕНО] Сброс текста
                 Log.d(TAG, "Translation disabled");
             }
             editor.apply();
@@ -544,7 +544,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
                                         String currentText = transcriptionTextView.getText().toString();
                                         String[] lines = currentText.split("\n");
                                         StringBuilder newText = new StringBuilder();
-                                        if (currentText.equals("Transcription: Waiting...") || currentText.startsWith("Error")) {
+                                        if (isPlaceholder(currentText) || currentText.startsWith("Error")) {
                                             newText.append(transcription);
                                         } else {
                                             if (lines.length >= 50) {
@@ -637,7 +637,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
         String currentText = transcriptionTextView.getText().toString();
         String[] lines = currentText.split("\n");
         StringBuilder newText = new StringBuilder();
-        if (currentText.equals("Transcription: Waiting...") || currentText.startsWith("Error")) {
+        if (isPlaceholder(currentText) || currentText.startsWith("Error")) {
             newText.append(displayText);
         } else {
             if (lines.length >= 50) {
@@ -1202,7 +1202,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
         String currentText = friendTranscriptionTextView.getText().toString();
         String[] lines = currentText.split("\n");
         StringBuilder newText = new StringBuilder();
-        if (currentText.equals("Friend's Transcription: Waiting...") || currentText.startsWith("Error")) {
+        if (isPlaceholder(currentText) || currentText.startsWith("Error")) {
             newText.append(displayText);
         } else {
             if (lines.length >= 50) {
@@ -1605,6 +1605,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
                         }
                         String sdp = signal.getString("sdp");
                         Log.d(TAG, "Received offer SDP: " + sdp);
+                        if (checkSignature(sdp, signal)) return;
                         peerConnection.setRemoteDescription(new SdpObserver() {
                             @Override
                             public void onSetSuccess() {
@@ -1663,6 +1664,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
                 case "answer":
                     if (isCaller && peerConnection != null) {
                         String sdp = signal.getString("sdp");
+                        if (checkSignature(sdp, signal)) return;
                         peerConnection.setRemoteDescription(new SdpObserver() {
                             @Override
                             public void onSetSuccess() {
@@ -1752,6 +1754,12 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
             if (data instanceof SessionDescription) {
                 SessionDescription sdp = (SessionDescription) data;
                 signal.put("sdp", sdp.description);
+                // Подписываем описание: по подписи собеседник узнаёт, что это мы
+                String signature = callGuard != null ? callGuard.sign(sdp.description) : null;
+                if (signature != null) {
+                    signal.put("signature", signature);
+                    signal.put("deviceId", callGuard.deviceId());
+                }
             } else if (data instanceof IceCandidate) {
                 IceCandidate candidate = (IceCandidate) data;
                 JSONObject iceCandidate = new JSONObject();
@@ -2230,5 +2238,188 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
         }
         // Разговор продолжается в своей стопке экранов, а она уходит назад
         moveTaskToBack(true);
+    }
+
+    // ---------- управление разговором ----------
+
+    /** Снимок собеседника, а если его нет — буква имени. */
+    private void showPartnerAvatar(String name) {
+        callAvatarText.setText(name.substring(0, 1).toUpperCase(Locale.getDefault()));
+        callAvatarText.setBackgroundTintList(
+                android.content.res.ColorStateList.valueOf(colorForName(name)));
+        int id;
+        try {
+            id = Integer.parseInt(recipientId);
+        } catch (Exception e) {
+            return;
+        }
+        com.example.unlimitedpossibilities12.api.ApiClient.getApiService().getUserById(id)
+                .enqueue(new retrofit2.Callback<com.example.unlimitedpossibilities12.api.User>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<com.example.unlimitedpossibilities12.api.User> call,
+                                           retrofit2.Response<com.example.unlimitedpossibilities12.api.User> response) {
+                        if (isFinishing() || isDestroyed()) return;
+                        if (!response.isSuccessful() || response.body() == null) return;
+                        String avatar = response.body().getAvatar();
+                        if (avatar == null || avatar.isEmpty()) return;
+                        com.bumptech.glide.Glide.with(VoiceCallWithTranslateActivity.this)
+                                .load("https://unlimitedpossibilities12.org" + avatar)
+                                .circleCrop()
+                                .into(callAvatarImage);
+                        callAvatarText.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<com.example.unlimitedpossibilities12.api.User> call, Throwable tr) {
+                        Log.e(TAG, "Could not load partner avatar: " + tr.getMessage());
+                    }
+                });
+    }
+
+    private int colorForName(String name) {
+        int[] colors = {0xFF6366F1, 0xFF0D9488, 0xFF8B5CF6, 0xFF0EA5E9, 0xFFDB2777, 0xFF475569};
+        int hash = 0;
+        for (int i = 0; i < name.length(); i++) hash = hash * 31 + name.charAt(i);
+        return colors[Math.abs(hash) % colors.length];
+    }
+
+    private void toggleMic() {
+        micMuted = !micMuted;
+        if (localAudioTrack != null) localAudioTrack.setEnabled(!micMuted);
+        muteButton.setImageResource(micMuted ? R.drawable.ic_mic_off_offline : R.drawable.ic_mic_white);
+        paintButton(muteButton, micMuted);
+    }
+
+    private void toggleSpeaker() {
+        speakerOn = !speakerOn;
+        if (audioManager != null) audioManager.setSpeakerphoneOn(speakerOn);
+        speakerButton.setImageResource(speakerOn ? R.drawable.ic_volume_up : R.drawable.ic_volume_off_offline);
+        paintButton(speakerButton, speakerOn);
+    }
+
+    /** Включённая кнопка — светлая, обычная — тёмная. */
+    private void paintButton(ImageView button, boolean active) {
+        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(active ? 0xFFE2E8F0 : 0xFF1E293B));
+        button.setColorFilter(active ? 0xFF0F172A : 0xFFE2E8F0);
+    }
+
+    // ---------- подтверждение собеседника ----------
+
+    private void setupCallGuard() {
+        callGuard = new com.example.unlimitedpossibilities12.messenger.notife.CallGuard(this, currentUserId);
+        // recipientId здесь всегда собеседник — и когда звоним мы, и когда нам
+        callGuard.prepare(recipientId, () -> runOnUiThread(this::updateSecurityLine));
+        updateSecurityLine();
+    }
+
+    private void updateSecurityLine() {
+        TextView text = findViewById(R.id.call_security_text);
+        ImageView icon = findViewById(R.id.call_security_icon);
+        if (text == null || icon == null || callGuard == null) return;
+        int color;
+        int label;
+        switch (callGuard.state()) {
+            case CONFIRMED:
+                label = R.string.call_security_confirmed;
+                color = 0xFF34D399;
+                break;
+            case VERIFIED:
+                label = R.string.call_security_verified;
+                color = 0xFF34D399;
+                break;
+            case NEW_DEVICE:
+                label = R.string.call_security_new_device;
+                color = 0xFF94A3B8;
+                break;
+            case CHANGED:
+                label = R.string.call_security_changed;
+                color = 0xFFFBBF24;
+                break;
+            case FAILED:
+                label = R.string.call_security_failed;
+                color = 0xFFF87171;
+                break;
+            case ENCRYPTED:
+                label = R.string.call_security_encrypted;
+                color = 0xFF94A3B8;
+                break;
+            default:
+                label = R.string.call_security_checking;
+                color = 0xFF94A3B8;
+        }
+        text.setText(label);
+        text.setTextColor(color);
+        icon.setColorFilter(color);
+    }
+
+    /** Код разговора и то, что с ним делать. */
+    private void showFingerprint() {
+        if (callGuard == null) return;
+        String code = callGuard.fingerprint();
+        String digits = callGuard.fingerprintDigits();
+        com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State state = callGuard.state();
+
+        StringBuilder message = new StringBuilder();
+        if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.CHANGED) {
+            message.append(getString(R.string.call_security_changed_note)).append("\n\n");
+        } else if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.CONFIRMED) {
+            message.append(getString(R.string.call_security_confirmed_note)).append("\n\n");
+        } else if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.NEW_DEVICE) {
+            message.append(getString(R.string.call_security_new_device_note)).append("\n\n");
+        } else {
+            message.append(getString(R.string.call_security_explained)).append("\n\n");
+        }
+        message.append(code != null ? code + "\n" + digits : getString(R.string.call_security_no_code));
+        if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.ENCRYPTED) {
+            message.append("\n\n").append(getString(R.string.call_security_unverified_note));
+        }
+
+        androidx.appcompat.app.AlertDialog.Builder builder =
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.AlertDialog_UP12)
+                        .setTitle(R.string.call_security_title)
+                        .setMessage(message.toString())
+                        .setNegativeButton(android.R.string.ok, null);
+        if (code != null) {
+            builder.setPositiveButton(R.string.call_security_match, (dialog, which) -> {
+                if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.CHANGED) {
+                    callGuard.acceptChangedKey();
+                }
+                callGuard.confirmByCode();
+                updateSecurityLine();
+            });
+        }
+        builder.show();
+    }
+
+    /**
+     * Проверить подпись под описанием соединения.
+     *
+     * @return true, если разговор надо прервать — подпись не сошлась.
+     */
+    private boolean checkSignature(String sdp, JSONObject signal) {
+        if (callGuard == null) return false;
+        String signature = signal.optString("signature", null);
+        String senderDevice = signal.optString("deviceId", null);
+        com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State state =
+                callGuard.verify(sdp, signature, senderDevice);
+        runOnUiThread(this::updateSecurityLine);
+        if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.FAILED) {
+            Log.e(TAG, "Подпись собеседника не сошлась — прекращаем разговор");
+            runOnUiThread(() -> {
+                updateSecurityLine();
+                new Handler(Looper.getMainLooper()).postDelayed(this::endCall, 2500);
+            });
+            return true;
+        }
+        return false;
+    }
+
+    /** Пустое поле расшифровки: туда пишем первую фразу, а не приписываем снизу. */
+    private boolean isPlaceholder(String text) {
+        return text == null
+                || text.isEmpty()
+                || text.equals(getString(R.string.call_translate_listening))
+                || text.equals("Transcription: Waiting...")
+                || text.equals("Friend's Transcription: Waiting...");
     }
 }

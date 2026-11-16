@@ -6,6 +6,7 @@ import SockJS from 'sockjs-client';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import { useNotification } from '../context/NotificationContext';
+import { createCallGuard, CallSecurity } from '../utils/callGuard';
 import axios from 'axios'; // NEW: Добавляем импорт axios
 // Те же модели OPUS-MT, что уже переводят секретные чаты: в звонке они избавляют
 // от платного перевода каждой фразы
@@ -15,7 +16,6 @@ import '../styles/VoiceCallWithTranslate.css';
 Chart.register(...registerables);
 
 const VoiceCallWithTranslate = ({ recipientId }) => {
-  const navigate = useNavigate();
   const notify = useNotification();
   const { roomId } = useParams();
   const location = useLocation();
@@ -32,6 +32,48 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const stompClient = useRef(null);
   const mediaRecorderRef = useRef(null);
   const [incomingCallState, setIncomingCallState] = useState(incomingCall);
+
+  // Подпись собеседника — такая же, как в обычном звонке: этот экран
+  // оставался без неё, и звонок с переводом показывался непроверенным
+  const callGuardRef = useRef(null);
+  const [callSecurity, setCallSecurity] = useState(CallSecurity.CHECKING);
+
+  useEffect(() => {
+    let cancelled = false;
+    const partnerId = isCaller
+      ? (incomingCall?.recipientId || recipientId)
+      : (incomingCall?.callerId || recipientId);
+    if (!currentUserId || !partnerId) return undefined;
+    createCallGuard(currentUserId, partnerId)
+      .then((guard) => {
+        if (cancelled) return;
+        callGuardRef.current = guard;
+        setCallSecurity(guard.state());
+      })
+      .catch((error) => console.warn('Не удалось подготовить подпись звонка:', error));
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserId, recipientId, incomingCall, isCaller]);
+
+  const signSdp = (sdp) => (callGuardRef.current ? callGuardRef.current.sign(sdp) : null);
+  const myDeviceId = () => (callGuardRef.current ? callGuardRef.current.deviceId : null);
+
+  const verifySdp = (sdp, signature, senderDeviceId) => {
+    const guard = callGuardRef.current;
+    if (!guard) return false;
+    const state = guard.verify(sdp, signature, senderDeviceId);
+    setCallSecurity(state);
+    if (state === CallSecurity.FAILED) {
+      console.error('Подпись собеседника не сошлась — прекращаем разговор');
+      setTimeout(() => endCall(), 2500);
+      return true;
+    }
+    return false;
+  };
+
+
+  const navigate = useNavigate();
   const [isWaiting, setIsWaiting] = useState(false);
   const [transcription, setTranscription] = useState('Transcription: Waiting...');
   const [friendTranscription, setFriendTranscription] = useState("Friend's Transcription: Waiting...");
@@ -994,7 +1036,11 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
 
       const offer = await peerConnectionRef.current.createOffer();
       await peerConnectionRef.current.setLocalDescription(offer);
-      sendSignal({ from: currentUserId, signal: offer, roomId });
+      sendSignal({
+        from: currentUserId,
+        signal: { type: offer.type, sdp: offer.sdp, signature: signSdp(offer.sdp), deviceId: myDeviceId() },
+        roomId,
+      });
     } catch (error) {
       console.error('Error starting voice call:', error);
       notify('Failed to start voice call.', { toastId: 'start-call-failed' });
@@ -1008,10 +1054,14 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       try {
         if (signalMessage.signal.type === 'offer') {
           if (peerConnectionRef.current && !isCaller) {
+            if (verifySdp(signalMessage.signal.sdp, signalMessage.signal.signature, signalMessage.signal.deviceId)) return;
             await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
             const answer = await peerConnectionRef.current.createAnswer();
             await peerConnectionRef.current.setLocalDescription(answer);
-            sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
+            sendSignal({
+              from: currentUserId,
+              signal: { type: 'answer', sdp: answer.sdp, signature: signSdp(answer.sdp), deviceId: myDeviceId() },
+            });
             // NEW: Устанавливаем hasNotifiedAcceptCall при получении offer
             hasNotifiedAcceptCall.current = true;
             notify(`${recipientName} accepted the call.`, { toastId: `accept-call-${roomId}` });
@@ -1019,6 +1069,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
         } else if (signalMessage.signal.type === 'answer') {
           if (isCaller && peerConnectionRef.current) {
             if (!peerConnectionRef.current.remoteDescription) {
+              if (verifySdp(signalMessage.signal.sdp, signalMessage.signal.signature, signalMessage.signal.deviceId)) return;
               await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
             }
           }

@@ -116,6 +116,15 @@
     <string name="call_camera_off">Camera is off</string>
     <string name="call_no_video">No video</string>
     <string name="call_speaker_off">Earpiece</string>
+    <!-- Звонок с переводом -->
+    <string name="call_translate_you">You</string>
+    <string name="call_translate_them">The other side</string>
+    <string name="call_translate_listening">Listening…</string>
+    <string name="call_translate_speech">Translate speech</string>
+    <string name="call_translate_hint">This is your language: you speak it, and you hear the other side in it.</string>
+    <string name="call_translate_on_device">On-device translation (free)</string>
+    <string name="call_translate_aloud">Speak the translation aloud</string>
+    <string name="call_translate_settings">Translation</string>
     <!-- Защита разговора -->
     <string name="call_security_checking">Checking the connection…</string>
     <string name="call_security_encrypted">Encrypted</string>
