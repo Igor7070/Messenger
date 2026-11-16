@@ -12,7 +12,6 @@ import UserProfile from './UserProfile';
 import PrivateChat from './PrivateChat';
 import SecretPrivateChat from './SecretPrivateChat';
 import VoiceCall from './VoiceCall';
-import VoiceCallSecure from './VoiceCallSecure';
 import VideoCall from './VideoCall';
 import VoiceCallWithTranslate from './VoiceCallWithTranslate';
 import PersonalChats from './PersonalChats';
@@ -164,7 +163,6 @@ const AppContent = () => {
               <Route path="/contacts" element={<RequireAuth><Home /></RequireAuth>} />
               <Route path="/user/:userId" element={<RequireAuth><UserProfile /></RequireAuth>} />
               <Route path="/voice-call/:roomId" element={<RequireAuth><VoiceCall /></RequireAuth>} />
-              <Route path="/secure-call/:roomId" element={<RequireAuth><VoiceCallSecure /></RequireAuth>} />
               <Route path="/video-call/:roomId" element={<RequireAuth><VideoCall /></RequireAuth>} />
               <Route path="/user/:userId/personal-chats" element={<RequireAuth><PersonalChats /></RequireAuth>} />
               <Route path="/voice-call-translate/:roomId" element={<RequireAuth><VoiceCallWithTranslate /></RequireAuth>} />

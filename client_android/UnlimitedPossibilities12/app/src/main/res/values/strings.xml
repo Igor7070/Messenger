@@ -116,6 +116,15 @@
     <string name="call_camera_off">Camera is off</string>
     <string name="call_no_video">No video</string>
     <string name="call_speaker_off">Earpiece</string>
+    <!-- Защита разговора -->
+    <string name="call_security_checking">Checking the connection…</string>
+    <string name="call_security_encrypted">Encrypted</string>
+    <string name="call_security_verified">Encrypted · verified</string>
+    <string name="call_security_failed">Could not verify the other side</string>
+    <string name="call_security_title">Call security</string>
+    <string name="call_security_explained">Voice and video in this call are encrypted between your devices; the server only passes the connection details.\n\nThe code below is the same on both phones. Read it aloud once: if it matches, nobody has slipped in between you.</string>
+    <string name="call_security_no_code">The code appears once both sides have exchanged keys.</string>
+    <string name="call_security_unverified_note">The other side did not sign the connection, so we could not confirm who answered. The call is still encrypted.</string>
     <string name="call_back_to_call">Tap to return to the call</string>
     <string name="call_muted_note">Your microphone is off</string>
     <string name="profile_no_bio">Tap the pencil to add a few words</string>

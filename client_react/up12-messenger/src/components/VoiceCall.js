@@ -6,6 +6,7 @@ import SockJS from 'sockjs-client';
 import axios from 'axios'; // NEW: Добавляем импорт axios
 import IncomingCallNotification from './IncomingCallNotification';
 import { Line } from 'react-chartjs-2';
+import { createCallGuard, CallSecurity } from '../utils/callGuard';
 import { Chart, registerables } from 'chart.js';
 import { useNotification } from '../context/NotificationContext';
 import '../styles/VoiceCall.css';
@@ -346,7 +347,11 @@ const VoiceCall = ({ recipientId }) => {
       await peerConnectionRef.current.setLocalDescription(offer);
       console.log('Local offer created and set:', offer);
 
-      sendSignal({ from: currentUserId, signal: offer, roomId });
+      sendSignal({
+        from: currentUserId,
+        signal: { type: offer.type, sdp: offer.sdp, signature: signSdp(offer.sdp) },
+        roomId,
+      });
 
       peerConnectionRef.current.onicegatheringstatechange = () => {
         console.log('ICE Gathering State:', peerConnectionRef.current.iceGatheringState);
@@ -369,11 +374,15 @@ const VoiceCall = ({ recipientId }) => {
           console.log('Handling offer...');
           if (peerConnectionRef.current && !isCaller) {
             console.log('Received offer SDP:', signalMessage.signal.sdp);
+            if (verifySdp(signalMessage.signal.sdp, signalMessage.signal.signature)) return;
             await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
             const answer = await peerConnectionRef.current.createAnswer();
             await peerConnectionRef.current.setLocalDescription(answer);
             console.log('Sending answer:', answer);
-            sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
+            sendSignal({
+              from: currentUserId,
+              signal: { type: 'answer', sdp: answer.sdp, signature: signSdp(answer.sdp) },
+            });
             // NEW: Устанавливаем hasNotifiedAcceptCall при получении offer
             hasNotifiedAcceptCall.current = true;
             notify(`${recipientName} accepted the call.`, { toastId: `accept-call-${roomId}` });
@@ -387,6 +396,7 @@ const VoiceCall = ({ recipientId }) => {
               console.log('Cannot set remote description: Already has a remote description.');
             } else {
               console.log('Setting remote answer SDP:', signalMessage.signal.sdp);
+              if (verifySdp(signalMessage.signal.sdp, signalMessage.signal.signature)) return;
               await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
             }
           }
@@ -580,6 +590,61 @@ const VoiceCall = ({ recipientId }) => {
     navigate('/');
   };
 
+
+  // Подпись собеседника: шифрование в звонке есть всегда, а подпись отвечает
+  // на другой вопрос — тот ли человек по ту сторону. Прежде это был отдельный
+  // «защищённый звонок», который надо было выбрать вручную.
+  const callGuardRef = useRef(null);
+  const [callSecurity, setCallSecurity] = useState(CallSecurity.CHECKING);
+  const [showFingerprint, setShowFingerprint] = useState(false);
+  const [fingerprintCode, setFingerprintCode] = useState(null);
+
+  // Отпечаток считается асинхронно — показываем его, когда он готов
+  const toggleFingerprint = async () => {
+    setShowFingerprint((shown) => !shown);
+    if (!fingerprintCode && callGuardRef.current) {
+      setFingerprintCode(await callGuardRef.current.fingerprint());
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    // Собеседник: кому звоним или кто звонит нам
+    // Собеседник: кому звоним или кто звонит нам. Идентификатор приходит в
+    // состоянии перехода, а не свойством — свойство у этого экрана пустое.
+    const partnerId = isCaller
+      ? (incomingCall?.recipientId || recipientId)
+      : (incomingCall?.callerId || recipientId);
+    if (!currentUserId || !partnerId) return undefined;
+    createCallGuard(currentUserId, partnerId)
+      .then((guard) => {
+        if (cancelled) return;
+        callGuardRef.current = guard;
+        setCallSecurity(guard.state());
+      })
+      .catch((error) => console.warn('Не удалось подготовить подпись звонка:', error));
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserId, recipientId, incomingCall, isCaller]);
+
+  const signSdp = (sdp) => (callGuardRef.current ? callGuardRef.current.sign(sdp) : null);
+
+  // Возвращает true, если разговор надо прервать: подпись не сошлась
+  const verifySdp = (sdp, signature) => {
+    const guard = callGuardRef.current;
+    if (!guard) return false;
+    const state = guard.verify(sdp, signature);
+    setCallSecurity(state);
+    if (state === CallSecurity.FAILED) {
+      console.error('Подпись собеседника не сошлась — прекращаем разговор');
+      notify('Could not verify the other side — ending the call.', { toastId: `bad-signature-${roomId}` });
+      setTimeout(() => endCall(), 2500);
+      return true;
+    }
+    return false;
+  };
+
   // Таймер продолжительности звонка
   useEffect(() => {
     const timer = setInterval(() => {
@@ -600,6 +665,31 @@ const VoiceCall = ({ recipientId }) => {
           {(callDuration % 60).toString().padStart(2, '0')}
         </div>
       </div>
+
+
+      <button
+        type="button"
+        className={`call-security call-security-${callSecurity}`}
+        onClick={toggleFingerprint}
+      >
+        <span className="call-security-lock">&#128274;</span>
+        {callSecurity === CallSecurity.VERIFIED && 'Encrypted \u00b7 verified'}
+        {callSecurity === CallSecurity.FAILED && 'Could not verify the other side'}
+        {callSecurity === CallSecurity.UNVERIFIED && 'Encrypted'}
+        {callSecurity === CallSecurity.CHECKING && 'Checking the connection\u2026'}
+      </button>
+      {showFingerprint && (
+        <div className="call-fingerprint">
+          <p>
+            Voice and video in this call are encrypted between the devices; the server only
+            passes the connection details. The code below is the same on both sides — read it
+            aloud once, and nobody can slip in between you.
+          </p>
+          <div className="call-fingerprint-code">
+            {fingerprintCode || 'The code appears once both sides have exchanged keys.'}
+          </div>
+        </div>
+      )}
 
       <div className="audio-container">
         <audio ref={localAudioRef} autoPlay muted />

@@ -495,7 +495,7 @@ const UserProfile = () => {
 
                 toast.success(`Calling ${user.username} — protected call 🔒`, { autoClose: 3000 });
 
-                navigate(`/secure-call/${roomId}`, {
+                navigate(`/voice-call/${roomId}`, {
                     state: {
                         incomingCall: callRequest,
                         isCaller: true,

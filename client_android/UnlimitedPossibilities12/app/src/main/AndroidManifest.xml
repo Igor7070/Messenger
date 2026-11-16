@@ -128,10 +128,7 @@
             android:name=".messenger.GroupCallActivity"
             android:launchMode="singleTask"
             android:taskAffinity="org.unlimitedpossibilities12.messenger.call" />
-        <activity
-            android:name=".messenger.SecureVoiceCallActivity"
-            android:launchMode="singleTask"
-            android:taskAffinity="org.unlimitedpossibilities12.messenger.call" />
+
         <activity android:name=".messenger.FullScreenMessageImageActivity" />
         <activity
             android:name=".messenger.FullScreenImageActivity"

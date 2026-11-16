@@ -157,6 +157,37 @@
                 android:text="@string/call_connecting"
                 android:textColor="#CBD5E1"
                 android:textSize="14sp" />
+
+            <!-- Подтверждён ли собеседник; нажатие показывает отпечаток -->
+            <LinearLayout
+                android:id="@+id/call_security"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingVertical="2dp">
+
+                <ImageView
+                    android:id="@+id/call_security_icon"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:contentDescription="@string/call_security_encrypted"
+                    android:src="@drawable/ic_lock"
+                    app:tint="#94A3B8" />
+
+                <TextView
+                    android:id="@+id/call_security_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:text="@string/call_security_checking"
+                    android:textColor="#94A3B8"
+                    android:textSize="12sp" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 

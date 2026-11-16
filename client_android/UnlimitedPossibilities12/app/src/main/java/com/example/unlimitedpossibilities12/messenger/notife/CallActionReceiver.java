@@ -10,7 +10,6 @@ import com.example.unlimitedpossibilities12.api.App;
 import com.example.unlimitedpossibilities12.api.CallRequest;
 import com.example.unlimitedpossibilities12.api.GroupCallRequest;
 import com.example.unlimitedpossibilities12.messenger.GroupCallActivity;
-import com.example.unlimitedpossibilities12.messenger.SecureVoiceCallActivity;
 import com.example.unlimitedpossibilities12.messenger.VideoCallActivity;
 import com.example.unlimitedpossibilities12.messenger.VoiceCallActivity;
 import com.example.unlimitedpossibilities12.messenger.VoiceCallWithTranslateActivity;
@@ -56,7 +55,8 @@ public class CallActionReceiver extends BroadcastReceiver {
                         callIntent = new Intent(context, VoiceCallWithTranslateActivity.class);
                         break;
                     case "voice_secure":
-                        callIntent = new Intent(context, SecureVoiceCallActivity.class);
+                        // Звонок от старого клиента: обычный экран, он теперь с подписью
+                        callIntent = new Intent(context, VoiceCallActivity.class);
                         break;
                     case "voice":
                     default:

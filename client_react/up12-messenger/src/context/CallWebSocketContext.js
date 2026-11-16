@@ -451,7 +451,8 @@ export const CallWebSocketProvider = ({ children }) => {
             route =
               incomingCall.type === 'video' ? `/video-call/${roomId}` :
               incomingCall.type === 'translate' ? `/voice-call-translate/${roomId}` :
-              incomingCall.type === 'voice_secure' ? `/secure-call/${roomId}` :  // ← ЭТА СТРОЧКА!
+              // Звонок от старого клиента: обычный экран, он теперь с подписью
+              incomingCall.type === 'voice_secure' ? `/voice-call/${roomId}` :
               `/voice-call/${roomId}`;
             state = {
               roomId: roomId,

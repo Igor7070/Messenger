@@ -1736,8 +1736,9 @@ public class MessengerMainActivity extends AppCompatActivity {
                                     case "translate":
                                         intent = new Intent(MessengerMainActivity.this, VoiceCallWithTranslateActivity.class);
                                         break;
-                                    case "voice_secure":  // ← ДОБАВЬ ЭТОТ CASE!
-                                        intent = new Intent(MessengerMainActivity.this, SecureVoiceCallActivity.class);
+                                    // Звонок от старого клиента: ведём на обычный экран — он теперь с подписью
+                                    case "voice_secure":
+                                        intent = new Intent(MessengerMainActivity.this, VoiceCallActivity.class);
                                         break;
                                     case "voice":
                                     default:

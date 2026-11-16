@@ -977,8 +977,9 @@ public class UserProfileActivity extends AppCompatActivity {
                                     case "translate":
                                         intent = new Intent(UserProfileActivity.this, VoiceCallWithTranslateActivity.class);
                                         break;
-                                    case "voice_secure":  // ← ДОБАВЬ ЭТОТ CASE!
-                                        intent = new Intent(UserProfileActivity.this, SecureVoiceCallActivity.class);
+                                    // Звонок от старого клиента: ведём на обычный экран — он теперь с подписью
+                                    case "voice_secure":
+                                        intent = new Intent(UserProfileActivity.this, VoiceCallActivity.class);
                                         break;
                                     case "voice":
                                     default:
@@ -1356,7 +1357,8 @@ public class UserProfileActivity extends AppCompatActivity {
         }
 
         String roomId = "room-" + currentUserId + "-" + userId;
-        CallRequest request = new CallRequest(currentUserId, userId, roomId, user.getUsername(), "voice_secure");
+        // Отдельного защищённого звонка больше нет: подпись есть в каждом обычном
+        CallRequest request = new CallRequest(currentUserId, userId, roomId, user.getUsername(), "voice");
 
         apiService.initiateCall(request).enqueue(new Callback<Void>() {
             @Override
@@ -1368,7 +1370,7 @@ public class UserProfileActivity extends AppCompatActivity {
                             if (response.isSuccessful() && response.body() != null) {
                                 String callerName = response.body().getUsername();
 
-                                Intent intent = new Intent(UserProfileActivity.this, SecureVoiceCallActivity.class);
+                                Intent intent = new Intent(UserProfileActivity.this, VoiceCallActivity.class);
                                 intent.putExtra("currentUserId", String.valueOf(currentUserId));
                                 intent.putExtra("recipientId", String.valueOf(userId));
                                 intent.putExtra("roomId", roomId);

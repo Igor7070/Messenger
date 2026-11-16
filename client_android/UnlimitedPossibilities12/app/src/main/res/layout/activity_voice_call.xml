@@ -104,6 +104,45 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!--
+        Защита разговора. Звук шифруется всегда, а эта строка говорит, удалось
+        ли подтвердить, что по ту сторону именно собеседник. Нажатие
+        показывает отпечаток для сверки вслух.
+    -->
+    <LinearLayout
+        android:id="@+id/call_security"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="6dp"
+        app:layout_constraintTop_toBottomOf="@id/call_timer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:id="@+id/call_security_icon"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:contentDescription="@string/call_security_encrypted"
+            android:src="@drawable/ic_lock"
+            app:tint="#94A3B8" />
+
+        <TextView
+            android:id="@+id/call_security_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:text="@string/call_security_checking"
+            android:textColor="#94A3B8"
+            android:textSize="13sp" />
+    </LinearLayout>
+
     <!-- Кнопки разговора -->
     <LinearLayout
         android:id="@+id/call_controls"

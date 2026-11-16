@@ -2124,8 +2124,9 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                                     case "translate":
                                         intent = new Intent(PrivateChatActivity.this, VoiceCallWithTranslateActivity.class);
                                         break;
-                                    case "voice_secure":  // ← ДОБАВЬ ЭТОТ CASE!
-                                        intent = new Intent(PrivateChatActivity.this, SecureVoiceCallActivity.class);
+                                    // Звонок от старого клиента: ведём на обычный экран — он теперь с подписью
+                                    case "voice_secure":
+                                        intent = new Intent(PrivateChatActivity.this, VoiceCallActivity.class);
                                         break;
                                     case "voice":
                                     default:

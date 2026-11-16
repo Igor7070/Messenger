@@ -1478,7 +1478,8 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         }
         String roomId = "secure-" + currentUserId + "-" + partnerId + "-" + System.currentTimeMillis();
         String myName = getSharedPreferences("prefs", MODE_PRIVATE).getString("username", "Unknown");
-        CallRequest request = new CallRequest(currentUserId, (int) partnerId, roomId, myName, "voice_secure");
+        // Отдельного защищённого звонка больше нет: подпись есть в каждом обычном
+        CallRequest request = new CallRequest(currentUserId, (int) partnerId, roomId, myName, "voice");
         apiService.initiateCall(request).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
@@ -1487,7 +1488,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                             Toast.LENGTH_SHORT).show();
                     return;
                 }
-                Intent intent = new Intent(SecretPrivateChatActivity.this, SecureVoiceCallActivity.class);
+                Intent intent = new Intent(SecretPrivateChatActivity.this, VoiceCallActivity.class);
                 intent.putExtra("currentUserId", String.valueOf(currentUserId));
                 intent.putExtra("recipientId", String.valueOf(partnerId));
                 intent.putExtra("roomId", roomId);

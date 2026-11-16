@@ -6,6 +6,8 @@ import SockJS from 'sockjs-client';
 import axios from 'axios'; // NEW: Добавляем импорт axios
 import { useNotification } from '../context/NotificationContext';
 import '../styles/VideoCall.css';
+import '../styles/VoiceCall.css';
+import { createCallGuard, CallSecurity } from '../utils/callGuard';
 
 const VideoCall = ({ recipientId }) => {
   const navigate = useNavigate();
@@ -314,7 +316,10 @@ const VideoCall = ({ recipientId }) => {
       await peerConnectionRef.current.setLocalDescription(offer);
       console.log('Local offer created and set:', offer.sdp);
 
-      sendSignal({ from: currentUserId, signal: { type: 'offer', sdp: offer.sdp } });
+      sendSignal({
+        from: currentUserId,
+        signal: { type: 'offer', sdp: offer.sdp, signature: signSdp(offer.sdp) },
+      });
     } catch (error) {
       console.error('Error starting video call:', error);
       notify('Failed to start video call.', { toastId: 'start-call-failed' });
@@ -338,6 +343,7 @@ const VideoCall = ({ recipientId }) => {
         console.log('Handling offer...');
         if (peerConnectionRef.current && !isCaller) {
           console.log('Received offer SDP:', sdp);
+          if (verifySdp(sdp, signalMessage.signal.signature)) return;
           await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp }));
           const answer = await peerConnectionRef.current.createAnswer({
             offerToReceiveAudio: true,
@@ -345,7 +351,10 @@ const VideoCall = ({ recipientId }) => {
           });
           await peerConnectionRef.current.setLocalDescription(answer);
           console.log('Sending answer SDP:', answer.sdp);
-          sendSignal({ from: currentUserId, signal: { type: 'answer', sdp: answer.sdp } });
+          sendSignal({
+            from: currentUserId,
+            signal: { type: 'answer', sdp: answer.sdp, signature: signSdp(answer.sdp) },
+          });
           // NEW: Устанавливаем hasNotifiedAcceptCall для получателя, так как обработка offer означает принятие звонка
           hasNotifiedAcceptCall.current = true;
           notify(`${callerName} call accepted.`, { toastId: `accept-call-${roomId}` });
@@ -359,6 +368,7 @@ const VideoCall = ({ recipientId }) => {
             console.log('Cannot set remote description: Already has a remote description.');
           } else {
             console.log('Setting remote answer SDP:', sdp);
+            if (verifySdp(sdp, signalMessage.signal.signature)) return;
             await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp }));
             console.log('Remote answer set successfully');
           }
@@ -557,6 +567,58 @@ const VideoCall = ({ recipientId }) => {
     return () => clearInterval(timer);
   }, []);
 
+
+  // Подпись собеседника: шифрование в звонке есть всегда, а подпись отвечает
+  // на другой вопрос — тот ли человек по ту сторону.
+  const callGuardRef = useRef(null);
+  const [callSecurity, setCallSecurity] = useState(CallSecurity.CHECKING);
+  const [showFingerprint, setShowFingerprint] = useState(false);
+  const [fingerprintCode, setFingerprintCode] = useState(null);
+
+  // Отпечаток считается асинхронно — показываем его, когда он готов
+  const toggleFingerprint = async () => {
+    setShowFingerprint((shown) => !shown);
+    if (!fingerprintCode && callGuardRef.current) {
+      setFingerprintCode(await callGuardRef.current.fingerprint());
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    // Собеседник: кому звоним или кто звонит нам
+    const partnerId = isCaller
+      ? (incomingCall?.recipientId || recipientId)
+      : (incomingCall?.callerId || recipientId);
+    if (!currentUserId || !partnerId) return undefined;
+    createCallGuard(currentUserId, partnerId)
+      .then((guard) => {
+        if (cancelled) return;
+        callGuardRef.current = guard;
+        setCallSecurity(guard.state());
+      })
+      .catch((error) => console.warn('Не удалось подготовить подпись звонка:', error));
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserId, recipientId, incomingCall, isCaller]);
+
+  const signSdp = (sdp) => (callGuardRef.current ? callGuardRef.current.sign(sdp) : null);
+
+  // Возвращает true, если разговор надо прервать: подпись не сошлась
+  const verifySdp = (sdp, signature) => {
+    const guard = callGuardRef.current;
+    if (!guard) return false;
+    const state = guard.verify(sdp, signature);
+    setCallSecurity(state);
+    if (state === CallSecurity.FAILED) {
+      console.error('Подпись собеседника не сошлась — прекращаем разговор');
+      notify('Could not verify the other side — ending the call.', { toastId: `bad-signature-${roomId}` });
+      setTimeout(() => endCall(), 2500);
+      return true;
+    }
+    return false;
+  };
+
   return (
     <div className="video-call-container">
       <div className="video-call-header">
@@ -567,7 +629,30 @@ const VideoCall = ({ recipientId }) => {
           {Math.floor(callDuration / 60).toString().padStart(2, '0')}:
           {(callDuration % 60).toString().padStart(2, '0')}
         </div>
+        <button
+          type="button"
+          className={`call-security call-security-${callSecurity}`}
+          onClick={toggleFingerprint}
+        >
+          <span className="call-security-lock">&#128274;</span>
+          {callSecurity === CallSecurity.VERIFIED && 'Encrypted \u00b7 verified'}
+          {callSecurity === CallSecurity.FAILED && 'Could not verify the other side'}
+          {callSecurity === CallSecurity.UNVERIFIED && 'Encrypted'}
+          {callSecurity === CallSecurity.CHECKING && 'Checking the connection\u2026'}
+        </button>
       </div>
+      {showFingerprint && (
+        <div className="call-fingerprint">
+          <p>
+            Voice and video in this call are encrypted between the devices; the server only
+            passes the connection details. The code below is the same on both sides — read it
+            aloud once, and nobody can slip in between you.
+          </p>
+          <div className="call-fingerprint-code">
+            {fingerprintCode || 'The code appears once both sides have exchanged keys.'}
+          </div>
+        </div>
+      )}
       <div className={`video-container ${videoOrientation}`}>
         <video ref={remoteVideoRef} className="remote-video" autoPlay playsInline />
         <video ref={localVideoRef} className="local-video" autoPlay playsInline muted />

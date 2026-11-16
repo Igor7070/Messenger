@@ -219,6 +219,8 @@ public class VideoCallActivity extends AppCompatActivity {
         partnerNameText.setText(partner);
         showPartnerAvatar(partner);
 
+        setupCallGuard();
+
         muteButton.setOnClickListener(v -> toggleMic());
         cameraButton.setOnClickListener(v -> toggleCamera());
         switchCameraButton.setOnClickListener(v -> flipCamera());
@@ -776,6 +778,7 @@ public class VideoCallActivity extends AppCompatActivity {
 
                         String sdp = signal.getString("sdp");
                         Log.d(TAG, "Received offer SDP: " + sdp);
+                        if (checkSignature(sdp, signal)) return;
                         peerConnection.setRemoteDescription(new SdpObserver() {
                             @Override
                             public void onSetSuccess() {
@@ -840,6 +843,7 @@ public class VideoCallActivity extends AppCompatActivity {
                 case "answer":
                     if (isCaller && peerConnection != null) {
                         String sdp = signal.getString("sdp");
+                        if (checkSignature(sdp, signal)) return;
                         peerConnection.setRemoteDescription(new SdpObserver() {
                             @Override
                             public void onSetSuccess() {
@@ -1014,6 +1018,9 @@ public class VideoCallActivity extends AppCompatActivity {
             if (data instanceof SessionDescription) {
                 SessionDescription sdp = (SessionDescription) data;
                 signal.put("sdp", sdp.description);
+                // Подписываем описание: по подписи собеседник узнаёт, что это мы
+                String signature = callGuard != null ? callGuard.sign(sdp.description) : null;
+                if (signature != null) signal.put("signature", signature);
             } else if (data instanceof IceCandidate) {
                 IceCandidate candidate = (IceCandidate) data;
                 JSONObject iceCandidate = new JSONObject();
@@ -1551,5 +1558,89 @@ public class VideoCallActivity extends AppCompatActivity {
         hideControlsHandler.removeCallbacksAndMessages(null);
         if (!callConnected) return; // пока идёт соединение, пусть всё будет видно
         hideControlsHandler.postDelayed(this::hideControls, 5000);
+    }
+
+    // ---------- подтверждение собеседника ----------
+
+    /**
+     * Подпись описания соединения. Звук и видео шифрует сам WebRTC; подпись
+     * отвечает на другой вопрос — тот ли человек по ту сторону.
+     */
+    private com.example.unlimitedpossibilities12.messenger.notife.CallGuard callGuard;
+
+    private void setupCallGuard() {
+        callGuard = new com.example.unlimitedpossibilities12.messenger.notife.CallGuard(this, currentUserId);
+        // recipientId здесь всегда собеседник — и когда звоним мы, и когда нам
+        callGuard.prepare(recipientId, () -> runOnUiThread(this::updateSecurityLine));
+        findViewById(R.id.call_security).setOnClickListener(v -> showFingerprint());
+        updateSecurityLine();
+    }
+
+    private void updateSecurityLine() {
+        TextView text = findViewById(R.id.call_security_text);
+        ImageView icon = findViewById(R.id.call_security_icon);
+        if (text == null || icon == null || callGuard == null) return;
+        switch (callGuard.state()) {
+            case VERIFIED:
+                text.setText(R.string.call_security_verified);
+                text.setTextColor(0xFF34D399);
+                icon.setColorFilter(0xFF34D399);
+                break;
+            case FAILED:
+                text.setText(R.string.call_security_failed);
+                text.setTextColor(0xFFF87171);
+                icon.setColorFilter(0xFFF87171);
+                break;
+            case UNVERIFIED:
+                text.setText(R.string.call_security_encrypted);
+                text.setTextColor(0xFF94A3B8);
+                icon.setColorFilter(0xFF94A3B8);
+                break;
+            default:
+                text.setText(R.string.call_security_checking);
+                text.setTextColor(0xFF94A3B8);
+                icon.setColorFilter(0xFF94A3B8);
+        }
+    }
+
+    /** Отпечаток разговора — код, одинаковый у обеих сторон. */
+    private void showFingerprint() {
+        if (callGuard == null) return;
+        showControls();
+        String code = callGuard.fingerprint();
+        StringBuilder message = new StringBuilder(getString(R.string.call_security_explained));
+        message.append("\n\n");
+        message.append(code != null ? code : getString(R.string.call_security_no_code));
+        if (callGuard.state() == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.UNVERIFIED) {
+            message.append("\n\n").append(getString(R.string.call_security_unverified_note));
+        }
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.AlertDialog_UP12)
+                .setTitle(R.string.call_security_title)
+                .setMessage(message.toString())
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
+    /**
+     * Проверить подпись под описанием соединения.
+     *
+     * @return true, если разговор надо прервать — подпись не сошлась.
+     */
+    private boolean checkSignature(String sdp, JSONObject signal) {
+        if (callGuard == null) return false;
+        String signature = signal.optString("signature", null);
+        com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State state =
+                callGuard.verify(sdp, signature);
+        runOnUiThread(this::updateSecurityLine);
+        if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.FAILED) {
+            Log.e(TAG, "Подпись собеседника не сошлась — прекращаем разговор");
+            runOnUiThread(() -> {
+                updateSecurityLine();
+                callTimer.setText(R.string.call_security_failed);
+                new Handler(Looper.getMainLooper()).postDelayed(this::endCall, 2500);
+            });
+            return true;
+        }
+        return false;
     }
 }

@@ -1623,8 +1623,9 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                                     case "translate":
                                         intent = new Intent(GroupChatsActivity.this, VoiceCallWithTranslateActivity.class);
                                         break;
-                                    case "voice_secure":  // ← ДОБАВЬ ЭТОТ CASE!
-                                        intent = new Intent(GroupChatsActivity.this, SecureVoiceCallActivity.class);
+                                    // Звонок от старого клиента: ведём на обычный экран — он теперь с подписью
+                                    case "voice_secure":
+                                        intent = new Intent(GroupChatsActivity.this, VoiceCallActivity.class);
                                         break;
                                     case "voice":
                                     default:

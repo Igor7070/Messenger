@@ -13,7 +13,9 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -169,6 +171,7 @@ public class VoiceCallActivity extends AppCompatActivity {
         // Главное на экране — собеседник, а не фраза про звонок
         callTitle.setText(recipientName != null ? recipientName : "Unknown");
         showPartner();
+        setupCallGuard();
 
         // Инициализация таймера
         timerHandler = new Handler(Looper.getMainLooper());
@@ -524,6 +527,7 @@ public class VoiceCallActivity extends AppCompatActivity {
                         }
                         String sdp = signal.getString("sdp");
                         Log.d(TAG, "Received offer SDP: " + sdp);
+                        if (checkSignature(sdp, signal)) return;
                         peerConnection.setRemoteDescription(new SdpObserver() {
                             @Override
                             public void onSetSuccess() {
@@ -582,6 +586,7 @@ public class VoiceCallActivity extends AppCompatActivity {
                 case "answer":
                     if (isCaller && peerConnection != null) {
                         String sdp = signal.getString("sdp");
+                        if (checkSignature(sdp, signal)) return;
                         peerConnection.setRemoteDescription(new SdpObserver() {
                             @Override
                             public void onSetSuccess() {
@@ -663,6 +668,25 @@ public class VoiceCallActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Проверить подпись под описанием соединения.
+     *
+     * @return true, если разговор надо прервать — подпись не сошлась.
+     */
+    private boolean checkSignature(String sdp, JSONObject signal) {
+        if (callGuard == null) return false;
+        String signature = signal.optString("signature", null);
+        com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State state =
+                callGuard.verify(sdp, signature);
+        runOnUiThread(this::updateSecurityLine);
+        if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.FAILED) {
+            Log.e(TAG, "Подпись собеседника не сошлась — прекращаем разговор");
+            failOnBadSignature();
+            return true;
+        }
+        return false;
+    }
+
     private JSONObject createSignalJson(String type, Object data) {
         JSONObject message = new JSONObject();
         JSONObject signal = new JSONObject();
@@ -671,6 +695,9 @@ public class VoiceCallActivity extends AppCompatActivity {
             if (data instanceof SessionDescription) {
                 SessionDescription sdp = (SessionDescription) data;
                 signal.put("sdp", sdp.description);
+                // Подписываем описание: по подписи собеседник узнаёт, что это мы
+                String signature = callGuard != null ? callGuard.sign(sdp.description) : null;
+                if (signature != null) signal.put("signature", signature);
             } else if (data instanceof IceCandidate) {
                 IceCandidate candidate = (IceCandidate) data;
                 JSONObject iceCandidate = new JSONObject();
@@ -711,6 +738,77 @@ public class VoiceCallActivity extends AppCompatActivity {
     }
 
     /** Снимок собеседника, а если его нет — буква имени на цветном кружке. */
+    /**
+     * Подпись собеседника: подтверждаем, что соединение устанавливает именно он.
+     * Раньше это жило в отдельном «защищённом звонке», и включать его надо было
+     * вручную — то есть как раз тогда, когда о подмене никто не подозревает.
+     */
+    private com.example.unlimitedpossibilities12.messenger.notife.CallGuard callGuard;
+
+    private void setupCallGuard() {
+        callGuard = new com.example.unlimitedpossibilities12.messenger.notife.CallGuard(this, currentUserId);
+        // recipientId здесь всегда собеседник — и когда звоним мы, и когда нам
+        callGuard.prepare(recipientId, () -> runOnUiThread(this::updateSecurityLine));
+
+        View security = findViewById(R.id.call_security);
+        security.setOnClickListener(v -> showFingerprint());
+        updateSecurityLine();
+    }
+
+    /** Что написано в строке о защите. */
+    private void updateSecurityLine() {
+        TextView text = findViewById(R.id.call_security_text);
+        ImageView icon = findViewById(R.id.call_security_icon);
+        if (text == null || icon == null || callGuard == null) return;
+        switch (callGuard.state()) {
+            case VERIFIED:
+                text.setText(R.string.call_security_verified);
+                text.setTextColor(0xFF34D399);
+                icon.setColorFilter(0xFF34D399);
+                break;
+            case FAILED:
+                text.setText(R.string.call_security_failed);
+                text.setTextColor(0xFFF87171);
+                icon.setColorFilter(0xFFF87171);
+                break;
+            case UNVERIFIED:
+                text.setText(R.string.call_security_encrypted);
+                text.setTextColor(0xFF94A3B8);
+                icon.setColorFilter(0xFF94A3B8);
+                break;
+            default:
+                text.setText(R.string.call_security_checking);
+                text.setTextColor(0xFF94A3B8);
+                icon.setColorFilter(0xFF94A3B8);
+        }
+    }
+
+    /** Отпечаток разговора — код, одинаковый у обеих сторон. */
+    private void showFingerprint() {
+        if (callGuard == null) return;
+        String code = callGuard.fingerprint();
+        StringBuilder message = new StringBuilder(getString(R.string.call_security_explained));
+        message.append("\n\n");
+        message.append(code != null ? code : getString(R.string.call_security_no_code));
+        if (callGuard.state() == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.UNVERIFIED) {
+            message.append("\n\n").append(getString(R.string.call_security_unverified_note));
+        }
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.AlertDialog_UP12)
+                .setTitle(R.string.call_security_title)
+                .setMessage(message.toString())
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
+    /** Подпись не сошлась — разговор прекращаем, собеседник не тот. */
+    private void failOnBadSignature() {
+        runOnUiThread(() -> {
+            updateSecurityLine();
+            callStatus.setText(R.string.call_security_failed);
+            new Handler(Looper.getMainLooper()).postDelayed(this::endCall, 2500);
+        });
+    }
+
     private void showPartner() {
         String name = recipientName != null && !recipientName.isEmpty() ? recipientName : "?";
         callAvatarText.setText(name.substring(0, 1).toUpperCase(Locale.getDefault()));

@@ -3077,7 +3077,7 @@ const SecretPrivateChat = () => {
       }
       const partnerName = displayChatName.replace('Secret Chat with ', '');
       toast.success(`Calling ${partnerName} — protected call`);
-      navigate(`/secure-call/${roomId}`, {
+      navigate(`/voice-call/${roomId}`, {
         state: {
           incomingCall: callRequest,
           isCaller: true,
