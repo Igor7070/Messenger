@@ -61,7 +61,14 @@ public class PushService {
             if (FirebaseApp.getApps().isEmpty()) {
                 GoogleCredentials credentials = GoogleCredentials.fromStream(
                         new ByteArrayInputStream(credentialsJson.getBytes(StandardCharsets.UTF_8)));
-                FirebaseApp.initializeApp(FirebaseOptions.builder().setCredentials(credentials).build());
+                // firebase-admin 9.4.x шлёт запросы по HTTP/2 и сам же ставит заголовок
+                // Host, который в HTTP/2 запрещён: каждая отправка падала с
+                // «Header 'Host: fcm.googleapis.com' is illegal for HTTP/2 messages»,
+                // и телефон с закрытым приложением ничего не получал.
+                FirebaseApp.initializeApp(FirebaseOptions.builder()
+                        .setCredentials(credentials)
+                        .setHttpTransport(new com.google.api.client.http.javanet.NetHttpTransport())
+                        .build());
             }
             ready = true;
             System.out.println("PushService: Firebase инициализирован, push включены");
