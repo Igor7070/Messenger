@@ -99,13 +99,35 @@
             android:taskAffinity=""
             android:theme="@style/Theme.AppCompat.NoActionBar"
             android:turnScreenOn="true" />
-        <activity android:name=".messenger.VoiceCallActivity" />
+        <!--
+            Разговор идёт в отдельной стопке экранов (своя taskAffinity).
+            Иначе он оставался лежать под перепиской: свернув звонок, человек
+            возвращался в него же следующим нажатием «назад», хотя для возврата
+            есть полоска сверху. Теперь «назад» в приложении работает как
+            обычно, а свёрнутый разговор ждёт в своей стопке.
+        -->
+        <activity
+            android:name=".messenger.VoiceCallActivity"
+            android:launchMode="singleTask"
+            android:taskAffinity="org.unlimitedpossibilities12.messenger.call" />
         <activity android:name=".messenger.PrivateChatActivity" />
         <activity android:name=".messenger.GroupChatsActivity" />
-        <activity android:name=".messenger.VideoCallActivity" />
-        <activity android:name=".messenger.VoiceCallWithTranslateActivity" />
-        <activity android:name=".messenger.GroupCallActivity" />
-        <activity android:name=".messenger.SecureVoiceCallActivity" />
+        <activity
+            android:name=".messenger.VideoCallActivity"
+            android:launchMode="singleTask"
+            android:taskAffinity="org.unlimitedpossibilities12.messenger.call" />
+        <activity
+            android:name=".messenger.VoiceCallWithTranslateActivity"
+            android:launchMode="singleTask"
+            android:taskAffinity="org.unlimitedpossibilities12.messenger.call" />
+        <activity
+            android:name=".messenger.GroupCallActivity"
+            android:launchMode="singleTask"
+            android:taskAffinity="org.unlimitedpossibilities12.messenger.call" />
+        <activity
+            android:name=".messenger.SecureVoiceCallActivity"
+            android:launchMode="singleTask"
+            android:taskAffinity="org.unlimitedpossibilities12.messenger.call" />
         <activity android:name=".messenger.FullScreenMessageImageActivity" />
         <activity
             android:name=".messenger.FullScreenImageActivity"

@@ -197,11 +197,6 @@ public class VoiceCallActivity extends AppCompatActivity {
         speakerButton.setOnClickListener(v -> toggleSpeaker());
         minimizeButton.setOnClickListener(v -> minimizeCall());
 
-        // Куда возвращаться, свернув разговор: на тот экран, с которого звонили
-        android.app.Activity previous = ((com.example.unlimitedpossibilities12.api.App) getApplication())
-                .getCurrentActivity();
-        returnScreen = previous != null && !(previous instanceof VoiceCallActivity)
-                ? previous.getClass() : MessengerMainActivity.class;
         com.example.unlimitedpossibilities12.messenger.notife.OngoingCall
                 .start(VoiceCallActivity.class, recipientName);
 
@@ -807,11 +802,10 @@ public class VoiceCallActivity extends AppCompatActivity {
      */
     private void minimizeCall() {
         updateCallNotification();
-        Intent back = new Intent(this, returnScreen != null ? returnScreen : MessengerMainActivity.class);
-        // Экран звонка остаётся жить позади: создать его заново значит оборвать
-        // разговор, поэтому мы не закрываем его, а поднимаем наверх прежний экран
-        back.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        startActivity(back);
+        // Разговор продолжается в своей стопке экранов, а она уходит назад —
+        // человек оказывается там, откуда звонил. Закрыть экран нельзя: с ним
+        // оборвётся и звонок.
+        moveTaskToBack(true);
     }
 
     /**
@@ -830,8 +824,6 @@ public class VoiceCallActivity extends AppCompatActivity {
         minimizeCall();
     }
 
-    /** Экран, на который возвращаемся, свернув разговор. */
-    private Class<? extends android.app.Activity> returnScreen;
 
     /**
      * Уведомление о звонке — это то же уведомление службы: пока идёт
@@ -1024,6 +1016,21 @@ public class VoiceCallActivity extends AppCompatActivity {
         super.onStop();
         // Разрешаем поворот экрана при уходе из активности
         setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+    }
+
+    /**
+     * Экран звонка теперь единственный в своей стопке, поэтому новый звонок
+     * приходит сюда же. Если это другой разговор — пересобираем экран, иначе
+     * просто возвращаемся в текущий (так работает полоска сверху).
+     */
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        String newRoom = intent.getStringExtra("roomId");
+        if (newRoom != null && !newRoom.equals(roomId)) {
+            setIntent(intent);
+            recreate();
+        }
     }
 
     @Override

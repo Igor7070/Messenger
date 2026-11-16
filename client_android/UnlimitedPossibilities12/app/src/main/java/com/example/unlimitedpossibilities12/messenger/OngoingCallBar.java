@@ -157,7 +157,8 @@ public final class OngoingCallBar {
         Class<? extends Activity> screen = OngoingCall.screen();
         if (screen == null) return;
         Intent intent = new Intent(activity, screen);
-        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        // Звонок живёт в своей стопке — поднимаем её наверх, не создавая экран заново
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         activity.startActivity(intent);
     }
 

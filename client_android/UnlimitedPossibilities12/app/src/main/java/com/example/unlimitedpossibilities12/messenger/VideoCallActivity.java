@@ -1223,15 +1223,8 @@ public class VideoCallActivity extends AppCompatActivity {
         }
     }
 
-    /** Экран, на который возвращаемся, свернув разговор. */
-    private Class<? extends android.app.Activity> callReturnScreen;
-
     /** Запомнить разговор и экран возврата — для полоски поверх приложения. */
     private void rememberOngoingCall(String partner) {
-        android.app.Activity previous = ((com.example.unlimitedpossibilities12.api.App) getApplication())
-                .getCurrentActivity();
-        callReturnScreen = previous != null && previous != this
-                ? previous.getClass() : MessengerMainActivity.class;
         com.example.unlimitedpossibilities12.messenger.notife.OngoingCall
                 .start(VideoCallActivity.class, partner);
     }
@@ -1246,9 +1239,7 @@ public class VideoCallActivity extends AppCompatActivity {
             super.onBackPressed();
             return;
         }
-        android.content.Intent back = new android.content.Intent(this,
-                callReturnScreen != null ? callReturnScreen : MessengerMainActivity.class);
-        back.addFlags(android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        startActivity(back);
+        // Разговор продолжается в своей стопке экранов, а она уходит назад
+        moveTaskToBack(true);
     }
 }
