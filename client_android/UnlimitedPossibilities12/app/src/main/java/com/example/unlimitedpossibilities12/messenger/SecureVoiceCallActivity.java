@@ -103,7 +103,6 @@ public class SecureVoiceCallActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         com.example.unlimitedpossibilities12.messenger.notife.CallService.setCallInProgress(true); // идёт звонок — соединение держим
-        rememberOngoingCall(getIntent().getStringExtra("recipientName"));
         setContentView(R.layout.activity_secure_voice_call);
 
         secureStatusText = findViewById(R.id.secure_status);
@@ -120,6 +119,7 @@ public class SecureVoiceCallActivity extends AppCompatActivity {
         isCaller = getIntent().getBooleanExtra("isCaller", false);
         callerName = getIntent().getStringExtra("callerName");
         recipientName = getIntent().getStringExtra("recipientName");
+        rememberOngoingCall(recipientName != null ? recipientName : callerName);
 
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);

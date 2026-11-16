@@ -211,7 +211,6 @@ public class GroupCallActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         com.example.unlimitedpossibilities12.messenger.notife.CallService.setCallInProgress(true); // идёт звонок — соединение держим
-        rememberOngoingCall(initiatorName);
         setContentView(R.layout.activity_group_call);
 
         // Запрещаем поворот экрана
@@ -220,6 +219,7 @@ public class GroupCallActivity extends AppCompatActivity {
         // Получение данных из Intent
         initiatorId = getIntent().getIntExtra("initiatorId", -1);
         initiatorName = getIntent().getStringExtra("initiatorName");
+        rememberOngoingCall(initiatorName);
         isInitiator = getIntent().getBooleanExtra("isInitiator", false);
         roomId = getIntent().getStringExtra("roomId");
         if (isInitiator && roomId == null) {

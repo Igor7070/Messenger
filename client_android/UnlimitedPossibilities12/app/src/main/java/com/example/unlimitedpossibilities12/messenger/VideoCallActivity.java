@@ -12,7 +12,9 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -87,7 +89,7 @@ public class VideoCallActivity extends AppCompatActivity {
     private boolean isWaiting = false;
     private String userName;
     private boolean terminationInitiator = false;
-    private Button endCallButton;
+    private View endCallButton;
     private CallService callService;
     private boolean isBound = false;
     private Handler statsHandler;
@@ -107,9 +109,31 @@ public class VideoCallActivity extends AppCompatActivity {
     // UI элементы
     private TextView callTitle;
     private TextView callTimer;
-    private TextView startTime;
-    private TextView currentTime;
-    private CallWaveformView waveformView;
+    // Заглушка на месте видео собеседника: снимок, имя и состояние
+    private View noVideoOverlay;
+    private ImageView avatarImage;
+    private TextView avatarText;
+    private TextView partnerNameText;
+    private TextView noVideoStatus;
+    private View localVideoCard;
+    private ImageView localVideoOffIcon;
+    private View topBar;
+    private View callControls;
+    private ImageView muteButton;
+    private ImageView cameraButton;
+    private ImageView switchCameraButton;
+    private ImageView speakerButton;
+    private View minimizeButton;
+    /** Состояние разговора: что выключено и чьё видео сейчас на весь экран. */
+    private boolean micMuted = false;
+    private boolean cameraOff = false;
+    private boolean speakerOn = true;
+    private boolean frontCamera = true;
+    private boolean swapped = false;
+    private boolean remoteVideoLive = false;
+    private boolean callConnected = false;
+    private VideoTrack remoteVideoTrack;
+    private final Handler hideControlsHandler = new Handler(Looper.getMainLooper());
     private Handler timerHandler;
     private Runnable timerRunnable;
     private Handler timeHandler;
@@ -153,7 +177,6 @@ public class VideoCallActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         com.example.unlimitedpossibilities12.messenger.notife.CallService.setCallInProgress(true); // идёт звонок — соединение держим
-        rememberOngoingCall(recipientName);
         setContentView(R.layout.activity_video_call);
 
         setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -164,58 +187,61 @@ public class VideoCallActivity extends AppCompatActivity {
         isCaller = getIntent().getBooleanExtra("isCaller", false);
         callerName = getIntent().getStringExtra("callerName");
         recipientName = getIntent().getStringExtra("recipientName");
+        rememberOngoingCall(recipientName != null ? recipientName : callerName);
 
         Log.d(TAG, "onCreate: currentUserId=" + currentUserId + ", recipientId=" + recipientId + ", roomId=" + roomId + ", isCaller=" + isCaller);
 
         callTitle = findViewById(R.id.call_title);
         callTimer = findViewById(R.id.call_timer);
-        startTime = findViewById(R.id.start_time);
-        currentTime = findViewById(R.id.current_time);
-        waveformView = findViewById(R.id.waveform_view);
         endCallButton = findViewById(R.id.end_call_button);
         localVideoView = findViewById(R.id.local_video_view);
         remoteVideoView = findViewById(R.id.remote_video_view);
+        noVideoOverlay = findViewById(R.id.no_video_overlay);
+        avatarImage = findViewById(R.id.call_avatar_image);
+        avatarText = findViewById(R.id.call_avatar_text);
+        partnerNameText = findViewById(R.id.partner_name);
+        noVideoStatus = findViewById(R.id.no_video_status);
+        localVideoCard = findViewById(R.id.local_video_card);
+        localVideoOffIcon = findViewById(R.id.local_video_off_icon);
+        topBar = findViewById(R.id.top_bar);
+        callControls = findViewById(R.id.call_controls);
+        muteButton = findViewById(R.id.mute_button);
+        cameraButton = findViewById(R.id.camera_button);
+        switchCameraButton = findViewById(R.id.switch_camera_button);
+        speakerButton = findViewById(R.id.speaker_button);
+        minimizeButton = findViewById(R.id.minimize_button);
 
-        callTitle.setText("Video call with " + recipientName);
+        String partner = recipientName != null && !recipientName.isEmpty() ? recipientName : "?";
+        callTitle.setText(partner);
+        partnerNameText.setText(partner);
+        showPartnerAvatar(partner);
+
+        muteButton.setOnClickListener(v -> toggleMic());
+        cameraButton.setOnClickListener(v -> toggleCamera());
+        switchCameraButton.setOnClickListener(v -> flipCamera());
+        speakerButton.setOnClickListener(v -> toggleSpeaker());
+        minimizeButton.setOnClickListener(v -> onBackPressed());
+        localVideoCard.setOnClickListener(v -> swapVideos());
+        findViewById(R.id.video_call_root).setOnClickListener(v -> toggleControls());
 
         timerHandler = new Handler(Looper.getMainLooper());
         callStartTime = System.currentTimeMillis();
         timerRunnable = new Runnable() {
             @Override
             public void run() {
-                long duration = System.currentTimeMillis() - callStartTime;
-                int minutes = (int) (duration / 1000) / 60;
-                int seconds = (int) (duration / 1000) % 60;
-                callTimer.setText(String.format("%02d:%02d", minutes, seconds));
+                if (callConnected) {
+                    long duration = System.currentTimeMillis() - callStartTime;
+                    int minutes = (int) (duration / 1000) / 60;
+                    int seconds = (int) (duration / 1000) % 60;
+                    callTimer.setText(String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds));
+                }
                 timerHandler.postDelayed(this, 1000);
             }
         };
         timerHandler.post(timerRunnable);
 
-        timeHandler = new Handler(Looper.getMainLooper());
-        final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-
-        currentTimeHandler = new Handler(Looper.getMainLooper());
-        currentTimeRunnable = new Runnable() {
-            @Override
-            public void run() {
-                currentTime.setText("Current: " + sdf.format(new Date()));
-                currentTimeHandler.postDelayed(this, 1000);
-            }
-        };
-        currentTimeHandler.post(currentTimeRunnable);
-
-        timeRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (startTime.getText().toString().startsWith("Start: --")) {
-                    startTime.setText("Start: " + sdf.format(new Date(callStartTime)));
-                }
-                waveformView.updateAmplitude();
-                timeHandler.postDelayed(this, 5000);
-            }
-        };
-        timeHandler.post(timeRunnable);
+        // Часы «Start:»/«Current:» и полоса графика убраны: это была отладка,
+        // человеку на звонке она ни о чём не говорила.
 
         endCallButton.setOnClickListener(v -> {
             v.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).withEndAction(() -> {
@@ -227,6 +253,9 @@ public class VideoCallActivity extends AppCompatActivity {
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
         audioManager.setSpeakerphoneOn(true);
+        speakerOn = true;
+        speakerButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFE2E8F0));
+        speakerButton.setColorFilter(0xFF0F172A);
         int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL);
         audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, maxVolume, 0);
         Log.d(TAG, "VOICE_CALL volume set to max: " + maxVolume);
@@ -596,7 +625,15 @@ public class VideoCallActivity extends AppCompatActivity {
             public void onIceConnectionChange(PeerConnection.IceConnectionState newState) {
                 Log.d(TAG, "IceConnectionState: " + newState);
                 if (newState == PeerConnection.IceConnectionState.CONNECTED || newState == PeerConnection.IceConnectionState.COMPLETED) {
-                    runOnUiThread(() -> Toast.makeText(VideoCallActivity.this, "Call connected", Toast.LENGTH_SHORT).show());
+                    runOnUiThread(() -> {
+                        if (!callConnected) {
+                            callConnected = true;
+                            callStartTime = System.currentTimeMillis();
+                            com.example.unlimitedpossibilities12.messenger.notife.OngoingCall.connected();
+                        }
+                        updateRemoteVideoState();
+                        hideControlsLater();
+                    });
                     peerConnection.getStats(statsReport -> {
                         for (RTCStats stats : statsReport.getStatsMap().values()) {
                             if (stats.getType().equals("candidate-pair") && stats.getMembers().get("state").equals("succeeded")) {
@@ -651,11 +688,16 @@ public class VideoCallActivity extends AppCompatActivity {
                         Log.d(TAG, "Remote audio track enabled: " + remoteAudioTrack.id() + ", enabled: " + remoteAudioTrack.enabled());
                     }
                     if (!mediaStreams[0].videoTracks.isEmpty()) {
-                        VideoTrack remoteVideoTrack = mediaStreams[0].videoTracks.get(0);
+                        remoteVideoTrack = mediaStreams[0].videoTracks.get(0);
                         remoteVideoTrack.setEnabled(true);
                         remoteVideoTrack.addSink(remoteVideoView);
+                        remoteVideoLive = true;
+                        runOnUiThread(VideoCallActivity.this::updateRemoteVideoState);
                         Log.d(TAG, "Remote video track enabled and added to remoteVideoView: " + remoteVideoTrack.id() + ", enabled: " + remoteVideoTrack.enabled());
                     } else {
+                        // Собеседник без камеры: вместо черноты показываем снимок
+                        remoteVideoLive = false;
+                        runOnUiThread(VideoCallActivity.this::updateRemoteVideoState);
                         Log.d(TAG, "No remote video track available (expected if React has no camera)");
                     }
                 } else {
@@ -1013,6 +1055,7 @@ public class VideoCallActivity extends AppCompatActivity {
             timerHandler = null;
             timerRunnable = null;
         }
+        hideControlsHandler.removeCallbacksAndMessages(null);
         if (timeHandler != null && timeRunnable != null) {
             timeHandler.removeCallbacks(timeRunnable);
             timeHandler = null;
@@ -1207,6 +1250,17 @@ public class VideoCallActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        // Свёрнутый разговор оставлял свои поверхности на экране: список чатов
+        // под ним оказывался закрыт чёрным. Убираем их, пока экран не на виду.
+        localVideoView.setVisibility(View.GONE);
+        remoteVideoView.setVisibility(View.GONE);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        remoteVideoView.setVisibility(View.VISIBLE);
+        localVideoView.setVisibility(cameraOff ? View.INVISIBLE : View.VISIBLE);
     }
 
     @Override
@@ -1241,5 +1295,159 @@ public class VideoCallActivity extends AppCompatActivity {
         }
         // Разговор продолжается в своей стопке экранов, а она уходит назад
         moveTaskToBack(true);
+    }
+
+    // ---------- управление разговором ----------
+
+    /** Снимок собеседника для заглушки: если его нет — буква имени. */
+    private void showPartnerAvatar(String name) {
+        avatarText.setText(name.substring(0, 1).toUpperCase(Locale.getDefault()));
+        avatarText.setBackgroundTintList(android.content.res.ColorStateList.valueOf(colorForName(name)));
+        int id;
+        try {
+            id = Integer.parseInt(recipientId);
+        } catch (Exception e) {
+            return;
+        }
+        com.example.unlimitedpossibilities12.api.ApiClient.getApiService().getUserById(id)
+                .enqueue(new retrofit2.Callback<com.example.unlimitedpossibilities12.api.User>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<com.example.unlimitedpossibilities12.api.User> call,
+                                           retrofit2.Response<com.example.unlimitedpossibilities12.api.User> response) {
+                        if (isFinishing() || isDestroyed()) return;
+                        if (!response.isSuccessful() || response.body() == null) return;
+                        String avatar = response.body().getAvatar();
+                        if (avatar == null || avatar.isEmpty()) return;
+                        com.bumptech.glide.Glide.with(VideoCallActivity.this)
+                                .load("https://unlimitedpossibilities12.org" + avatar)
+                                .circleCrop()
+                                .into(avatarImage);
+                        avatarText.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<com.example.unlimitedpossibilities12.api.User> call, Throwable tr) {
+                        Log.e(TAG, "Could not load partner avatar: " + tr.getMessage());
+                    }
+                });
+    }
+
+    private int colorForName(String name) {
+        int[] colors = {0xFF6366F1, 0xFF0D9488, 0xFF8B5CF6, 0xFF0EA5E9, 0xFFDB2777, 0xFF475569};
+        int hash = 0;
+        for (int i = 0; i < name.length(); i++) hash = hash * 31 + name.charAt(i);
+        return colors[Math.abs(hash) % colors.length];
+    }
+
+    /** Есть ли что показывать на большом экране, и что писать, если нет. */
+    private void updateRemoteVideoState() {
+        boolean bigScreenHasVideo = swapped ? !cameraOff : remoteVideoLive;
+        noVideoOverlay.setVisibility(bigScreenHasVideo ? View.GONE : View.VISIBLE);
+        if (!bigScreenHasVideo) {
+            noVideoStatus.setText(!callConnected ? R.string.call_connecting
+                    : swapped ? R.string.call_camera_off : R.string.call_no_video);
+        }
+        if (!callConnected) callTimer.setText(R.string.call_connecting);
+    }
+
+    /** Микрофон. Звук перестаёт уходить собеседнику, разговор продолжается. */
+    private void toggleMic() {
+        micMuted = !micMuted;
+        if (localAudioTrack != null) localAudioTrack.setEnabled(!micMuted);
+        muteButton.setImageResource(micMuted ? R.drawable.ic_mic_off_offline : R.drawable.ic_mic_white);
+        paintButton(muteButton, micMuted);
+        showControls();
+    }
+
+    /** Камера. Собеседник видит вместо картинки наш снимок — как и мы в ответ. */
+    private void toggleCamera() {
+        cameraOff = !cameraOff;
+        if (localVideoTrack != null) localVideoTrack.setEnabled(!cameraOff);
+        cameraButton.setImageResource(cameraOff ? R.drawable.ic_videocam_off : R.drawable.ic_video_call);
+        paintButton(cameraButton, cameraOff);
+        localVideoView.setVisibility(cameraOff ? View.INVISIBLE : View.VISIBLE);
+        localVideoOffIcon.setVisibility(cameraOff ? View.VISIBLE : View.GONE);
+        updateRemoteVideoState();
+        showControls();
+    }
+
+    /** Передняя камера или основная. */
+    private void flipCamera() {
+        if (!(videoCapturer instanceof org.webrtc.CameraVideoCapturer)) return;
+        ((org.webrtc.CameraVideoCapturer) videoCapturer).switchCamera(
+                new org.webrtc.CameraVideoCapturer.CameraSwitchHandler() {
+                    @Override
+                    public void onCameraSwitchDone(boolean isFrontCamera) {
+                        frontCamera = isFrontCamera;
+                        runOnUiThread(() -> {
+                            // Зеркалим только своё лицо с передней камеры
+                            localVideoView.setMirror(!swapped && isFrontCamera);
+                            remoteVideoView.setMirror(swapped && isFrontCamera);
+                        });
+                    }
+
+                    @Override
+                    public void onCameraSwitchError(String error) {
+                        Log.w(TAG, "Не удалось переключить камеру: " + error);
+                    }
+                });
+        showControls();
+    }
+
+    private void toggleSpeaker() {
+        speakerOn = !speakerOn;
+        if (audioManager != null) audioManager.setSpeakerphoneOn(speakerOn);
+        paintButton(speakerButton, !speakerOn);
+        speakerButton.setImageResource(speakerOn ? R.drawable.ic_volume_up : R.drawable.ic_volume_off_offline);
+        showControls();
+    }
+
+    /** Нажатая кнопка — светлая, обычная — тёмная. */
+    private void paintButton(ImageView button, boolean active) {
+        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(active ? 0xFFE2E8F0 : 0xFF1E293B));
+        button.setColorFilter(active ? 0xFF0F172A : 0xFFE2E8F0);
+    }
+
+    /** Поменять местами себя и собеседника. */
+    private void swapVideos() {
+        if (remoteVideoTrack == null || localVideoTrack == null) return;
+        remoteVideoTrack.removeSink(swapped ? localVideoView : remoteVideoView);
+        localVideoTrack.removeSink(swapped ? remoteVideoView : localVideoView);
+        swapped = !swapped;
+        remoteVideoTrack.addSink(swapped ? localVideoView : remoteVideoView);
+        localVideoTrack.addSink(swapped ? remoteVideoView : localVideoView);
+        localVideoView.setMirror(!swapped && frontCamera);
+        remoteVideoView.setMirror(swapped && frontCamera);
+        updateRemoteVideoState();
+        showControls();
+    }
+
+    // ---------- панели ----------
+
+    /** Панели уезжают, чтобы не закрывать картинку, и возвращаются по касанию. */
+    private void toggleControls() {
+        if (callControls.getVisibility() == View.VISIBLE) {
+            hideControls();
+        } else {
+            showControls();
+        }
+    }
+
+    private void showControls() {
+        topBar.setVisibility(View.VISIBLE);
+        callControls.setVisibility(View.VISIBLE);
+        hideControlsLater();
+    }
+
+    private void hideControls() {
+        hideControlsHandler.removeCallbacksAndMessages(null);
+        topBar.setVisibility(View.GONE);
+        callControls.setVisibility(View.GONE);
+    }
+
+    private void hideControlsLater() {
+        hideControlsHandler.removeCallbacksAndMessages(null);
+        if (!callConnected) return; // пока идёт соединение, пусть всё будет видно
+        hideControlsHandler.postDelayed(this::hideControls, 5000);
     }
 }

@@ -214,7 +214,6 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         com.example.unlimitedpossibilities12.messenger.notife.CallService.setCallInProgress(true); // идёт звонок — соединение держим
-        rememberOngoingCall(recipientName);
         setContentView(R.layout.activity_voice_call_with_translate);
 
         setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -225,6 +224,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
         isCaller = getIntent().getBooleanExtra("isCaller", false);
         callerName = getIntent().getStringExtra("callerName");
         recipientName = getIntent().getStringExtra("recipientName");
+        rememberOngoingCall(recipientName != null ? recipientName : callerName);
 
         // NEW: Проверка currentUserId на null или пустую строку
         if (currentUserId == null || currentUserId.isEmpty()) {

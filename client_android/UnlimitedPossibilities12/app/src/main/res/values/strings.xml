@@ -110,6 +110,12 @@
     <string name="call_unmute">Unmute</string>
     <string name="call_end">End</string>
     <string name="call_minimize">Minimize</string>
+    <!-- Экран видеозвонка -->
+    <string name="call_camera">Camera</string>
+    <string name="call_switch_camera">Flip</string>
+    <string name="call_camera_off">Camera is off</string>
+    <string name="call_no_video">No video</string>
+    <string name="call_speaker_off">Earpiece</string>
     <string name="call_back_to_call">Tap to return to the call</string>
     <string name="call_muted_note">Your microphone is off</string>
     <string name="profile_no_bio">Tap the pencil to add a few words</string>
