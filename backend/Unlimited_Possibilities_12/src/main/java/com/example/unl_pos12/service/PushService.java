@@ -41,6 +41,8 @@ import java.util.Map;
 public class PushService {
 
     private final PushTokenRepository repository;
+    @Autowired
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
     private final String credentialsJson;
     private volatile boolean ready;
 
@@ -151,6 +153,18 @@ public class PushService {
 
     private void deliver(Long userId, List<String> tokenValues, Map<String, String> payload) {
         for (String token : tokenValues) {
+            // У человека может быть несколько токенов, и старые среди них мёртвые.
+            // Сбой на одном не должен оставлять без уведомления живое устройство.
+            try {
+                deliverToToken(userId, token, payload);
+            } catch (Throwable error) {
+                System.out.println("PushService: токен пропущен: " + error);
+            }
+        }
+    }
+
+    private void deliverToToken(Long userId, String token, Map<String, String> payload) {
+        {
             if (!sendOnce(userId, token, payload, false)) {
                 // Транспортные сбои у Firebase случаются — пробуем ещё раз
                 try {
@@ -181,7 +195,7 @@ public class PushService {
         } catch (FirebaseMessagingException e) {
             MessagingErrorCode code = e.getMessagingErrorCode();
             if (code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.INVALID_ARGUMENT) {
-                repository.deleteByToken(token);
+                forgetToken(token);
                 System.out.println("PushService: удалён недействительный токен userId=" + userId);
                 return true;
             }
@@ -192,6 +206,16 @@ public class PushService {
             System.out.println("PushService: ошибка отправки: " + e.getMessage() + causeChain(e));
             return false;
         }
+    }
+
+    /**
+     * Удалить мёртвый токен. Отправка идёт в своём потоке, где транзакции нет,
+     * и прямое удаление падало с «No EntityManager with actual transaction» —
+     * обрывая рассылку до того, как очередь дойдёт до живого устройства.
+     */
+    private void forgetToken(String token) {
+        new org.springframework.transaction.support.TransactionTemplate(transactionManager)
+                .executeWithoutResult(status -> repository.deleteByToken(token));
     }
 
     private static String causeChain(Throwable e) {
