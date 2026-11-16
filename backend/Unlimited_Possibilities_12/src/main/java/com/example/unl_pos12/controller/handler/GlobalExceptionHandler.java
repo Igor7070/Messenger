@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -14,6 +15,19 @@ public class GlobalExceptionHandler {
         System.out.println("Error: " + e.getMessage());
         e.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+    }
+
+    /**
+     * Запрошенного файла нет — это «не найдено», а не сбой сервера.
+     *
+     * Аватары и вложения лежат в каталоге рядом с приложением, и после выката
+     * контейнер поднимается пустым. Запрос к пропавшей картинке попадал в общий
+     * обработчик и возвращал 500: клиент считал это поломкой и писал ошибку в
+     * журнал, хотя ему достаточно показать букву вместо лица.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<String> handleMissingResource(NoResourceFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Not found");
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
