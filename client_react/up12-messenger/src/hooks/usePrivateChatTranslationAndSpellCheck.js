@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { translateMessage, saveTranslation } from '../api/messages';
 import { toast } from 'react-toastify';
 
@@ -29,6 +29,15 @@ const usePrivateChatTranslationAndSpellCheck = ({
   isTranscribing, // ДОБАВЛЕНО
   setIsTranscribing, // ДОБАВЛЕНО
 }) => {
+
+  // Сообщения, перевод или расшифровка которых уже сорвались.
+  //
+  // Очередь складывалась заново при каждом изменении списка сообщений, а
+  // неудача ничего о себе не оставляла: ссылка, которую сервер не переводит,
+  // попадала в очередь снова и снова. Страница уходила в вечный круг запросов
+  // и переставала отвечать — вкладку приходилось перезагружать.
+  const failedTranslations = useRef(new Set());
+  const failedTranscriptions = useRef(new Set());
 
   // Проверка, является ли сообщение новым
   const isMessageNew = useCallback(
@@ -144,12 +153,13 @@ const usePrivateChatTranslationAndSpellCheck = ({
         const hasTranscription = isAudio && transcribedContentMap[msg.id]?.content;
         const isTranslated = (isAudio && transcribedContentMap[msg.id]?.translatedContent && transcribedContentMap[msg.id]?.translationLanguage === translationLanguage) ||
                             (!isAudio && msg.translatedContent && msg.translationLanguage === translationLanguage);
-        const isValid = (!isAudio || hasTranscription) && !isDeleted && !isTranslated;
+        const hasFailed = failedTranslations.current.has(msg.id);
+        const isValid = (!isAudio || hasTranscription) && !isDeleted && !isTranslated && !hasFailed;
         if (!isValid) {
           console.log(`Message at index ${index} skipped from translation queue:`, {
             id: msg.id,
             content: isAudio ? transcribedContentMap[msg.id]?.content : msg.content,
-            reason: isAudio && !hasTranscription ? 'Audio without transcription' : isDeleted ? 'Deleted message' : isTranslated ? 'Already translated' : 'Unknown',
+            reason: isAudio && !hasTranscription ? 'Audio without transcription' : isDeleted ? 'Deleted message' : isTranslated ? 'Already translated' : hasFailed ? 'Translation failed before' : 'Unknown',
           });
         }
         return isValid;
@@ -251,6 +261,8 @@ const usePrivateChatTranslationAndSpellCheck = ({
         setIsTranslating(false);
       } catch (error) {
         console.error('Translation error for message:', { id: message.id, content: contentToTranslate, error: error.message });
+        // Второй раз за это сообщение не беремся: иначе оно вернётся в очередь
+        failedTranslations.current.add(message.id);
         setTranslationQueue((prevQueue) => prevQueue.slice(1));
         setIsTranslating(false);
       }
@@ -448,17 +460,19 @@ const usePrivateChatTranslationAndSpellCheck = ({
   };
 
   // ДОБАВЛЕНО: Транскрипция существующих сообщений
-  const transcribeExistingMessages = (messagesToTranscribe) => {
+  const transcribeExistingMessages = useCallback((messagesToTranscribe) => {
       if (!isTranscriptionEnabled || transcriptionMode !== 'all') return;
       const queue = messagesToTranscribe
           .filter((msg) => {
               const isAudio = msg.messageType === 'audio';
               const isTranscribed = transcribedContentMap[msg.id]?.content;
               const isNew = isMessageNew(msg, 'transcription');
-              const isValid = isAudio && !isTranscribed && (transcriptionMode === 'all' || (transcriptionMode === 'new' && isNew));
+              const hasFailed = failedTranscriptions.current.has(msg.id);
+              const isValid = isAudio && !isTranscribed && !hasFailed
+                  && (transcriptionMode === 'all' || (transcriptionMode === 'new' && isNew));
               if (!isValid) {
                   console.log(`Message ${msg.id} skipped from transcription queue:`, {
-                      reason: !isAudio ? 'Not audio' : isTranscribed ? 'Already transcribed' : !isNew ? 'Not new' : 'Unknown',
+                      reason: !isAudio ? 'Not audio' : isTranscribed ? 'Already transcribed' : hasFailed ? 'Transcription failed before' : !isNew ? 'Not new' : 'Unknown',
                   });
               }
               return isValid;
@@ -470,7 +484,7 @@ const usePrivateChatTranslationAndSpellCheck = ({
       } else {
           console.log('No messages to transcribe');
       }
-  };
+  }, [isTranscriptionEnabled, transcriptionMode, transcribedContentMap, isMessageNew, setTranscriptionQueue]);
 
   // ДОБАВЛЕНО: Обработка следующего сообщения в очереди транскрипции
   const transcribeNextMessage = async () => {
@@ -522,6 +536,8 @@ const usePrivateChatTranslationAndSpellCheck = ({
               // Очередь идёт сама: о каждой неудаче человеку сообщать незачем,
               // иначе при недоступных файлах экран заваливает одинаковыми окнами
               console.warn('Transcription skipped:', { id: message.id, fileUrl: message.fileUrl, error: error.message });
+              // Файла нет или он не читается — второй раз не пробуем
+              failedTranscriptions.current.add(message.id);
           } finally {
               setTranscriptionQueue((prevQueue) => prevQueue.slice(1));
               setIsTranscribing(false);
