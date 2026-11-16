@@ -157,6 +157,14 @@ public class App extends Application {
             }
         });
 
+        // Ключ подписи этого устройства выкладываем при запуске: если ждать
+        // звонка, собеседник успеет спросить список устройств раньше, чем мы
+        // в нём появимся, и первый разговор пройдёт без проверки.
+        if (currentUserId != -1) {
+            new com.example.unlimitedpossibilities12.messenger.notife.CallGuard(
+                    this, String.valueOf(currentUserId)).prepare(null, null);
+        }
+
         // Сервис поднимаем при входе пользователя на экран (см. onActivityStarted),
         // а на телефонах без push — сразу, как раньше: иначе сообщения не дойдут.
         if (currentUserId != -1

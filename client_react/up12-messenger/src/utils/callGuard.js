@@ -69,10 +69,7 @@ const deviceIdFor = () => {
   return id;
 };
 
-export async function createCallGuard(currentUserId, partnerId) {
-  await sodium.ready;
-
-  const deviceId = deviceIdFor();
+const loadPair = (currentUserId) => {
   const storageKey = `secure_sign_${currentUserId}`;
   let pair = null;
   try {
@@ -94,23 +91,44 @@ export async function createCallGuard(currentUserId, partnerId) {
     };
     write(storageKey, JSON.stringify(pair));
   }
+  return pair;
+};
 
-  // Свой ключ кладём на сервер: по нему собеседник нас проверит
-  const publish = async (url, body) => {
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!response.ok) console.warn('Ключ не принят сервером:', url, response.status);
-    } catch (error) {
-      console.warn('Ключ не ушёл на сервер:', url, error);
-    }
-  };
+const publish = async (url, body) => {
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) console.warn('Ключ не принят сервером:', url, response.status);
+  } catch (error) {
+    console.warn('Ключ не ушёл на сервер:', url, error);
+  }
+};
+
+/**
+ * Выложить ключ этого устройства при запуске.
+ *
+ * Если ждать звонка, собеседник успевает спросить список устройств раньше,
+ * чем мы в нём появились, и первый разговор проходит без проверки.
+ */
+export async function publishCallKey(currentUserId) {
+  if (!currentUserId) return;
+  await sodium.ready;
+  const pair = loadPair(currentUserId);
+  const deviceId = deviceIdFor();
   await publish(DEVICES_API, { userId: String(currentUserId), deviceId, publicKey: pair.publicKey });
   // Прежний общий слот — для ещё не обновлённых собеседников
   publish(API, { userId: String(currentUserId), publicKey: pair.publicKey });
+}
+
+export async function createCallGuard(currentUserId, partnerId) {
+  await sodium.ready;
+
+  const deviceId = deviceIdFor();
+  const pair = loadPair(currentUserId);
+  await publishCallKey(currentUserId);
 
   // Устройства собеседника
   const partnerDevices = new Map();

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Route, Routes, Link, Navigate, useLocation, useParams } from 'react-router-dom';
 import SyncHashRouter from './SyncHashRouter';
 import { ToastContainer } from 'react-toastify';
+import { publishCallKey } from '../utils/callGuard';
 import 'react-toastify/dist/ReactToastify.css';
 import Home from './Home';
 import ChatShell from './ChatShell';
@@ -93,6 +94,9 @@ const AppContent = () => {
     const username = localStorage.getItem('username');
     if (userId && username) {
       initializeWebSocket(Number(userId), username);
+      // Ключ этого устройства должен лежать на сервере до первого звонка,
+      // иначе собеседник спросит список раньше, чем мы в нём появимся
+      publishCallKey(userId);
     }
   }, [initializeWebSocket, location.pathname]);
 
