@@ -154,7 +154,15 @@ public class ChatGPTController {
             System.out.println("Текст состоит из одной ссылки — исправлять нечего");
             return ResponseEntity.ok(request.getPrompt());
         }
-        String prompt = String.format("Correct the spelling and grammar of the following text and return only the corrected text in double quotes: \"%s\"",
+        // Язык в просьбе не назывался, и модель «исправляла» русское «Вот» в
+        // английское «Here», а в чате с хинди — на хинди. Исправленный текст
+        // уходил как сам текст сообщения: человек писал по-русски, а в
+        // переписке у всех оставался перевод вместо оригинала.
+        String prompt = String.format(
+                "Correct spelling and grammar in the text below.%n"
+                        + "Keep the original language, wording and meaning. Do not translate it.%n"
+                        + "Do not add, remove or explain anything, and do not wrap the answer in quotes.%n"
+                        + "Reply with the corrected text only.%n%n%s",
                 request.getPrompt());
         String result = openAIService.generateCompletion(prompt);
         System.out.println("Spell checked result: " + result);

@@ -174,8 +174,12 @@ public class GroupChatTranslationAndSpellCheckHelper {
                     Log.d(TAG, "Parsed translated content: " + translatedContent);
                     message.setTranslatedContent(translatedContent);
                     message.setTranslationLanguage(translationLanguage);
-                    // Устанавливаем showOriginal в зависимости от типа сообщения
-                    message.setShowOriginal("text".equalsIgnoreCase(message.getMessageType())); // true для текстовых, false для аудио
+                    // Оригинал показываем у всего, кроме голосовых: у них
+                    // «оригинал» — это расшифровка, и переключение там своё.
+                    // Прежде проверка была на тип «text», и у фото с подписью
+                    // главной строкой шёл перевод, а под ним он же — человек
+                    // писал по-русски и видел две строки на хинди.
+                    message.setShowOriginal(!"audio".equalsIgnoreCase(message.getMessageType()));
 
                     SharedPreferences prefs = context.getSharedPreferences("chat_prefs", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = prefs.edit();

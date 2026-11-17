@@ -85,6 +85,37 @@
             android:padding="12dp"
             android:background="@null">
 
+            <!--
+                Снимок в пузыре.
+
+                Прежде подпись стояла над фотографией, а сама она лежала на
+                тёмной подложке с полями по бокам — как картина в раме. В
+                переписке принято иначе: сперва снимок, подпись под ним.
+            -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/image_card"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/image_preview"
+                    android:layout_width="248dp"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:maxHeight="420dp"
+                    android:minHeight="120dp"
+                    android:scaleType="fitCenter"
+                    android:contentDescription="@string/image_viewer_photo"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Содержимое сообщения -->
             <TextView
                 android:id="@+id/content_text_view"
@@ -170,24 +201,6 @@
                 android:textStyle="italic"
                 android:textColor="#94A3B8"
                 android:visibility="gone" />
-
-            <!-- Превью изображения: фиксированная ширина, высота по пропорциям
-                 снимка (adjustViewBounds), без обрезки в квадрат. Ширина совпадает
-                 с maxWidth текста, чтобы пузырь с фото был такого же размера. -->
-            <ImageView
-                android:id="@+id/image_preview"
-                android:layout_width="240dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:adjustViewBounds="true"
-                android:maxHeight="320dp"
-                android:minHeight="120dp"
-                android:scaleType="fitCenter"
-                android:background="#0F172A"
-                android:contentDescription="Image preview"
-                android:visibility="gone"
-                android:clickable="true"
-                android:focusable="true" />
 
             <!-- Вложение не открылось: файлы на сервере пропадают при
                  переразвёртывании. Прежде на их месте рисовался красный знак

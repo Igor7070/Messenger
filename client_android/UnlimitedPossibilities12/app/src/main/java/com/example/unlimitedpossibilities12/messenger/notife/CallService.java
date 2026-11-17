@@ -693,16 +693,25 @@ public class CallService extends Service {
                             subscribeToCalls();
                             subscribeToGroupCalls();
                             subscribeToNotifications();
-                            for (Long chatId : new HashSet<>(subscribedChatIds)) {
-                                subscribeToChatMessages(chatId);
+                            // Переподписка после обрыва.
+                            //
+                            // Прежде этот перебор ничего не делал: подписка
+                            // первым же делом выходит с «уже подписан», а
+                            // отметки от старого соединения оставались на
+                            // месте. Связь восстанавливалась, но события чата
+                            // больше не приходили — сообщение было видно в
+                            // браузере и не появлялось на телефоне, удаление
+                            // тоже не доезжало. Поэтому сначала забываем
+                            // старые подписки, потом подписываемся заново.
+                            java.util.Set<Long> toRestore = new HashSet<>(subscribedChatIds);
+                            toRestore.addAll(pendingChatSubscriptions);
+                            pendingChatSubscriptions.clear();
+                            for (Disposable old : messageSubscriptions) {
+                                if (old != null && !old.isDisposed()) old.dispose();
                             }
-                            // ← Добавлена переподписка на typing для всех чатов
-                            for (Long chatId : new HashSet<>(subscribedChatIds)) {
-                                subscribeToTyping(chatId);
-                            }
-                            // Подписки, запрошенные до готовности соединения
-                            for (Long chatId : new HashSet<>(pendingChatSubscriptions)) {
-                                pendingChatSubscriptions.remove(chatId);
+                            messageSubscriptions.clear();
+                            subscribedChatIds.clear();
+                            for (Long chatId : toRestore) {
                                 subscribeToChatMessages(chatId);
                                 subscribeToTyping(chatId);
                             }

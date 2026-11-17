@@ -1493,14 +1493,21 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
             // будим службу и ждём соединения — обычно оно поднимается за
             // секунду-другую
             Log.w(TAG, "Сокет не готов — будим службу и ждём");
-            waitForSocketAndSend(content, fileUrl, messageType, 0);
+            whenSocketReady(() -> sendMessageWithFile(content, fileUrl, messageType), 0);
         }
     }
 
     /** Сколько раз пробуем дождаться соединения, прежде чем сдаться. */
     private static final int SOCKET_RETRIES = 8;
 
-    private void waitForSocketAndSend(String content, String fileUrl, String messageType, int attempt) {
+    /**
+     * Выполнить действие, когда поднимется соединение.
+     *
+     * Служба засыпает, пока приложение закрыто, и рвёт сокет; после возврата
+     * он поднимается за секунду-другую. Всё это время нажатия — отправить,
+     * удалить — упирались в «WebSocket not connected» и пропадали.
+     */
+    private void whenSocketReady(Runnable action, int attempt) {
         if (isFinishing() || isDestroyed()) return;
         if (attempt == 0) {
             Intent wake = new Intent(this, CallService.class);
@@ -1509,7 +1516,7 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
             startService(wake);
         }
         if (attempt >= SOCKET_RETRIES) {
-            Log.e(TAG, "Соединение так и не поднялось — сообщение не ушло");
+            Log.e(TAG, "Соединение так и не поднялось");
             Toast.makeText(this, R.string.chat_no_connection, Toast.LENGTH_LONG).show();
             isMessageJustSent = false;
             return;
@@ -1517,9 +1524,9 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             if (callService != null) stompClient = callService.getStompClient();
             if (stompClient != null && stompClient.isConnected()) {
-                sendMessageWithFile(content, fileUrl, messageType);
+                action.run();
             } else {
-                waitForSocketAndSend(content, fileUrl, messageType, attempt + 1);
+                whenSocketReady(action, attempt + 1);
             }
         }, 600);
     }
@@ -1565,8 +1572,10 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                                 }
                         );
             } else {
-                Log.w(TAG, "StompClient not connected for delete");
-                Toast.makeText(this, "WebSocket not connected", Toast.LENGTH_LONG).show();
+                // Ждём соединения, а не отказываем: удаление упиралось в тот же
+                // спящий сокет, что и отправка
+                Log.w(TAG, "Сокет не готов — ждём, чтобы удалить");
+                whenSocketReady(() -> onDelete(message), 0);
             }
         } else {
             Toast.makeText(this, "You can only delete your own messages", Toast.LENGTH_SHORT).show();

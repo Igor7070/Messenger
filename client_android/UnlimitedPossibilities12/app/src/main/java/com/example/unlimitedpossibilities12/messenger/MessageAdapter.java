@@ -365,7 +365,8 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         ImageView translateIconAudio;
         ImageView ttsIconAudio;
         ImageView ttsTranslatedIconAudio;
-        ImageView imagePreview; // *** ДОБАВЛЕНО: Превью изображения для файлов в личном чате ***
+        ImageView imagePreview;
+        View imageCard; // карточка со скруглением вокруг снимка // *** ДОБАВЛЕНО: Превью изображения для файлов в личном чате ***
         // ДОБАВЛЕНО: Превью ссылок
         CardView linkPreviewCard;
         ImageView previewImage;
@@ -404,7 +405,8 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
             translateIconAudio = itemView.findViewById(R.id.translate_icon_audio);
             ttsIconAudio = itemView.findViewById(R.id.tts_icon_audio);
             ttsTranslatedIconAudio = itemView.findViewById(R.id.tts_translated_icon_audio);
-            imagePreview = itemView.findViewById(R.id.image_preview); // *** ДОБАВЛЕНО: Превью изображения ***
+            imagePreview = itemView.findViewById(R.id.image_preview);
+            imageCard = itemView.findViewById(R.id.image_card); // *** ДОБАВЛЕНО: Превью изображения ***
             // ДОБАВЛЕНО: Превью ссылок
             linkPreviewCard = itemView.findViewById(R.id.link_preview_card);
             previewImage = itemView.findViewById(R.id.preview_image);
@@ -565,6 +567,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
 
             // ЯВНО скрываем image_preview в начале bind — чтобы старое превью не оставалось
             imagePreview.setVisibility(View.GONE);
+            if (imageCard != null) imageCard.setVisibility(View.GONE);
             imagePreview.setOnClickListener(null); // убираем старый обработчик
             // Точка «в сети» живёт у края аватара: без него её показывать негде,
             // а от прошлого сообщения в этой же вьюхе она уезжала к краю экрана
@@ -1155,6 +1158,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                                                                 boolean isFirstResource) {
                                         MissingAttachments.remember(context, fileUrl);
                                         imagePreview.setVisibility(View.GONE);
+            if (imageCard != null) imageCard.setVisibility(View.GONE);
                                         attachmentUnavailable.setText("Image unavailable");
                                         attachmentUnavailable.setVisibility(View.VISIBLE);
                                         applyFooterLayout();
@@ -1188,6 +1192,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     fileLinkContainer.setVisibility(View.VISIBLE);
                     audioContainer.setVisibility(View.GONE);
                     imagePreview.setVisibility(View.GONE);
+            if (imageCard != null) imageCard.setVisibility(View.GONE);
                     fileLinkContainer.setOnClickListener(v -> downloadFile(fileUrl));
 
                     // Опционально: красивый текст для аудиофайлов
@@ -1201,6 +1206,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 fileLinkContainer.setVisibility(View.GONE);
                 audioContainer.setVisibility(View.GONE);
                 imagePreview.setVisibility(View.GONE);
+            if (imageCard != null) imageCard.setVisibility(View.GONE);
             }
 
             // Установка содержимого сообщения с учётом перевода и транскрипции

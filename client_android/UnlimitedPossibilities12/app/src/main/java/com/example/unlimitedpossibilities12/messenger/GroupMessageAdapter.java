@@ -369,7 +369,8 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         ImageView translateIconAudio;
         ImageView ttsIconAudio;
         ImageView ttsTranslatedIconAudio;
-        ImageView imagePreview; // *** ДОБАВЛЕНО: Превью изображения для файлов ***
+        ImageView imagePreview; // *** ДОБАВЛЕНО: Превью изображения
+        View imageCard; // карточка со скруглением вокруг снимка для файлов ***
         private Handler seekBarHandler = new Handler(Looper.getMainLooper());
         private Runnable seekBarUpdater;
         private int currentPosition = 0;
@@ -412,7 +413,8 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             translateIconAudio = itemView.findViewById(R.id.translate_icon_audio);
             ttsIconAudio = itemView.findViewById(R.id.tts_icon_audio);
             ttsTranslatedIconAudio = itemView.findViewById(R.id.tts_translated_icon_audio);
-            imagePreview = itemView.findViewById(R.id.image_preview); // *** ДОБАВЛЕНО: Превью изображения ***
+            imagePreview = itemView.findViewById(R.id.image_preview);
+            imageCard = itemView.findViewById(R.id.image_card); // *** ДОБАВЛЕНО: Превью изображения ***
             // ДОБАВЛЕНО: Превью ссылок
             linkPreviewCard = itemView.findViewById(R.id.link_preview_card);
             previewImage = itemView.findViewById(R.id.preview_image);
@@ -581,6 +583,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
 
             // ЯВНО скрываем image_preview в начале bind — чтобы старое превью не оставалось
             imagePreview.setVisibility(View.GONE);
+            if (imageCard != null) imageCard.setVisibility(View.GONE);
             imagePreview.setOnClickListener(null); // убираем старый обработчик
             // Точка «в сети» живёт у края аватара: без него её показывать негде,
             // а от прошлого сообщения в этой же вьюхе она уезжала к краю экрана
@@ -1157,6 +1160,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                     boolean knownMissing = MissingAttachments.isMissing(context, fileUrl);
                     attachmentUnavailable.setText("Image unavailable");
                     imagePreview.setVisibility(knownMissing ? View.GONE : View.VISIBLE);
+                    if (imageCard != null) imageCard.setVisibility(knownMissing ? View.GONE : View.VISIBLE);
                     attachmentUnavailable.setVisibility(knownMissing ? View.VISIBLE : View.GONE);
 
                     if (!knownMissing) {
@@ -1171,6 +1175,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                                                                 boolean isFirstResource) {
                                         MissingAttachments.remember(context, fileUrl);
                                         imagePreview.setVisibility(View.GONE);
+                                        if (imageCard != null) imageCard.setVisibility(View.GONE);
                                         attachmentUnavailable.setVisibility(View.VISIBLE);
                                         applyFooterLayout();
                                         return false;

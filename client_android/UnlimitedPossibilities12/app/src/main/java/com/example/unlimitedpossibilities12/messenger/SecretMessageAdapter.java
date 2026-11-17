@@ -209,6 +209,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
         private Runnable seekBarUpdater;
         private final SecretMessageAdapter adapter;
         ImageView imagePreview;
+        View imageCard; // карточка со скруглением вокруг снимка
 
         public MessageViewHolder(@NonNull View itemView, SecretMessageAdapter adapter) {
             super(itemView);
@@ -231,6 +232,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             audioDurationTextView = itemView.findViewById(R.id.audio_duration_text_view);
             audioSeekBar = itemView.findViewById(R.id.audio_seek_bar);
             imagePreview = itemView.findViewById(R.id.image_preview);
+            imageCard = itemView.findViewById(R.id.image_card);
 
             // Обработчик долгого клика
             messageContainer.setOnLongClickListener(v -> {
@@ -308,6 +310,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                     ", isTemporary=" + message.isTemporary() + ", contentType=" + message.getContentType());
             // ЯВНО скрываем image_preview в начале bind — чтобы старое превью не оставалось
             imagePreview.setVisibility(View.GONE);
+            if (imageCard != null) imageCard.setVisibility(View.GONE);
             imagePreview.setOnClickListener(null);
             // Точка «в сети» живёт у края аватара: без него её показывать негде,
             // а от прошлого сообщения в этой же вьюхе она уезжала к краю экрана
@@ -443,6 +446,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 }
                 if (tmpImage != null && tmpImage.exists()) {
                     imagePreview.setVisibility(View.VISIBLE);
+            if (imageCard != null) imageCard.setVisibility(View.VISIBLE);
                     Glide.with(context)
                             .load(tmpImage)
                             .signature(new com.bumptech.glide.signature.ObjectKey(tmpImage.lastModified()))
@@ -553,6 +557,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                     fileLinkContainer.setVisibility(View.GONE);
                     audioContainer.setVisibility(View.GONE);
                     imagePreview.setVisibility(View.VISIBLE);
+            if (imageCard != null) imageCard.setVisibility(View.VISIBLE);
 
                     final File imageFile = adapter.activity.getLocalFile(message, fileName);
                     if (imageFile != null && imageFile.exists()) {
@@ -979,6 +984,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                                             message.setBeingProcessed(false);
                                             fileLinkContainer.setVisibility(View.GONE);
                                             imagePreview.setVisibility(View.GONE);
+            if (imageCard != null) imageCard.setVisibility(View.GONE);
                                             if (attachmentUnavailable != null) {
                                                 attachmentUnavailable.setText("Attachment can't be decrypted on this device");
                                                 attachmentUnavailable.setVisibility(View.VISIBLE);
@@ -994,6 +1000,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                                         // человека длинной ссылкой в всплывашке
                                         fileLinkContainer.setVisibility(View.GONE);
                                         imagePreview.setVisibility(View.GONE);
+            if (imageCard != null) imageCard.setVisibility(View.GONE);
                                         if (attachmentUnavailable != null) {
                                             attachmentUnavailable.setText("Attachment unavailable");
                                             attachmentUnavailable.setVisibility(View.VISIBLE);
