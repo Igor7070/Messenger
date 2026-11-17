@@ -154,7 +154,6 @@
 
     <string name="call_deleted">Call deleted successfully</string>
     <string name="call_delete_failed">Failed to delete call</string>
-    <string name="call_fetch_failed">Failed to fetch calls</string>
     <string name="call_error">Error fetching calls</string>
     <string name="redial_not_implemented">Redial not implemented yet</string>
     <string name="call_participant_avatar">Participant picture</string>
@@ -180,4 +179,5 @@
     <string name="calls_delete_message">%1$d records will be removed from this list. The calls themselves are not affected.</string>
     <string name="calls_delete_confirm">Delete</string>
     <string name="calls_delete_cancel">Cancel</string>
+    <string name="calls_load_failed">Could not load the calls. Check the connection and open this tab again.</string>
 </resources>

@@ -1907,8 +1907,24 @@ public class MessengerMainActivity extends AppCompatActivity {
     private void updateCallsEmptyState() {
         if (callsEmptyView == null) return;
         boolean empty = callsList.isEmpty();
+        callsEmptyView.setText(R.string.calls_empty);
         callsEmptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
         callsRecyclerView.setVisibility(empty ? View.GONE : View.VISIBLE);
+    }
+
+    /**
+     * Список звонков не загрузился.
+     *
+     * Говорим об этом на том же месте, где обычно стоит «звонков пока нет», —
+     * человеку важно понимать разницу между «пусто» и «не дозвонились до
+     * сервера». Если список уже показан, не трогаем его: старые записи лучше
+     * пустоты.
+     */
+    private void showCallsLoadFailure() {
+        if (callsEmptyView == null || !callsList.isEmpty()) return;
+        callsEmptyView.setText(R.string.calls_load_failed);
+        callsEmptyView.setVisibility(View.VISIBLE);
+        callsRecyclerView.setVisibility(View.GONE);
     }
 
     /**
@@ -1949,14 +1965,17 @@ public class MessengerMainActivity extends AppCompatActivity {
                     updateCallsEmptyState();
                     Log.d(TAG, "Calls fetched: " + callsList.size());
                 } else {
-                    Toast.makeText(MessengerMainActivity.this, "Failed to fetch calls", Toast.LENGTH_SHORT).show();
+                    // Прежде здесь всплывало «Failed to fetch calls» — слова для
+                    // журнала, а не для человека, да ещё поверх пустого экрана,
+                    // будто список и правда пуст
+                    showCallsLoadFailure();
                     Log.e(TAG, "Failed to fetch calls: code=" + response.code());
                 }
             }
 
             @Override
             public void onFailure(retrofit2.Call<List<com.example.unlimitedpossibilities12.api.Call>> call, Throwable t) {
-                Toast.makeText(MessengerMainActivity.this, "Error fetching calls", Toast.LENGTH_SHORT).show();
+                showCallsLoadFailure();
                 Log.e(TAG, "Error fetching calls: " + t.getMessage());
             }
         });
