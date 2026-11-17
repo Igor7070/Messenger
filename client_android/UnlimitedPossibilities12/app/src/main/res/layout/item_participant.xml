@@ -1,48 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    Участник группового звонка в голосовом режиме.
+
+    Прежде здесь были только снимок и имя, причём снимок грузился без кэша и
+    без запасной буквы: не загрузился — осталось пустое место. И нигде не было
+    видно главного: кто уже в разговоре, а кому ещё звонит.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/participant_row"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="4dp"
-    app:cardBackgroundColor="#3A3A55"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    android:layout_marginVertical="4dp"
+    android:background="@drawable/bg_transcript_card"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="12dp">
+
+    <FrameLayout
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="12dp">
+
+        <ImageView
+            android:id="@+id/avatar_image_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/call_participant_avatar"
+            android:scaleType="centerCrop" />
+
+        <!-- Буква имени на цветном круге: видна, пока снимок не загрузился,
+             и остаётся, если его нет вовсе -->
+        <TextView
+            android:id="@+id/avatar_text_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/circle_background"
+            android:gravity="center"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp" />
+    </FrameLayout>
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp">
-
-        <FrameLayout
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginEnd="8dp">
-
-            <ImageView
-                android:id="@+id/avatar_image_view"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:scaleType="centerCrop"/>
-
-            <TextView
-                android:id="@+id/avatar_text_view"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:gravity="center"
-                android:textColor="#FFFFFF"
-                android:textSize="18sp"
-                android:background="@drawable/default_messenger_avatar"
-                android:visibility="gone"/>
-        </FrameLayout>
+        android:layout_weight="1"
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/username_text_view"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"/>
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="#F1F5F9"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/participant_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="#94A3B8"
+            android:textSize="13sp" />
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+
+    <!-- Говорит: зелёная точка рядом с именем -->
+    <View
+        android:id="@+id/speaking_dot"
+        android:layout_width="10dp"
+        android:layout_height="10dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/circle_background"
+        android:backgroundTint="#34D399"
+        android:visibility="invisible" />
+
+    <ImageView
+        android:id="@+id/mic_off_icon"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:contentDescription="@string/call_muted_note"
+        android:src="@drawable/ic_mic_off_offline"
+        android:visibility="gone"
+        app:tint="#94A3B8" />
+</LinearLayout>

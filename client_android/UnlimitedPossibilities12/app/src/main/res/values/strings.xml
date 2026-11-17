@@ -157,4 +157,15 @@
     <string name="call_fetch_failed">Failed to fetch calls</string>
     <string name="call_error">Error fetching calls</string>
     <string name="redial_not_implemented">Redial not implemented yet</string>
+    <string name="call_participant_avatar">Participant picture</string>
+    <string name="call_participant_you">%1$s (you)</string>
+    <string name="call_participant_in_call">in the call</string>
+    <string name="call_participant_ringing">ringing…</string>
+    <string name="call_participants">Group call · %1$d participants</string>
+    <string name="call_group_invited">%1$s invited you</string>
+    <string name="call_tile_shape">Participant screen shape</string>
+    <string name="call_tile_auto">Auto</string>
+    <string name="call_tile_wide">Wide</string>
+    <string name="call_tile_tall">Tall</string>
+    <string name="call_group_connecting">Group call</string>
 </resources>

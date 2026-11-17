@@ -19,6 +19,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -134,11 +135,18 @@ public class GroupCallActivity extends AppCompatActivity {
 
     // UI элементы
     private TextView callTitle;
+    private TextView callSubtitle;
     private TextView callTimer;
-    private TextView startTime;
-    private TextView currentTime;
-    private CallWaveformView waveformView;
-    private Button endCallButton;
+    private View endCallButton;
+    private ImageView muteButton;
+    private ImageView speakerButton;
+    private View localVideoCard;
+    private boolean micMuted = false;
+    private boolean speakerOn = true;
+    /** Кто говорит прямо сейчас — по уровню звука из статистики WebRTC. */
+    private final java.util.Set<String> speakingUsers = new java.util.HashSet<>();
+    private Handler speakingHandler;
+    private Runnable speakingRunnable;
     private RecyclerView participantsRecyclerView;
     private ParticipantsAdapter participantsAdapter;
     private Handler timerHandler;
@@ -165,7 +173,7 @@ public class GroupCallActivity extends AppCompatActivity {
     private AtomicBoolean isVideoTrackReady = new AtomicBoolean(false);
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private SurfaceViewRenderer localVideoView;
-    private Button toggleCameraButton;
+    private ImageView toggleCameraButton;
     private TextView localNoVideoText; // [ДОБАВЛЕНО]
     private Map<String, RtpSender> videoTrackSenders = new HashMap<>();
 
@@ -219,7 +227,10 @@ public class GroupCallActivity extends AppCompatActivity {
         // Получение данных из Intent
         initiatorId = getIntent().getIntExtra("initiatorId", -1);
         initiatorName = getIntent().getStringExtra("initiatorName");
-        rememberOngoingCall(initiatorName);
+        // В полоске идущего разговора у группового звонка нет одного
+        // собеседника: прежде там стояло имя позвонившего — для него самого
+        // это было его собственное имя
+        rememberOngoingCall(getString(R.string.call_group_connecting));
         isInitiator = getIntent().getBooleanExtra("isInitiator", false);
         roomId = getIntent().getStringExtra("roomId");
         if (isInitiator && roomId == null) {
@@ -250,14 +261,19 @@ public class GroupCallActivity extends AppCompatActivity {
 
         // Инициализация UI
         callTitle = findViewById(R.id.call_title);
+        callSubtitle = findViewById(R.id.call_subtitle);
         callTimer = findViewById(R.id.call_timer);
-        startTime = findViewById(R.id.start_time);
-        currentTime = findViewById(R.id.current_time);
-        waveformView = findViewById(R.id.waveform_view);
         endCallButton = findViewById(R.id.end_call_button);
+        muteButton = findViewById(R.id.mute_button);
+        speakerButton = findViewById(R.id.speaker_button);
+        localVideoCard = findViewById(R.id.local_video_card);
         participantsRecyclerView = findViewById(R.id.participants_recycler_view);
 
-        callTitle.setText("Group Call with " + initiatorName);
+        muteButton.setOnClickListener(v -> toggleMic());
+        speakerButton.setOnClickListener(v -> toggleSpeaker());
+        findViewById(R.id.minimize_button).setOnClickListener(v -> onBackPressed());
+        paintButton(speakerButton, true);
+        updateHeader();
         participantsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         participantsAdapter = new ParticipantsAdapter(participants, userId -> {
             if (!isVideoMode) {
@@ -348,13 +364,13 @@ public class GroupCallActivity extends AppCompatActivity {
         Log.d(TAG, "Initialized toggleCameraButton");
 
         // Обработчик кнопки переключения режима
-        ImageButton toggleModeButton = findViewById(R.id.toggle_mode_button);
+        ImageView toggleModeButton = findViewById(R.id.toggle_mode_button);
         toggleModeButton.setOnClickListener(v -> toggleMode());
 
         // Форма плиток участников: восстанавливаем выбор с прошлого звонка
         // и вешаем переключение по кругу Auto → Wide → Tall.
         videoParticipantsAdapter.setTileMode(loadSavedTileMode());
-        Button tileModeButton = findViewById(R.id.tile_mode_button);
+        TextView tileModeButton = findViewById(R.id.tile_mode_button);
         updateTileModeButton();
         tileModeButton.setOnClickListener(v -> cycleTileMode());
 
@@ -403,6 +419,7 @@ public class GroupCallActivity extends AppCompatActivity {
         // Инициализация таймера
         timerHandler = new Handler(Looper.getMainLooper());
         callStartTime = System.currentTimeMillis();
+        startSpeakingWatch();
         timerRunnable = new Runnable() {
             @Override
             public void run() {
@@ -418,27 +435,7 @@ public class GroupCallActivity extends AppCompatActivity {
         // Инициализация времени
         timeHandler = new Handler(Looper.getMainLooper());
         final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-        currentTimeHandler = new Handler(Looper.getMainLooper());
-        currentTimeRunnable = new Runnable() {
-            @Override
-            public void run() {
-                currentTime.setText("Current: " + sdf.format(new Date()));
-                currentTimeHandler.postDelayed(this, 1000);
-            }
-        };
-        currentTimeHandler.post(currentTimeRunnable);
-
-        timeRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (startTime.getText().toString().startsWith("Start: --")) {
-                    startTime.setText("Start: " + sdf.format(new Date(callStartTime)));
-                }
-                waveformView.updateAmplitude();
-                timeHandler.postDelayed(this, 5000);
-            }
-        };
-        timeHandler.post(timeRunnable);
+        // Часы «Start»/«Current» и полоса графика убраны: это была отладка
 
         // [ДОБАВЛЕНО]: Периодическая проверка соединений
         connectionCheckHandler = new Handler(Looper.getMainLooper());
@@ -533,6 +530,7 @@ public class GroupCallActivity extends AppCompatActivity {
                             videoParticipantsAdapter.notifyItemChanged(existingIndex); // Точечное обновление для видеоадаптера
                         } else {
                             participants.add(user);
+                            refreshParticipants();
                             cameraStates.put(String.valueOf(user.getId()), false); // Инициализация состояния камеры
                             participantsAdapter.notifyItemInserted(participants.size() - 1); // Точечное добавление
                             videoParticipantsAdapter.notifyItemInserted(participants.size() - 1);
@@ -568,6 +566,7 @@ public class GroupCallActivity extends AppCompatActivity {
                                 videoParticipantsAdapter.notifyItemChanged(existingIndex);
                             } else {
                                 participants.add(initiator);
+                                refreshParticipants();
                                 cameraStates.put(String.valueOf(initiator.getId()), false);
                                 participantsAdapter.notifyItemInserted(participants.size() - 1);
                                 videoParticipantsAdapter.notifyItemInserted(participants.size() - 1);
@@ -599,6 +598,7 @@ public class GroupCallActivity extends AppCompatActivity {
                             videoParticipantsAdapter.notifyItemChanged(existingIndex);
                         } else {
                             participants.add(initiator);
+                            refreshParticipants();
                             cameraStates.put(String.valueOf(initiator.getId()), false);
                             participantsAdapter.notifyItemInserted(participants.size() - 1);
                             videoParticipantsAdapter.notifyItemInserted(participants.size() - 1);
@@ -1011,6 +1011,7 @@ public class GroupCallActivity extends AppCompatActivity {
                 } else if (newState == PeerConnection.IceConnectionState.CONNECTED) {
                     Log.d(TAG, "ICE connection established for user " + userId);
                     readyUsers.add(userId); // [ДОБАВЛЕНО]: Добавляем пользователя в readyUsers
+                    refreshParticipants();
                     runOnUiThread(() -> Toast.makeText(GroupCallActivity.this, "Connected to user " + userId, Toast.LENGTH_SHORT).show());
                 }
             }
@@ -1249,6 +1250,7 @@ public class GroupCallActivity extends AppCompatActivity {
                 case "ready":
                     if (isInitiator) {
                         readyUsers.add(fromId);
+                        refreshParticipants();
                         String userName = participants.stream()
                                 .filter(u -> String.valueOf(u.getId()).equals(fromId))
                                 .findFirst()
@@ -1295,7 +1297,8 @@ public class GroupCallActivity extends AppCompatActivity {
                                 .orElse("User " + fromId);
                         Toast.makeText(this, userName + " rejected the group call", Toast.LENGTH_LONG).show();
                         participants.removeIf(u -> String.valueOf(u.getId()).equals(fromId));
-                        participantsAdapter.notifyDataSetChanged();
+                        refreshParticipants();
+                        refreshParticipants();
                         if (participants.size() <= 1) {
                             saveCall("rejected");
                             endCall();
@@ -1490,6 +1493,7 @@ public class GroupCallActivity extends AppCompatActivity {
                     }
                     if (position != -1) {
                         participants.remove(position);
+                        refreshParticipants();
                         participantsAdapter.notifyItemRemoved(position);
                         videoParticipantsAdapter.notifyItemRemoved(position);
                     }
@@ -1900,17 +1904,17 @@ public class GroupCallActivity extends AppCompatActivity {
 
     /** Подписывает кнопку текущим режимом и показывает её только в видео-режиме. */
     private void updateTileModeButton() {
-        Button tileModeButton = findViewById(R.id.tile_mode_button);
+        TextView tileModeButton = findViewById(R.id.tile_mode_button);
         if (tileModeButton == null) return;
 
         String mode = videoParticipantsAdapter.getTileMode();
         String label;
         if (VideoParticipantsAdapter.MODE_LANDSCAPE.equals(mode)) {
-            label = "Wide";
+            label = getString(R.string.call_tile_wide);
         } else if (VideoParticipantsAdapter.MODE_PORTRAIT.equals(mode)) {
-            label = "Tall";
+            label = getString(R.string.call_tile_tall);
         } else {
-            label = "Auto";
+            label = getString(R.string.call_tile_auto);
         }
 
         tileModeButton.setText(label);
@@ -1921,15 +1925,18 @@ public class GroupCallActivity extends AppCompatActivity {
     private void toggleMode() {
         isVideoMode = !isVideoMode;
         updateTileModeButton();
-        ImageButton toggleModeButton = findViewById(R.id.toggle_mode_button);
-        FrameLayout contentContainer = findViewById(R.id.content_container);
-        LinearLayout audioContainer = findViewById(R.id.audio_container);
+        View tileMode = findViewById(R.id.tile_mode_button);
+        if (tileMode != null) tileMode.setVisibility(isVideoMode ? View.VISIBLE : View.GONE);
+        ImageView toggleModeButton = findViewById(R.id.toggle_mode_button);
         RecyclerView videoGrid = findViewById(R.id.video_grid);
 
         if (isVideoMode) {
-            toggleModeButton.setImageResource(R.drawable.ic_microphone);
-            audioContainer.setVisibility(View.GONE);
+            // Кнопка остаётся камерой — она переключает экран, а не микрофон:
+            // прежде она превращалась в микрофон и читалась как «выключить звук»
+            paintButton(toggleModeButton, true);
+            participantsRecyclerView.setVisibility(View.GONE);
             videoGrid.setVisibility(View.VISIBLE);
+            localVideoCard.setVisibility(View.VISIBLE);
             // Принудительное обновление UI
             videoGrid.requestLayout();
             videoGrid.invalidate();
@@ -1952,14 +1959,13 @@ public class GroupCallActivity extends AppCompatActivity {
             }
             Log.d(TAG, "toggleMode: Switched to video mode, set icon to ic_microphone, videoGrid width=" + videoGrid.getWidth() + ", height=" + videoGrid.getHeight());
         } else {
-            toggleModeButton.setImageResource(R.drawable.ic_camera);
-            audioContainer.setVisibility(View.VISIBLE);
+            paintButton(toggleModeButton, false);
+            participantsRecyclerView.setVisibility(View.VISIBLE);
             videoGrid.setVisibility(View.GONE);
-            Log.d(TAG, "toggleMode: Switched to audio mode, set icon to ic_camera");
+            localVideoCard.setVisibility(View.GONE);
+            Log.d(TAG, "toggleMode: Switched to audio mode");
         }
-        // Убедимся, что кнопка видима и без цветового оттенка
         toggleModeButton.setVisibility(View.VISIBLE);
-        toggleModeButton.setBackgroundTintList(null);
         Log.d(TAG, "toggleMode: Completed, isVideoMode=" + isVideoMode + ", button visibility=" + (toggleModeButton.getVisibility() == View.VISIBLE ? "VISIBLE" : "INVISIBLE"));
     }
 
@@ -2056,7 +2062,7 @@ public class GroupCallActivity extends AppCompatActivity {
                                 localVideoView.setVisibility(View.VISIBLE);
                                 localVideoView.clearImage();
                                 localNoVideoText.setVisibility(View.VISIBLE);
-                                toggleCameraButton.setText("📷");
+                                toggleCameraButton.setImageResource(R.drawable.ic_video_call);
                                 toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
                                 toggleCameraButton.setVisibility(View.VISIBLE);
                                 toggleCameraButton.bringToFront();
@@ -2069,7 +2075,7 @@ public class GroupCallActivity extends AppCompatActivity {
                                 localVideoView.setVisibility(View.VISIBLE);
                                 localVideoView.clearImage();
                                 localNoVideoText.setVisibility(View.VISIBLE);
-                                toggleCameraButton.setText("📷");
+                                toggleCameraButton.setImageResource(R.drawable.ic_video_call);
                                 toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
                                 toggleCameraButton.setVisibility(View.VISIBLE);
                                 toggleCameraButton.bringToFront();
@@ -2082,7 +2088,7 @@ public class GroupCallActivity extends AppCompatActivity {
                                 localVideoView.setVisibility(View.VISIBLE);
                                 localVideoView.clearImage();
                                 localNoVideoText.setVisibility(View.VISIBLE);
-                                toggleCameraButton.setText("📷");
+                                toggleCameraButton.setImageResource(R.drawable.ic_video_call);
                                 toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
                                 toggleCameraButton.setVisibility(View.VISIBLE);
                                 toggleCameraButton.bringToFront();
@@ -2121,7 +2127,7 @@ public class GroupCallActivity extends AppCompatActivity {
                                 localVideoView.setVisibility(View.VISIBLE);
                                 localVideoView.clearImage();
                                 localNoVideoText.setVisibility(View.VISIBLE);
-                                toggleCameraButton.setText("📷");
+                                toggleCameraButton.setImageResource(R.drawable.ic_video_call);
                                 toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
                                 toggleCameraButton.setVisibility(View.VISIBLE);
                                 toggleCameraButton.bringToFront();
@@ -2301,7 +2307,7 @@ public class GroupCallActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         isCameraOn = true;
                         cameraStates.put(currentUserId, true);
-                        toggleCameraButton.setText("🔴");
+                        toggleCameraButton.setImageResource(R.drawable.ic_videocam_off);
                         toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF4444));
                         localVideoView.setVisibility(View.VISIBLE);
                         localNoVideoText.setVisibility(View.GONE);
@@ -2375,7 +2381,7 @@ public class GroupCallActivity extends AppCompatActivity {
                         localVideoView.setVisibility(View.VISIBLE);
                         localVideoView.clearImage();
                         localNoVideoText.setVisibility(View.VISIBLE);
-                        toggleCameraButton.setText("📷");
+                        toggleCameraButton.setImageResource(R.drawable.ic_video_call);
                         toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
                         toggleCameraButton.setVisibility(View.VISIBLE);
                         toggleCameraButton.bringToFront();
@@ -2395,7 +2401,7 @@ public class GroupCallActivity extends AppCompatActivity {
                     localVideoView.setVisibility(View.VISIBLE);
                     localVideoView.clearImage();
                     localNoVideoText.setVisibility(View.VISIBLE);
-                    toggleCameraButton.setText("📷");
+                    toggleCameraButton.setImageResource(R.drawable.ic_video_call);
                     toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
                     toggleCameraButton.setVisibility(View.VISIBLE);
                     toggleCameraButton.bringToFront();
@@ -2650,5 +2656,172 @@ public class GroupCallActivity extends AppCompatActivity {
         }
         // Разговор продолжается в своей стопке экранов, а она уходит назад
         moveTaskToBack(true);
+    }
+
+    // ---------- шапка и управление ----------
+
+    /**
+     * Кто на связи: имена собеседников и сколько всего участников.
+     *
+     * Прежде в заголовке стояло «Group Call with <инициатор>» — то есть для
+     * самого звонящего «с собой же». Список звонков рядом в это время
+     * показывал правильно: снимки участников и их имена.
+     */
+    private void updateHeader() {
+        StringBuilder names = new StringBuilder();
+        int shown = 0;
+        for (User user : participants) {
+            if (String.valueOf(user.getId()).equals(currentUserId)) continue;
+            if (shown == 3) {
+                names.append(" +").append(participants.size() - 1 - shown);
+                break;
+            }
+            if (shown > 0) names.append(", ");
+            names.append(user.getUsername());
+            shown++;
+        }
+        // Пока собеседники не подтянулись, показываем того, кто позвонил, —
+        // но не себя: прежде в заголовке стояло собственное имя
+        if (names.length() == 0 && initiatorName != null
+                && !initiatorName.equals(getIntent().getStringExtra("currentUserName"))
+                && !String.valueOf(initiatorId).equals(currentUserId)) {
+            names.append(initiatorName);
+        }
+        callTitle.setText(names.length() > 0 ? names.toString() : getString(R.string.call_group_connecting));
+        int others = Math.max(participants.size(), 1);
+        callSubtitle.setText(getString(R.string.call_participants, others));
+        updateAvatarsRow();
+    }
+
+    /** Снимки участников стопкой, как в списке звонков. */
+    private void updateAvatarsRow() {
+        LinearLayout row = findViewById(R.id.avatars_container);
+        if (row == null) return;
+        row.removeAllViews();
+        int size = (int) (56 * getResources().getDisplayMetrics().density);
+        int overlap = (int) (-14 * getResources().getDisplayMetrics().density);
+        int shown = 0;
+        for (User user : participants) {
+            if (String.valueOf(user.getId()).equals(currentUserId)) continue;
+            if (shown == 4) break;
+            FrameLayout holder = new FrameLayout(this);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(size, size);
+            if (shown > 0) params.setMarginStart(overlap);
+            holder.setLayoutParams(params);
+
+            String name = user.getUsername() != null ? user.getUsername() : "?";
+            TextView letter = new TextView(this);
+            letter.setLayoutParams(new FrameLayout.LayoutParams(size, size));
+            letter.setBackgroundResource(R.drawable.circle_background);
+            letter.setBackgroundTintList(android.content.res.ColorStateList.valueOf(colorForName(name)));
+            letter.setGravity(android.view.Gravity.CENTER);
+            letter.setTextColor(0xFFFFFFFF);
+            letter.setTextSize(20);
+            letter.setText(name.substring(0, 1).toUpperCase(Locale.getDefault()));
+            holder.addView(letter);
+
+            ImageView picture = new ImageView(this);
+            picture.setLayoutParams(new FrameLayout.LayoutParams(size, size));
+            picture.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            holder.addView(picture);
+            if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
+                com.bumptech.glide.Glide.with(this)
+                        .load("https://unlimitedpossibilities12.org" + user.getAvatar())
+                        .circleCrop()
+                        .into(picture);
+            }
+            row.addView(holder);
+            shown++;
+        }
+    }
+
+    private int colorForName(String name) {
+        int[] colors = {0xFF6366F1, 0xFF0D9488, 0xFF8B5CF6, 0xFF0EA5E9, 0xFFDB2777, 0xFF475569};
+        int hash = 0;
+        for (int i = 0; i < name.length(); i++) hash = hash * 31 + name.charAt(i);
+        return colors[Math.abs(hash) % colors.length];
+    }
+
+    private void toggleMic() {
+        micMuted = !micMuted;
+        if (localAudioTrack != null) localAudioTrack.setEnabled(!micMuted);
+        muteButton.setImageResource(micMuted ? R.drawable.ic_mic_off_offline : R.drawable.ic_mic_white);
+        paintButton(muteButton, micMuted);
+        refreshParticipants();
+    }
+
+    private void toggleSpeaker() {
+        speakerOn = !speakerOn;
+        if (audioManager != null) audioManager.setSpeakerphoneOn(speakerOn);
+        speakerButton.setImageResource(speakerOn ? R.drawable.ic_volume_up : R.drawable.ic_volume_off_offline);
+        paintButton(speakerButton, speakerOn);
+    }
+
+    /** Включённая кнопка — светлая, обычная — тёмная. */
+    private void paintButton(ImageView button, boolean active) {
+        if (button == null) return;
+        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(active ? 0xFFE2E8F0 : 0xFF1E293B));
+        button.setColorFilter(active ? 0xFF0F172A : 0xFFE2E8F0);
+    }
+
+    /** Обновить список участников: кто уже в разговоре, кто говорит. */
+    private void refreshParticipants() {
+        runOnUiThread(() -> {
+            if (participantsAdapter != null) {
+                participantsAdapter.updateState(readyUsers, speakingUsers, currentUserId, micMuted);
+            }
+            if (videoParticipantsAdapter != null) {
+                videoParticipantsAdapter.setJoinedUsers(readyUsers);
+            }
+            updateHeader();
+        });
+    }
+
+    /**
+     * Кто говорит прямо сейчас.
+     *
+     * Уровень звука берём из статистики WebRTC по каждому соединению. Иначе на
+     * экране с четырьмя участниками не понять, чей голос слышен.
+     */
+    private void startSpeakingWatch() {
+        if (speakingHandler != null) return;
+        speakingHandler = new Handler(Looper.getMainLooper());
+        speakingRunnable = new Runnable() {
+            @Override
+            public void run() {
+                for (Map.Entry<String, PeerConnection> entry : peerConnections.entrySet()) {
+                    String userId = entry.getKey();
+                    PeerConnection pc = entry.getValue();
+                    if (pc == null) continue;
+                    try {
+                        pc.getStats(report -> {
+                            boolean loud = false;
+                            for (RTCStats stats : report.getStatsMap().values()) {
+                                Object level = stats.getMembers().get("audioLevel");
+                                if (level instanceof Number && ((Number) level).doubleValue() > 0.02) {
+                                    loud = true;
+                                    break;
+                                }
+                            }
+                            boolean changed = loud ? speakingUsers.add(userId) : speakingUsers.remove(userId);
+                            if (changed) refreshParticipants();
+                        });
+                    } catch (Exception e) {
+                        Log.w(TAG, "Не получили уровень звука: " + e.getMessage());
+                    }
+                }
+                speakingHandler.postDelayed(this, 900);
+            }
+        };
+        speakingHandler.postDelayed(speakingRunnable, 1500);
+    }
+
+    private void stopSpeakingWatch() {
+        if (speakingHandler != null && speakingRunnable != null) {
+            speakingHandler.removeCallbacks(speakingRunnable);
+        }
+        speakingHandler = null;
+        speakingRunnable = null;
+        speakingUsers.clear();
     }
 }

@@ -10,6 +10,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -345,7 +346,7 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
     private void hideNoVideoLabelFor(SurfaceViewRenderer videoView) {
         View itemRoot = (View) videoView.getParent();
         if (itemRoot == null) return;
-        TextView noVideoText = itemRoot.findViewById(R.id.no_video_text);
+        View noVideoText = itemRoot.findViewById(R.id.no_video_text);
         if (noVideoText != null) noVideoText.setVisibility(View.GONE);
     }
 
@@ -408,6 +409,7 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
         Log.d(TAG, "onBindViewHolder: position=" + position + ", userId=" + userId + ", width=" + holder.videoView.getWidth() + ", height=" + holder.videoView.getHeight());
 
         holder.usernameTextView.setText(user.getUsername());
+        bindTileAvatar(holder, user);
         videoViews.put(userId, holder.videoView);
         applyTileShape(holder, userId);
 
@@ -508,8 +510,10 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
     static class VideoViewHolder extends RecyclerView.ViewHolder {
         TextView usernameTextView;
         SurfaceViewRenderer videoView;
-        TextView noVideoText;
-        Button toggleCameraButton;
+        View noVideoText;
+        ImageView toggleCameraButton;
+        ImageView tileAvatarImage;
+        TextView tileAvatarText;
         View videoContainer;
         boolean isInitialized;
 
@@ -519,9 +523,55 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
             videoView = itemView.findViewById(R.id.video_view);
             videoContainer = itemView.findViewById(R.id.video_container);
             noVideoText = itemView.findViewById(R.id.no_video_text);
+            tileAvatarImage = itemView.findViewById(R.id.tile_avatar_image);
+            tileAvatarText = itemView.findViewById(R.id.tile_avatar_text);
             toggleCameraButton = itemView.findViewById(R.id.toggle_camera_button);
             isInitialized = false;
             Log.d(TAG, "Created VideoViewHolder for videoView=" + (videoView != null ? videoView.toString() : "null"));
         }
+    }
+
+    /**
+     * Снимок участника на плитке без видео.
+     *
+     * Прежде там был чёрный прямоугольник с надписью «No Video» — одинаковый
+     * и у того, кто выключил камеру, и у того, кто ещё не ответил.
+     */
+    private void bindTileAvatar(VideoViewHolder holder, User user) {
+        if (holder.tileAvatarText == null) return;
+        String name = user.getUsername() != null ? user.getUsername() : "?";
+        holder.tileAvatarText.setText(name.substring(0, 1).toUpperCase(java.util.Locale.getDefault()));
+        holder.tileAvatarText.setBackgroundTintList(
+                android.content.res.ColorStateList.valueOf(colorForName(name)));
+        holder.tileAvatarText.setVisibility(View.VISIBLE);
+        holder.tileAvatarImage.setImageDrawable(null);
+        if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
+            com.bumptech.glide.Glide.with(holder.itemView.getContext())
+                    .load("https://unlimitedpossibilities12.org" + user.getAvatar())
+                    .circleCrop()
+                    .into(holder.tileAvatarImage);
+            holder.tileAvatarText.setVisibility(View.GONE);
+        }
+        // Состояние пишем рядом с именем: отдельной строкой под снимком оно
+        // не помещалось в плитку и обрезалось многоточием
+        boolean joined = joinedUsers.contains(String.valueOf(user.getId()))
+                || String.valueOf(user.getId()).equals(currentUserId);
+        holder.usernameTextView.setText(joined
+                ? name
+                : name + " · " + holder.itemView.getContext().getString(R.string.call_participant_ringing));
+    }
+
+    /** Кто уже в разговоре — чтобы плитка не молчала о том, что человеку ещё звонит. */
+    private java.util.Set<String> joinedUsers = java.util.Collections.emptySet();
+
+    public void setJoinedUsers(java.util.Set<String> joined) {
+        this.joinedUsers = joined != null ? joined : java.util.Collections.emptySet();
+    }
+
+    private int colorForName(String name) {
+        int[] colors = {0xFF6366F1, 0xFF0D9488, 0xFF8B5CF6, 0xFF0EA5E9, 0xFFDB2777, 0xFF475569};
+        int hash = 0;
+        for (int i = 0; i < name.length(); i++) hash = hash * 31 + name.charAt(i);
+        return colors[Math.abs(hash) % colors.length];
     }
 }

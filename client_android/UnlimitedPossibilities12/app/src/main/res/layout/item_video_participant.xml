@@ -1,63 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
+    Плитка участника в видеорежиме.
+
     Корень намеренно НЕ CardView: он включает clipToOutline, из-за чего
     SurfaceViewRenderer внутри показывает чёрный прямоугольник вместо видео.
     Подробности — в комментарии к @drawable/bg_video_participant.
-    Локальное видео (local_video_view в activity_group_call.xml) работало именно
-    потому, что лежит в обычном FrameLayout, а не в карточке.
+
+    Прежде без видео плитка была просто чёрным прямоугольником с надписью
+    «No Video» — одинаковым и у того, кто выключил камеру, и у того, кто ещё
+    не ответил. Теперь там снимок человека, а имя лежит поверх плитки, как в
+    видеозвонке вдвоём.
 -->
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="4dp"
-    android:orientation="vertical"
-    android:padding="8dp"
     android:background="@drawable/bg_video_participant">
-
-    <TextView
-        android:id="@+id/username_text_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        android:gravity="center"
-        android:paddingBottom="4dp"/>
 
     <FrameLayout
         android:id="@+id/video_container"
         android:layout_width="match_parent"
-        android:layout_height="120dp"
-        android:background="#000000">
+        android:layout_height="140dp">
 
         <!-- У SurfaceViewRenderer НЕ должно быть непрозрачного background:
-             собственный фон рисуется поверх пробитого отверстия и закрывает
-             видео. Чёрный фон даёт родительский video_container. -->
+             собственный фон рисуется поверх пробитого отверстия для видео. -->
         <org.webrtc.SurfaceViewRenderer
             android:id="@+id/video_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="center"/>
+            android:layout_gravity="center" />
 
-        <TextView
+        <!-- Камеры нет — показываем человека, а не чёрный прямоугольник -->
+        <LinearLayout
             android:id="@+id/no_video_text"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#000000"
-            android:text="No Video"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:background="#0F172A"
             android:gravity="center"
-            android:visibility="visible"/>
+            android:orientation="vertical">
 
-        <Button
-            android:id="@+id/toggle_camera_button"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_gravity="top|end"
-            android:text="📷"
-            android:textSize="24sp"
-            android:backgroundTint="#FF4444"
-            android:visibility="gone"/>
+            <FrameLayout
+                android:layout_width="64dp"
+                android:layout_height="64dp">
+
+                <ImageView
+                    android:id="@+id/tile_avatar_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/call_participant_avatar"
+                    android:scaleType="centerCrop" />
+
+                <TextView
+                    android:id="@+id/tile_avatar_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/circle_background"
+                    android:gravity="center"
+                    android:textColor="#FFFFFF"
+                    android:textSize="26sp" />
+            </FrameLayout>
+
+        </LinearLayout>
     </FrameLayout>
-</LinearLayout>
+
+    <!-- Имя поверх плитки, по нижнему краю -->
+    <TextView
+        android:id="@+id/username_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_video_scrim_bottom"
+        android:ellipsize="end"
+        android:paddingHorizontal="10dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="8dp"
+        android:singleLine="true"
+        android:textColor="#F1F5F9"
+        android:textSize="13sp" />
+
+    <ImageView
+        android:id="@+id/toggle_camera_button"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="6dp"
+        android:background="@drawable/circle_background"
+        android:backgroundTint="#CC0F172A"
+        android:contentDescription="@string/call_switch_camera"
+        android:padding="8dp"
+        android:src="@drawable/ic_camera_switch"
+        android:visibility="gone"
+        app:tint="#E2E8F0" />
+</FrameLayout>
