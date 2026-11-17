@@ -121,4 +121,23 @@ public final class BubbleFooter {
         column.setPadding(column.getPaddingLeft(), column.getPaddingTop(), column.getPaddingRight(),
                 reserve ? basePadding + footerHeight : basePadding);
     }
+
+    /**
+     * Подвал пустой, когда время неизвестно и ни один значок не горит.
+     * Тогда полоса под содержимым ни к чему: у снимка под подписью
+     * оставалась ничем не занятая пустота в треть сантиметра.
+     */
+    public static boolean isEmpty(View footer) {
+        if (footer == null) return true;
+        if (!(footer instanceof android.view.ViewGroup)) return footer.getVisibility() != View.VISIBLE;
+        android.view.ViewGroup group = (android.view.ViewGroup) footer;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            if (child.getVisibility() != View.VISIBLE) continue;
+            if (child instanceof android.widget.TextView
+                    && ((android.widget.TextView) child).getText().length() == 0) continue;
+            return false;
+        }
+        return true;
+    }
 }

@@ -232,6 +232,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             audioDurationTextView = itemView.findViewById(R.id.audio_duration_text_view);
             audioSeekBar = itemView.findViewById(R.id.audio_seek_bar);
             imagePreview = itemView.findViewById(R.id.image_preview);
+            PhotoBubble.keepInShape(imagePreview);
             imageCard = itemView.findViewById(R.id.image_card);
 
             // Обработчик долгого клика
@@ -1425,10 +1426,13 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             // делал пузырь шире, и он потом на глазах сужался
             BubbleFooter.keepTailOnly(last, contentTextView, translatedContentTextView);
 
+            // Снимок идёт во всю ширину пузыря: поля тут только мешают
+            boolean hasPhoto = imagePreview != null && imagePreview.getVisibility() == View.VISIBLE;
+            PhotoBubble.flushToEdges(column, hasPhoto, false, base, contentTextView, translatedContentTextView);
             if (hasMedia || last == null) {
                 // Здесь хвост не нужен — подвал встанет под содержимым
                 if (last != null) last.setText(BubbleFooter.stripTail(last.getText()));
-                BubbleFooter.reserveBelow(column, true, base, footerHeight);
+                BubbleFooter.reserveBelow(column, !BubbleFooter.isEmpty(footer), base, footerHeight);
                 return;
             }
             BubbleFooter.reserveBelow(column, false, base, footerHeight);

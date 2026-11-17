@@ -406,6 +406,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
             ttsIconAudio = itemView.findViewById(R.id.tts_icon_audio);
             ttsTranslatedIconAudio = itemView.findViewById(R.id.tts_translated_icon_audio);
             imagePreview = itemView.findViewById(R.id.image_preview);
+            PhotoBubble.keepInShape(imagePreview);
             imageCard = itemView.findViewById(R.id.image_card); // *** ДОБАВЛЕНО: Превью изображения ***
             // ДОБАВЛЕНО: Превью ссылок
             linkPreviewCard = itemView.findViewById(R.id.link_preview_card);
@@ -1656,10 +1657,13 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
             // делал пузырь шире, и он потом на глазах сужался
             BubbleFooter.keepTailOnly(last, contentTextView, translatedContentTextView, transcribedContentTextView);
 
+            // Снимок идёт во всю ширину пузыря: поля тут только мешают
+            boolean hasPhoto = imagePreview != null && imagePreview.getVisibility() == View.VISIBLE;
+            PhotoBubble.flushToEdges(column, hasPhoto, false, base, contentTextView, translatedContentTextView, transcribedContentTextView);
             if (hasMedia || last == null) {
                 // Здесь хвост не нужен — подвал встанет под содержимым
                 if (last != null) last.setText(BubbleFooter.stripTail(last.getText()));
-                BubbleFooter.reserveBelow(column, true, base, footerHeight);
+                BubbleFooter.reserveBelow(column, !BubbleFooter.isEmpty(footer), base, footerHeight);
                 return;
             }
             BubbleFooter.reserveBelow(column, false, base, footerHeight);
