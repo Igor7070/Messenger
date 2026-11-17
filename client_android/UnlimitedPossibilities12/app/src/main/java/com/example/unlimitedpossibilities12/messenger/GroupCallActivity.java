@@ -145,6 +145,8 @@ public class GroupCallActivity extends AppCompatActivity {
     private boolean speakerOn = true;
     /** Кто говорит прямо сейчас — по уровню звука из статистики WebRTC. */
     private final java.util.Set<String> speakingUsers = new java.util.HashSet<>();
+    /** Кто выключил себе микрофон — по сигналу от его телефона. */
+    private final java.util.Set<String> mutedUsers = new java.util.HashSet<>();
     private Handler speakingHandler;
     private Runnable speakingRunnable;
     private RecyclerView participantsRecyclerView;
@@ -1251,6 +1253,9 @@ public class GroupCallActivity extends AppCompatActivity {
                     if (isInitiator) {
                         readyUsers.add(fromId);
                         refreshParticipants();
+                        // Человек подключился позже — расскажем ему, выключен ли
+                        // у нас микрофон, иначе он увидит нас обычными
+                        if (micMuted) sendSignal(createSignalJson("micOff", null, fromId));
                         String userName = participants.stream()
                                 .filter(u -> String.valueOf(u.getId()).equals(fromId))
                                 .findFirst()
@@ -1505,6 +1510,17 @@ public class GroupCallActivity extends AppCompatActivity {
                     if (participants.size() <= 1) {
                         endCall();
                     }
+                    break;
+
+                case "micOff":
+                case "micOn":
+                    boolean muted = "micOff".equals(type);
+                    Log.d(TAG, "User " + fromId + (muted ? " muted" : " unmuted") + " their microphone");
+                    runOnUiThread(() -> {
+                        if (muted) mutedUsers.add(fromId);
+                        else mutedUsers.remove(fromId);
+                        refreshParticipants();
+                    });
                     break;
 
                 case "cameraOn":
@@ -2747,7 +2763,22 @@ public class GroupCallActivity extends AppCompatActivity {
         if (localAudioTrack != null) localAudioTrack.setEnabled(!micMuted);
         muteButton.setImageResource(micMuted ? R.drawable.ic_mic_off_offline : R.drawable.ic_mic_white);
         paintButton(muteButton, micMuted);
+        announceMicState();
         refreshParticipants();
+    }
+
+    /**
+     * Сказать остальным, что микрофон выключен или снова включён.
+     *
+     * Без этого человек на том конце видел собеседника обычным и не понимал,
+     * почему тот молчит: про чужой микрофон в групповом звонке не знал никто.
+     */
+    private void announceMicState() {
+        for (User user : participants) {
+            String userId = String.valueOf(user.getId());
+            if (userId.equals(currentUserId)) continue;
+            sendSignal(createSignalJson(micMuted ? "micOff" : "micOn", null, userId));
+        }
     }
 
     private void toggleSpeaker() {
@@ -2768,10 +2799,11 @@ public class GroupCallActivity extends AppCompatActivity {
     private void refreshParticipants() {
         runOnUiThread(() -> {
             if (participantsAdapter != null) {
-                participantsAdapter.updateState(readyUsers, speakingUsers, currentUserId, micMuted);
+                participantsAdapter.updateState(readyUsers, speakingUsers, mutedUsers, currentUserId, micMuted);
             }
             if (videoParticipantsAdapter != null) {
                 videoParticipantsAdapter.setJoinedUsers(readyUsers);
+                videoParticipantsAdapter.setMutedUsers(mutedUsers);
             }
             updateHeader();
         });

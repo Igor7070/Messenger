@@ -34,6 +34,8 @@ public class ParticipantsAdapter extends RecyclerView.Adapter<ParticipantsAdapte
     private Set<String> joined = Collections.emptySet();
     /** Кто сейчас говорит. */
     private Set<String> speaking = Collections.emptySet();
+    /** Кто выключил себе микрофон. */
+    private Set<String> muted = Collections.emptySet();
     private String currentUserId;
     private boolean selfMuted;
 
@@ -47,9 +49,11 @@ public class ParticipantsAdapter extends RecyclerView.Adapter<ParticipantsAdapte
     }
 
     /** Состояние разговора: кто ответил, кто говорит, выключен ли свой микрофон. */
-    public void updateState(Set<String> joined, Set<String> speaking, String currentUserId, boolean selfMuted) {
+    public void updateState(Set<String> joined, Set<String> speaking, Set<String> muted,
+                            String currentUserId, boolean selfMuted) {
         this.joined = joined != null ? joined : Collections.emptySet();
         this.speaking = speaking != null ? speaking : Collections.emptySet();
+        this.muted = muted != null ? muted : Collections.emptySet();
         this.currentUserId = currentUserId;
         this.selfMuted = selfMuted;
         notifyDataSetChanged();
@@ -91,9 +95,9 @@ public class ParticipantsAdapter extends RecyclerView.Adapter<ParticipantsAdapte
         holder.participantState.setText(inCall ? R.string.call_participant_in_call : R.string.call_participant_ringing);
         holder.participantState.setTextColor(inCall ? 0xFF34D399 : 0xFF94A3B8);
 
-        holder.speakingDot.setVisibility(speaking.contains(id) ? View.VISIBLE : View.INVISIBLE);
-        // О чужом микрофоне мы пока не знаем — показываем только свой
-        holder.micOffIcon.setVisibility(isSelf && selfMuted ? View.VISIBLE : View.GONE);
+        boolean micOff = isSelf ? selfMuted : muted.contains(id);
+        holder.speakingDot.setVisibility(!micOff && speaking.contains(id) ? View.VISIBLE : View.INVISIBLE);
+        holder.micOffIcon.setVisibility(micOff ? View.VISIBLE : View.GONE);
 
         holder.avatarImageView.setOnClickListener(v -> {
             if (avatarClickListener != null) avatarClickListener.onAvatarClick(user.getId());

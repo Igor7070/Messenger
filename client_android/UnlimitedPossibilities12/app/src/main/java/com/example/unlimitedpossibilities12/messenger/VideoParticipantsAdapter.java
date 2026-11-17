@@ -556,9 +556,11 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
         // не помещалось в плитку и обрезалось многоточием
         boolean joined = joinedUsers.contains(String.valueOf(user.getId()))
                 || String.valueOf(user.getId()).equals(currentUserId);
-        holder.usernameTextView.setText(joined
+        String label = joined
                 ? name
-                : name + " · " + holder.itemView.getContext().getString(R.string.call_participant_ringing));
+                : name + " · " + holder.itemView.getContext().getString(R.string.call_participant_ringing);
+        if (mutedUsers.contains(String.valueOf(user.getId()))) label = "🔇 " + label;
+        holder.usernameTextView.setText(label);
     }
 
     /** Кто уже в разговоре — чтобы плитка не молчала о том, что человеку ещё звонит. */
@@ -566,6 +568,14 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
 
     public void setJoinedUsers(java.util.Set<String> joined) {
         this.joinedUsers = joined != null ? joined : java.util.Collections.emptySet();
+    }
+
+    /** Кто выключил себе микрофон — об этом сообщает его телефон. */
+    private java.util.Set<String> mutedUsers = java.util.Collections.emptySet();
+
+    public void setMutedUsers(java.util.Set<String> muted) {
+        this.mutedUsers = muted != null ? muted : java.util.Collections.emptySet();
+        notifyDataSetChanged();
     }
 
     private int colorForName(String name) {
