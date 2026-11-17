@@ -595,6 +595,8 @@ const VoiceCall = ({ recipientId }) => {
             direction: isCaller ? 'outgoing' : 'incoming',
             status: status,
             callType: 'voice',
+            // Сколько длился разговор — для списка звонков
+            durationSeconds: status === 'completed' ? callDuration : undefined,
             timestamp: new Date().toLocaleString('en-US', {
               year: 'numeric',
               month: '2-digit',

@@ -14,6 +14,7 @@ public class Call implements Serializable {
     private String callType; // "voice", "video", "voice_with_translate", "group"
     private String timestamp;
     private String roomId;
+    private Integer durationSeconds; // сколько длился разговор, секунды
 
     // Конструктор для индивидуальных звонков
     public Call(long id, String caller, String receiver, String direction, String status, String callType, String timestamp) {
@@ -49,4 +50,12 @@ public class Call implements Serializable {
     public String getCallType() { return callType; }
     public String getTimestamp() { return timestamp; }
     public String getRoomId() { return roomId; }
+
+    public Integer getDurationSeconds() {
+        return durationSeconds;
+    }
+
+    public void setDurationSeconds(Integer durationSeconds) {
+        this.durationSeconds = durationSeconds;
+    }
 }

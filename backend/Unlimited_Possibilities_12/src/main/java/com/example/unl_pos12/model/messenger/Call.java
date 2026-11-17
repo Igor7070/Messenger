@@ -42,6 +42,24 @@ public class Call {
     @Column(name = "room_id") // NEW: Поле для хранения roomId
     private String roomId;
 
+    /**
+     * Сколько длился разговор, в секундах.
+     *
+     * Пустое — для пропущенных и отклонённых: разговора не было. Без этого
+     * в списке звонков было видно только время начала, а главное — сколько
+     * говорили — нигде.
+     */
+    @Column(name = "duration_seconds")
+    private Integer durationSeconds;
+
+    public Integer getDurationSeconds() {
+        return durationSeconds;
+    }
+
+    public void setDurationSeconds(Integer durationSeconds) {
+        this.durationSeconds = durationSeconds;
+    }
+
     // Getters and Setters
     public Long getId() {
         return id;

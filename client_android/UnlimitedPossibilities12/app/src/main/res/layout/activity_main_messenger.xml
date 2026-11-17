@@ -550,13 +550,38 @@
         android:orientation="horizontal"
         android:visibility="gone">
 
+        <!-- Сколько записей выбрано: прежде это нигде не было написано -->
+        <TextView
+            android:id="@+id/selected_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/bg_selected_count"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="8dp"
+            android:textColor="#E2E8F0"
+            android:textSize="14sp" />
+
+        <!-- Выйти из выбора, не нажимая «назад» -->
+        <ImageView
+            android:id="@+id/cancel_selection_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/circle_background"
+            android:backgroundTint="#1E293B"
+            android:contentDescription="@string/calls_selection_cancel"
+            android:padding="14dp"
+            android:src="@drawable/ic_close"
+            android:tint="#E2E8F0" />
+
         <ImageView
             android:id="@+id/delete_selected_button"
             android:layout_width="56dp"
             android:layout_height="56dp"
             android:background="@drawable/circle_background"
             android:backgroundTint="#DC2626"
-            android:contentDescription="Delete selected calls"
+            android:contentDescription="@string/calls_selection_delete"
             android:padding="16dp"
             android:src="@android:drawable/ic_menu_delete"
             android:tint="#FFFFFF" />

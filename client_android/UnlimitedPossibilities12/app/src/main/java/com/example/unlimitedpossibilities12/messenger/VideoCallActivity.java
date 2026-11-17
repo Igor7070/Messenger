@@ -1240,6 +1240,12 @@ public class VideoCallActivity extends AppCompatActivity {
             callData.put("callType", "video");
             callData.put("timestamp", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(new Date()));
             callData.put("roomId", roomId);
+            // Сколько длился разговор: в списке звонков видно было только
+            // время начала, а главное — сколько говорили — нигде
+            if ("completed".equals(status) && callStartTime > 0) {
+                callData.put("durationSeconds",
+                        (int) ((System.currentTimeMillis() - callStartTime) / 1000));
+            }
         } catch (JSONException e) {
             Log.e(TAG, "Error creating call JSON: " + e.getMessage());
             runOnUiThread(() -> Toast.makeText(this, "Failed to save call", Toast.LENGTH_SHORT).show());

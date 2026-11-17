@@ -173,4 +173,11 @@
     <string name="group_call_chosen">%1$d of 4 chosen</string>
     <string name="group_call_search">Search people…</string>
     <string name="group_call_start">Start call</string>
+    <string name="calls_selection_cancel">Cancel selection</string>
+    <string name="calls_selection_delete">Delete chosen records</string>
+    <string name="calls_selected">%1$d chosen</string>
+    <string name="calls_delete_title">Delete from the call list?</string>
+    <string name="calls_delete_message">%1$d records will be removed from this list. The calls themselves are not affected.</string>
+    <string name="calls_delete_confirm">Delete</string>
+    <string name="calls_delete_cancel">Cancel</string>
 </resources>

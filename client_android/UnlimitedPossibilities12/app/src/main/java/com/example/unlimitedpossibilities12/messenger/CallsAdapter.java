@@ -31,9 +31,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -98,10 +100,39 @@ public class CallsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     }
 
     private void setupActionBar() {
+        // Удаление без переспроса: промахнуться легко, а вернуть нельзя
         deleteSelectedButton.setOnClickListener(v -> {
-            listener.onDeleteSelectedCalls(new ArrayList<>(selectedCallIds));
-            exitSelectionMode();
+            List<Long> chosen = withMerged(selectedCallIds);
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+                    actionBar.getContext(), R.style.AlertDialog_UP12)
+                    .setTitle(R.string.calls_delete_title)
+                    .setMessage(actionBar.getContext()
+                            .getString(R.string.calls_delete_message, chosen.size()))
+                    .setNegativeButton(R.string.calls_delete_cancel, null)
+                    .setPositiveButton(R.string.calls_delete_confirm, (dialog, which) -> {
+                        listener.onDeleteSelectedCalls(chosen);
+                        exitSelectionMode();
+                    })
+                    .show();
         });
+
+        View cancel = actionBar.findViewById(R.id.cancel_selection_button);
+        if (cancel != null) cancel.setOnClickListener(v -> exitSelectionMode());
+    }
+
+    /**
+     * Свёрнутые строки удаляем целиком.
+     *
+     * В строке со счётчиком «(8)» спрятаны восемь записей: выбрав её, человек
+     * выбирает все восемь, а не только верхнюю.
+     */
+    private List<Long> withMerged(Set<Long> chosen) {
+        Set<Long> all = new HashSet<>(chosen);
+        for (Long id : chosen) {
+            List<Long> hidden = merged.get(id);
+            if (hidden != null) all.addAll(hidden);
+        }
+        return new ArrayList<>(all);
     }
 
     public void updateCalls(List<Call> newCalls, List<User> users) {
@@ -133,6 +164,12 @@ public class CallsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         boolean deleting = isSelectionMode && !selectedCallIds.isEmpty();
         actionBar.setVisibility(deleting ? View.VISIBLE : View.GONE);
 
+        android.widget.TextView counter = actionBar.findViewById(R.id.selected_count);
+        if (counter != null && deleting) {
+            counter.setText(actionBar.getContext()
+                    .getString(R.string.calls_selected, withMerged(selectedCallIds).size()));
+        }
+
         // Пока выделяем звонки, кнопка «позвонить» уступает место корзине:
         // иначе две круглые кнопки стоят одна над другой
         View root = actionBar.getRootView();
@@ -145,18 +182,65 @@ public class CallsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     }
 
     /** Собирает показываемый список: над каждой группой звонков — свой день. */
+    /**
+     * Собрать список.
+     *
+     * Подряд идущие одинаковые звонки сводим в одну строку со счётчиком:
+     * восемь строк «Kenzya · Incoming · Translated call» подряд читать
+     * невозможно, а смысла в них ровно столько же, сколько в одной «(8)».
+     * Одинаковыми считаем звонки одного дня, с тем же собеседником, в ту же
+     * сторону, того же вида и с тем же исходом.
+     */
     private void rebuild() {
         rows.clear();
+        repeats.clear();
         String currentHeader = null;
+        Call previous = null;
         for (Call call : calls) {
             String header = dateHeader(parseTimestamp(call.getTimestamp()));
             if (header != null && !header.equals(currentHeader)) {
                 rows.add(header);
                 currentHeader = header;
+                previous = null;
+            }
+            if (previous != null && sameKind(previous, call)) {
+                repeats.put(previous.getId(), repeats.getOrDefault(previous.getId(), 1) + 1);
+                merged.computeIfAbsent(previous.getId(), k -> new ArrayList<>()).add(call.getId());
+                continue;
             }
             rows.add(call);
+            previous = call;
         }
         notifyDataSetChanged();
+    }
+
+    /** Сколько звонков свёрнуто в строку: ключ — идентификатор верхнего. */
+    private final Map<Long, Integer> repeats = new HashMap<>();
+    /** Какие именно звонки свёрнуты — чтобы удалять строку целиком. */
+    private final Map<Long, List<Long>> merged = new HashMap<>();
+
+    private boolean sameKind(Call a, Call b) {
+        return equal(a.getDirection(), b.getDirection())
+                && equal(a.getStatus(), b.getStatus())
+                && equal(a.getCallType(), b.getCallType())
+                && equal(partnerKey(a), partnerKey(b));
+    }
+
+    private String partnerKey(Call call) {
+        if ("group".equals(call.getCallType())) {
+            // Порядок участников в записи бывает разным — для сравнения
+            // приводим к одному виду, иначе два одинаковых звонка подряд
+            // считались бы разными
+            if (call.getParticipants() == null) return "";
+            List<String> sorted = new ArrayList<>(call.getParticipants());
+            java.util.Collections.sort(sorted);
+            return sorted.toString();
+        }
+        return String.valueOf(otherUserId(call));
+    }
+
+    private boolean equal(Object a, Object b) {
+        return a == null ? b == null : a.equals(b);
     }
 
     @Override
@@ -197,6 +281,10 @@ public class CallsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
         // Имя: для группового звонка заголовком идёт сам звонок, а имена — ниже
         holder.name.setText(isGroup ? "Group call" : usernameOf(otherUserId(call)));
+        Integer repeated = repeats.get(call.getId());
+        if (repeated != null && repeated > 1) {
+            holder.name.setText(holder.name.getText() + " (" + repeated + ")");
+        }
         holder.subtitle.setText(subtitleFor(call, isGroup, missed));
         holder.subtitle.setTextColor(missed ? COLOR_MISSED : COLOR_MUTED);
 
@@ -210,7 +298,11 @@ public class CallsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
         holder.checkmark.setVisibility(
                 isSelectionMode && selectedCallIds.contains(call.getId()) ? View.VISIBLE : View.GONE);
-        holder.itemView.setSelected(selectedCallIds.contains(call.getId()));
+        // Выбранная строка подсвечивается: прежде её выдавала только
+        // маленькая галочка на снимке
+        boolean chosen = selectedCallIds.contains(call.getId());
+        holder.itemView.setSelected(chosen);
+        holder.itemView.setBackgroundColor(chosen ? 0xFF1D3157 : 0x00000000);
 
         holder.redialButton.setVisibility(isSelectionMode ? View.GONE : View.VISIBLE);
         holder.redialButton.setOnClickListener(v -> redial(context, call));
@@ -250,10 +342,27 @@ public class CallsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
                 ? ("rejected".equals(call.getStatus()) ? "Declined" : "Missed")
                 : ("outgoing".equals(call.getDirection()) ? "Outgoing" : "Incoming");
 
-        if (isGroup) {
-            return direction + " · " + participantNames(call);
+        String line = isGroup
+                ? direction + " · " + participantNames(call)
+                : direction + " · " + callTypeLabel(call.getCallType());
+
+        // Сколько говорили — то, зачем в список звонков и заглядывают
+        Integer seconds = call.getDurationSeconds();
+        if (!missed && seconds != null && seconds > 0) {
+            line = line + " · " + durationLabel(seconds);
         }
-        return direction + " · " + callTypeLabel(call.getCallType());
+        return line;
+    }
+
+    /** «1:05», «12:30», «1:02:40». */
+    private String durationLabel(int seconds) {
+        int hours = seconds / 3600;
+        int minutes = (seconds % 3600) / 60;
+        int rest = seconds % 60;
+        if (hours > 0) {
+            return String.format(Locale.getDefault(), "%d:%02d:%02d", hours, minutes, rest);
+        }
+        return String.format(Locale.getDefault(), "%d:%02d", minutes, rest);
     }
 
     /** Вид звонка по-человечески: в базе лежит «voice_with_translate». */

@@ -2575,6 +2575,11 @@ public class GroupCallActivity extends AppCompatActivity {
             callData.put("direction", isInitiator ? "outgoing" : "incoming");
             callData.put("status", effectiveFinalStatus);
             callData.put("callType", "group");
+            // Сколько длился разговор — для списка звонков
+            if ("completed".equals(effectiveFinalStatus) && callStartTime > 0) {
+                callData.put("durationSeconds",
+                        (int) ((System.currentTimeMillis() - callStartTime) / 1000));
+            }
             callData.put("timestamp", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(new Date()));
             // Убрано поле "roomId", так как его нет в React
         } catch (JSONException e) {
