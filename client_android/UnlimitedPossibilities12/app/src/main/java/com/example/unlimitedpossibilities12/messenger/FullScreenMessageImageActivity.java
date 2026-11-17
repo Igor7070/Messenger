@@ -28,8 +28,17 @@ public class FullScreenMessageImageActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_full_screen_message_image);
 
-        ImageView fullImageView = findViewById(R.id.full_message_image_view);
-        ImageButton downloadButton = findViewById(R.id.download_message_image_button);
+        com.github.chrisbanes.photoview.PhotoView fullImageView = findViewById(R.id.full_message_image_view);
+        ImageView downloadButton = findViewById(R.id.download_message_image_button);
+        ImageView shareButton = findViewById(R.id.share_message_image_button);
+        ImageView closeButton = findViewById(R.id.close_image_button);
+
+        // Выйти можно было только системной кнопкой «назад»
+        closeButton.setOnClickListener(v -> finish());
+        // Нажатие по картинке тоже закрывает — как в телеграме
+        fullImageView.setOnPhotoTapListener((view, x, y) -> finish());
+        // Под просмотром картинки верхняя строка тоже чёрная
+        getWindow().setStatusBarColor(android.graphics.Color.BLACK);
 
         // Получаем extras
         String imageUrl = getIntent().getStringExtra("message_image_url");
@@ -83,6 +92,30 @@ public class FullScreenMessageImageActivity extends AppCompatActivity {
                 }
             } else {
                 Toast.makeText(this, "Nothing to download", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Поделиться: прежде картинку можно было только скачать
+        shareButton.setOnClickListener(v -> {
+            try {
+                if (localPath != null && !localPath.isEmpty()) {
+                    File file = new File(localPath);
+                    Uri shared = androidx.core.content.FileProvider.getUriForFile(
+                            this, getPackageName() + ".fileprovider", file);
+                    Intent intent = new Intent(Intent.ACTION_SEND);
+                    intent.setType("image/*");
+                    intent.putExtra(Intent.EXTRA_STREAM, shared);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(intent, getString(R.string.image_viewer_share)));
+                } else if (imageUrl != null && !imageUrl.isEmpty()) {
+                    Intent intent = new Intent(Intent.ACTION_SEND);
+                    intent.setType("text/plain");
+                    intent.putExtra(Intent.EXTRA_TEXT, imageUrl);
+                    startActivity(Intent.createChooser(intent, getString(R.string.image_viewer_share)));
+                }
+            } catch (Exception e) {
+                Toast.makeText(this, "Could not share the photo", Toast.LENGTH_SHORT).show();
+                Log.e("FullScreen", "Поделиться не вышло", e);
             }
         });
     }

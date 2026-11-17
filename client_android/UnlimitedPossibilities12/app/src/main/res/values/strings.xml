@@ -181,4 +181,9 @@
     <string name="calls_delete_cancel">Cancel</string>
     <string name="calls_load_failed">Could not load the calls. Check the connection and open this tab again.</string>
     <string name="call_calling">Calling…</string>
+    <string name="image_viewer_photo">Photo</string>
+    <string name="image_viewer_close">Close</string>
+    <string name="image_viewer_share">Share</string>
+    <string name="image_viewer_save">Save to the phone</string>
+    <string name="chat_no_connection">No connection — the message was not sent. Check the network and try again.</string>
 </resources>

@@ -17,6 +17,7 @@ import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.IBinder;
 import android.provider.OpenableColumns;
 import android.text.Spannable;
@@ -363,12 +364,14 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                 } else if (currentRightDrawable != null &&
                         event.getRawX() >= (inputMessage.getRight() - rightDrawableWidth - inputMessage.getPaddingEnd())) {
                     Log.d(TAG, "Right icon clicked, isRecording=" + isRecording + ", selectedFileUri=" + selectedFileUri);
+                    // Отправку здесь не вызываем: поверх правого края поля лежит
+                    // отдельная кнопка отправки, и один тычок попадал в оба
+                    // обработчика — сообщение уходило дважды, каждое со своей
+                    // загрузкой файла. В личной переписке это убрали раньше.
                     if (isRecording) {
                         stopRecording();
                     } else if (!isRecording && inputMessage.getText().length() == 0 && selectedFileUri == null) {
                         requestAudioPermission();
-                    } else if (!isRecording && (inputMessage.getText().length() > 0 || selectedFileUri != null)) {
-                        sendMessage();
                     }
                     return true;
                 }
@@ -1432,6 +1435,12 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         message.setTimestamp(generateCurrentTimestamp());
         message.setMessageType(messageType); // *** ДОБАВЛЕНО: Установка messageType ***
 
+        // Служба засыпает, пока приложение закрыто, и рвёт соединение. Экран
+        // при этом держит старую ссылку на сокет, поэтому берём свежую
+        if ((stompClient == null || !stompClient.isConnected()) && callService != null) {
+            stompClient = callService.getStompClient();
+        }
+
         if (stompClient != null && stompClient.isConnected()) {
             try {
                 JSONObject jsonMessage = new JSONObject();
@@ -1479,10 +1488,40 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                 isMessageJustSent = false;
             }
         } else {
-            Log.w(TAG, "StompClient not connected");
-            Toast.makeText(this, "WebSocket not connected", Toast.LENGTH_LONG).show();
-            isMessageJustSent = false;
+            // Прежде сообщение просто выбрасывалось с надписью «WebSocket not
+            // connected»: человек видел загруженное фото и пустой чат. Теперь
+            // будим службу и ждём соединения — обычно оно поднимается за
+            // секунду-другую
+            Log.w(TAG, "Сокет не готов — будим службу и ждём");
+            waitForSocketAndSend(content, fileUrl, messageType, 0);
         }
+    }
+
+    /** Сколько раз пробуем дождаться соединения, прежде чем сдаться. */
+    private static final int SOCKET_RETRIES = 8;
+
+    private void waitForSocketAndSend(String content, String fileUrl, String messageType, int attempt) {
+        if (isFinishing() || isDestroyed()) return;
+        if (attempt == 0) {
+            Intent wake = new Intent(this, CallService.class);
+            wake.putExtra("action", "SUBSCRIBE_CHAT");
+            wake.putExtra("chatId", chatId);
+            startService(wake);
+        }
+        if (attempt >= SOCKET_RETRIES) {
+            Log.e(TAG, "Соединение так и не поднялось — сообщение не ушло");
+            Toast.makeText(this, R.string.chat_no_connection, Toast.LENGTH_LONG).show();
+            isMessageJustSent = false;
+            return;
+        }
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (callService != null) stompClient = callService.getStompClient();
+            if (stompClient != null && stompClient.isConnected()) {
+                sendMessageWithFile(content, fileUrl, messageType);
+            } else {
+                waitForSocketAndSend(content, fileUrl, messageType, attempt + 1);
+            }
+        }, 600);
     }
 
     private void resetForm() {
