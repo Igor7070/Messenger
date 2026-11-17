@@ -31,6 +31,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const peerConnectionRef = useRef(null);
   const stompClient = useRef(null);
   const mediaRecorderRef = useRef(null);
+  const audioSeq = useRef(0); // порядковый номер куска звука
   const [incomingCallState, setIncomingCallState] = useState(incomingCall);
 
   // Подпись собеседника — такая же, как в обычном звонке: этот экран
@@ -777,6 +778,9 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
               const audioMessage = {
                   audio: base64Audio,
                   sessionId: sessionId,
+                  // Номер куска: на сервере их разбирает несколько потоков сразу,
+                  // и без номера речь склеивается в переставленном порядке
+                  seq: audioSeq.current++,
                   // Распознаванию сообщаем язык пользователя, иначе оно угадывает
                   // по короткой фразе и ошибается
                   spokenLanguage: selectedLanguageRef.current,
@@ -788,6 +792,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
               console.log('Sent PCM audio buffer, length:', buffer.length, 'sessionId:', sessionId);
           };
 
+          audioSeq.current = 0;
           // NEW: Подключение аудиоузлов
           source.connect(processor);
           processor.connect(audioContext.destination); // Required to keep processor active

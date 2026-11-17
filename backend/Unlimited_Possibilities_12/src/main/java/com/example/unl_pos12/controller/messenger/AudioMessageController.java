@@ -29,7 +29,10 @@ public class AudioMessageController {
             if (audioData.length > 0) {
                 // Язык говорящего, если он выбран в интерфейсе звонка
                 String spokenLanguage = json.has("spokenLanguage") ? json.get("spokenLanguage").asText() : null;
-                openAIService.handleAudioMessage(roomId, sessionId, audioData, spokenLanguage);
+                // Номер куска: входящие сообщения разбирает несколько потоков
+                // сразу, и без номера порядок речи не восстановить
+                int seq = json.has("seq") ? json.get("seq").asInt() : -1;
+                openAIService.handleAudioMessage(roomId, sessionId, audioData, spokenLanguage, seq);
             } else {
                 System.out.println("Empty audio data for roomId " + roomId);
             }

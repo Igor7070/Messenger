@@ -64,6 +64,21 @@ public class OpenAIService {
     }
 
     public void handleAudioMessage(String roomId, String sessionId, byte[] audioData, String spokenLanguage) {
+        handleAudioMessage(roomId, sessionId, audioData, spokenLanguage, -1);
+    }
+
+    /**
+     * Принять кусок звука.
+     *
+     * Куски приходят по вебсокету по порядку, но разбирает их пул потоков, и к
+     * этому месту они успевают перемешаться: речь склеивалась с переставленными
+     * полусекундными кусками, распознавание слышало кашу и выдавало то обрывки,
+     * то выдуманные титры. Поэтому клиент нумерует куски, а здесь мы
+     * восстанавливаем порядок: чуть ждём отставшего и идём дальше, если он
+     * так и не пришёл.
+     */
+    public void handleAudioMessage(String roomId, String sessionId, byte[] audioData,
+                                   String spokenLanguage, int seq) {
         if (audioData == null || audioData.length == 0) {
             LOGGER.warning("Empty audio data for roomId: " + roomId);
             return;
@@ -71,7 +86,7 @@ public class OpenAIService {
         try {
             String bufferKey = roomId + "_" + sessionId;
             VoiceSegmenter segmenter = segmenters.computeIfAbsent(bufferKey, k -> new VoiceSegmenter());
-            byte[] phrase = segmenter.accept(audioData);
+            byte[] phrase = acceptInOrder(bufferKey, segmenter, audioData, seq);
             cleanupIdleSegmenters();
             if (phrase == null) return; // человек ещё говорит
 
@@ -125,6 +140,72 @@ public class OpenAIService {
         }
     }
 
+    /** Куски, пришедшие раньше времени: ждут своей очереди. */
+    private static class Reorder {
+        int expected = -1;
+        final java.util.TreeMap<Integer, byte[]> pending = new java.util.TreeMap<>();
+        long waitingSince;
+        int outOfOrder;
+        long lastReport;
+    }
+
+    private final java.util.Map<String, Reorder> reorders = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Отдать нарезке куски в том порядке, в каком их произнёс человек.
+     *
+     * @return готовая фраза или null
+     */
+    private byte[] acceptInOrder(String bufferKey, VoiceSegmenter segmenter, byte[] chunk, int seq) {
+        Reorder order = reorders.computeIfAbsent(bufferKey, k -> new Reorder());
+        synchronized (order) {
+            // Клиент без нумерации (старая версия) — работаем как раньше
+            if (seq < 0) return segmenter.accept(chunk);
+
+            if (order.expected < 0) order.expected = seq;
+            if (seq < order.expected) {
+                // Опоздал совсем: лучше отдать не на своём месте, чем потерять
+                return segmenter.accept(chunk);
+            }
+            if (seq != order.expected) order.outOfOrder++;
+            order.pending.put(seq, chunk);
+            long now = System.currentTimeMillis();
+            if (order.waitingSince == 0) order.waitingSince = now;
+
+            byte[] phrase = null;
+            phrase = drain(segmenter, order, phrase);
+
+            // Отставший так и не пришёл — не держим разговор, идём дальше
+            if (!order.pending.isEmpty()
+                    && (order.pending.size() >= 6 || now - order.waitingSince > 400)) {
+                order.expected = order.pending.firstKey();
+                phrase = drain(segmenter, order, phrase);
+            }
+            if (order.pending.isEmpty()) order.waitingSince = 0;
+
+            if (order.outOfOrder > 0 && now - order.lastReport > 10000) {
+                order.lastReport = now;
+                LOGGER.info("Порядок кусков восстановлен " + order.outOfOrder + " раз: " + bufferKey);
+                order.outOfOrder = 0;
+            }
+            return phrase;
+        }
+    }
+
+    /** Скормить нарезке всё, что лежит подряд от ожидаемого номера. */
+    private byte[] drain(VoiceSegmenter segmenter, Reorder order, byte[] phrase) {
+        while (order.pending.containsKey(order.expected)) {
+            byte[] next = order.pending.remove(order.expected);
+            order.expected++;
+            order.waitingSince = System.currentTimeMillis();
+            byte[] ready = segmenter.accept(next);
+            // За один вызов фраза может закончиться только одна: остальное
+            // останется в нарезке до следующего куска
+            if (ready != null) phrase = ready;
+        }
+        return phrase;
+    }
+
     /** Язык каждого говорящего, определённый на первой фразе разговора. */
     private final java.util.Map<String, String> sessionLanguages = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -159,6 +240,7 @@ public class OpenAIService {
 
     /** Разговоры заканчиваются без уведомления — забытые буферы убираем сами. */
     private void cleanupIdleSegmenters() {
+        reorders.keySet().removeIf(key -> !segmenters.containsKey(key));
         segmenters.entrySet().removeIf(e -> {
             if (!e.getValue().isIdle(120000)) return false;
             sessionLanguages.remove(e.getKey()); // разговор закончился — язык не помним
@@ -167,6 +249,15 @@ public class OpenAIService {
     }
 
     // [ДОБАВЛЕНО] Метод для фильтрации транскрипции
+    /** Выдумки распознавания на тишине — встречаются у Whisper постоянно. */
+    private static final String[] HALLUCINATIONS = {
+            "редактор субтитров", "корректор", "субтитры сделал", "субтитры создавал",
+            "субтитры подготовил", "продолжение следует", "спасибо за просмотр",
+            "подписывайтесь на канал", "продолжение в следующей серии",
+            "subtitles by", "subs by", "thanks for watching", "amara.org",
+            "subtitled by", "transcription by"
+    };
+
     public boolean isValidTranscription(String transcription) {
         if (transcription == null || transcription.trim().isEmpty()) {
             LOGGER.info("Filtered out null or empty transcription: " + transcription);
@@ -176,6 +267,16 @@ public class OpenAIService {
         if (transcription.trim().length() < 3) {
             LOGGER.info("Filtered out short transcription: " + transcription);
             return false;
+        }
+        // Whisper на тишине и шуме выдумывает концовки субтитров: он много учился
+        // на фильмах, и в паузах выдаёт «Редактор субтитров …», «Продолжение
+        // следует…» и подобное. В разговоре этого быть не может.
+        String lowered = transcription.toLowerCase(java.util.Locale.ROOT);
+        for (String junk : HALLUCINATIONS) {
+            if (lowered.contains(junk)) {
+                LOGGER.info("Filtered out hallucinated transcription: " + transcription);
+                return false;
+            }
         }
         return true; // Транскрипция считается разговорной речью
     }

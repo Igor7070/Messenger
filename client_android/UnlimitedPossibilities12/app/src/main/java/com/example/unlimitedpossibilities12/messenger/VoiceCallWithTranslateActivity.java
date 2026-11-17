@@ -8,7 +8,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioManager;
-import android.media.AudioRecord;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.Bundle;
@@ -147,7 +146,6 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
     private Handler currentTimeHandler;
     private Runnable currentTimeRunnable;
 
-    private AudioRecord audioRecord;
     private boolean isRecording = false;
     private TextView transcriptionTextView;
     private Disposable friendSubscription;
@@ -426,88 +424,247 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Включить расшифровку своей речи.
+     *
+     * Раньше экран открывал микрофон второй раз, своим AudioRecord. Первым его
+     * уже держал сам звонок, и на телефоне второй захват получал придушенный
+     * сигнал или тишину — кому что достанется, зависело от того, кто успел
+     * раньше. Отсюда и была расшифровка «через раз»: человек говорил, а до
+     * сервера доходила тишина, он не находил ни одной фразы и молчал.
+     *
+     * Теперь микрофон один: звук берём тот же, что уходит собеседнику, —
+     * WebRTC отдаёт свои отсчёты через {@link #onMicSamples}.
+     */
     private void startAudioCapture() {
-        // Запись запускается из двух мест — сразу и по событию соединения WebRTC.
-        // Без этой проверки при неудачном порядке событий создавались два потока
-        // с одного микрофона: сервер получал звук дважды, каждая фраза дважды
-        // распознавалась, переводилась и озвучивалась — двойная цена и эхо.
-        if (isRecording || audioRecord != null) {
-            Log.d(TAG, "Audio capture already running — skipping second start");
+        if (isRecording) {
+            Log.d(TAG, "Расшифровка своей речи уже включена");
             return;
         }
-        if (isRecording) return;
-        int sampleRate = 16000;
-        int channelConfig = AudioFormat.CHANNEL_IN_MONO;
-        int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-        // Минимальный буфер — около сотни миллисекунд. Если поток чтения на миг
-        // задержится, микрофон затрёт несчитанное, и речь дойдёт с дырами.
-        // Берём запас на секунду: памяти это 32 КБ, зато терять нечего.
-        int bufferSize = Math.max(
-                AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat) * 4,
-                sampleRate * 2);
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            audioRecord = new AudioRecord(
-                    MediaRecorder.AudioSource.MIC,
-                    sampleRate,
-                    channelConfig,
-                    audioFormat,
-                    bufferSize
-            );
-            audioRecord.startRecording();
-            isRecording = true;
-            new Thread(() -> {
-                byte[] buffer = new byte[1600];
-                while (isRecording) {
-                    int bytesRead = audioRecord.read(buffer, 0, buffer.length);
-                    if (onDeviceMode && vosk != null && vosk.isReady()) {
-                        // Бесплатный режим: тот же поток звука отдаём распознавателю
-                        // на устройстве — на сервер не уходит ничего
-                        if (bytesRead > 0) vosk.accept(buffer, bytesRead);
-                        continue;
-                    }
-                    // Модель ещё качается или ждёт согласия — пока идём прежним
-                    // путём через сервер, иначе собеседник не услышал бы ничего
-                    // и не понял почему
-                    if (bytesRead > 0 && stompClient != null && stompClient.isConnected()) {
-                        String base64Audio = android.util.Base64.encodeToString(buffer, 0, bytesRead, android.util.Base64.NO_WRAP);
-                        JSONObject audioMessage = new JSONObject();
-                        try {
-                            audioMessage.put("audio", base64Audio);
-                            audioMessage.put("sessionId", sessionId);
-                            // Распознаванию сообщаем язык пользователя: угадывание по
-                            // коротким фразам ошибается (английская речь шла кириллицей)
-                            audioMessage.put("spokenLanguage", selectedLanguageCode != null ? selectedLanguageCode : "auto");
-                        } catch (JSONException e) {
-                            Log.e(TAG, "Error creating audio JSON: " + e.getMessage());
-                        }
-                        Log.d(TAG, "Encoded Base64 audio length: " + base64Audio.length());
-                        stompClient.send("/app/audio-transcription/" + roomId, audioMessage.toString())
-                                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
-                                .observeOn(io.reactivex.android.schedulers.AndroidSchedulers.mainThread())
-                                .subscribe(
-                                        () -> Log.d(TAG, "Sent audio buffer: " + bytesRead + " bytes, sessionId: " + sessionId),
-                                        throwable -> Log.e(TAG, "Error sending audio: " + throwable.getMessage())
-                                );
-                    }
-                }
-            }).start();
-            Log.d(TAG, "Audio capture started");
-        } else {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
             Log.e(TAG, "No RECORD_AUDIO permission");
+            return;
         }
+        isRecording = true;
+        audioSeq = 0;
+        micQueue.clear();
+        startMicSender();
+        Log.d(TAG, "Расшифровка своей речи включена (звук берём у звонка)");
     }
 
     private void stopAudioCapture() {
-        if (isRecording) {
-            isRecording = false;
-            if (audioRecord != null) {
-                audioRecord.stop();
-                audioRecord.release();
-                audioRecord = null;
-                Log.d(TAG, "Audio capture stopped");
+        if (!isRecording) return;
+        isRecording = false;
+        micRemainder = null;
+        micQueue.clear();
+        Log.d(TAG, "Расшифровка своей речи выключена");
+    }
+
+    /** Остаток от прошлой порции: отсчёты делим на куски по 50 мс. */
+    private byte[] micRemainder;
+    /** Номер куска по порядку — по нему сервер собирает речь как она звучала. */
+    private int audioSeq;
+
+    /** Насколько громкой была речь в последние секунды — по ней и выравниваем. */
+    private int recentPeak;
+    private long lastPeakReset;
+    private double gain = 1.0;
+
+    /**
+     * Выровнять громкость.
+     *
+     * Звонок отдаёт запись уже обработанной: эхо убрано, шум подавлен, а
+     * громкость рассчитана на передачу собеседнику — усиление делает уже
+     * принимающая сторона. Нам же эта запись идёт на распознавание, и обычная
+     * речь приходит на уровне около шести процентов шкалы. Нарезка фраз на
+     * сервере считает такую речь тишиной, и большая часть сказанного просто не
+     * доходила до распознавания.
+     *
+     * Поэтому подтягиваем уровень сами: смотрим, насколько громкой была речь в
+     * последние секунды, и приводим её к удобному для распознавания уровню.
+     * Усиление ограничено, тишина остаётся тишиной, а громкий голос не
+     * захлёстывает — отсчёты не выходят за пределы шкалы.
+     */
+    private byte[] normalize(byte[] pcm) {
+        int peak = 0;
+        for (int i = 0; i + 1 < pcm.length; i += 2) {
+            int sample = Math.abs((short) ((pcm[i] & 0xFF) | (pcm[i + 1] << 8)));
+            if (sample > peak) peak = sample;
+        }
+        long now = System.currentTimeMillis();
+        if (peak > recentPeak) recentPeak = peak;
+        // Раз в три секунды забываем прежний пик: иначе случайный громкий звук
+        // навсегда прижал бы усиление
+        if (now - lastPeakReset > 3000) {
+            lastPeakReset = now;
+            recentPeak = Math.max(peak, recentPeak / 2);
+        }
+        if (recentPeak < 200) return pcm; // тишина — усиливать нечего
+
+        // Целимся примерно в треть шкалы: громко для распознавания и далеко
+        // от предела, за которым звук захлёстывает
+        // Усиление меняем плавно: скачок между соседними порциями ломает
+        // форму волны, и распознавание слышит дребезг вместо речи
+        double target = 11000.0 / recentPeak;
+        if (target < 1.0) target = 1.0;
+        if (target > 8.0) target = 8.0;
+        gain += (target - gain) * 0.02;
+        if (gain <= 1.05) return pcm;
+
+        for (int i = 0; i + 1 < pcm.length; i += 2) {
+            int sample = (short) ((pcm[i] & 0xFF) | (pcm[i + 1] << 8));
+            int louder = (int) Math.round(sample * gain);
+            if (louder > 32767) louder = 32767;
+            if (louder < -32768) louder = -32768;
+            pcm[i] = (byte) (louder & 0xFF);
+            pcm[i + 1] = (byte) ((louder >> 8) & 0xFF);
+        }
+        return pcm;
+    }
+
+    /**
+     * Звук микрофона, уже записанный звонком.
+     *
+     * Приходит короткими порциями (10 мс). Собираем их в куски по 50 мс — в
+     * таком виде звук и уходил на сервер раньше, и серверная нарезка фраз
+     * рассчитана на него.
+     */
+    private void onMicSamples(org.webrtc.audio.JavaAudioDeviceModule.AudioSamples samples) {
+        if (!isRecording) return;
+        byte[] pcm = toMono16k(samples);
+        if (pcm == null || pcm.length == 0) return;
+
+        if (micRemainder != null && micRemainder.length > 0) {
+            byte[] joined = new byte[micRemainder.length + pcm.length];
+            System.arraycopy(micRemainder, 0, joined, 0, micRemainder.length);
+            System.arraycopy(pcm, 0, joined, micRemainder.length, pcm.length);
+            pcm = joined;
+        }
+        pcm = normalize(pcm);
+
+        int chunk = 1600; // 50 мс при 16 кГц, 16 бит, моно
+        int offset = 0;
+        while (pcm.length - offset >= chunk) {
+            byte[] piece = new byte[chunk];
+            System.arraycopy(pcm, offset, piece, 0, chunk);
+            offset += chunk;
+            // В очередь, а не напрямую: звуковой поток звонка держать нельзя
+            if (!micQueue.offer(piece)) {
+                Log.w(TAG, "Очередь звука переполнена — кусок пропущен");
             }
         }
+        int left = pcm.length - offset;
+        micRemainder = new byte[left];
+        System.arraycopy(pcm, offset, micRemainder, 0, left);
     }
+
+    /** Приводим отсчёты к тому, чего ждёт распознавание: моно, 16 кГц, 16 бит. */
+    private byte[] toMono16k(org.webrtc.audio.JavaAudioDeviceModule.AudioSamples samples) {
+        byte[] data = samples.getData();
+        int channels = samples.getChannelCount();
+        int rate = samples.getSampleRate();
+        if (data == null || data.length < 2) return null;
+
+        short[] mono = new short[data.length / 2 / Math.max(1, channels)];
+        for (int i = 0, j = 0; j < mono.length; i += 2 * channels, j++) {
+            // Из стерео берём левый канал: для речи этого достаточно
+            mono[j] = (short) ((data[i] & 0xFF) | (data[i + 1] << 8));
+        }
+
+        if (rate != 16000 && rate > 16000 && rate % 16000 == 0) {
+            int factor = rate / 16000;
+            short[] down = new short[mono.length / factor];
+            for (int j = 0; j < down.length; j++) {
+                int sum = 0;
+                for (int k = 0; k < factor; k++) sum += mono[j * factor + k];
+                down[j] = (short) (sum / factor);
+            }
+            mono = down;
+        }
+
+        byte[] out = new byte[mono.length * 2];
+        for (int j = 0; j < mono.length; j++) {
+            out[j * 2] = (byte) (mono[j] & 0xFF);
+            out[j * 2 + 1] = (byte) ((mono[j] >> 8) & 0xFF);
+        }
+        return out;
+    }
+
+    /**
+     * Очередь кусков звука.
+     *
+     * Отсчёты приходят из звукового потока звонка, и задерживать его нельзя:
+     * пока мы кодируем в Base64 и отправляем, запись стоит, и часть речи
+     * теряется. Поэтому кладём кусок в очередь, а отправляет отдельный поток.
+     */
+    private final java.util.concurrent.BlockingQueue<byte[]> micQueue =
+            new java.util.concurrent.LinkedBlockingQueue<>(200);
+    private Thread micSender;
+
+    private void startMicSender() {
+        if (micSender != null && micSender.isAlive()) return;
+        micSender = new Thread(() -> {
+            while (isRecording) {
+                try {
+                    byte[] piece = micQueue.poll(200, java.util.concurrent.TimeUnit.MILLISECONDS);
+                    if (piece != null) sendAudioChunk(piece, piece.length);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                } catch (Exception e) {
+                    Log.w(TAG, "Кусок звука не ушёл: " + e.getMessage());
+                }
+            }
+        }, "mic-sender");
+        micSender.start();
+    }
+
+    /** Отправка куска: на устройство или на сервер — как и раньше. */
+    private void sendAudioChunk(byte[] buffer, int bytesRead) {
+        if (onDeviceMode && vosk != null && vosk.isReady()) {
+            // Бесплатный режим: распознаём у себя, на сервер не уходит ничего
+            vosk.accept(buffer, bytesRead);
+            return;
+        }
+        if (stompClient == null || !stompClient.isConnected()) return;
+        String base64Audio = android.util.Base64.encodeToString(buffer, 0, bytesRead, android.util.Base64.NO_WRAP);
+        JSONObject audioMessage = new JSONObject();
+        try {
+            audioMessage.put("audio", base64Audio);
+            audioMessage.put("sessionId", sessionId);
+            // Номер куска: на сервере их разбирает несколько потоков сразу,
+            // и без номера речь склеивается в переставленном порядке
+            audioMessage.put("seq", audioSeq++);
+            // Распознаванию сообщаем язык пользователя: угадывание по коротким
+            // фразам ошибается (английская речь шла кириллицей)
+            audioMessage.put("spokenLanguage", selectedLanguageCode != null ? selectedLanguageCode : "auto");
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating audio JSON: " + e.getMessage());
+            return;
+        }
+        stompClient.send("/app/audio-transcription/" + roomId, audioMessage.toString())
+                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
+                .observeOn(io.reactivex.android.schedulers.AndroidSchedulers.mainThread())
+                .subscribe(
+                        () -> { },
+                        throwable -> Log.e(TAG, "Error sending audio: " + throwable.getMessage())
+                );
+    }
+
+    /**
+     * Звуковое устройство звонка. Просим у него 16 кГц — ровно то, что нужно
+     * распознаванию, — и забираем записанные отсчёты себе.
+     */
+    private org.webrtc.audio.AudioDeviceModule createAudioDeviceModule() {
+        return org.webrtc.audio.JavaAudioDeviceModule.builder(getApplicationContext())
+                .setInputSampleRate(16000)
+                .setUseHardwareAcousticEchoCanceler(true)
+                .setUseHardwareNoiseSuppressor(false)
+                .setSamplesReadyCallback(this::onMicSamples)
+                .createAudioDeviceModule();
+    }
+
 
     private void subscribeToTranscription() {
         // Программно устанавливаем высоту ScrollView
@@ -1337,7 +1494,9 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
         PeerConnectionFactory.InitializationOptions options = PeerConnectionFactory.InitializationOptions.builder(this)
                 .createInitializationOptions();
         PeerConnectionFactory.initialize(options);
-        peerConnectionFactory = PeerConnectionFactory.builder().createPeerConnectionFactory();
+        peerConnectionFactory = PeerConnectionFactory.builder()
+                .setAudioDeviceModule(createAudioDeviceModule())
+                .createPeerConnectionFactory();
 
         if (currentUserId == null) {
             Log.e(TAG, "currentUserId is undefined. Check the Intent extras.");
@@ -1453,6 +1612,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
             PeerConnectionFactory.Options factoryOptions = new PeerConnectionFactory.Options();
             peerConnectionFactory = PeerConnectionFactory.builder()
                     .setOptions(factoryOptions)
+                    .setAudioDeviceModule(createAudioDeviceModule())
                     .createPeerConnectionFactory();
         }
 
