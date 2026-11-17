@@ -1958,7 +1958,7 @@ const Messenger = () => {
                     )}
                   </div>
                 )}
-                <div className={`message-content-container ${shouldShowAvatar(msg) ? '' : 'no-avatar'} ${inlineTime(msg) ? 'inline-time' : ''}`}>
+                <div className={`message-content-container ${msg.fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) ? 'with-photo' : ''} ${shouldShowAvatar(msg) ? '' : 'no-avatar'} ${inlineTime(msg) ? 'inline-time' : ''}`}>
                   <div className="message-body">
                     {msg.sender.id !== userId && (
                       <span

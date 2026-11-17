@@ -2319,3 +2319,41 @@
     padding: 2px 0 !important;
     border-radius: 0;
 }
+
+/* Снимок занимает пузырь целиком — как в телеграме: фотография во всю
+   ширину, подпись под ней. Поля пузыря переносим внутрь, на текст, а
+   снимок их гасит отрицательным полем — иначе вокруг фотографии идёт
+   рамка цвета пузыря. */
+.message-content-container.with-photo {
+  /* !important — в файле есть правила с более сильным отбором, которые
+     возвращали пузырю поля, и снимок снова оказывался в рамке. */
+  padding: 0 !important;
+  overflow: hidden;
+  /* Ширину тоже отстаиваем: иначе пузырь шире снимка, и подпись
+     растягивает его на пол-экрана, а фотография жмётся влево. */
+  width: fit-content !important;
+  max-width: min(420px, 80%) !important;
+}
+
+.message-content-container.with-photo > div {
+  /* Верхнее поле держим ради случая, когда снимка нет: файл мог
+     пропасть с сервера, и на его месте стоит строка «Image
+     unavailable» — она иначе липнет к краю пузыря. Сам снимок это
+     поле гасит. */
+  padding: 6px 10px;
+}
+
+.message-content-container.with-photo .image-preview-container {
+  margin: -6px -10px 6px -10px;
+  border-radius: 0;
+  max-width: none;
+}
+
+.message-content-container.with-photo .message-image-preview {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(420px, 100%);
+  max-height: 460px;
+  border-radius: 0;
+}

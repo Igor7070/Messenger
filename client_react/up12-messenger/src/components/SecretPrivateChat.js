@@ -3312,6 +3312,10 @@ const SecretPrivateChat = () => {
                 } ${
                   // Время в углу последней строки — только у простых сообщений
                   msg.messageType !== 'audio' && msg.messageType !== 'file' && !msg.fileUrl ? 'inline-time' : ''
+                } ${
+                  // Снимок занимает пузырь целиком, без полей-рамки
+                  msg.messageType === 'file' && msg.fileUrl
+                    && (decryptedImageBlobs[msg.id] || msg.fileUrl.startsWith('blob:')) ? 'with-photo' : ''
                 }`}
               >
                 <div className="secret-message-body">
@@ -3482,8 +3486,14 @@ const SecretPrivateChat = () => {
                           );
                         })()}
 
-                        {/* Ссылка на скачивание — всегда */}
-                        {msg.messageType === 'file' && msg.fileUrl && (
+                        {/* Ссылка на скачивание — только у непохожего на снимок.
+                            У фотографии под пузырём висела строка вида
+                            «Download 1776010722494_image__11___1_.jpg» — имя с
+                            сервера, никому ничего не говорящее. Снимок и так
+                            открывается нажатием, а сохранить его можно из
+                            просмотрщика. */}
+                        {msg.messageType === 'file' && msg.fileUrl
+                          && !(decryptedImageBlobs[msg.id] || msg.fileUrl.startsWith('blob:')) && (
                           <a
                             href="#"
                             className="secret-file-link"

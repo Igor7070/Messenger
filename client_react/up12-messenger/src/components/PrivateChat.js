@@ -2129,7 +2129,11 @@ const PrivateChat = () => {
               <div
                 className={`private-message-content-container ${
                   shouldShowAvatar(msg, index) ? '' : 'no-avatar'
-                } ${inlineTime(msg) ? 'inline-time' : ''}`}
+                } ${inlineTime(msg) ? 'inline-time' : ''} ${
+                  // Снимок занимает пузырь целиком: поля пузыря обводили
+                  // фотографию рамкой, которой в переписке не место.
+                  msg.fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) ? 'with-photo' : ''
+                }`}
               >
                 <div className="private-message-body">
                   <div className="private-message-content-wrapper">
