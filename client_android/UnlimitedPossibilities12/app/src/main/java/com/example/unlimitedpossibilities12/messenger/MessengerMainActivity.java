@@ -1372,6 +1372,15 @@ public class MessengerMainActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         usersAdapter.updateUsers(usersList);
                         updateProfileIcon();
+                        // Список чатов рисует собеседников по имени: у личной
+                        // переписки своей картинки нет
+                        java.util.Map<String, String> avatars = new java.util.HashMap<>();
+                        for (User user : usersList) {
+                            if (user.getUsername() != null && user.getAvatar() != null) {
+                                avatars.put(user.getUsername(), user.getAvatar());
+                            }
+                        }
+                        chatsAdapter.setUserAvatars(avatars);
                     });
                 } else {
                     Log.e(TAG, "Failed to fetch users: " + response.code());

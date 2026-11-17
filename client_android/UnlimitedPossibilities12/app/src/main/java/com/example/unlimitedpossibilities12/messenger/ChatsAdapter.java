@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Единый список разговоров: личные, секретные, групповые и ассистент.
@@ -44,6 +45,14 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
     private final List<Chat> chats = new ArrayList<>();
     private final List<Chat> filteredChats = new ArrayList<>();
     private final OnChatClickListener listener;
+    /**
+     * Снимки людей по имени.
+     *
+     * У личной переписки своей картинки нет — поле avatar у чата заполняется
+     * только для групп. Поэтому в списке чатов вместо снимков собеседников
+     * рисовались буквы, хотя в самой переписке и в списке людей снимки были.
+     */
+    private Map<String, String> avatarsByName = java.util.Collections.emptyMap();
     private OnChatLongClickListener longClickListener;
 
     /** Нужно, чтобы вытащить имя собеседника из названия личного чата «я_он». */
@@ -129,13 +138,39 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
         holder.chatIconView.setBackgroundTintList(null);
         holder.chatIconView.setPadding(0, 0, 0, 0);
 
-        if (chat.getAvatar() != null && !chat.getAvatar().isEmpty()) {
+        String picture = chat.getAvatar();
+        // У личной переписки картинки нет — берём снимок собеседника
+        if ((picture == null || picture.isEmpty()) && isOneToOne(chat)) {
+            picture = avatarsByName.get(title);
+        }
+        if (picture != null && !picture.isEmpty()) {
+            // Букву прячем не заранее, а когда снимок действительно пришёл:
+            // иначе у человека с пропавшим файлом картинки оставалось пустое
+            // место — ни фото, ни буквы
+            showLetter(holder, title);
             com.bumptech.glide.Glide.with(holder.itemView.getContext())
-                    .load("https://unlimitedpossibilities12.org" + chat.getAvatar())
+                    .load("https://unlimitedpossibilities12.org" + picture)
                     .circleCrop()
+                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                    Object model,
+                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                    boolean isFirstResource) {
+                            return false; // буква остаётся на месте
+                        }
+
+                        @Override
+                        public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model,
+                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                       com.bumptech.glide.load.DataSource dataSource,
+                                                       boolean isFirstResource) {
+                            if (holder.chatIconLetter != null) holder.chatIconLetter.setVisibility(View.GONE);
+                            return false;
+                        }
+                    })
                     .into(holder.chatIconView);
             holder.chatIconView.setVisibility(View.VISIBLE);
-            if (holder.chatIconLetter != null) holder.chatIconLetter.setVisibility(View.GONE);
             return;
         }
 
@@ -143,13 +178,23 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
         // скрытый вид схлопывается, и текст наезжает на место кружка.
         com.bumptech.glide.Glide.with(holder.itemView.getContext()).clear(holder.chatIconView);
         holder.chatIconView.setImageDrawable(null);
-        if (holder.chatIconLetter == null) return;
+        showLetter(holder, title);
+    }
 
+    /** Кружок с первой буквой имени. */
+    private void showLetter(ChatViewHolder holder, String title) {
+        if (holder.chatIconLetter == null) return;
         String trimmed = title == null ? "" : title.trim();
         holder.chatIconLetter.setText(trimmed.isEmpty()
                 ? "?" : trimmed.substring(0, 1).toUpperCase());
         holder.chatIconLetter.setBackgroundTintList(ColorStateList.valueOf(colorFor(trimmed)));
         holder.chatIconLetter.setVisibility(View.VISIBLE);
+    }
+
+    /** Снимки людей: имя — путь к картинке. */
+    public void setUserAvatars(Map<String, String> avatars) {
+        this.avatarsByName = avatars != null ? avatars : java.util.Collections.emptyMap();
+        notifyDataSetChanged();
     }
 
     private int colorFor(String name) {

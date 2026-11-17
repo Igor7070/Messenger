@@ -175,10 +175,20 @@ export const assistantConversation = () => ({
  * чата. Свежие разговоры сверху, ассистент закреплён первым.
  */
 export const loadConversations = async (currentUserId, currentUsername, signal) => {
-  const [allChats, privateChats] = await Promise.all([
+  const [allChats, privateChats, people] = await Promise.all([
     jsonOrEmpty(`${API}/chats`, signal),
     currentUserId ? jsonOrEmpty(`${API}/users/${currentUserId}/private-chats`, signal) : Promise.resolve([]),
+    jsonOrEmpty(`${API}/users`, signal),
   ]);
+
+  // Своей картинки у личной переписки нет — она заполняется только у групп.
+  // Поэтому в списке вместо снимков собеседников рисовались буквы, хотя в
+  // самой переписке и в списке людей снимки были.
+  const avatarByName = new Map(
+    (people || [])
+      .filter((person) => person && person.username && person.avatar)
+      .map((person) => [person.username, person.avatar])
+  );
 
   const groups = (allChats || []).filter((chat) => !chat.private && !chat.isSecret);
   const chats = [...groups, ...(privateChats || [])];
@@ -193,11 +203,12 @@ export const loadConversations = async (currentUserId, currentUsername, signal) 
     }
     const last = messages.length ? messages[messages.length - 1] : null;
     const oneToOne = chat.private || chat.isSecret;
+    const title = oneToOne ? partnerName(chat, currentUsername, currentUserId) : chat.name;
     return {
       id: chat.id,
       kind: chat.isSecret ? 'secret' : chat.private ? 'private' : 'group',
-      name: oneToOne ? partnerName(chat, currentUsername, currentUserId) : chat.name,
-      avatar: chat.avatar || null,
+      name: title,
+      avatar: chat.avatar || (oneToOne ? avatarByName.get(title) || null : null),
       preview: previewOf(chat, last, currentUserId),
       timestamp: last ? last.timestamp : '',
       lastMessageId: last ? Number(last.id) : 0,
