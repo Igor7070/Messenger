@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Две галочки одним значком — для списка разговоров.
+
+    В пузыре переписки двойная галочка собрана из двух одинаковых значков
+    внахлёст, но в строке списка держать для этого два вида ни к чему: там
+    просто не хватает места, да и выравнивать их пришлось бы вручную.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="18dp"
+    android:viewportWidth="32"
+    android:viewportHeight="24">
+    <group android:translateX="0">
+        <path
+            android:fillColor="#34D399"
+            android:pathData="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+    </group>
+    <group android:translateX="8">
+        <path
+            android:fillColor="#34D399"
+            android:pathData="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+    </group>
+</vector>

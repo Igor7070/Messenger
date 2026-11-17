@@ -83,10 +83,26 @@
         android:maxLines="1"
         android:visibility="gone"
         app:layout_constraintStart_toEndOf="@id/chat_name_text_view"
-        app:layout_constraintEnd_toStartOf="@id/timestamp_text_view"
+        app:layout_constraintEnd_toStartOf="@id/last_status_view"
         app:layout_constraintTop_toTopOf="@id/chat_name_text_view"
         app:layout_constraintBottom_toBottomOf="@id/chat_name_text_view"
         app:layout_constraintHorizontal_bias="0" />
+
+    <!-- Галочки у своего последнего сообщения: дошло ли, прочли ли.
+         Прежде в списке этого не было — «You: …» стояло без всякого
+         признака, и понять судьбу сообщения можно было только зайдя в чат. -->
+    <ImageView
+        android:id="@+id/last_status_view"
+        android:layout_width="21dp"
+        android:layout_height="15dp"
+        android:scaleType="fitCenter"
+        android:layout_marginStart="6dp"
+        android:src="@drawable/ic_delivered"
+        android:contentDescription="Delivered"
+        android:visibility="gone"
+        app:layout_constraintEnd_toStartOf="@id/timestamp_text_view"
+        app:layout_constraintTop_toTopOf="@id/timestamp_text_view"
+        app:layout_constraintBottom_toBottomOf="@id/timestamp_text_view" />
 
     <!-- Время последнего сообщения -->
     <TextView
@@ -101,18 +117,36 @@
         app:layout_constraintTop_toTopOf="@id/chat_name_text_view"
         app:layout_constraintBottom_toBottomOf="@id/chat_name_text_view" />
 
+    <!-- Снимок из последнего сообщения: крошечная миниатюра перед словом
+         «Photo», как в других мессенджерах. В секретных чатах её нет —
+         содержимое такой переписки в списке показывать нельзя. -->
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/last_photo_view"
+        android:layout_width="19dp"
+        android:layout_height="19dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="3dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="Photo in the last message"
+        android:visibility="gone"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.Up12.Thumb"
+        app:layout_constraintStart_toEndOf="@id/chat_icon_view"
+        app:layout_constraintTop_toTopOf="@id/last_message_text_view"
+        app:layout_constraintBottom_toBottomOf="@id/last_message_text_view" />
+
     <!-- Последнее сообщение -->
     <TextView
         android:id="@+id/last_message_text_view"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
+        android:layout_marginStart="5dp"
+        app:layout_goneMarginStart="12dp"
         android:layout_marginTop="3dp"
         android:maxLines="1"
         android:ellipsize="end"
         android:textColor="#94A3B8"
         android:textSize="14sp"
-        app:layout_constraintStart_toEndOf="@id/chat_icon_view"
+        app:layout_constraintStart_toEndOf="@id/last_photo_view"
         app:layout_constraintEnd_toStartOf="@id/unread_count_view"
         app:layout_constraintTop_toBottomOf="@id/chat_name_text_view" />
 

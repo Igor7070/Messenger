@@ -1187,12 +1187,14 @@ public class MessengerMainActivity extends AppCompatActivity {
                         if (!messages.isEmpty()) {
                             Message lastMessage = messages.get(messages.size() - 1);
                             chat.setLastMessage(previewFor(chat, lastMessage));
+                            rememberLastMessage(chat, lastMessage);
                             chat.setTimestamp(lastMessage.getTimestamp());
                             chat.setUnreadCount(unreadFor(chat, messages, prefs));
                         } else {
                             chat.setLastMessage("No messages yet");
                             chat.setTimestamp("");
                             chat.setUnreadCount(0);
+                            rememberLastMessage(chat, null);
                         }
                         Log.d(TAG, "Messages fetched for chat " + chat.getId() + ": unreadCount=" + chat.getUnreadCount());
                     } else {
@@ -1255,6 +1257,29 @@ public class MessengerMainActivity extends AppCompatActivity {
             return message.getSender().getUsername() + ": " + body;
         }
         return body;
+    }
+
+    /**
+     * Признаки последнего сообщения для списка разговоров: чей он, дошёл ли,
+     * прочтён ли, и снимок для миниатюры.
+     *
+     * Снимок берём только из обычной переписки: в секретной файл лежит
+     * зашифрованным, да и показывать её содержимое в общем списке нельзя.
+     */
+    private void rememberLastMessage(Chat chat, Message message) {
+        if (message == null) {
+            chat.setLastPhotoUrl(null);
+            chat.setLastFromMe(false);
+            return;
+        }
+        boolean mine = message.getSender() != null && message.getSender().getId() == currentUserId;
+        chat.setLastFromMe(mine);
+        chat.setLastDelivered(message.isDelivered());
+        chat.setLastRead(message.isRead());
+
+        boolean secret = Boolean.TRUE.equals(chat.getIsSecret());
+        String url = message.getFileUrl();
+        chat.setLastPhotoUrl(!secret && isImage(message) && url != null && !url.trim().isEmpty() ? url : null);
     }
 
     private boolean isImage(Message message) {

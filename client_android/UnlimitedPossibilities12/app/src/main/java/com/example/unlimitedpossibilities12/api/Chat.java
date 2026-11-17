@@ -17,6 +17,12 @@ public class Chat {
     /** Картинка группы вида /avatars/group_12.jpg; у чатов на двоих не используется. */
     private String avatar;
     private String lastMessage;
+    /** Снимок из последнего сообщения — для миниатюры в списке. */
+    private transient String lastPhotoUrl;
+    /** Последнее сообщение моё: тогда в списке рисуем галочки. */
+    private transient boolean lastFromMe;
+    private transient boolean lastDelivered;
+    private transient boolean lastRead;
     private String timestamp;
     private int unreadCount;
     @SerializedName("messages")
@@ -66,6 +72,18 @@ public class Chat {
 
     public String getLastMessage() { return lastMessage; }
     public void setLastMessage(String lastMessage) { this.lastMessage = lastMessage; }
+
+    public String getLastPhotoUrl() { return lastPhotoUrl; }
+    public void setLastPhotoUrl(String lastPhotoUrl) { this.lastPhotoUrl = lastPhotoUrl; }
+
+    public boolean isLastFromMe() { return lastFromMe; }
+    public void setLastFromMe(boolean lastFromMe) { this.lastFromMe = lastFromMe; }
+
+    public boolean isLastDelivered() { return lastDelivered; }
+    public void setLastDelivered(boolean lastDelivered) { this.lastDelivered = lastDelivered; }
+
+    public boolean isLastRead() { return lastRead; }
+    public void setLastRead(boolean lastRead) { this.lastRead = lastRead; }
 
     public String getTimestamp() { return timestamp; }
     public void setTimestamp(String timestamp) { this.timestamp = timestamp; }

@@ -86,6 +86,9 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
 
         String lastMessage = chat.getLastMessage() != null ? chat.getLastMessage() : "No messages yet";
         holder.lastMessageTextView.setText(lastMessage);
+        bindSecretMark(holder, chat, context);
+        bindOwnStatus(holder, chat);
+        bindPhotoThumb(holder, chat, context);
         holder.timestampTextView.setText(formatTime(context, chat.getTimestamp()));
 
         int unreadCount = chat.getUnreadCount();
@@ -208,15 +211,85 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
      * Метка рядом с именем: сначала секретность, иначе включённый перевод.
      * Две сразу не показываем — строка узкая, а имя важнее.
      */
+    /** Замок перед именем — так секретный чат виден сразу, а не по плашке у края. */
+    private void bindSecretMark(ChatViewHolder holder, Chat chat, Context context) {
+        if (holder.chatNameTextView == null) return;
+        if (!Boolean.TRUE.equals(chat.getIsSecret())) {
+            holder.chatNameTextView.setCompoundDrawablesRelative(null, null, null, null);
+            holder.chatNameTextView.setCompoundDrawablePadding(0);
+            return;
+        }
+        float density = context.getResources().getDisplayMetrics().density;
+        android.graphics.drawable.Drawable lock =
+                androidx.appcompat.content.res.AppCompatResources.getDrawable(context, R.drawable.ic_lock);
+        if (lock != null) {
+            // Значок сам по себе крупный и серый: уменьшаем до строчной высоты
+            // и красим в тот же цвет, что и метка языка, — замок тогда читается
+            // как пометка, а не как кнопка.
+            lock = androidx.core.graphics.drawable.DrawableCompat.wrap(lock.mutate());
+            androidx.core.graphics.drawable.DrawableCompat.setTint(lock,
+                    android.graphics.Color.parseColor("#67E8F9"));
+            int size = Math.round(15 * density);
+            lock.setBounds(0, 0, size, size);
+            holder.chatNameTextView.setCompoundDrawablesRelative(lock, null, null, null);
+            holder.chatNameTextView.setCompoundDrawablePadding(Math.round(5 * density));
+        }
+    }
+
+    /** Галочки у своего последнего сообщения: одна — дошло, две — прочли. */
+    private void bindOwnStatus(ChatViewHolder holder, Chat chat) {
+        if (holder.lastStatusView == null) return;
+        if (!chat.isLastFromMe() || !chat.isLastDelivered()) {
+            holder.lastStatusView.setVisibility(View.GONE);
+            return;
+        }
+        // Прочитано — две галочки одним значком; доставлено — одна.
+        holder.lastStatusView.setImageResource(chat.isLastRead()
+                ? R.drawable.ic_ticks_read : R.drawable.ic_delivered);
+        holder.lastStatusView.setVisibility(View.VISIBLE);
+    }
+
+    /** Миниатюра снимка перед словом «Photo». Нет файла — нет и миниатюры. */
+    private void bindPhotoThumb(ChatViewHolder holder, Chat chat, Context context) {
+        if (holder.lastPhotoView == null) return;
+        String url = chat.getLastPhotoUrl();
+        if (url == null || url.trim().isEmpty()) {
+            holder.lastPhotoView.setVisibility(View.GONE);
+            return;
+        }
+        holder.lastPhotoView.setVisibility(View.VISIBLE);
+        com.bumptech.glide.Glide.with(context)
+                .load(url)
+                .centerCrop()
+                .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                Object model,
+                                                com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                boolean isFirstResource) {
+                        // Файл мог пропасть с сервера: пустого квадратика в
+                        // списке быть не должно — остаётся одно слово «Photo».
+                        holder.lastPhotoView.setVisibility(View.GONE);
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model,
+                                                   com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                   com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                        return false;
+                    }
+                })
+                .into(holder.lastPhotoView);
+    }
+
     private void bindBadge(ChatViewHolder holder, Chat chat, Context context, boolean assistant) {
         if (holder.chatBadge == null) return;
 
-        if (!assistant && Boolean.TRUE.equals(chat.getIsSecret())) {
-            holder.chatBadge.setText("SECRET");
-            holder.chatBadge.setVisibility(View.VISIBLE);
-            return;
-        }
-
+        // Секретность теперь помечена замком у самого имени: плашка стояла
+        // у правого края, рядом со временем, и два одинаковых имени — обычный
+        // чат и секретный — глазом было не различить. А освободившаяся плашка
+        // показывает язык перевода и в секретной переписке.
         if (!assistant) {
             SharedPreferences prefs = context.getSharedPreferences("chat_prefs", Context.MODE_PRIVATE);
             if (prefs.getBoolean("translation_enabled_" + chat.getId(), false)) {
@@ -283,6 +356,7 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
 
     static class ChatViewHolder extends RecyclerView.ViewHolder {
         TextView chatNameTextView, lastMessageTextView, timestampTextView, unreadCountView, chatBadge;
+        ImageView lastStatusView, lastPhotoView;
         ImageView chatIconView;
         TextView chatIconLetter;
         View onlineDot;
@@ -294,6 +368,8 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
             timestampTextView = itemView.findViewById(R.id.timestamp_text_view);
             unreadCountView = itemView.findViewById(R.id.unread_count_view);
             chatBadge = itemView.findViewById(R.id.chat_badge);
+            lastStatusView = itemView.findViewById(R.id.last_status_view);
+            lastPhotoView = itemView.findViewById(R.id.last_photo_view);
             chatIconView = itemView.findViewById(R.id.chat_icon_view);
             chatIconLetter = itemView.findViewById(R.id.chat_icon_letter);
             onlineDot = itemView.findViewById(R.id.chat_online_dot);

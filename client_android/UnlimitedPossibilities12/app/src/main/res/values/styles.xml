@@ -370,4 +370,10 @@
         <item name="android:tint">#64748B</item>
         <item name="android:contentDescription">@null</item>
     </style>
+
+    <!-- Скругление крошечной миниатюры снимка в списке разговоров -->
+    <style name="ShapeAppearance.Up12.Thumb" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">4dp</item>
+    </style>
 </resources>
