@@ -1175,8 +1175,42 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
 
     /**
      * Громкость входящего голоса по текущему состоянию: без озвучки — полная,
-     * с озвучкой — фоновая, а на время самой озвучки ещё тише.
+     * с озвучкой — фоновая, а на время самой озвучки тишина.
+     *
+     * Вызывать нужно при каждом изменении состояния и сразу, как появилась
+     * дорожка собеседника: иначе первая его фраза звучит в полный голос, а
+     * фоновой громкость становится только после первого же перевода.
      */
+    /**
+     * Держать громкость входящего голоса.
+     *
+     * Выставить её один раз мало: пока по дорожке не пошёл звук, значение не
+     * прилипает — дорожка остаётся в полный голос, и первая фраза собеседника
+     * звучала громко, а тихой становилась только после первого перевода.
+     * Поэтому подтверждаем значение каждые две секунды, пока идёт разговор.
+     */
+    private Runnable volumeKeeper;
+    private double lastRemoteVolume = -1;
+
+    private void keepRemoteVolume() {
+        if (volumeKeeper != null) return;
+        Handler handler = new Handler(Looper.getMainLooper());
+        volumeKeeper = new Runnable() {
+            @Override
+            public void run() {
+                applyRemoteVolume();
+                handler.postDelayed(this, 2000);
+            }
+        };
+        handler.post(volumeKeeper);
+    }
+
+    private void stopKeepingRemoteVolume() {
+        if (volumeKeeper == null) return;
+        new Handler(Looper.getMainLooper()).removeCallbacks(volumeKeeper);
+        volumeKeeper = null;
+    }
+
     private void applyRemoteVolume() {
         if (remoteAudioTrack == null) return;
         boolean voiceTranslation = ttsSwitch != null && ttsSwitch.isChecked()
@@ -1185,7 +1219,10 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
                 : (translationSpeaking ? DUCK_VOLUME : BACKGROUND_VOLUME);
         try {
             remoteAudioTrack.setVolume(volume);
-            Log.d(TAG, "Remote voice volume: " + volume);
+            if (volume != lastRemoteVolume) {
+                lastRemoteVolume = volume;
+                Log.d(TAG, "Remote voice volume: " + volume);
+            }
         } catch (Exception e) {
             Log.w(TAG, "Не удалось изменить громкость входящего голоса: " + e.getMessage());
         }
@@ -1194,6 +1231,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
     /** Озвучку выключили посреди фразы — замолчать, а не договаривать. */
     private void stopSpeaking() {
         if (onDeviceSpeech != null) onDeviceSpeech.silence();
+        stopKeepingRemoteVolume();
         clearTtsQueue();
         if (ttsMediaPlayer != null) {
             try {
@@ -1688,11 +1726,16 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
                 if (track instanceof AudioTrack) {
                     remoteAudioTrack = (AudioTrack) track;
                     remoteAudioTrack.setEnabled(true);
-                    runOnUiThread(VoiceCallWithTranslateActivity.this::applyRemoteVolume);
+                    runOnUiThread(VoiceCallWithTranslateActivity.this::keepRemoteVolume);
                     Log.d(TAG, "Remote audio track from receiver: " + remoteAudioTrack.id());
                 } else if (mediaStreams.length > 0 && !mediaStreams[0].audioTracks.isEmpty()) {
                     remoteAudioTrack = mediaStreams[0].audioTracks.get(0);
                     remoteAudioTrack.setEnabled(true);
+                    // Громкость выставляем и здесь: иначе первая фраза
+                    // собеседника звучала в полный голос, а все следующие —
+                    // приглушённо, потому что фон включался только после
+                    // первой озвучки перевода
+                    runOnUiThread(VoiceCallWithTranslateActivity.this::keepRemoteVolume);
                     Log.d(TAG, "Remote audio track enabled: " + remoteAudioTrack.id());
                 }
             }
@@ -2141,6 +2184,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
             Log.d(TAG, "Unsubscribed from TTS topic");
         }
         // [ДОБАВЛЕНО] Очистка ttsMediaPlayer
+        stopKeepingRemoteVolume();
         clearTtsQueue();
         if (ttsMediaPlayer != null) {
             ttsMediaPlayer.release();
