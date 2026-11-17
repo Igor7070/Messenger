@@ -446,7 +446,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 }
                 if (tmpImage != null && tmpImage.exists()) {
                     imagePreview.setVisibility(View.VISIBLE);
-            if (imageCard != null) imageCard.setVisibility(View.VISIBLE);
+                    if (imageCard != null) imageCard.setVisibility(View.VISIBLE);
                     Glide.with(context)
                             .load(tmpImage)
                             .signature(new com.bumptech.glide.signature.ObjectKey(tmpImage.lastModified()))
@@ -557,7 +557,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                     fileLinkContainer.setVisibility(View.GONE);
                     audioContainer.setVisibility(View.GONE);
                     imagePreview.setVisibility(View.VISIBLE);
-            if (imageCard != null) imageCard.setVisibility(View.VISIBLE);
+                    if (imageCard != null) imageCard.setVisibility(View.VISIBLE);
 
                     final File imageFile = adapter.activity.getLocalFile(message, fileName);
                     if (imageFile != null && imageFile.exists()) {
@@ -984,7 +984,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                                             message.setBeingProcessed(false);
                                             fileLinkContainer.setVisibility(View.GONE);
                                             imagePreview.setVisibility(View.GONE);
-            if (imageCard != null) imageCard.setVisibility(View.GONE);
+                                            if (imageCard != null) imageCard.setVisibility(View.GONE);
                                             if (attachmentUnavailable != null) {
                                                 attachmentUnavailable.setText("Attachment can't be decrypted on this device");
                                                 attachmentUnavailable.setVisibility(View.VISIBLE);
@@ -1000,7 +1000,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                                         // человека длинной ссылкой в всплывашке
                                         fileLinkContainer.setVisibility(View.GONE);
                                         imagePreview.setVisibility(View.GONE);
-            if (imageCard != null) imageCard.setVisibility(View.GONE);
+                                        if (imageCard != null) imageCard.setVisibility(View.GONE);
                                         if (attachmentUnavailable != null) {
                                             attachmentUnavailable.setText("Attachment unavailable");
                                             attachmentUnavailable.setVisibility(View.VISIBLE);

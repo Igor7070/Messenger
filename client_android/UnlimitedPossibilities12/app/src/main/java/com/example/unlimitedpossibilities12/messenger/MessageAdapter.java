@@ -1144,6 +1144,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     boolean knownMissing = MissingAttachments.isMissing(context, fileUrl);
                     attachmentUnavailable.setText("Image unavailable");
                     imagePreview.setVisibility(knownMissing ? View.GONE : View.VISIBLE);
+                    if (imageCard != null) imageCard.setVisibility(knownMissing ? View.GONE : View.VISIBLE);
                     attachmentUnavailable.setVisibility(knownMissing ? View.VISIBLE : View.GONE);
 
                     if (!knownMissing) {
@@ -1158,7 +1159,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                                                                 boolean isFirstResource) {
                                         MissingAttachments.remember(context, fileUrl);
                                         imagePreview.setVisibility(View.GONE);
-            if (imageCard != null) imageCard.setVisibility(View.GONE);
+                                        if (imageCard != null) imageCard.setVisibility(View.GONE);
                                         attachmentUnavailable.setText("Image unavailable");
                                         attachmentUnavailable.setVisibility(View.VISIBLE);
                                         applyFooterLayout();
@@ -1192,7 +1193,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     fileLinkContainer.setVisibility(View.VISIBLE);
                     audioContainer.setVisibility(View.GONE);
                     imagePreview.setVisibility(View.GONE);
-            if (imageCard != null) imageCard.setVisibility(View.GONE);
+                    if (imageCard != null) imageCard.setVisibility(View.GONE);
                     fileLinkContainer.setOnClickListener(v -> downloadFile(fileUrl));
 
                     // Опционально: красивый текст для аудиофайлов
@@ -1206,7 +1207,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 fileLinkContainer.setVisibility(View.GONE);
                 audioContainer.setVisibility(View.GONE);
                 imagePreview.setVisibility(View.GONE);
-            if (imageCard != null) imageCard.setVisibility(View.GONE);
+                if (imageCard != null) imageCard.setVisibility(View.GONE);
             }
 
             // Установка содержимого сообщения с учётом перевода и транскрипции

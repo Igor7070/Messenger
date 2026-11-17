@@ -1208,6 +1208,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                     fileLinkContainer.setVisibility(View.VISIBLE);
                     audioContainer.setVisibility(View.GONE);
                     imagePreview.setVisibility(View.GONE);
+                    if (imageCard != null) imageCard.setVisibility(View.GONE);
                     fileLinkContainer.setOnClickListener(v -> downloadFile(fileUrl));
 
                     Log.d(TAG, "Regular file link shown for group message id=" + message.getId());
@@ -1216,6 +1217,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 fileLinkContainer.setVisibility(View.GONE);
                 audioContainer.setVisibility(View.GONE);
                 imagePreview.setVisibility(View.GONE);
+                if (imageCard != null) imageCard.setVisibility(View.GONE);
             }
 
             // Установка временной метки
