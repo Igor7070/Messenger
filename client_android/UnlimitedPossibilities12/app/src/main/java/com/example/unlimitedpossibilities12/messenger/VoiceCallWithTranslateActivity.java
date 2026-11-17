@@ -422,6 +422,9 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
 
         initializeWebRTC();
         if (isCaller) {
+            // Пока собеседник не ответил, честнее «звоним», чем «соединяем»:
+            // соединять ещё нечего, вызов только ушёл
+            showStatus(R.string.call_calling);
             Log.d(TAG, "Caller waiting for 'ready' or 'acceptCall' signal...");
         }
     }
@@ -1837,6 +1840,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
                     break;
 
                 case "answer":
+                    showStatus(R.string.call_connecting);
                     if (isCaller && peerConnection != null) {
                         String sdp = signal.getString("sdp");
                         if (checkSignature(sdp, signal)) return;
@@ -2685,5 +2689,18 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
         ttsPlaying = false;
         File left;
         while ((left = ttsQueue.poll()) != null) left.delete();
+    }
+
+    /**
+     * Надпись о состоянии, пока разговор не начался.
+     *
+     * Прежде и у звонящего, и у отвечающего стояло «Connecting…», хотя пока
+     * собеседник не ответил, соединять ещё нечего.
+     */
+    private void showStatus(int textRes) {
+        runOnUiThread(() -> {
+            android.widget.TextView v0 = findViewById(R.id.call_timer);
+            if (v0 != null) v0.setText(textRes);
+        });
     }
 }

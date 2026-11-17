@@ -246,6 +246,9 @@ public class VoiceCallActivity extends AppCompatActivity {
 
         initializeWebRTC();
         if (isCaller) {
+            // Пока собеседник не ответил, честнее «звоним», чем «соединяем»:
+            // соединять ещё нечего, вызов только ушёл
+            showStatus(R.string.call_calling);
             Log.d(TAG, "Caller waiting for 'ready' or 'acceptCall' signal...");
         }
     }
@@ -584,6 +587,7 @@ public class VoiceCallActivity extends AppCompatActivity {
                     break;
 
                 case "answer":
+                    showStatus(R.string.call_connecting);
                     if (isCaller && peerConnection != null) {
                         String sdp = signal.getString("sdp");
                         if (checkSignature(sdp, signal)) return;
@@ -1207,5 +1211,13 @@ public class VoiceCallActivity extends AppCompatActivity {
             unbindService(connection);
             isBound = false;
         }
+    }
+
+    /** Надпись под именем, пока разговор не начался. */
+    private void showStatus(int textRes) {
+        runOnUiThread(() -> {
+            android.widget.TextView status = findViewById(R.id.call_status);
+            if (status != null) status.setText(textRes);
+        });
     }
 }

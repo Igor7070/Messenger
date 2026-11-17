@@ -1339,8 +1339,12 @@ public class CallService extends Service {
                 .build();
 
         Notification notification = new NotificationCompat.Builder(this, INCOMING_CHANNEL_ID)
+                // Системный стиль звонка подставляет свой текст вместо нашего,
+                // и в шторке пропадал вид звонка: видео и перевод выглядели как
+                // обычный. Подпись кладём туда, где стиль её показывает.
                 .setStyle(NotificationCompat.CallStyle.forIncomingCall(
-                        caller, rejectPendingIntent, acceptPendingIntent))
+                                caller, rejectPendingIntent, acceptPendingIntent)
+                        .setVerificationText(title))
                 .setContentTitle(callerName)
                 .setContentText(title)
                 .setSmallIcon(icon)
@@ -1392,7 +1396,8 @@ public class CallService extends Service {
 
                     Notification withAvatar = new NotificationCompat.Builder(this, INCOMING_CHANNEL_ID)
                             .setStyle(NotificationCompat.CallStyle.forIncomingCall(
-                                    withPhoto, rejectPendingIntent, acceptPendingIntent))
+                                            withPhoto, rejectPendingIntent, acceptPendingIntent)
+                                    .setVerificationText(text))
                             .setContentTitle(name)
                             .setContentText(text)
                             .setSmallIcon(smallIcon)

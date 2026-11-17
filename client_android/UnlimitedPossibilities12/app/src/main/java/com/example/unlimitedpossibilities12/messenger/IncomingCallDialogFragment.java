@@ -99,34 +99,31 @@ public class IncomingCallDialogFragment extends DialogFragment {
             callerName = callRequest.getCallerName() != null ? callRequest.getCallerName() : "User " + callRequest.getCallerId();
             avatarUrl = callRequest.getCallerAvatar();
             switch (callType) {
+                // Значок оставляем в цвете разметки: он стоит рядом с серой
+                // подписью, и яркая заливка с ней спорила
                 case "video":
                     callTitleTextView.setText(R.string.call_incoming_video);
                     callTypeIcon.setImageResource(R.drawable.ic_video_call);
-                    callTypeIcon.setColorFilter(Color.parseColor("#0288D1")); // Синий цвет для контраста
                     break;
                 case "translate":
                     callTitleTextView.setText(R.string.call_incoming_translated);
                     callTypeIcon.setImageResource(R.drawable.ic_translate_call);
-                    callTypeIcon.setColorFilter(Color.parseColor("#0288D1")); // Синий цвет для контраста
-                    break;
-                case "voice_secure":
-                    callTitleTextView.setText(R.string.call_incoming_secure);
-                    callTypeIcon.setImageResource(R.drawable.ic_lock); // ← иконка с замком
-                    callTypeIcon.setColorFilter(Color.parseColor("#00C853")); // зелёный — как в Signal
                     break;
                 case "voice":
+                // Отдельного защищённого звонка больше нет — подпись теперь в
+                // каждом. Старый клиент ещё может позвонить так; показываем это
+                // обычным голосовым, которым оно и будет
+                case "voice_secure":
                 default:
                     callTitleTextView.setText(R.string.call_incoming_voice);
                     callTypeIcon.setImageResource(android.R.drawable.stat_sys_phone_call);
-                    callTypeIcon.setColorFilter(Color.parseColor("#0288D1")); // Синий цвет для контраста
                     break;
             }
         } else {
             callType = "group";
             callerName = groupCallRequest.getInitiatorName() != null ? groupCallRequest.getInitiatorName() : "User " + groupCallRequest.getInitiatorId();
             callTitleTextView.setText(R.string.call_incoming_group);
-            callTypeIcon.setImageResource(R.drawable.ic_group_call); // Используйте свою иконку для группового звонка
-            callTypeIcon.setColorFilter(Color.parseColor("#0288D1")); // Синий цвет для контраста
+            callTypeIcon.setImageResource(R.drawable.ic_group_call);
         }
 
         // Имя идёт первым и без предлога: вид звонка подписан ниже

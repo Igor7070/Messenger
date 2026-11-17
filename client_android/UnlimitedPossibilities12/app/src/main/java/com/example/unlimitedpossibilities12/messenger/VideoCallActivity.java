@@ -301,6 +301,9 @@ public class VideoCallActivity extends AppCompatActivity {
 
         initializeWebRTC();
         if (isCaller) {
+            // Пока собеседник не ответил, честнее «звоним», чем «соединяем»:
+            // соединять ещё нечего, вызов только ушёл
+            showStatus(R.string.call_calling);
             Log.d(TAG, "Caller waiting for 'ready' or 'acceptCall' signal...");
         } else {
             Log.d(TAG, "Initializing for incoming call");
@@ -841,6 +844,7 @@ public class VideoCallActivity extends AppCompatActivity {
                     break;
 
                 case "answer":
+                    showStatus(R.string.call_connecting);
                     if (isCaller && peerConnection != null) {
                         String sdp = signal.getString("sdp");
                         if (checkSignature(sdp, signal)) return;
@@ -1693,5 +1697,20 @@ public class VideoCallActivity extends AppCompatActivity {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Надпись о состоянии, пока разговор не начался.
+     *
+     * Прежде и у звонящего, и у отвечающего стояло «Connecting…», хотя пока
+     * собеседник не ответил, соединять ещё нечего.
+     */
+    private void showStatus(int textRes) {
+        runOnUiThread(() -> {
+            android.widget.TextView v0 = findViewById(R.id.call_timer);
+            if (v0 != null) v0.setText(textRes);
+            android.widget.TextView v1 = findViewById(R.id.no_video_status);
+            if (v1 != null) v1.setText(textRes);
+        });
     }
 }
