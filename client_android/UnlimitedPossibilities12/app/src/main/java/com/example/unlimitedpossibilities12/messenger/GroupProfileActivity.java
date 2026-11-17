@@ -62,7 +62,9 @@ public class GroupProfileActivity extends AppCompatActivity {
 
     private static final String TAG = "GroupProfile";
     /** Ссылку открывает веб-клиент: один адрес годится и телефону, и браузеру. */
-    private static final String INVITE_BASE = "https://igor7070.github.io/Messenger/#/invite/";
+    // Приглашение ведёт на наш домен: оттуда телефон открывает приложение,
+    // а у кого его нет — страница сама отправляет в веб-клиент.
+    private static final String INVITE_BASE = "https://unlimitedpossibilities12.org/invite/";
     private static final String AVATAR_BASE = "https://unlimitedpossibilities12.org";
 
     /** Та же палитра кружков, что в списках чатов и людей. */

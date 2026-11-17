@@ -71,6 +71,13 @@ export const uploadChatAvatar = async (chatId, file) => {
 export const chatAvatarUrl = (chat) =>
   chat && chat.avatar ? `https://unlimitedpossibilities12.org${chat.avatar}` : null;
 
-/** Ссылка, которую человек отправляет друзьям. */
+/**
+ * Ссылка, которую человек отправляет друзьям.
+ *
+ * Ведёт на наш домен, а не в веб-клиент: прежде код приглашения стоял после
+ * решётки, и телефон по такому адресу приложение не находил — нажатие
+ * открывало браузер. Теперь код — часть пути, на телефоне открывается
+ * приложение, а у кого его нет, того страница сама отправит сюда же, в веб.
+ */
 export const inviteLink = (token) =>
-  `${window.location.origin}${window.location.pathname}#/invite/${token}`;
+  `https://unlimitedpossibilities12.org/invite/${token}`;

@@ -19,6 +19,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SelectionUsersAdapter extends RecyclerView.Adapter<SelectionUsersAdapter.UserViewHolder> {
+
+    /**
+     * Сколько человек можно отметить. В звонке их четверо — больше
+     * не выдерживает связь каждого с каждым; при сборе группы предела нет.
+     */
+    private int selectionLimit = 4;
+
+    public void setSelectionLimit(int limit) {
+        this.selectionLimit = limit;
+        notifyDataSetChanged();
+    }
+
     private List<User> usersList = new ArrayList<>();
     private List<User> selectedUsers = new ArrayList<>();
     private final OnUserClickListener clickListener;
@@ -91,7 +103,7 @@ public class SelectionUsersAdapter extends RecyclerView.Adapter<SelectionUsersAd
             itemView.setActivated(isSelected);
 
             // Отключаем взаимодействие, если пользователь не выбран и лимит достигнут
-            boolean isLimitReached = selectedUsers.size() >= 4 && !selectedUsers.contains(user);
+            boolean isLimitReached = selectedUsers.size() >= selectionLimit && !selectedUsers.contains(user);
             itemView.setEnabled(!isLimitReached);
             checkBox.setEnabled(!isLimitReached);
             usernameTextView.setAlpha(isLimitReached ? 0.5f : 1.0f);

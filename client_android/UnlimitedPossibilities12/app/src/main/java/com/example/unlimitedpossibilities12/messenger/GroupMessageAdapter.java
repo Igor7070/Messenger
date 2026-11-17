@@ -357,6 +357,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         TextView attachmentUnavailable;
         View fileLinkContainer;
         LinearLayout indicatorsContainer;
+        ImageView groupStatusView; // галочки у своего сообщения
         LinearLayout audioContainer;
         ImageView playPauseButton;
         ImageView translateIcon;
@@ -399,6 +400,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             attachmentUnavailable = itemView.findViewById(R.id.attachment_unavailable);
             daySeparator = itemView.findViewById(R.id.day_separator);
             indicatorsContainer = itemView.findViewById(R.id.indicators_container);
+            groupStatusView = itemView.findViewById(R.id.group_status_view);
             statusIndicator = itemView.findViewById(R.id.status_indicator);
             translatedContentTextView = itemView.findViewById(R.id.translated_content_text_view);
             audioContainer = itemView.findViewById(R.id.audio_container);
@@ -576,6 +578,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             // Реализация метода bind остаётся без изменений, как в предоставленном коде
             User sender = message.getSender();
             boolean isSentByCurrentUser = sender.getId() == currentUserId;
+            showOwnStatus(message, isSentByCurrentUser);
 
             boundMessageId = message.getId(); // ← Обязательно!
 
@@ -1461,6 +1464,23 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         private void showVoiceTime(int millis) {
             int sec = Math.max(0, millis) / 1000;
             audioDurationTextView.setText(String.format("%d:%02d", sec / 60, sec % 60));
+        }
+
+
+        /**
+         * Галочки у своего сообщения в группе: одна — ушло на сервер, две —
+         * прочитал кто-то из участников. Кто именно — сервер не хранит, да и
+         * в других мессенджерах вторая галочка значит ровно это.
+         */
+        private void showOwnStatus(Message message, boolean mine) {
+            if (groupStatusView == null) return;
+            if (!mine || !message.isDelivered()) {
+                groupStatusView.setVisibility(View.GONE);
+                return;
+            }
+            groupStatusView.setImageResource(message.isRead()
+                    ? R.drawable.ic_ticks_read : R.drawable.ic_delivered);
+            groupStatusView.setVisibility(View.VISIBLE);
         }
 
         private void applyFooterLayout() {

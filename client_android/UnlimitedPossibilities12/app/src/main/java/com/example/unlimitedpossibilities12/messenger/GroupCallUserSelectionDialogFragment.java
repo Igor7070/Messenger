@@ -43,6 +43,35 @@ public class GroupCallUserSelectionDialogFragment extends DialogFragment {
     private OnStartGroupCallListener startGroupCallListener;
     private int currentUserId;
 
+    /**
+     * Окно выбора людей пригодилось и вне звонка — при создании группы.
+     * Чтобы не писать второе такое же, у него теперь два применения:
+     * с этим слушателем кнопка просто отдаёт выбранных, не начиная звонок.
+     */
+    public interface OnUsersChosenListener {
+        void onUsersChosen(List<User> users);
+    }
+
+    private OnUsersChosenListener usersChosenListener;
+    private String actionLabel;
+    private String titleLabel;
+    private String hintLabel;
+    private int selectionLimit = 4;
+
+    public static GroupCallUserSelectionDialogFragment forChoosing(
+            int currentUserId, String title, String hint, String actionLabel, int limit) {
+        GroupCallUserSelectionDialogFragment dialog = newInstance(currentUserId);
+        dialog.titleLabel = title;
+        dialog.hintLabel = hint;
+        dialog.actionLabel = actionLabel;
+        dialog.selectionLimit = limit;
+        return dialog;
+    }
+
+    public void setOnUsersChosenListener(OnUsersChosenListener listener) {
+        this.usersChosenListener = listener;
+    }
+
     public interface OnStartGroupCallListener {
         void onStartGroupCall(List<User> selectedUsers, int initiatorId, String initiatorName);
     }
@@ -83,16 +112,24 @@ public class GroupCallUserSelectionDialogFragment extends DialogFragment {
         usersAdapter = new SelectionUsersAdapter(user -> {
             if (selectedUsers.contains(user)) {
                 selectedUsers.remove(user);
-            } else if (selectedUsers.size() < 4) {
+            } else if (selectedUsers.size() < selectionLimit) {
                 selectedUsers.add(user);
             } else {
-                Toast.makeText(requireContext(), "Maximum 4 users can be selected (initiator included)", Toast.LENGTH_LONG).show();
+                Toast.makeText(requireContext(), "Maximum " + selectionLimit + " can be selected", Toast.LENGTH_LONG).show();
                 return;
             }
             usersAdapter.updateSelectedUsers(selectedUsers);
             updateStartButtonState();
         });
+        usersAdapter.setSelectionLimit(selectionLimit);
         usersRecyclerView.setAdapter(usersAdapter);
+
+        // Это же окно собирает и участников новой группы: тогда у него
+        // другой заголовок, другая подсказка и нет предела в четыре человека.
+        if (titleLabel != null) {
+            android.widget.TextView title = view.findViewById(R.id.dialog_title);
+            if (title != null) title.setText(titleLabel);
+        }
 
         searchEditText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -105,7 +142,13 @@ public class GroupCallUserSelectionDialogFragment extends DialogFragment {
             }
         });
 
+        if (actionLabel != null) startCallButton.setText(actionLabel);
         startCallButton.setOnClickListener(v -> {
+            if (usersChosenListener != null) {
+                usersChosenListener.onUsersChosen(new ArrayList<>(selectedUsers));
+                dismiss();
+                return;
+            }
             if (startGroupCallListener != null && !selectedUsers.isEmpty()) {
                 String initiatorName = getContext().getSharedPreferences("prefs", Context.MODE_PRIVATE)
                         .getString("username", "Unknown");
@@ -182,7 +225,7 @@ public class GroupCallUserSelectionDialogFragment extends DialogFragment {
         startCallButton.setEnabled(!selectedUsers.isEmpty());
         if (selectionHint != null) {
             selectionHint.setText(selectedUsers.isEmpty()
-                    ? getString(R.string.group_call_choose_hint)
+                    ? (hintLabel != null ? hintLabel : getString(R.string.group_call_choose_hint))
                     : getString(R.string.group_call_chosen, selectedUsers.size()));
         }
     }

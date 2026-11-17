@@ -71,6 +71,8 @@ public class MessengerMainActivity extends AppCompatActivity {
     private TextView titleTextView;
     /** «Пригласить» на экране людей: до этого экран был только для чтения. */
     private com.google.android.material.floatingactionbutton.FloatingActionButton inviteButton;
+    /** Кого позвали в окне создания группы — добавляем их сразу после создания. */
+    private final java.util.List<User> pendingGroupMembers = new java.util.ArrayList<>();
     private TextView toolbarTitle; // название раздела в шапке
     private LinearLayout usersContainer, chatsContainer;
     private List<User> usersList = new ArrayList<>();
@@ -139,6 +141,13 @@ public class MessengerMainActivity extends AppCompatActivity {
         // ответит 401, а экраны останутся пустыми. Отправляем ко входу —
         // сюда можно попасть и по нажатию на уведомление.
         if (getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1) == -1) {
+            // Приглашение могло прийти человеку, ещё не входившему в мессенджер:
+            // запоминаем его, чтобы после входа не просить ссылку заново.
+            String waiting = inviteTokenFrom(getIntent());
+            if (waiting != null) {
+                getSharedPreferences("prefs", MODE_PRIVATE).edit()
+                        .putString("pending_invite", waiting).apply();
+            }
             startActivity(new Intent(this, AuthActivity.class));
             finish();
             return;
@@ -150,6 +159,9 @@ public class MessengerMainActivity extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         apiService = ApiClient.getApiService();
+        // Приглашение разбираем только теперь: до этой строки обращаться к
+        // серверу нечем, и экран падал, не успев открыться.
+        handleInviteLink(getIntent());
         mediaPlayer = null; // Инициализация отложена до необходимости
 
         toolbar = findViewById(R.id.toolbar);
@@ -772,6 +784,37 @@ public class MessengerMainActivity extends AppCompatActivity {
                 .show();
     }
 
+    /**
+     * Код приглашения из ссылки, по которой открыли приложение.
+     * Ссылка выглядит как https://unlimitedpossibilities12.org/invite/КОД.
+     */
+    private String inviteTokenFrom(Intent intent) {
+        if (intent == null || intent.getData() == null) return null;
+        String path = intent.getData().getPath();
+        if (path == null) return null;
+        int at = path.lastIndexOf("/invite/");
+        if (at < 0) return null;
+        String token = path.substring(at + "/invite/".length()).replaceAll("[^A-Za-z0-9_-]", "");
+        return token.isEmpty() ? null : token;
+    }
+
+    /**
+     * Открыли приглашение — сразу показываем, куда зовут. Ссылку, пришедшую
+     * до входа в мессенджер, подхватываем здесь же: она ждала в настройках.
+     */
+    private void handleInviteLink(Intent intent) {
+        String token = inviteTokenFrom(intent);
+        if (token == null) {
+            token = getSharedPreferences("prefs", MODE_PRIVATE).getString("pending_invite", null);
+            if (token == null) return;
+            getSharedPreferences("prefs", MODE_PRIVATE).edit().remove("pending_invite").apply();
+        } else if (intent != null) {
+            intent.setData(null); // второй раз по тому же приглашению не зовём
+        }
+        final String invite = token;
+        runOnUiThread(() -> acceptInvite(invite));
+    }
+
     private void acceptInvite(String linkOrToken) {
         if (linkOrToken.isEmpty()) return;
         // Из ссылки берём хвост после /invite/, но принимаем и голый токен
@@ -1163,6 +1206,31 @@ public class MessengerMainActivity extends AppCompatActivity {
         publicBox.setTextSize(13);
         box.addView(publicBox);
 
+        // Кого зовём. Прежде группа рождалась пустой, и людей приходилось
+        // звать потом — ссылкой или из списка участников. Теперь их можно
+        // выбрать сразу, тем же окном, что и для группового звонка.
+        pendingGroupMembers.clear();
+        final android.widget.TextView members = new android.widget.TextView(this);
+        members.setText("Add members");
+        members.setTextColor(0xFF67E8F9);
+        members.setTextSize(15);
+        int rowPad = (int) (10 * getResources().getDisplayMetrics().density);
+        members.setPadding(0, rowPad, 0, rowPad);
+        members.setOnClickListener(v -> {
+            GroupCallUserSelectionDialogFragment picker =
+                    GroupCallUserSelectionDialogFragment.forChoosing(currentUserId,
+                            "Add members", "Choose who to invite", "Add to group", 64);
+            picker.setOnUsersChosenListener(chosen -> {
+                pendingGroupMembers.clear();
+                pendingGroupMembers.addAll(chosen);
+                members.setText(chosen.isEmpty()
+                        ? "Add members"
+                        : chosen.size() + (chosen.size() == 1 ? " person invited" : " people invited"));
+            });
+            picker.show(getSupportFragmentManager(), "CreateGroupMembers");
+        });
+        box.addView(members);
+
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.AlertDialog_UP12)
                 .setTitle("New group")
                 .setView(box)
@@ -1441,6 +1509,7 @@ public class MessengerMainActivity extends AppCompatActivity {
                 public void onResponse(Call<Chat> call, Response<Chat> response) {
                     if (response.isSuccessful() && response.body() != null) {
                         chatsList.add(response.body());
+                        addPendingMembers(response.body());
                         runOnUiThread(() -> {
                             chatsAdapter.updateChats(chatsList);
                             chatNameEditText.setText("");
@@ -1463,6 +1532,48 @@ public class MessengerMainActivity extends AppCompatActivity {
             });
         } else {
             Toast.makeText(this, "Chat name cannot be empty", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Добавляем в только что созданную группу тех, кого выбрали в окне.
+     * Молча: о неудаче скажем одной строкой, остальных это не отменяет.
+     */
+    private void addPendingMembers(Chat chat) {
+        if (pendingGroupMembers.isEmpty() || chat == null) return;
+        final java.util.List<User> invited = new java.util.ArrayList<>(pendingGroupMembers);
+        pendingGroupMembers.clear();
+        final java.util.concurrent.atomic.AtomicInteger failed = new java.util.concurrent.atomic.AtomicInteger();
+        final java.util.concurrent.atomic.AtomicInteger left = new java.util.concurrent.atomic.AtomicInteger(invited.size());
+        for (User user : invited) {
+            apiService.addChatMember(chat.getId(), (long) user.getId())
+                    .enqueue(new Callback<Void>() {
+                        @Override
+                        public void onResponse(Call<Void> call, Response<Void> response) {
+                            if (!response.isSuccessful()) failed.incrementAndGet();
+                            finish();
+                        }
+
+                        @Override
+                        public void onFailure(Call<Void> call, Throwable t) {
+                            Log.e(TAG, "Failed to add member to a new group: " + t.getMessage());
+                            failed.incrementAndGet();
+                            finish();
+                        }
+
+                        private void finish() {
+                            if (left.decrementAndGet() > 0) return;
+                            int bad = failed.get();
+                            runOnUiThread(() -> {
+                                if (bad > 0) {
+                                    Toast.makeText(MessengerMainActivity.this,
+                                            bad + " of " + invited.size() + " could not be added",
+                                            Toast.LENGTH_LONG).show();
+                                }
+                                shouldRefreshChats = true;
+                            });
+                        }
+                    });
         }
     }
 
@@ -2083,6 +2194,7 @@ public class MessengerMainActivity extends AppCompatActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        handleInviteLink(intent);
         if (isBound && callService != null) {
             handleIntent(intent);
         }

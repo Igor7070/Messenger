@@ -389,6 +389,19 @@
                 app:tint="#67E8F9"
                 android:visibility="gone" />
 
+            <!-- Галочки у своего сообщения: одна — ушло на сервер, две —
+                 кто-то из группы прочитал. Прежде в групповой переписке
+                 их не было вовсе, и судьба своего сообщения была не видна. -->
+            <ImageView
+                android:id="@+id/group_status_view"
+                android:layout_width="21dp"
+                android:layout_height="15dp"
+                android:layout_marginEnd="4dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_delivered"
+                android:contentDescription="Delivered"
+                android:visibility="gone" />
+
             <TextView
                 android:id="@+id/timestamp_text_view"
                 android:layout_width="wrap_content"

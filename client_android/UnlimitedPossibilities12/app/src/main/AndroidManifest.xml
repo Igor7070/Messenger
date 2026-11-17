@@ -86,7 +86,37 @@
         <activity android:name=".job_search.ResumeSendActivity"></activity>
         <activity android:name=".job_search.ResumeStatusSendActivity"></activity>
         <activity android:name=".communication_with_ai.ChatWithAIActivity"></activity>
-        <activity android:name=".messenger.MessengerMainActivity" />
+        <!--
+            Приглашение в группу открывается прямо в приложении.
+
+            Раньше ссылка вела в веб-клиент и код приглашения стоял после
+            решётки — по такому адресу андроид приложение не ищет, нажатие
+            открывало браузер, и человеку приходилось копировать ссылку и
+            вставлять её в приложении руками. Теперь приглашение живёт на
+            нашем домене, где код — часть пути.
+
+            autoVerify: когда на домене лежит подтверждение (его отдаёт сам
+            сервер по /.well-known/assetlinks.json), телефон открывает
+            приложение молча, без вопроса «чем открыть».
+        -->
+        <activity
+            android:name=".messenger.MessengerMainActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="unlimitedpossibilities12.org"
+                    android:pathPrefix="/invite/" />
+                <data
+                    android:scheme="http"
+                    android:host="unlimitedpossibilities12.org"
+                    android:pathPrefix="/invite/" />
+            </intent-filter>
+        </activity>
         <activity android:name=".messenger.UserProfileActivity" />
         <activity android:name=".messenger.SettingsActivity" />
         <activity android:name=".messenger.GroupProfileActivity" />
