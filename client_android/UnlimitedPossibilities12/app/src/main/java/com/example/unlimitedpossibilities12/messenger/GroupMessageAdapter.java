@@ -632,6 +632,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                                 .setBottomRightCorner(CornerFamily.ROUNDED, 16f * density)
                                 .build()
                 );
+                PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_TOP_RIGHT);
                 avatarImageView.setVisibility(View.GONE);
                 avatarPlaceholder.setVisibility(View.GONE);
                 senderNameTextView.setVisibility(View.GONE);
@@ -655,6 +656,10 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                                 .setBottomRightCorner(CornerFamily.ROUNDED, 16f * density)
                                 .build()
                 );
+                // У чужого сообщения сверху стоит имя — тогда углу снимка
+                // скругление не мешает; без имени снимок сам упирается в угол.
+                PhotoBubble.matchBubbleCorner(imagePreview,
+                        firstInSeries(position) ? PhotoBubble.SQUARE_NONE : PhotoBubble.SQUARE_TOP_LEFT);
                 avatarImageView.setVisibility(firstInSeries(position) ? View.VISIBLE : View.INVISIBLE);
                 avatarPlaceholder.setVisibility(View.GONE);
                 senderNameTextView.setVisibility(firstInSeries(position) ? View.VISIBLE : View.GONE);

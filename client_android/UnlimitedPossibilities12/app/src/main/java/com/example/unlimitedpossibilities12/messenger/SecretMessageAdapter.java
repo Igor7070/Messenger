@@ -346,12 +346,14 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                             .setBottomRightCorner(CornerFamily.ROUNDED, 12f * density)
                             .build();
                     messageContainer.setShapeAppearanceModel(shapeModel);
+                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_TOP_RIGHT);
                 } else {
                     ShapeAppearanceModel shapeModel = new ShapeAppearanceModel()
                             .toBuilder()
                             .setAllCorners(CornerFamily.ROUNDED, 12f * density)
                             .build();
                     messageContainer.setShapeAppearanceModel(shapeModel);
+                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_NONE);
                 }
                 avatarImageView.setVisibility(View.GONE);
                 avatarPlaceholder.setVisibility(View.GONE);
@@ -377,6 +379,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                             .setBottomRightCorner(CornerFamily.ROUNDED, 12f * density)
                             .build();
                     messageContainer.setShapeAppearanceModel(shapeModel);
+                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_TOP_LEFT);
                 } else {
                     params.startToEnd = R.id.avatar_placeholder;
                     avatarImageView.setVisibility(View.GONE);
@@ -386,6 +389,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                             .setAllCorners(CornerFamily.ROUNDED, 12f * density)
                             .build();
                     messageContainer.setShapeAppearanceModel(shapeModel);
+                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_NONE);
                 }
                 messageContainer.setCardBackgroundColor(ContextCompat.getColor(adapter.context, R.color.received_message_background));
             }

@@ -625,6 +625,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                             .setBottomRightCorner(CornerFamily.ROUNDED, 12f * density)
                             .build();
                     messageContainer.setShapeAppearanceModel(shapeModel);
+                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_TOP_RIGHT);
                     Log.d(TAG, "Sent message with square top-right corner at position " + position + ": set top-right=0dp, others=16dp");
                 } else {
                     // Скругленные углы для последующих сообщений в серии
@@ -633,6 +634,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                             .setAllCorners(CornerFamily.ROUNDED, 12f * density)
                             .build();
                     messageContainer.setShapeAppearanceModel(shapeModel);
+                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_NONE);
                     Log.d(TAG, "Sent message with rounded corners at position " + position + ": set corner radius to 16dp");
                 }
                 avatarImageView.setVisibility(View.GONE);
@@ -665,6 +667,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                             .setBottomRightCorner(CornerFamily.ROUNDED, 12f * density)
                             .build();
                     messageContainer.setShapeAppearanceModel(shapeModel);
+                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_TOP_LEFT);
                     Log.d(TAG, "Received message with avatar at position " + position + ": set top-left=0dp, others=16dp, marginStart=" + marginStart);
                 } else {
                     params.startToEnd = R.id.avatar_placeholder;
@@ -676,6 +679,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                             .setAllCorners(CornerFamily.ROUNDED, 12f * density)
                             .build();
                     messageContainer.setShapeAppearanceModel(shapeModel);
+                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_NONE);
                     Log.d(TAG, "Received message without avatar at position " + position + ": set corner radius to 16dp, marginStart=" + marginStart);
                 }
                 messageContainer.setCardBackgroundColor(ContextCompat.getColor(context, R.color.received_message_background));
