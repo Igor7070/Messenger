@@ -52,10 +52,8 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginBottom="12dp"
-        android:clipToPadding="false"
-        android:fadingEdgeLength="28dp"
-        android:paddingBottom="4dp"
+        android:layout_marginBottom="14dp"
+        android:fadingEdgeLength="36dp"
         android:requiresFadingEdge="vertical" />
 
     <com.google.android.material.button.MaterialButton
