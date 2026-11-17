@@ -99,7 +99,14 @@ public class ChatGPTController {
             System.out.println("Текст состоит из одной ссылки — отдаём как есть");
             return ResponseEntity.ok(request.getPrompt());
         }
-        String prompt = String.format("Translate the following text to %s and return only the translated phrase in double quotes: \"%s\"",
+        // Просили «вернуть фразу в кавычках» — и на нескольких предложениях
+        // модель возвращала одну первую, остальное пропадало. Теперь просим
+        // перевести текст целиком и отдать только перевод.
+        String prompt = String.format(
+                "Translate the text below into %s.%n"
+                        + "Translate all of it, sentence by sentence, keeping the meaning and tone.%n"
+                        + "Do not add, drop or explain anything. Do not wrap the answer in quotes.%n"
+                        + "Reply with the translation only.%n%n%s",
                 request.getTargetLanguage().equals("auto") ? "English" : request.getTargetLanguage(),
                 request.getPrompt());
         String result = openAIService.generateCompletion(prompt);

@@ -104,9 +104,11 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
      * по нему слышно, что человек говорит, и какая у него интонация, а
      * главным голосом становится перевод.
      */
-    private static final double BACKGROUND_VOLUME = 0.3;
+    private static final double BACKGROUND_VOLUME = 0.15;
     /** На время самой озвучки оригинал убираем ещё тише, но не в тишину. */
-    private static final double DUCK_VOLUME = 0.12;
+    // Пока звучит перевод, оригинал молчит: иначе две речи идут внахлёст —
+    // перевод отстаёт на фразу, и человек слышит сразу обе
+    private static final double DUCK_VOLUME = 0.0;
     /** Произносится ли перевод прямо сейчас. */
     private boolean translationSpeaking;
     private AudioManager audioManager;
@@ -849,11 +851,14 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
                                         // Выполняем перевод через /api/translate асинхронно
                                         translateTranscription(transcription, selectedLanguageCode, translatedText -> {
                                             String displayText = translatedText != null ? translatedText : transcription;
-                                            updateFriendTranscriptionTextView(displayText, scrollView);
+                                            // Оригинал показываем под переводом: когда перевод звучит
+                                            // странно, только по нему и понять, что было сказано
+                                            String original = translatedText != null ? transcription : null;
+                                            updateFriendTranscriptionTextView(displayText, original, scrollView);
                                         });
                                     } else {
                                         // Отображаем оригинальный текст
-                                        updateFriendTranscriptionTextView(transcription, scrollView);
+                                        updateFriendTranscriptionTextView(transcription, null, scrollView);
                                     }
                                 }
                             } catch (JSONException e) {
@@ -1189,6 +1194,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
     /** Озвучку выключили посреди фразы — замолчать, а не договаривать. */
     private void stopSpeaking() {
         if (onDeviceSpeech != null) onDeviceSpeech.silence();
+        clearTtsQueue();
         if (ttsMediaPlayer != null) {
             try {
                 ttsMediaPlayer.stop();
@@ -1354,24 +1360,32 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
         return bottomEdge <= 0 || scrollView.getScrollY() >= bottomEdge - 50;
     }
 
-    private void updateFriendTranscriptionTextView(String displayText, ScrollView scrollView) {
+    /**
+     * Добавить фразу собеседника.
+     *
+     * @param original исходные слова: показываем их мельче и тусклее под
+     *                 переводом. Перевод иногда получается странным, и тогда
+     *                 понять собеседника можно только по тому, что он сказал
+     *                 на самом деле.
+     */
+    private void updateFriendTranscriptionTextView(String displayText, String original, ScrollView scrollView) {
         boolean wasAtBottom = isScrolledToBottom(scrollView);
-        String currentText = friendTranscriptionTextView.getText().toString();
-        String[] lines = currentText.split("\n");
-        StringBuilder newText = new StringBuilder();
-        if (isPlaceholder(currentText) || currentText.startsWith("Error")) {
-            newText.append(displayText);
-        } else {
-            if (lines.length >= 50) {
-                for (int i = lines.length - 49; i < lines.length; i++) {
-                    newText.append(lines[i]).append("\n");
-                }
-            } else {
-                newText.append(currentText).append("\n");
-            }
-            newText.append(displayText);
+        CharSequence current = friendTranscriptionTextView.getText();
+        String plain = current.toString();
+        android.text.SpannableStringBuilder text = new android.text.SpannableStringBuilder();
+        if (!isPlaceholder(plain) && !plain.startsWith("Error")) {
+            text.append(current).append("\n");
         }
-        friendTranscriptionTextView.setText(newText.toString());
+        text.append(displayText);
+        if (original != null && !original.trim().equalsIgnoreCase(displayText.trim())) {
+            int from = text.length();
+            text.append("\n").append(original);
+            text.setSpan(new android.text.style.RelativeSizeSpan(0.82f), from, text.length(),
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            text.setSpan(new android.text.style.ForegroundColorSpan(0xFF7C8BA1), from, text.length(),
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        friendTranscriptionTextView.setText(text);
         // Прокручиваем, только если человек сам не ушёл читать выше
         if (wasAtBottom) scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
         Log.d(TAG, "Updated friend_transcription_text_view with: " + displayText);
@@ -1391,53 +1405,11 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
                                 if (json.has("audio") && json.has("sessionId")) {
                                     String base64Audio = json.getString("audio");
                                     byte[] audioData = android.util.Base64.decode(base64Audio, android.util.Base64.DEFAULT);
-                                    // Создаём временный файл для MediaPlayer
                                     File tempFile = File.createTempFile("tts_audio", ".mp3", getCacheDir());
                                     FileOutputStream fos = new FileOutputStream(tempFile);
                                     fos.write(audioData);
                                     fos.close();
-
-                                    // Инициализируем новый MediaPlayer для TTS
-                                    if (ttsMediaPlayer != null) {
-                                        ttsMediaPlayer.release();
-                                    }
-                                    ttsMediaPlayer = new MediaPlayer();
-                                    ttsMediaPlayer.setDataSource(tempFile.getAbsolutePath());
-                                    ttsMediaPlayer.prepare();
-
-                                    // Приглушаем голос собеседника: иначе оригинал и
-                                    // перевод звучат одновременно
-                                    duckRemoteVoice(true);
-                                    // Микрофон тоже выключаем, иначе он поймает перевод
-                                    // из динамика и вернёт его собеседнику
-                                    if (localAudioTrack != null) {
-                                        localAudioTrack.setEnabled(false);
-                                        Log.d(TAG, "Muted own mic during TTS playback");
-                                    }
-
-                                    ttsMediaPlayer.start();
-                                    Log.d(TAG, "Started TTS audio playback");
-
-                                    // Восстанавливаем WebRTC-аудио после завершения
-                                    ttsMediaPlayer.setOnCompletionListener(mp -> {
-                                        Log.d(TAG, "TTS audio playback completed");
-                                        duckRemoteVoice(false);
-                                        if (localAudioTrack != null) {
-                                            localAudioTrack.setEnabled(true);
-                                            Log.d(TAG, "Restored own mic");
-                                        }
-                                        ttsMediaPlayer.release();
-                                        ttsMediaPlayer = null;
-                                        tempFile.delete();
-                                    });
-                                    // Сорвалось воспроизведение — звук не должен
-                                    // остаться приглушённым до конца разговора
-                                    ttsMediaPlayer.setOnErrorListener((mp, what, extra) -> {
-                                        Log.w(TAG, "TTS playback error: " + what);
-                                        duckRemoteVoice(false);
-                                        if (localAudioTrack != null) localAudioTrack.setEnabled(true);
-                                        return false;
-                                    });
+                                    enqueueTts(tempFile);
                                 }
                             } catch (JSONException | IOException e) {
                                 Log.e(TAG, "Error processing TTS audio: " + e.getMessage());
@@ -2169,6 +2141,7 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
             Log.d(TAG, "Unsubscribed from TTS topic");
         }
         // [ДОБАВЛЕНО] Очистка ttsMediaPlayer
+        clearTtsQueue();
         if (ttsMediaPlayer != null) {
             ttsMediaPlayer.release();
             ttsMediaPlayer = null;
@@ -2581,5 +2554,80 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
                 || text.equals(getString(R.string.call_translate_listening))
                 || text.equals("Transcription: Waiting...")
                 || text.equals("Friend's Transcription: Waiting...");
+    }
+
+    // ---------- озвучка перевода ----------
+
+    /**
+     * Очередь озвучки.
+     *
+     * Перевод каждой фразы приходит отдельным куском. Раньше новый кусок
+     * освобождал проигрыватель и начинал играть сам — если собеседник говорил
+     * без долгих пауз, следующая фраза обрывала предыдущую на полуслове, и
+     * вслух пропадало целое предложение, хотя на экране оно было.
+     */
+    private final java.util.ArrayDeque<File> ttsQueue = new java.util.ArrayDeque<>();
+    private boolean ttsPlaying;
+
+    private void enqueueTts(File audio) {
+        ttsQueue.add(audio);
+        // Далеко отстать тоже нельзя: разговор уйдёт вперёд, а мы будем
+        // договаривать сказанное минуту назад
+        while (ttsQueue.size() > 4) {
+            File dropped = ttsQueue.poll();
+            if (dropped != null) dropped.delete();
+            Log.w(TAG, "Озвучка отстала — пропускаем самую старую фразу");
+        }
+        if (!ttsPlaying) playNextTts();
+    }
+
+    private void playNextTts() {
+        File next = ttsQueue.poll();
+        if (next == null) {
+            ttsPlaying = false;
+            duckRemoteVoice(false);
+            // Микрофон возвращаем, если его не выключил сам человек
+            if (localAudioTrack != null) localAudioTrack.setEnabled(!micMuted);
+            return;
+        }
+        try {
+            if (!ttsPlaying) {
+                // Приглушаем голос собеседника: иначе оригинал и перевод звучат
+                // одновременно. Микрофон тоже выключаем, иначе он поймает
+                // перевод из динамика и вернёт его собеседнику
+                duckRemoteVoice(true);
+                if (localAudioTrack != null) localAudioTrack.setEnabled(false);
+            }
+            ttsPlaying = true;
+            ttsMediaPlayer = new MediaPlayer();
+            ttsMediaPlayer.setDataSource(next.getAbsolutePath());
+            ttsMediaPlayer.prepare();
+            ttsMediaPlayer.setOnCompletionListener(mp -> {
+                mp.release();
+                ttsMediaPlayer = null;
+                next.delete();
+                playNextTts();
+            });
+            ttsMediaPlayer.setOnErrorListener((mp, what, extra) -> {
+                Log.w(TAG, "TTS playback error: " + what);
+                mp.release();
+                ttsMediaPlayer = null;
+                next.delete();
+                playNextTts();
+                return true;
+            });
+            ttsMediaPlayer.start();
+        } catch (Exception e) {
+            Log.e(TAG, "Не удалось проиграть перевод: " + e.getMessage());
+            next.delete();
+            playNextTts();
+        }
+    }
+
+    /** Конец разговора — очередь не должна доигрывать в пустоту. */
+    private void clearTtsQueue() {
+        ttsPlaying = false;
+        File left;
+        while ((left = ttsQueue.poll()) != null) left.delete();
     }
 }

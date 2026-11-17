@@ -258,6 +258,19 @@ public class OpenAIService {
             "subtitled by", "transcription by"
     };
 
+    /**
+     * Фразы, которые в разговоре звучат только от распознавания.
+     *
+     * Короткие и сами по себе безобидные («подпишись», «спасибо за просмотр»),
+     * поэтому сверяем их целиком: внутри живой фразы такое слово оставляем.
+     */
+    private static final java.util.Set<String> JUNK_ALONE = java.util.Set.of(
+            "подпишись", "подпишитесь", "подписывайтесь", "субтитры", "спасибо за внимание",
+            "продолжение следует", "конец", "субтитры и перевод",
+            "subscribe", "like and subscribe", "thank you", "thanks", "bye", "the end",
+            "you", "music", "applause", "аплодисменты", "музыка"
+    );
+
     public boolean isValidTranscription(String transcription) {
         if (transcription == null || transcription.trim().isEmpty()) {
             LOGGER.info("Filtered out null or empty transcription: " + transcription);
@@ -272,6 +285,21 @@ public class OpenAIService {
         // на фильмах, и в паузах выдаёт «Редактор субтитров …», «Продолжение
         // следует…» и подобное. В разговоре этого быть не может.
         String lowered = transcription.toLowerCase(java.util.Locale.ROOT);
+        // Фраза целиком состоит из такого слова — это пауза, а не речь
+        StringBuilder letters = new StringBuilder();
+        for (char c : lowered.toCharArray()) {
+            letters.append(Character.isLetterOrDigit(c) ? c : ' ');
+        }
+        String bare = letters.toString().replaceAll(" +", " ").trim();
+        // «Подпишись», «подписывайся», «подписывайтесь» — у призыва много форм,
+        // и перечислять их все бессмысленно: в разговоре отдельным возгласом
+        // такое слово не звучит
+        boolean oneCall = bare.split(" ").length <= 2
+                && (bare.startsWith("подпис") || bare.startsWith("subscribe"));
+        if (oneCall || JUNK_ALONE.contains(bare)) {
+            LOGGER.info("Filtered out hallucinated transcription: " + transcription);
+            return false;
+        }
         for (String junk : HALLUCINATIONS) {
             if (lowered.contains(junk)) {
                 LOGGER.info("Filtered out hallucinated transcription: " + transcription);
@@ -483,13 +511,25 @@ public class OpenAIService {
 
             if (isTranslationEnabled && !targetLanguage.equals("auto") && isTtsEnabled) {
                 // Переводим транскрипцию
+                // Текст переводим целиком: прежняя просьба «вернуть фразу»
+                // обрезала всё после первого предложения
                 String translatePrompt = String.format(
-                        "Translate the following text to %s and return only the translated phrase in double quotes: \"%s\"",
+                        "Translate the text below into %s.%n"
+                                + "Translate all of it, sentence by sentence, keeping the meaning and tone.%n"
+                                + "Do not add, drop or explain anything. Do not wrap the answer in quotes.%n"
+                                + "Reply with the translation only.%n%n%s",
                         targetLanguage, transcription
                 );
                 String translatedText = generateCompletion(translatePrompt);
-                if (translatedText != null && translatedText.startsWith("\"") && translatedText.endsWith("\"")) {
-                    translatedText = translatedText.substring(1, translatedText.length() - 1).trim();
+                if (translatedText != null) {
+                    translatedText = translatedText.trim();
+                    // Кавычки иногда всё же приходят — снимаем, но без них
+                    // перевод теперь не отбрасываем: раньше такая фраза просто
+                    // не звучала, и человек слышал тишину вместо перевода
+                    if (translatedText.length() > 1
+                            && translatedText.startsWith("\"") && translatedText.endsWith("\"")) {
+                        translatedText = translatedText.substring(1, translatedText.length() - 1).trim();
+                    }
                     if (!translatedText.isEmpty()) {
                         // Синтезируем аудио
                         byte[] ttsAudio = synthesizeSpeech(translatedText);
@@ -506,7 +546,7 @@ public class OpenAIService {
                         LOGGER.warning("Empty translated text for TTS: " + translatedText);
                     }
                 } else {
-                    LOGGER.warning("Invalid translation response for TTS: " + translatedText);
+                    LOGGER.warning("No translation for TTS, roomId: " + roomId);
                 }
             }
         } catch (Exception e) {

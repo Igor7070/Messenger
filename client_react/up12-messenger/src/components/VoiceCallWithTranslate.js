@@ -32,6 +32,12 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const stompClient = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioSeq = useRef(0); // порядковый номер куска звука
+
+  /** Добавить фразу собеседника, держа в панели последние полсотни. */
+  const appendFriendLine = useCallback((text, original) => {
+    setFriendError(null);
+    setFriendLines((prev) => [...prev, { text, original }].slice(-50));
+  }, []);
   const [incomingCallState, setIncomingCallState] = useState(incomingCall);
 
   // Подпись собеседника — такая же, как в обычном звонке: этот экран
@@ -77,7 +83,9 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
   const navigate = useNavigate();
   const [isWaiting, setIsWaiting] = useState(false);
   const [transcription, setTranscription] = useState('Transcription: Waiting...');
-  const [friendTranscription, setFriendTranscription] = useState("Friend's Transcription: Waiting...");
+  // Фразы собеседника: перевод и, если он был, исходные слова
+  const [friendLines, setFriendLines] = useState([]);
+  const [friendError, setFriendError] = useState(null);
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
   const hasNotifiedEndCall = useRef(false);
   const hasNotifiedAcceptCall = useRef(false);
@@ -117,7 +125,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       // фразы, и если оба голоса громкие, разговор удваивается
       if (remoteAudioRef.current) {
         remoteAudioRef.current.muted = false;
-        remoteAudioRef.current.volume = ttsEnabled ? 0.3 : 1.0;
+        remoteAudioRef.current.volume = ttsEnabled ? 0.15 : 1.0;
       }
       return;
     }
@@ -126,7 +134,9 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
     ttsPlayingRef.current = true;
     if (remoteAudioRef.current) {
       remoteAudioRef.current.muted = false;
-      remoteAudioRef.current.volume = 0.12; // почти тишина, но слышно, что человек ещё говорит
+      // Пока звучит перевод, оригинал молчит: перевод отстаёт на фразу,
+      // и вместе они звучат внахлёст
+      remoteAudioRef.current.volume = 0;
     }
     audio.src = url;
     audio.onended = () => {
@@ -384,7 +394,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
             const json = JSON.parse(message.body);
             if (json.error) {
               console.log('Transcription error:', json.error); // [ОСТАВЛЕНО] Лог ошибки
-              setFriendTranscription(`Error: ${json.error}`);
+              setFriendError(json.error);
               scrollToBottom(friendTranscriptionRef);
             } else if (json.transcription) {
               console.log('Processing transcription:', { // [ИЗМЕНЕНО] Используем рефы
@@ -401,36 +411,20 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
                   if (onDeviceModeRef.current && ttsEnabledRef.current) {
                     speakLocally(displayText, selectedLanguageRef.current);
                   }
-                  setFriendTranscription((prev) => {
-                    if (prev === "Friend's Transcription: Waiting..." || prev.startsWith('Error')) {
-                      return displayText;
-                    }
-                    const lines = prev.split('\n');
-                    if (lines.length >= 50) {
-                      return [...lines.slice(-49), displayText].join('\n');
-                    }
-                    return `${prev}\n${displayText}`;
-                  });
+                  // Оригинал держим рядом с переводом: когда перевод звучит
+                  // странно, понять собеседника можно только по его словам
+                  appendFriendLine(displayText, translatedText ? json.transcription : null);
                   scrollToBottom(friendTranscriptionRef);
                 });
               } else {
                 console.log('Translation skipped, using original:', json.transcription); // [ОСТАВЛЕНО] Лог пропуска перевода
-                setFriendTranscription((prev) => {
-                  if (prev === "Friend's Transcription: Waiting..." || prev.startsWith('Error')) {
-                    return json.transcription;
-                  }
-                  const lines = prev.split('\n');
-                  if (lines.length >= 50) {
-                    return [...lines.slice(-49), json.transcription].join('\n');
-                  }
-                  return `${prev}\n${json.transcription}`;
-                });
+                appendFriendLine(json.transcription, null);
                 scrollToBottom(friendTranscriptionRef);
               }
             }
           } catch (error) {
             console.error('Error parsing friend transcription JSON:', error);
-            setFriendTranscription(`Error: ${error.message}`);
+            setFriendError(error.message);
             scrollToBottom(friendTranscriptionRef);
           }
         });
@@ -1304,7 +1298,18 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
       <div className="transcription-container">
         <h3 className="transcription-label">Friend's Voice</h3>
         <div className="transcription-scroll" ref={friendTranscriptionRef}>
-          <p className="transcription-text">{friendTranscription}</p>
+          {friendError && <p className="transcription-text">Error: {friendError}</p>}
+          {!friendError && friendLines.length === 0 && (
+            <p className="transcription-text">Friend's Transcription: Waiting...</p>
+          )}
+          {friendLines.map((line, i) => (
+            <p className="transcription-text" key={i}>
+              {line.text}
+              {line.original && line.original !== line.text && (
+                <span className="transcription-original">{line.original}</span>
+              )}
+            </p>
+          ))}
         </div>
       </div>
       
@@ -1330,7 +1335,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
                 console.log('Disabling translation, resetting to auto');
                 setSelectedLanguage('auto');
                 localStorage.setItem(`translation_language_${roomId}`, 'auto');
-                setFriendTranscription("Friend's Transcription: Waiting...");
+                setFriendLines([]);
                 if (languageDropdownRef.current) {
                   languageDropdownRef.current.value = 'auto';
                   console.log('Synced dropdown value to auto');
