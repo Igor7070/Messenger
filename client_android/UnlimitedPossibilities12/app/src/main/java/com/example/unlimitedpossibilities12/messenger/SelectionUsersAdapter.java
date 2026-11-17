@@ -86,6 +86,9 @@ public class SelectionUsersAdapter extends RecyclerView.Adapter<SelectionUsersAd
         public void bind(User user, boolean isSelected) {
             usernameTextView.setText(user.getUsername());
             checkBox.setChecked(isSelected);
+            // Выбранная строка светлее и с рамкой: прежде выбор был виден
+            // только по мелкой галочке у правого края
+            itemView.setActivated(isSelected);
 
             // Отключаем взаимодействие, если пользователь не выбран и лимит достигнут
             boolean isLimitReached = selectedUsers.size() >= 4 && !selectedUsers.contains(user);
@@ -94,20 +97,28 @@ public class SelectionUsersAdapter extends RecyclerView.Adapter<SelectionUsersAd
             usernameTextView.setAlpha(isLimitReached ? 0.5f : 1.0f);
 
             // Логика отображения аватара и первой буквы
+            // Буква имени видна, пока снимок грузится, и остаётся, если его нет
+            String name = user.getUsername() != null ? user.getUsername() : "?";
+            avatarTextView.setText(name.substring(0, 1).toUpperCase(java.util.Locale.getDefault()));
+            avatarTextView.setBackgroundTintList(
+                    android.content.res.ColorStateList.valueOf(colorForName(name)));
+            avatarTextView.setVisibility(View.VISIBLE);
+            avatarImageView.setImageDrawable(null);
             if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
-                String avatarUrl = "https://unlimitedpossibilities12.org" + user.getAvatar() + "?t=" + System.currentTimeMillis();
                 Glide.with(itemView.getContext())
-                        .load(avatarUrl)
-                        .diskCacheStrategy(DiskCacheStrategy.NONE)
-                        .skipMemoryCache(true)
+                        .load("https://unlimitedpossibilities12.org" + user.getAvatar())
                         .circleCrop()
                         .into(avatarImageView);
                 avatarTextView.setVisibility(View.GONE);
-            } else {
-                avatarImageView.setImageResource(R.drawable.default_messenger_avatar);
-                avatarTextView.setText(user.getUsername().substring(0, 1).toUpperCase());
-                avatarTextView.setVisibility(View.VISIBLE);
             }
         }
+    }
+
+    /** Цвет круга по имени — как на экранах звонка. */
+    private int colorForName(String name) {
+        int[] colors = {0xFF6366F1, 0xFF0D9488, 0xFF8B5CF6, 0xFF0EA5E9, 0xFFDB2777, 0xFF475569};
+        int hash = 0;
+        for (int i = 0; i < name.length(); i++) hash = hash * 31 + name.charAt(i);
+        return colors[Math.abs(hash) % colors.length];
     }
 }

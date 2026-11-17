@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Строка выбора собеседника. Выбранная отличается не только галочкой: у неё
+    светлее фон и видна рамка цветом приложения — прежде выбор читался только
+    по мелкой серой галочке у правого края.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_activated="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#1D3157" />
+            <stroke android:width="1dp" android:color="#6366F1" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#16213A" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+</selector>

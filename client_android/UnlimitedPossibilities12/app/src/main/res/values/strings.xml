@@ -168,4 +168,9 @@
     <string name="call_tile_wide">Wide</string>
     <string name="call_tile_tall">Tall</string>
     <string name="call_group_connecting">Group call</string>
+    <string name="group_call_new">New group call</string>
+    <string name="group_call_choose_hint">Choose up to 4 people</string>
+    <string name="group_call_chosen">%1$d of 4 chosen</string>
+    <string name="group_call_search">Search people…</string>
+    <string name="group_call_start">Start call</string>
 </resources>

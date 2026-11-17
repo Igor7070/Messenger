@@ -1,45 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Выбор собеседников для группового звонка.
+
+    Прежде окно было лиловато-серым посреди тёмно-синего приложения, список
+    обрывался на полстроки, кнопка кричала заглавными «START A GROUP CALL», а
+    о пределе в четырёх человек узнавали, только упёршись в него: на пятом
+    выборе выскакивало предупреждение.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/bg_dialog_call"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@drawable/dialog_background">
+    android:padding="20dp">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Select Users for Group Call"
+        android:text="@string/group_call_new"
+        android:textColor="#F8FAFC"
         android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF"
-        android:paddingBottom="8dp" />
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/selection_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="12dp"
+        android:text="@string/group_call_choose_hint"
+        android:textColor="#94A3B8"
+        android:textSize="14sp" />
 
     <EditText
         android:id="@+id/search_users_edit_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Search users..."
-        android:padding="12dp"
+        android:layout_marginBottom="10dp"
         android:background="@drawable/edit_text_dark_background"
+        android:hint="@string/group_call_search"
+        android:inputType="text"
+        android:maxLines="1"
+        android:padding="12dp"
         android:textColor="#E2E8F0"
         android:textColorHint="#94A3B8"
-        android:layout_marginBottom="8dp" />
+        android:textSize="15sp" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/users_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginBottom="8dp"
-        android:maxHeight="400dp" />
+        android:layout_marginBottom="12dp"
+        android:clipToPadding="false"
+        android:paddingBottom="4dp" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/start_call_button"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Start a group call"
-        app:cornerRadius="8dp"
-        android:enabled="false" />
+        android:layout_height="52dp"
+        android:enabled="false"
+        android:text="@string/group_call_start"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        app:backgroundTint="#6366F1"
+        app:cornerRadius="12dp" />
 </LinearLayout>

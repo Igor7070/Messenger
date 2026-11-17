@@ -1,60 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    Строка выбора собеседника для группового звонка.
+
+    Прежде это была лиловая карточка со светлой обводкой, одинаковая для
+    выбранного и невыбранного: разницу выдавала только мелкая серая галочка
+    у правого края.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/user_row"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="8dp"
-    android:layout_marginVertical="2dp"
-    app:cardCornerRadius="8dp"
-    app:cardBackgroundColor="#3A3A55"
-    app:cardElevation="2dp"
-    app:cardUseCompatPadding="false"
-    app:strokeColor="#B0BEC5"
-    app:strokeWidth="2dp">
+    android:layout_marginVertical="3dp"
+    android:background="@drawable/bg_user_selection_row"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="10dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:background="?android:attr/selectableItemBackground">
+    <FrameLayout
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginEnd="12dp">
 
-        <FrameLayout
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginEnd="8dp">
-
-            <ImageView
-                android:id="@+id/avatar_image_view"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/default_messenger_avatar"
-                android:scaleType="centerCrop" />
-
-            <TextView
-                android:id="@+id/avatar_text_view"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:visibility="gone" />
-        </FrameLayout>
+        <ImageView
+            android:id="@+id/avatar_image_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/call_participant_avatar"
+            android:scaleType="centerCrop" />
 
         <TextView
-            android:id="@+id/username_text_view"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="16sp"
+            android:id="@+id/avatar_text_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/circle_background"
+            android:gravity="center"
             android:textColor="#FFFFFF"
-            android:layout_gravity="center_vertical" />
+            android:textSize="18sp"
+            android:visibility="gone" />
+    </FrameLayout>
 
-        <CheckBox
-            android:id="@+id/user_check_box"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical" />
-    </LinearLayout>
-</androidx.cardview.widget.CardView>
+    <TextView
+        android:id="@+id/username_text_view"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:textColor="#F1F5F9"
+        android:textSize="16sp" />
+
+    <CheckBox
+        android:id="@+id/user_check_box"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="false"
+        android:focusable="false"
+        app:buttonTint="#6366F1" />
+</LinearLayout>

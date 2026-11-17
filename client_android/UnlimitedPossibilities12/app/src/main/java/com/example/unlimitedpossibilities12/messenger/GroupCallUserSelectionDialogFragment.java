@@ -35,6 +35,7 @@ public class GroupCallUserSelectionDialogFragment extends DialogFragment {
     private RecyclerView usersRecyclerView;
     private EditText searchEditText;
     private MaterialButton startCallButton;
+    private android.widget.TextView selectionHint;
     private SelectionUsersAdapter usersAdapter;
     private List<User> usersList = new ArrayList<>();
     private List<User> selectedUsers = new ArrayList<>();
@@ -76,6 +77,7 @@ public class GroupCallUserSelectionDialogFragment extends DialogFragment {
         usersRecyclerView = view.findViewById(R.id.users_recycler_view);
         searchEditText = view.findViewById(R.id.search_users_edit_text);
         startCallButton = view.findViewById(R.id.start_call_button);
+        selectionHint = view.findViewById(R.id.selection_hint);
 
         usersRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         usersAdapter = new SelectionUsersAdapter(user -> {
@@ -169,7 +171,19 @@ public class GroupCallUserSelectionDialogFragment extends DialogFragment {
         usersAdapter.updateUsers(filteredList);
     }
 
+    /**
+     * Кнопка и подсказка под заголовком.
+     *
+     * Прежде о пределе в четырёх человек узнавали, только упёршись в него:
+     * на пятом выборе выскакивало предупреждение. Теперь видно заранее,
+     * сколько выбрано и сколько можно.
+     */
     private void updateStartButtonState() {
         startCallButton.setEnabled(!selectedUsers.isEmpty());
+        if (selectionHint != null) {
+            selectionHint.setText(selectedUsers.isEmpty()
+                    ? getString(R.string.group_call_choose_hint)
+                    : getString(R.string.group_call_chosen, selectedUsers.size()));
+        }
     }
 }
