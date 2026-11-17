@@ -2249,6 +2249,36 @@ const PrivateChat = () => {
                       </div>
                     ) : (
                       <>
+                        {/* Снимок идёт перед подписью: прежде подпись стояла над фотографией,
+                            а в переписке принято наоборот — сперва снимок, текст под ним. */}
+                        {/* Превью изображения — показываем, если fileUrl заканчивается на картинку */}
+                        {msg.fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && (
+                          <div className="image-preview-container">
+                        {/*
+                          Картинка не открылась — чаще всего файл потерян при
+                          переразвёртывании сервера. Прежде её просто прятали, и
+                          в пузыре оставалась необъяснимая пустая полоса. Пишем
+                          прямо, как у голосовых: вложение недоступно.
+                        */}
+                            {brokenImages[msg.id] || isMissingAttachment(msg.fileUrl) ? (
+                              <span className="attachment-unavailable">Image unavailable</span>
+                            ) : (
+                              <img
+                                src={msg.fileUrl}
+                                alt="Image in the message"
+                                className="message-image-preview"
+                                onClick={() => openFullScreenImage(msg.fileUrl)}
+                                loading="lazy"
+                                onError={() => {
+                                  console.warn('Ошибка загрузки превью в личном чате:', msg.fileUrl);
+                                  rememberMissingAttachment(msg.fileUrl);
+                                  setBrokenImages((broken) => ({ ...broken, [msg.id]: true }));
+                                }}
+                              />
+                            )}
+                          </div>
+                        )}
+
                         <div
                           className={`private-message-content ${isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''} ${isTTSEnabled && msg.messageType !== 'audio' ? 'tts-enabled' : ''}`}
                           style={{ cursor: msg.translatedContent ? 'pointer' : 'default' }}
@@ -2290,34 +2320,6 @@ const PrivateChat = () => {
                             </span>
                           )}
                         </div>
-
-                        {/* Превью изображения — показываем, если fileUrl заканчивается на картинку */}
-                        {msg.fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && (
-                          <div className="image-preview-container">
-                        {/*
-                          Картинка не открылась — чаще всего файл потерян при
-                          переразвёртывании сервера. Прежде её просто прятали, и
-                          в пузыре оставалась необъяснимая пустая полоса. Пишем
-                          прямо, как у голосовых: вложение недоступно.
-                        */}
-                            {brokenImages[msg.id] || isMissingAttachment(msg.fileUrl) ? (
-                              <span className="attachment-unavailable">Image unavailable</span>
-                            ) : (
-                              <img
-                                src={msg.fileUrl}
-                                alt="Image in the message"
-                                className="message-image-preview"
-                                onClick={() => openFullScreenImage(msg.fileUrl)}
-                                loading="lazy"
-                                onError={() => {
-                                  console.warn('Ошибка загрузки превью в личном чате:', msg.fileUrl);
-                                  rememberMissingAttachment(msg.fileUrl);
-                                  setBrokenImages((broken) => ({ ...broken, [msg.id]: true }));
-                                }}
-                              />
-                            )}
-                          </div>
-                        )}
 
                         {/* Ссылка на скачивание — только если НЕ картинка */}
                         {msg.fileUrl && !/\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && (

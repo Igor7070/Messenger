@@ -2085,6 +2085,34 @@ const Messenger = () => {
                         <div className="message-content-wrapper">
 
                             {/* Текст сообщения (с кликабельными ссылками и переключением перевода) */}
+                            {/* Снимок идёт перед подписью: прежде подпись стояла над
+                                фотографией, а принято наоборот — сперва снимок. */}
+                                                        {/* Превью изображения — показываем только если тип = image и есть fileUrl */}
+                            {msg.fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && (
+                                <div className="image-preview-container">
+                                    {/*
+                                      Картинка не открылась — обычно файл потерян при
+                                      переразвёртывании сервера. Раньше её прятали, и в
+                                      пузыре оставалась пустая полоса без объяснения.
+                                    */}
+                                    {brokenImages[msg.id] || isMissingAttachment(msg.fileUrl) ? (
+                                        <span className="attachment-unavailable">Image unavailable</span>
+                                    ) : (
+                                        <img
+                                            src={msg.fileUrl}
+                                            alt="Image in the message"
+                                            className="message-image-preview"
+                                            onClick={() => openFullScreenImage(msg.fileUrl)}
+                                            loading="lazy"
+                                            onError={() => {
+                                                console.warn('Ошибка загрузки превью в групповом чате:', msg.fileUrl);
+                                                rememberMissingAttachment(msg.fileUrl);
+                                                setBrokenImages((broken) => ({ ...broken, [msg.id]: true }));
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            )}
                             <div
                                 className={`message-content ${
                                     isTranslationEnabled && msg.messageType !== 'audio' ? 'translate-enabled' : ''
@@ -2119,33 +2147,6 @@ const Messenger = () => {
                                     </span>
                                 )}
                             </div>
-
-                            {/* Превью изображения — показываем только если тип = image и есть fileUrl */}
-                            {msg.fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && (
-                                <div className="image-preview-container">
-                                    {/*
-                                      Картинка не открылась — обычно файл потерян при
-                                      переразвёртывании сервера. Раньше её прятали, и в
-                                      пузыре оставалась пустая полоса без объяснения.
-                                    */}
-                                    {brokenImages[msg.id] || isMissingAttachment(msg.fileUrl) ? (
-                                        <span className="attachment-unavailable">Image unavailable</span>
-                                    ) : (
-                                        <img
-                                            src={msg.fileUrl}
-                                            alt="Image in the message"
-                                            className="message-image-preview"
-                                            onClick={() => openFullScreenImage(msg.fileUrl)}
-                                            loading="lazy"
-                                            onError={() => {
-                                                console.warn('Ошибка загрузки превью в групповом чате:', msg.fileUrl);
-                                                rememberMissingAttachment(msg.fileUrl);
-                                                setBrokenImages((broken) => ({ ...broken, [msg.id]: true }));
-                                            }}
-                                        />
-                                    )}
-                                </div>
-                            )}
 
                             {/* Ссылка на скачивание — показываем ТОЛЬКО если НЕ изображение */}
                             {msg.fileUrl && !/\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) && msg.messageType !== 'audio' && (

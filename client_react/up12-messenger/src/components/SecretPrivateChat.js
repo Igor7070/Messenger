@@ -3418,36 +3418,8 @@ const SecretPrivateChat = () => {
                       </div>
                     ) : (
                       <>
-                        {(() => {
-                          const st = parseSecretText(msg.content);
-                          return (
-                            <>
-                              <span className="secret-message-content">
-                                {st.text}
-                                {/* Время — в конце последней строки, если перевода нет */}
-                                {inlineTime(msg) && !hasLocalTranslation() && (
-                                  <span className="private-message-footer inline">
-                                    <span className="secret-message-timestamp">{formatTimestamp(msg.timestamp)}</span>
-                                    {msg.sender.id === userId && (
-                                      <span className="secret-message-status">
-                                        <MessageChecks delivered={isDeliveredFlag(msg)} read={isReadFlag(msg)} />
-                                      </span>
-                                    )}
-                                  </span>
-                                )}
-                              </span>
-                              <LocalTranslatedLine
-                                chatId={chatId}
-                                msgId={msg.id}
-                                text={st.text}
-                                translated={st.translated}
-                                lang={st.lang}
-                                refreshKey={translationRefresh}
-                              />
-                            </>
-                          );
-                        })()}
-
+                        {/* Снимок идёт перед подписью: прежде подпись стояла над
+                            фотографией, а принято наоборот — сперва снимок. */}
                         {/* Превью изображения — используем расшифрованный blob или локальный */}
                         {msg.messageType === 'file' && msg.fileUrl && (
                           (decryptedImageBlobs[msg.id] || msg.fileUrl.startsWith('blob:')) && (
@@ -3479,6 +3451,36 @@ const SecretPrivateChat = () => {
                             </div>
                           )
                         )}
+
+                        {(() => {
+                          const st = parseSecretText(msg.content);
+                          return (
+                            <>
+                              <span className="secret-message-content">
+                                {st.text}
+                                {/* Время — в конце последней строки, если перевода нет */}
+                                {inlineTime(msg) && !hasLocalTranslation() && (
+                                  <span className="private-message-footer inline">
+                                    <span className="secret-message-timestamp">{formatTimestamp(msg.timestamp)}</span>
+                                    {msg.sender.id === userId && (
+                                      <span className="secret-message-status">
+                                        <MessageChecks delivered={isDeliveredFlag(msg)} read={isReadFlag(msg)} />
+                                      </span>
+                                    )}
+                                  </span>
+                                )}
+                              </span>
+                              <LocalTranslatedLine
+                                chatId={chatId}
+                                msgId={msg.id}
+                                text={st.text}
+                                translated={st.translated}
+                                lang={st.lang}
+                                refreshKey={translationRefresh}
+                              />
+                            </>
+                          );
+                        })()}
 
                         {/* Ссылка на скачивание — всегда */}
                         {msg.messageType === 'file' && msg.fileUrl && (
