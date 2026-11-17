@@ -43,36 +43,7 @@ final class PhotoBubble {
         // считаем по пропорциям снимка, так что полей от подгонки не будет.
         view.setScaleType(ImageView.ScaleType.FIT_CENTER);
         view.setAdjustViewBounds(false);
-        // Скругление держим на самом снимке, причём угол у хвоста пузыря
-        // оставляем прямым: у первого сообщения в череде пузырь срезан
-        // по-живому — сверху справа у своих, сверху слева у чужих, — и
-        // скруглённая фотография в этом углу выглядела заплаткой.
-        view.setOutlineProvider(new android.view.ViewOutlineProvider() {
-            @Override
-            public void getOutline(View v, android.graphics.Outline outline) {
-                float radius = CORNER_DP * v.getResources().getDisplayMetrics().density;
-                Object flag = v.getTag(R.id.image_card);
-                int square = flag instanceof Integer ? (Integer) flag : 0;
-                if (square == 0) {
-                    outline.setRoundRect(0, 0, v.getWidth(), v.getHeight(), radius);
-                    return;
-                }
-                float[] radii = new float[]{
-                        square == SQUARE_TOP_LEFT ? 0 : radius, square == SQUARE_TOP_LEFT ? 0 : radius,
-                        square == SQUARE_TOP_RIGHT ? 0 : radius, square == SQUARE_TOP_RIGHT ? 0 : radius,
-                        radius, radius,
-                        radius, radius};
-                android.graphics.Path path = new android.graphics.Path();
-                path.addRoundRect(0, 0, v.getWidth(), v.getHeight(), radii,
-                        android.graphics.Path.Direction.CW);
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                    outline.setPath(path);
-                } else {
-                    outline.setConvexPath(path);
-                }
-            }
-        });
-        view.setClipToOutline(true);
+        matchBubbleCorner(view, SQUARE_NONE);
         view.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
             public boolean onPreDraw() {
@@ -139,10 +110,21 @@ final class PhotoBubble {
      * у своих — сверху справа, у чужих — сверху слева.
      */
     static void matchBubbleCorner(ImageView view, int square) {
-        if (view == null) return;
+        if (!(view instanceof com.google.android.material.imageview.ShapeableImageView)) return;
         Object was = view.getTag(R.id.image_card);
         if (was instanceof Integer && (Integer) was == square) return;
         view.setTag(R.id.image_card, square);
-        view.invalidateOutline();
+
+        float radius = CORNER_DP * view.getResources().getDisplayMetrics().density;
+        com.google.android.material.shape.ShapeAppearanceModel shape =
+                new com.google.android.material.shape.ShapeAppearanceModel().toBuilder()
+                        .setTopLeftCorner(com.google.android.material.shape.CornerFamily.ROUNDED,
+                                square == SQUARE_TOP_LEFT ? 0f : radius)
+                        .setTopRightCorner(com.google.android.material.shape.CornerFamily.ROUNDED,
+                                square == SQUARE_TOP_RIGHT ? 0f : radius)
+                        .setBottomLeftCorner(com.google.android.material.shape.CornerFamily.ROUNDED, radius)
+                        .setBottomRightCorner(com.google.android.material.shape.CornerFamily.ROUNDED, radius)
+                        .build();
+        ((com.google.android.material.imageview.ShapeableImageView) view).setShapeAppearanceModel(shape);
     }
 }

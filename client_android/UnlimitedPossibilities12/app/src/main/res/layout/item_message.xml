@@ -106,7 +106,10 @@
                 app:strokeWidth="0dp"
                 android:visibility="gone">
 
-                <ImageView
+                <!-- ShapeableImageView, а не ImageView: ей можно задать
+                     каждый угол отдельно, а обрезка вида по произвольному
+                     контуру в андроиде просто не применяется. -->
+                <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/image_preview"
                     android:layout_width="252dp"
                     android:layout_height="wrap_content"
