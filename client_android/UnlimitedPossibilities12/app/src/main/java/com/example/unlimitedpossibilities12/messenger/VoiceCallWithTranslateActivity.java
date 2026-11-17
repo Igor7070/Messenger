@@ -2586,20 +2586,26 @@ public class VoiceCallWithTranslateActivity extends AppCompatActivity {
         if (next == null) {
             ttsPlaying = false;
             duckRemoteVoice(false);
-            // Микрофон возвращаем, если его не выключил сам человек
-            if (localAudioTrack != null) localAudioTrack.setEnabled(!micMuted);
             return;
         }
         try {
             if (!ttsPlaying) {
                 // Приглушаем голос собеседника: иначе оригинал и перевод звучат
-                // одновременно. Микрофон тоже выключаем, иначе он поймает
-                // перевод из динамика и вернёт его собеседнику
+                // одновременно
                 duckRemoteVoice(true);
-                if (localAudioTrack != null) localAudioTrack.setEnabled(false);
             }
             ttsPlaying = true;
             ttsMediaPlayer = new MediaPlayer();
+            // Перевод пускаем по голосовому тракту звонка. Прежде на время
+            // озвучки выключался микрофон — чтобы перевод из динамика не ушёл
+            // обратно собеседнику. Но перевод длинной фразы звучит секунд
+            // двадцать, и всё сказанное человеком за это время пропадало: он
+            // говорил, а на экране не появлялось ничего. По голосовому тракту
+            // эхо гасит сам телефон, и микрофон можно не трогать.
+            ttsMediaPlayer.setAudioAttributes(new android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build());
             ttsMediaPlayer.setDataSource(next.getAbsolutePath());
             ttsMediaPlayer.prepare();
             ttsMediaPlayer.setOnCompletionListener(mp -> {
