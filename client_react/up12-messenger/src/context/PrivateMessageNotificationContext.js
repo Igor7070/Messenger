@@ -18,6 +18,8 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
   // из двух чатов, сколько бы сообщений там ни было.
   const [unreadChats, setUnreadChats] = useState(() => new Set());
   const messageAudioRef = useRef(null);
+  const lastNotificationRef = useRef(null); // последнее уведомление: от повторов
+  const notificationSubRef = useRef(null); // подписка на уведомления: чтобы снимать старую
   const stompClientRef = useRef(null);
   const errorToastRef = useRef(null);
   const navigate = useNavigate();
@@ -76,7 +78,14 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
           errorToastRef.current = null;
         }
 
-        stompClient.subscribe(`/topic/notifications/${currentUserId}`, (message) => {
+        // Связь восстанавливается не раз за вечер, и каждый раз сюда
+        // заходили снова — подписки накапливались, а с ними и копии
+        // одного уведомления: на одно сообщение звенело трижды.
+        if (notificationSubRef.current) {
+          try { notificationSubRef.current.unsubscribe(); } catch (e) { /* уже отвалилась */ }
+          notificationSubRef.current = null;
+        }
+        notificationSubRef.current = stompClient.subscribe(`/topic/notifications/${currentUserId}`, (message) => {
           const rawNotification = message.body;
           console.log('Received notification:', rawNotification);
 
@@ -90,7 +99,23 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
           const chatIdMatch = notification.match(/\(chatId: (\d+)\)/);
           const chatId = chatIdMatch ? chatIdMatch[1] : null;
 
-          if (chatId && chatId !== currentChatIdRef.current) {
+          // Чат, который сейчас открыт, определяем и по адресу страницы:
+          // ссылка на него переживает перерисовки, а запомненный номер
+          // на миг обнуляется при каждом пересоздании экрана — в эту
+          // щель и проскакивал звонок по чату, в котором ты сидишь.
+          const openChat = (window.location.hash.match(/\/(?:secret-chat|private-chat|chat)\/(\d+)/) || [])[1];
+          const inThisChat = chatId
+            && (String(chatId) === String(currentChatIdRef.current) || String(chatId) === openChat);
+
+          // Одно и то же уведомление иногда приходит пачкой (например,
+          // когда собеседник переподключился). Звеним один раз.
+          const now = Date.now();
+          const repeat = lastNotificationRef.current
+            && lastNotificationRef.current.text === notification
+            && now - lastNotificationRef.current.at < 2000;
+          lastNotificationRef.current = { text: notification, at: now };
+
+          if (chatId && !inThisChat && !repeat) {
             if (userInteractedRef.current && messageAudioRef.current) {
               console.log('Attempting to play message audio');
               messageAudioRef.current.play()
@@ -238,6 +263,10 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
 
     return () => {
       console.log('Deactivating WebSocket in PrivateMessageNotification');
+      if (notificationSubRef.current) {
+        try { notificationSubRef.current.unsubscribe(); } catch (e) { /* уже отвалилась */ }
+        notificationSubRef.current = null;
+      }
       if (stompClientRef.current) {
         stompClientRef.current.deactivate();
       }

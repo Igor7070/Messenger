@@ -591,6 +591,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                             downloadFileFromServer(message, fileName, mimeType, position);
                         }
                     }
+                    showStatusAndTime(message, isSentByCurrentUser, position);
                     return;
                 }
 
@@ -598,6 +599,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                     fileLinkContainer.setVisibility(View.VISIBLE);
                     fileLinkContainer.setText("📄 Loading " + fileName + "...");
                     Log.d(TAG, "File message id=" + message.getId() + " is being processed, skipping");
+                    showStatusAndTime(message, isSentByCurrentUser, position);
                     return;
                 }
                 File localFile = adapter.activity.getLocalFile(message, fileName);
@@ -651,6 +653,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                     fileLinkContainer.setVisibility(View.VISIBLE);
                     fileLinkContainer.setText("📄 Loading audio...");
                     Log.d(TAG, "Audio message id=" + message.getId() + " is being processed, skipping");
+                    showStatusAndTime(message, isSentByCurrentUser, position);
                     return;
                 }
                 if (isSentByCurrentUser) {
@@ -681,6 +684,14 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 fileLinkContainer.setText("📄 Invalid message type");
                 Toast.makeText(adapter.context, "Unknown message type: " + messageType, Toast.LENGTH_LONG).show();
             }
+            // Галочки и время рисуем отдельно: раньше этот кусок стоял
+            // в самом конце, а ветка со снимком выходила раньше — у
+            // фотографии не было ни времени, ни отметки о доставке.
+            showStatusAndTime(message, isSentByCurrentUser, position);
+        }
+
+        /** Отметки о доставке и прочтении, а под ними время. */
+        private void showStatusAndTime(Message message, boolean isSentByCurrentUser, int position) {
             // Индикаторы доставки и прочтения
             indicatorsContainer.setVisibility(isSentByCurrentUser ? View.VISIBLE : View.GONE);
             if (isSentByCurrentUser) {

@@ -486,7 +486,10 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                                 applyDecryptedFileMetadata(newMessage); // имя, MIME, подпись
                             }
                             updateMessages(newMessage);
-                            sendNotification(newMessage);
+                            // Уведомление отсюда не шлём: раньше, получив
+                            // сообщение, телефон отправлял уведомление обратно
+                            // отправителю — и у того на своё же сообщение
+                            // звенело. Собеседника извещаем, когда пишем сами.
                         } catch (Exception e) {
                             Log.e(TAG, "Error parsing received message: " + e.getMessage(), e);
                         }
@@ -2079,8 +2082,10 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         checkMessageStatus(message, retryCount, tempId, null);
     }
 
+    /** Извещаем собеседника о своём сообщении — ему, не себе. */
     private void sendNotification(Message message) {
-        if (message.getSender().getId() != currentUserId) {
+        if (message.getSender() == null) return;
+        if (message.getSender().getId() == currentUserId) {
             String[] parts = chatName.split("_");
             String recipientName;
             if (parts.length == 3 && parts[2].equals("secret")) {
@@ -2875,6 +2880,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                         .subscribe(
                                 () -> {
                                     Log.d(TAG, "Message sent successfully, tempId=" + tempId);
+                                    sendNotification(message); // звоночек собеседнику, а не себе
                                     sendTypingEvent(false);
                                     resetForm(); // Очищаем поле ввода и сбрасываем состояние
                                     // Проверяем статус сообщения
