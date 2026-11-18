@@ -1718,7 +1718,18 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 int end = start + url.length();
 
                 spannable.setSpan(new android.text.style.UnderlineSpan(), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                spannable.setSpan(new android.text.style.URLSpan(url), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                // Своё приглашение открываем сами — иначе система уводит
+                // человека в браузер, хотя он нажал ссылку в этом же приложении.
+                if (InviteLinks.isOurs(url)) {
+                    spannable.setSpan(new android.text.style.ClickableSpan() {
+                        @Override
+                        public void onClick(@NonNull View widget) {
+                            InviteLinks.open(widget.getContext(), url);
+                        }
+                    }, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                } else {
+                    spannable.setSpan(new android.text.style.URLSpan(url), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
 
                 contentTextView.setText(spannable);
                 contentTextView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());

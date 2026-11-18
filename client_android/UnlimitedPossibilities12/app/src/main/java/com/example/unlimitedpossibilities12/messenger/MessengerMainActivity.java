@@ -880,6 +880,16 @@ public class MessengerMainActivity extends AppCompatActivity {
                     Toast.makeText(MessengerMainActivity.this,
                             "You joined \"" + name + "\"", Toast.LENGTH_LONG).show();
                     fetchChats();
+                    // И сразу открываем группу: человек шёл по ссылке именно
+                    // в неё, а оставался на общем списке и искал её глазами.
+                    Object joinedId = response.body().get("chatId");
+                    if (joinedId instanceof Number) {
+                        Intent open = new Intent(MessengerMainActivity.this, GroupChatsActivity.class);
+                        open.putExtra("chatId", ((Number) joinedId).longValue());
+                        open.putExtra("chatName", name != null ? name.toString() : "");
+                        shouldRefreshChats = true;
+                        startActivity(open);
+                    }
                 } else {
                     Toast.makeText(MessengerMainActivity.this,
                             response.code() == 410 ? "This invite is no longer valid" : "Could not join",
