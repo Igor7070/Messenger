@@ -25,7 +25,7 @@ import AiMessageGeneratorDialog from './AiMessageGeneratorDialog';
 import GroupMembersDialog from './GroupMembersDialog';
 import { chatAvatarUrl } from '../api/chatMembers';
 import { getChatById } from '../api/chats';
-import { getCachedPreview, loadPreview } from '../utils/linkPreviewCache';
+import { getCachedPreview, loadPreview, shortLinkLabel } from '../utils/linkPreviewCache';
 import { isMissingAttachment, rememberMissingAttachment } from '../utils/missingAttachments';
 import { loadCachedMessages, cacheMessages } from '../utils/messageCache';
 
@@ -1665,7 +1665,7 @@ const Messenger = () => {
                 rel="noopener noreferrer"
                 className="message-link"
             >
-                {rawUrl}
+                {shortLinkLabel(rawUrl)}
             </a>
             );
 

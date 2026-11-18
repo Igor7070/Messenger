@@ -24,7 +24,7 @@ import usePrivateChatTranslationAndSpellCheck from '../hooks/usePrivateChatTrans
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import TranscriptionSettingsModal from './TranscriptionSettingsModal';
 import AiMessageGeneratorDialog from './AiMessageGeneratorDialog';
-import { getCachedPreview, loadPreview } from '../utils/linkPreviewCache';
+import { getCachedPreview, loadPreview, shortLinkLabel } from '../utils/linkPreviewCache';
 import { isMissingAttachment, rememberMissingAttachment } from '../utils/missingAttachments';
 import { loadCachedMessages, cacheMessages } from '../utils/messageCache';
 
@@ -1814,7 +1814,7 @@ const PrivateChat = () => {
           className="message-link"
           // НЕ используем stopPropagation — пусть браузер сам обработает переход
         >
-          {rawUrl}
+          {shortLinkLabel(rawUrl)}
         </a>
       );
 

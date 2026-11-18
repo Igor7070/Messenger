@@ -2377,3 +2377,48 @@
   max-height: 460px;
   border-radius: 0;
 }
+
+/*
+  Карточка ссылки внутри своего (синего) пузыря.
+
+  Прежде она оставалась тёмной — чёрный прямоугольник на синем фоне, будто
+  чужеродная вставка. В телеграме карточка — часть пузыря: полупрозрачная
+  подложка и полоска слева в цвет ссылки.
+*/
+.private-message.private-current-user .link-preview-card {
+  background: rgba(255, 255, 255, 0.12);
+  border: 0;
+  border-left: 3px solid rgba(255, 255, 255, 0.75);
+  border-radius: 8px;
+}
+
+.private-message.private-current-user .link-preview-title {
+  color: #ffffff;
+}
+
+.private-message.private-current-user .link-preview-description,
+.private-message.private-current-user .link-preview-domain {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Ссылка в своём пузыре: белая с подчёркиванием, а не голубая на синем */
+.private-message.private-current-user .message-link {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/*
+  Пузырь со ссылкой чуть шире: сокращённый адрес «сайт/invite/…» не влезал
+  в узкий пузырь и ломался посередине слова — «…/invit» и «e/…» на двух
+  строках. Карточке под ним лишняя ширина тоже к лицу.
+*/
+.private-message-content-container:has(.link-preview-card) {
+  min-width: min(320px, 70vw);
+}
+
+/* Адрес переносим целиком, а не по буквам */
+.message-link {
+  word-break: normal;
+  overflow-wrap: break-word;
+}

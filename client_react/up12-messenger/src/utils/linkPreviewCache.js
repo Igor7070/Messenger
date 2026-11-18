@@ -5,7 +5,11 @@
 // ответ живёт в памяти вкладки и в localStorage.
 
 const MEMORY = new Map();
-const PREFIX = 'linkPreview:';
+// Номер в ключе — чтобы разом забыть прежние разборы, когда страница стала
+// рассказывать о себе больше: приглашения в группу раньше давали пустую
+// карточку с одним названием сайта, и она жила бы в памяти браузера две
+// недели, хотя сервер уже отдаёт имя группы, число участников и снимок.
+const PREFIX = 'linkPreview2:';
 // Заголовки страниц меняются редко — двух недель достаточно.
 const TTL_MS = 14 * 24 * 60 * 60 * 1000;
 // Чтобы localStorage не рос без конца.
@@ -93,3 +97,24 @@ export async function loadPreview(url) {
     return null;
   }
 }
+
+
+/**
+ * Короткая подпись ссылки для пузыря.
+ *
+ * Приглашение в группу выглядит как длинный адрес с кодом из тридцати двух
+ * знаков: в переписке он занимал две строки и читался как мусор. Показываем
+ * узнаваемое — узел и начало пути, — а полный адрес остаётся в самой ссылке.
+ */
+export const shortLinkLabel = (url) => {
+  if (!url || url.length <= 48) return url;
+  try {
+    const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
+    const path = parsed.pathname.replace(/\/$/, '');
+    const head = path.split('/').filter(Boolean)[0];
+    const host = parsed.hostname.replace(/^www\./, '');
+    return head ? `${host}/${head}/…` : host;
+  } catch {
+    return `${url.slice(0, 45)}…`;
+  }
+};
