@@ -1044,6 +1044,7 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                     }
 
                     messageAdapter.updateMessages(messages);
+                    markGroupMessagesAsRead(messages);
                     jumpToBottom();
                     MessageCache.save(getApplicationContext(), chatId, messages);
                     updateLastVisitTime();
@@ -1115,6 +1116,29 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         Log.d(TAG, "Using StompClient from CallService");
     }
 
+    /**
+     * Отмечаем чужие сообщения прочитанными, пока группа открыта.
+     *
+     * В личной переписке такая отметка была, а в групповой — нет: у
+     * отправителя вторая галочка не появлялась никогда, сколько бы человек
+     * ни прочитало. Сервер для этого один и тот же.
+     */
+    private void markGroupMessagesAsRead(java.util.List<Message> list) {
+        if (list == null || stompClient == null || !stompClient.isConnected()) return;
+        for (Message message : list) {
+            if (message == null || message.getSender() == null) continue;
+            if (message.getSender().getId() == currentUserId) continue; // своё не отмечаем
+            if (message.isRead()) continue;
+            stompClient.send("/app/readMessage/" + chatId, String.valueOf(message.getId()))
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                            () -> Log.d(TAG, "Read mark sent for id=" + message.getId()),
+                            error -> Log.e(TAG, "Could not mark read: " + error.getMessage())
+                    );
+        }
+    }
+
     private void updateMessages(Message newMessage) {
         runOnUiThread(() -> {
             SharedPreferences prefs = getSharedPreferences("chat_prefs", MODE_PRIVATE);
@@ -1128,6 +1152,8 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                 return;
             }
             Log.d(TAG, "Updating message: id=" + newMessage.getId() + ", content=" + newMessage.getContent());
+            // Сообщение пришло, а группа открыта — значит, прочитано
+            markGroupMessagesAsRead(java.util.Collections.singletonList(newMessage));
             if ("Message deleted".equals(newMessage.getContent())) {
                 messages.removeIf(msg -> msg.getId() == newMessage.getId());
                 messageAdapter.updateMessages(messages);

@@ -504,6 +504,7 @@ const Messenger = () => {
                   return result;
               });
               setMessages(updatedMessages);
+              markGroupMessagesAsRead(updatedMessages);
               cacheMessages(chatId, updatedMessages);
               const chat = await getChatById(chatId);
               setChatName(chat.name);
@@ -720,7 +721,32 @@ const Messenger = () => {
         };
     }, [contextMenu.visible]);
 
+
+    /**
+     * Отмечаем чужие сообщения прочитанными, пока группа открыта.
+     *
+     * Прежде этого не делал никто: в личной переписке такая отметка есть, а
+     * в групповой не было — и у отправителя вторая галочка не появлялась
+     * никогда, сколько бы человек ни прочитало.
+     */
+    const markGroupMessagesAsRead = (list) => {
+        if (!Array.isArray(list) || !client || !client.connected) return;
+        list.forEach((msg) => {
+            if (!msg || !msg.sender) return;
+            if (Number(msg.sender.id) === Number(userId)) return; // своё не отмечаем
+            if (msg.read || msg.read_status) return;
+            client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
+        });
+    };
+
     const updateMessages = (newMessage) => {
+        // Сообщение пришло, а чат открыт — значит, прочитано
+        if (newMessage && newMessage.sender
+                && Number(newMessage.sender.id) !== Number(userId)
+                && !(newMessage.read || newMessage.read_status)
+                && document.visibilityState === 'visible') {
+            markGroupMessagesAsRead([newMessage]);
+        }
         setMessages((prevMessages) => {
             if (newMessage.content === 'Message deleted') {
                 setTranscribedContentMap((prevMap) => {
