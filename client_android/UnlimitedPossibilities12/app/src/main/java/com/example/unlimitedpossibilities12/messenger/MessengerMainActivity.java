@@ -764,21 +764,63 @@ public class MessengerMainActivity extends AppCompatActivity {
             Toast.makeText(this, "You need to log in first", Toast.LENGTH_SHORT).show();
             return;
         }
+        float density = getResources().getDisplayMetrics().density;
+        android.widget.LinearLayout box = new android.widget.LinearLayout(this);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        int pad = Math.round(20 * density);
+        box.setPadding(pad, pad / 2, pad, 0);
+
         android.widget.EditText input = new android.widget.EditText(this);
         input.setHint("Paste the invite link");
+        // Светлый текст: в тёмном окне поле досталось чёрными буквами на
+        // тёмном фоне — ссылку было не прочитать. И помельче: длинный адрес
+        // иначе занимает четыре строки.
+        input.setTextColor(0xFFE2E8F0);
+        input.setHintTextColor(0xFF94A3B8);
+        input.setTextSize(14);
+        box.addView(input);
+
+        // Откуда взялась ссылка в поле — говорим прямо. Прежде поле просто
+        // оказывалось заполненным, и было непонятно, что это за ссылка и
+        // откуда она взялась.
+        final android.widget.TextView source = new android.widget.TextView(this);
+        source.setTextColor(0xFF94A3B8);
+        source.setTextSize(13);
+        source.setPadding(0, Math.round(6 * density), 0, 0);
+        source.setVisibility(View.GONE);
+        box.addView(source);
+
+        final android.widget.TextView clear = new android.widget.TextView(this);
+        clear.setText("Clear");
+        clear.setTextColor(0xFF67E8F9);
+        clear.setTextSize(14);
+        clear.setPadding(0, Math.round(10 * density), 0, 0);
+        clear.setVisibility(View.GONE);
+        clear.setOnClickListener(v -> {
+            input.setText("");
+            source.setVisibility(View.GONE);
+            clear.setVisibility(View.GONE);
+        });
+        box.addView(clear);
+
         try {
             android.content.ClipboardManager clipboard =
                     (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
             if (clipboard != null && clipboard.hasPrimaryClip() && clipboard.getPrimaryClip() != null
                     && clipboard.getPrimaryClip().getItemCount() > 0) {
                 CharSequence text = clipboard.getPrimaryClip().getItemAt(0).coerceToText(this);
-                if (text != null && text.toString().contains("/invite/")) input.setText(text.toString());
+                if (text != null && text.toString().contains("/invite/")) {
+                    input.setText(text.toString());
+                    source.setText("Link from the clipboard");
+                    source.setVisibility(View.VISIBLE);
+                    clear.setVisibility(View.VISIBLE);
+                }
             }
         } catch (Exception ignored) {
         }
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.AlertDialog_UP12)
                 .setTitle("Join by invite link")
-                .setView(input)
+                .setView(box)
                 .setPositiveButton("Join", (dialog, which) -> acceptInvite(input.getText().toString().trim()))
                 .setNegativeButton("Cancel", null)
                 .show();
