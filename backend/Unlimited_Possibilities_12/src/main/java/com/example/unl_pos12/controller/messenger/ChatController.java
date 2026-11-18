@@ -164,7 +164,7 @@ public class ChatController {
         }
 
         try {
-            java.io.File directory = new java.io.File("src/main/resources/static/avatars/").getAbsoluteFile();
+            java.io.File directory = com.example.unl_pos12.service.StoragePaths.avatars().toFile();
             if (!directory.exists() && !directory.mkdirs()) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(Map.of("error", "Cannot create the avatars folder"));

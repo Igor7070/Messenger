@@ -37,7 +37,7 @@ public class UserController {
     @GetMapping("/check-avatar/{filename}")
     public ResponseEntity<String> checkAvatar(@PathVariable String filename) {
         // Указываем абсолютный путь к директории для аватаров в проекте
-        String filePath = new File("src/main/resources/static/avatars/" + filename).getAbsolutePath();
+        String filePath = com.example.unl_pos12.service.StoragePaths.avatars().resolve(filename).toString();
         File file = new File(filePath);
 
         if (file.exists()) {
@@ -108,7 +108,7 @@ public class UserController {
     // Реализация метода saveAvatar...
     private String saveAvatar(String username, MultipartFile avatar) {
         // Используем абсолютный путь к директории для аватаров
-        String uploadDir = new File("src/main/resources/static/avatars/").getAbsolutePath();
+        String uploadDir = com.example.unl_pos12.service.StoragePaths.avatars().toString();
 
         // Создаем директорию, если она не существует
         File directory = new File(uploadDir);

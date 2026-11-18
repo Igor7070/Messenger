@@ -10,6 +10,6 @@ public class WebConfigAvatars implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/avatars/**")
-                .addResourceLocations("file:/app/src/main/resources/static/avatars/");
+                .addResourceLocations(com.example.unl_pos12.service.StoragePaths.avatarsLocation());
     }
 }

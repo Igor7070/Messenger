@@ -31,7 +31,7 @@ public class FileDownloadController {
         try {
             // Декодируем имя файла
             String decodedFilename = URLDecoder.decode(filename, StandardCharsets.UTF_8.toString());
-            Path filePath = Paths.get("uploads").resolve(decodedFilename).normalize();
+            Path filePath = com.example.unl_pos12.service.StoragePaths.uploads().resolve(decodedFilename).normalize();
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
@@ -80,7 +80,7 @@ public class FileDownloadController {
         try {
             // Декодируем имя файла
             String decodedFilename = URLDecoder.decode(filename, StandardCharsets.UTF_8.toString());
-            Path filePath = Paths.get("uploads/encrypted").resolve(decodedFilename).normalize();
+            Path filePath = com.example.unl_pos12.service.StoragePaths.encrypted().resolve(decodedFilename).normalize();
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {

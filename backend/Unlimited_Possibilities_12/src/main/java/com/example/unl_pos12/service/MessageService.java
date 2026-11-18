@@ -143,12 +143,12 @@ public class MessageService {
 
         // Загрузка файла
         String fileName = System.currentTimeMillis() + "_encrypted_" + transliterate(encryptedFile.getOriginalFilename());
-        String filePath = "uploads/encrypted/" + fileName;
+        String filePath = StoragePaths.encrypted().resolve(fileName).toString();
         String fullFileUrl = "https://unlimitedpossibilities12.org/api/files/download/encrypted/" + fileName;
         System.out.println("Uploading encrypted file: original name=" + encryptedFile.getOriginalFilename() + ", contentType=" + encryptedFile.getContentType());
 
         try {
-            File dest = new File(System.getProperty("user.dir") + "/" + filePath);
+            File dest = new File(filePath);
             dest.getParentFile().mkdirs();
             encryptedFile.transferTo(dest);
             System.out.println("Encrypted file uploaded successfully: path=" + filePath);
@@ -233,7 +233,7 @@ public class MessageService {
             throw new RuntimeException("File size exceeds 100 MB");
         }
 
-        String uploadDir = "uploads/";
+        String uploadDir = StoragePaths.uploads().toString();
         File directory = new File(uploadDir);
         if (!directory.exists()) {
             directory.mkdirs();
@@ -287,7 +287,7 @@ public class MessageService {
             throw new RuntimeException("Encrypted file size exceeds 100 MB");
         }
 
-        String uploadDir = "Uploads/encrypted/";
+        String uploadDir = StoragePaths.encrypted().toString();
         File directory = new File(uploadDir);
         if (!directory.exists()) {
             directory.mkdirs();
