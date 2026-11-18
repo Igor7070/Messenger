@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import ChatList from './ChatList';
 import '../styles/tokens.css';
 import '../styles/ChatShell.css';
+import '../styles/ShellPages.css';
 
 /**
  * Каркас мессенджера: слева список разговоров, справа открытая переписка.
@@ -16,6 +17,9 @@ import '../styles/ChatShell.css';
  */
 const ChatShell = () => {
   const location = useLocation();
+  // Правая часть занята, когда открыт разговор или раздел — люди,
+  // звонки, профиль. На узком экране тогда виден только он, а список
+  // уезжает за край, как и раньше при открытой переписке.
   const chatOpen = location.pathname !== '/';
 
   // Страница целиком не прокручивается: прокрутка живёт внутри колонок.

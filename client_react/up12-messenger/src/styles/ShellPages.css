@@ -1,0 +1,250 @@
+/*
+  Разделы внутри каркаса: люди, звонки, профиль.
+
+  Раньше это были отдельные страницы: фотообои на весь экран, поверх —
+  карточка по центру с кнопками «To Main» и «To Home». Человек, перешедший
+  туда из переписки, попадал будто в другую программу. Теперь они живут в
+  правой части окна и должны выглядеть её продолжением: без собственного
+  фона, без рамок и теней, с теми же цветами и заголовками, что и колонка
+  разговоров слева.
+*/
+
+.up-shell-content > .home-container,
+.up-shell-content > .calls-container,
+.up-shell-content > .user-profile-container,
+.up-shell-content > .profile-container {
+  height: 100%;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 16px 22px 22px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Заголовки разделов — вровень со словом «Chats» слева, а не вдвое крупнее */
+.up-shell-content h1,
+.up-shell-content h2,
+.up-shell-content .home-users-h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: left;
+  color: var(--up-text);
+  letter-spacing: 0.2px;
+}
+
+/* Поля ввода — как поиск в колонке разговоров */
+.up-shell-content .search-input,
+.up-shell-content .chat-input,
+.up-shell-content .login-input-home {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--up-border);
+  border-radius: 10px;
+  color: var(--up-text);
+  padding: 9px 12px;
+}
+
+.up-shell-content .search-input::placeholder,
+.up-shell-content .chat-input::placeholder {
+  color: var(--up-faint);
+}
+
+/* Кнопки — в цвет «New chat», без розово-фиолетовой заливки */
+.up-shell-content .create-chat-button,
+.up-shell-content .call-button,
+.up-shell-content .new-call-button {
+  background: var(--up-accent);
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.up-shell-content .create-chat-button:hover,
+.up-shell-content .call-button:hover {
+  background: var(--up-accent-strong);
+}
+
+/* Списки занимают высоту раздела, а не живут в окошке с своей прокруткой */
+.up-shell-content .user-list,
+.up-shell-content .chat-list,
+.up-shell-content .calls-list {
+  max-height: none;
+  background: transparent;
+  border: 0;
+}
+
+.up-shell-content .user-item,
+.up-shell-content .chat-item,
+.up-shell-content .call-item {
+  border-radius: 10px;
+}
+
+.up-shell-content .user-item:hover,
+.up-shell-content .chat-item:hover,
+.up-shell-content .call-item:hover {
+  background: var(--up-surface-2);
+}
+
+/*
+  Свой аватар с выпадающим меню внутри раздела не нужен: вход «всё про
+  меня» теперь один — кружок в колонке разговоров слева. Прежде он висел
+  поверх заголовка «Users» и закрывал его.
+*/
+.up-shell-content .current-user-avatar-container {
+  display: none;
+}
+
+/* Значок ассистента внутри раздела тоже лишний: он есть в общем окне */
+.up-shell-content .assistant-center-wrapper,
+.up-shell-content .assistant-icon-mobile {
+  display: none;
+}
+
+/* Небольшой воздух сверху, чтобы заголовок не прилипал к краю окна */
+.up-shell-content > .home-container > *:first-child,
+.up-shell-content > .calls-container > *:first-child {
+  margin-top: 4px;
+}
+
+/* ---- Звонки ----------------------------------------------------------- */
+
+/* Заголовок раздела — как слева, а не вдвое крупнее и голубым */
+.up-shell-content .calls-container h1,
+.up-shell-content .calls-container h2,
+.up-shell-content .home-container h1,
+.up-shell-content .home-container h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: left;
+  color: var(--up-text);
+  margin: 0 0 10px;
+}
+
+/* Строка звонка: прежде она занимала сто точек по высоте, имя стояло и
+   справа, и под снимком, а крестик удаления висел поверх всегда. */
+.up-shell-content .call-item {
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  min-height: 0;
+}
+
+.up-shell-content .call-item .call-avatar,
+.up-shell-content .call-item .call-participant img {
+  width: 44px;
+  height: 44px;
+}
+
+.up-shell-content .call-item .call-name {
+  font-size: 0.95rem;
+}
+
+.up-shell-content .call-details {
+  gap: 2px;
+}
+
+.up-shell-content .call-status {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.up-shell-content .call-type,
+.up-shell-content .call-timestamp {
+  font-size: 0.8rem;
+  color: var(--up-muted);
+}
+
+/* Крестик показываем только когда на строку навели: он нужен изредка,
+   а висел у каждой записи красным пятном. */
+.up-shell-content .call-delete {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.up-shell-content .call-item:hover .call-delete {
+  opacity: 1;
+}
+
+/* Кнопка «перезвонить» поменьше и спокойнее */
+.up-shell-content .call-redial {
+  width: 38px;
+  height: 38px;
+}
+
+/* Строка звонка строится слева направо: снимок, имя, под именем разряд
+   звонка и время, справа — перезвонить. Прежде имя стояло столбиком под
+   снимком, а между ним и остальным зияла пустота в пол-экрана. */
+.up-shell-content .call-participants {
+  flex: 0 0 auto;
+}
+
+.up-shell-content .call-participant {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.up-shell-content .call-item .call-name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.up-shell-content .call-direction {
+  margin-left: 14px;
+  order: 3;
+}
+
+.up-shell-content .call-details {
+  flex: 1 1 auto;
+  order: 4;
+  align-items: flex-start;
+  text-align: left;
+  margin-left: 10px;
+}
+
+.up-shell-content .call-redial {
+  order: 5;
+  margin-left: auto;
+}
+
+.up-shell-content .call-delete {
+  order: 6;
+  margin-left: 8px;
+}
+
+/* ---- Профиль ---------------------------------------------------------- */
+
+/* Внутри каркаса переходы «Calls» и «Personal Chats» не нужны: и то и
+   другое открывается из меню слева. Остаётся одно действие — сохранить. */
+.up-shell-content .calls-button,
+.up-shell-content .personal-chats-button {
+  display: none;
+}
+
+/* Кнопки в один цвет: прежде тут стояли синяя, оранжевая и сиреневая
+   рядом, будто из разных приложений. */
+.up-shell-content .update-button,
+.up-shell-content .userprofile-file-label,
+.up-shell-content .avatar-select-button {
+  background: var(--up-accent);
+  background-image: none;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.up-shell-content .update-button:hover,
+.up-shell-content .userprofile-file-label:hover {
+  background: var(--up-accent-strong);
+}
+
+.up-shell-content .button-container {
+  justify-content: flex-start;
+  gap: 10px;
+}

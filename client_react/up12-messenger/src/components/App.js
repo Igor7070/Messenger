@@ -121,9 +121,14 @@ const AppContent = () => {
         toastPortal
       )}
 
-      <div className={`app ${['/', '/chat/', '/private-chat/', '/secret-chat/'].some(
-        (route) => route === '/' ? location.pathname === '/' : location.pathname.startsWith(route)
-      ) ? 'app-messenger' : ''}`}>
+      {/*
+        Мессенджер занимает окно целиком — везде, кроме экрана входа.
+        Прежде так выглядела только переписка, а люди, звонки и профиль
+        открывались поверх фотообоев, с кнопками «To Main» и «To Home»:
+        человек, перешедший туда из переписки, думал, что попал в другую
+        программу.
+      */}
+      <div className={`app ${location.pathname === '/auth' ? '' : 'app-messenger'}`}>
         <div className="header-container">
           <a href="https://unlimitedpossibilities12.org" className="nav-link nav-link-main" rel="noopener noreferrer">
             To Main
@@ -161,16 +166,18 @@ const AppContent = () => {
                 <Route path="/chat/:chatId" element={<KeyedChat element={Messenger} />} />
                 <Route path="/private-chat/:chatId" element={<KeyedChat element={PrivateChat} />} />
                 <Route path="/secret-chat/:chatId" element={<KeyedChat element={SecretPrivateChat} />} />
+                {/* Люди, звонки и профиль — тоже внутри каркаса: список
+                    разговоров остаётся слева, меняется только правая часть */}
+                <Route path="/contacts" element={<Home />} />
+                <Route path="/calls" element={<Calls />} />
+                <Route path="/user/:userId" element={<UserProfile />} />
               </Route>
-
-              {/* Каталог людей и создание чатов — отдельная страница «New chat» */}
-              <Route path="/contacts" element={<RequireAuth><Home /></RequireAuth>} />
-              <Route path="/user/:userId" element={<RequireAuth><UserProfile /></RequireAuth>} />
               <Route path="/voice-call/:roomId" element={<RequireAuth><VoiceCall /></RequireAuth>} />
               <Route path="/video-call/:roomId" element={<RequireAuth><VideoCall /></RequireAuth>} />
-              <Route path="/user/:userId/personal-chats" element={<RequireAuth><PersonalChats /></RequireAuth>} />
+              {/* Прежний отдельный список личных чатов больше не нужен:
+                  все разговоры живут в колонке слева */}
+              <Route path="/user/:userId/personal-chats" element={<Navigate to="/" replace />} />
               <Route path="/voice-call-translate/:roomId" element={<RequireAuth><VoiceCallWithTranslate /></RequireAuth>} />
-              <Route path="/calls" element={<RequireAuth><Calls /></RequireAuth>} />
               <Route path="/group-call" element={<RequireAuth><GroupCallActivity /></RequireAuth>} />
             </Routes>
           </PrivateMessageNotificationProvider>

@@ -9,6 +9,25 @@ import IncomingCallNotification from './IncomingCallNotification';
 import AssistantIcon from './AssistantIcon';
 import '../styles/Calls.css';
 
+
+/**
+ * Человеческое название разряда звонка.
+ *
+ * Прежде в списке стояло машинное имя поля: «Voice_with_translate Call».
+ * Человеку оно ничего не говорит, да ещё и с подчёркиванием посередине.
+ */
+const callKind = (type) => {
+  switch ((type || '').toLowerCase()) {
+    case 'voice': return 'Voice call';
+    case 'video': return 'Video call';
+    case 'voice_with_translate':
+    case 'translated':
+    case 'translate': return 'Call with translation';
+    case 'group': return 'Group call';
+    default: return 'Call';
+  }
+};
+
 const Calls = () => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [users, setUsers] = useState([]);
@@ -339,7 +358,7 @@ const Calls = () => {
 
               <div className="call-details">
                 <span className="call-status">{call.status.charAt(0).toUpperCase() + call.status.slice(1)}</span>
-                <span className="call-type">{call.callType.charAt(0).toUpperCase() + call.callType.slice(1)} Call</span>
+                <span className="call-type">{callKind(call.callType)}</span>
                 <span className="call-timestamp">{formatTimestamp(call.timestamp)}</span>
               </div>
 
@@ -359,7 +378,7 @@ const Calls = () => {
 
                 <div className="call-details">
                   <span className="call-status">{call.status.charAt(0).toUpperCase() + call.status.slice(1)}</span>
-                  <span className="call-type">{call.callType.charAt(0).toUpperCase() + call.callType.slice(1)} Call</span>
+                  <span className="call-type">{callKind(call.callType)}</span>
                   <span className="call-timestamp">{formatTimestamp(call.timestamp)}</span>
                 </div>
 
