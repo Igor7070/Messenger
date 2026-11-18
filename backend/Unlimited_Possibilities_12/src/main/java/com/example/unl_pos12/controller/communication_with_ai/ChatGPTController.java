@@ -258,7 +258,11 @@ public class ChatGPTController {
         try {
             // Загружаем файл из fileUrl
             String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-            File audioFile = new File("uploads/" + fileName);
+            // Берём файл из общего хранилища: вложения давно лежат не рядом
+            // с программой, а на подключённом томе. Этот путь остался
+            // старым, и расшифровка голосовых отвечала «файл не найден».
+            File audioFile = com.example.unl_pos12.service.StoragePaths.uploads()
+                    .resolve(fileName).toFile();
             System.out.println("Constructed file path: " + audioFile.getAbsolutePath());
             if (!audioFile.exists()) {
                 System.out.println("Error: Audio file not found at " + audioFile.getAbsolutePath());
