@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import NewGroupDialog from './NewGroupDialog';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import SockJS from 'sockjs-client';
@@ -50,6 +51,7 @@ const ChatList = () => {
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   // Картинка чата может не открыться: файлы на сервере пропадают при
   // переразвёртывании. Тогда показываем кружок с буквой, а не битый значок.
   const [brokenAvatars, setBrokenAvatars] = useState({});
@@ -231,19 +233,21 @@ const ChatList = () => {
     navigate(item.route);
   };
 
-  const newGroup = async () => {
+  // Новая группа — своим окном: имя, вид и участники разом. Прежде здесь
+  // стояли два системных запроса браузера подряд, а людей в группу
+  // пригласить при создании было нельзя вовсе.
+  const newGroup = () => {
     setMenuOpen(false);
-    const name = window.prompt('Group name');
-    if (!name || !name.trim()) return;
-    const isPublic = window.confirm('Make the group public? Cancel keeps it private.');
-    try {
-      await createChat({ name: name.trim(), private: false, isPublic });
-      toast.success(isPublic ? 'Public group created' : 'Private group created');
-      refresh();
-    } catch (error) {
-      toast.error(error.message || 'Could not create the group');
-    }
+    setGroupDialogOpen(true);
   };
+
+  const groupCreated = (chat, invited) => {
+    setGroupDialogOpen(false);
+    toast.success(invited > 0 ? `Group created, ${invited} invited` : 'Group created');
+    refresh();
+    if (chat && chat.id) navigate(`/chat/${chat.id}`);
+  };
+
 
   /**
    * Выход из учётной записи. Раньше он жил только на странице контактов, в
@@ -297,6 +301,13 @@ const ChatList = () => {
 
   return (
     <aside className="up-list">
+      {groupDialogOpen && (
+        <NewGroupDialog
+          currentUserId={currentUserId}
+          onClose={() => setGroupDialogOpen(false)}
+          onCreated={groupCreated}
+        />
+      )}
       <header className="up-list-header">
         {/*
           Кружок с аватаром — вход в меню: именно по нему жмут, когда ищут
@@ -337,6 +348,12 @@ const ChatList = () => {
                 Calls
               </button>
               <button type="button" onClick={newGroup}>New group</button>
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); navigate('/settings'); }}
+              >
+                Settings
+              </button>
               <button type="button" onClick={joinByLink}>Join by invite link</button>
               <button type="button" className="up-list-menu-danger" onClick={signOut}>
                 Sign out
@@ -403,11 +420,46 @@ const ChatList = () => {
 
             <span className="up-row-body">
               <span className="up-row-line">
+                {/* Замок перед именем — у секретного разговора. Прежде
+                    секретность отмечала плашка у правого края, рядом со
+                    временем, и два разговора с одним человеком различить
+                    было нечем. */}
+                {item.kind === 'secret' && (
+                  <svg className="up-row-lock" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                    <rect x="5" y="11" width="14" height="10" rx="2" />
+                    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                  </svg>
+                )}
                 <span className="up-row-name">{item.name}</span>
                 {item.badge && <span className="up-row-badge">{item.badge}</span>}
+                {/* Галочки у своего последнего сообщения: одна — дошло,
+                    две — прочли. Раньше судьбу своего сообщения в списке
+                    было не видно вовсе. */}
+                {item.lastFromMe && item.lastDelivered && (
+                  <span className={`up-row-ticks ${item.lastRead ? 'up-row-ticks-read' : ''}`}>
+                    <svg width="16" height="11" viewBox="0 0 24 16" fill="none" stroke="currentColor"
+                         strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                      <path d="M1 8.5l4.5 4.5L14 3" />
+                      {item.lastRead && <path d="M9 8.5l4.5 4.5L22 3" />}
+                    </svg>
+                  </span>
+                )}
                 <span className="up-row-time">{formatTime(item.timestamp)}</span>
               </span>
               <span className="up-row-line">
+                {/* Крошечный снимок перед словом «Photo» — чтобы узнать
+                    фотографию, не открывая разговор */}
+                {item.lastPhotoUrl && !brokenAvatars[`photo-${item.id}`] && (
+                  <img
+                    className="up-row-thumb"
+                    src={item.lastPhotoUrl}
+                    alt=""
+                    onError={() =>
+                      setBrokenAvatars((broken) => ({ ...broken, [`photo-${item.id}`]: true }))
+                    }
+                  />
+                )}
                 <span className="up-row-preview">{item.preview}</span>
                 {item.unreadCount > 0 && <span className="up-row-unread">{item.unreadCount}</span>}
               </span>

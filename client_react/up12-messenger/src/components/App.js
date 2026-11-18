@@ -10,6 +10,7 @@ import Auth from './Auth';
 import InviteAccept from './InviteAccept';
 import Messenger from './Messenger';
 import UserProfile from './UserProfile';
+import Settings from './Settings';
 import PrivateChat from './PrivateChat';
 import SecretPrivateChat from './SecretPrivateChat';
 import VoiceCall from './VoiceCall';
@@ -171,6 +172,7 @@ const AppContent = () => {
                 <Route path="/contacts" element={<Home />} />
                 <Route path="/calls" element={<Calls />} />
                 <Route path="/user/:userId" element={<UserProfile />} />
+                <Route path="/settings" element={<Settings />} />
               </Route>
               <Route path="/voice-call/:roomId" element={<RequireAuth><VoiceCall /></RequireAuth>} />
               <Route path="/video-call/:roomId" element={<RequireAuth><VideoCall /></RequireAuth>} />

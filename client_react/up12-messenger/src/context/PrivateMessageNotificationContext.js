@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { webSettings } from '../api/webSettings';
 import { stompAuthHeaders } from '../authToken';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -8,6 +9,20 @@ import { useNavigate } from 'react-router-dom';
 import { useUserInteraction } from './UserInteractionContext';
 
 const PrivateMessageNotificationContext = createContext();
+
+
+/**
+ * Текст сообщения из служебной строки сервера:
+ * «New message: привет from: Kenzya (chatId: 18)» → «привет».
+ */
+const messageTextOf = (notification) => {
+  if (!notification) return 'New message';
+  let text = notification;
+  const from = text.lastIndexOf(' from: ');
+  if (from > 0) text = text.slice(0, from);
+  text = text.replace(/^New message:\s*/, '').trim();
+  return text || 'New message';
+};
 
 export const PrivateMessageNotificationProvider = ({ children }) => {
   const { userInteracted } = useUserInteraction();
@@ -115,8 +130,12 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
             && now - lastNotificationRef.current.at < 2000;
           lastNotificationRef.current = { text: notification, at: now };
 
+          // Звук и текст — как решил хозяин браузера в настройках
+          const wantSound = webSettings.notificationSound();
+          const wantText = webSettings.notificationPreview();
+
           if (chatId && !inThisChat && !repeat) {
-            if (userInteractedRef.current && messageAudioRef.current) {
+            if (wantSound && userInteractedRef.current && messageAudioRef.current) {
               console.log('Attempting to play message audio');
               messageAudioRef.current.play()
                 .then(() => console.log('Message audio played successfully'))
@@ -132,7 +151,7 @@ export const PrivateMessageNotificationProvider = ({ children }) => {
             // Текст сообщения в нём не приводим: достаточно имени отправителя.
             const fromMatch = notification.match(/from: (\w+)/);
             notify(fromMatch ? fromMatch[1] : 'Messenger UP12', {
-              body: isSecret ? 'New secret message' : 'New message',
+              body: isSecret || !wantText ? (isSecret ? 'New secret message' : 'New message') : messageTextOf(notification),
               tag: `chat-${chatId}`,
               onClick: () => navigateRef.current(`/${chatRoute}/${chatId}`),
             });

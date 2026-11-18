@@ -128,7 +128,9 @@ const unreadOf = (chat, messages, currentUserId) => {
 
 /** Метка возможности: сначала секретность, иначе включённый перевод. */
 const badgeOf = (chat) => {
-  if (chat.isSecret) return 'SECRET';
+  // Секретность теперь помечена замком перед именем — так же, как в
+  // приложении на телефоне. Плашка у правого края стояла рядом со
+  // временем, и два разговора с одним человеком было не различить.
   try {
     if (localStorage.getItem(`translation_enabled_${chat.id}`) === 'true') {
       const language = localStorage.getItem(`translation_language_${chat.id}`) || '';
@@ -204,6 +206,16 @@ export const loadConversations = async (currentUserId, currentUsername, signal) 
     const last = messages.length ? messages[messages.length - 1] : null;
     const oneToOne = chat.private || chat.isSecret;
     const title = oneToOne ? partnerName(chat, currentUsername, currentUserId) : chat.name;
+    // Про последнее сообщение строке нужно знать больше: чьё оно (тогда
+    // рисуем галочки), дошло ли, прочли ли, и не снимок ли это — тогда
+    // перед словом «Photo» встаёт его миниатюра. В секретной переписке
+    // миниатюры нет: файл зашифрован, да и содержимому такого разговора
+    // в общем списке не место.
+    const mine = !!(last && last.sender && Number(last.sender.id) === Number(currentUserId));
+    const photoUrl =
+      !chat.isSecret && last && last.fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(last.fileUrl)
+        ? last.fileUrl
+        : null;
     return {
       id: chat.id,
       kind: chat.isSecret ? 'secret' : chat.private ? 'private' : 'group',
@@ -212,6 +224,10 @@ export const loadConversations = async (currentUserId, currentUsername, signal) 
       preview: previewOf(chat, last, currentUserId),
       timestamp: last ? last.timestamp : '',
       lastMessageId: last ? Number(last.id) : 0,
+      lastFromMe: mine,
+      lastDelivered: mine && !!(last.delivered_status ?? last.delivered),
+      lastRead: mine && !!(last.read_status ?? last.read),
+      lastPhotoUrl: photoUrl,
       unreadCount: unreadOf(chat, messages, currentUserId),
       badge: badgeOf(chat),
       route: routeOf(chat),

@@ -1,0 +1,89 @@
+/* Настройки: список строк с переключателями, как на телефоне. */
+.up-settings {
+  max-width: 560px;
+}
+
+.up-settings h2 {
+  margin: 0 0 14px;
+}
+
+.up-settings-group {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--up-feature-soft);
+}
+
+.up-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 4px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--up-surface-2);
+  color: var(--up-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.up-settings-row:hover {
+  background: var(--up-selected);
+}
+
+.up-settings-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+}
+
+.up-settings-title {
+  font-size: 0.97rem;
+  font-weight: 600;
+}
+
+.up-settings-hint {
+  font-size: 0.82rem;
+  color: var(--up-muted);
+}
+
+/* Переключатель */
+.up-settings-switch {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.3);
+  position: relative;
+  transition: background 0.15s ease;
+}
+
+.up-settings-switch-on {
+  background: var(--up-accent);
+}
+
+.up-settings-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s ease;
+}
+
+.up-settings-switch-on .up-settings-knob {
+  transform: translateX(20px);
+}
+
+.up-settings-note {
+  margin-top: 16px;
+  font-size: 0.82rem;
+  color: var(--up-faint);
+  line-height: 1.5;
+}

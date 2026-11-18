@@ -248,3 +248,21 @@
   justify-content: flex-start;
   gap: 10px;
 }
+
+.up-shell-content .call-repeats {
+  color: var(--up-muted);
+  font-weight: 400;
+}
+
+.up-shell-content .call-duration {
+  color: var(--up-muted);
+}
+
+/* Значок ассистента висел в левом нижнем углу прямо на кнопке «New chat».
+   Внутри разделов отправляем его в правый угол, к остальным действиям. */
+.up-shell-content .assistant-icon,
+body:has(.up-shell) .assistant-icon {
+  left: auto !important;
+  right: 86px;
+  bottom: 18px;
+}

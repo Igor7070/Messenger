@@ -650,3 +650,33 @@ body.up-no-scroll {
 .up-shell-content .message-tts-button svg {
   fill: currentColor;
 }
+
+/* Замок секретного разговора — перед именем, в цвет метки языка */
+.up-row-lock {
+  color: var(--up-feature-soft);
+  flex: 0 0 auto;
+  margin-right: 3px;
+}
+
+/* Галочки у своего последнего сообщения */
+.up-row-ticks {
+  color: var(--up-muted);
+  display: inline-flex;
+  align-items: center;
+  margin-left: 2px;
+  flex: 0 0 auto;
+}
+
+.up-row-ticks-read {
+  color: #34d399;
+}
+
+/* Миниатюра снимка из последнего сообщения */
+.up-row-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+  margin-right: 6px;
+  flex: 0 0 auto;
+}

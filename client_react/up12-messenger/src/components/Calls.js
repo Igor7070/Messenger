@@ -28,6 +28,39 @@ const callKind = (type) => {
   }
 };
 
+
+/** Длительность разговора: «4:07». Пропущенных и отклонённых не касается. */
+const durationLabel = (call) => {
+  const seconds = Number(call && (call.durationSeconds ?? call.duration_seconds));
+  if (!Number.isFinite(seconds) || seconds <= 0) return '';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+};
+
+/**
+ * Свернуть подряд идущие однотипные звонки одному человеку в одну строку.
+ *
+ * Пять попыток дозвониться превращали список в пять одинаковых записей;
+ * в телефонах их показывают одной строкой со счётчиком «(5)».
+ */
+const mergeRepeats = (list) => {
+  const key = (call) => {
+    const ids = (call.participants || []).map((p) => p.id).sort().join(',');
+    return [ids || call.user?.id, call.callType, call.status, call.direction].join('|');
+  };
+  const out = [];
+  list.forEach((call) => {
+    const previous = out[out.length - 1];
+    if (previous && key(previous) === key(call)) {
+      previous.repeats = (previous.repeats || 1) + 1;
+      return;
+    }
+    out.push({ ...call, repeats: 1 });
+  });
+  return out;
+};
+
 const Calls = () => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [users, setUsers] = useState([]);
@@ -75,7 +108,7 @@ const Calls = () => {
           if (response.ok) {
               const data = await response.json();
               const sortedCalls = data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-              setCalls(sortedCalls);
+              setCalls(mergeRepeats(sortedCalls));
           } else {
               toast.error('Failed to fetch calls');
           }
@@ -357,8 +390,14 @@ const Calls = () => {
               </div>
 
               <div className="call-details">
-                <span className="call-status">{call.status.charAt(0).toUpperCase() + call.status.slice(1)}</span>
-                <span className="call-type">{callKind(call.callType)}</span>
+                <span className="call-status">
+                  {call.status.charAt(0).toUpperCase() + call.status.slice(1)}
+                  {call.repeats > 1 && <span className="call-repeats"> ({call.repeats})</span>}
+                </span>
+                <span className="call-type">
+                  {callKind(call.callType)}
+                  {durationLabel(call) && <span className="call-duration"> · {durationLabel(call)}</span>}
+                </span>
                 <span className="call-timestamp">{formatTimestamp(call.timestamp)}</span>
               </div>
 
