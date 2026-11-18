@@ -61,4 +61,30 @@
         android:textColor="#94A3B8"
         android:textSize="14sp" />
 
+    <!--
+        Кнопки держим внутри карточки, а не отдаём системному окну: там они
+        прижимаются к правому краю, и на фоне снимка с названием по центру
+        это выглядело перекошенным.
+    -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/invite_join"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="22dp"
+        android:text="Join group"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        app:cornerRadius="12dp" />
+
+    <com.google.android.material.button.MaterialButton
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:id="@+id/invite_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginTop="2dp"
+        android:text="Not now"
+        android:textAllCaps="false"
+        android:textColor="#94A3B8"
+        android:textSize="15sp" />
+
 </LinearLayout>

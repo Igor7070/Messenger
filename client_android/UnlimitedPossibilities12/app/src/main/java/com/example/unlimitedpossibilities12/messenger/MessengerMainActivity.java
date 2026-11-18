@@ -907,11 +907,16 @@ public class MessengerMainActivity extends AppCompatActivity {
                     .into(picture);
         }
 
-        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.AlertDialog_UP12)
-                .setView(view)
-                .setPositiveButton("Join group", (d, w) -> joinByToken(inviteToken))
-                .setNegativeButton("Not now", null)
-                .show();
+        androidx.appcompat.app.AlertDialog dialog =
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.AlertDialog_UP12)
+                        .setView(view)
+                        .create();
+        view.findViewById(R.id.invite_join).setOnClickListener(v -> {
+            dialog.dismiss();
+            joinByToken(inviteToken);
+        });
+        view.findViewById(R.id.invite_cancel).setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 
     /** Собственно вступление — по нажатию в карточке. */
