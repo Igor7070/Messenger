@@ -636,6 +636,14 @@ public class CallService extends Service {
 
     /** Отдельный канал для входящих: служебный был тихим, и звонок уезжал в «без звука». */
     private static final String INCOMING_CHANNEL_ID = "IncomingCallsChannel";
+    /**
+     * Канал сообщений. Прежде уведомления о письмах шли по каналу самой
+     * службы, а он беззвучный — иначе постоянная служба пищала бы при
+     * каждом запуске. Из-за этого сообщение падало в «Уведомления без
+     * звука»: ни звука, ни всплывающей подсказки. Тот же канал, что у
+     * push-уведомлений, чтобы настройки у них были общие.
+     */
+    private static final String MESSAGES_CHANNEL_ID = "MessagesChannel";
 
     private void createIncomingCallChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -646,6 +654,16 @@ public class CallService extends Service {
             channel.setSound(null, null);
             channel.enableVibration(false);
             channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) manager.createNotificationChannel(channel);
+        }
+    }
+
+    private void createMessagesChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(MESSAGES_CHANNEL_ID, "Messages",
+                    NotificationManager.IMPORTANCE_HIGH);
+            channel.setDescription("New messages");
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) manager.createNotificationChannel(channel);
         }
@@ -690,9 +708,7 @@ public class CallService extends Service {
                             socketOpen = true;
                             subscribeToUserStatus();
                             reconnectAttempt = 0;
-                            subscribeToCalls();
-                            subscribeToGroupCalls();
-                            subscribeToNotifications();
+
                             // Переподписка после обрыва.
                             //
                             // Прежде этот перебор ничего не делал: подписка
@@ -703,6 +719,12 @@ public class CallService extends Service {
                             // браузере и не появлялось на телефоне, удаление
                             // тоже не доезжало. Поэтому сначала забываем
                             // старые подписки, потом подписываемся заново.
+                            //
+                            // И делаем это ДО новых подписок, а не после:
+                            // иначе перебор сбрасывал только что созданные
+                            // подписки на звонки и уведомления — связь жива,
+                            // а сообщение о новом письме до телефона уже не
+                            // доходило, и push молчал, полагаясь на неё.
                             java.util.Set<Long> toRestore = new HashSet<>(subscribedChatIds);
                             toRestore.addAll(pendingChatSubscriptions);
                             pendingChatSubscriptions.clear();
@@ -711,6 +733,10 @@ public class CallService extends Service {
                             }
                             messageSubscriptions.clear();
                             subscribedChatIds.clear();
+
+                            subscribeToCalls();
+                            subscribeToGroupCalls();
+                            subscribeToNotifications();
                             for (Long chatId : toRestore) {
                                 subscribeToChatMessages(chatId);
                                 subscribeToTyping(chatId);
@@ -957,6 +983,26 @@ public class CallService extends Service {
         });
     }
 
+    /**
+     * Сервер присылает уведомление одной строкой:
+     * «New message: текст from: Имя (chatId: 18)». Для шторки разбираем её
+     * на имя и текст — внутренние номера человеку показывать незачем.
+     */
+    private static String senderFrom(String notificationText) {
+        if (notificationText == null) return null;
+        Matcher matcher = Pattern.compile(" from: (.+?) \\(chatId: \\d+\\)").matcher(notificationText);
+        return matcher.find() ? matcher.group(1) : null;
+    }
+
+    private static String bodyFrom(String notificationText) {
+        if (notificationText == null) return "";
+        String text = notificationText;
+        int from = text.lastIndexOf(" from: ");
+        if (from > 0) text = text.substring(0, from);
+        if (text.startsWith("New message: ")) text = text.substring("New message: ".length());
+        return text.trim();
+    }
+
     private void showNotification(String notificationText, long chatId) {
         // Уведомления о сообщениях можно выключить в настройках (звонки остаются)
         if (!com.example.unlimitedpossibilities12.messenger.AppSettings.messageNotifications(this)) {
@@ -987,9 +1033,15 @@ public class CallService extends Service {
                 ? notificationText.replace(" " + SECRET_MARKER, "").replace(SECRET_MARKER, "")
                 : notificationText;
 
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle(secret ? "New Secret Message" : "New Message")
-                .setContentText(displayText)
+        // В шторке показываем имя отправителя и само сообщение, а не
+        // служебную строку сервера: прежде там стояло «New message: привет
+        // from: Kenzya (chatId: 18)» — вместе с внутренним номером чата.
+        String sender = senderFrom(displayText);
+        String body = bodyFrom(displayText);
+        createMessagesChannel();
+        Notification notification = new NotificationCompat.Builder(this, MESSAGES_CHANNEL_ID)
+                .setContentTitle(sender != null ? sender : (secret ? "New Secret Message" : "New Message"))
+                .setContentText(secret ? "New secret message" : body)
                 .setSmallIcon(android.R.drawable.stat_notify_chat)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
