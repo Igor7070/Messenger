@@ -680,3 +680,12 @@ body.up-no-scroll {
   margin-right: 6px;
   flex: 0 0 auto;
 }
+
+/* Свой снимок в кружке меню — вместо буквы, когда он загружен */
+.up-list-avatar-picture {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}

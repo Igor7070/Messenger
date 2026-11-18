@@ -59,6 +59,10 @@ const ChatList = () => {
 
   const currentUserId = localStorage.getItem('userId');
   const currentUsername = localStorage.getItem('username') || '';
+  // Свой снимок для кружка меню. Прежде там стояла одна буква имени, хотя
+  // у человека загружен аватар, — и в списке ниже его снимок был виден, а
+  // в собственном кружке нет.
+  const [myAvatar, setMyAvatar] = useState(localStorage.getItem('userAvatar') || '');
 
   // Текущий адрес держим в ссылке, а не в зависимостях: иначе при каждом
   // переходе между чатами пересоздавались и опрос списка, и постоянное
@@ -297,6 +301,30 @@ const ChatList = () => {
     ? items.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
     : items;
 
+  useEffect(() => {
+    if (!currentUserId) return undefined;
+    let alive = true;
+    fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}`, { credentials: 'include' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((user) => {
+        if (!alive || !user) return;
+        const picture = user.avatar || '';
+        setMyAvatar(picture);
+        try {
+          if (picture) localStorage.setItem('userAvatar', picture);
+          else localStorage.removeItem('userAvatar');
+        } catch {
+          /* приватный режим */
+        }
+      })
+      .catch(() => {
+        /* снимок не обязателен: остаётся буква */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [currentUserId]);
+
   const activeRoute = location.pathname;
 
   return (
@@ -322,7 +350,16 @@ const ChatList = () => {
             title="Menu"
             onClick={() => setMenuOpen((open) => !open)}
           >
-            {(currentUsername || '?').charAt(0).toUpperCase()}
+            {myAvatar && !brokenAvatars.me ? (
+              <img
+                className="up-list-avatar-picture"
+                src={`https://unlimitedpossibilities12.org${myAvatar}`}
+                alt=""
+                onError={() => setBrokenAvatars((broken) => ({ ...broken, me: true }))}
+              />
+            ) : (
+              (currentUsername || '?').charAt(0).toUpperCase()
+            )}
           </button>
           {menuOpen && (
             <div className="up-list-menu up-list-menu-left">
