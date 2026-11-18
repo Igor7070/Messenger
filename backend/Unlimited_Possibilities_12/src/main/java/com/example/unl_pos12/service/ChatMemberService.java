@@ -68,6 +68,22 @@ public class ChatMemberService {
         return memberRepository.findByChatIdAndUserId(chatId, userId);
     }
 
+    /**
+     * Номера всех разговоров, где человек состоит, — одним запросом.
+     *
+     * Прежде список чатов спрашивал про каждый разговор отдельно:
+     * «состоит ли он здесь?» — и на десятке групп это десяток запросов
+     * к базе ради одной страницы.
+     */
+    public java.util.Set<Long> chatIdsOf(Long userId) {
+        if (userId == null) return java.util.Set.of();
+        java.util.Set<Long> ids = new java.util.HashSet<>();
+        for (ChatMember member : memberRepository.findByUserId(userId)) {
+            ids.add(member.getChatId());
+        }
+        return ids;
+    }
+
     public List<ChatMember> members(Long chatId) {
         return memberRepository.findByChatIdOrderByJoinedAtAsc(chatId);
     }

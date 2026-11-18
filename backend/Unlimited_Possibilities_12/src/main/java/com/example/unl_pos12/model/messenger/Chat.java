@@ -31,8 +31,17 @@ public class Chat {
     private String avatar;
 
     //@OneToMany(mappedBy = "chat", cascade = CascadeType.ALL)
-    @OneToMany(mappedBy = "chat", fetch = FetchType.EAGER)
-    @JsonManagedReference
+    /**
+     * Сообщения разговора.
+     *
+     * Прежде они грузились вместе с самим разговором (EAGER) и ехали в
+     * ответе. Из-за этого список чатов — запрос, которому нужны только
+     * имена, — поднимал из базы всю переписку всех разговоров сразу:
+     * страница открывалась две с лишним секунды. Теперь сообщения берутся
+     * отдельным запросом, который для того и есть: /api/chats/{id}/messages.
+     */
+    @OneToMany(mappedBy = "chat", fetch = FetchType.LAZY)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<Message> messages;
 
     /**

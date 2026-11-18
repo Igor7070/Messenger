@@ -97,9 +97,11 @@ public class ChatController {
     @GetMapping
     public List<Chat> getAllChats(jakarta.servlet.http.HttpServletRequest request) {
         Long me = authz.currentUserId(request);
+        // Про своё участие спрашиваем разом, а не по разговору за раз:
+        // страница со списком поднимала по запросу к базе на каждый чат.
+        java.util.Set<Long> mine = chatMembers.chatIdsOf(me);
         return chatService.getAllChats().stream()
-                .filter(chat -> chatMembers.isPublicGroup(chat)
-                        || (me != null && chatMembers.isMember(chat.getId(), me)))
+                .filter(chat -> chatMembers.isPublicGroup(chat) || mine.contains(chat.getId()))
                 .collect(java.util.stream.Collectors.toList());
     }
 

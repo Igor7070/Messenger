@@ -111,8 +111,10 @@ public class ChatService {
     }
 
     public List<Message> getMessagesByChatId(Long chatId) {
-        Chat chat = chatRepository.findById(chatId).orElseThrow(() -> new RuntimeException("Chat not found"));
-        return chat.getMessages();
+        // Прямым запросом, а не через сам разговор: его сообщения больше
+        // не грузятся вместе с ним, да и незачем было поднимать разговор
+        // целиком ради списка его сообщений.
+        return messageRepository.findByChatId(chatId);
     }
 
     public Chat getChatById(Long id) {
