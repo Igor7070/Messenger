@@ -849,16 +849,7 @@ public class MessengerMainActivity extends AppCompatActivity {
                     fetchChats();
                     return;
                 }
-                Object name = card.get("name");
-                Object members = card.get("members");
-                int count = members instanceof Number ? ((Number) members).intValue() : 0;
-                String kind = Boolean.TRUE.equals(card.get("isPublic")) ? "Public group" : "Private group";
-                new com.google.android.material.dialog.MaterialAlertDialogBuilder(MessengerMainActivity.this, R.style.AlertDialog_UP12)
-                        .setTitle(String.valueOf(name))
-                        .setMessage(kind + " · " + count + (count == 1 ? " member" : " members"))
-                        .setPositiveButton("Join group", (d, w) -> joinByToken(inviteToken))
-                        .setNegativeButton("Not now", null)
-                        .show();
+                showInviteCard(card, inviteToken);
             }
 
             @Override
@@ -867,6 +858,60 @@ public class MessengerMainActivity extends AppCompatActivity {
                 Toast.makeText(MessengerMainActivity.this, "Could not reach the server", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    /**
+     * Карточка приглашения: снимок группы, название, сколько человек.
+     * Прежде здесь была одна строка текста, и человек, идущий по ссылке,
+     * вступал вслепую — узнать группу в лицо было нельзя.
+     */
+    private void showInviteCard(java.util.Map<String, Object> card, String inviteToken) {
+        Object name = card.get("name");
+        Object members = card.get("members");
+        int count = members instanceof Number ? ((Number) members).intValue() : 0;
+        String kind = Boolean.TRUE.equals(card.get("isPublic")) ? "Public group" : "Private group";
+        String title = name != null ? name.toString() : "Group";
+
+        View view = getLayoutInflater().inflate(R.layout.dialog_invite_card, null);
+        ((android.widget.TextView) view.findViewById(R.id.invite_name)).setText(title);
+        ((android.widget.TextView) view.findViewById(R.id.invite_subtitle))
+                .setText(kind + " · " + count + (count == 1 ? " member" : " members"));
+
+        android.widget.TextView letter = view.findViewById(R.id.invite_avatar_letter);
+        letter.setText(title.isEmpty() ? "?" : title.substring(0, 1).toUpperCase());
+
+        final android.widget.ImageView picture = view.findViewById(R.id.invite_avatar);
+        Object avatar = card.get("avatar");
+        if (avatar != null && !avatar.toString().isEmpty()) {
+            com.bumptech.glide.Glide.with(this)
+                    .load("https://unlimitedpossibilities12.org" + avatar)
+                    .circleCrop()
+                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                    Object model,
+                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                    boolean isFirstResource) {
+                            return false; // снимок пропал — остаётся буква
+                        }
+
+                        @Override
+                        public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model,
+                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                       com.bumptech.glide.load.DataSource dataSource,
+                                                       boolean isFirstResource) {
+                            picture.setVisibility(View.VISIBLE);
+                            return false;
+                        }
+                    })
+                    .into(picture);
+        }
+
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.AlertDialog_UP12)
+                .setView(view)
+                .setPositiveButton("Join group", (d, w) -> joinByToken(inviteToken))
+                .setNegativeButton("Not now", null)
+                .show();
     }
 
     /** Собственно вступление — по нажатию в карточке. */

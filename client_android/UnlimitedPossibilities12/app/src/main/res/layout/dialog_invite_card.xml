@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Карточка приглашения в группу.
+
+    Прежде здесь был обычный заголовок с подписью: имя группы и число
+    участников. Человек, идущий по ссылке, видел только строку текста и
+    решал вслепую — та ли это группа. Теперь сверху её снимок, как в
+    списке разговоров: сначала узнаёшь группу в лицо, потом вступаешь.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingHorizontal="24dp"
+    android:paddingTop="24dp"
+    android:paddingBottom="4dp">
+
+    <FrameLayout
+        android:layout_width="84dp"
+        android:layout_height="84dp">
+
+        <!-- Буква в кружке: видна, пока снимок грузится, и остаётся, если его нет -->
+        <TextView
+            android:id="@+id/invite_avatar_letter"
+            android:layout_width="84dp"
+            android:layout_height="84dp"
+            android:background="@drawable/bg_letter_avatar"
+            android:gravity="center"
+            android:textColor="#FFFFFF"
+            android:textSize="34sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/invite_avatar"
+            android:layout_width="84dp"
+            android:layout_height="84dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="Group picture"
+            android:visibility="gone"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Up12.Round" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/invite_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:gravity="center"
+        android:textColor="#F8FAFC"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/invite_subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center"
+        android:textColor="#94A3B8"
+        android:textSize="14sp" />
+
+</LinearLayout>
