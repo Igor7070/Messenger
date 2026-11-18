@@ -584,6 +584,11 @@ const Messenger = () => {
     на один сайт всего шесть.
   */
     const liveRef = useRef({});
+    // Соединение в ссылке: обработчик подписки создаётся один раз и в нём
+    // остаётся то значение, какое было в тот миг, — а оно пустое.
+    const clientRef = useRef(null);
+    // Что не успели отметить прочитанным, пока связь поднималась.
+    const pendingReadRef = useRef(new Set());
     liveRef.current = {
         isTranslationEnabled,
         translationMode,
@@ -598,6 +603,8 @@ const Messenger = () => {
             webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
             onConnect: () => {
                 console.log('Connected to WebSocket');
+                clientRef.current = stompClientInstance;
+                markGroupMessagesAsRead(); // досылаем то, что ждало связи
                 stompClientInstance.subscribe(`/topic/chat/${chatId}/messages`, (message) => {
                     const newMessage = JSON.parse(message.body);
                     updateMessages(newMessage);
@@ -621,6 +628,7 @@ const Messenger = () => {
         });
 
         setClient(stompClientInstance);
+        clientRef.current = stompClientInstance;
         stompClientInstance.activate();
 
         return () => {
@@ -730,13 +738,20 @@ const Messenger = () => {
      * никогда, сколько бы человек ни прочитало.
      */
     const markGroupMessagesAsRead = (list) => {
-        if (!Array.isArray(list) || !client || !client.connected) return;
-        list.forEach((msg) => {
-            if (!msg || !msg.sender) return;
-            if (Number(msg.sender.id) === Number(userId)) return; // своё не отмечаем
-            if (msg.read || msg.read_status) return;
-            client.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(msg.id) });
+        if (Array.isArray(list)) {
+            list.forEach((msg) => {
+                if (!msg || !msg.sender) return;
+                if (Number(msg.sender.id) === Number(userId)) return; // своё не отмечаем
+                if (msg.read || msg.read_status) return;
+                pendingReadRef.current.add(msg.id);
+            });
+        }
+        const socket = clientRef.current;
+        if (!socket || !socket.connected) return; // отправим, когда связь поднимется
+        pendingReadRef.current.forEach((id) => {
+            socket.publish({ destination: `/app/readMessage/${chatId}`, body: JSON.stringify(id) });
         });
+        pendingReadRef.current.clear();
     };
 
     const updateMessages = (newMessage) => {
