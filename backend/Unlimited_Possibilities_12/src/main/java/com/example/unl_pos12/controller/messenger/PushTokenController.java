@@ -36,7 +36,8 @@ public class PushTokenController {
             return ResponseEntity.badRequest().build();
         }
         authz.requireSelf(http, userId); // токен можно регистрировать только себе
-        pushService.register(userId, token, body.getOrDefault("platform", "android"));
+        boolean showText = !"false".equalsIgnoreCase(body.getOrDefault("showText", "true"));
+        pushService.register(userId, token, body.getOrDefault("platform", "android"), showText);
         return ResponseEntity.ok().build();
     }
 

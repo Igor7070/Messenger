@@ -30,6 +30,15 @@ public class PushToken {
 
     private ZonedDateTime updatedAt;
 
+    /**
+     * Показывать ли текст сообщения в уведомлении на этом устройстве.
+     * Решает владелец устройства: push идёт через серверы Google, и текст
+     * виден и им, и любому, кто взглянет на заблокированный экран. Секретной
+     * переписки это не касается никак — её текста у сервера нет.
+     */
+    @Column(name = "show_text", nullable = false)
+    private boolean showText = true;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -44,4 +53,12 @@ public class PushToken {
 
     public ZonedDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(ZonedDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public boolean isShowText() {
+        return showText;
+    }
+
+    public void setShowText(boolean showText) {
+        this.showText = showText;
+    }
 }

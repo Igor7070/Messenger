@@ -153,6 +153,23 @@ public class WebSocketMessageController {
         }
     }
 
+    /** Короткая выжимка сообщения для уведомления. */
+    private String shortPreview(Message saved) {
+        String type = saved.getMessageType();
+        if ("audio".equalsIgnoreCase(type)) return "Voice message";
+        String text = saved.getContent();
+        if (text == null || text.isBlank()) {
+            if ("file".equalsIgnoreCase(type)) {
+                String url = saved.getFileUrl();
+                boolean image = url != null && url.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif|webp)$");
+                return image ? "Photo" : "File";
+            }
+            return "New message";
+        }
+        text = text.trim();
+        return text.length() > 120 ? text.substring(0, 120) + "…" : text;
+    }
+
     private void pushToChatMembers(Message saved) {
         if (pushService == null || saved == null || saved.getChat() == null) return;
         try {
@@ -176,9 +193,14 @@ public class WebSocketMessageController {
             for (com.example.unl_pos12.model.messenger.ChatMember member : chatMembers.members(chatId)) {
                 recipients.add(member.getUserId());
             }
+            // Текст сообщения кладём в push, а дальше каждое устройство
+            // получает его или общую подпись — смотря как решил владелец.
+            // Секретной переписки это не касается: её текста у сервера нет,
+            // в базе лежат зашифрованные байты, прочитать их некому.
+            String preview = secret ? "New secret message" : shortPreview(saved);
             for (Long recipient : recipients) {
                 if (senderId != null && senderId.equals(recipient)) continue; // себе не шлём
-                pushService.sendToUser(recipient, senderName, "New message", data);
+                pushService.sendToUser(recipient, senderName, preview, data);
             }
         } catch (Exception e) {
             System.out.println("pushToChatMembers error: " + e.getMessage());

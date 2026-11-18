@@ -84,10 +84,15 @@ public class PushService {
     /** Запомнить токен устройства (или переназначить его другому пользователю после перелогина). */
     @Transactional
     public void register(Long userId, String token, String platform) {
+        register(userId, token, platform, true);
+    }
+
+    public void register(Long userId, String token, String platform, boolean showText) {
         if (userId == null || token == null || token.isBlank()) return;
         PushToken entity = repository.findByToken(token).orElseGet(PushToken::new);
         entity.setToken(token);
         entity.setUserId(userId);
+        entity.setShowText(showText);
         entity.setPlatform(platform != null ? platform : "android");
         entity.setUpdatedAt(ZonedDateTime.now());
         repository.save(entity);
@@ -130,12 +135,22 @@ public class PushService {
         // Отправляем в отдельном потоке: вызов идёт из обработчика WebSocket, а
         // блокировать его сетевым запросом к Google нельзя — доставка сообщения
         // другим участникам не должна ждать Firebase.
+        // Текст сообщения получают только устройства, где это разрешено;
+        // остальным уходит та же подпись без текста.
         List<String> tokenValues = new java.util.ArrayList<>();
-        for (PushToken t : tokens) tokenValues.add(t.getToken());
+        List<String> quietTokens = new java.util.ArrayList<>();
+        for (PushToken t : tokens) {
+            if (t.isShowText()) tokenValues.add(t.getToken());
+            else quietTokens.add(t.getToken());
+        }
+        Map<String, String> quietPayload = new HashMap<>(payload);
+        quietPayload.put("body", data != null && "true".equals(data.get("secret"))
+                ? "New secret message" : "New message");
         // submit() прячет любую ошибку внутрь Future, и отправка падала молча:
         // в журнале обрывалось на «устройств для userId=…» и ничего дальше
         sender.execute(() -> {
             try {
+                if (!quietTokens.isEmpty()) deliver(userId, quietTokens, quietPayload);
                 deliver(userId, tokenValues, payload);
             } catch (Throwable error) {
                 System.out.println("PushService: отправка сорвалась: " + error);

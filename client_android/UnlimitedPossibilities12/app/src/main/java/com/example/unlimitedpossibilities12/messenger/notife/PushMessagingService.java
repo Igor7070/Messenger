@@ -117,9 +117,13 @@ public class PushMessagingService extends FirebaseMessagingService {
             Log.d(TAG, "Чат " + chatId + " открыт — уведомление не показываем");
             return;
         }
+        // Текст прячем и здесь: сервер решает по записи об устройстве, но
+        // настройку могли переключить только что, а токен уйти чуть позже.
+        boolean showText = !secret
+                && com.example.unlimitedpossibilities12.messenger.AppSettings.notificationPreview(this);
         showNotification(chatId, secret,
                 title != null ? title : "Messenger UP12",
-                body != null ? body : "New message");
+                showText && body != null ? body : (secret ? "New secret message" : "New message"));
     }
 
     /** Открыт ли сейчас этот чат на экране — тогда уведомление не нужно. */
@@ -210,6 +214,10 @@ public class PushMessagingService extends FirebaseMessagingService {
                 json.put("userId", String.valueOf(userId));
                 json.put("token", token);
                 json.put("platform", "android");
+                // Пусть сервер знает, что класть в push на это устройство:
+                // текст сообщения или общую подпись.
+                json.put("showText", String.valueOf(
+                        com.example.unlimitedpossibilities12.messenger.AppSettings.notificationPreview(context)));
                 OkHttpClient client = com.example.unlimitedpossibilities12.api.AuthToken.httpClient();
                 Request request = new Request.Builder()
                         .url(API_BASE + "push/token")

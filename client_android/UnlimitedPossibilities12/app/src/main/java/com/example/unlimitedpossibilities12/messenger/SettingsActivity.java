@@ -80,6 +80,19 @@ public class SettingsActivity extends AppCompatActivity {
             AppSettings.setNotificationSound(this, on);
         });
 
+        SwitchMaterial preview = findViewById(R.id.switch_notification_preview);
+        preview.setChecked(AppSettings.notificationPreview(this));
+        preview.setEnabled(messages.isChecked());
+        findViewById(R.id.row_notification_preview).setOnClickListener(v -> {
+            if (!messages.isChecked()) return;
+            boolean on = !preview.isChecked();
+            preview.setChecked(on);
+            AppSettings.setNotificationPreview(this, on);
+            // Сервер должен знать, что класть в push: текст или общую подпись.
+            com.example.unlimitedpossibilities12.messenger.notife.PushMessagingService
+                    .sendTokenToServer(this);
+        });
+
         findViewById(R.id.row_system_notifications).setOnClickListener(v -> openSystemNotifications());
     }
 

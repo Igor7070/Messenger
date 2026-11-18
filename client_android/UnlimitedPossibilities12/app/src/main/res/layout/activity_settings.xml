@@ -123,6 +123,38 @@
 
                     <View style="@style/SettingsDivider" />
 
+                    <!--
+                        Текст сообщения в уведомлении. Когда приложение закрыто,
+                        уведомление идёт через серверы Google, и текст виден и им,
+                        и любому, кто взглянет на заблокированный экран. Пусть
+                        решает хозяин телефона. Секретной переписки это не
+                        касается: её текста у сервера нет и быть не может.
+                    -->
+                    <LinearLayout
+                        android:id="@+id/row_notification_preview"
+                        style="@style/SettingsRow">
+
+                        <LinearLayout style="@style/SettingsRowText">
+
+                            <TextView
+                                style="@style/SettingsRowTitle"
+                                android:text="@string/settings_preview" />
+
+                            <TextView
+                                style="@style/SettingsRowSubtitle"
+                                android:text="@string/settings_preview_hint" />
+                        </LinearLayout>
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/switch_notification_preview"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:clickable="false"
+                            android:focusable="false" />
+                    </LinearLayout>
+
+                    <View style="@style/SettingsDivider" />
+
                     <LinearLayout
                         android:id="@+id/row_system_notifications"
                         style="@style/SettingsRow">

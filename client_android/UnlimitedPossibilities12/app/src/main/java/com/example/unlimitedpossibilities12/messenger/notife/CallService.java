@@ -1037,7 +1037,9 @@ public class CallService extends Service {
         // служебную строку сервера: прежде там стояло «New message: привет
         // from: Kenzya (chatId: 18)» — вместе с внутренним номером чата.
         String sender = senderFrom(displayText);
-        String body = bodyFrom(displayText);
+        String body = com.example.unlimitedpossibilities12.messenger.AppSettings.notificationPreview(this)
+                ? bodyFrom(displayText)
+                : "New message";
         createMessagesChannel();
         Notification notification = new NotificationCompat.Builder(this, MESSAGES_CHANNEL_ID)
                 .setContentTitle(sender != null ? sender : (secret ? "New Secret Message" : "New Message"))

@@ -186,4 +186,6 @@
     <string name="image_viewer_share">Share</string>
     <string name="image_viewer_save">Save to the phone</string>
     <string name="chat_no_connection">No connection — the message was not sent. Check the network and try again.</string>
+    <string name="settings_preview">Show message text</string>
+    <string name="settings_preview_hint">In notifications. Secret chats never show their text</string>
 </resources>

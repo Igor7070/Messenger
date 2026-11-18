@@ -17,6 +17,7 @@ public final class AppSettings {
 
     private static final String KEY_MESSAGE_NOTIFICATIONS = "notifications_messages";
     private static final String KEY_NOTIFICATION_SOUND = "notifications_sound";
+    private static final String KEY_NOTIFICATION_PREVIEW = "notification_preview";
     private static final String KEY_DEFAULT_TRANSLATION = "default_translation_language";
 
     /** Язык перевода по умолчанию, пока в переписке не выбран свой. */
@@ -35,6 +36,20 @@ public final class AppSettings {
 
     public static void setMessageNotifications(Context context, boolean on) {
         prefs(context).edit().putBoolean(KEY_MESSAGE_NOTIFICATIONS, on).apply();
+    }
+
+    /**
+     * Показывать ли текст сообщения в уведомлении. Касается и уведомлений от
+     * живого соединения, и push: когда приложение закрыто, уведомление идёт
+     * через серверы Google. Секретная переписка текста не показывает никогда —
+     * у сервера его попросту нет.
+     */
+    public static boolean notificationPreview(Context context) {
+        return prefs(context).getBoolean(KEY_NOTIFICATION_PREVIEW, true);
+    }
+
+    public static void setNotificationPreview(Context context, boolean on) {
+        prefs(context).edit().putBoolean(KEY_NOTIFICATION_PREVIEW, on).apply();
     }
 
     public static boolean notificationSound(Context context) {
