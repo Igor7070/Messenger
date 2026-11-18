@@ -41,6 +41,12 @@ public class DiagnosticsController {
         result.put("countMessagesMs", (System.nanoTime() - started) / 1_000_000);
         result.put("messages", String.valueOf(messages));
 
+        // Где стоит само приложение. Том у Railway привязан к региону, и
+        // служба переезжает к нему: если база осталась в другом регионе,
+        // каждый запрос начинает ходить через полмира.
+        result.put("appRegion", String.valueOf(System.getenv("RAILWAY_REPLICA_REGION")));
+        result.put("dbHost", String.valueOf(System.getenv("MYSQLHOST")));
+
         return result;
     }
 }
