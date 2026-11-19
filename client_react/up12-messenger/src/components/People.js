@@ -115,7 +115,11 @@ const People = ({ onClose, onNewGroup }) => {
   const total = sections.reduce((sum, group) => sum + group.people.length, 0);
 
   return (
-    <div className="up-people-backdrop" onClick={onClose} role="presentation">
+    <div
+      className="up-people-backdrop"
+      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
+      role="presentation"
+    >
       <div
         className="up-people-panel"
         onClick={(event) => event.stopPropagation()}

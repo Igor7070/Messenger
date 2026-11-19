@@ -507,7 +507,11 @@ const UserProfile = ({ onClose = () => {} }) => {
     const online = Boolean(usersStatus[userId]?.online);
 
     return (
-        <div className="up-profile-backdrop" onClick={onClose} role="presentation">
+        <div
+      className="up-profile-backdrop"
+      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
+      role="presentation"
+    >
             <div
                 className="up-profile-panel"
                 onClick={(event) => event.stopPropagation()}

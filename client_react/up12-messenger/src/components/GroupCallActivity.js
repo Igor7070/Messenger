@@ -1809,7 +1809,11 @@ const GroupCallActivity = () => {
         )}
       </div>
       {codeFor && (
-        <div className="group-call-code-backdrop" onClick={() => setCodeFor(null)} role="presentation">
+        <div
+          className="group-call-code-backdrop"
+          onClick={(event) => { if (event.target === event.currentTarget) setCodeFor(null); }}
+          role="presentation"
+        >
           <div className="group-call-code" onClick={(event) => event.stopPropagation()}>
             <h3>Code with {codeFor.name}</h3>
             <p className="group-call-code-digits">{codeFor.code || '—'}</p>

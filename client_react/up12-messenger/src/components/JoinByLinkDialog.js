@@ -28,7 +28,11 @@ const JoinByLinkDialog = ({ onClose, onToken }) => {
   };
 
   return (
-    <div className="up-join-backdrop" onClick={onClose} role="presentation">
+    <div
+      className="up-join-backdrop"
+      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
+      role="presentation"
+    >
       <form
         className="up-join"
         onClick={(event) => event.stopPropagation()}

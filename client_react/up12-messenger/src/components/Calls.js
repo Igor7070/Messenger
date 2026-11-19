@@ -388,7 +388,11 @@ const Calls = ({ onClose = () => {} }) => {
 
   return (
     <>
-    <div className="up-calls-backdrop" onClick={onClose} role="presentation">
+    <div
+      className="up-calls-backdrop"
+      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
+      role="presentation"
+    >
       <div
         className="up-calls-panel"
         onClick={(event) => event.stopPropagation()}
