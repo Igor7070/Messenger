@@ -4,29 +4,29 @@
   читается хуже, да и в телеграме эта колонка узкая.
 */
 .up-people {
-  /* Колонка узкая намеренно: имя с подписью в строку на весь экран
-     читается хуже, да и в телеграме это окно такой же ширины. Отступы и
-     прокрутка — свои, а не от общего правила разделов: оно растягивает
-     раздел во всю ширину. */
+  /* Раздел занимает всю правую часть окна — как «Calls» рядом и как
+     колонка разговоров слева. Узкая колонка посреди пустого поля
+     смотрелась здесь чужой формой, а не частью приложения. */
   height: 100%;
   box-sizing: border-box;
-  padding: 16px 22px 22px;
+  padding: 16px 0 22px;
   overflow-y: auto;
-  /* Колонка стоит посередине свободной части окна: прижатая к левому
-     краю, она оставляла справа пустое поле шириной с саму себя. */
-  max-width: 560px;
-  margin: 0 auto;
 }
 
 .up-people-title {
-  margin: 0 0 14px;
+  margin: 0 22px 14px;
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--up-text);
 }
 
 .up-people-search {
-  width: 100%;
+  /* Поле во всю ширину окна выглядит нелепо длинным: ищут по имени, а не
+     по строке в метр. Строки людей при этом остаются во всю ширину. */
+  width: calc(100% - 44px);
+  max-width: 420px;
+  margin-left: 22px;
+  margin-right: 22px;
   /* Без этого поля и рамка прибавляются к ширине, поле вылезает за
      колонку — и внизу окна появляется полоса прокрутки вбок. */
   box-sizing: border-box;
@@ -50,7 +50,7 @@
 }
 
 .up-people-empty {
-  margin: 18px 2px;
+  margin: 18px 24px;
   color: var(--up-muted);
   font-size: 0.92rem;
 }
@@ -61,7 +61,7 @@
 
 /* Буква перед группой имён — как на телефоне, в цвет кнопок */
 .up-people-letter {
-  margin: 10px 0 2px 14px;
+  margin: 12px 0 2px 24px;
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--up-accent-soft);
@@ -73,14 +73,53 @@
   padding: 0;
 }
 
+/* Строка целиком: имя слева, кнопка «написать» у правого края — так же,
+   как кнопка звонка в строке на экране звонков. */
+.up-person-row {
+  display: flex;
+  align-items: center;
+}
+
+.up-person-row:hover {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.up-person-write {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-right: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.16);
+  color: var(--up-accent-soft);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.up-person-row:hover .up-person-write,
+.up-person-write:focus-visible {
+  opacity: 1;
+}
+
+.up-person-write:hover {
+  background: rgba(99, 102, 241, 0.28);
+}
+
 .up-person {
+  flex: 1 1 auto;
+  min-width: 0;
   width: 100%;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 14px;
+  padding: 8px 22px;
   border: none;
-  border-radius: 10px;
+  border-radius: 0;
   background: transparent;
   color: var(--up-text);
   text-align: left;
@@ -88,9 +127,7 @@
   cursor: pointer;
 }
 
-.up-person:hover {
-  background: rgba(148, 163, 184, 0.08);
-}
+
 
 .up-person-avatar-wrap {
   position: relative;
@@ -154,7 +191,13 @@
 }
 
 @media (max-width: 800px) {
-  .up-people {
-    max-width: none;
+  .up-people-search {
+    width: calc(100% - 28px);
+    margin-left: 14px;
+    margin-right: 14px;
   }
+
+  .up-people-title { margin-left: 14px; }
+  .up-people-letter { margin-left: 16px; }
+  .up-person { padding-left: 14px; padding-right: 14px; }
 }

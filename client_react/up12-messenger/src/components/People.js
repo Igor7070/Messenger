@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useUserStatusContext } from '../context/UserStatusContext';
+import { findOrCreatePrivateChat } from '../api/privateChats';
 import '../styles/People.css';
 
 /**
@@ -47,6 +48,14 @@ const People = () => {
   const [loading, setLoading] = useState(true);
 
   const myId = localStorage.getItem('userId');
+
+  // Написать прямо отсюда, не заходя в карточку, — как кнопка звонка в
+  // правом краю строки на экране звонков.
+  const writeTo = (person) => {
+    findOrCreatePrivateChat(person, myId)
+      .then((route) => navigate(route))
+      .catch(() => toast.error(`Could not open the chat with ${person.username}`));
+  };
   // Снимки, которых не оказалось на сервере: вместо пустого места рисуем
   // букву — так же, как у тех, кто снимок не ставил вовсе.
   const [brokenAvatars, setBrokenAvatars] = useState({});
@@ -124,7 +133,7 @@ const People = () => {
               const online = isOnline(person);
               const about = (person.info || '').trim();
               return (
-                <li key={person.id}>
+                <li key={person.id} className="up-person-row">
                   <button
                     type="button"
                     className="up-person"
@@ -154,6 +163,16 @@ const People = () => {
                         {about || (online ? 'Online' : 'Offline')}
                       </span>
                     </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="up-person-write"
+                    title={`Message ${person.username}`}
+                    onClick={() => writeTo(person)}
+                  >
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 3c-4.97 0-9 3.36-9 7.5 0 2.3 1.25 4.36 3.2 5.73L5.5 20l3.9-2.06c.8.2 1.68.31 2.6.31 4.97 0 9-3.36 9-7.5S16.97 3 12 3z" />
+                    </svg>
                   </button>
                 </li>
               );
