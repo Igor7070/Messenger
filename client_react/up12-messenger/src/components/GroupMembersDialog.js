@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import * as api from '../api/chatMembers';
+import { deleteChat } from '../api/messages';
+import { useNavigate } from 'react-router-dom';
 import '../styles/GroupMembersDialog.css';
 
 /**
@@ -11,6 +13,7 @@ import '../styles/GroupMembersDialog.css';
  * проверяет то же самое — здесь мы только не показываем заведомо запретное.
  */
 const GroupMembersDialog = ({ chat, currentUserId, allUsers = [], onClose, onChanged }) => {
+  const navigate = useNavigate();
   const [members, setMembers] = useState([]);
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -240,6 +243,22 @@ const GroupMembersDialog = ({ chat, currentUserId, allUsers = [], onClose, onCha
             )}
 
             <div className="group-members-footer">
+              {/* Удаление группы жило на экране людей, рядом со вторым полем
+                  «создать групповой чат». Экран людей теперь занят только
+                  людьми, а распоряжаться группой правильнее отсюда — из её
+                  же карточки, и только хозяину. */}
+              {isOwner && (
+                <button className="danger" onClick={() => {
+                  if (!window.confirm(`Delete the group "${chat.name}" for everyone? This cannot be undone.`)) return;
+                  deleteChat(chat.id)
+                    .then(() => {
+                      toast.success('Group deleted');
+                      onClose();
+                      navigate('/');
+                    })
+                    .catch(() => toast.error('Could not delete the group'));
+                }}>Delete group</button>
+              )}
               {members.some((m) => String(m.userId) === String(currentUserId)) && (
                 <button className="danger" onClick={() => {
                   if (!window.confirm('Leave this group?')) return;
