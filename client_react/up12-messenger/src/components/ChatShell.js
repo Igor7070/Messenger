@@ -27,6 +27,9 @@ const ChatShell = () => {
   // Прежний адрес /contacts остался рабочим: по нему окно просто открывается.
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [callsOpen, setCallsOpen] = useState(false);
+  // Новая группа заводится из окна людей: «New chat» ведёт туда же,
+  // и строка «New group» стоит там первой — как в привычных мессенджерах.
+  const [groupWanted, setGroupWanted] = useState(0);
   const peopleRoute = location.pathname === '/contacts';
   const callsRoute = location.pathname === '/calls';
   const profileRoute = /^\/user\/[^/]+$/.test(location.pathname);
@@ -60,7 +63,11 @@ const ChatShell = () => {
 
   return (
     <div className={`up-shell ${chatOpen ? 'up-shell-open' : ''}`}>
-      <ChatList onOpenPeople={() => setPeopleOpen(true)} onOpenCalls={() => setCallsOpen(true)} />
+      <ChatList
+        onOpenPeople={() => setPeopleOpen(true)}
+        onOpenCalls={() => setCallsOpen(true)}
+        groupWanted={groupWanted}
+      />
       <main className="up-shell-content">
         {chatOpen ? (
           <Outlet />
@@ -70,7 +77,12 @@ const ChatShell = () => {
           </div>
         )}
       </main>
-      {peopleOpen && <People onClose={closePeople} />}
+      {peopleOpen && (
+        <People
+          onClose={closePeople}
+          onNewGroup={() => { closePeople(); setGroupWanted((n) => n + 1); }}
+        />
+      )}
       {callsOpen && <Calls onClose={closeCalls} />}
       {profileRoute && <UserProfile onClose={() => navigate('/', { replace: true })} />}
     </div>

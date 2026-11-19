@@ -40,7 +40,7 @@ const letterOf = (name) => {
   return clean ? clean.charAt(0).toUpperCase() : '#';
 };
 
-const People = ({ onClose }) => {
+const People = ({ onClose, onNewGroup }) => {
   const navigate = useNavigate();
   const { usersStatus } = useUserStatusContext();
   const [people, setPeople] = useState([]);
@@ -148,6 +148,23 @@ const People = ({ onClose }) => {
         </div>
 
         <div className="up-people-scroll">
+          {/* Группа заводится отсюда же: кнопка «New chat» ведёт в это окно, и
+              если человеку нужна не переписка с кем-то одним, а группа, он не
+              должен искать её в меню. Строка стоит первой, как в привычных
+              мессенджерах. */}
+          {onNewGroup && !term.trim() && (
+            <button type="button" className="up-people-new-group" onClick={onNewGroup}>
+              <span className="up-people-new-group-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <circle cx="9" cy="8" r="3.4" />
+                  <path d="M2.6 19c0-3.1 3-4.9 6.4-4.9s6.4 1.8 6.4 4.9z" />
+                  <path d="M18 7.6v6M15 10.6h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+                </svg>
+              </span>
+              New group
+            </button>
+          )}
+
           {loading && <p className="up-people-empty">Loading…</p>}
 
           {!loading && total === 0 && (

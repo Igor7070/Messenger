@@ -43,7 +43,7 @@ const formatTime = (value) => {
  * Список живёт в каркасе и не перерисовывается при переходах между чатами —
  * раньше каждый чат был отдельной страницей, и список собирался заново.
  */
-const ChatList = ({ onOpenPeople = () => {}, onOpenCalls = () => {} }) => {
+const ChatList = ({ onOpenPeople = () => {}, onOpenCalls = () => {}, groupWanted = 0 }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { openAssistant } = useAssistant();
@@ -246,6 +246,12 @@ const ChatList = ({ onOpenPeople = () => {}, onOpenCalls = () => {} }) => {
     setMenuOpen(false);
     setGroupDialogOpen(true);
   };
+
+  // Из окна людей просят завести группу — открываем то же окно, что и
+  // пункт меню. Считаем нажатия, иначе второй раз подряд он бы не открылся.
+  useEffect(() => {
+    if (groupWanted > 0) setGroupDialogOpen(true);
+  }, [groupWanted]);
 
   const groupCreated = (chat, invited) => {
     setGroupDialogOpen(false);

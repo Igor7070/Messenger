@@ -106,6 +106,38 @@
   font-size: 0.9rem;
 }
 
+/* Первая строка окна — новая группа */
+.up-people-new-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 14px;
+  border: none;
+  background: transparent;
+  color: var(--up-text);
+  font-family: inherit;
+  font-size: 0.94rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.up-people-new-group:hover {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.up-people-new-group-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--up-accent);
+  color: #fff;
+}
+
 .up-people-letter {
   margin: 10px 0 2px 18px;
   font-size: 0.78rem;

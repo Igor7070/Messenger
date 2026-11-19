@@ -4,6 +4,7 @@ import * as api from '../api/chatMembers';
 import { deleteChat } from '../api/messages';
 import { useNavigate } from 'react-router-dom';
 import '../styles/GroupMembersDialog.css';
+import { nameOf } from '../api/names';
 
 /**
  * Участники группы: кто состоит, с какой ролью, и что я могу с этим сделать.
@@ -143,7 +144,7 @@ const GroupMembersDialog = ({ chat, currentUserId, allUsers = [], onClose, onCha
               {members.map((member) => (
                 <li key={member.userId} className="group-members-row">
                   <span className="group-members-name">
-                    {member.username || `User ${member.userId}`}
+                    {nameOf(member) || `User ${member.userId}`}
                     {String(member.userId) === String(currentUserId) ? ' (you)' : ''}
                   </span>
                   <span className={`group-members-role role-${member.role.toLowerCase()}`}>
@@ -187,7 +188,7 @@ const GroupMembersDialog = ({ chat, currentUserId, allUsers = [], onClose, onCha
                 <select value={adding} onChange={(e) => setAdding(e.target.value)}>
                   <option value="">Add someone…</option>
                   {notMembers.map((user) => (
-                    <option key={user.id} value={user.id}>{user.username}</option>
+                    <option key={user.id} value={user.id}>{nameOf(user)}</option>
                   ))}
                 </select>
                 <button

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createChat } from '../api/messages';
 import { addMember } from '../api/chatMembers';
 import '../styles/NewGroupDialog.css';
+import { nameOf } from '../api/names';
 
 const API = 'https://unlimitedpossibilities12.org/api';
 
@@ -40,7 +41,8 @@ const NewGroupDialog = ({ currentUserId, onClose, onCreated }) => {
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return people;
-    return people.filter((person) => (person.username || '').toLowerCase().includes(term));
+    return people.filter((person) => nameOf(person).toLowerCase().includes(term)
+      || (person.username || '').toLowerCase().includes(term));
   }, [people, search]);
 
   const toggle = (id) =>
@@ -116,10 +118,10 @@ const NewGroupDialog = ({ currentUserId, onClose, onCreated }) => {
                 />
               ) : (
                 <span className="up-modal-avatar up-modal-avatar-letter">
-                  {(person.username || '?').charAt(0).toUpperCase()}
+                  {(nameOf(person) || '?').charAt(0).toUpperCase()}
                 </span>
               )}
-              <span className="up-modal-person-name">{person.username}</span>
+              <span className="up-modal-person-name">{nameOf(person)}</span>
             </label>
           ))}
           {visible.length === 0 && <p className="up-modal-empty">Nobody found</p>}
