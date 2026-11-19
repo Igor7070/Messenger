@@ -228,6 +228,12 @@ public class MessengerMainActivity extends AppCompatActivity {
             highlightTabs(2);
         });
 
+        // Карточка своего профиля, открытая откуда-то ещё (скажем, из
+        // участников группы), отправляет сюда: свой профиль живёт вкладкой.
+        if (getIntent() != null && getIntent().getBooleanExtra("openProfileTab", false)) {
+            navProfileLayout.post(() -> navProfileLayout.performClick());
+        }
+
         navProfileLayout.setOnClickListener(v -> {
             highlightTabs(3);
 
@@ -1562,7 +1568,13 @@ public class MessengerMainActivity extends AppCompatActivity {
                     Log.d(TAG, "Users received: " + response.body().size());
                     usersFetchAttempt = 0;
                     usersList.clear();
-                    usersList.addAll(response.body());
+                    // Себя в списке людей не показываем: писать себе незачем,
+                    // а своя карточка открывается вкладкой «Profile». Прежде
+                    // нажатие на себя вело в чужую карточку — второй, старый
+                    // вид своего профиля.
+                    for (User person : response.body()) {
+                        if (person.getId() != currentUserId) usersList.add(person);
+                    }
 
                     runOnUiThread(() -> {
                         // Запоминаем, кто как себя назвал: список разговоров

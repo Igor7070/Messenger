@@ -123,6 +123,20 @@ public class UserProfileActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Своя карточка — это вкладка «Profile» на главном экране; второй её
+        // вид, с кнопками «написать» и «позвонить» самому себе, здесь ни к
+        // чему. Попали сюда на себе — уходим туда.
+        int meId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
+        int askedId = getIntent() == null ? -1 : getIntent().getIntExtra("userId", -1);
+        if (meId != -1 && askedId == meId) {
+            Intent mine = new Intent(this, MessengerMainActivity.class);
+            mine.putExtra("openProfileTab", true);
+            mine.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(mine);
+            finish();
+            return;
+        }
         setContentView(R.layout.activity_user_profile);
 
         // Запрещаем поворот экрана
