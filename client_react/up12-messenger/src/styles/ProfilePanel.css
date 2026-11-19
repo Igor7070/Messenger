@@ -35,6 +35,22 @@
   padding: 10px 12px 0;
 }
 
+/* В правке шапка выстраивается слева направо: стрелка, название, крестик */
+.up-profile-head.editing {
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.up-profile-head-title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--up-text);
+}
+
 .up-profile-icon {
   display: flex;
   align-items: center;
@@ -249,6 +265,68 @@
   margin: 2px 0 0;
   font-size: 0.78rem;
   color: var(--up-muted);
+}
+
+/* Поле правки описания со счётчиком — как «О себе» у телеграма */
+.up-profile-field {
+  padding: 10px 14px 12px;
+}
+
+.up-profile-field-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  color: var(--up-muted);
+}
+
+.up-profile-counter {
+  font-variant-numeric: tabular-nums;
+}
+
+.up-profile-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.4);
+  color: var(--up-text);
+  font-family: inherit;
+  font-size: 0.92rem;
+  resize: vertical;
+  outline: none;
+}
+
+.up-profile-field textarea:focus {
+  border-color: var(--up-accent);
+}
+
+/* Пояснение под полем — тоже телеграмовская привычка */
+.up-profile-hint {
+  margin: 0;
+  padding: 0 14px 12px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--up-faint, #64748b);
+}
+
+.up-profile-save {
+  margin-left: 4px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--up-accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.up-profile-save:hover {
+  background: var(--up-accent-strong);
 }
 
 /* Правка описания */

@@ -543,15 +543,46 @@ const UserProfile = ({ onClose = () => {} }) => {
                 role="dialog"
                 aria-label="Profile"
             >
-                <header className="up-profile-head">
-                    <button
-                        type="button"
-                        className="up-profile-icon"
-                        title="More"
-                        onClick={toggleSettingsMenu}
-                    >
-                        <FaEllipsisV />
-                    </button>
+                <header className={`up-profile-head ${isEditing ? 'editing' : ''}`}>
+                    {/* В правке шапка меняется так же, как у телеграма: слева
+                        стрелка назад и название, справа крестик. Карандаш
+                        стоит там же, где у них, — отдельного экрана не нужно,
+                        меняются всего две вещи: снимок и описание. */}
+                    {isEditing && (
+                        <>
+                            <button
+                                type="button"
+                                className="up-profile-icon"
+                                title="Back"
+                                onClick={() => { setInfo(user.info || ''); setIsEditing(false); }}
+                            >
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M15 5l-7 7 7 7" />
+                                </svg>
+                            </button>
+                            <h3 className="up-profile-head-title">Edit profile</h3>
+                        </>
+                    )}
+                    {isMe && !isEditing && (
+                        <button
+                            type="button"
+                            className="up-profile-icon"
+                            title="Edit"
+                            onClick={() => setIsEditing(true)}
+                        >
+                            <FaEdit />
+                        </button>
+                    )}
+                    {!isEditing && (
+                        <button
+                            type="button"
+                            className="up-profile-icon"
+                            title="More"
+                            onClick={toggleSettingsMenu}
+                        >
+                            <FaEllipsisV />
+                        </button>
+                    )}
                     <button type="button" className="up-profile-icon" title="Close" onClick={onClose}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                             <path d="M6 6l12 12M18 6L6 18" />
@@ -641,9 +672,13 @@ const UserProfile = ({ onClose = () => {} }) => {
                 )}
 
                 <div className="up-profile-rows">
-                    <div className="up-profile-row">
-                        {isEditing ? (
-                            <div className="up-profile-edit">
+                    {isEditing ? (
+                        <>
+                            <div className="up-profile-field">
+                                <div className="up-profile-field-head">
+                                    <span>About</span>
+                                    <span className="up-profile-counter">{244 - info.length}</span>
+                                </div>
                                 <textarea
                                     value={info}
                                     onChange={(event) => setInfo(event.target.value)}
@@ -651,30 +686,20 @@ const UserProfile = ({ onClose = () => {} }) => {
                                     maxLength={244}
                                     autoFocus
                                 />
-                                <div className="up-profile-edit-buttons">
-                                    <button type="button" onClick={() => setIsEditing(false)}>Cancel</button>
-                                    <button type="button" className="primary" onClick={handleUpdateUser}>Save</button>
-                                </div>
                             </div>
-                        ) : (
-                            <>
-                                <div className="up-profile-row-body">
-                                    <p className="up-profile-row-value">{info || '—'}</p>
-                                    <p className="up-profile-row-label">About</p>
-                                </div>
-                                {isMe && (
-                                    <button
-                                        type="button"
-                                        className="up-profile-icon"
-                                        title="Edit"
-                                        onClick={() => setIsEditing(true)}
-                                    >
-                                        <FaEdit />
-                                    </button>
-                                )}
-                            </>
-                        )}
-                    </div>
+                            <p className="up-profile-hint">
+                                Any details, such as what you do or where you are.
+                                For example: designer from Kyiv.
+                            </p>
+                        </>
+                    ) : (
+                        <div className="up-profile-row">
+                            <div className="up-profile-row-body">
+                                <p className="up-profile-row-value">{info || '—'}</p>
+                                <p className="up-profile-row-label">About</p>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="up-profile-row">
                         <div className="up-profile-row-body">
@@ -682,10 +707,30 @@ const UserProfile = ({ onClose = () => {} }) => {
                             <p className="up-profile-row-label">Username</p>
                         </div>
                     </div>
+                    {isEditing && (
+                        <p className="up-profile-hint">
+                            People find you by this name; it cannot be changed.
+                        </p>
+                    )}
                 </div>
 
                 <footer className="up-profile-foot">
-                    <button type="button" className="up-profile-done" onClick={onClose}>Close</button>
+                    {isEditing ? (
+                        <>
+                            <button
+                                type="button"
+                                className="up-profile-done"
+                                onClick={() => { setInfo(user.info || ''); setIsEditing(false); }}
+                            >
+                                Cancel
+                            </button>
+                            <button type="button" className="up-profile-save" onClick={handleUpdateUser}>
+                                Save
+                            </button>
+                        </>
+                    ) : (
+                        <button type="button" className="up-profile-done" onClick={onClose}>Close</button>
+                    )}
                 </footer>
 
                 {/* Снимок во весь рост */}
