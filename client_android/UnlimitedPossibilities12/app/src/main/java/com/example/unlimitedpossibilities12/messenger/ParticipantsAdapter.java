@@ -39,6 +39,29 @@ public class ParticipantsAdapter extends RecyclerView.Adapter<ParticipantsAdapte
     private String currentUserId;
     private boolean selfMuted;
 
+    /**
+     * Что вышло с подписью каждого участника: строка вроде «verified».
+     * Показываем её в той же строке, где «in call», через точку — лишних
+     * значков на тесной карточке заводить не стоит.
+     */
+    private java.util.Map<String, String> security = java.util.Collections.emptyMap();
+
+    public void setSecurity(java.util.Map<String, String> security) {
+        this.security = security == null ? java.util.Collections.emptyMap() : security;
+        notifyDataSetChanged();
+    }
+
+    /** Долгое нажатие на участника: показать код для сверки голосом. */
+    public interface OnSecurityClickListener {
+        void onSecurityClick(String userId);
+    }
+
+    private OnSecurityClickListener securityListener;
+
+    public void setOnSecurityClickListener(OnSecurityClickListener listener) {
+        this.securityListener = listener;
+    }
+
     public interface OnAvatarClickListener {
         void onAvatarClick(int userId);
     }
@@ -92,8 +115,15 @@ public class ParticipantsAdapter extends RecyclerView.Adapter<ParticipantsAdapte
         }
 
         boolean inCall = isSelf || joined.contains(id);
-        holder.participantState.setText(inCall ? R.string.call_participant_in_call : R.string.call_participant_ringing);
+        String state = holder.itemView.getContext().getString(
+                inCall ? R.string.call_participant_in_call : R.string.call_participant_ringing);
+        String guard = isSelf ? null : security.get(id);
+        holder.participantState.setText(guard == null ? state : state + " · " + guard);
         holder.participantState.setTextColor(inCall ? 0xFF34D399 : 0xFF94A3B8);
+        holder.itemView.setOnLongClickListener(v -> {
+            if (!isSelf && securityListener != null) securityListener.onSecurityClick(id);
+            return true;
+        });
 
         boolean micOff = isSelf ? selfMuted : muted.contains(id);
         holder.speakingDot.setVisibility(!micOff && speaking.contains(id) ? View.VISIBLE : View.INVISIBLE);

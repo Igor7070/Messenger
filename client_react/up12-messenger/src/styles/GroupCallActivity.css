@@ -330,3 +330,100 @@
   /* Ограничение высоты и прокрутка сетки видео теперь заданы в основном
      правиле .group-call-video-grid и действуют на любой ширине экрана. */
 }
+/* ======================================================================
+   Защита в групповом звонке: замок с подписью у каждого участника и окно
+   с кодом для сверки голосом. Групповой звонок сложен из парных
+   соединений, поэтому и защита у каждого своя.
+   ====================================================================== */
+.group-call-participant-security {
+  display: block;
+  margin-top: 2px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.group-call-participant-security:hover {
+  text-decoration: underline;
+}
+
+.group-call-code-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(2, 6, 23, 0.6);
+}
+
+.group-call-code {
+  width: 100%;
+  max-width: 360px;
+  box-sizing: border-box;
+  padding: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 14px;
+  background: #16213a;
+  box-shadow: 0 22px 60px rgba(2, 6, 23, 0.6);
+  text-align: center;
+}
+
+.group-call-code h3 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  color: #e2e8f0;
+}
+
+.group-call-code-digits {
+  margin: 0 0 10px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #a5b4fc;
+  font-variant-numeric: tabular-nums;
+}
+
+.group-call-code-hint {
+  margin: 0 0 16px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.group-call-code-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.group-call-code-buttons button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: #94a3b8;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.group-call-code-buttons button:hover {
+  background: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+
+.group-call-code-buttons button.primary {
+  background: #6366f1;
+  color: #fff;
+}
+
+.group-call-code-buttons button.primary:hover {
+  background: #4f46e5;
+}

@@ -244,6 +244,11 @@
 
 .calls-group-call-modal-overlay,
 .calls-delete-modal-overlay {
+    /* Окно выбора участников рисуется поверх всего экрана. Пока звонки были
+       страницей, оно вставало по месту само; теперь звонки — окошко, и без
+       жёсткой привязки окно выбора уезжало вниз, за край экрана. */
+    position: fixed;
+    inset: 0;
     background: rgba(0, 0, 0, 0.75);
     display: flex;
     align-items: center;
@@ -870,4 +875,145 @@
     right: 10px;
     width: auto;
   }
+}
+
+/* ======================================================================
+   Окно выбора участников: со времён отдельной страницы звонков оно
+   осталось в прежнем виде — бирюзовый заголовок, наезжающие друг на
+   друга строки, полоса прокрутки вбок. Приводим к виду остальных окон.
+   ====================================================================== */
+/* Общее правило .ReactModal__Content стоит в сборке ниже и при равном весе
+   перебивало это: карточка выходила без фона, без полей и во весь экран.
+   Поэтому пишем оба класса — так правило весит больше. */
+.ReactModal__Content.calls-group-call-modal {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    box-sizing: border-box;
+    /* Общие правила окон в сборке стоят ниже и спорят с этим; метку ставим
+       только там, где они перебивали — фон и поля. */
+    padding: 20px !important;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 14px;
+    background: #16213a !important;
+    box-shadow: 0 22px 60px rgba(2, 6, 23, 0.6);
+    outline: none;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.ReactModal__Content.calls-group-call-modal .calls-modal-title {
+    margin: 0 0 14px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    text-align: left;
+    text-shadow: none;
+    letter-spacing: normal;
+}
+
+.ReactModal__Content.calls-group-call-modal .calls-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 10px;
+    padding: 9px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+    background: rgba(2, 6, 23, 0.4);
+    color: #e2e8f0;
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+}
+
+.ReactModal__Content.calls-group-call-modal .calls-search-input:focus {
+    border-color: #6366f1;
+}
+
+.ReactModal__Content.calls-group-call-modal .calls-user-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    list-style: none;
+    margin: 0 0 14px;
+    padding: 0;
+}
+
+.ReactModal__Content.calls-group-call-modal .calls-user-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 4px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+}
+
+.ReactModal__Content.calls-group-call-modal .calls-user-item:hover {
+    background: rgba(148, 163, 184, 0.08);
+}
+
+.ReactModal__Content.calls-group-call-modal .calls-user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #475569;
+    color: #fff;
+    font-weight: 700;
+    border: none;
+}
+
+.ReactModal__Content.calls-group-call-modal .calls-user-name {
+    color: #e2e8f0;
+    font-size: 0.95rem;
+}
+
+.ReactModal__Content.calls-group-call-modal .calls-start-group-call-button,
+.ReactModal__Content.calls-group-call-modal .calls-modal-close-button {
+    width: auto;
+    margin: 0;
+    padding: 9px 16px;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    color: #94a3b8;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.ReactModal__Content.calls-group-call-modal .calls-start-group-call-button {
+    background: #6366f1;
+    color: #fff;
+    order: 2;
+}
+
+.ReactModal__Content.calls-group-call-modal .calls-start-group-call-button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.ReactModal__Content.calls-group-call-modal .calls-modal-close-button:hover {
+    background: rgba(148, 163, 184, 0.12);
+    color: #e2e8f0;
+}
+
+/* Кнопки внизу — в строку, справа */
+.ReactModal__Content.calls-group-call-modal {
+    text-align: left;
+}
+
+.ReactModal__Content.calls-group-call-modal .calls-start-group-call-button,
+.ReactModal__Content.calls-group-call-modal .calls-modal-close-button {
+    align-self: flex-end;
 }

@@ -4,8 +4,33 @@ import { toast } from 'react-toastify';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
-import axios from 'axios'; // NEW: Добавляем импорт axios
+import { createCallGuard, CallSecurity } from '../utils/callGuard';
+import axios from 'axios';
 import '../styles/GroupCallActivity.css';
+
+/** Короткая подпись под именем участника — что вышло с его подписью. */
+const securityWord = (state) => {
+  switch (state) {
+    case CallSecurity.CONFIRMED: return 'confirmed by you';
+    case CallSecurity.VERIFIED: return 'verified';
+    case CallSecurity.NEW_DEVICE: return 'new device';
+    case CallSecurity.CHANGED: return 'key changed';
+    case CallSecurity.FAILED: return 'not verified';
+    case CallSecurity.ENCRYPTED: return 'encrypted';
+    default: return 'checking…';
+  }
+};
+
+/** Цвет замка: тревожим только когда есть чем. */
+const securityColor = (state) => {
+  switch (state) {
+    case CallSecurity.CONFIRMED:
+    case CallSecurity.VERIFIED: return '#34D399';
+    case CallSecurity.CHANGED: return '#FBBF24';
+    case CallSecurity.FAILED: return '#F87171';
+    default: return '#94A3B8';
+  }
+};
 
 Chart.register(...registerables);
 
@@ -18,6 +43,18 @@ const GroupCallActivity = () => {
   const currentUserId = localStorage.getItem('userId');
   const roomId = useRef(isInitiator ? crypto.randomUUID() : initialRoomId || null);
   const peerConnections = useRef(new Map());
+  /**
+   * По стражу на каждого собеседника.
+   *
+   * Групповой звонок у нас — не общий поток через сервер, а несколько
+   * обычных парных соединений. Значит и защита парная: с каждым своя подпись
+   * сведений о соединении, своя проверка его ключа и свой код для сверки
+   * голосом. Общей выработки ключей на компанию не нужно.
+   */
+  const guards = useRef(new Map());
+  // Чей код сверки сейчас открыт
+  const [codeFor, setCodeFor] = useState(null);
+  const [securityByUser, setSecurityByUser] = useState({});
   const localAudioRef = useRef(null);
   const remoteAudioRefs = useRef(new Map());
   const pendingCandidates = useRef(new Map());
@@ -520,7 +557,7 @@ const GroupCallActivity = () => {
 
   const resendPendingSignals = () => {
     console.log('Resending pending signals for unconnected peers');
-    peerConnections.current.forEach((pc, userId) => {
+    peerConnections.current.forEach(async (pc, userId) => {
         if (pc.iceConnectionState !== 'connected' && pc.iceConnectionState !== 'completed') {
             // Проверяем, установлено ли соединение
             if (
@@ -537,7 +574,11 @@ const GroupCallActivity = () => {
                     {
                         from: currentUserId,
                         to: userId,
-                        signal: { type: 'offer', sdp: pc.localDescription.sdp },
+                        signal: {
+                            type: 'offer',
+                            sdp: pc.localDescription.sdp,
+                            ...(await signFor(userId, pc.localDescription.sdp)),
+                        },
                     },
                     roomId.current
                 );
@@ -545,6 +586,49 @@ const GroupCallActivity = () => {
             }
         }
     });
+  };
+
+  /** Страж для собеседника: заводим один раз и держим до конца звонка. */
+  const guardFor = async (userId) => {
+    const key = String(userId);
+    if (guards.current.has(key)) return guards.current.get(key);
+    try {
+      const guard = await createCallGuard(currentUserId, userId);
+      guards.current.set(key, guard);
+      setSecurityByUser((prev) => ({ ...prev, [key]: guard.state() }));
+      return guard;
+    } catch (error) {
+      console.warn(`Не удалось завести стража для ${userId}:`, error);
+      return null;
+    }
+  };
+
+  /** Подписать своё описание соединения для этого собеседника. */
+  const signFor = async (userId, sdp) => {
+    const guard = await guardFor(userId);
+    return guard ? { signature: guard.sign(sdp), deviceId: guard.deviceId } : {};
+  };
+
+  /**
+   * Проверить подпись собеседника. Если не сошлась — рвём соединение
+   * только с ним: остальные в звонке не виноваты и продолжают говорить.
+   */
+  const verifyFrom = async (userId, sdp, signature, senderDeviceId) => {
+    const guard = await guardFor(userId);
+    if (!guard) return false;
+    const state = guard.verify(sdp, signature, senderDeviceId);
+    setSecurityByUser((prev) => ({ ...prev, [String(userId)]: state }));
+    if (state === CallSecurity.FAILED) {
+      console.error(`Подпись участника ${userId} не сошлась — отключаем его`);
+      toast.error('Could not verify one of the participants — they were disconnected');
+      const pc = peerConnections.current.get(String(userId));
+      if (pc) {
+        pc.close();
+        peerConnections.current.delete(String(userId));
+      }
+      return true;
+    }
+    return false;
   };
 
   const initializePeerConnection = async (userId, stream) => {
@@ -773,7 +857,9 @@ const GroupCallActivity = () => {
                             {
                                 from: currentUserId,
                                 to: String(user.id),
-                                signal: modifiedOffer,
+                                // Своё описание соединения подписываем — собеседник
+                                // проверит подпись и увидит подмену ключа
+                                signal: { ...modifiedOffer, ...(await signFor(user.id, modifiedOffer.sdp)) },
                             },
                             roomId.current
                         );
@@ -891,7 +977,9 @@ const GroupCallActivity = () => {
                             {
                                 from: currentUserId,
                                 to: String(user.id),
-                                signal: modifiedOffer,
+                                // Своё описание соединения подписываем — собеседник
+                                // проверит подпись и увидит подмену ключа
+                                signal: { ...modifiedOffer, ...(await signFor(user.id, modifiedOffer.sdp)) },
                             },
                             roomId.current
                         );
@@ -1079,6 +1167,12 @@ const GroupCallActivity = () => {
 
           case 'offer':
             console.log('Processing offer from:', currentFrom, 'signal:', currentSignalData);
+            // Подпись собеседника: не сошлась — отключаем его одного,
+            // остальные в звонке продолжают говорить
+            if (await verifyFrom(currentFrom, currentSignalData.sdp,
+                currentSignalData.signature, currentSignalData.deviceId)) {
+              break;
+            }
             offerReceived.current.set(currentFrom, true);
             try {
               const currentState = peerConnection.signalingState;
@@ -1104,7 +1198,11 @@ const GroupCallActivity = () => {
               if (!sentSignals.current.has(signalKey)) {
                 sentSignals.current.add(signalKey);
                 sendSignal(
-                  { from: currentUserId, to: currentFrom, signal: answer },
+                  {
+                    from: currentUserId,
+                    to: currentFrom,
+                    signal: { type: answer.type, sdp: answer.sdp, ...(await signFor(currentFrom, answer.sdp)) },
+                  },
                   roomId.current
                 );
                 console.log(`Sent answer to user ${currentFrom}`);
@@ -1133,6 +1231,10 @@ const GroupCallActivity = () => {
 
           case 'answer':
             console.log('Processing answer from:', currentFrom, 'signal:', currentSignalData);
+            if (await verifyFrom(currentFrom, currentSignalData.sdp,
+                currentSignalData.signature, currentSignalData.deviceId)) {
+              break;
+            }
             try {
               if (peerConnection.signalingState === 'have-local-offer') {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(currentSignalData));
@@ -1669,6 +1771,24 @@ const GroupCallActivity = () => {
                     <div className="group-call-participant-avatar">{user.username.charAt(0).toUpperCase()}</div>
                   )}
                   <span className="group-call-participant-name">{user.username}</span>
+                  {/* Защита — своя у каждого: групповой звонок сложен из
+                      парных соединений, и подпись проверяется с каждым
+                      отдельно. Нажатие открывает код для сверки голосом. */}
+                  {Number(user.id) !== Number(currentUserId) && (
+                    <button
+                      type="button"
+                      className="group-call-participant-security"
+                      style={{ color: securityColor(securityByUser[String(user.id)]) }}
+                      title="Show the code to read aloud"
+                      onClick={async () => {
+                        const guard = guards.current.get(String(user.id));
+                        if (!guard) return;
+                        setCodeFor({ id: user.id, name: user.username, code: await guard.fingerprint() });
+                      }}
+                    >
+                      🔒 {securityWord(securityByUser[String(user.id)])}
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -1688,6 +1808,34 @@ const GroupCallActivity = () => {
           </>
         )}
       </div>
+      {codeFor && (
+        <div className="group-call-code-backdrop" onClick={() => setCodeFor(null)} role="presentation">
+          <div className="group-call-code" onClick={(event) => event.stopPropagation()}>
+            <h3>Code with {codeFor.name}</h3>
+            <p className="group-call-code-digits">{codeFor.code || '—'}</p>
+            <p className="group-call-code-hint">
+              Read it aloud. If it is the same on both sides, nobody swapped the keys.
+            </p>
+            <div className="group-call-code-buttons">
+              <button type="button" onClick={() => setCodeFor(null)}>Close</button>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => {
+                  const guard = guards.current.get(String(codeFor.id));
+                  if (guard) {
+                    guard.confirmByCode();
+                    setSecurityByUser((prev) => ({ ...prev, [String(codeFor.id)]: guard.state() }));
+                  }
+                  setCodeFor(null);
+                }}
+              >
+                It matches
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <audio id="local-audio" ref={localAudioRef} autoPlay muted />
       <button className="group-call-end-button" onClick={endCall}>
         End Call

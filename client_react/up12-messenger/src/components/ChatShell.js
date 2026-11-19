@@ -4,6 +4,8 @@ import ChatList from './ChatList';
 import People from './People';
 import Calls from './Calls';
 import UserProfile from './UserProfile';
+import IncomingCallNotification from './IncomingCallNotification';
+import { useCallWebSocket } from '../context/CallWebSocketContext';
 import '../styles/tokens.css';
 import '../styles/ChatShell.css';
 import '../styles/ShellPages.css';
@@ -21,6 +23,16 @@ import '../styles/ShellPages.css';
 const ChatShell = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  /**
+   * Входящий звонок — на каркасе, а не на страницах.
+   *
+   * Раньше окошко «вам звонят» рисовали сами страницы: список людей, звонки,
+   * профиль, переписка. Когда разделы стали окнами поверх каркаса, на пустом
+   * экране не осталось ни одной такой страницы — звонок приходил, звенел, а
+   * принять его было негде. Теперь оно живёт в каркасе и появляется в любом
+   * месте приложения.
+   */
+  const { incomingCall, acceptCall, rejectCall } = useCallWebSocket();
 
   // Люди живут не разделом, а окошком поверх приложения — как «Контакты» в
   // телеграме: открыл, выбрал, кого написать, и вернулся к той же переписке.
@@ -85,6 +97,16 @@ const ChatShell = () => {
       )}
       {callsOpen && <Calls onClose={closeCalls} />}
       {profileRoute && <UserProfile onClose={() => navigate('/', { replace: true })} />}
+      {incomingCall && (
+        <IncomingCallNotification
+          callerId={incomingCall.callerId}
+          callerName={incomingCall.callerName || incomingCall.initiatorName || 'Unknown'}
+          avatar={incomingCall.avatar}
+          callType={incomingCall.type || incomingCall.callType}
+          onAccept={() => acceptCall(navigate)}
+          onReject={rejectCall}
+        />
+      )}
     </div>
   );
 };

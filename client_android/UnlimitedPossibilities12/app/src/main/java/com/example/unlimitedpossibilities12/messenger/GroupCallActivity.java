@@ -108,6 +108,19 @@ public class GroupCallActivity extends AppCompatActivity {
     private ArrayList<User> participants;
     private String roomId;
     private Map<String, PeerConnection> peerConnections;
+    /**
+     * По стражу на каждого собеседника.
+     *
+     * Групповой звонок у нас — не общий поток через сервер, а несколько
+     * обычных парных соединений. Значит и защита парная: с каждым своя
+     * подпись сведений о соединении, своя проверка его ключа и свой код для
+     * сверки голосом. Общей выработки ключей на компанию не нужно.
+     */
+    private final Map<String, com.example.unlimitedpossibilities12.messenger.notife.CallGuard> guards
+            = new java.util.concurrent.ConcurrentHashMap<>();
+    /** Что вышло с подписью каждого: показываем под его именем. */
+    private final Map<String, com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State> guardStates
+            = new java.util.concurrent.ConcurrentHashMap<>();
     private PeerConnectionFactory peerConnectionFactory;
     private AudioSource audioSource;
     private AudioTrack localAudioTrack;
@@ -282,6 +295,7 @@ public class GroupCallActivity extends AppCompatActivity {
                 toggleMode();
             }
         });
+        participantsAdapter.setOnSecurityClickListener(this::showParticipantCode);
         participantsRecyclerView.setAdapter(participantsAdapter);
 
         // Инициализация видеоадаптера и GridLayoutManager
@@ -1313,6 +1327,13 @@ public class GroupCallActivity extends AppCompatActivity {
 
                 case "offer":
                     Log.d(TAG, "Processing signal from: " + fromId + ", type: offer, payload: " + signalMessage.toString());
+                    // Подпись собеседника: не сошлась — отключаем его одного,
+                    // остальные в звонке продолжают говорить
+                    if (verifyFrom(fromId, signal.optString("sdp", null),
+                            signal.optString("signature", null),
+                            signal.optString("deviceId", null))) {
+                        break;
+                    }
                     if (true) {
                         // Существующее PeerConnection НЕ пересоздаём. Раньше здесь стоял
                         // existingPc.close(), и при одновременных офферах (а в mesh-звонке
@@ -1398,6 +1419,11 @@ public class GroupCallActivity extends AppCompatActivity {
                     break;
 
                 case "answer":
+                    if (verifyFrom(fromId, signal.optString("sdp", null),
+                            signal.optString("signature", null),
+                            signal.optString("deviceId", null))) {
+                        break;
+                    }
                     final PeerConnection peerConn = peerConnections.get(fromId); // Переименовано с pc на peerConn
                     if (peerConn != null) {
                         String sdp = signal.getString("sdp");
@@ -1666,13 +1692,115 @@ public class GroupCallActivity extends AppCompatActivity {
         }, new SessionDescription(SessionDescription.Type.OFFER, sdp));
     }
 
+    /** Страж для собеседника: заводится один раз и живёт до конца звонка. */
+    private com.example.unlimitedpossibilities12.messenger.notife.CallGuard guardFor(String partnerId) {
+        if (partnerId == null) return null;
+        com.example.unlimitedpossibilities12.messenger.notife.CallGuard guard = guards.get(partnerId);
+        if (guard != null) return guard;
+        guard = new com.example.unlimitedpossibilities12.messenger.notife.CallGuard(
+                this, String.valueOf(currentUserId));
+        guards.put(partnerId, guard);
+        guardStates.put(partnerId, guard.state());
+        // Ключи собеседника спрашиваем у сервера в своём потоке; своей
+        // подписи это не мешает — свой ключ лежит на устройстве
+        guard.prepare(partnerId, () -> runOnUiThread(() -> {
+            guardStates.put(partnerId, guards.get(partnerId).state());
+            updateSecurityLine(partnerId);
+        }));
+        return guard;
+    }
+
+    /**
+     * Проверить подпись собеседника. Не сошлась — рвём соединение только с
+     * ним: остальные в звонке не виноваты и продолжают говорить.
+     */
+    private boolean verifyFrom(String fromId, String sdp, String signature, String senderDeviceId) {
+        com.example.unlimitedpossibilities12.messenger.notife.CallGuard guard = guardFor(fromId);
+        if (guard == null) return false;
+        com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State state =
+                guard.verify(sdp, signature, senderDeviceId);
+        guardStates.put(fromId, state);
+        runOnUiThread(() -> updateSecurityLine(fromId));
+        if (state == com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State.FAILED) {
+            Log.e(TAG, "Подпись участника " + fromId + " не сошлась — отключаем его");
+            runOnUiThread(() -> Toast.makeText(this,
+                    "Could not verify one of the participants — they were disconnected",
+                    Toast.LENGTH_LONG).show());
+            PeerConnection pc = peerConnections.get(fromId);
+            if (pc != null) {
+                pc.close();
+                peerConnections.remove(fromId);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /** Подпись под именем участника обновляется, когда что-то выяснилось. */
+    private void updateSecurityLine(String partnerId) {
+        if (participantsAdapter == null) return;
+        java.util.Map<String, String> words = new java.util.HashMap<>();
+        for (java.util.Map.Entry<String,
+                com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State> entry
+                : guardStates.entrySet()) {
+            words.put(entry.getKey(), securityWord(entry.getValue()));
+        }
+        participantsAdapter.setSecurity(words);
+    }
+
+    /** Короткая подпись о защите — те же слова, что в обычном звонке. */
+    private String securityWord(com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State state) {
+        if (state == null) return getString(R.string.call_security_checking);
+        switch (state) {
+            case CONFIRMED: return getString(R.string.call_security_confirmed);
+            case VERIFIED: return getString(R.string.call_security_verified);
+            case NEW_DEVICE: return getString(R.string.call_security_new_device);
+            case CHANGED: return getString(R.string.call_security_changed);
+            case FAILED: return getString(R.string.call_security_failed);
+            case ENCRYPTED: return getString(R.string.call_security_encrypted);
+            default: return getString(R.string.call_security_checking);
+        }
+    }
+
+    /** Код для сверки голосом — по долгому нажатию на участника. */
+    private void showParticipantCode(String partnerId) {
+        com.example.unlimitedpossibilities12.messenger.notife.CallGuard guard = guards.get(partnerId);
+        if (guard == null) return;
+        String code = guard.fingerprintDigits();
+        String name = participants.stream()
+                .filter(u -> String.valueOf(u.getId()).equals(partnerId))
+                .map(User::getVisibleName)
+                .findFirst()
+                .orElse("участник");
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Code with " + name)
+                .setMessage((code == null ? "—" : code)
+                        + "\n\nRead it aloud. If it is the same on both sides, nobody swapped the keys.")
+                .setNegativeButton("Close", null)
+                .setPositiveButton("It matches", (dialog, which) -> {
+                    guard.confirmByCode();
+                    guardStates.put(partnerId, guard.state());
+                    updateSecurityLine(partnerId);
+                })
+                .show();
+    }
+
     private JSONObject createSignalJson(String type, Object data, String to) {
         JSONObject message = new JSONObject();
         JSONObject signal = new JSONObject();
         try {
             signal.put("type", type);
             if (data instanceof SessionDescription) {
-                signal.put("sdp", ((SessionDescription) data).description);
+                String sdp = ((SessionDescription) data).description;
+                signal.put("sdp", sdp);
+                // Своё описание соединения подписываем для того, кому шлём:
+                // он проверит подпись и увидит подмену ключа
+                com.example.unlimitedpossibilities12.messenger.notife.CallGuard guard = guardFor(to);
+                if (guard != null) {
+                    String signature = guard.sign(sdp);
+                    if (signature != null) signal.put("signature", signature);
+                    signal.put("deviceId", guard.deviceId());
+                }
             } else if (data instanceof IceCandidate) {
                 IceCandidate candidate = (IceCandidate) data;
                 JSONObject iceCandidate = new JSONObject();
