@@ -145,6 +145,23 @@ public interface ApiService {
     Call<List<Message>> getMessagesByChatId(@Path("chatId") long chatId,
                                             @Query("language") String language);
 
+    /**
+     * То же, но с пометкой «переписку открыли»: сервер отметит чужие
+     * сообщения прочитанными. Просит об этом только экран самой переписки.
+     * Список разговоров читает ту же историю ради последней строки и молчит,
+     * иначе всё прочитывалось бы само собой — счётчик непрочитанных не
+     * появлялся бы никогда, а собеседнику вставала бы вторая галочка, хотя
+     * его сообщение даже не открывали.
+     */
+    @GET("chats/{chatId}/messages")
+    Call<List<Message>> getMessagesOfOpenedChat(@Path("chatId") long chatId,
+                                                @Query("opened") boolean opened);
+
+    @GET("chats/{chatId}/messages")
+    Call<List<Message>> getMessagesOfOpenedChat(@Path("chatId") long chatId,
+                                                @Query("language") String language,
+                                                @Query("opened") boolean opened);
+
     @GET("messages/{messageId}")
     Call<Message> getMessageById(@Path("messageId") long messageId);
 

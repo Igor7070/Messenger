@@ -1435,7 +1435,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
     }
 
     private void fetchMessages() {
-        apiService.getMessagesByChatId(chatId).enqueue(new Callback<List<Message>>() {
+        apiService.getMessagesOfOpenedChat(chatId, true).enqueue(new Callback<List<Message>>() {
             @Override
             public void onResponse(Call<List<Message>> call, Response<List<Message>> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -2002,7 +2002,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
             }
             return;
         }
-        apiService.getMessagesByChatId(chatId).enqueue(new Callback<List<Message>>() {
+        apiService.getMessagesOfOpenedChat(chatId, true).enqueue(new Callback<List<Message>>() {
             @Override
             public void onResponse(Call<List<Message>> call, Response<List<Message>> response) {
                 if (response.isSuccessful() && response.body() != null) {

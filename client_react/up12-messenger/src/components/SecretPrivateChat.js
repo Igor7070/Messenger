@@ -155,7 +155,7 @@ const dayLabel = (timestamp) => {
   if (date.toDateString() === today.toDateString()) return 'Today';
   if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
   const sameYear = date.getFullYear() === today.getFullYear();
-  return date.toLocaleDateString([], sameYear
+  return date.toLocaleDateString('en-GB', sameYear
     ? { day: 'numeric', month: 'long' }
     : { day: 'numeric', month: 'long', year: 'numeric' });
 };
@@ -467,7 +467,7 @@ const SecretPrivateChat = () => {
       try {
         // Сообщения не ждут ни собеседника, ни ключей — запрос уходит сразу,
         // иначе лента появляется только через пару секунд
-        const messagesPromise = getMessages(chatIdParam);
+        const messagesPromise = getMessages(chatIdParam, {}, null, true);
         const chatData = await getChatById(chatIdParam);
         if (!chatData.isSecret) {
           toast.error('This is not a secret chat');

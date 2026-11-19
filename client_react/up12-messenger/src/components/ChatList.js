@@ -32,7 +32,9 @@ const formatTime = (value) => {
     date.getFullYear() === today.getFullYear();
   return sameDay
     ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+    // Язык даты — язык самого окна: рядом стоят Today и Yesterday,
+    // и «18 нояб.» в том же столбце выглядело случайной оговоркой.
+    : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 };
 
 /**

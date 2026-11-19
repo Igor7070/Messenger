@@ -23,7 +23,9 @@ import sodium from 'libsodium-wrappers';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import AiMessageGeneratorDialog from './AiMessageGeneratorDialog';
 import GroupMembersDialog from './GroupMembersDialog';
-import { chatAvatarUrl } from '../api/chatMembers';
+import { chatAvatarUrl, getMembers } from '../api/chatMembers';
+import MessageChecks from './MessageChecks';
+import { isReadFlag, isDeliveredFlag } from '../api/messageFlags';
 import { getChatById } from '../api/chats';
 import { getCachedPreview, loadPreview, shortLinkLabel } from '../utils/linkPreviewCache';
 import { isMissingAttachment, rememberMissingAttachment } from '../utils/missingAttachments';
@@ -122,7 +124,7 @@ const dayLabel = (timestamp) => {
   if (date.toDateString() === today.toDateString()) return 'Today';
   if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
   const sameYear = date.getFullYear() === today.getFullYear();
-  return date.toLocaleDateString([], sameYear
+  return date.toLocaleDateString('en-GB', sameYear
     ? { day: 'numeric', month: 'long' }
     : { day: 'numeric', month: 'long', year: 'numeric' });
 };
@@ -152,6 +154,9 @@ const Messenger = () => {
     // Карточка группы целиком: панели участников нужны картинка и признак
     // публичности, а шапке — картинка вместо кружка с буквой.
     const [chatInfo, setChatInfo] = useState(null);
+    // Сколько человек в группе — то же, что пишет телеграм под её
+    // именем. Пока не сосчитали, в шапке стоит прежняя надпись.
+    const [memberCount, setMemberCount] = useState(null);
     const [showMembers, setShowMembers] = useState(false);
     const [knownUsers, setKnownUsers] = useState([]);
     const [chatAvatarBroken, setChatAvatarBroken] = useState(false);
@@ -452,7 +457,7 @@ const Messenger = () => {
               const wantedLanguage = translationEnabled
                   ? (localStorage.getItem(`translation_language_${chatId}`) || null)
                   : null;
-              const initialMessages = await getMessages(chatId, {}, wantedLanguage);
+              const initialMessages = await getMessages(chatId, {}, wantedLanguage, true);
               const updatedMessages = initialMessages.map((msg) => {
                   const translationKey = `translation_${chatId}_${msg.id}`;
                   const transcriptionKey = `transcription_${chatId}_${msg.id}`;
@@ -535,6 +540,19 @@ const Messenger = () => {
         .catch(() => setKnownUsers([]));
     }, [showMembers, knownUsers.length]);
 
+    // Сколько человек в группе. Считаем один раз при открытии и ещё раз
+    // после правок в панели: состав мог измениться там же.
+    const reloadMemberCount = React.useCallback(() => {
+      if (!chatId) return;
+      getMembers(chatId)
+        .then((list) => setMemberCount(Array.isArray(list) ? list.length : null))
+        .catch(() => setMemberCount(null));
+    }, [chatId]);
+
+    useEffect(() => {
+      reloadMemberCount();
+    }, [reloadMemberCount]);
+
     // После правок в панели перечитываем карточку: имя и картинка в шапке
     // должны смениться сразу, а не после повторного захода в чат.
     const reloadChatInfo = () => {
@@ -545,6 +563,7 @@ const Messenger = () => {
           setChatAvatarBroken(false);
         })
         .catch((error) => console.warn('Could not refresh the group card:', error));
+      reloadMemberCount();
     };
 
     useEffect(() => {
@@ -1859,7 +1878,11 @@ const Messenger = () => {
           <div className="partner-info">
             <div className="partner-name">{chatName}</div>
             <div className="chat-status-line">
-              <span className="chat-status-text">Group chat</span>
+              <span className="chat-status-text">
+                {memberCount === null
+                  ? 'Group chat'
+                  : `${memberCount} ${memberCount === 1 ? 'member' : 'members'}`}
+              </span>
               {isTranslationEnabled && (
                 <span className="chat-mode-chip" title="Incoming messages are translated">
                   {translationLanguage && translationLanguage !== 'auto'
@@ -2178,7 +2201,14 @@ const Messenger = () => {
                                     )}
                                     {/* Время — в конце последней строки текста */}
                                     {inlineTime(msg) && !hasTranslation(msg) && (
-                                        <span className="message-timestamp inline">{formatTimestamp(msg.timestamp)}</span>
+                                        <span className="message-footer inline">
+                                            <span className="message-timestamp">{formatTimestamp(msg.timestamp)}</span>
+                                            {msg.sender?.id === userId && (
+                                                <span className="message-status">
+                                                    <MessageChecks delivered={isDeliveredFlag(msg)} read={isReadFlag(msg)} />
+                                                </span>
+                                            )}
+                                        </span>
                                     )}
                                 </span>
 
@@ -2324,7 +2354,14 @@ const Messenger = () => {
                     )}
                     {/* Отдельной строкой — у вложений и под переводом */}
                     {(!inlineTime(msg) || hasTranslation(msg)) && (
-                      <div className="message-timestamp">{formatTimestamp(msg.timestamp)}</div>
+                      <div className="message-footer">
+                        <span className="message-timestamp">{formatTimestamp(msg.timestamp)}</span>
+                        {msg.sender?.id === userId && (
+                          <span className="message-status">
+                            <MessageChecks delivered={isDeliveredFlag(msg)} read={isReadFlag(msg)} />
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

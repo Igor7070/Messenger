@@ -2192,6 +2192,33 @@
 }
 
 /* Время прямо в строке: идёт за текстом и прижимается к его низу */
+/* Время и галочки стоят рядом: время слева, отметки справа от него. */
+.message-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+.message-footer.inline {
+    display: inline-flex;
+    margin-left: 8px;
+    margin-top: 0;
+    vertical-align: bottom;
+    white-space: nowrap;
+    position: relative;
+    top: 2px;
+}
+
+.message-footer.inline .message-timestamp {
+    margin-top: 0;
+}
+
+.message-status {
+    display: flex;
+    align-items: center;
+}
+
 .message-timestamp.inline {
     display: inline-block;
     margin-left: 8px;

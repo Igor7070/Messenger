@@ -6,8 +6,20 @@ const API_CHATS_URL = 'https://unlimitedpossibilities12.org/api/chats'; // URL �
 
 // Переводы сервер хранит по языкам: попросив свой, получаем готовый
 // и не заказываем его заново — и чужой язык в чат не попадёт
-export const getMessages = async (chatId, options = {}, language = null) => {
-    const query = language ? `?language=${encodeURIComponent(language)}` : '';
+/**
+ * История разговора.
+ *
+ * `opened` говорит серверу, что переписку действительно открыли, — тогда он
+ * пометит чужие сообщения прочитанными. Список разговоров читает ту же
+ * историю ради последней строки и этого не просит: иначе всё прочитывалось
+ * бы само собой, счётчик непрочитанных не появлялся бы никогда, а у
+ * собеседника вставала бы вторая галочка, хотя его даже не открывали.
+ */
+export const getMessages = async (chatId, options = {}, language = null, opened = false) => {
+    const params = new URLSearchParams();
+    if (language) params.set('language', language);
+    if (opened) params.set('opened', 'true');
+    const query = params.toString() ? `?${params}` : '';
     const response = await fetch(`${API_CHATS_URL}/${chatId}/messages${query}`, options);
     if (!response.ok) {
         const errorText = await response.text();

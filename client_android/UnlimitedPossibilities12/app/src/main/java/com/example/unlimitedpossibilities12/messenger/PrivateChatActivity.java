@@ -1125,7 +1125,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         // Перевод на наш язык сервер подставит сам: он хранит переводы по
         // языкам, так что чужой не придёт, а свой не придётся заказывать заново
         String wantedLanguage = isTranslationEnabled ? translationLanguage : null;
-        apiService.getMessagesByChatId(chatId, wantedLanguage).enqueue(new Callback<List<Message>>() {
+        apiService.getMessagesOfOpenedChat(chatId, wantedLanguage, true).enqueue(new Callback<List<Message>>() {
             @Override
             public void onResponse(Call<List<Message>> call, Response<List<Message>> response) {
                 if (response.isSuccessful() && response.body() != null) {

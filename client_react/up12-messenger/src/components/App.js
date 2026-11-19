@@ -181,6 +181,10 @@ const AppContent = () => {
               <Route path="/user/:userId/personal-chats" element={<Navigate to="/" replace />} />
               <Route path="/voice-call-translate/:roomId" element={<RequireAuth><VoiceCallWithTranslate /></RequireAuth>} />
               <Route path="/group-call" element={<RequireAuth><GroupCallActivity /></RequireAuth>} />
+              {/* Неизвестный адрес — старая закладка, опечатка в ссылке —
+                  прежде оставлял чёрный экран без единой подсказки.
+                  Отправляем к списку разговоров. */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </PrivateMessageNotificationProvider>
         </ErrorBoundary>

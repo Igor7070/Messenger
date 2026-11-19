@@ -201,13 +201,19 @@ public class ChatController {
     @GetMapping("/{id}/messages")
     public List<Message> getMessagesByChatId(@PathVariable Long id,
                                              @RequestParam(name = "language", required = false) String language,
+                                             @RequestParam(name = "opened", defaultValue = "false") boolean opened,
                                              jakarta.servlet.http.HttpServletRequest request) {
         authz.requireChatAccess(request, id); // историю приватного/секретного чата — только участнику
 
         // Открыл переписку — значит прочитал. Раньше отметку слал клиент, и
         // стоило его списку разойтись с базой, она не уходила вовсе: у
         // отправителя навсегда оставалась одна галочка.
-        Long reader = authz.currentUserId(request);
+        // «Открыл» говорит сам клиент, и только экран самой переписки.
+        // Список разговоров читает историю каждого из них, чтобы показать
+        // последнюю строку, — и прежде этим прочитывал всё подряд: счётчик
+        // непрочитанных не появлялся никогда, а отправителю вставала вторая
+        // галочка, хотя его сообщение даже не открывали.
+        Long reader = opened ? authz.currentUserId(request) : null;
         if (reader != null) {
             for (Message updated : messageService.markChatRead(id, reader)) {
                 messagingTemplate.convertAndSend("/topic/chat/" + id + "/messages", updated);

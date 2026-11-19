@@ -75,7 +75,7 @@ const dayLabel = (timestamp) => {
   if (date.toDateString() === today.toDateString()) return 'Today';
   if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
   const sameYear = date.getFullYear() === today.getFullYear();
-  return date.toLocaleDateString([], sameYear
+  return date.toLocaleDateString('en-GB', sameYear
     ? { day: 'numeric', month: 'long' }
     : { day: 'numeric', month: 'long', year: 'numeric' });
 };
@@ -354,7 +354,7 @@ const PrivateChat = () => {
         const wantedLanguage = localStorage.getItem(`translation_enabled_${chatIdParam}`) === 'true'
           ? (localStorage.getItem(`translation_language_${chatIdParam}`) || null)
           : null;
-        const initialMessages = await getMessages(chatIdParam, {}, wantedLanguage);
+        const initialMessages = await getMessages(chatIdParam, {}, wantedLanguage, true);
         const updatedMessages = initialMessages.map((msg) => {
           const translationKey = `translation_${chatIdParam}_${msg.id}`;
           const transcriptionKey = `transcription_${chatIdParam}_${msg.id}`;
