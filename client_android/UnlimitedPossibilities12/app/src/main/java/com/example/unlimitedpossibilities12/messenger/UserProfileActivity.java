@@ -540,8 +540,11 @@ public class UserProfileActivity extends AppCompatActivity {
         if (userId == currentUserId) {
             menuItems.add(new PopupMenuItem("Delete account", null, Color.parseColor("#E2E8F0")));
         } else {
-            // Оба пункта про одно и то же — закрытую связь, и выглядеть
-            // должны одинаково: один значок, один цвет, слова без аббревиатур
+            // Секретная переписка заводится отсюда — больше неоткуда.
+            // Пункта «защищённый звонок» здесь нет: защита переехала в каждый
+            // звонок — подпись соединения, сверка ключа собеседника и строка
+            // о защите прямо на экране звонка. Отдельный пункт только внушал
+            // бы, что обычный звонок чем-то хуже.
             menuItems.add(new PopupMenuItem("Secret chat",
                     ContextCompat.getDrawable(this, R.drawable.ic_lock),
                     Color.parseColor("#E2E8F0")));
