@@ -331,6 +331,25 @@
   background: var(--up-accent-strong);
 }
 
+/* Строки «что в переписке»: число слева, название рядом */
+.up-profile-count {
+  gap: 10px;
+  align-items: baseline;
+}
+
+.up-profile-count-number {
+  min-width: 26px;
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--up-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.up-profile-count-name {
+  font-size: 0.9rem;
+  color: var(--up-muted);
+}
+
 /* Правка описания */
 .up-profile-edit {
   width: 100%;

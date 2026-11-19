@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/UserProfile.css';
 import '../styles/ProfilePanel.css';
 import { nameOf } from '../api/names';
+import { sharedWith } from '../api/sharedWith';
 import { FaEdit, FaEllipsisV, FaPhone, FaVideo, FaLanguage } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Modal from 'react-modal';
@@ -23,6 +24,9 @@ const UserProfile = ({ onClose = () => {} }) => {
     const [isEditing, setIsEditing] = useState(false);
     // Имя, которым человека видят. Пустое — значит показываем имя входа.
     const [displayName, setDisplayName] = useState('');
+    // Что накопилось в переписке с этим человеком — как в карточке
+    // человека у телеграма: снимки, файлы, ссылки, голосовые, общие группы.
+    const [shared, setShared] = useState(null);
     const [error, setError] = useState(null);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -231,6 +235,16 @@ const UserProfile = ({ onClose = () => {} }) => {
             toast.error('Error initiating translate call');
         }
     };
+
+    useEffect(() => {
+        if (!user || !user.username || !currentUserId) return;
+        if (userId === String(currentUserId)) return; // своя карточка — считать нечего
+        let alive = true;
+        sharedWith(user, currentUserId, localStorage.getItem('username'))
+            .then((counts) => { if (alive) setShared(counts); })
+            .catch(() => { if (alive) setShared(null); });
+        return () => { alive = false; };
+    }, [user, userId, currentUserId]);
 
     useEffect(() => {
         const onKey = (event) => { if (event.key === 'Escape') onClose(); };
@@ -721,6 +735,28 @@ const UserProfile = ({ onClose = () => {} }) => {
                             <p className="up-profile-row-label">Username</p>
                         </div>
                     </div>
+
+                    {/* Что накоплено в переписке — так же устроена карточка
+                        человека в телеграме */}
+                    {!isMe && shared && (
+                        <>
+                            {[
+                                ['photos', 'photo', 'photos'],
+                                ['videos', 'video', 'videos'],
+                                ['files', 'file', 'files'],
+                                ['links', 'link', 'links'],
+                                ['voices', 'voice message', 'voice messages'],
+                                ['groups', 'group in common', 'groups in common'],
+                            ].filter(([key]) => shared[key] > 0).map(([key, one, many]) => (
+                                <div className="up-profile-row up-profile-count" key={key}>
+                                    <span className="up-profile-count-number">{shared[key]}</span>
+                                    <span className="up-profile-count-name">
+                                        {shared[key] === 1 ? one : many}
+                                    </span>
+                                </div>
+                            ))}
+                        </>
+                    )}
                     {isEditing && (
                         <p className="up-profile-hint">
                             People find you by this name; it cannot be changed.
