@@ -331,6 +331,16 @@ public class GroupProfileActivity extends AppCompatActivity {
         } else if (!isMe) {
             // Обычный участник всё равно может открыть человека
             row.setOnClickListener(v -> openMemberProfile(member));
+        } else {
+            // Нажатие на себя прежде не делало ничего: строка стояла мёртвой
+            // среди живых. Своя карточка живёт вкладкой «Profile» — туда и
+            // отправляем.
+            row.setOnClickListener(v -> {
+                Intent mine = new Intent(this, MessengerMainActivity.class);
+                mine.putExtra("openProfileTab", true);
+                mine.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(mine);
+            });
         }
         return row;
     }
