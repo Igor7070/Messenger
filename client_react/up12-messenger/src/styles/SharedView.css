@@ -64,6 +64,9 @@
 }
 
 .up-shared-row {
+  /* Без этого ширина 100% складывается с полями, строка вылезает за край
+     и внизу появляется полоса прокрутки вбок. */
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;

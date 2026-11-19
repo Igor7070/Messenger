@@ -353,10 +353,21 @@
 
 /* Счёт нажимается и открывает сам список — отсюда стрелка справа */
 button.up-profile-count {
+  /* Браузер даёт кнопке свой светло-серый фон, рамку и цвет текста: строки
+     выходили блёклыми прямоугольниками поверх скруглённой карточки. */
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  background: transparent;
+  color: var(--up-text);
   font-family: inherit;
   text-align: left;
   cursor: pointer;
-  width: 100%;
+}
+
+button.up-profile-count:last-child {
+  border-bottom: none;
 }
 
 button.up-profile-count:hover {
