@@ -108,6 +108,21 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
     }
 
     /** Личный чат назван «я_он» — показываем собеседника, а не служебную склейку. */
+    /**
+      * Имя входа собеседника — то, из чего сложено название переписки.
+      * По нему разложены снимки людей, поэтому картинку ищем именно им:
+      * в строке стоит выбранное имя, и по нему снимок уже не найти.
+      */
+    private String partnerLogin(Chat chat) {
+        String name = chat.getName() == null ? "" : chat.getName();
+        if (chat.getId() == ASSISTANT_ID || !isOneToOne(chat)) return "";
+        String[] parts = name.split("_");
+        if (parts.length >= 2) {
+            return parts[0].equals(currentUsername) ? parts[1] : parts[0];
+        }
+        return "";
+    }
+
     private String displayName(Chat chat) {
         String name = chat.getName() == null ? "" : chat.getName();
         if (chat.getId() == ASSISTANT_ID || !isOneToOne(chat)) return name;
@@ -146,7 +161,8 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
         String picture = chat.getAvatar();
         // У личной переписки картинки нет — берём снимок собеседника
         if ((picture == null || picture.isEmpty()) && isOneToOne(chat)) {
-            picture = avatarsByName.get(title);
+            String login = partnerLogin(chat);
+            picture = avatarsByName.get(login.isEmpty() ? title : login);
         }
         if (picture != null && !picture.isEmpty()) {
             // Букву прячем не заранее, а когда снимок действительно пришёл:

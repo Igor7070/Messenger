@@ -76,6 +76,12 @@ public class MessengerMainActivity extends AppCompatActivity {
     private TextView toolbarTitle; // название раздела в шапке
     private LinearLayout usersContainer, chatsContainer;
     private List<User> usersList = new ArrayList<>();
+    /**
+     * Своя запись отдельно: в списке людей её больше нет (себе не пишут), а
+     * кружку во вкладке «Profile» нужен свой снимок — прежде он искался там
+     * и потому пропал.
+     */
+    private User me;
     private List<Chat> chatsList = new ArrayList<>();
     private UsersAdapter usersAdapter;
     private ChatsAdapter chatsAdapter;
@@ -1580,7 +1586,8 @@ public class MessengerMainActivity extends AppCompatActivity {
                     // нажатие на себя вело в чужую карточку — второй, старый
                     // вид своего профиля.
                     for (User person : response.body()) {
-                        if (person.getId() != currentUserId) usersList.add(person);
+                        if (person.getId() == currentUserId) me = person;
+                        else usersList.add(person);
                     }
 
                     runOnUiThread(() -> {
@@ -1825,8 +1832,8 @@ public class MessengerMainActivity extends AppCompatActivity {
         navProfileIcon.setVisibility(View.GONE);
         navProfileAvatar.setVisibility(View.VISIBLE);
 
-        // Пытаемся найти пользователя в списке
-        User currentUser = usersList.stream()
+        // Своя запись лежит отдельно; на случай старых путей смотрим и в списке
+        User currentUser = me != null && me.getId() == currentUserId ? me : usersList.stream()
                 .filter(u -> u.getId() == currentUserId)
                 .findFirst()
                 .orElse(null);
