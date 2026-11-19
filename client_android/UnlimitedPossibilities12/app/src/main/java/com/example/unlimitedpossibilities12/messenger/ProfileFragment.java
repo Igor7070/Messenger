@@ -199,6 +199,7 @@ public class ProfileFragment extends Fragment {
             String avatarUrl = "https://unlimitedpossibilities12.org" + currentUser.getAvatar()
                     + "?t=" + System.currentTimeMillis();
 
+            avatarImageView.setBackgroundColor(0xFF172033);
             Glide.with(this)
                     .load(avatarUrl)
                     .diskCacheStrategy(DiskCacheStrategy.NONE)
@@ -236,8 +237,10 @@ public class ProfileFragment extends Fragment {
             });
 
         } else {
-            // Заглушка с первой буквой
+            // Заглушка с первой буквой на цветном кадре — в тот же цвет, что
+            // и кружок этого человека в списках
             avatarImageView.setImageDrawable(null);
+            avatarImageView.setBackgroundColor(AvatarColors.of(currentUser.getVisibleName()));
             avatarTextView.setVisibility(View.VISIBLE);
 
             // Снимка нет — открывать нечего, снимок выбирается кружком с камерой

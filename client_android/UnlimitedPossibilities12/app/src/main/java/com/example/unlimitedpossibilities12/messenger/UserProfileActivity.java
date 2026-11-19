@@ -393,6 +393,7 @@ public class UserProfileActivity extends AppCompatActivity {
                         String avatarUrl = "https://unlimitedpossibilities12.org" + user.getAvatar() + "?t=" + System.currentTimeMillis();
                         avatarTextView.setText(user.getUsername().substring(0, 1).toUpperCase());
                         if (isFinishing() || isDestroyed()) return; // экран уже закрыли — грузить некуда
+                        avatarImageView.setBackgroundColor(0xFF172033);
                         Glide.with(UserProfileActivity.this)
                                 .load(avatarUrl)
                                 .diskCacheStrategy(DiskCacheStrategy.NONE)
@@ -444,6 +445,9 @@ public class UserProfileActivity extends AppCompatActivity {
                         // вылезал за края экрана и выглядел случайным пятном.
                         Glide.with(UserProfileActivity.this).clear(avatarImageView);
                         avatarImageView.setImageDrawable(null);
+                        // Цвет — тот же, что у кружка этого человека в списках:
+                        // считается по имени, и человек выглядит одинаково всюду.
+                        avatarImageView.setBackgroundColor(AvatarColors.of(user.getVisibleName()));
                         avatarTextView.setText(user.getVisibleName().substring(0, 1).toUpperCase());
                         avatarTextView.setVisibility(View.VISIBLE);
 

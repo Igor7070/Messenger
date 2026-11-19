@@ -216,10 +216,7 @@ public class UsersAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     }
 
     private int colorFor(String name) {
-        if (name == null || name.isEmpty()) return AVATAR_COLORS[0];
-        int hash = 0;
-        for (int i = 0; i < name.length(); i++) hash = hash * 31 + name.charAt(i);
-        return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+        return AvatarColors.of(name);
     }
 
     static class UserViewHolder extends RecyclerView.ViewHolder {
