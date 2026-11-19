@@ -9,9 +9,9 @@ const IncomingCallNotification = ({
     callType, 
     onAccept, 
     onReject,
-    onSilence
+    onSilence,
+    silenced
 }) => {
-    const [silenced, setSilenced] = React.useState(false);
     const avatarSrc = avatar ? `https://unlimitedpossibilities12.org${avatar}` : null;
     const initials = callerName ? callerName.charAt(0).toUpperCase() : '';
 
@@ -94,10 +94,9 @@ const IncomingCallNotification = ({
                     <button
                         type="button"
                         className="silence-button"
-                        disabled={silenced}
-                        onClick={() => { onSilence(); setSilenced(true); }}
+                        onClick={onSilence}
                     >
-                        {silenced ? 'Silenced' : 'Silence'}
+                        {silenced ? 'Sound on' : 'Silence'}
                     </button>
                 )}
             </div>

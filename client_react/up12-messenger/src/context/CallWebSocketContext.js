@@ -91,15 +91,32 @@ export const CallWebSocketProvider = ({ children }) => {
    * больше не нужна — так же, как кнопка «Silence» на телефоне. Помним номер
    * комнаты, чтобы приглушение не перескочило на следующий звонок.
    */
-  const silencedRoom = useRef(null);
-  const silenceRingtone = () => {
-    silencedRoom.current = incomingCall ? incomingCall.roomId : null;
-    audioRef.current.pause();
-    audioRef.current.currentTime = 0;
-  };
+  const [ringtoneSilenced, setRingtoneSilenced] = useState(false);
+  /** Приглушить — и вернуть голос: решение одного звонка, а не навсегда. */
+  const silenceRingtone = () => setRingtoneSilenced((quiet) => !quiet);
+
+  /**
+   * Новый звонок звенит заново.
+   *
+   * Прежде приглушение помнилось по номеру комнаты — а у двоих
+   * собеседников он всегда один и тот же, room-<кто>-<кому>. Приглушив
+   * звонок один раз, человек обрекал на тишину и все следующие звонки от
+   * того же собеседника, ничего больше не нажимая. Сравниваем сам звонок, а
+   * не его комнату: на каждый приходит своя запись.
+   */
+  const lastCall = useRef(null);
+  useEffect(() => {
+    if (incomingCall === lastCall.current) return;
+    lastCall.current = incomingCall;
+    setRingtoneSilenced(false);
+  }, [incomingCall]);
 
   useEffect(() => {
-    if (incomingCall && silencedRoom.current === incomingCall.roomId) return;
+    if (incomingCall && ringtoneSilenced) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      return;
+    }
     if (incomingCall && userInteracted) {
       console.log('CallWebSocketContext: Попытка воспроизведения звука, userInteracted:', userInteracted);
       audioRef.current.play().catch((error) => {
@@ -111,7 +128,7 @@ export const CallWebSocketProvider = ({ children }) => {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-  }, [incomingCall, userInteracted]);
+  }, [incomingCall, userInteracted, ringtoneSilenced]);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -611,6 +628,7 @@ export const CallWebSocketProvider = ({ children }) => {
         acceptCall,
         rejectCall,
         silenceRingtone,
+        ringtoneSilenced,
         setCurrentUserId,
         sendSignal,
         setGroupSignalHandler,

@@ -191,5 +191,4 @@
   transition: color 150ms ease, background 150ms ease;
 }
 
-.silence-button:hover:not(:disabled) { color: #e2e8f0; background: rgba(148, 163, 184, 0.14); }
-.silence-button:disabled { color: #64748b; cursor: default; }
+.silence-button:hover { color: #e2e8f0; background: rgba(148, 163, 184, 0.14); }
