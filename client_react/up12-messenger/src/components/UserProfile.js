@@ -573,7 +573,7 @@ const UserProfile = ({ onClose = () => {} }) => {
                             <FaEdit />
                         </button>
                     )}
-                    {!isEditing && (
+                    {!isEditing && !isMe && (
                         <button
                             type="button"
                             className="up-profile-icon"
@@ -589,18 +589,10 @@ const UserProfile = ({ onClose = () => {} }) => {
                         </svg>
                     </button>
 
-                    {settingsMenuVisible && (
+                    {settingsMenuVisible && !isMe && (
                         <div className="up-profile-menu">
-                            {isMe ? (
-                                <button type="button" className="danger" onClick={handleDeleteAccount}>
-                                    Delete account
-                                </button>
-                            ) : (
-                                <>
-                                    <button type="button" onClick={handleSecretChat}>Secret chat</button>
-                                    <button type="button" onClick={handleSecureCall}>Secure call</button>
-                                </>
-                            )}
+                            <button type="button" onClick={handleSecretChat}>Secret chat</button>
+                            <button type="button" onClick={handleSecureCall}>Secure call</button>
                         </div>
                     )}
                 </header>
@@ -711,6 +703,12 @@ const UserProfile = ({ onClose = () => {} }) => {
                         <p className="up-profile-hint">
                             People find you by this name; it cannot be changed.
                         </p>
+                    )}
+
+                    {isEditing && isMe && (
+                        <button type="button" className="up-profile-delete" onClick={handleDeleteAccount}>
+                            Delete account
+                        </button>
                     )}
                 </div>
 
