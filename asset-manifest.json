@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/Messenger/static/css/main.5cbe9a9e.css",
-    "main.js": "/Messenger/static/js/main.a9787445.js",
+    "main.css": "/Messenger/static/css/main.56d18596.css",
+    "main.js": "/Messenger/static/js/main.96bc497c.js",
     "static/js/726.63e59fed.chunk.js": "/Messenger/static/js/726.63e59fed.chunk.js",
     "static/js/49.73bc6a59.chunk.js": "/Messenger/static/js/49.73bc6a59.chunk.js",
     "static/js/453.d3aabf12.chunk.js": "/Messenger/static/js/453.d3aabf12.chunk.js",
@@ -9,15 +9,15 @@
     "static/media/ort-wasm-simd-threaded.jsep.wasm": "/Messenger/static/media/ort-wasm-simd-threaded.jsep.666d0398a1e13e9c0c1d.wasm",
     "static/media/ort.bundle.min.mjs": "/Messenger/static/media/ort.bundle.min.875cdaab3e5b7d87f3bd.mjs",
     "index.html": "/Messenger/index.html",
-    "main.5cbe9a9e.css.map": "/Messenger/static/css/main.5cbe9a9e.css.map",
-    "main.a9787445.js.map": "/Messenger/static/js/main.a9787445.js.map",
+    "main.56d18596.css.map": "/Messenger/static/css/main.56d18596.css.map",
+    "main.96bc497c.js.map": "/Messenger/static/js/main.96bc497c.js.map",
     "726.63e59fed.chunk.js.map": "/Messenger/static/js/726.63e59fed.chunk.js.map",
     "49.73bc6a59.chunk.js.map": "/Messenger/static/js/49.73bc6a59.chunk.js.map",
     "453.d3aabf12.chunk.js.map": "/Messenger/static/js/453.d3aabf12.chunk.js.map",
     "141.97d335d5.chunk.js.map": "/Messenger/static/js/141.97d335d5.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.5cbe9a9e.css",
-    "static/js/main.a9787445.js"
+    "static/css/main.56d18596.css",
+    "static/js/main.96bc497c.js"
   ]
 }
