@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ChatList from './ChatList';
 import People from './People';
 import Calls from './Calls';
+import UserProfile from './UserProfile';
 import '../styles/tokens.css';
 import '../styles/ChatShell.css';
 import '../styles/ShellPages.css';
@@ -28,6 +29,7 @@ const ChatShell = () => {
   const [callsOpen, setCallsOpen] = useState(false);
   const peopleRoute = location.pathname === '/contacts';
   const callsRoute = location.pathname === '/calls';
+  const profileRoute = /^\/user\/[^/]+$/.test(location.pathname);
 
   useEffect(() => {
     if (peopleRoute) setPeopleOpen(true);
@@ -46,7 +48,7 @@ const ChatShell = () => {
   // Правая часть занята, когда открыт разговор или раздел — люди,
   // звонки, профиль. На узком экране тогда виден только он, а список
   // уезжает за край, как и раньше при открытой переписке.
-  const chatOpen = location.pathname !== '/' && !peopleRoute && !callsRoute;
+  const chatOpen = location.pathname !== '/' && !peopleRoute && !callsRoute && !profileRoute;
 
   // Страница целиком не прокручивается: прокрутка живёт внутри колонок.
   // Иначе у окна появляется вторая полоса справа и всё содержимое уезжает
@@ -70,6 +72,7 @@ const ChatShell = () => {
       </main>
       {peopleOpen && <People onClose={closePeople} />}
       {callsOpen && <Calls onClose={closeCalls} />}
+      {profileRoute && <UserProfile onClose={() => navigate('/', { replace: true })} />}
     </div>
   );
 };

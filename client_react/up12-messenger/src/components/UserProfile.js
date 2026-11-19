@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/UserProfile.css';
+import '../styles/ProfilePanel.css';
 import { FaEdit, FaEllipsisV, FaPhone, FaVideo, FaLanguage } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Modal from 'react-modal';
@@ -12,7 +13,7 @@ import { usePrivateMessageNotification } from '../context/PrivateMessageNotifica
 import { generateChatName } from './SecretPrivateChat';
 import AssistantIcon from './AssistantIcon';
 
-const UserProfile = () => {
+const UserProfile = ({ onClose = () => {} }) => {
     const { userId } = useParams();
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
@@ -227,15 +228,27 @@ const UserProfile = () => {
         }
     };
 
+    useEffect(() => {
+        const onKey = (event) => { if (event.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [onClose]);
+
+    // Снимок сохраняется сразу, как только его выбрали: отдельной кнопки
+    // «Update Profile» на карточке больше нет, а выбранный и не сохранённый
+    // снимок пропадал бы молча.
     const handleAvatarChange = (e) => {
-        setNewAvatar(e.target.files[0]);
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        setNewAvatar(file);
+        saveProfile(file);
     };
 
-    const handleUpdateUser = async () => {
+    const saveProfile = async (avatarFile = newAvatar) => {
         const formData = new FormData();
         formData.append('info', info);
-        if (newAvatar) {
-            formData.append('avatar', newAvatar);
+        if (avatarFile) {
+            formData.append('avatar', avatarFile);
         }
 
         try {
@@ -260,6 +273,8 @@ const UserProfile = () => {
             toast.error('Error updating user');
         }
     };
+
+    const handleUpdateUser = () => saveProfile();
 
     const openModal = () => {
         setIsModalOpen(true);
@@ -517,172 +532,186 @@ const UserProfile = () => {
     if (error) return <div className="error-message">{error}</div>;
     if (!user) return <div>Loading...</div>;
 
+    const isMe = Boolean(currentUserId) && userId === String(currentUserId);
+    const online = Boolean(usersStatus[userId]?.online);
+
     return (
-        <>
-        <div className="user-profile-container">
-            <h1 className="user-profile-username">{user.username}</h1>
-            <span className="userprofile-status-text">
-                <span className={`userprofile-status-label ${usersStatus[userId]?.online ? 'userprofile-online' : 'userprofile-offline'}`}>
-                    {usersStatus[userId]?.online ? 'Online' : 'Offline'}
-                </span>
-            </span>
-            <div className="userprofile-avatar-container">
-                {user.avatar ? (
-                    <img
-                        src={`https://unlimitedpossibilities12.org${user.avatar}`}
-                        alt={`${user.username} avatar`}
-                        className="user-avatar-profile"
-                        onClick={openModal}
-                    />
-                ) : (
-                    <div className="user-avatar-profile" style={{ backgroundColor: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {user.username.charAt(0).toUpperCase()}
-                    </div>
-                )}
-                {(usersStatus[userId]?.online) && (
-                    <span className="userprofile-status-indicator-online"></span>
-                )}
-            </div>
+        <div className="up-profile-backdrop" onClick={onClose} role="presentation">
+            <div
+                className="up-profile-panel"
+                onClick={(event) => event.stopPropagation()}
+                role="dialog"
+                aria-label="Profile"
+            >
+                <header className="up-profile-head">
+                    <button
+                        type="button"
+                        className="up-profile-icon"
+                        title="More"
+                        onClick={toggleSettingsMenu}
+                    >
+                        <FaEllipsisV />
+                    </button>
+                    <button type="button" className="up-profile-icon" title="Close" onClick={onClose}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <path d="M6 6l12 12M18 6L6 18" />
+                        </svg>
+                    </button>
 
-            {/* === КНОПКИ ДЛЯ СВОЕЙ СТРАНИЦЫ — ТОЛЬКО ЕСЛИ АВТОРИЗОВАН === */}
-            {currentUserId && userId === String(currentUserId) && (
-                <div className="userprofile-avatar-input-container">
-                    <label className="userprofile-file-label">
-                        <input type="file" onChange={handleAvatarChange} className="userprofile-avatar-input" />
-                        Select New Avatar
-                    </label>
-                </div>
-            )}
+                    {settingsMenuVisible && (
+                        <div className="up-profile-menu">
+                            {isMe ? (
+                                <button type="button" className="danger" onClick={handleDeleteAccount}>
+                                    Delete account
+                                </button>
+                            ) : (
+                                <>
+                                    <button type="button" onClick={handleSecretChat}>Secret chat</button>
+                                    <button type="button" onClick={handleSecureCall}>Secure call</button>
+                                </>
+                            )}
+                        </div>
+                    )}
+                </header>
 
-            <div className="user-info">
-                <h2 className="user-info-title">About me:</h2>
-                {isEditing ? (
-                    <textarea
-                        value={info}
-                        onChange={(e) => setInfo(e.target.value)}
-                        rows={3}
-                        className="user-info-input"
-                        maxLength={244}
-                    />
-                ) : (
-                    <div className="user-info-text">
-                        <p className="user-info-description">{info}</p>
-                        {currentUserId && userId === String(currentUserId) && (
-                            <FaEdit className="edit-icon" onClick={() => setIsEditing(true)} />
+                {/* Снимок, имя и присутствие — как в карточке на телефоне и в
+                    окне своего профиля у телеграма */}
+                <div className="up-profile-hero">
+                    <div className="up-profile-avatar-wrap">
+                        {user.avatar ? (
+                            <img
+                                src={`https://unlimitedpossibilities12.org${user.avatar}`}
+                                alt=""
+                                className="up-profile-avatar"
+                                onClick={openModal}
+                            />
+                        ) : (
+                            <div className="up-profile-avatar up-profile-avatar-letter">
+                                {(user.username || '?').charAt(0).toUpperCase()}
+                            </div>
+                        )}
+                        {online && <span className="up-profile-online" title="Online" />}
+                        {isMe && (
+                            <label className="up-profile-camera" title="Change the photograph">
+                                <input type="file" accept="image/*" onChange={handleAvatarChange} />
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                    <path d="M9 4l-1.2 2H4.5A1.5 1.5 0 003 7.5v11A1.5 1.5 0 004.5 20h15a1.5 1.5 0 001.5-1.5v-11A1.5 1.5 0 0019.5 6h-3.3L15 4H9zm3 4.8a4.7 4.7 0 110 9.4 4.7 4.7 0 010-9.4z" />
+                                </svg>
+                            </label>
                         )}
                     </div>
-                )}
-            </div>
-
-            {/* === КНОПКИ ДЛЯ СВОЕЙ СТРАНИЦЫ — ВИДНЫ ТОЛЬКО АВТОРИЗОВАННЫМ === */}
-            {currentUserId && userId === String(currentUserId) && (
-                <div className="button-container">
-                    <button onClick={handleUpdateUser} className="update-button">Update Profile</button>
-                    <button onClick={() => navigate('/calls')} className="calls-button">Calls</button>
-                    <button onClick={handlePersonalChats} className="personal-chats-button">
-                        Personal Chats
-                    </button>
-                    <FaEllipsisV className="settings-icon" onClick={toggleSettingsMenu} />
-                    {settingsMenuVisible && (
-                        <div className="settings-menu">
-                            <button onClick={handleDeleteAccount}>Delete account</button>
-                        </div>
-                    )}
+                    <h2 className="up-profile-name">{user.username}</h2>
+                    <p className={`up-profile-status ${online ? 'online' : ''}`}>
+                        {online ? 'Online' : 'Offline'}
+                    </p>
                 </div>
-            )}
 
-            {/* === КНОПКИ ДЛЯ ЧУЖОЙ СТРАНИЦЫ — ВИДНЫ ВСЕМ, НО С ТОАСТОМ === */}
-            {(!currentUserId || userId !== String(currentUserId)) && (
-                <>
-                    <button
-                        onClick={currentUserId ? handleSendMessage : () => toast.warn("You need to log in to send a message.")}
-                        className="send-message-button"
-                    >
-                        Send Message
-                    </button>
+                {/* Чужая карточка: те же четыре кнопки, что на телефоне */}
+                {!isMe && (
+                    <div className="up-profile-actions">
+                        <button
+                            type="button"
+                            onClick={currentUserId ? handleSendMessage : () => toast.warn('You need to log in to send a message')}
+                        >
+                            <FaEdit />
+                            <span>Message</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={currentUserId ? handleCall : () => toast.warn('You need to log in to call')}
+                        >
+                            <FaPhone />
+                            <span>Call</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={currentUserId ? handleTranslateCall : () => toast.warn('You need to log in to call')}
+                        >
+                            <FaLanguage />
+                            <span>Translate</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={currentUserId ? handleVideoCall : () => toast.warn('You need to log in to call')}
+                        >
+                            <FaVideo />
+                            <span>Video</span>
+                        </button>
+                    </div>
+                )}
 
-                    <div className="call-buttons-container">
-                        <div className="standard-call-buttons">
-                            <button
-                                onClick={currentUserId ? handleCall : () => toast.warn("You need to log in to make a voice call.")}
-                                className="voice-call-button"
-                            >
-                                <FaPhone /> Voice Call
-                            </button>
-                            <button
-                                onClick={currentUserId ? handleVideoCall : () => toast.warn("You need to log in to make a video call.")}
-                                className="video-call-button"
-                            >
-                                <FaVideo /> Video Call
-                            </button>
-                        </div>
-                        <div className="translate-call-container">
-                            <button
-                                onClick={currentUserId ? handleTranslateCall : () => toast.warn("You need to log in to use translation.")}
-                                className="translate-call-button"
-                            >
-                                <FaLanguage /> Translate Call
-                            </button>
-                        </div>
+                <div className="up-profile-rows">
+                    <div className="up-profile-row">
+                        {isEditing ? (
+                            <div className="up-profile-edit">
+                                <textarea
+                                    value={info}
+                                    onChange={(event) => setInfo(event.target.value)}
+                                    rows={3}
+                                    maxLength={244}
+                                    autoFocus
+                                />
+                                <div className="up-profile-edit-buttons">
+                                    <button type="button" onClick={() => setIsEditing(false)}>Cancel</button>
+                                    <button type="button" className="primary" onClick={handleUpdateUser}>Save</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="up-profile-row-body">
+                                    <p className="up-profile-row-value">{info || '—'}</p>
+                                    <p className="up-profile-row-label">About</p>
+                                </div>
+                                {isMe && (
+                                    <button
+                                        type="button"
+                                        className="up-profile-icon"
+                                        title="Edit"
+                                        onClick={() => setIsEditing(true)}
+                                    >
+                                        <FaEdit />
+                                    </button>
+                                )}
+                            </>
+                        )}
                     </div>
 
-                    {/* Меню "..." для чужого профиля — только если авторизован */}
-                    {currentUserId && (
-                        <>
-                            <FaEllipsisV className="settings-icon" onClick={toggleSettingsMenu} />
-                            {settingsMenuVisible && (
-                                <div className="settings-menu">
-                                    <button onClick={handleSecretChat} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <span role="img" aria-label="secret chat">🔒</span> Open Secret Chat
-                                    </button>
+                    <div className="up-profile-row">
+                        <div className="up-profile-row-body">
+                            <p className="up-profile-row-value">@{user.username}</p>
+                            <p className="up-profile-row-label">Username</p>
+                        </div>
+                    </div>
+                </div>
 
-                                    {/* НОВАЯ КНОПКА — ЗАЩИЩЁННЫЙ ЗВОНОК */}
-                                    <button 
-                                        onClick={handleSecureCall} 
-                                        style={{ 
-                                            display: 'flex', 
-                                            alignItems: 'center', 
-                                            gap: '8px',
-                                            marginTop: '8px',
-                                            color: '#00ff00',
-                                            fontWeight: 'bold'
-                                        }}
-                                    >
-                                        <span role="img" aria-label="secure call">🔒📞</span> Secure Call (E2EE)
-                                    </button>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </>
-            )}
+                <footer className="up-profile-foot">
+                    <button type="button" className="up-profile-done" onClick={onClose}>Close</button>
+                </footer>
 
-            {/* === МОДАЛКА АВАТАРА === */}
-            <Modal isOpen={isModalOpen} onRequestClose={closeModal} className="user-profile-modal" overlayClassName="user-profile-modal-overlay">
-                <img
-                    src={`https://unlimitedpossibilities12.org/avatars/${avatarFileName}`}
-                    alt={`${user.username} avatar`}
-                    className="user-profile-modal-image"
-                    style={{ width: '100%', height: 'auto' }}
-                    onClick={closeModal}
-                />
-                <button onClick={closeModal} className="user-profile-modal-close-button">Close</button>
-            </Modal>
+                {/* Снимок во весь рост */}
+                <Modal isOpen={isModalOpen} onRequestClose={closeModal} className="user-profile-modal" overlayClassName="user-profile-modal-overlay">
+                    <img
+                        src={`https://unlimitedpossibilities12.org/avatars/${avatarFileName}`}
+                        alt=""
+                        className="user-profile-modal-image"
+                        style={{ width: '100%', height: 'auto' }}
+                        onClick={closeModal}
+                    />
+                    <button onClick={closeModal} className="user-profile-modal-close-button">Close</button>
+                </Modal>
 
-            {/* === ВХОДЯЩИЙ ЗВОНОК === */}
-            {incomingCall && currentUserId && (
-                <IncomingCallNotification
-                    callerId={incomingCall.callerId}
-                    callerName={incomingCall.callerName || 'Unknown'}
-                    avatar={incomingCall.avatar}
-                    callType={incomingCall.type}
-                    onAccept={() => acceptCall(navigate)}
-                    onReject={rejectCall}
-                />
-            )}
+                {incomingCall && currentUserId && (
+                    <IncomingCallNotification
+                        callerId={incomingCall.callerId}
+                        callerName={incomingCall.callerName || 'Unknown'}
+                        avatar={incomingCall.avatar}
+                        callType={incomingCall.type}
+                        onAccept={() => acceptCall(navigate)}
+                        onReject={rejectCall}
+                    />
+                )}
+            </div>
         </div>
-        <AssistantIcon size="large" className="fixed-app-bottom-right" />
-        </>
     );
 };
 
