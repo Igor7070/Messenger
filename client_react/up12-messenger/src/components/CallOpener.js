@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 
 /**
@@ -14,12 +14,21 @@ import { useCallWebSocket } from '../context/CallWebSocketContext';
 const CallOpener = ({ type = 'voice' }) => {
   const { roomId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { activeCall, openCall } = useCallWebSocket();
 
   useEffect(() => {
     if (!roomId) return;
     if (activeCall && activeCall.roomId === roomId) return;
-    openCall({ type, roomId, ...(location.state || {}) });
+    // Без сведений о звонке заводить нечего: они передаются переходом и
+    // перезагрузку не переживают. Прежде на этом месте открывалось окно
+    // давно законченного разговора — и так при каждой перезагрузке, пока
+    // адрес оставался прежним.
+    if (!location.state) {
+      navigate('/', { replace: true });
+      return;
+    }
+    openCall({ type, roomId, ...location.state });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 

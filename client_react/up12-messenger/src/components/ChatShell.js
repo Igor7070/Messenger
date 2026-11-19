@@ -109,7 +109,12 @@ const ChatShell = () => {
           call={activeCall}
           minimized={callMinimized}
           onMinimize={() => setCallMinimized(!callMinimized)}
-          onClose={closeCall}
+          onClose={() => {
+            closeCall();
+            // Уходим и с адреса: иначе он остаётся на /voice-call/<комната>,
+            // и перезагрузка страницы заводит разговор заново
+            if (location.pathname.startsWith('/voice-call')) navigate('/', { replace: true });
+          }}
         />
       )}
       {incomingCall && (
