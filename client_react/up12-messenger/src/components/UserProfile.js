@@ -500,58 +500,6 @@ const UserProfile = ({ onClose = () => {} }) => {
         }
     };
 
-    const handleSecureCall = async () => {
-        if (!currentUserId) {
-            toast.error('You need to log in');
-            return;
-        }
-        if (String(currentUserId) === userId) {
-            toast.error('You cannot call yourself');
-            return;
-        }
-
-        const roomId = `secure-${currentUserId}-${userId}-${Date.now()}`;
-
-        const callRequest = {
-            callerId: currentUserId,
-            recipientId: parseInt(userId),
-            roomId: roomId,
-            callerName: localStorage.getItem('username') || 'Unknown',
-            type: 'voice_secure'
-        };
-
-        try {
-            const response = await fetch('https://unlimitedpossibilities12.org/api/webrtc/call', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(callRequest),
-            });
-
-            if (response.ok) {
-                const callerResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${currentUserId}`);
-                const callerData = await callerResponse.json();
-
-                toast.success(`Calling ${user.username} — protected call 🔒`, { autoClose: 3000 });
-
-                navigate(`/voice-call/${roomId}`, {
-                    state: {
-                        incomingCall: callRequest,
-                        isCaller: true,
-                        currentUserId: currentUserId,
-                        callerName: callerData.username,
-                        recipientName: user.username,
-                        recipientId: parseInt(userId),
-                    }
-                });
-            } else {
-                toast.error('Failed to initiate secure call');
-            }
-        } catch (error) {
-            console.error('Error initiating secure call:', error);
-            toast.error('Error initiating secure call');
-        }
-    };
-
     if (error) return <div className="error-message">{error}</div>;
     if (!user) return <div>Loading...</div>;
 
@@ -623,8 +571,11 @@ const UserProfile = ({ onClose = () => {} }) => {
 
                     {settingsMenuVisible && !isMe && (
                         <div className="up-profile-menu">
+                            {/* Секретная переписка заводится отсюда — больше неоткуда.
+                                «Защищённого звонка» здесь больше нет: такого звонка в
+                                мессенджере не существует, пункт заводил обычный голосовой
+                                и обещал защиту, которой не было. */}
                             <button type="button" onClick={handleSecretChat}>Secret chat</button>
-                            <button type="button" onClick={handleSecureCall}>Secure call</button>
                         </div>
                     )}
                 </header>

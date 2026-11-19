@@ -545,10 +545,6 @@ public class UserProfileActivity extends AppCompatActivity {
             menuItems.add(new PopupMenuItem("Secret chat",
                     ContextCompat.getDrawable(this, R.drawable.ic_lock),
                     Color.parseColor("#E2E8F0")));
-
-            menuItems.add(new PopupMenuItem("Encrypted call",
-                    ContextCompat.getDrawable(this, R.drawable.ic_lock),
-                    Color.parseColor("#E2E8F0")));
         }
 
         PopupMenuAdapter adapter = new PopupMenuAdapter(this, menuItems);
@@ -561,8 +557,6 @@ public class UserProfileActivity extends AppCompatActivity {
                 showDeleteAccountDialog();
             } else if ("Secret chat".equals(title)) {
                 handleSecretChat();
-            } else if ("Encrypted call".equals(title)) {
-                handleSecureCall();
             }
             listPopupWindow.dismiss();
         });
@@ -1484,58 +1478,5 @@ public class UserProfileActivity extends AppCompatActivity {
         intent.putExtra("currentUserId", currentUserId);
         intent.putExtra("partnerId", userId);
         startActivity(intent);
-    }
-
-    private void handleSecureCall() {
-        if (currentUserId == -1) {
-            Toast.makeText(this, "You need to create an account or log in", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (currentUserId == userId) {
-            Toast.makeText(this, "You cannot call yourself", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        String roomId = "room-" + currentUserId + "-" + userId;
-        // Отдельного защищённого звонка больше нет: подпись есть в каждом обычном
-        CallRequest request = new CallRequest(currentUserId, userId, roomId, user.getUsername(), "voice");
-
-        apiService.initiateCall(request).enqueue(new Callback<Void>() {
-            @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    apiService.getUserById(currentUserId).enqueue(new Callback<User>() {
-                        @Override
-                        public void onResponse(Call<User> call, Response<User> response) {
-                            if (response.isSuccessful() && response.body() != null) {
-                                String callerName = response.body().getUsername();
-
-                                Intent intent = new Intent(UserProfileActivity.this, VoiceCallActivity.class);
-                                intent.putExtra("currentUserId", String.valueOf(currentUserId));
-                                intent.putExtra("recipientId", String.valueOf(userId));
-                                intent.putExtra("roomId", roomId);
-                                intent.putExtra("isCaller", true);
-                                intent.putExtra("callerName", callerName);
-                                intent.putExtra("recipientName", user.getUsername());
-                                startActivity(intent);
-
-                                Toast.makeText(UserProfileActivity.this,
-                                        "Secure call to " + user.getUsername() + "...", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                        @Override
-                        public void onFailure(Call<User> call, Throwable t) {
-                            Toast.makeText(UserProfileActivity.this, "Error", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                } else {
-                    Toast.makeText(UserProfileActivity.this, "Failed to initiate secure call", Toast.LENGTH_SHORT).show();
-                }
-            }
-            @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                Toast.makeText(UserProfileActivity.this, "Network error", Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 }
