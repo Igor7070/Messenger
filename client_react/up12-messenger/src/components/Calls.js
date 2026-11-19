@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { FaUsers, FaPlus, FaArrowUp, FaArrowDown, FaPhone, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
+import { findOrCreatePrivateChat } from '../api/privateChats';
 import IncomingCallNotification from './IncomingCallNotification';
 import AssistantIcon from './AssistantIcon';
 import '../styles/Calls.css';
@@ -61,7 +62,31 @@ const mergeRepeats = (list) => {
   return out;
 };
 
-const Calls = () => {
+/** День звонка: «Today», «Yesterday», дальше — день недели или дата. */
+const dayLabel = (timestamp) => {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '';
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (date.toDateString() === today.toDateString()) return 'Today';
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  const week = (today - date) / 86400000;
+  if (week < 7) return date.toLocaleDateString('en-GB', { weekday: 'long' });
+  const sameYear = date.getFullYear() === today.getFullYear();
+  return date.toLocaleDateString('en-GB', sameYear
+    ? { day: 'numeric', month: 'long' }
+    : { day: 'numeric', month: 'long', year: 'numeric' });
+};
+
+/** Часы и минуты — ими подписана каждая строка справа. */
+const timeLabel = (timestamp) => {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+};
+
+const Calls = ({ onClose = () => {} }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [users, setUsers] = useState([]);
   const [calls, setCalls] = useState([]);
@@ -133,6 +158,21 @@ const Calls = () => {
     window.addEventListener('resize', updateScrollBar);
     return () => window.removeEventListener('resize', updateScrollBar);
   }, [calls]);
+
+  // По строке — переписка с человеком, звонок только по кнопке с трубкой:
+  // мимо кнопки промахнуться легко, а звонок у собеседника зазвенит сразу.
+  const openChatWith = (person) => {
+    if (!person || !person.id) return;
+    findOrCreatePrivateChat(person, currentUserId)
+      .then((route) => { onClose(); navigate(route); })
+      .catch(() => toast.error(`Could not open the chat with ${person.username}`));
+  };
+
+  useEffect(() => {
+    const onKey = (event) => { if (event.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   const handleGroupCallButtonClick = () => {
     setModalIsOpen(true);
@@ -335,106 +375,128 @@ const Calls = () => {
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Звонки, разложенные по дням: «Today», «Yesterday», дальше день недели —
+  // так же, как на телефоне, где над списком стоит «Tuesday».
+  const byDay = [];
+  calls.forEach((call) => {
+    const day = dayLabel(call.timestamp);
+    const last = byDay[byDay.length - 1];
+    if (last && last.day === day) last.items.push(call);
+    else byDay.push({ day, items: [call] });
+  });
+
   return (
     <>
-    <div className="calls-container">
-      <h1>Calls</h1>
+    <div className="up-calls-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="up-calls-panel"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-label="Calls"
+      >
+        <header className="up-calls-head">
+          <h2 className="up-calls-title">Calls</h2>
+          <button type="button" className="up-calls-close" title="Close" onClick={onClose}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </header>
 
-      <div className="calls-list">
-        {calls.map((call) => {
-          const isGroup = call.callType === 'group';
-          const participants = isGroup ? call.participants.map((id) => getUserById(Number(id))) : [];
-          const singleUser = !isGroup
-            ? getUserById(call.direction === 'outgoing' ? Number(call.receiver) : Number(call.caller))
-            : null;
+        <div className="up-calls-scroll">
+          {calls.length === 0 && <p className="up-calls-empty">No calls yet</p>}
 
-          return (
-            <div key={call.id} className="call-item">
-              {/* Кнопка удаления */}
-              <div className="call-delete" onClick={() => handleConfirmDelete(call.id)}>
-                <FaTimes className="call-delete-icon" />
-              </div>
+          {byDay.map(({ day, items }) => (
+            <section key={day} className="up-calls-day">
+              <h3 className="up-calls-day-title">{day}</h3>
+              {items.map((call) => {
+                const isGroup = call.callType === 'group';
+                const participants = isGroup ? call.participants.map((id) => getUserById(Number(id))) : [];
+                const singleUser = !isGroup
+                  ? getUserById(call.direction === 'outgoing' ? Number(call.receiver) : Number(call.caller))
+                  : null;
+                const people = isGroup ? participants : [singleUser];
+                const title = people.map((person) => person.username).join(', ');
+                // Неотвеченный и отклонённый — красным, как на телефоне
+                const missed = ['missed', 'rejected', 'declined'].includes((call.status || '').toLowerCase());
+                const duration = durationLabel(call);
 
-              {/* Аватары — как было */}
-              <div className="call-participants">
-                {isGroup ? (
-                  participants.map((user) => (
-                    <div key={user.id} className="call-participant">
-                      {user.avatar ? (
-                        <img src={`https://unlimitedpossibilities12.org${user.avatar}`} alt={`${user.username} avatar`} className="call-avatar" />
-                      ) : (
-                        <div className="call-avatar">{user.username.charAt(0).toUpperCase()}</div>
-                      )}
-                      <span className="call-name">{user.username}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="call-participant">
-                    {singleUser.avatar ? (
-                      <img src={`https://unlimitedpossibilities12.org${singleUser.avatar}`} alt={`${singleUser.username} avatar`} className="call-avatar" />
-                    ) : (
-                      <div className="call-avatar">{singleUser.username.charAt(0).toUpperCase()}</div>
-                    )}
-                    <span className="call-name">{singleUser.username}</span>
+                return (
+                  <div key={call.id} className="up-call-row">
+                    <button
+                      type="button"
+                      className="up-call"
+                      onClick={() => !isGroup && openChatWith(singleUser)}
+                      title={isGroup ? title : `Open the chat with ${title}`}
+                    >
+                      <span className="up-call-avatars">
+                        {people.slice(0, 3).map((person, index) => (
+                          person.avatar ? (
+                            <img
+                              key={`${person.id}-${index}`}
+                              className="up-call-avatar"
+                              src={`https://unlimitedpossibilities12.org${person.avatar}`}
+                              alt=""
+                            />
+                          ) : (
+                            <span key={`${person.id}-${index}`} className="up-call-avatar up-call-avatar-letter">
+                              {(person.username || '?').charAt(0).toUpperCase()}
+                            </span>
+                          )
+                        ))}
+                      </span>
+
+                      <span className="up-call-body">
+                        <span className="up-call-top">
+                          <span className="up-call-name">
+                            {title}
+                            {call.repeats > 1 && <span className="up-call-repeats"> ({call.repeats})</span>}
+                          </span>
+                          <span className="up-call-time">{timeLabel(call.timestamp)}</span>
+                        </span>
+                        <span className={`up-call-about ${missed ? 'missed' : ''}`}>
+                          {call.direction === 'outgoing'
+                            ? <FaArrowUp className="up-call-arrow outgoing" />
+                            : <FaArrowDown className="up-call-arrow incoming" />}
+                          {call.status.charAt(0).toUpperCase() + call.status.slice(1)}
+                          {' · '}{callKind(call.callType)}
+                          {duration && <>{' · '}{duration}</>}
+                        </span>
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="up-call-again"
+                      title="Call again"
+                      onClick={() => handleRedial(call)}
+                    >
+                      <FaPhone />
+                    </button>
+                    <button
+                      type="button"
+                      className="up-call-drop"
+                      title="Remove from the list"
+                      onClick={() => handleConfirmDelete(call.id)}
+                    >
+                      <FaTimes />
+                    </button>
                   </div>
-                )}
-              </div>
+                );
+              })}
+            </section>
+          ))}
+        </div>
 
-              {/* === НА ПК: старое расположение === */}
-              <div className="call-direction">
-                {call.direction === 'outgoing' ? (
-                  <FaArrowUp className="call-arrow outgoing" />
-                ) : (
-                  <FaArrowDown className="call-arrow incoming" />
-                )}
-              </div>
-
-              <div className="call-details">
-                <span className="call-status">
-                  {call.status.charAt(0).toUpperCase() + call.status.slice(1)}
-                  {call.repeats > 1 && <span className="call-repeats"> ({call.repeats})</span>}
-                </span>
-                <span className="call-type">
-                  {callKind(call.callType)}
-                  {durationLabel(call) && <span className="call-duration"> · {durationLabel(call)}</span>}
-                </span>
-                <span className="call-timestamp">{formatTimestamp(call.timestamp)}</span>
-              </div>
-
-              <div className="call-redial" onClick={() => handleRedial(call)}>
-                <FaPhone className="call-phone-icon" />
-              </div>
-
-              {/* === НА ТЕЛЕФОНЕ: нижний ряд === */}
-              <div className="call-bottom-row">
-                <div className="call-direction">
-                  {call.direction === 'outgoing' ? (
-                    <FaArrowUp className="call-arrow outgoing" />
-                  ) : (
-                    <FaArrowDown className="call-arrow incoming" />
-                  )}
-                </div>
-
-                <div className="call-details">
-                  <span className="call-status">{call.status.charAt(0).toUpperCase() + call.status.slice(1)}</span>
-                  <span className="call-type">{callKind(call.callType)}</span>
-                  <span className="call-timestamp">{formatTimestamp(call.timestamp)}</span>
-                </div>
-
-                <div className="call-redial" onClick={() => handleRedial(call)}>
-                  <FaPhone className="call-phone-icon" />
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        <footer className="up-calls-foot">
+          <button type="button" className="up-calls-group" onClick={handleGroupCallButtonClick}>
+            <FaUsers />
+            <FaPlus className="up-calls-group-plus" />
+            <span>Group call</span>
+          </button>
+          <button type="button" className="up-calls-done" onClick={onClose}>Close</button>
+        </footer>
       </div>
-
-      <button className="calls-group-call-button" onClick={handleGroupCallButtonClick}>
-        <FaUsers className="calls-group-call-icon" />
-        <FaPlus className="calls-plus-icon" />
-      </button>
-
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={() => setModalIsOpen(false)}

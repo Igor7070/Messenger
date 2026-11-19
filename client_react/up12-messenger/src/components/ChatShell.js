@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ChatList from './ChatList';
 import People from './People';
+import Calls from './Calls';
 import '../styles/tokens.css';
 import '../styles/ChatShell.css';
 import '../styles/ShellPages.css';
@@ -24,20 +25,28 @@ const ChatShell = () => {
   // телеграме: открыл, выбрал, кого написать, и вернулся к той же переписке.
   // Прежний адрес /contacts остался рабочим: по нему окно просто открывается.
   const [peopleOpen, setPeopleOpen] = useState(false);
+  const [callsOpen, setCallsOpen] = useState(false);
   const peopleRoute = location.pathname === '/contacts';
+  const callsRoute = location.pathname === '/calls';
 
   useEffect(() => {
     if (peopleRoute) setPeopleOpen(true);
-  }, [peopleRoute]);
+    if (callsRoute) setCallsOpen(true);
+  }, [peopleRoute, callsRoute]);
 
   const closePeople = useCallback(() => {
     setPeopleOpen(false);
     if (peopleRoute) navigate('/', { replace: true });
   }, [peopleRoute, navigate]);
+
+  const closeCalls = useCallback(() => {
+    setCallsOpen(false);
+    if (callsRoute) navigate('/', { replace: true });
+  }, [callsRoute, navigate]);
   // Правая часть занята, когда открыт разговор или раздел — люди,
   // звонки, профиль. На узком экране тогда виден только он, а список
   // уезжает за край, как и раньше при открытой переписке.
-  const chatOpen = location.pathname !== '/' && !peopleRoute;
+  const chatOpen = location.pathname !== '/' && !peopleRoute && !callsRoute;
 
   // Страница целиком не прокручивается: прокрутка живёт внутри колонок.
   // Иначе у окна появляется вторая полоса справа и всё содержимое уезжает
@@ -49,7 +58,7 @@ const ChatShell = () => {
 
   return (
     <div className={`up-shell ${chatOpen ? 'up-shell-open' : ''}`}>
-      <ChatList onOpenPeople={() => setPeopleOpen(true)} />
+      <ChatList onOpenPeople={() => setPeopleOpen(true)} onOpenCalls={() => setCallsOpen(true)} />
       <main className="up-shell-content">
         {chatOpen ? (
           <Outlet />
@@ -60,6 +69,7 @@ const ChatShell = () => {
         )}
       </main>
       {peopleOpen && <People onClose={closePeople} />}
+      {callsOpen && <Calls onClose={closeCalls} />}
     </div>
   );
 };

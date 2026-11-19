@@ -16,7 +16,6 @@ import VoiceCall from './VoiceCall';
 import VideoCall from './VideoCall';
 import VoiceCallWithTranslate from './VoiceCallWithTranslate';
 import PersonalChats from './PersonalChats';
-import Calls from './Calls';
 import GroupCallActivity from './GroupCallActivity';
 import { NotificationProvider } from '../context/NotificationContext';
 import { UserInteractionProvider } from '../context/UserInteractionContext';
@@ -170,7 +169,8 @@ const AppContent = () => {
                     разговоров остаётся слева, меняется только правая часть */}
                 {/* Люди — окно поверх приложения, его открывает каркас */}
                 <Route path="/contacts" element={null} />
-                <Route path="/calls" element={<Calls />} />
+                {/* Звонки — тоже окно поверх приложения */}
+                <Route path="/calls" element={null} />
                 <Route path="/user/:userId" element={<UserProfile />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>

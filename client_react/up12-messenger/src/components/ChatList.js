@@ -43,7 +43,7 @@ const formatTime = (value) => {
  * Список живёт в каркасе и не перерисовывается при переходах между чатами —
  * раньше каждый чат был отдельной страницей, и список собирался заново.
  */
-const ChatList = ({ onOpenPeople = () => {} }) => {
+const ChatList = ({ onOpenPeople = () => {}, onOpenCalls = () => {} }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { openAssistant } = useAssistant();
@@ -382,7 +382,7 @@ const ChatList = ({ onOpenPeople = () => {} }) => {
               </button>
               <button
                 type="button"
-                onClick={() => { setMenuOpen(false); navigate('/calls'); }}
+                onClick={() => { setMenuOpen(false); onOpenCalls(); }}
               >
                 Calls
               </button>
