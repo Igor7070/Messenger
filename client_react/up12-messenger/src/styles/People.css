@@ -1,68 +1,114 @@
 /*
-  Люди. Одна колонка, как окно «Контакты» в телеграме: поиск сверху, дальше
-  имена по алфавиту. Ширину держим небольшой — длинная строка во весь экран
-  читается хуже, да и в телеграме эта колонка узкая.
+  Люди — окошко поверх приложения, как «Контакты» в телеграме: узкая панель у
+  края колонки разговоров, переписка позади остаётся видна.
 */
-.up-people {
-  /* Раздел занимает всю правую часть окна — как «Calls» рядом и как
-     колонка разговоров слева. Узкая колонка посреди пустого поля
-     смотрелась здесь чужой формой, а не частью приложения. */
-  height: 100%;
-  box-sizing: border-box;
-  padding: 16px 0 22px;
-  overflow-y: auto;
+.up-people-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(2, 6, 23, 0.45);
+}
+
+.up-people-panel {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 372px; /* сразу за колонкой разговоров */
+  width: 364px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 14px;
+  background: var(--up-surface-2);
+  box-shadow: 0 22px 60px rgba(2, 6, 23, 0.55);
+  overflow: hidden;
+}
+
+/* Шапка: название слева, крестик справа */
+.up-people-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 14px 10px 18px;
 }
 
 .up-people-title {
-  margin: 0 22px 14px;
-  font-size: 1.15rem;
+  margin: 0;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--up-text);
 }
 
-.up-people-search {
-  /* Поле во всю ширину окна выглядит нелепо длинным: ищут по имени, а не
-     по строке в метр. Строки людей при этом остаются во всю ширину. */
-  width: calc(100% - 44px);
-  max-width: 420px;
-  margin-left: 22px;
-  margin-right: 22px;
-  /* Без этого поля и рамка прибавляются к ширине, поле вылезает за
-     колонку — и внизу окна появляется полоса прокрутки вбок. */
-  box-sizing: border-box;
-  padding: 9px 14px;
-  margin-bottom: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 10px;
-  background: var(--up-surface-2);
-  color: var(--up-text);
-  font-family: inherit;
-  font-size: 0.95rem;
-  outline: none;
+.up-people-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--up-muted);
+  cursor: pointer;
 }
 
-.up-people-search:focus {
+.up-people-close:hover {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--up-text);
+}
+
+/* Поиск с лупой — как в телеграме */
+.up-people-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 14px 6px;
+  padding: 7px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.up-people-search-row:focus-within {
   border-color: var(--up-accent);
+}
+
+.up-people-search-icon {
+  flex: 0 0 auto;
+  color: var(--up-muted);
+}
+
+.up-people-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--up-text);
+  font-family: inherit;
+  font-size: 0.92rem;
+  outline: none;
 }
 
 .up-people-search::placeholder {
   color: var(--up-muted);
 }
 
+.up-people-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 4px 0 8px;
+}
+
 .up-people-empty {
-  margin: 18px 24px;
+  margin: 18px;
   color: var(--up-muted);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
 }
 
-.up-people-section {
-  margin-top: 6px;
-}
-
-/* Буква перед группой имён — как на телефоне, в цвет кнопок */
 .up-people-letter {
-  margin: 12px 0 2px 24px;
-  font-size: 0.82rem;
+  margin: 10px 0 2px 18px;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--up-accent-soft);
 }
@@ -73,8 +119,7 @@
   padding: 0;
 }
 
-/* Строка целиком: имя слева, кнопка «написать» у правого края — так же,
-   как кнопка звонка в строке на экране звонков. */
+/* Строка: имя слева, карточка человека — у правого края, по наведению */
 .up-person-row {
   display: flex;
   align-items: center;
@@ -84,14 +129,34 @@
   background: rgba(148, 163, 184, 0.08);
 }
 
-.up-person-write {
+.up-person {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 7px 8px 7px 14px;
+  border: none;
+  background: transparent;
+  color: var(--up-text);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.up-person:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.up-person-card {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
-  margin-right: 22px;
+  width: 32px;
+  height: 32px;
+  margin-right: 10px;
   border: none;
   border-radius: 50%;
   background: rgba(99, 102, 241, 0.16);
@@ -101,44 +166,25 @@
   transition: opacity 0.12s ease;
 }
 
-.up-person-row:hover .up-person-write,
-.up-person-write:focus-visible {
+.up-person-row:hover .up-person-card,
+.up-person-card:focus-visible {
   opacity: 1;
 }
 
-.up-person-write:hover {
+.up-person-card:hover {
   background: rgba(99, 102, 241, 0.28);
 }
-
-.up-person {
-  flex: 1 1 auto;
-  min-width: 0;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 22px;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: var(--up-text);
-  text-align: left;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-
 
 .up-person-avatar-wrap {
   position: relative;
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
 }
 
 .up-person-avatar {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
   display: block;
@@ -149,7 +195,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 700;
   color: #fff;
 }
@@ -159,22 +205,22 @@
   position: absolute;
   right: 0;
   bottom: 1px;
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #22c55e;
-  border: 2px solid var(--up-surface);
+  border: 2px solid var(--up-surface-2);
 }
 
 .up-person-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
 
 .up-person-name {
-  font-size: 0.97rem;
+  font-size: 0.94rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -183,21 +229,42 @@
 
 /* Описание, а если его нет — присутствие. Так же, как на телефоне. */
 .up-person-about {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--up-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-@media (max-width: 800px) {
-  .up-people-search {
-    width: calc(100% - 28px);
-    margin-left: 14px;
-    margin-right: 14px;
-  }
+/* Нижняя полоса с кнопкой — как «Закрыть» у телеграма */
+.up-people-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
 
-  .up-people-title { margin-left: 14px; }
-  .up-people-letter { margin-left: 16px; }
-  .up-person { padding-left: 14px; padding-right: 14px; }
+.up-people-done {
+  border: none;
+  background: transparent;
+  color: var(--up-accent-soft);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.up-people-done:hover {
+  background: rgba(99, 102, 241, 0.14);
+}
+
+/* На узком экране колонки разговоров рядом нет — окно занимает весь экран */
+@media (max-width: 800px) {
+  .up-people-panel {
+    left: 10px;
+    right: 10px;
+    width: auto;
+  }
 }

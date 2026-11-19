@@ -43,7 +43,7 @@ const formatTime = (value) => {
  * Список живёт в каркасе и не перерисовывается при переходах между чатами —
  * раньше каждый чат был отдельной страницей, и список собирался заново.
  */
-const ChatList = () => {
+const ChatList = ({ onOpenPeople = () => {} }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { openAssistant } = useAssistant();
@@ -376,7 +376,7 @@ const ChatList = () => {
               </button>
               <button
                 type="button"
-                onClick={() => { setMenuOpen(false); navigate('/contacts'); }}
+                onClick={() => { setMenuOpen(false); onOpenPeople(); }}
               >
                 People
               </button>
@@ -508,7 +508,7 @@ const ChatList = () => {
       </div>
 
       <footer className="up-list-footer">
-        <button type="button" className="up-list-new" onClick={() => navigate('/contacts')}>
+        <button type="button" className="up-list-new" onClick={onOpenPeople}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M16.5 3.8l3.7 3.7L8.6 19.2l-4.6.9.9-4.6z" />
           </svg>

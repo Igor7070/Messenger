@@ -6,18 +6,17 @@ import { findOrCreatePrivateChat } from '../api/privateChats';
 import '../styles/People.css';
 
 /**
- * Люди.
+ * Люди — окошком поверх приложения, как «Контакты» в телеграме.
  *
- * Прежде на этом месте стояли сразу две вещи: список людей и рядом — панель
- * групп с полем «создать групповой чат». Создание групп давно переехало в
- * кнопку «New chat» над списком разговоров, а панель осталась и повторяла
- * его во второй раз.
+ * Прежде это был раздел во всю правую половину окна. Половина окна для списка
+ * имён велика: строки растягивались на метр, а переписка позади закрывалась
+ * совсем. Теперь список висит окошком у края колонки разговоров: разговор
+ * позади видно, окно закрывается крестиком, кнопкой внизу, щелчком мимо или
+ * клавишей Esc.
  *
- * Теперь экран делает одно: показывает людей — так же, как вкладка Contacts
- * в нашем приложении на телефоне и окно «Контакты» в телеграме: поиск
- * сверху, список по алфавиту, у каждого снимок, имя и строка под ним —
- * описание, а если его нет, то «Online» или «Offline». Нажатие открывает
- * карточку человека, откуда можно написать или позвонить.
+ * Нажатие на человека открывает переписку с ним — так же, как в телеграме.
+ * Кнопка у правого края строки ведёт в его карточку: снимок, описание,
+ * звонки — как по нажатию на человека в приложении на телефоне.
  */
 
 const API = 'https://unlimitedpossibilities12.org';
@@ -40,25 +39,18 @@ const letterOf = (name) => {
   return clean ? clean.charAt(0).toUpperCase() : '#';
 };
 
-const People = () => {
+const People = ({ onClose }) => {
   const navigate = useNavigate();
   const { usersStatus } = useUserStatusContext();
   const [people, setPeople] = useState([]);
   const [term, setTerm] = useState('');
   const [loading, setLoading] = useState(true);
-
-  const myId = localStorage.getItem('userId');
-
-  // Написать прямо отсюда, не заходя в карточку, — как кнопка звонка в
-  // правом краю строки на экране звонков.
-  const writeTo = (person) => {
-    findOrCreatePrivateChat(person, myId)
-      .then((route) => navigate(route))
-      .catch(() => toast.error(`Could not open the chat with ${person.username}`));
-  };
   // Снимки, которых не оказалось на сервере: вместо пустого места рисуем
   // букву — так же, как у тех, кто снимок не ставил вовсе.
   const [brokenAvatars, setBrokenAvatars] = useState({});
+  const [opening, setOpening] = useState(null);
+
+  const myId = localStorage.getItem('userId');
 
   useEffect(() => {
     let alive = true;
@@ -69,7 +61,7 @@ const People = () => {
       })
       .then((list) => {
         if (!alive) return;
-        // Себя в списке нет: себе не пишут. На телефоне то же самое.
+        // Себя в списке нет: себе не пишут.
         setPeople((Array.isArray(list) ? list : []).filter(
           (person) => String(person.id) !== String(myId)
         ));
@@ -83,7 +75,22 @@ const People = () => {
     return () => { alive = false; };
   }, [myId]);
 
+  // Esc закрывает окно — как любое окно поверх приложения
+  useEffect(() => {
+    const onKey = (event) => { if (event.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   const isOnline = (person) => Boolean(usersStatus?.[person.id]?.online ?? person.online);
+
+  const writeTo = (person) => {
+    setOpening(person.id);
+    findOrCreatePrivateChat(person, myId)
+      .then((route) => { onClose(); navigate(route); })
+      .catch(() => toast.error(`Could not open the chat with ${person.username}`))
+      .finally(() => setOpening(null));
+  };
 
   /** Список по алфавиту, разбитый на буквы: [{ letter, people: [...] }] */
   const sections = useMemo(() => {
@@ -105,81 +112,110 @@ const People = () => {
   const total = sections.reduce((sum, group) => sum + group.people.length, 0);
 
   return (
-    <div className="up-people">
-      <h2 className="up-people-title">Contacts</h2>
+    <div className="up-people-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="up-people-panel"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-label="Contacts"
+      >
+        <header className="up-people-head">
+          <h2 className="up-people-title">Contacts</h2>
+          <button type="button" className="up-people-close" title="Close" onClick={onClose}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </header>
 
-      <input
-        className="up-people-search"
-        type="text"
-        value={term}
-        onChange={(event) => setTerm(event.target.value)}
-        placeholder="Search users..."
-        aria-label="Search users"
-      />
+        <div className="up-people-search-row">
+          <svg className="up-people-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" strokeLinecap="round" />
+          </svg>
+          <input
+            className="up-people-search"
+            type="text"
+            value={term}
+            onChange={(event) => setTerm(event.target.value)}
+            placeholder="Search"
+            aria-label="Search users"
+            autoFocus
+          />
+        </div>
 
-      {loading && <p className="up-people-empty">Loading…</p>}
+        <div className="up-people-scroll">
+          {loading && <p className="up-people-empty">Loading…</p>}
 
-      {!loading && total === 0 && (
-        <p className="up-people-empty">
-          {term.trim() ? 'Nobody with such a name' : 'Nobody here yet'}
-        </p>
-      )}
+          {!loading && total === 0 && (
+            <p className="up-people-empty">
+              {term.trim() ? 'Nobody with such a name' : 'Nobody here yet'}
+            </p>
+          )}
 
-      {sections.map((group) => (
-        <section key={group.letter} className="up-people-section">
-          <h3 className="up-people-letter">{group.letter}</h3>
-          <ul className="up-people-list">
-            {group.people.map((person) => {
-              const online = isOnline(person);
-              const about = (person.info || '').trim();
-              return (
-                <li key={person.id} className="up-person-row">
-                  <button
-                    type="button"
-                    className="up-person"
-                    onClick={() => navigate(`/user/${person.id}`)}
-                  >
-                    <span className="up-person-avatar-wrap">
-                      {person.avatar && !brokenAvatars[person.id] ? (
-                        <img
-                          className="up-person-avatar"
-                          src={`${API}${person.avatar}`}
-                          alt=""
-                          onError={() => setBrokenAvatars((prev) => ({ ...prev, [person.id]: true }))}
-                        />
-                      ) : (
-                        <span
-                          className="up-person-avatar up-person-avatar-letter"
-                          style={{ background: colorFor(person.username) }}
-                        >
-                          {letterOf(person.username)}
+          {sections.map((group) => (
+            <section key={group.letter} className="up-people-section">
+              <h3 className="up-people-letter">{group.letter}</h3>
+              <ul className="up-people-list">
+                {group.people.map((person) => {
+                  const online = isOnline(person);
+                  const about = (person.info || '').trim();
+                  return (
+                    <li key={person.id} className="up-person-row">
+                      <button
+                        type="button"
+                        className="up-person"
+                        onClick={() => writeTo(person)}
+                        disabled={opening === person.id}
+                      >
+                        <span className="up-person-avatar-wrap">
+                          {person.avatar && !brokenAvatars[person.id] ? (
+                            <img
+                              className="up-person-avatar"
+                              src={`${API}${person.avatar}`}
+                              alt=""
+                              onError={() => setBrokenAvatars((prev) => ({ ...prev, [person.id]: true }))}
+                            />
+                          ) : (
+                            <span
+                              className="up-person-avatar up-person-avatar-letter"
+                              style={{ background: colorFor(person.username) }}
+                            >
+                              {letterOf(person.username)}
+                            </span>
+                          )}
+                          {online && <span className="up-person-online" title="Online" />}
                         </span>
-                      )}
-                      {online && <span className="up-person-online" title="Online" />}
-                    </span>
-                    <span className="up-person-body">
-                      <span className="up-person-name">{person.username}</span>
-                      <span className="up-person-about">
-                        {about || (online ? 'Online' : 'Offline')}
-                      </span>
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className="up-person-write"
-                    title={`Message ${person.username}`}
-                    onClick={() => writeTo(person)}
-                  >
-                    <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path d="M12 3c-4.97 0-9 3.36-9 7.5 0 2.3 1.25 4.36 3.2 5.73L5.5 20l3.9-2.06c.8.2 1.68.31 2.6.31 4.97 0 9-3.36 9-7.5S16.97 3 12 3z" />
-                    </svg>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
+                        <span className="up-person-body">
+                          <span className="up-person-name">{person.username}</span>
+                          <span className="up-person-about">
+                            {about || (online ? 'Online' : 'Offline')}
+                          </span>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="up-person-card"
+                        title={`${person.username}'s profile`}
+                        onClick={() => { onClose(); navigate(`/user/${person.id}`); }}
+                      >
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <circle cx="12" cy="8" r="3.6" />
+                          <path d="M4.8 19.2c0-3.3 3.2-5.2 7.2-5.2s7.2 1.9 7.2 5.2z" />
+                        </svg>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
+
+        <footer className="up-people-foot">
+          <button type="button" className="up-people-done" onClick={onClose}>Close</button>
+        </footer>
+      </div>
     </div>
   );
 };

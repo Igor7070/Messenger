@@ -4,7 +4,6 @@ import SyncHashRouter from './SyncHashRouter';
 import { ToastContainer } from 'react-toastify';
 import { publishCallKey } from '../utils/callGuard';
 import 'react-toastify/dist/ReactToastify.css';
-import People from './People';
 import ChatShell from './ChatShell';
 import Auth from './Auth';
 import InviteAccept from './InviteAccept';
@@ -169,7 +168,8 @@ const AppContent = () => {
                 <Route path="/secret-chat/:chatId" element={<KeyedChat element={SecretPrivateChat} />} />
                 {/* Люди, звонки и профиль — тоже внутри каркаса: список
                     разговоров остаётся слева, меняется только правая часть */}
-                <Route path="/contacts" element={<People />} />
+                {/* Люди — окно поверх приложения, его открывает каркас */}
+                <Route path="/contacts" element={null} />
                 <Route path="/calls" element={<Calls />} />
                 <Route path="/user/:userId" element={<UserProfile />} />
                 <Route path="/settings" element={<Settings />} />
