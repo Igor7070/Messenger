@@ -89,6 +89,15 @@ public class UserProfileActivity extends AppCompatActivity {
     private LinearLayout currentUserButtons;
     private ApiService apiService;
     private int currentUserId, userId;
+    // Что накопилось в переписке: вкладки и список под карточкой — так же,
+    // как в карточке человека у телеграма.
+    private android.widget.HorizontalScrollView sharedTabsScroll;
+    private android.widget.LinearLayout sharedTabs;
+    private androidx.recyclerview.widget.RecyclerView sharedList;
+    private SharedAdapter sharedAdapter;
+    private java.util.List<com.example.unlimitedpossibilities12.api.Message> sharedMessages
+            = new java.util.ArrayList<>();
+    private String sharedKind = SharedWith.PHOTOS;
     private User user;
     private MediaPlayer mediaPlayer;
     private CallRequest incomingCall;
@@ -210,6 +219,13 @@ public class UserProfileActivity extends AppCompatActivity {
             currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
         }
         userId = getIntent().getIntExtra("userId", -1);
+
+        sharedTabsScroll = findViewById(R.id.shared_tabs_scroll);
+        sharedTabs = findViewById(R.id.shared_tabs);
+        sharedList = findViewById(R.id.shared_list);
+        sharedAdapter = new SharedAdapter(this);
+        sharedList.setAdapter(sharedAdapter);
+        sharedList.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(this, 3));
 
         // Загрузка данных пользователя
         fetchUser();
@@ -377,6 +393,8 @@ public class UserProfileActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     user = response.body();
                     usernameTextView.setText(user.getVisibleName());
+                    // Что накопилось в переписке — вкладками под карточкой
+                    loadShared(user.getUsername());
                     TextView usernameHandle = findViewById(R.id.username_handle);
                     if (usernameHandle != null) usernameHandle.setText("@" + user.getUsername());
                     // Сбрасываем анимации и устанавливаем видимость для био
@@ -614,6 +632,108 @@ public class UserProfileActivity extends AppCompatActivity {
                 Glide.with(this).load(newAvatarUri).centerCrop().into(avatarImageView);
             }
         }
+    }
+
+    /**
+     * Берём историю личной переписки с этим человеком и раскладываем её по
+     * разрядам. Историю читаем без пометки «открыл»: заглянуть в карточку —
+     * не то же самое, что прочитать переписку.
+     */
+    private void loadShared(String theirLogin) {
+        String myLogin = getSharedPreferences("prefs", MODE_PRIVATE).getString("username", "");
+        if (theirLogin == null || myLogin.isEmpty() || userId == currentUserId) return;
+
+        apiService.checkChatByUsers(theirLogin, myLogin).enqueue(new Callback<java.util.Map<String, Object>>() {
+            @Override
+            public void onResponse(Call<java.util.Map<String, Object>> call,
+                                   Response<java.util.Map<String, Object>> response) {
+                if (!response.isSuccessful() || response.body() == null) return;
+                Object raw = response.body().get("chatId");
+                long chatId = raw instanceof Number ? ((Number) raw).longValue() : -1;
+                if (chatId == -1) return;
+
+                apiService.getMessagesByChatId(chatId).enqueue(
+                        new Callback<java.util.List<com.example.unlimitedpossibilities12.api.Message>>() {
+                    @Override
+                    public void onResponse(Call<java.util.List<com.example.unlimitedpossibilities12.api.Message>> call,
+                                           Response<java.util.List<com.example.unlimitedpossibilities12.api.Message>> response) {
+                        if (isFinishing() || isDestroyed()) return;
+                        if (!response.isSuccessful() || response.body() == null) return;
+                        sharedMessages = response.body();
+                        showSharedTabs();
+                    }
+
+                    @Override
+                    public void onFailure(Call<java.util.List<com.example.unlimitedpossibilities12.api.Message>> call, Throwable t) {
+                        Log.w(TAG, "Не вышло прочитать переписку для карточки: " + t.getMessage());
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Call<java.util.Map<String, Object>> call, Throwable t) {
+                Log.w(TAG, "Не вышло найти переписку: " + t.getMessage());
+            }
+        });
+    }
+
+    /** Вкладки: только те разряды, в которых что-то есть. */
+    private void showSharedTabs() {
+        if (sharedTabs == null) return;
+        sharedTabs.removeAllViews();
+
+        String[][] kinds = {
+                {SharedWith.PHOTOS, "Media"},
+                {SharedWith.FILES, "Files"},
+                {SharedWith.LINKS, "Links"},
+                {SharedWith.VOICES, "Voice"},
+        };
+
+        String first = null;
+        for (String[] kind : kinds) {
+            java.util.List<SharedWith.Item> found = SharedWith.pick(sharedMessages, kind[0]);
+            if (found.isEmpty()) continue;
+            if (first == null) first = kind[0];
+            sharedTabs.addView(makeTab(kind[0], kind[1] + "  " + found.size()));
+        }
+
+        boolean anything = first != null;
+        sharedTabsScroll.setVisibility(anything ? View.VISIBLE : View.GONE);
+        sharedList.setVisibility(anything ? View.VISIBLE : View.GONE);
+        if (anything) selectShared(first);
+    }
+
+    private View makeTab(String kind, String title) {
+        float density = getResources().getDisplayMetrics().density;
+        TextView tab = new TextView(this);
+        tab.setText(title);
+        tab.setTextSize(14);
+        tab.setPadding((int) (16 * density), (int) (9 * density), (int) (16 * density), (int) (9 * density));
+        tab.setBackgroundResource(R.drawable.bg_shared_tab);
+        tab.setTag(kind);
+        android.widget.LinearLayout.LayoutParams params = new android.widget.LinearLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.setMarginEnd((int) (8 * density));
+        tab.setLayoutParams(params);
+        tab.setOnClickListener(v -> selectShared(kind));
+        return tab;
+    }
+
+    private void selectShared(String kind) {
+        sharedKind = kind;
+        for (int i = 0; i < sharedTabs.getChildCount(); i++) {
+            View tab = sharedTabs.getChildAt(i);
+            boolean active = kind.equals(tab.getTag());
+            tab.setSelected(active);
+            ((TextView) tab).setTextColor(active ? 0xFFFFFFFF : 0xFF94A3B8);
+        }
+
+        java.util.List<SharedWith.Item> found = SharedWith.pick(sharedMessages, kind);
+        sharedAdapter.show(kind, found);
+        sharedList.setLayoutManager(sharedAdapter.isGrid()
+                ? new androidx.recyclerview.widget.GridLayoutManager(this, 3)
+                : new androidx.recyclerview.widget.LinearLayoutManager(this));
     }
 
     private void handleUpdateUser() {
