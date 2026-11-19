@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { stompAuthHeaders } from '../authToken';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { getMessages, sendMessage as apiSendMessage, loginUser } from '../api/messages';
+import { getMessages, sendMessage as apiSendMessage, loginUser, deleteChat } from '../api/messages';
 import { createUser } from '../api/users';
 import '../styles/Messenger.css';
 import { toast } from 'react-toastify';
@@ -1950,6 +1950,27 @@ const Messenger = () => {
                   <span>Spellcheck</span>
                   <span className={`chat-menu-switch ${isSpellCheckEnabled ? 'on' : ''}`} />
                 </button>
+                {/* Удалить группу может только тот, кто её завёл. Пункт стоит
+                    здесь же, в меню шапки: внутри карточки группы его искать
+                    никто не станет. */}
+                {String(chatInfo?.createdBy ?? '') === String(userId ?? '') && (
+                  <button
+                    type="button"
+                    className="chat-menu-danger"
+                    onClick={() => {
+                      setChatMenuOpen(false);
+                      if (!window.confirm(`Delete the group "${chatName}" for everyone? This cannot be undone.`)) return;
+                      deleteChat(chatId)
+                        .then(() => {
+                          toast.success('Group deleted');
+                          navigate('/');
+                        })
+                        .catch(() => toast.error('Could not delete the group'));
+                    }}
+                  >
+                    Delete group
+                  </button>
+                )}
               </div>
             )}
           </div>

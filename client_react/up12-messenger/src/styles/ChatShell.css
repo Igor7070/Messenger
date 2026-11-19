@@ -388,6 +388,16 @@ body.up-no-scroll {
   background: rgba(148, 163, 184, 0.12);
 }
 
+/* Удаление группы — красным и отделено чертой: такое не нажимают мимоходом */
+.chat-header-menu button.chat-menu-danger {
+  color: #f87171;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.chat-header-menu button.chat-menu-danger:hover {
+  background: rgba(248, 113, 113, 0.12);
+}
+
 /* Переключатель в строке меню — тот же вид, что в андроидном меню */
 .chat-menu-switch {
   width: 36px;
