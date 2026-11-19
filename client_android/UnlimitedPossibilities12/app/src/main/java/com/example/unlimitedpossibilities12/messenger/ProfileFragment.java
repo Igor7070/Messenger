@@ -289,30 +289,40 @@ public class ProfileFragment extends Fragment {
     private void startNameEditing() {
         if (!isAdded() || currentUser == null) return;
 
-        android.widget.EditText input = new android.widget.EditText(requireContext());
-        input.setHint(currentUser.getUsername());
-        input.setTextColor(0xFFE2E8F0);
-        input.setHintTextColor(0xFF64748B);
-        input.setSingleLine(true);
+        View content = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_edit_name, null, false);
+        EditText input = content.findViewById(R.id.name_input);
+        TextView hint = content.findViewById(R.id.name_hint);
+
+        String login = currentUser.getUsername() == null ? "" : currentUser.getUsername();
         String chosen = currentUser.getDisplayName() == null ? "" : currentUser.getDisplayName();
+        input.setHint(login);
         input.setText(chosen);
         input.setSelection(chosen.length());
-        int pad = (int) (18 * getResources().getDisplayMetrics().density);
-        input.setPadding(pad, pad, pad, pad);
+        hint.setText(getString(R.string.profile_name_hint, login));
 
-        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                .setTitle("Name")
-                .setMessage("The name others see. Leave it empty to be shown as @"
-                        + currentUser.getUsername())
-                .setView(input)
-                .setNegativeButton("Cancel", null)
-                .setPositiveButton("Save", (dialog, which) -> {
-                    String typed = input.getText().toString().trim();
-                    currentUser.setDisplayName(typed.isEmpty() ? null : typed);
-                    usernameTextView.setText(currentUser.getVisibleName());
-                    handleUpdateUser();
-                })
-                .show();
+        androidx.appcompat.app.AlertDialog dialog =
+                new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setView(content)
+                        .create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(
+                    new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setSoftInputMode(
+                    android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        }
+
+        content.findViewById(R.id.name_cancel).setOnClickListener(v -> dialog.dismiss());
+        content.findViewById(R.id.name_save).setOnClickListener(v -> {
+            String typed = input.getText().toString().trim();
+            currentUser.setDisplayName(typed.isEmpty() ? null : typed);
+            usernameTextView.setText(currentUser.getVisibleName());
+            handleUpdateUser();
+            dialog.dismiss();
+        });
+
+        dialog.show();
+        input.requestFocus();
     }
 
     private void saveBio(String typed) {

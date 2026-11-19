@@ -188,4 +188,7 @@
     <string name="chat_no_connection">No connection — the message was not sent. Check the network and try again.</string>
     <string name="settings_preview">Show message text</string>
     <string name="settings_preview_hint">In notifications. Secret chats never show their text</string>
+    <!-- Имя, которым человека видят, — рядом с именем входа -->
+    <string name="profile_name">Name</string>
+    <string name="profile_name_hint">The name others see. Leave it empty to be shown as @%1$s</string>
 </resources>
