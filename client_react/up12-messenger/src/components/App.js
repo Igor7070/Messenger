@@ -5,6 +5,7 @@ import { ToastContainer } from 'react-toastify';
 import { publishCallKey } from '../utils/callGuard';
 import 'react-toastify/dist/ReactToastify.css';
 import ChatShell from './ChatShell';
+import CallOpener from './CallOpener';
 import Auth from './Auth';
 import InviteAccept from './InviteAccept';
 import Messenger from './Messenger';
@@ -173,8 +174,10 @@ const AppContent = () => {
                 {/* Карточка человека — окно поверх приложения */}
                 <Route path="/user/:userId" element={null} />
                 <Route path="/settings" element={<Settings />} />
+                {/* Звонок рисуется поверх каркаса, а путь лишь заводит его */}
+                <Route path="/voice-call/:roomId" element={<CallOpener type="voice" />} />
               </Route>
-              <Route path="/voice-call/:roomId" element={<RequireAuth><VoiceCall /></RequireAuth>} />
+
               <Route path="/video-call/:roomId" element={<RequireAuth><VideoCall /></RequireAuth>} />
               {/* Прежний отдельный список личных чатов больше не нужен:
                   все разговоры живут в колонке слева */}

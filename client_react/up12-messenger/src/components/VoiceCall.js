@@ -50,18 +50,20 @@ const securityExplanation = (state) => {
   }
 };
 
-const VoiceCall = ({ recipientId }) => {
+const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onClose }) => {
   const navigate = useNavigate();
   const notify = useNotification();
-  const { roomId } = useParams();
+  const params = useParams();
   const location = useLocation();
-  const { incomingCall, isCaller, currentUserId, callerName, recipientName } = location.state || {
-    incomingCall: null,
-    isCaller: false,
-    currentUserId: null,
-    callerName: '',
-    recipientName: '',
-  };
+  // Окно звонка живёт в каркасе и получает всё свойствами; переход по
+  // ссылке остался запасным путём — на случай, если окно открыли ею
+  const fromRoute = location.state || {};
+  const roomId = call.roomId || params.roomId;
+  const incomingCall = call.incomingCall !== undefined ? call.incomingCall : (fromRoute.incomingCall || null);
+  const isCaller = call.isCaller !== undefined ? call.isCaller : Boolean(fromRoute.isCaller);
+  const currentUserId = call.currentUserId || fromRoute.currentUserId || null;
+  const callerName = call.callerName || fromRoute.callerName || '';
+  const recipientName = call.recipientName || fromRoute.recipientName || '';
   const localAudioRef = useRef(null);
   const remoteAudioRef = useRef(null);
   const peerConnectionRef = useRef(null);
@@ -669,7 +671,7 @@ const VoiceCall = ({ recipientId }) => {
     hasNotifiedEndCall.current = false;
     hasNotifiedRejectCall.current = false;
 
-    navigate('/');
+    if (onClose) onClose(); else navigate('/');
   };
 
 
@@ -748,17 +750,71 @@ const VoiceCall = ({ recipientId }) => {
     return () => clearInterval(timer);
   }, []);
 
+
+  /**
+   * Свёрнутый разговор занимает полоску сверху — и приложение должно на
+   * неё подвинуться, иначе полоска накрывает шапку со словом «Chats» и
+   * поиском.
+   */
+  useEffect(() => {
+    document.body.classList.toggle('has-call-strip', Boolean(minimized));
+    return () => document.body.classList.remove('has-call-strip');
+  }, [minimized]);
+
   const partnerName = partner
     ? (partner.displayName || partner.username)
     : (isCaller ? recipientName : callerName);
+
   const letter = (partnerName || '?').trim().charAt(0).toUpperCase();
   // Цвет кружка — от имени, как в списке людей и на телефоне
   const letterColor = ['#F87171', '#FB923C', '#FBBF24', '#34D399', '#38BDF8', '#A78BFA', '#F472B6']
     [(partnerName || '?').split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % 7];
   const levels = (chartData.datasets[0]?.data || []).slice(-28);
 
+  // Четыре значка кода прямо в шапке: в телеграме они стоят в заголовке
+  // окна, и сверить разговор можно, ничего не открывая
+  const shortCode = (fingerprintCode || '').split(' ').filter(Boolean).slice(0, 4).join(' ');
+
+  if (minimized) {
+    return (
+      <div className="voice-call-strip" onClick={onMinimize} role="presentation">
+        <span className="voice-call-strip-dot" />
+        <strong>{partnerName}</strong>
+        <span className="voice-call-strip-time">
+          {Math.floor(callDuration / 60).toString().padStart(2, '0')}:
+          {(callDuration % 60).toString().padStart(2, '0')}
+        </span>
+        {shortCode && <span className="voice-call-strip-code">{shortCode}</span>}
+        <button
+          type="button"
+          className="voice-call-strip-end"
+          onClick={(event) => { event.stopPropagation(); endCall(); }}
+        >
+          End call
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="voice-call-screen">
+    <div className="voice-call-window">
+      <div className="voice-call-bar">
+        <button
+          type="button"
+          className={`voice-call-bar-code call-security-${callSecurity}`}
+          onClick={toggleFingerprint}
+          title="Show the code to read aloud"
+        >
+          {shortCode || '🔒'}
+        </button>
+        <span className="voice-call-bar-title">{partnerName}</span>
+        <button type="button" className="voice-call-bar-button" onClick={onMinimize} title="Minimise">
+          &#8211;
+        </button>
+        <button type="button" className="voice-call-bar-button is-close" onClick={endCall} title="End the call">
+          &#10005;
+        </button>
+      </div>
       <div className="voice-call-person">
         <div className="voice-call-avatar" style={{ background: partner && partner.avatar ? 'none' : letterColor }}>
           {partner && partner.avatar

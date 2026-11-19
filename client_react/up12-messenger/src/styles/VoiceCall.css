@@ -195,9 +195,17 @@
    с осями от нуля до ста, занимавшее весь экран; кнопка «завершить»
    при открытом коде уезжала под сгиб, и бросить разговор было нечем.
    --------------------------------------------------------------------- */
-.voice-call-screen {
+.voice-call-window {
   position: fixed;
-  inset: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(460px, calc(100vw - 32px));
+  height: min(620px, calc(100vh - 48px));
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 32px 80px rgba(2, 6, 23, 0.6);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -250,7 +258,7 @@
   color: #94a3b8;
 }
 
-.voice-call-screen .call-duration {
+.voice-call-window .call-duration {
   font-size: 22px;
   color: #cbd5e1;
   letter-spacing: 1px;
@@ -325,7 +333,7 @@
   z-index: 60;
 }
 
-.voice-call-screen ~ .call-fingerprint,
+.voice-call-window ~ .call-fingerprint,
 .call-fingerprint-backdrop .call-fingerprint {
   max-width: 420px;
   width: 100%;
@@ -338,7 +346,116 @@
 }
 
 @media (max-width: 640px) {
-  .voice-call-screen { padding: 40px 14px 32px; }
+  .voice-call-window { width: calc(100vw - 20px); height: calc(100vh - 32px); }
   .voice-call-avatar { width: 118px; height: 118px; font-size: 46px; }
   .voice-call-name { font-size: 25px; }
 }
+
+
+/* Шапка окна: код для сверки слева, имя посреди, свернуть и завершить */
+.voice-call-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 0 12px;
+  background: rgba(2, 6, 23, 0.55);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.voice-call-bar-code {
+  border: none;
+  background: rgba(148, 163, 184, 0.14);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 14px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  color: #e2e8f0;
+}
+
+.voice-call-bar-code:hover { background: rgba(148, 163, 184, 0.26); }
+.voice-call-bar-code.call-security-verified,
+.voice-call-bar-code.call-security-confirmed { box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.5); }
+.voice-call-bar-code.call-security-changed { box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.6); }
+.voice-call-bar-code.call-security-failed { box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.7); }
+
+.voice-call-bar-title {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.voice-call-bar-button {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.voice-call-bar-button:hover { background: rgba(148, 163, 184, 0.18); }
+.voice-call-bar-button.is-close:hover { background: #ef4444; color: #fff; }
+
+.voice-call-window .voice-call-person { margin-top: 56px; }
+
+/* Свёрнутый разговор — полоска сверху, как в телеграме */
+.voice-call-strip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  background: #0b7285;
+  color: #ecfeff;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 60;
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.4);
+}
+
+.voice-call-strip-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #4ade80;
+  animation: voice-call-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes voice-call-pulse { 50% { opacity: 0.25; } }
+
+.voice-call-strip-time { font-variant-numeric: tabular-nums; }
+.voice-call-strip-code { letter-spacing: 2px; opacity: 0.85; }
+
+.voice-call-strip-end {
+  margin-left: auto;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.voice-call-strip-end:hover { background: #dc2626; }
+
+
+/* Пока разговор свёрнут, приложение сдвинуто на высоту полоски */
+body.has-call-strip #root > .app { padding-top: 42px; }
+body.has-call-strip #root > .app > * { max-height: calc(100vh - 42px); }

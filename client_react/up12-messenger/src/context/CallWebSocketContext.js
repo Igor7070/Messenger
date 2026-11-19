@@ -91,6 +91,25 @@ export const CallWebSocketProvider = ({ children }) => {
    * больше не нужна — так же, как кнопка «Silence» на телефоне. Помним номер
    * комнаты, чтобы приглушение не перескочило на следующий звонок.
    */
+  /**
+   * Идущий разговор.
+   *
+   * Прежде звонок был отдельной страницей: уходя с неё, человек рвал
+   * соединение, и пока он говорил, переписка была недоступна — ни
+   * посмотреть, ни написать. Теперь разговор живёт здесь, над всем
+   * приложением, как отдельное окно, и страницу под ним можно листать.
+   */
+  const [activeCall, setActiveCall] = useState(null);
+  const [callMinimized, setCallMinimized] = useState(false);
+  const openCall = (call) => {
+    setActiveCall(call);
+    setCallMinimized(false);
+  };
+  const closeCall = () => {
+    setActiveCall(null);
+    setCallMinimized(false);
+  };
+
   const [ringtoneSilenced, setRingtoneSilenced] = useState(false);
   /** Приглушить — и вернуть голос: решение одного звонка, а не навсегда. */
   const silenceRingtone = () => setRingtoneSilenced((quiet) => !quiet);
@@ -629,6 +648,11 @@ export const CallWebSocketProvider = ({ children }) => {
         rejectCall,
         silenceRingtone,
         ringtoneSilenced,
+        activeCall,
+        openCall,
+        closeCall,
+        callMinimized,
+        setCallMinimized,
         setCurrentUserId,
         sendSignal,
         setGroupSignalHandler,

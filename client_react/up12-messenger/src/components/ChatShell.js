@@ -5,6 +5,7 @@ import People from './People';
 import Calls from './Calls';
 import UserProfile from './UserProfile';
 import IncomingCallNotification from './IncomingCallNotification';
+import VoiceCall from './VoiceCall';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import '../styles/tokens.css';
 import '../styles/ChatShell.css';
@@ -32,7 +33,10 @@ const ChatShell = () => {
    * принять его было негде. Теперь оно живёт в каркасе и появляется в любом
    * месте приложения.
    */
-  const { incomingCall, acceptCall, rejectCall, silenceRingtone, ringtoneSilenced } = useCallWebSocket();
+  const {
+    incomingCall, acceptCall, rejectCall, silenceRingtone, ringtoneSilenced,
+    activeCall, closeCall, callMinimized, setCallMinimized,
+  } = useCallWebSocket();
 
   // Люди живут не разделом, а окошком поверх приложения — как «Контакты» в
   // телеграме: открыл, выбрал, кого написать, и вернулся к той же переписке.
@@ -97,6 +101,17 @@ const ChatShell = () => {
       )}
       {callsOpen && <Calls onClose={closeCalls} />}
       {profileRoute && <UserProfile onClose={() => navigate('/', { replace: true })} />}
+      {/* Разговор идёт поверх переписки и переживает переход в другой чат:
+          прежде он был страницей, и уйти с неё значило оборвать звонок */}
+      {activeCall && activeCall.type === 'voice' && (
+        <VoiceCall
+          key={activeCall.roomId}
+          call={activeCall}
+          minimized={callMinimized}
+          onMinimize={() => setCallMinimized(!callMinimized)}
+          onClose={closeCall}
+        />
+      )}
       {incomingCall && (
         <IncomingCallNotification
           callerId={incomingCall.callerId}
