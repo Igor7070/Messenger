@@ -102,7 +102,20 @@ export const translateMessage = async (content, targetLanguage) => {
     body: JSON.stringify({ prompt: content, targetLanguage }),
   });
   if (!response.ok) throw new Error('Failed to translate message');
-  return await response.json();
+  // Сервер отдаёт перевод простой строкой, как и андроиду. Раньше модель
+  // возвращала её в кавычках, и строка случайно читалась как JSON; когда
+  // кавычки из ответа ушли, разбор стал падать — и подписи под снимками
+  // в переписке остались без перевода. Читаем как текст, кавычки по краям
+  // снимаем, если они ещё встретятся.
+  const body = (await response.text()).trim();
+  if (body.length > 1 && body.startsWith('"') && body.endsWith('"')) {
+    try {
+      return JSON.parse(body);
+    } catch {
+      return body.slice(1, -1);
+    }
+  }
+  return body;
 };
 
 export const saveTranslation = async (messageId, translatedContent, targetLanguage) => {
