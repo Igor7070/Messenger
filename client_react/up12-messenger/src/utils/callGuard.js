@@ -153,6 +153,25 @@ export async function createCallGuard(currentUserId, partnerId) {
     }
   }
 
+  /** Спросить ключи устройств собеседника заново. */
+  const fetchPartnerDevices = async () => {
+    const before = partnerDevices.size;
+    try {
+      const response = await fetch(`${DEVICES_API}/${partnerId}`);
+      if (response.ok) {
+        const devices = await response.json();
+        devices.forEach((device) => partnerDevices.set(device.deviceId, device.publicKey));
+      }
+    } catch {
+      /* не ответил — пусть останется как было */
+    }
+    return partnerDevices.size !== before;
+  };
+
+  // Кому сообщать, если проверка сошлась не сразу
+  let listener = null;
+  const retried = new Set();
+
   let state = CallSecurity.CHECKING;
   let partnerPublicKey = null;
   let partnerDeviceId = null;
@@ -196,7 +215,18 @@ export async function createCallGuard(currentUserId, partnerId) {
       keyB64 = partnerDevices.get(device);
     }
     if (!keyB64) {
+      // Ключ этого устройства мог появиться на сервере только что: собеседник
+      // звонит впервые, и свой ключ он кладёт туда в начале разговора. Берём
+      // список заново и проверяем ещё раз — один раз на подпись, без кругов.
       state = CallSecurity.ENCRYPTED;
+      if (signature && !retried.has(signature)) {
+        retried.add(signature);
+        fetchPartnerDevices().then((changed) => {
+          if (!changed) return;
+          const again = verify(sdp, signature, senderDeviceId);
+          if (listener) listener(again);
+        });
+      }
       return state;
     }
     try {
@@ -281,6 +311,8 @@ export async function createCallGuard(currentUserId, partnerId) {
     deviceId,
     sign,
     verify,
+    /** Сообщать, когда проверка сошлась не сразу, а после запроса ключей. */
+    onState: (fn) => { listener = fn; },
     fingerprint,
     fingerprintDigits,
     confirmByCode,

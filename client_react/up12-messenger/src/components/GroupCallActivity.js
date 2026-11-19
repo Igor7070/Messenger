@@ -595,6 +595,9 @@ const GroupCallActivity = () => {
     try {
       const guard = await createCallGuard(currentUserId, userId);
       guards.current.set(key, guard);
+      // Ключ собеседника мог появиться позже — страж доспросит его сам и
+      // скажет сюда, чтобы подпись под именем поправилась
+      if (guard.onState) guard.onState((state) => setSecurityByUser((prev) => ({ ...prev, [key]: state })));
       setSecurityByUser((prev) => ({ ...prev, [key]: guard.state() }));
       return guard;
     } catch (error) {
@@ -1618,7 +1621,7 @@ const GroupCallActivity = () => {
         ) {
           pc.createOffer()
             .then((offer) => pc.setLocalDescription(offer))
-            .then(() => {
+            .then(async () => {
               const signalKey = `${currentUserId}-${userId}-renegotiated-offer-camera-off-${pc.localDescription.sdp.slice(0, 50)}`;
               if (!sentSignals.current.has(signalKey)) {
                 sentSignals.current.add(signalKey);
@@ -1626,7 +1629,13 @@ const GroupCallActivity = () => {
                   {
                     from: currentUserId,
                     to: userId,
-                    signal: pc.localDescription, // { type: 'offer', sdp: ... }
+                    // Перепредложение (камеру включили или выключили) тоже
+                    // подписываем: без подписи собеседник увидит «encrypted»
+                    signal: {
+                      type: pc.localDescription.type,
+                      sdp: pc.localDescription.sdp,
+                      ...(await signFor(userId, pc.localDescription.sdp)),
+                    },
                   },
                   roomId.current
                 );
@@ -1703,7 +1712,7 @@ const GroupCallActivity = () => {
           ) {
             pc.createOffer()
               .then((offer) => pc.setLocalDescription(offer))
-              .then(() => {
+              .then(async () => {
                 const signalKey = `${currentUserId}-${userId}-renegotiated-offer-camera-on-${pc.localDescription.sdp.slice(0, 50)}`;
                 if (!sentSignals.current.has(signalKey)) {
                   sentSignals.current.add(signalKey);
@@ -1711,7 +1720,13 @@ const GroupCallActivity = () => {
                     {
                       from: currentUserId,
                       to: userId,
-                      signal: pc.localDescription, // { type: 'offer', sdp: ... }
+                      // Перепредложение (камеру включили или выключили) тоже
+                    // подписываем: без подписи собеседник увидит «encrypted»
+                    signal: {
+                      type: pc.localDescription.type,
+                      sdp: pc.localDescription.sdp,
+                      ...(await signFor(userId, pc.localDescription.sdp)),
+                    },
                     },
                     roomId.current
                   );

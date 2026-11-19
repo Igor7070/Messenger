@@ -6,6 +6,15 @@ public class SignalData {
     private IceCandidate iceCandidate;
     private String signature;     // подпись SDP (base64)
     private String publicKey;     // публичный ключ подписи Ed25519 (base64)
+    /**
+     * Какое устройство подписало. У человека их бывает несколько — телефон,
+     * браузер, второй браузер, — и у каждого свой ключ. Без этой метки
+     * собеседник не знает, каким ключом проверять подпись: пока устройство
+     * было одно, он угадывал его единственностью, а со вторым проверка
+     * переставала сходиться и звонок показывал «encrypted» вместо
+     * «verified». Поле проходит насквозь, сервер в него не смотрит.
+     */
+    private String deviceId;
 
     public String getType() {
         return type;
@@ -29,6 +38,14 @@ public class SignalData {
 
     public void setIceCandidate(IceCandidate iceCandidate) {
         this.iceCandidate = iceCandidate;
+    }
+
+    public String getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
     }
 
     public String getSignature() {
