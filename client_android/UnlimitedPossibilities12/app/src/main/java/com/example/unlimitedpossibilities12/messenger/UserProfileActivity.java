@@ -397,7 +397,11 @@ public class UserProfileActivity extends AppCompatActivity {
                                 .load(avatarUrl)
                                 .diskCacheStrategy(DiskCacheStrategy.NONE)
                                 .skipMemoryCache(true)
-                                .circleCrop()
+                                // Шапка — снимок во всю ширину, как на вкладке
+                                // своего профиля. Круг вписывался в ширину и
+                                // вылезал за кадр: сверху его срезала строка
+                                // состояния, по бокам — края экрана.
+                                .centerCrop()
                                 .transition(DrawableTransitionOptions.withCrossFade())
                                 .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
                                     @Override
@@ -436,7 +440,7 @@ public class UserProfileActivity extends AppCompatActivity {
                         if (isFinishing() || isDestroyed()) return; // экран уже закрыли — грузить некуда
                         Glide.with(UserProfileActivity.this)
                                 .load(R.drawable.default_messenger_avatar)
-                                .circleCrop()
+                                .centerCrop()
                                 .transition(DrawableTransitionOptions.withCrossFade())
                                 .into(avatarImageView);
                         avatarTextView.setText(user.getUsername().substring(0, 1).toUpperCase());
@@ -605,7 +609,7 @@ public class UserProfileActivity extends AppCompatActivity {
         if (requestCode == 1 && resultCode == RESULT_OK && data != null) {
             newAvatarUri = data.getData();
             if (newAvatarUri != null) {
-                Glide.with(this).load(newAvatarUri).circleCrop().into(avatarImageView);
+                Glide.with(this).load(newAvatarUri).centerCrop().into(avatarImageView);
             }
         }
     }
