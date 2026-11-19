@@ -1337,7 +1337,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                     chatName = response.body().getName();
                     String partnerName = getChatPartnerName(chatName);
                     partnerUsername = partnerName;
-                    chatNameTextView.setText(partnerName);
+                    chatNameTextView.setText(PeopleNames.of(partnerName));
                     apiService.getUserByUsername(partnerName).enqueue(new Callback<User>() {
                         @Override
                         public void onResponse(Call<User> call, Response<User> response) {

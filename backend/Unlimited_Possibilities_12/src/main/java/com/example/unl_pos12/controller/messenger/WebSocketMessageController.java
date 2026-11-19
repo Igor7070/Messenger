@@ -176,7 +176,8 @@ public class WebSocketMessageController {
             Long chatId = saved.getChat().getId();
             Long senderId = saved.getSender() != null ? saved.getSender().getId() : null;
             boolean secret = Boolean.TRUE.equals(saved.getChat().getIsSecret());
-            String senderName = saved.getSender() != null ? saved.getSender().getUsername() : "Messenger UP12";
+            // В уведомлении человек подписан так, как сам себя назвал
+            String senderName = saved.getSender() != null ? saved.getSender().getVisibleName() : "Messenger UP12";
 
             java.util.Map<String, String> data = new java.util.HashMap<>();
             data.put("chatId", String.valueOf(chatId));

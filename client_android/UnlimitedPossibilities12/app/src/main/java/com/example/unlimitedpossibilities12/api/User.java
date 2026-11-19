@@ -8,6 +8,11 @@ import com.google.gson.annotations.SerializedName;
 public class User implements Parcelable {
     private int id;
     private String username;
+    /**
+     * Имя, которым человека видят: его он выбирает сам и меняет когда
+     * захочет. Имя входа остаётся прежним — по нему находят и им входят.
+     */
+    private String displayName;
     private String password;
     @SerializedName("info") // Исправляем на имя поля из JSON
     private String bio;
@@ -33,6 +38,7 @@ public class User implements Parcelable {
     protected User(Parcel in) {
         id = in.readInt();
         username = in.readString();
+        displayName = in.readString();
         password = in.readString();
         bio = in.readString();
         avatar = in.readString();
@@ -56,6 +62,7 @@ public class User implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeInt(id);
         dest.writeString(username);
+        dest.writeString(displayName);
         dest.writeString(password);
         dest.writeString(bio);
         dest.writeString(avatar);
@@ -70,6 +77,15 @@ public class User implements Parcelable {
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
     public String getUsername() { return username; }
+
+    public String getDisplayName() { return displayName; }
+
+    public void setDisplayName(String displayName) { this.displayName = displayName; }
+
+    /** Как показывать человека: своё имя, а нет его — имя входа. */
+    public String getVisibleName() {
+        return displayName == null || displayName.trim().isEmpty() ? username : displayName;
+    }
     public void setUsername(String username) { this.username = username; }
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }

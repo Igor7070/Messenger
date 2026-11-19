@@ -83,7 +83,7 @@ public class UsersAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         final User user = (User) row;
         final UserViewHolder holder = (UserViewHolder) viewHolder;
 
-        holder.usernameTextView.setText(user.getUsername());
+        holder.usernameTextView.setText(user.getVisibleName());
 
         // Под именем — описание, а если его нет, присутствие: «No bio» у
         // каждого второго человека не говорило ничего
@@ -185,22 +185,25 @@ public class UsersAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         List<User> shown = new ArrayList<>();
         String needle = term.toLowerCase(Locale.getDefault());
         for (User user : users) {
-            String name = user.getUsername() == null ? "" : user.getUsername();
-            if (needle.isEmpty() || name.toLowerCase(Locale.getDefault()).contains(needle)) {
+            String name = user.getVisibleName() == null ? "" : user.getVisibleName();
+            String login = user.getUsername() == null ? "" : user.getUsername();
+            if (needle.isEmpty()
+                    || name.toLowerCase(Locale.getDefault()).contains(needle)
+                    || login.toLowerCase(Locale.getDefault()).contains(needle)) {
                 shown.add(user);
             }
         }
         Collections.sort(shown, (left, right) -> {
-            String a = left.getUsername() == null ? "" : left.getUsername();
-            String b = right.getUsername() == null ? "" : right.getUsername();
+            String a = left.getVisibleName() == null ? "" : left.getVisibleName();
+            String b = right.getVisibleName() == null ? "" : right.getVisibleName();
             return a.compareToIgnoreCase(b);
         });
 
         rows.clear();
         String current = null;
         for (User user : shown) {
-            String name = user.getUsername() == null || user.getUsername().isEmpty()
-                    ? "#" : user.getUsername();
+            String name = user.getVisibleName() == null || user.getVisibleName().isEmpty()
+                    ? "#" : user.getVisibleName();
             String letter = name.substring(0, 1).toUpperCase(Locale.getDefault());
             if (!letter.equals(current)) {
                 rows.add(letter);

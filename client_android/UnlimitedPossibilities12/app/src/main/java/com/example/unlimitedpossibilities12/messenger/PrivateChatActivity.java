@@ -1052,7 +1052,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                     chatName = response.body().getName();
                     String partnerName = getChatPartnerName(chatName);
                     partnerUsername = partnerName;
-                    chatNameTextView.setText(partnerName);
+                    chatNameTextView.setText(PeopleNames.of(partnerName));
                     Log.d(TAG, "Chat fetched: name=" + chatName + ", displayed as: Chat with " + partnerName);
                     // Получить ID собеседника
                     apiService.getUserByUsername(partnerName).enqueue(new Callback<User>() {

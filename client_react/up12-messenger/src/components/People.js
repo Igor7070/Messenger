@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useUserStatusContext } from '../context/UserStatusContext';
 import { findOrCreatePrivateChat } from '../api/privateChats';
+import { nameOf } from '../api/names';
 import '../styles/People.css';
 
 /**
@@ -88,7 +89,7 @@ const People = ({ onClose }) => {
     setOpening(person.id);
     findOrCreatePrivateChat(person, myId)
       .then((route) => { onClose(); navigate(route); })
-      .catch(() => toast.error(`Could not open the chat with ${person.username}`))
+      .catch(() => toast.error(`Could not open the chat with ${nameOf(person)}`))
       .finally(() => setOpening(null));
   };
 
@@ -96,12 +97,14 @@ const People = ({ onClose }) => {
   const sections = useMemo(() => {
     const needle = term.trim().toLowerCase();
     const shown = people
-      .filter((person) => !needle || (person.username || '').toLowerCase().includes(needle))
-      .sort((a, b) => (a.username || '').localeCompare(b.username || '', undefined, { sensitivity: 'base' }));
+      .filter((person) => !needle
+        || nameOf(person).toLowerCase().includes(needle)
+        || (person.username || '').toLowerCase().includes(needle))
+      .sort((a, b) => nameOf(a).localeCompare(nameOf(b), undefined, { sensitivity: 'base' }));
 
     const groups = [];
     shown.forEach((person) => {
-      const letter = letterOf(person.username);
+      const letter = letterOf(nameOf(person));
       const last = groups[groups.length - 1];
       if (last && last.letter === letter) last.people.push(person);
       else groups.push({ letter, people: [person] });
@@ -181,13 +184,13 @@ const People = ({ onClose }) => {
                               className="up-person-avatar up-person-avatar-letter"
                               style={{ background: colorFor(person.username) }}
                             >
-                              {letterOf(person.username)}
+                              {letterOf(nameOf(person))}
                             </span>
                           )}
                           {online && <span className="up-person-online" title="Online" />}
                         </span>
                         <span className="up-person-body">
-                          <span className="up-person-name">{person.username}</span>
+                          <span className="up-person-name">{nameOf(person)}</span>
                           <span className="up-person-about">
                             {about || (online ? 'Online' : 'Offline')}
                           </span>
@@ -196,7 +199,7 @@ const People = ({ onClose }) => {
                       <button
                         type="button"
                         className="up-person-card"
-                        title={`${person.username}'s profile`}
+                        title={`${nameOf(person)}'s profile`}
                         onClick={() => { onClose(); navigate(`/user/${person.id}`); }}
                       >
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

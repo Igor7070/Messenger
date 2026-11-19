@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/UserProfile.css';
 import '../styles/ProfilePanel.css';
+import { nameOf } from '../api/names';
 import { FaEdit, FaEllipsisV, FaPhone, FaVideo, FaLanguage } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Modal from 'react-modal';
@@ -20,6 +21,8 @@ const UserProfile = ({ onClose = () => {} }) => {
     const [newAvatar, setNewAvatar] = useState(null);
     const [info, setInfo] = useState('');
     const [isEditing, setIsEditing] = useState(false);
+    // Имя, которым человека видят. Пустое — значит показываем имя входа.
+    const [displayName, setDisplayName] = useState('');
     const [error, setError] = useState(null);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,6 +41,7 @@ const UserProfile = ({ onClose = () => {} }) => {
                     const data = await response.json();
                     setUser(data);
                     setInfo(data.info || '');
+                setDisplayName(data.displayName || '');
                     const avatarResponse = await fetch(`https://unlimitedpossibilities12.org/api/users/${userId}/avatar`);
                     if (avatarResponse.ok) {
                         const fileName = await avatarResponse.text();
@@ -247,6 +251,7 @@ const UserProfile = ({ onClose = () => {} }) => {
     const saveProfile = async (avatarFile = newAvatar) => {
         const formData = new FormData();
         formData.append('info', info);
+        formData.append('displayName', displayName);
         if (avatarFile) {
             formData.append('avatar', avatarFile);
         }
@@ -554,7 +559,7 @@ const UserProfile = ({ onClose = () => {} }) => {
                                 type="button"
                                 className="up-profile-icon"
                                 title="Back"
-                                onClick={() => { setInfo(user.info || ''); setIsEditing(false); }}
+                                onClick={() => { setInfo(user.info || ''); setDisplayName(user.displayName || ''); setIsEditing(false); }}
                             >
                                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M15 5l-7 7 7 7" />
@@ -623,7 +628,7 @@ const UserProfile = ({ onClose = () => {} }) => {
                             </label>
                         )}
                     </div>
-                    <h2 className="up-profile-name">{user.username}</h2>
+                    <h2 className="up-profile-name">{nameOf(user)}</h2>
                     <p className={`up-profile-status ${online ? 'online' : ''}`}>
                         {online ? 'Online' : 'Offline'}
                     </p>
@@ -668,6 +673,24 @@ const UserProfile = ({ onClose = () => {} }) => {
                         <>
                             <div className="up-profile-field">
                                 <div className="up-profile-field-head">
+                                    <span>Name</span>
+                                    <span className="up-profile-counter">{64 - displayName.length}</span>
+                                </div>
+                                <input
+                                    type="text"
+                                    value={displayName}
+                                    onChange={(event) => setDisplayName(event.target.value)}
+                                    maxLength={64}
+                                    placeholder={user.username}
+                                    autoFocus
+                                />
+                            </div>
+                            <p className="up-profile-hint">
+                                The name others see. Leave it empty to be shown as @{user.username}.
+                            </p>
+
+                            <div className="up-profile-field">
+                                <div className="up-profile-field-head">
                                     <span>About</span>
                                     <span className="up-profile-counter">{244 - info.length}</span>
                                 </div>
@@ -676,7 +699,6 @@ const UserProfile = ({ onClose = () => {} }) => {
                                     onChange={(event) => setInfo(event.target.value)}
                                     rows={3}
                                     maxLength={244}
-                                    autoFocus
                                 />
                             </div>
                             <p className="up-profile-hint">
@@ -718,7 +740,7 @@ const UserProfile = ({ onClose = () => {} }) => {
                             <button
                                 type="button"
                                 className="up-profile-done"
-                                onClick={() => { setInfo(user.info || ''); setIsEditing(false); }}
+                                onClick={() => { setInfo(user.info || ''); setDisplayName(user.displayName || ''); setIsEditing(false); }}
                             >
                                 Cancel
                             </button>

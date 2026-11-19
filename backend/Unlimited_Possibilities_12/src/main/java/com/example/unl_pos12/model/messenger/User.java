@@ -29,6 +29,16 @@ public class User {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password; // Храните пароли в зашифрованном виде
 
+    /**
+     * Имя, которым человека видят: его он меняет когда захочет, и
+     * совпадать с чужим ему не запрещено. Имя входа выше остаётся
+     * прежним и неизменным — по нему находят, им входят, и из него же
+     * сложены названия личных переписок и имена файлов с аватарами.
+     * Пусто — значит показываем имя входа.
+     */
+    @Column(length = 64)
+    private String displayName;
+
     //@Lob // Указываем, что это большое поле
     private String info; // Информация о пользователе
     private String avatar; // Путь к аватару или байтовый массив
@@ -51,6 +61,20 @@ public class User {
 
     public String getToken() { return token; }
     public void setToken(String token) { this.token = token; }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    /** Как человека показывать: своё имя, а если его нет — имя входа. */
+    @JsonIgnore
+    public String getVisibleName() {
+        return displayName == null || displayName.isBlank() ? username : displayName;
+    }
 
     public Long getId() {
         return id;

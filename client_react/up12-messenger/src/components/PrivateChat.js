@@ -1,5 +1,6 @@
 import MessageChecks from './MessageChecks';
 import { isReadFlag, isDeliveredFlag } from '../api/messageFlags';
+import { nameOf } from '../api/names';
 import { findPartner, partnerNameFromChat } from '../api/participants';
 import { stompAuthHeaders } from '../authToken';
 import React, { useEffect, useState, useRef, useMemo } from 'react';
@@ -327,7 +328,7 @@ const PrivateChat = () => {
         try {
           const partner = await findPartner(chatIdParam, localStorage.getItem('userId'));
           if (partner) {
-            interlocutorName = partner.username;
+            interlocutorName = nameOf(partner);
             setPartnerId(partner.id);
             setPartnerAvatar(partner.avatar);
           } else {
@@ -515,7 +516,7 @@ const PrivateChat = () => {
 
             if (sender && sender.id !== liveRef.current.userId) { // не показываем себе
               if (type === 'TYPING') {
-                setTypingName(sender.username || 'Кто-то');
+                setTypingName(nameOf(sender) || 'Кто-то');
                 setIsTyping(true);
 
                 // Сбрасываем старый таймер и запускаем новый (6.5 сек)

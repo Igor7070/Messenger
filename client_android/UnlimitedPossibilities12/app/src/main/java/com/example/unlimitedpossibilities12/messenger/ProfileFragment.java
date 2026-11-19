@@ -127,6 +127,8 @@ public class ProfileFragment extends Fragment {
         avatarInputButton.setOnClickListener(v -> openFilePicker());
         settingsTile.setOnClickListener(v -> openSettings());
         bioEditIcon.setOnClickListener(v -> startBioEditing());
+        // По самому имени — правка имени: того, которым тебя видят.
+        usernameTextView.setOnClickListener(v -> startNameEditing());
         // Описание правится и по самой строке, а не только по карандашу
         bioTextView.setOnClickListener(v -> startBioEditing());
 
@@ -173,9 +175,10 @@ public class ProfileFragment extends Fragment {
     private void displayUserData() {
         if (currentUser == null || !isAdded()) return;
 
-        String name = currentUser.getUsername() == null ? "" : currentUser.getUsername();
-        usernameTextView.setText(name);
-        usernameHandle.setText("@" + name);
+        // Сверху — имя, которым тебя видят; строкой ниже, с «@», — имя входа
+        String login = currentUser.getUsername() == null ? "" : currentUser.getUsername();
+        usernameTextView.setText(currentUser.getVisibleName());
+        usernameHandle.setText("@" + login);
 
         // Своя страница открыта — значит мы в сети; раньше строка присутствия
         // вообще никогда не заполнялась
@@ -187,7 +190,8 @@ public class ProfileFragment extends Fragment {
         bioTextView.setText(hasBio ? bio : getString(R.string.profile_no_bio));
         bioTextView.setTextColor(hasBio ? 0xFFE2E8F0 : 0xFF64748B);
 
-        String letter = name.isEmpty() ? "?" : name.substring(0, 1).toUpperCase();
+        String shown = currentUser.getVisibleName() == null ? "" : currentUser.getVisibleName();
+        String letter = shown.isEmpty() ? "?" : shown.substring(0, 1).toUpperCase();
         avatarTextView.setText(letter);
 
         // Аватар + обработчик открытия полного изображения
@@ -277,6 +281,40 @@ public class ProfileFragment extends Fragment {
         input.requestFocus();
     }
 
+    /**
+     * Правка имени, которым человека видят. Имя входа (строка с «@» ниже)
+     * остаётся прежним: по нему находят, им входят, и из него же сложены
+     * названия личных переписок и имена файлов с аватарами.
+     */
+    private void startNameEditing() {
+        if (!isAdded() || currentUser == null) return;
+
+        android.widget.EditText input = new android.widget.EditText(requireContext());
+        input.setHint(currentUser.getUsername());
+        input.setTextColor(0xFFE2E8F0);
+        input.setHintTextColor(0xFF64748B);
+        input.setSingleLine(true);
+        String chosen = currentUser.getDisplayName() == null ? "" : currentUser.getDisplayName();
+        input.setText(chosen);
+        input.setSelection(chosen.length());
+        int pad = (int) (18 * getResources().getDisplayMetrics().density);
+        input.setPadding(pad, pad, pad, pad);
+
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Name")
+                .setMessage("The name others see. Leave it empty to be shown as @"
+                        + currentUser.getUsername())
+                .setView(input)
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String typed = input.getText().toString().trim();
+                    currentUser.setDisplayName(typed.isEmpty() ? null : typed);
+                    usernameTextView.setText(currentUser.getVisibleName());
+                    handleUpdateUser();
+                })
+                .show();
+    }
+
     private void saveBio(String typed) {
         if (currentUser != null) currentUser.setBio(typed);
 
@@ -318,7 +356,10 @@ public class ProfileFragment extends Fragment {
             }
         }
 
-        apiService.updateUser(currentUserId, bioBody, avatarPart).enqueue(new Callback<User>() {
+        String chosenName = currentUser.getDisplayName() == null ? "" : currentUser.getDisplayName().trim();
+        RequestBody nameBody = RequestBody.create(MediaType.parse("text/plain"), chosenName);
+
+        apiService.updateUser(currentUserId, bioBody, nameBody, avatarPart).enqueue(new Callback<User>() {
             @Override
             public void onResponse(Call<User> call, Response<User> response) {
                 if (response.isSuccessful() && response.body() != null) {

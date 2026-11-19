@@ -594,7 +594,7 @@ public class CallsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     private String usernameOf(int id) {
         User user = getUserById(id);
-        return user != null && user.getUsername() != null ? user.getUsername() : "Unknown";
+        return user != null && user.getUsername() != null ? user.getVisibleName() : "Unknown";
     }
 
     private User getUserById(int id) {

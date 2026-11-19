@@ -285,6 +285,7 @@
   font-variant-numeric: tabular-nums;
 }
 
+.up-profile-field input[type="text"],
 .up-profile-field textarea {
   width: 100%;
   box-sizing: border-box;
@@ -299,6 +300,7 @@
   outline: none;
 }
 
+.up-profile-field input[type="text"]:focus,
 .up-profile-field textarea:focus {
   border-color: var(--up-accent);
 }

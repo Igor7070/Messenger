@@ -362,7 +362,7 @@ public class UserProfileActivity extends AppCompatActivity {
             public void onResponse(Call<User> call, Response<User> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     user = response.body();
-                    usernameTextView.setText(user.getUsername());
+                    usernameTextView.setText(user.getVisibleName());
                     TextView usernameHandle = findViewById(R.id.username_handle);
                     if (usernameHandle != null) usernameHandle.setText("@" + user.getUsername());
                     // Сбрасываем анимации и устанавливаем видимость для био
@@ -613,7 +613,7 @@ public class UserProfileActivity extends AppCompatActivity {
             }
         }
 
-        apiService.updateUser(userId, bioBody, avatarPart).enqueue(new Callback<User>() {
+        apiService.updateUser(userId, bioBody, null, avatarPart).enqueue(new Callback<User>() {
             @Override
             public void onResponse(Call<User> call, Response<User> response) {
                 if (response.isSuccessful()) {

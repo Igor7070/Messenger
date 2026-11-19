@@ -24,6 +24,7 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 import AiMessageGeneratorDialog from './AiMessageGeneratorDialog';
 import GroupMembersDialog from './GroupMembersDialog';
 import { chatAvatarUrl, getMembers } from '../api/chatMembers';
+import { nameOf } from '../api/names';
 import MessageChecks from './MessageChecks';
 import { isReadFlag, isDeliveredFlag } from '../api/messageFlags';
 import { getChatById } from '../api/chats';
@@ -2051,7 +2052,7 @@ const Messenger = () => {
                           (isTranslationEnabled || isTTSEnabled) && msg.messageType !== 'audio' ? 'translate-enabled' : ''
                         }`}
                       >
-                        {msg.sender.username}
+                        {nameOf(msg.sender)}
                       </span>
                     )}
                     {msg.messageType === 'audio' && msg.fileUrl ? (

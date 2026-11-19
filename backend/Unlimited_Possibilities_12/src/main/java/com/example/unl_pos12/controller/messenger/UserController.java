@@ -138,12 +138,20 @@ public class UserController {
     public User updateUser(@PathVariable Long id,
                            jakarta.servlet.http.HttpServletRequest request,
                            @RequestParam(value = "info", required = false) String info,
+                           @RequestParam(value = "displayName", required = false) String displayName,
                            @RequestParam(value = "avatar", required = false) MultipartFile avatar) {
         authz.requireSelf(request, id); // менять можно только свой профиль
         User user = userService.getUserById(id);
         if (user != null) {
             if (info != null) {
                 user.setInfo(info);
+            }
+            // Имя, которым человека видят. Пустое — значит вернулись к имени
+            // входа; длину режем по столбцу, чтобы правка не падала на базе.
+            if (displayName != null) {
+                String name = displayName.trim();
+                if (name.length() > 64) name = name.substring(0, 64);
+                user.setDisplayName(name.isEmpty() ? null : name);
             }
             if (avatar != null && !avatar.isEmpty()) {
                 String avatarPath = saveAvatar(user.getUsername(), avatar);

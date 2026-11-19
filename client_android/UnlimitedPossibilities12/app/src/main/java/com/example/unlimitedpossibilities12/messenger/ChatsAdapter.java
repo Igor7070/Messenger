@@ -115,7 +115,9 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsAdapter.ChatViewHold
         String[] parts = name.split("_");
         if (parts.length >= 2) {
             String partner = parts[0].equals(currentUsername) ? parts[1] : parts[0];
-            if (!partner.isEmpty()) return partner;
+            // Название переписки сложено из имён входа; показываем то имя,
+            // которым человек себя назвал, если оно известно.
+            if (!partner.isEmpty()) return PeopleNames.of(partner);
         }
         return name;
     }

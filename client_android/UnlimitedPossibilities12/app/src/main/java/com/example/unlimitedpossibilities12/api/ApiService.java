@@ -111,6 +111,7 @@ public interface ApiService {
     Call<User> updateUser(
             @Path("id") int id,
             @Part("info") RequestBody info,
+            @Part("displayName") RequestBody displayName,
             @Part MultipartBody.Part avatar
     );
 

@@ -1565,7 +1565,12 @@ public class MessengerMainActivity extends AppCompatActivity {
                     usersList.addAll(response.body());
 
                     runOnUiThread(() -> {
+                        // Запоминаем, кто как себя назвал: список разговоров
+                        // и шапки переписок знают о собеседнике только имя
+                        // входа и берут выбранное имя отсюда.
+                        PeopleNames.remember(usersList);
                         usersAdapter.updateUsers(usersList);
+                        if (chatsAdapter != null) chatsAdapter.notifyDataSetChanged();
                         updateProfileIcon();
                         // Список чатов рисует собеседников по имени: у личной
                         // переписки своей картинки нет

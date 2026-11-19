@@ -6,6 +6,7 @@ import { FaUsers, FaPlus, FaArrowUp, FaArrowDown, FaPhone, FaTimes } from 'react
 import axios from 'axios';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import { findOrCreatePrivateChat } from '../api/privateChats';
+import { nameOf } from '../api/names';
 import IncomingCallNotification from './IncomingCallNotification';
 import AssistantIcon from './AssistantIcon';
 import '../styles/Calls.css';
@@ -416,7 +417,7 @@ const Calls = ({ onClose = () => {} }) => {
                   ? getUserById(call.direction === 'outgoing' ? Number(call.receiver) : Number(call.caller))
                   : null;
                 const people = isGroup ? participants : [singleUser];
-                const title = people.map((person) => person.username).join(', ');
+                const title = people.map((person) => nameOf(person)).join(', ');
                 // Неотвеченный и отклонённый — красным, как на телефоне
                 const missed = ['missed', 'rejected', 'declined'].includes((call.status || '').toLowerCase());
                 const duration = durationLabel(call);
@@ -440,7 +441,7 @@ const Calls = ({ onClose = () => {} }) => {
                             />
                           ) : (
                             <span key={`${person.id}-${index}`} className="up-call-avatar up-call-avatar-letter">
-                              {(person.username || '?').charAt(0).toUpperCase()}
+                              {(nameOf(person) || '?').charAt(0).toUpperCase()}
                             </span>
                           )
                         ))}

@@ -6,6 +6,7 @@
 
 import { getMessages } from './messages';
 import { isReadFlag } from './messageFlags';
+import { nameOf } from './names';
 
 const API = 'https://unlimitedpossibilities12.org/api';
 
@@ -55,7 +56,7 @@ const partnerName = (chat, me, myId) => {
   const people = Array.isArray(chat.participants) ? chat.participants : null;
   if (people) {
     const partner = people.find((person) => Number(person.id) !== Number(myId));
-    if (partner && partner.username) return partner.username;
+    if (partner) return nameOf(partner) || partner.username;
   }
   const parts = String(chat.name || '').replace('_secret', '').split('_');
   const guess = parts.find((part) => part && part !== me);
@@ -106,7 +107,7 @@ const previewOf = (chat, message, currentUserId) => {
   if (mine) return `You: ${body}`;
 
   const group = !chat.private && !chat.isSecret;
-  if (group && message.sender && message.sender.username) return `${message.sender.username}: ${body}`;
+  if (group && message.sender && message.sender.username) return `${nameOf(message.sender)}: ${body}`;
   return body;
 };
 

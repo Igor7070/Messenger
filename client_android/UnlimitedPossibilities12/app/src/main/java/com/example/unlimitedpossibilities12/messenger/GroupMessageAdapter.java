@@ -670,7 +670,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             messageContainer.setLayoutParams(params);
 
             // Настройка имени отправителя и аватара
-            senderNameTextView.setText(sender.getUsername());
+            senderNameTextView.setText(sender.getVisibleName());
             String avatarUrl = sender.getAvatar();
             if (!isSentByCurrentUser && !TextUtils.isEmpty(avatarUrl)) {
                 Glide.with(context)

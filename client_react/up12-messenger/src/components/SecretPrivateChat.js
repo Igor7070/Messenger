@@ -1,5 +1,6 @@
 import MessageChecks from './MessageChecks';
 import AudioWaveform from './AudioWaveform';
+import { nameOf } from '../api/names';
 import { findPartner, partnerNameFromChat } from '../api/participants';
 import { isReadFlag, isDeliveredFlag } from '../api/messageFlags';
 import { stompAuthHeaders } from '../authToken';
@@ -273,7 +274,7 @@ const SecretPrivateChat = () => {
     const partner = await findPartner(chatIdParam, localStorage.getItem('userId'));
     if (partner) {
       partnerRef.current = partner.id;
-      partnerNameRef.current = partner.username;
+      partnerNameRef.current = nameOf(partner);
       return partner.id;
     }
     const name = partnerNameFromChat(chatNameRef.current, username);
@@ -486,7 +487,7 @@ const SecretPrivateChat = () => {
         let recipient;
         const partner = await findPartner(chatIdParam, localStorage.getItem('userId'));
         if (partner) {
-          interlocutorName = partner.username;
+          interlocutorName = nameOf(partner);
           recipient = partner;
         } else {
           interlocutorName = partnerNameFromChat(chatData.name, username);
@@ -967,7 +968,7 @@ const SecretPrivateChat = () => {
 
             if (sender && sender.id !== userId) {
               if (type === 'TYPING') {
-                setTypingName(sender.username || 'Собеседник');
+                setTypingName(nameOf(sender) || 'Собеседник');
                 setIsTyping(true);
 
                 if (typingTimerRef.current) {
