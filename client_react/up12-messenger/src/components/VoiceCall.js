@@ -74,6 +74,47 @@ const VoiceCall = ({ recipientId }) => {
   const hasNotifiedRejectCall = useRef(false); // NEW: Добавляем реф для rejectCall
   const hasSavedCall = useRef(false); // NEW: Флаг для предотвращения двойного сохранения звонка
   const [callDuration, setCallDuration] = useState(0);
+  /**
+   * Собеседник целиком: снимок и выбранное имя.
+   *
+   * Прежде экран знал только логин, переданный при переходе, и показывал
+   * строку «Voice Call with Kenzya3» над полем графика — ни лица, ни имени.
+   * На телефоне в это время видно снимок во весь круг, имя и «On the call»,
+   * поэтому берём ту же запись о человеке.
+   */
+  const [partner, setPartner] = useState(null);
+  const [muted, setMuted] = useState(false);
+  const localStreamRef = useRef(null);
+
+  // Номер собеседника вынимаем из названия комнаты: room-<звонящий>-<кому>
+  const partnerId = (() => {
+    const parts = String(roomId || '').split('-');
+    const pair = parts.slice(1).filter((part) => /^[0-9]+$/.test(part));
+    return pair.find((id) => String(id) !== String(currentUserId)) || null;
+  })();
+
+  useEffect(() => {
+    if (!partnerId) return undefined;
+    let alive = true;
+    (async () => {
+      try {
+        const response = await fetch(`https://unlimitedpossibilities12.org/api/users/${partnerId}`);
+        if (response.ok && alive) setPartner(await response.json());
+      } catch (error) {
+        console.warn('Не вышло узнать собеседника:', error);
+      }
+    })();
+    return () => { alive = false; };
+  }, [partnerId]);
+
+  /** Выключить и включить свой микрофон. */
+  const toggleMute = () => {
+    const stream = localStreamRef.current;
+    if (!stream) return;
+    const next = !muted;
+    stream.getAudioTracks().forEach((track) => { track.enabled = !next; });
+    setMuted(next);
+  };
 
   useEffect(() => {
     if (isCaller) {
@@ -223,6 +264,7 @@ const VoiceCall = ({ recipientId }) => {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStreamRef.current = stream; // чтобы кнопка «Mute» было что выключить
       localAudioRef.current.srcObject = stream;
       console.log('Audio stream obtained successfully.');
 
@@ -312,6 +354,7 @@ const VoiceCall = ({ recipientId }) => {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStreamRef.current = stream; // чтобы кнопка «Mute» было что выключить
       localAudioRef.current.srcObject = stream;
       console.log('Local audio stream obtained.');
 
@@ -705,39 +748,64 @@ const VoiceCall = ({ recipientId }) => {
     return () => clearInterval(timer);
   }, []);
 
+  const partnerName = partner
+    ? (partner.displayName || partner.username)
+    : (isCaller ? recipientName : callerName);
+  const letter = (partnerName || '?').trim().charAt(0).toUpperCase();
+  // Цвет кружка — от имени, как в списке людей и на телефоне
+  const letterColor = ['#F87171', '#FB923C', '#FBBF24', '#34D399', '#38BDF8', '#A78BFA', '#F472B6']
+    [(partnerName || '?').split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % 7];
+  const levels = (chartData.datasets[0]?.data || []).slice(-28);
+
   return (
-    <div className="voice-call-container">
-      <div className="voice-call-header">
-        <h2 className="voice-call-title">
-          Voice Call with {isCaller ? recipientName : callerName}
-        </h2>
-        <div className="call-duration">
-          {Math.floor(callDuration / 60).toString().padStart(2, '0')}:
-          {(callDuration % 60).toString().padStart(2, '0')}
+    <div className="voice-call-screen">
+      <div className="voice-call-person">
+        <div className="voice-call-avatar" style={{ background: partner && partner.avatar ? 'none' : letterColor }}>
+          {partner && partner.avatar
+            ? <img src={`https://unlimitedpossibilities12.org${partner.avatar}`} alt="" />
+            : <span>{letter}</span>}
+        </div>
+        <h2 className="voice-call-name">{partnerName}</h2>
+        <p className="voice-call-state">{isWaiting ? 'Calling…' : 'On the call'}</p>
+        {!isWaiting && (
+          <div className="call-duration">
+            {Math.floor(callDuration / 60).toString().padStart(2, '0')}:
+            {(callDuration % 60).toString().padStart(2, '0')}
+          </div>
+        )}
+
+        <button
+          type="button"
+          className={`call-security call-security-${callSecurity}`}
+          onClick={toggleFingerprint}
+        >
+          <span className="call-security-lock">&#128274;</span>
+          {securityLabel(callSecurity)}
+        </button>
+
+        {/* Голос собеседника — полоской, а не полем с осями и часами:
+            на экране звонка важно видеть, что он говорит, а не измерять */}
+        <div className="voice-call-levels" aria-hidden="true">
+          {levels.map((value, index) => (
+            <span key={index} style={{ height: `${Math.max(3, Math.min(100, value))}%` }} />
+          ))}
         </div>
       </div>
 
-
-      <button
-        type="button"
-        className={`call-security call-security-${callSecurity}`}
-        onClick={toggleFingerprint}
-      >
-        <span className="call-security-lock">&#128274;</span>
-        {securityLabel(callSecurity)}
-      </button>
       {showFingerprint && (
-        <div className="call-fingerprint">
-          <p>{securityExplanation(callSecurity)}</p>
-          <div className="call-fingerprint-code">
-            {fingerprintCode || 'The code appears once both sides have exchanged keys.'}
+        <div className="call-fingerprint-backdrop" onClick={toggleFingerprint} role="presentation">
+          <div className="call-fingerprint" onClick={(event) => event.stopPropagation()}>
+            <p>{securityExplanation(callSecurity)}</p>
+            <div className="call-fingerprint-code">
+              {fingerprintCode || 'The code appears once both sides have exchanged keys.'}
+            </div>
+            {fingerprintDigits && <div className="call-fingerprint-digits">{fingerprintDigits}</div>}
+            {fingerprintCode && (
+              <button type="button" className="call-fingerprint-confirm" onClick={confirmCodes}>
+                The codes match
+              </button>
+            )}
           </div>
-          {fingerprintDigits && <div className="call-fingerprint-digits">{fingerprintDigits}</div>}
-          {fingerprintCode && (
-            <button type="button" className="call-fingerprint-confirm" onClick={confirmCodes}>
-              The codes match
-            </button>
-          )}
         </div>
       )}
 
@@ -746,34 +814,27 @@ const VoiceCall = ({ recipientId }) => {
         <audio ref={remoteAudioRef} autoPlay />
       </div>
 
-      <div className="chart-container">
-        <Line
-          data={chartData}
-          options={{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-            },
-            scales: {
-              x: {
-                grid: { color: 'rgba(148, 163, 184, 0.25)' },
-                ticks: { color: '#94a3b8' },
-              },
-              y: {
-                grid: { color: 'rgba(148, 163, 184, 0.25)' },
-                ticks: { color: '#94a3b8' },
-                min: 0,
-                max: 100,
-              },
-            },
-          }}
-        />
+      <div className="voice-call-controls">
+        <button
+          type="button"
+          className={`voice-call-round${muted ? ' is-on' : ''}`}
+          onClick={toggleMute}
+          title={muted ? 'Turn the microphone back on' : 'Turn the microphone off'}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" />
+            <path d="M18 11a6 6 0 0 1-12 0M12 17v4M9 21h6" fill="none" strokeWidth="2" strokeLinecap="round" />
+            {muted && <path d="M4 3 L20 21" fill="none" strokeWidth="2" strokeLinecap="round" />}
+          </svg>
+          <small>{muted ? 'Unmute' : 'Mute'}</small>
+        </button>
+        <button type="button" className="voice-call-round is-end" onClick={endCall} title="End the call">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 9c-2.6 0-5.1.5-7.3 1.5-.8.4-1.3 1.2-1.2 2.1l.2 1.8c.1.9.9 1.5 1.8 1.4l2.6-.4c.8-.1 1.4-.8 1.5-1.6l.2-1.4c1.5-.4 3-.4 4.5 0l.2 1.4c.1.8.7 1.5 1.5 1.6l2.6.4c.9.1 1.7-.5 1.8-1.4l.2-1.8c.1-.9-.4-1.7-1.2-2.1C17.1 9.5 14.6 9 12 9Z" />
+          </svg>
+          <small>End</small>
+        </button>
       </div>
-
-      <button className="end-call-button-voice" onClick={endCall}>
-        End Call
-      </button>
     </div>
   );
 };

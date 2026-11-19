@@ -163,3 +163,33 @@
     }
 }
 
+
+
+/* Заголовок со значком в одну строку */
+.notification-header h2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.notification-header h2 .notification-icon {
+  font-size: 22px;
+}
+
+/* «Приглушить» — тихая строка под кнопками, не кнопка-соперник */
+.silence-button {
+  display: block;
+  margin: 14px auto 0;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.silence-button:hover:not(:disabled) { color: #e2e8f0; background: rgba(148, 163, 184, 0.14); }
+.silence-button:disabled { color: #64748b; cursor: default; }

@@ -8,8 +8,10 @@ const IncomingCallNotification = ({
     avatar, 
     callType, 
     onAccept, 
-    onReject 
+    onReject,
+    onSilence
 }) => {
+    const [silenced, setSilenced] = React.useState(false);
     const avatarSrc = avatar ? `https://unlimitedpossibilities12.org${avatar}` : null;
     const initials = callerName ? callerName.charAt(0).toUpperCase() : '';
 
@@ -68,12 +70,11 @@ const IncomingCallNotification = ({
 
                 {/* Заголовок и иконка */}
                 <div className="notification-header">
-                    <h2>{title}</h2>
-                    <p className="caller-name">from <strong>{callerName}</strong></p>
-                    
-                    <div className="notification-icon-wrapper">
+                    <h2>
                         <Icon className="notification-icon" style={{ color: accentColor }} />
-                    </div>
+                        {title}
+                    </h2>
+                    <p className="caller-name">from <strong>{callerName}</strong></p>
                 </div>
 
                 {/* Кнопки — логика полностью как в старом коде */}
@@ -85,6 +86,20 @@ const IncomingCallNotification = ({
                         Accept
                     </button>
                 </div>
+                {/* Приглушить, не отвечая и не отказывая, — то же, что
+                    «Silence» на телефоне: звонок остаётся на виду, а музыка
+                    замолкает. Без этого собеседнику оставалось либо отбиться,
+                    либо слушать */}
+                {onSilence && (
+                    <button
+                        type="button"
+                        className="silence-button"
+                        disabled={silenced}
+                        onClick={() => { onSilence(); setSilenced(true); }}
+                    >
+                        {silenced ? 'Silenced' : 'Silence'}
+                    </button>
+                )}
             </div>
         </div>
     );

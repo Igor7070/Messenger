@@ -187,3 +187,158 @@
     background: rgba(52, 211, 153, 0.14);
     color: #34d399;
 }
+
+
+/* ---------------------------------------------------------------------
+   Экран звонка, собранный как на телефоне: лицо собеседника и его имя
+   посреди, управление внизу. Прежде здесь была полоса заголовка и поле
+   с осями от нуля до ста, занимавшее весь экран; кнопка «завершить»
+   при открытом коде уезжала под сгиб, и бросить разговор было нечем.
+   --------------------------------------------------------------------- */
+.voice-call-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 64px 16px 48px;
+  background: linear-gradient(160deg, #0f172a 0%, #1b2a41 100%);
+  color: #e2e8f0;
+  font-family: 'Inter', sans-serif;
+  z-index: 50;
+}
+
+.voice-call-person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.voice-call-avatar {
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 58px;
+  font-weight: 600;
+  color: #0f172a;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.voice-call-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.voice-call-name {
+  margin: 14px 0 0;
+  font-size: 30px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.voice-call-state {
+  margin: 0;
+  font-size: 17px;
+  color: #94a3b8;
+}
+
+.voice-call-screen .call-duration {
+  font-size: 22px;
+  color: #cbd5e1;
+  letter-spacing: 1px;
+}
+
+/* Голос собеседника — живой полоской под замком */
+.voice-call-levels {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 46px;
+  margin-top: 18px;
+}
+
+.voice-call-levels span {
+  width: 4px;
+  min-height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #67e8f9, #3b82f6);
+  transition: height 120ms linear;
+}
+
+/* Управление снизу, как на телефоне */
+.voice-call-controls {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+
+.voice-call-round {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(148, 163, 184, 0.16);
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.voice-call-round svg {
+  width: 26px;
+  height: 26px;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.voice-call-round.is-end svg { width: 30px; height: 30px; }
+.voice-call-round small { font-size: 11px; color: #94a3b8; }
+.voice-call-round:hover { background: rgba(148, 163, 184, 0.26); transform: translateY(-2px); }
+.voice-call-round.is-on { background: #e2e8f0; color: #0f172a; }
+.voice-call-round.is-on small { color: #334155; }
+.voice-call-round.is-end { background: #ef4444; }
+.voice-call-round.is-end span { transform: rotate(135deg); }
+.voice-call-round.is-end small { color: #fee2e2; }
+.voice-call-round.is-end:hover { background: #dc2626; }
+
+/* Код для сверки — поверх экрана, чтобы ничего не уезжало */
+.call-fingerprint-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 60;
+}
+
+.voice-call-screen ~ .call-fingerprint,
+.call-fingerprint-backdrop .call-fingerprint {
+  max-width: 420px;
+  width: 100%;
+  background: #16213a;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 18px;
+  padding: 22px;
+  text-align: center;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .voice-call-screen { padding: 40px 14px 32px; }
+  .voice-call-avatar { width: 118px; height: 118px; font-size: 46px; }
+  .voice-call-name { font-size: 25px; }
+}

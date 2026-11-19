@@ -86,7 +86,20 @@ export const CallWebSocketProvider = ({ children }) => {
     return () => clearTimeout(stopper);
   }, [incomingCall]);
 
+  /**
+   * Приглушённый звонок: человек видит, кто звонит, и решает, а музыка ему
+   * больше не нужна — так же, как кнопка «Silence» на телефоне. Помним номер
+   * комнаты, чтобы приглушение не перескочило на следующий звонок.
+   */
+  const silencedRoom = useRef(null);
+  const silenceRingtone = () => {
+    silencedRoom.current = incomingCall ? incomingCall.roomId : null;
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
+  };
+
   useEffect(() => {
+    if (incomingCall && silencedRoom.current === incomingCall.roomId) return;
     if (incomingCall && userInteracted) {
       console.log('CallWebSocketContext: Попытка воспроизведения звука, userInteracted:', userInteracted);
       audioRef.current.play().catch((error) => {
@@ -597,6 +610,7 @@ export const CallWebSocketProvider = ({ children }) => {
         incomingCall,
         acceptCall,
         rejectCall,
+        silenceRingtone,
         setCurrentUserId,
         sendSignal,
         setGroupSignalHandler,

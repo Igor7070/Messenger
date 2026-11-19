@@ -32,7 +32,7 @@ const ChatShell = () => {
    * принять его было негде. Теперь оно живёт в каркасе и появляется в любом
    * месте приложения.
    */
-  const { incomingCall, acceptCall, rejectCall } = useCallWebSocket();
+  const { incomingCall, acceptCall, rejectCall, silenceRingtone } = useCallWebSocket();
 
   // Люди живут не разделом, а окошком поверх приложения — как «Контакты» в
   // телеграме: открыл, выбрал, кого написать, и вернулся к той же переписке.
@@ -105,6 +105,7 @@ const ChatShell = () => {
           callType={incomingCall.type || incomingCall.callType}
           onAccept={() => acceptCall(navigate)}
           onReject={rejectCall}
+          onSilence={silenceRingtone}
         />
       )}
     </div>
