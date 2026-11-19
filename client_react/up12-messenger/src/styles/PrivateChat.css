@@ -2386,10 +2386,14 @@
   подложка и полоска слева в цвет ссылки.
 */
 .private-message.private-current-user .link-preview-card {
+  /* Полоску слева убрал: она была уместна, пока карточка состояла из
+     одного текста, а со снимком группы белая черта рядом с картинкой
+     выглядит случайной царапиной. Светлая подложка и так отделяет
+     карточку от пузыря. */
   background: rgba(255, 255, 255, 0.12);
   border: 0;
-  border-left: 3px solid rgba(255, 255, 255, 0.75);
-  border-radius: 8px;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .private-message.private-current-user .link-preview-title {
