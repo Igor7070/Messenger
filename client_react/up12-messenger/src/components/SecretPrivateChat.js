@@ -819,7 +819,7 @@ const SecretPrivateChat = () => {
                 : m
             ));
             // Trigger preload if audio (use current state fileUrl to avoid null)
-            if (newMessage.messageType === 'audio' && audioRefs.current[newMessage.id]) {
+            if (newMessage.messageType === 'audio') {
               const currentMsg = messages.find(m => m.id === newMessage.id);
               if (currentMsg && currentMsg.fileUrl) {
                 setTimeout(() => {
@@ -912,7 +912,7 @@ const SecretPrivateChat = () => {
               updateMessages(updatedNewMessage);
 
               // Trigger preload/decrypt after update for audio
-              if (newMessage.messageType === 'audio' && audioRefs.current[newMessage.id]) {
+              if (newMessage.messageType === 'audio') {
                 setTimeout(() => preloadAudio(newMessage.id, fileUrl, updatedNewMessage), 100);
               }
             } catch (error) {
@@ -1114,7 +1114,6 @@ const SecretPrivateChat = () => {
     const audioMessages = messages.filter((msg) => msg.messageType === 'audio' && msg.fileUrl);
     audioMessages.slice(-10).forEach(async (msg) => {  // async для preloadAudio
       if (
-        audioRefs.current[msg.id] &&
         !audioProgress[msg.id]?.isReady &&
         !audioProgress[msg.id]?.isPreloading
       ) {
@@ -1282,7 +1281,7 @@ const SecretPrivateChat = () => {
     });
 
     // Trigger preload for audio
-    if (newMessage.messageType === 'audio' && audioRefs.current[newMessage.id]) {
+    if (newMessage.messageType === 'audio') {
       const fullMsg = { ...newMessage, sender: { id: newMessage.sender?.id || userId } };
       setTimeout(() => preloadAudio(newMessage.id, newMessage.fileUrl || newMessage.file_url, fullMsg), 100);
     }
@@ -2558,7 +2557,14 @@ const SecretPrivateChat = () => {
 
   const preloadAudio = async (msgId, url, msg) => {  // Добавлен msg param
     const audio = audioRefs.current[msgId];
-    if (!audio || audioProgress[msgId]?.isReady || audioProgress[msgId]?.decrypted) {
+    // Сам проигрыватель появляется в разметке только тогда, когда запись
+    // уже расшифрована, а расшифровать её прежде брался этот же обработчик
+    // — и отказывался, не найдя проигрывателя. Замкнутый круг: у свежей
+    // записи кнопка оставалась серой до перезагрузки страницы, где разбор
+    // переписки расшифровывает всё сам. Поэтому отсутствие проигрывателя
+    // работе больше не мешает: расшифруем, он появится и доложит о
+    // готовности сам.
+    if (audioProgress[msgId]?.isReady || audioProgress[msgId]?.decrypted) {
       console.log(`Preload skipped for ${msgId}: already ready/decrypted`);
       return;
     }
@@ -2590,6 +2596,20 @@ const SecretPrivateChat = () => {
     // Для своих temp blob — используем как есть
     if (url.startsWith('blob:') && msg.sender.id === userId) {
       console.log(`Using temp blob for own audio ${msgId}`);
+    }
+
+    // Только что отправленная своя запись уже лежит у нас готовой: кладём
+    // её туда же, куда ложатся расшифрованные, иначе проигрыватель для
+    // неё не нарисуется вовсе.
+    if (playableUrl.startsWith('blob:') && !decryptedAudioBlobs[msgId]?.blobUrl) {
+      setDecryptedAudioBlobs(prev => ({ ...prev, [msgId]: { ...prev[msgId], blobUrl: playableUrl } }));
+    }
+
+    if (!audio) {
+      // Проигрыватель появится следующим шагом отрисовки и сам скажет,
+      // что готов, — через onCanPlay.
+      setAudioProgress(prev => ({ ...prev, [msgId]: { ...prev[msgId], isPreloading: false } }));
+      return;
     }
 
     if (audio.src === playableUrl && audio.readyState >= 2) {
