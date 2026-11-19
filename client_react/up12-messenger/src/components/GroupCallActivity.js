@@ -1804,7 +1804,14 @@ const GroupCallActivity = () => {
                       onClick={async () => {
                         const guard = guards.current.get(String(user.id));
                         if (!guard) return;
-                        setCodeFor({ id: user.id, name: user.username, code: await guard.fingerprint() });
+                        setCodeFor({
+                          id: user.id,
+                          name: user.username,
+                          code: await guard.fingerprint(),
+                          // Цифры — для тех, кому значки неудобно читать вслух;
+                          // в обычном звонке показываются обе записи, здесь тоже
+                          digits: await guard.fingerprintDigits(),
+                        });
                       }}
                     >
                       🔒 {securityWord(securityByUser[String(user.id)])}
@@ -1838,6 +1845,7 @@ const GroupCallActivity = () => {
           <div className="group-call-code" onClick={(event) => event.stopPropagation()}>
             <h3>Code with {codeFor.name}</h3>
             <p className="group-call-code-digits">{codeFor.code || '—'}</p>
+            {codeFor.digits && <p className="group-call-code-numbers">{codeFor.digits}</p>}
             <p className="group-call-code-hint">
               Read it aloud. If it is the same on both sides, nobody swapped the keys.
             </p>

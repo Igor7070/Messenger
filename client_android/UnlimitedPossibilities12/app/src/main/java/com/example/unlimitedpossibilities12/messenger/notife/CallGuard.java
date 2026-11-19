@@ -124,8 +124,17 @@ public final class CallGuard {
      * Готовим ключи: свои берём из хранилища или заводим, список устройств
      * собеседника спрашиваем у сервера. Всё в отдельном потоке — звонок не ждёт.
      */
+    /** Чем отозваться, когда проверка сошлась не сразу. */
+    private Runnable listener;
+    /** Подпись, которую не смогли проверить: ключа ещё не было. */
+    private String pendingSdp;
+    private String pendingSignature;
+    private String pendingDeviceId;
+    private final java.util.Set<String> retried = new java.util.HashSet<>();
+
     public void prepare(String partnerId, Runnable done) {
         this.partnerId = partnerId;
+        this.listener = done;
         new Thread(() -> {
             try {
                 loadOrCreateKeys();
@@ -252,7 +261,25 @@ public final class CallGuard {
             senderDeviceId = partnerDevices.keySet().iterator().next();
         }
         if (keyB64 == null) {
+            // Ключей могло ещё не быть: их тянут с сервера в своём потоке, а
+            // предложение собеседника приходит сразу. Прежде такая проверка
+            // оставалась «encrypted» до конца разговора, и код для сверки был
+            // пуст. Теперь список ключей берём заново и проверяем ещё раз —
+            // по одному заходу на подпись, без кругов.
             state = State.ENCRYPTED;
+            final String signatureOnce = signatureB64;
+            if (retried.add(signatureOnce)) {
+                pendingSdp = sdp;
+                pendingSignature = signatureB64;
+                pendingDeviceId = senderDeviceId;
+                new Thread(() -> {
+                    int before = partnerDevices.size();
+                    fetchPartnerDevices(partnerId);
+                    if (partnerDevices.size() == before) return;
+                    verify(pendingSdp, pendingSignature, pendingDeviceId);
+                    if (listener != null) listener.run();
+                }).start();
+            }
             return state;
         }
         try {

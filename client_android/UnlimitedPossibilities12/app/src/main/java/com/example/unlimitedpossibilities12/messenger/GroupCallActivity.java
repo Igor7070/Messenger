@@ -1743,12 +1743,24 @@ public class GroupCallActivity extends AppCompatActivity {
         for (java.util.Map.Entry<String,
                 com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State> entry
                 : guardStates.entrySet()) {
-            words.put(entry.getKey(), securityWord(entry.getValue()));
+            words.put(entry.getKey(), shortWord(entry.getValue()));
         }
         participantsAdapter.setSecurity(words);
     }
 
-    /** Короткая подпись о защите — те же слова, что в обычном звонке. */
+    /**
+     * Короткая подпись о защите — те же слова, что в обычном звонке, но без
+     * начального «Encrypted». В обычном звонке строка стоит сама по себе, и
+     * «Encrypted · verified» читается верно; здесь она приписывается к «in
+     * the call», и выходило «in the call · Encrypted · verified» — одно и то
+     * же сказано дважды на тесной строке.
+     */
+    private String shortWord(com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State state) {
+        String word = securityWord(state);
+        String prefix = getString(R.string.call_security_encrypted) + " · ";
+        return word.startsWith(prefix) ? word.substring(prefix.length()) : word;
+    }
+
     private String securityWord(com.example.unlimitedpossibilities12.messenger.notife.CallGuard.State state) {
         if (state == null) return getString(R.string.call_security_checking);
         switch (state) {
@@ -1766,7 +1778,10 @@ public class GroupCallActivity extends AppCompatActivity {
     private void showParticipantCode(String partnerId) {
         com.example.unlimitedpossibilities12.messenger.notife.CallGuard guard = guards.get(partnerId);
         if (guard == null) return;
-        String code = guard.fingerprintDigits();
+        // Показываем обе записи кода — значками и цифрами, как в обычном
+        // звонке: собеседник может читать любую, лишь бы сошлось
+        String code = guard.fingerprint();
+        String digits = guard.fingerprintDigits();
         String name = participants.stream()
                 .filter(u -> String.valueOf(u.getId()).equals(partnerId))
                 .map(User::getVisibleName)
@@ -1774,7 +1789,7 @@ public class GroupCallActivity extends AppCompatActivity {
                 .orElse("участник");
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Code with " + name)
-                .setMessage((code == null ? "—" : code)
+                .setMessage((code == null ? "—" : code + "\n" + (digits == null ? "" : digits))
                         + "\n\nRead it aloud. If it is the same on both sides, nobody swapped the keys.")
                 .setNegativeButton("Close", null)
                 .setPositiveButton("It matches", (dialog, which) -> {

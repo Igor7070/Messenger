@@ -427,3 +427,12 @@
 .group-call-code-buttons button.primary:hover {
   background: #4f46e5;
 }
+
+/* Цифровая запись того же кода — под значками */
+.group-call-code-numbers {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  letter-spacing: 2px;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
