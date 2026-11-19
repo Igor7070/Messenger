@@ -5,39 +5,61 @@ const API = 'https://unlimitedpossibilities12.org';
 
 const isImage = (url) => /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(url || '');
 const isVideo = (url) => /\.(mp4|webm|mov|mkv|avi)$/i.test(url || '');
-const hasLink = (text) => /\bhttps?:\/\/\S+/i.test(text || '');
+const LINK = /\bhttps?:\/\/\S+/gi;
 
 /**
  * Что накопилось в переписке с человеком: снимки, видео, файлы, ссылки,
- * голосовые — и сколько групп у вас общих. Так же устроена карточка человека
- * в телеграме, только там это ещё и открывается; у нас пока счёт.
+ * голосовые — и какие группы у вас общие. Так же устроена карточка человека
+ * в телеграме: под именем счёт, а по нажатию — сам список.
  *
  * История читается без пометки «открыл»: заглянуть в карточку — не то же
  * самое, что прочитать переписку, и чужие сообщения прочитанными не станут.
+ * Секретную переписку не трогаем вовсе: её содержимое зашифровано, и
+ * вскрывать его ради подсчёта снимков карточка не должна.
  */
 export const sharedWith = async (person, currentUserId, currentUsername) => {
-  const empty = { photos: 0, videos: 0, files: 0, links: 0, voices: 0, groups: 0 };
-  if (!person || !person.username || !currentUsername) return empty;
-
-  const result = { ...empty };
+  const found = {
+    photos: [], videos: [], files: [], links: [], voices: [], groups: [],
+  };
+  if (!person || !person.username || !currentUsername) return found;
 
   // 1. Личная переписка — если она вообще заводилась
   try {
-    const found = await fetch(
+    const check = await fetch(
       `${API}/api/chats/check?name1=${encodeURIComponent(person.username)}`
       + `&name2=${encodeURIComponent(currentUsername)}`
     );
-    if (found.ok) {
-      const { chatId } = await found.json();
+    if (check.ok) {
+      const { chatId } = await check.json();
       if (chatId && chatId !== -1) {
         const messages = await getMessages(chatId);
         (Array.isArray(messages) ? messages : []).forEach((message) => {
           const url = message.fileUrl || message.file_url;
-          if (message.messageType === 'audio') result.voices += 1;
-          else if (url && isImage(url)) result.photos += 1;
-          else if (url && isVideo(url)) result.videos += 1;
-          else if (url) result.files += 1;
-          if (hasLink(message.content)) result.links += 1;
+          // Адрес приходит уже полным; но попадались и короткие пути —
+          // достраиваем только их
+          const full = !url ? null : (/^https?:\/\//i.test(url) ? url : `${API}${url}`);
+          const item = {
+            id: message.id,
+            url: full,
+            name: full ? decodeURIComponent(full.split('/').pop()) : '',
+            caption: message.content || '',
+            timestamp: message.timestamp,
+            mine: Number(message.sender?.id) === Number(currentUserId),
+          };
+          if (message.messageType === 'audio') found.voices.push(item);
+          else if (url && isImage(url)) found.photos.push(item);
+          else if (url && isVideo(url)) found.videos.push(item);
+          else if (url) found.files.push(item);
+
+          const links = String(message.content || '').match(LINK);
+          if (links) {
+            links.forEach((href, index) => found.links.push({
+              id: `${message.id}-${index}`,
+              href,
+              timestamp: message.timestamp,
+              mine: item.mine,
+            }));
+          }
         });
       }
     }
@@ -53,21 +75,32 @@ export const sharedWith = async (person, currentUserId, currentUsername) => {
       const groups = (Array.isArray(chats) ? chats : [])
         .filter((chat) => !chat.private && !chat.isSecret)
         .slice(0, 12); // в общий счёт лезем не бесконечно
-      const checks = await Promise.all(groups.map(async (chat) => {
+      const checked = await Promise.all(groups.map(async (chat) => {
         try {
           const members = await getMembers(chat.id);
-          return (members || []).some((m) => Number(m.userId) === Number(person.id));
+          const shares = (members || []).some(
+            (member) => Number(member.userId) === Number(person.id)
+          );
+          return shares ? chat : null;
         } catch {
-          return false;
+          return null;
         }
       }));
-      result.groups = checks.filter(Boolean).length;
+      found.groups = checked.filter(Boolean);
     }
   } catch {
     /* не вышло — просто не покажем строку */
   }
 
-  return result;
+  // Новое сверху — как в любом списке такого рода
+  const newestFirst = (a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || ''));
+  found.photos.sort(newestFirst);
+  found.videos.sort(newestFirst);
+  found.files.sort(newestFirst);
+  found.links.sort(newestFirst);
+  found.voices.sort(newestFirst);
+
+  return found;
 };
 
 export default sharedWith;

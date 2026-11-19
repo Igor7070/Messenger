@@ -4,6 +4,7 @@ import '../styles/UserProfile.css';
 import '../styles/ProfilePanel.css';
 import { nameOf } from '../api/names';
 import { sharedWith } from '../api/sharedWith';
+import SharedView from './SharedView';
 import { FaEdit, FaEllipsisV, FaPhone, FaVideo, FaLanguage } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Modal from 'react-modal';
@@ -27,6 +28,9 @@ const UserProfile = ({ onClose = () => {} }) => {
     // Что накопилось в переписке с этим человеком — как в карточке
     // человека у телеграма: снимки, файлы, ссылки, голосовые, общие группы.
     const [shared, setShared] = useState(null);
+    // Открытый список накопленного: снимки, файлы, ссылки, голосовые,
+    // общие группы. Пусто — показываем саму карточку.
+    const [sharedView, setSharedView] = useState(null);
     const [error, setError] = useState(null);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -562,6 +566,15 @@ const UserProfile = ({ onClose = () => {} }) => {
                 role="dialog"
                 aria-label="Profile"
             >
+                {sharedView ? (
+                    <SharedView
+                        kind={sharedView}
+                        items={shared ? shared[sharedView] : []}
+                        onBack={() => setSharedView(null)}
+                        onClose={onClose}
+                    />
+                ) : (
+                <>
                 <header className={`up-profile-head ${isEditing ? 'editing' : ''}`}>
                     {/* В правке шапка меняется так же, как у телеграма: слева
                         стрелка назад и название, справа крестик. Карандаш
@@ -747,13 +760,19 @@ const UserProfile = ({ onClose = () => {} }) => {
                                 ['links', 'link', 'links'],
                                 ['voices', 'voice message', 'voice messages'],
                                 ['groups', 'group in common', 'groups in common'],
-                            ].filter(([key]) => shared[key] > 0).map(([key, one, many]) => (
-                                <div className="up-profile-row up-profile-count" key={key}>
-                                    <span className="up-profile-count-number">{shared[key]}</span>
+                            ].filter(([key]) => shared[key].length > 0).map(([key, one, many]) => (
+                                <button
+                                    type="button"
+                                    className="up-profile-row up-profile-count"
+                                    key={key}
+                                    onClick={() => setSharedView(key)}
+                                >
+                                    <span className="up-profile-count-number">{shared[key].length}</span>
                                     <span className="up-profile-count-name">
-                                        {shared[key] === 1 ? one : many}
+                                        {shared[key].length === 1 ? one : many}
                                     </span>
-                                </div>
+                                    <span className="up-profile-count-arrow" aria-hidden="true">›</span>
+                                </button>
                             ))}
                         </>
                     )}
@@ -788,6 +807,9 @@ const UserProfile = ({ onClose = () => {} }) => {
                         <button type="button" className="up-profile-done" onClick={onClose}>Close</button>
                     )}
                 </footer>
+
+                </>
+                )}
 
                 {/* Снимок во весь рост */}
                 <Modal isOpen={isModalOpen} onRequestClose={closeModal} className="user-profile-modal" overlayClassName="user-profile-modal-overlay">

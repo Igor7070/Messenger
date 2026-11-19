@@ -346,8 +346,28 @@
 }
 
 .up-profile-count-name {
+  flex: 1 1 auto;
   font-size: 0.9rem;
   color: var(--up-muted);
+}
+
+/* Счёт нажимается и открывает сам список — отсюда стрелка справа */
+button.up-profile-count {
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
+button.up-profile-count:hover {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.up-profile-count-arrow {
+  flex: 0 0 auto;
+  color: var(--up-muted);
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 /* Правка описания */
