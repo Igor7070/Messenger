@@ -438,19 +438,17 @@ public class UserProfileActivity extends AppCompatActivity {
                         });
                     } else {
                         if (isFinishing() || isDestroyed()) return; // экран уже закрыли — грузить некуда
-                        Glide.with(UserProfileActivity.this)
-                                .load(R.drawable.default_messenger_avatar)
-                                .centerCrop()
-                                .transition(DrawableTransitionOptions.withCrossFade())
-                                .into(avatarImageView);
-                        avatarTextView.setText(user.getUsername().substring(0, 1).toUpperCase());
+                        // Снимка нет — кадр остаётся тёмным, поверх него буква,
+                        // как на вкладке своего профиля. Прежде сюда клали
+                        // картинку по умолчанию: сиреневый круг, который
+                        // вылезал за края экрана и выглядел случайным пятном.
+                        Glide.with(UserProfileActivity.this).clear(avatarImageView);
+                        avatarImageView.setImageDrawable(null);
+                        avatarTextView.setText(user.getVisibleName().substring(0, 1).toUpperCase());
                         avatarTextView.setVisibility(View.VISIBLE);
 
-                        avatarImageView.setOnClickListener(v -> {
-                            Intent intent = new Intent(UserProfileActivity.this, FullScreenImageActivity.class);
-                            intent.putExtra("username", user.getUsername());
-                            startActivity(intent);
-                        });
+                        // Открывать нечего: снимка нет
+                        avatarImageView.setOnClickListener(null);
                     }
 
                     // Что показывать: свою страницу правят, чужую — читают
