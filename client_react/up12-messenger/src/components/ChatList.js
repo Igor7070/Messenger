@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import NewGroupDialog from './NewGroupDialog';
+import JoinByLinkDialog from './JoinByLinkDialog';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import SockJS from 'sockjs-client';
@@ -7,7 +8,7 @@ import { Client } from '@stomp/stompjs';
 import { loadConversations, previewForRow, ASSISTANT_ID } from '../api/conversations';
 import { stompAuthHeaders } from '../authToken';
 import { createChat } from '../api/messages';
-import { previewInvite, acceptInvite } from '../api/chatMembers';
+import { previewInvite } from '../api/chatMembers';
 import { useAssistant } from '../context/AssistantContext';
 import BUILD_STAMP from '../buildStamp';
 import '../styles/ChatList.css';
@@ -54,6 +55,7 @@ const ChatList = ({ onOpenPeople = () => {}, onOpenCalls = () => {}, groupWanted
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   // Картинка чата может не открыться: файлы на сервере пропадают при
   // переразвёртывании. Тогда показываем кружок с буквой, а не битый значок.
   const [brokenAvatars, setBrokenAvatars] = useState({});
@@ -280,11 +282,18 @@ const ChatList = ({ onOpenPeople = () => {}, onOpenCalls = () => {}, groupWanted
     window.location.reload(); // сбрасываем сокеты и состояние контекстов
   };
 
-  const joinByLink = async () => {
+  const joinByLink = () => {
     setMenuOpen(false);
-    const link = window.prompt('Paste the invite link');
-    if (!link) return;
-    const token = link.trim().split('/').pop();
+    setJoinDialogOpen(true);
+  };
+
+  /**
+   * Ссылку разобрали — дальше показываем ту же карточку группы, что видит
+   * человек, перешедший по ссылке: снимок, название, число участников и
+   * кнопку «вступить». Прежде вместо карточки спрашивал браузер своим окном.
+   */
+  const joinWithToken = async (token) => {
+    setJoinDialogOpen(false);
     try {
       const card = await previewInvite(token);
       if (!card.usable) {
@@ -295,11 +304,7 @@ const ChatList = ({ onOpenPeople = () => {}, onOpenCalls = () => {}, groupWanted
         navigate(`/chat/${card.chatId}`);
         return;
       }
-      if (!window.confirm(`Join "${card.name}"? ${card.members} members.`)) return;
-      const joined = await acceptInvite(token);
-      toast.success(`You joined "${joined.name}"`);
-      refresh();
-      navigate(`/chat/${joined.chatId}`);
+      navigate(`/invite/${token}`);
     } catch (error) {
       toast.error('This invite is no longer valid');
     }
@@ -337,6 +342,12 @@ const ChatList = ({ onOpenPeople = () => {}, onOpenCalls = () => {}, groupWanted
 
   return (
     <aside className="up-list">
+      {joinDialogOpen && (
+        <JoinByLinkDialog
+          onClose={() => setJoinDialogOpen(false)}
+          onToken={joinWithToken}
+        />
+      )}
       {groupDialogOpen && (
         <NewGroupDialog
           currentUserId={currentUserId}

@@ -1,0 +1,99 @@
+/* Окно «войти по ссылке» — такое же тёмное, как остальные окна приложения */
+.up-join-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(2, 6, 23, 0.5);
+}
+
+.up-join {
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+  padding: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 14px;
+  background: var(--up-surface-2);
+  box-shadow: 0 22px 60px rgba(2, 6, 23, 0.55);
+}
+
+.up-join-title {
+  margin: 0 0 14px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--up-text);
+}
+
+.up-join-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.4);
+  color: var(--up-text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.up-join-input:focus {
+  border-color: var(--up-accent);
+}
+
+.up-join-input::placeholder {
+  color: var(--up-muted);
+}
+
+.up-join-hint {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--up-faint, #64748b);
+}
+
+.up-join-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.up-join-cancel,
+.up-join-go {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.up-join-cancel {
+  background: transparent;
+  color: var(--up-muted);
+}
+
+.up-join-cancel:hover {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--up-text);
+}
+
+.up-join-go {
+  background: var(--up-accent);
+  color: #fff;
+}
+
+.up-join-go:hover {
+  background: var(--up-accent-strong);
+}
+
+.up-join-go:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
