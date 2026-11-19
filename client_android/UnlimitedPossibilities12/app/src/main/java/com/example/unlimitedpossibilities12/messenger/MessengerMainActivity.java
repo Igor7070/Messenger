@@ -228,11 +228,7 @@ public class MessengerMainActivity extends AppCompatActivity {
             highlightTabs(2);
         });
 
-        // Карточка своего профиля, открытая откуда-то ещё (скажем, из
-        // участников группы), отправляет сюда: свой профиль живёт вкладкой.
-        if (getIntent() != null && getIntent().getBooleanExtra("openProfileTab", false)) {
-            navProfileLayout.post(() -> navProfileLayout.performClick());
-        }
+        openProfileTabIfAsked(getIntent());
 
         navProfileLayout.setOnClickListener(v -> {
             highlightTabs(3);
@@ -727,6 +723,17 @@ public class MessengerMainActivity extends AppCompatActivity {
 
             showProfile();
         }
+    }
+
+    /**
+     * Просьба открыть свою карточку: её шлёт экран, где на себя нажали, —
+     * участники группы или старая карточка человека. Свой профиль живёт
+     * вкладкой, туда и переключаемся.
+     */
+    private void openProfileTabIfAsked(Intent intent) {
+        if (intent == null || !intent.getBooleanExtra("openProfileTab", false)) return;
+        intent.removeExtra("openProfileTab"); // второй раз просьба не сработает
+        if (navProfileLayout != null) navProfileLayout.post(() -> navProfileLayout.performClick());
     }
 
     private void resetAllTabs() {
@@ -2313,6 +2320,9 @@ public class MessengerMainActivity extends AppCompatActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        // Экран уже открыт — onCreate не позовут, и просьба открыть свою
+        // карточку приходит сюда.
+        openProfileTabIfAsked(intent);
         handleInviteLink(intent);
         if (isBound && callService != null) {
             handleIntent(intent);
