@@ -64,6 +64,27 @@ export const CallWebSocketProvider = ({ children }) => {
     }
   }, [incomingCall]);
 
+  /**
+   * Сторож над звонком вызова.
+   *
+   * Гудок играет, пока стоит incomingCall. Если сигнал об окончании не дошёл
+   * — потерялся, пришёл с другим номером комнаты, звонивший просто закрыл
+   * вкладку, — звенеть он будет вечно, и человеку остаётся только
+   * перезагружать страницу. Сорок пять секунд — столько же, сколько звонит
+   * телефон, и дальше тишина.
+   */
+  useEffect(() => {
+    if (!incomingCall) return undefined;
+    const stopper = setTimeout(() => {
+      console.log('CallWebSocketContext: звонок звенел слишком долго — гасим');
+      setIncomingCallWithLog(null);
+      callRequestRef.current = null;
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }, 45000);
+    return () => clearTimeout(stopper);
+  }, [incomingCall]);
+
   useEffect(() => {
     if (incomingCall && userInteracted) {
       console.log('CallWebSocketContext: Попытка воспроизведения звука, userInteracted:', userInteracted);

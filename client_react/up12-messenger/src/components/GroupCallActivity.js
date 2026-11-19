@@ -709,6 +709,12 @@ const GroupCallActivity = () => {
         console.log(`ICE for ${userId}: iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}, signalingState: ${peerConnection.signalingState}`);
         if (peerConnection.iceConnectionState === 'connected') {
           console.log(`Connection established with user ${userId}, clearing readyTimeout`);
+          // Соединение есть — значит человек уже в разговоре, и гудок вызова
+          // звучать больше не должен. Прежде он гас только при старте
+          // звонка, и если сигнал «готов» терялся, играл до конца разговора
+          ringtoneRef.current.pause();
+          ringtoneRef.current.currentTime = 0;
+          setIsWaiting(false);
           if (readyTimeoutRef.current) {
             clearTimeout(readyTimeoutRef.current);
             readyTimeoutRef.current = null;
