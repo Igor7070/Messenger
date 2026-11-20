@@ -84,10 +84,21 @@ public class VoiceCallActivity extends AppCompatActivity {
     private org.webrtc.SurfaceViewRenderer remoteVideoView;
     private org.webrtc.SurfaceViewRenderer localVideoView;
     private org.webrtc.VideoCapturer videoCapturer;
+    private org.webrtc.SurfaceTextureHelper surfaceHelper;
     private org.webrtc.VideoSource videoSource;
     private org.webrtc.VideoTrack localVideoTrack;
     private org.webrtc.RtpSender videoSender;
     private boolean isCameraOn = false;
+    /**
+     * Камера занята: заводится или гасится.
+     *
+     * Открытие камеры идёт в своём потоке и занимает доли секунды. Второе
+     * нажатие в это время уходило в ветку выключения и освобождало
+     * источник видео, с которым первый поток ещё работал, — приложение
+     * падало в родном коде (SIGSEGV в nativeSetState на потоке захвата) и
+     * звонок обрывался вместе с ним.
+     */
+    private volatile boolean cameraBusy = false;
     private boolean partnerCameraOn = false;
     private AudioSource audioSource;
     private AudioTrack localAudioTrack;
@@ -340,64 +351,32 @@ public class VoiceCallActivity extends AppCompatActivity {
      * добавляется к живому соединению, собеседнику уходит новое
      * предложение связи, и разговор при этом не прерывается.
      */
+    /**
+     * Включить и выключить свою камеру посреди разговора: дорожка
+     * добавляется к живому соединению, собеседнику уходит новое
+     * предложение связи, и разговор при этом не прерывается.
+     */
     private void toggleCamera() {
         if (peerConnection == null) return;
+        if (cameraBusy) {
+            Log.d(TAG, "Камера занята — нажатие пропускаем");
+            return;
+        }
         if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
                 != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             androidx.core.app.ActivityCompat.requestPermissions(
                     this, new String[]{android.Manifest.permission.CAMERA}, 42);
             return;
         }
+        cameraBusy = true;
         if (!isCameraOn) {
             // Камеру заводим в своём потоке: её открытие занимает секунды,
             // и в главном потоке экран звонка подвисал — система считала
             // его зависшим и закрывала, а разговор обрывался
             подготовитьЭкраны();
             new Thread(this::включитьКамеру).start();
-            return;
-        }
-        try {
-            if (false) {
-                org.webrtc.CameraEnumerator перечень = org.webrtc.Camera2Enumerator.isSupported(this)
-                        ? new org.webrtc.Camera2Enumerator(this)
-                        : new org.webrtc.Camera1Enumerator(true);
-                String имя = null;
-                for (String устройство : перечень.getDeviceNames()) {
-                    if (перечень.isFrontFacing(устройство)) { имя = устройство; break; }
-                }
-                if (имя == null && перечень.getDeviceNames().length > 0) имя = перечень.getDeviceNames()[0];
-                if (имя == null) { Toast.makeText(this, "No camera found", Toast.LENGTH_SHORT).show(); return; }
-
-                videoCapturer = перечень.createCapturer(имя, null);
-                videoSource = peerConnectionFactory.createVideoSource(videoCapturer.isScreencast());
-                org.webrtc.SurfaceTextureHelper помощник = org.webrtc.SurfaceTextureHelper.create(
-                        "CaptureThread", eglBase.getEglBaseContext());
-                videoCapturer.initialize(помощник, this, videoSource.getCapturerObserver());
-                videoCapturer.startCapture(1280, 720, 30);
-                localVideoTrack = peerConnectionFactory.createVideoTrack("video0", videoSource);
-                localVideoTrack.setEnabled(true);
-                localVideoTrack.addSink(localVideoView);
-                videoSender = peerConnection.addTrack(localVideoTrack, Arrays.asList("stream0"));
-                isCameraOn = true;
-                sendSignal(createSignalJson("cameraOn", null));
-            } else {
-                if (videoSender != null) { peerConnection.removeTrack(videoSender); videoSender = null; }
-                if (videoCapturer != null) {
-                    try { videoCapturer.stopCapture(); } catch (InterruptedException ignored) { }
-                    videoCapturer.dispose(); videoCapturer = null;
-                }
-                if (localVideoTrack != null) { localVideoTrack.dispose(); localVideoTrack = null; }
-                if (videoSource != null) { videoSource.dispose(); videoSource = null; }
-                isCameraOn = false;
-                sendSignal(createSignalJson("cameraOff", null));
-            }
-            обновитьВидКартинки();
-            предложитьСвязьЗаново();
-        } catch (Exception e) {
-            Log.e(TAG, "Камеру включить не вышло: " + e.getMessage());
-            Toast.makeText(this, "Could not turn the camera on", Toast.LENGTH_SHORT).show();
-            isCameraOn = false;
-            обновитьВидКартинки();
+        } else {
+            new Thread(this::выключитьКамеру).start();
         }
     }
 
@@ -418,9 +397,9 @@ public class VoiceCallActivity extends AppCompatActivity {
             }
             videoCapturer = перечень.createCapturer(имя, null);
             videoSource = peerConnectionFactory.createVideoSource(videoCapturer.isScreencast());
-            org.webrtc.SurfaceTextureHelper помощник = org.webrtc.SurfaceTextureHelper.create(
+            surfaceHelper = org.webrtc.SurfaceTextureHelper.create(
                     "CaptureThread", eglBase.getEglBaseContext());
-            videoCapturer.initialize(помощник, this, videoSource.getCapturerObserver());
+            videoCapturer.initialize(surfaceHelper, this, videoSource.getCapturerObserver());
             videoCapturer.startCapture(1280, 720, 30);
             localVideoTrack = peerConnectionFactory.createVideoTrack("video0", videoSource);
             localVideoTrack.setEnabled(true);
@@ -439,6 +418,55 @@ public class VoiceCallActivity extends AppCompatActivity {
                 Toast.makeText(this, "Could not turn the camera on", Toast.LENGTH_SHORT).show();
                 обновитьВидКартинки();
             });
+        } finally {
+            cameraBusy = false;
+        }
+    }
+
+    /** Остановить и освободить захват с камеры — по порядку и до конца. */
+    private void остановитьКамеру() {
+        cameraBusy = true;
+        try {
+            if (videoCapturer != null) {
+                try { videoCapturer.stopCapture(); } catch (InterruptedException ignored) { }
+                videoCapturer.dispose();
+                videoCapturer = null;
+            }
+            if (localVideoTrack != null) { localVideoTrack.dispose(); localVideoTrack = null; }
+            if (videoSource != null) { videoSource.dispose(); videoSource = null; }
+            if (surfaceHelper != null) { surfaceHelper.dispose(); surfaceHelper = null; }
+            videoSender = null;
+            isCameraOn = false;
+        } catch (Exception e) {
+            Log.w(TAG, "Камера гасилась с заминкой: " + e.getMessage());
+        } finally {
+            cameraBusy = false;
+        }
+    }
+
+    /** Погасить камеру: тоже не в главном потоке и по порядку. */
+    private void выключитьКамеру() {
+        try {
+            if (videoSender != null) {
+                peerConnection.removeTrack(videoSender);
+                videoSender = null;
+            }
+            if (videoCapturer != null) {
+                try { videoCapturer.stopCapture(); } catch (InterruptedException ignored) { }
+                videoCapturer.dispose();
+                videoCapturer = null;
+            }
+            if (localVideoTrack != null) { localVideoTrack.dispose(); localVideoTrack = null; }
+            if (videoSource != null) { videoSource.dispose(); videoSource = null; }
+            if (surfaceHelper != null) { surfaceHelper.dispose(); surfaceHelper = null; }
+            isCameraOn = false;
+            sendSignal(createSignalJson("cameraOff", null));
+            runOnUiThread(this::обновитьВидКартинки);
+            предложитьСвязьЗаново();
+        } catch (Exception e) {
+            Log.e(TAG, "Камеру выключить не вышло: " + e.getMessage());
+        } finally {
+            cameraBusy = false;
         }
     }
 
@@ -1292,6 +1320,19 @@ public class VoiceCallActivity extends AppCompatActivity {
         }
 
         // Освобождение ресурсов WebRTC
+        /*
+         * Камеру гасим раньше всего остального.
+         *
+         * Прежде разговор заканчивался, а захват с камеры продолжал жить:
+         * его не трогали ни здесь, ни при закрытии экрана. Завод
+         * соединений при этом освобождался, а вместе с ним и источник
+         * видео — и поток захвата, ещё живой, обращался к освобождённой
+         * памяти. Падало не сразу: следующий звонок поднимал новый
+         * источник, и приложение рушилось в родном коде через пару секунд
+         * после включения камеры, унося разговор с собой.
+         */
+        остановитьКамеру();
+
         if (peerConnection != null) {
             peerConnection.close();
             peerConnection.dispose();
