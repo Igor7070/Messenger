@@ -44,6 +44,19 @@ const ChatShell = () => {
   // Прежний адрес /contacts остался рабочим: по нему окно просто открывается.
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [callsOpen, setCallsOpen] = useState(false);
+
+  /**
+   * Разговор начался — окна разделов своё отслужили.
+   *
+   * Групповой звонок заводят из «Calls»: отмечают, кого позвать, и
+   * нажимают «позвонить». Окно выбора при этом оставалось открытым и
+   * закрывало собой начавшийся разговор.
+   */
+  useEffect(() => {
+    if (!activeCall) return;
+    setCallsOpen(false);
+    setPeopleOpen(false);
+  }, [activeCall]);
   // Новая группа заводится из окна людей: «New chat» ведёт туда же,
   // и строка «New group» стоит там первой — как в привычных мессенджерах.
   const [groupWanted, setGroupWanted] = useState(0);

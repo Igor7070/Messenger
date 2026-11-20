@@ -464,3 +464,12 @@ body.has-call-strip #root > .app > * { max-height: calc(100vh - 42px); }
 /* Свёрнутое окно остаётся в странице, но не показывается: внутри него
    живут звуковые узлы разговора */
 .voice-call-window.is-minimized { display: none; }
+
+
+/* Разговор лежит выше окон разделов.
+   Окна «Calls» и «Contacts» стоят на шестидесятом слое, а звонок стоял
+   на пятидесятом — начав групповой звонок из выбора участников, человек
+   видел разговор под тем самым окном, из которого его завёл. */
+.voice-call-window { z-index: 1200; }
+.voice-call-strip { z-index: 1300; }
+.call-fingerprint-backdrop { z-index: 1350; }

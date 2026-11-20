@@ -493,3 +493,8 @@
 
 
 .group-call-container.is-minimized { display: none; }
+
+
+/* Тот же порядок слоёв, что и у звонка вдвоём */
+.group-call-container { z-index: 1200; }
+.group-call-code-backdrop { z-index: 1350; }
