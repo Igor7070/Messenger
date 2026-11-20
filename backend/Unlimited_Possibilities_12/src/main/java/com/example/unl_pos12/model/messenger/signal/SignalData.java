@@ -22,6 +22,15 @@ public class SignalData {
      * услышали. Поле проходит насквозь, сервер в него не смотрит.
      */
     private String reason;
+    /**
+     * Куда перейти и с кем. Когда в разговор вдвоём зовут третьего, тот,
+     * с кем уже говоришь, должен перейти в общий разговор молча — звонить
+     * ему заново незачем. Здесь ему и приходит номер новой комнаты и
+     * список участников (их номера через запятую). Сервер в эти поля не
+     * смотрит, они проходят насквозь.
+     */
+    private String roomId;
+    private String peers;
 
     public String getType() {
         return type;
@@ -45,6 +54,22 @@ public class SignalData {
 
     public void setIceCandidate(IceCandidate iceCandidate) {
         this.iceCandidate = iceCandidate;
+    }
+
+    public String getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(String roomId) {
+        this.roomId = roomId;
+    }
+
+    public String getPeers() {
+        return peers;
+    }
+
+    public void setPeers(String peers) {
+        this.peers = peers;
     }
 
     public String getReason() {

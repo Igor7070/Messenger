@@ -289,17 +289,42 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
     })();
   }, [peopleOpen, people.length, currentUserId, partnerId]);
 
-  /** Позвать выбранного: начинаем разговор на троих. */
+  /**
+   * Позвать выбранного: разговор продолжается втроём.
+   *
+   * Тому, с кем уже говоришь, звонить заново незачем — ему уходит тихий
+   * перевод в общий разговор, и его телефон или окно просто перейдёт
+   * туда. Звонит только новый человек.
+   */
   const позвать = (человек) => {
-    const собеседник = partner
-      ? { id: Number(partner.id), username: partner.username }
-      : { id: Number(partnerId), username: partnerName };
+    // Номер собеседника знаем из названия комнаты, имя — из его записи;
+    // прежде при неудачной загрузке записи собеседник выпадал из списка
+    const собеседник = {
+      id: Number((partner && partner.id) || partnerId),
+      username: (partner && (partner.displayName || partner.username)) || partnerName || 'Собеседник',
+    };
+    if (!собеседник.id) {
+      notify('Could not tell who you are speaking to.', { toastId: `add-${roomId}` });
+      return;
+    }
+    const комната = (crypto.randomUUID && crypto.randomUUID()) || `group-${Date.now()}`;
     setPeopleOpen(false);
+    sendSignal({
+      from: currentUserId,
+      signal: {
+        type: 'moveToGroup',
+        roomId: комната,
+        peers: [собеседник.id, человек.id].join(','),
+      },
+    });
     endCall();
     navigate('/group-call', {
       state: {
+        roomId: комната,
         participants: [собеседник, { id: Number(человек.id), username: человек.username }],
         initiator: { id: currentUserId, username: localStorage.getItem('username') },
+        // Собеседника уже перевели — звонить ему не надо
+        alreadyIn: [собеседник.id],
       },
     });
   };
@@ -685,6 +710,38 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
       console.log('Processing signal type:', signalMessage.signal.type);
 
       try {
+        if (signalMessage.signal.type === 'moveToGroup') {
+          /* Нас переводят в общий разговор: собираем участников по
+             номерам и переходим молча, без звонка */
+          const номера = String(signalMessage.signal.peers || '')
+            .split(',')
+            .map((н) => н.trim())
+            .filter(Boolean);
+          const люди = [];
+          for (const номер of номера) {
+            if (String(номер) === String(currentUserId)) continue;
+            try {
+              const ответ = await fetch(`https://unlimitedpossibilities12.org/api/users/${номер}`);
+              if (ответ.ok) {
+                const человек = await ответ.json();
+                люди.push({ id: Number(человек.id), username: человек.username });
+              }
+            } catch (ошибка) {
+              console.warn('Участник не прочитался:', ошибка);
+            }
+          }
+          const звавший = { id: Number(signalMessage.from), username: partnerName };
+          endCall();
+          navigate('/group-call', {
+            state: {
+              roomId: signalMessage.signal.roomId,
+              participants: [...люди, звавший],
+              initiator: звавший,
+            },
+          });
+          return;
+        }
+
         if (signalMessage.signal.type === 'cameraOn') {
           setPartnerCameraOn(true);
         } else if (signalMessage.signal.type === 'cameraOff') {

@@ -40,10 +40,22 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
   // Разговор живёт в каркасе и получает своё свойствами; переход по
   // адресу остался запасным путём
   const state = Object.keys(call).length ? call : location.state;
-  const { participants = [], initiator = {}, roomId: initialRoomId } = state || {};
+  const { participants = [], initiator = {}, roomId: initialRoomId, alreadyIn = [] } = state || {};
+  /*
+   * Приглашение уходит всем — с него начинается знакомство в комнате.
+   * Молчит оно лишь у того, кто уже сюда перешёл: его клиент видит, что
+   * комната та же, в которой он и так находится, и звонка не поднимает.
+   */
   const isInitiator = Number(localStorage.getItem('userId')) === initiator.id;
   const currentUserId = localStorage.getItem('userId');
-  const roomId = useRef(isInitiator ? crypto.randomUUID() : initialRoomId || null);
+  /*
+   * Если комнату уже назвали — берём её.
+   *
+   * Заводящий разговор прежде всегда придумывал свою, и перевод из
+   * разговора вдвоём ломался: собеседнику называли одну комнату, а сам
+   * звавший уходил в другую.
+   */
+  const roomId = useRef(initialRoomId || (isInitiator ? crypto.randomUUID() : null));
   const peerConnections = useRef(new Map());
   /**
    * По стражу на каждого собеседника.

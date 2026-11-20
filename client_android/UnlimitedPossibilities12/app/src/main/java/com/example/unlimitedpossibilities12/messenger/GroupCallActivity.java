@@ -107,6 +107,17 @@ public class GroupCallActivity extends AppCompatActivity {
     private String initiatorName;
     private ArrayList<User> participants;
     private String roomId;
+    /**
+     * Комната, в которой сейчас идёт общий разговор.
+     *
+     * Приглашение приходит и тому, кто уже перешёл сюда из разговора
+     * вдвоём: с него начинается знакомство в комнате. Звонить ему при
+     * этом не нужно — служба сверяет комнату с этой и молчит.
+     */
+    public static volatile String currentRoomId = null;
+    /** Сколько раз уже ждали, пока поднимется звук, прежде чем сказать «я готов». */
+    private int readyRetries = 0;
+
     private Map<String, PeerConnection> peerConnections;
     /**
      * По стражу на каждого собеседника.
@@ -248,6 +259,10 @@ public class GroupCallActivity extends AppCompatActivity {
         rememberOngoingCall(getString(R.string.call_group_connecting));
         isInitiator = getIntent().getBooleanExtra("isInitiator", false);
         roomId = getIntent().getStringExtra("roomId");
+        // Отмечаемся в комнате сразу: приглашение приходит через доли
+        // секунды, и прежде оно успевало поднять звонок до того, как
+        // разговор заявит о себе
+        currentRoomId = roomId;
         if (isInitiator && roomId == null) {
             roomId = UUID.randomUUID().toString();
         }
@@ -844,6 +859,7 @@ public class GroupCallActivity extends AppCompatActivity {
     }
 
     private void startCall() {
+        currentRoomId = roomId;
         if (isCallStarted) {
             Log.d(TAG, "Call already started, ignoring");
             return;
@@ -1237,6 +1253,7 @@ public class GroupCallActivity extends AppCompatActivity {
                         String receivedRoomId = signal.getString("roomId");
                         String initiatorName = signal.getString("initiatorName");
                         roomId = receivedRoomId;
+                        currentRoomId = roomId;
                         Toast.makeText(this, initiatorName + " invites you to a group call", Toast.LENGTH_LONG).show();
                         sendSignal(createSignalJson("acceptCall", null, from));
                         sendReadySignal();
@@ -1864,10 +1881,26 @@ public class GroupCallActivity extends AppCompatActivity {
 
     private void sendReadySignal() {
         if (localAudioTrack == null) {
-            Log.e(TAG, "localAudioTrack is null, cannot send ready signal");
-            runOnUiThread(() -> Toast.makeText(this, "Audio not initialized", Toast.LENGTH_SHORT).show());
+            /*
+             * Звук ещё не поднялся — подождём и попробуем снова.
+             *
+             * Прежде здесь всё обрывалось: при переходе из разговора вдвоём
+             * общий экран открывается раньше, чем создаётся своя звуковая
+             * дорожка, и «я готов» не уходило вовсе. Собеседники не узнавали
+             * о нас, разговор считался несостоявшимся и закрывался.
+             */
+            if (readyRetries < 20) {
+                readyRetries++;
+                Log.d(TAG, "Звук ещё не готов — повторим «я готов» (" + readyRetries + ")");
+                new android.os.Handler(android.os.Looper.getMainLooper())
+                        .postDelayed(this::sendReadySignal, 500);
+            } else {
+                Log.e(TAG, "localAudioTrack is null, cannot send ready signal");
+                runOnUiThread(() -> Toast.makeText(this, "Audio not initialized", Toast.LENGTH_SHORT).show());
+            }
             return;
         }
+        readyRetries = 0;
 
         // Создаём PeerConnection только для инициатора
         if (!peerConnections.containsKey(String.valueOf(initiatorId))) {
@@ -2039,6 +2072,7 @@ public class GroupCallActivity extends AppCompatActivity {
             audioManager = null;
         }
 
+        currentRoomId = null;
         Log.d(TAG, "Call ended, resources released");
         isCallStarted = false; // Сбрасываем isCallStarted перед сохранением
         saveCall("completed");

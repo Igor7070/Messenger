@@ -159,6 +159,18 @@ export const CallWebSocketProvider = ({ children }) => {
     setCallMinimized(false);
   };
 
+  /**
+   * Не звоним о комнате, в которой уже сидим.
+   *
+   * Когда в разговор вдвоём зовут третьего, собеседник переходит в общий
+   * разговор молча. Приглашение всё равно приходит — с него начинается
+   * знакомство в комнате, — и прежде оно поднимало звонок у того, кто
+   * уже разговаривает.
+   */
+  const вТойЖеКомнате = (комната) => Boolean(
+    комната && activeCall && String(activeCall.roomId) === String(комната)
+  );
+
   const [ringtoneSilenced, setRingtoneSilenced] = useState(false);
   /** Приглушить — и вернуть голос: решение одного звонка, а не навсегда. */
   const silenceRingtone = () => setRingtoneSilenced((quiet) => !quiet);
@@ -411,6 +423,10 @@ export const CallWebSocketProvider = ({ children }) => {
   };
 
   const handleIncomingCall = async (callRequest) => {
+    if (вТойЖеКомнате(callRequest && callRequest.roomId)) {
+      console.log('CallWebSocketContext: приглашение в комнату, где мы уже есть — не звоним');
+      return;
+    }
     if (isCallEnded) {
       console.log('CallWebSocketContext: Ignoring incoming call as call is ended:', callRequest);
       return;

@@ -1235,6 +1235,17 @@ public class CallService extends Service {
     }
 
     private void handleIncomingGroupCall(GroupCallRequest groupCallRequest) {
+        /*
+         * В эту комнату мы уже перешли — из разговора вдвоём, когда позвали
+         * третьего. Приглашение нужно самому разговору, с него начинается
+         * знакомство в комнате; а звонить человеку, который и так говорит,
+         * незачем.
+         */
+        String идущая = com.example.unlimitedpossibilities12.messenger.GroupCallActivity.currentRoomId;
+        if (идущая != null && идущая.equals(groupCallRequest.getRoomId())) {
+            Log.d(TAG, "Приглашение в комнату, где мы уже есть — не звоним");
+            return;
+        }
         // Новый звонок — значит согласие по нему ещё не отправлялось.
         //
         // Метка «согласие уже отправлено» ставится, чтобы не послать его
