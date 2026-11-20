@@ -818,12 +818,14 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
           {shortCode || '🔒'}
         </button>
         <span className="voice-call-bar-title">{partnerName}</span>
-        <button type="button" className="voice-call-bar-button" onClick={onMinimize} title="Minimise">
-          &#8211;
-        </button>
-        <button type="button" className="voice-call-bar-button is-close" onClick={endCall} title="End the call">
-          &#10005;
-        </button>
+        <span className="voice-call-bar-buttons">
+          <button type="button" className="voice-call-bar-button" onClick={onMinimize} title="Minimise">
+            &#8211;
+          </button>
+          <button type="button" className="voice-call-bar-button is-close" onClick={endCall} title="End the call">
+            &#10005;
+          </button>
+        </span>
       </div>
       <div className="voice-call-person">
         <div className="voice-call-avatar" style={{ background: partner && partner.avatar ? 'none' : letterColor }}>

@@ -473,3 +473,16 @@ body.has-call-strip #root > .app > * { max-height: calc(100vh - 42px); }
 .voice-call-window { z-index: 1200; }
 .voice-call-strip { z-index: 1300; }
 .call-fingerprint-backdrop { z-index: 1350; }
+
+
+/* Шапка окна тремя долями, чтобы имя стояло ровно посередине, а не
+   съезжало влево на ширину кнопок справа */
+.voice-call-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.voice-call-bar-code { justify-self: start; }
+.voice-call-bar-side { display: block; }
+.voice-call-bar-buttons { justify-self: end; display: flex; gap: 2px; }

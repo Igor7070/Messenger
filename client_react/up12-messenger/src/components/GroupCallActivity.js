@@ -56,6 +56,18 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
   const guards = useRef(new Map());
   // Чей код сверки сейчас открыт
   const [codeFor, setCodeFor] = useState(null);
+  // Свой микрофон: в групповом разговоре его нельзя было выключить
+  const [muted, setMuted] = useState(false);
+  /**
+   * У кого из собеседников включена камера.
+   *
+   * Прежде плитки с видео показывались, только если ты сам нажимал
+   * камеру: собеседник включал свою, а у тебя на экране не менялось
+   * ничего, и он говорил в пустоту. Теперь вид переключается сам, как
+   * только у кого-то появилась картинка, — своя камера при этом не
+   * включается, её по-прежнему включают кнопкой.
+   */
+  const [cameraOnUsers, setCameraOnUsers] = useState([]);
 
   /** Свёрнутый разговор занимает полоску — приложение двигается под неё. */
   useEffect(() => {
@@ -1050,6 +1062,19 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
 
     const { signal, from, to } = signalMessage;
 
+    /*
+     * Сигналы о камере приходят снова и снова — их не отсеиваем.
+     *
+     * Повторы ловятся по ключу «от кого — кому — какого рода — начало
+     * SDP», а у «камеру включил» и «камеру выключил» своего содержания
+     * нет: ключ у них всегда один и тот же. Поэтому собеседник включал
+     * камеру второй раз за разговор, а у нас это считалось повтором и
+     * отбрасывалось — картинка больше не появлялась до конца разговора.
+     */
+    if (signal.type === 'cameraOn' || signal.type === 'cameraOff') {
+      console.log(`Signal about camera from ${from}: ${signal.type}`);
+    } else {
+
     // Фильтрация дублирующихся сигналов
     const signalKey = `${from}-${to || 'null'}-${signal.type}-${signal.sdp?.slice(0, 50) || signal.iceCandidate?.candidate || 'no-sdp'}`;
     if (receivedSignals.current.has(signalKey)) {
@@ -1057,6 +1082,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
       return;
     }
     receivedSignals.current.add(signalKey);
+    }
 
     // Очередь сигналов, если localAudioRef или srcObject не готовы
     if (!localAudioRef.current || !localAudioRef.current.srcObject) {
@@ -1354,11 +1380,20 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
 
           case 'cameraOn':
             console.log(`User ${currentFrom} turned on their camera`);
+            setCameraOnUsers((prev) => (prev.includes(currentFrom) ? prev : [...prev, currentFrom]));
+            setIsVideoMode(true);
             // [ДОБАВЛЕНО]: Ожидаем видеопоток через ontrack, ничего дополнительно не делаем
             break;
 
           case 'cameraOff':
             console.log(`User ${currentFrom} turned off their camera`);
+            setCameraOnUsers((prev) => {
+              const left = prev.filter((id) => id !== currentFrom);
+              // Никто больше не показывает картинку и своя камера выключена —
+              // возвращаемся к списку имён
+              if (left.length === 0 && !isCameraOn) setIsVideoMode(false);
+              return left;
+            });
             const videoElement = videoRefs.current.get(currentFrom);
             if (videoElement) {
               videoElement.srcObject = null;
@@ -1511,6 +1546,16 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
   };
 
   // [ДОБАВЛЕНО]: Функция для переключения между аудио- и видео-режимами
+  /** Выключить и включить свой микрофон. */
+  const toggleMute = () => {
+    const stream = localVideoStreamRef.current
+      || (localAudioRef.current && localAudioRef.current.srcObject);
+    if (!stream) return;
+    const next = !muted;
+    stream.getAudioTracks().forEach((track) => { track.enabled = !next; });
+    setMuted(next);
+  };
+
   const toggleMode = () => {
     setIsVideoMode((prev) => !prev);
   };
@@ -1807,13 +1852,16 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
           полоску — прежде он занимал страницу целиком, и пока говоришь,
           приложение было недоступно */}
       <div className="voice-call-bar">
+        <span className="voice-call-bar-side" />
         <span className="voice-call-bar-title">Group call with {initiator.username}</span>
-        <button type="button" className="voice-call-bar-button" onClick={onMinimize} title="Minimise">
-          &#8211;
-        </button>
-        <button type="button" className="voice-call-bar-button is-close" onClick={endCall} title="End the call">
-          &#10005;
-        </button>
+        <span className="voice-call-bar-buttons">
+          <button type="button" className="voice-call-bar-button" onClick={onMinimize} title="Minimise">
+            &#8211;
+          </button>
+          <button type="button" className="voice-call-bar-button is-close" onClick={endCall} title="End the call">
+            &#10005;
+          </button>
+        </span>
       </div>
       {/* Имя разговора стоит в шапке окна, а время — одной строкой.
           Прежде заголовок был написан дважды, а под ним шли три строки:
@@ -1822,13 +1870,10 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         <p className="call-timer" title={`Started at ${startTime}`}>{callDuration}</p>
       </div>
       <div className="group-call-participants">
+        {/* Заголовок «Participants» убран: в окне на четверых и так
+            видно, кто в разговоре, а кнопка камеры переехала вниз, к
+            остальному управлению, как в телеграме */}
         <div className="group-call-participants-header">
-          <h2>Participants</h2>
-          <button onClick={toggleMode} className="group-call-mode-toggle">
-            <span role="img" aria-label={isVideoMode ? 'audio' : 'video'}>
-              {isVideoMode ? '🔊' : '📷'}
-            </span>
-          </button>
           {isVideoMode && (
             <button
               onClick={cycleTileMode}
@@ -1930,6 +1975,31 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
       )}
       <audio id="local-audio" ref={localAudioRef} autoPlay muted />
       <div className="voice-call-controls">
+        <button
+          type="button"
+          className={`voice-call-round${isVideoMode ? ' is-on' : ''}`}
+          onClick={toggleMode}
+          title={isVideoMode ? 'Turn the camera off' : 'Turn the camera on'}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h9a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
+            <path d="M15 11.5 21 8v8l-6-3.5Z" />
+          </svg>
+          <small>{isVideoMode ? 'Video off' : 'Video'}</small>
+        </button>
+        <button
+          type="button"
+          className={`voice-call-round${muted ? ' is-on' : ''}`}
+          onClick={toggleMute}
+          title={muted ? 'Turn the microphone back on' : 'Turn the microphone off'}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" />
+            <path d="M18 11a6 6 0 0 1-12 0M12 17v4M9 21h6" fill="none" strokeWidth="2" strokeLinecap="round" />
+            {muted && <path d="M4 3 L20 21" fill="none" strokeWidth="2" strokeLinecap="round" />}
+          </svg>
+          <small>{muted ? 'Unmute' : 'Mute'}</small>
+        </button>
         <button type="button" className="voice-call-round is-end" onClick={endCall} title="End the call">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 9c-2.6 0-5.1.5-7.3 1.5-.8.4-1.3 1.2-1.2 2.1l.2 1.8c.1.9.9 1.5 1.8 1.4l2.6-.4c.8-.1 1.4-.8 1.5-1.6l.2-1.4c1.5-.4 3-.4 4.5 0l.2 1.4c.1.8.7 1.5 1.5 1.6l2.6.4c.9.1 1.7-.5 1.8-1.4l.2-1.8c.1-.9-.4-1.7-1.2-2.1C17.1 9.5 14.6 9 12 9Z" />
