@@ -87,6 +87,22 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
   const [partner, setPartner] = useState(null);
   const [muted, setMuted] = useState(false);
   const localStreamRef = useRef(null);
+  /**
+   * Камера в том же окне.
+   *
+   * Прежде видео было отдельной страницей: позвонив голосом, включить
+   * камеру было нельзя — только положить трубку и позвонить заново,
+   * уже «видеозвонком». В телеграме это одна кнопка в идущем разговоре,
+   * и здесь теперь так же: дорожка добавляется к живому соединению, а
+   * собеседнику уходит новое предложение связи.
+   */
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const [partnerCameraOn, setPartnerCameraOn] = useState(false);
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+  const videoSenderRef = useRef(null);
+  const cameraStreamRef = useRef(null);
+  const makingOffer = useRef(false);
 
   // Номер собеседника вынимаем из названия комнаты: room-<звонящий>-<кому>
   const partnerId = (() => {
@@ -108,6 +124,63 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
     })();
     return () => { alive = false; };
   }, [partnerId]);
+
+  /**
+   * Включить и выключить свою камеру посреди разговора.
+   *
+   * Дорожку добавляем к живому соединению и шлём собеседнику новое
+   * предложение связи — разговор при этом не прерывается.
+   */
+  const toggleCamera = async () => {
+    const pc = peerConnectionRef.current;
+    if (!pc) return;
+    try {
+      if (!isCameraOn) {
+        const поток = await navigator.mediaDevices.getUserMedia({ video: true });
+        cameraStreamRef.current = поток;
+        const дорожка = поток.getVideoTracks()[0];
+        videoSenderRef.current = pc.addTrack(дорожка, поток);
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = поток;
+          localVideoRef.current.play().catch(() => {});
+        }
+        setIsCameraOn(true);
+        sendSignal({ from: currentUserId, signal: { type: 'cameraOn' } });
+      } else {
+        if (videoSenderRef.current) {
+          pc.removeTrack(videoSenderRef.current);
+          videoSenderRef.current = null;
+        }
+        if (cameraStreamRef.current) {
+          cameraStreamRef.current.getTracks().forEach((д) => д.stop());
+          cameraStreamRef.current = null;
+        }
+        if (localVideoRef.current) localVideoRef.current.srcObject = null;
+        setIsCameraOn(false);
+        sendSignal({ from: currentUserId, signal: { type: 'cameraOff' } });
+      }
+
+      // Новое предложение связи — иначе дорожка никуда не пойдёт
+      makingOffer.current = true;
+      const предложение = await pc.createOffer();
+      await pc.setLocalDescription(предложение);
+      sendSignal({
+        from: currentUserId,
+        signal: {
+          type: 'offer',
+          sdp: предложение.sdp,
+          signature: signSdp(предложение.sdp),
+          deviceId: myDeviceId(),
+        },
+      });
+    } catch (ошибка) {
+      console.error('Камеру включить не вышло:', ошибка);
+      notify('Could not turn the camera on.', { toastId: `camera-${roomId}` });
+      setIsCameraOn(false);
+    } finally {
+      makingOffer.current = false;
+    }
+  };
 
   /** Выключить и включить свой микрофон. */
   const toggleMute = () => {
@@ -291,8 +364,20 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
         if (stream) {
           console.log('Stream active:', stream.active);
           console.log('Track enabled:', event.track.enabled);
-          remoteAudioRef.current.srcObject = stream;
-          remoteAudioRef.current.play().catch((err) => console.error('Audio play error:', err));
+          if (event.track.kind === 'video') {
+            // Собеседник включил камеру посреди разговора
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.srcObject = stream;
+              remoteVideoRef.current.play().catch(() => {});
+            }
+            setPartnerCameraOn(true);
+            event.track.onended = () => setPartnerCameraOn(false);
+            event.track.onmute = () => setPartnerCameraOn(false);
+            event.track.onunmute = () => setPartnerCameraOn(true);
+          } else {
+            remoteAudioRef.current.srcObject = stream;
+            remoteAudioRef.current.play().catch((err) => console.error('Audio play error:', err));
+          }
         } else {
           console.error('No streams received in ontrack event');
         }
@@ -381,8 +466,20 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
         if (stream) {
           console.log('Stream active:', stream.active);
           console.log('Track enabled:', event.track.enabled);
-          remoteAudioRef.current.srcObject = stream;
-          remoteAudioRef.current.play().catch((err) => console.error('Audio play error:', err));
+          if (event.track.kind === 'video') {
+            // Собеседник включил камеру посреди разговора
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.srcObject = stream;
+              remoteVideoRef.current.play().catch(() => {});
+            }
+            setPartnerCameraOn(true);
+            event.track.onended = () => setPartnerCameraOn(false);
+            event.track.onmute = () => setPartnerCameraOn(false);
+            event.track.onunmute = () => setPartnerCameraOn(true);
+          } else {
+            remoteAudioRef.current.srcObject = stream;
+            remoteAudioRef.current.play().catch((err) => console.error('Audio play error:', err));
+          }
         } else {
           console.error('No streams received in ontrack event');
         }
@@ -452,9 +549,44 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
       console.log('Processing signal type:', signalMessage.signal.type);
 
       try {
-        if (signalMessage.signal.type === 'offer') {
+        if (signalMessage.signal.type === 'cameraOn') {
+          setPartnerCameraOn(true);
+        } else if (signalMessage.signal.type === 'cameraOff') {
+          setPartnerCameraOn(false);
+          if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+        } else if (signalMessage.signal.type === 'offer') {
           console.log('Handling offer...');
-          if (peerConnectionRef.current && !isCaller) {
+          const pc = peerConnectionRef.current;
+          const переговоры = pc && pc.signalingState === 'stable' && pc.currentRemoteDescription;
+          if (pc && переговоры) {
+            /*
+             * Предложение посреди разговора — собеседник включил или
+             * выключил камеру. Прежде такие предложения принимал только
+             * тот, кому звонили: у звонящего стояло «я не отвечаю на
+             * предложения», и камера, включённая с той стороны, до него
+             * не доходила.
+             *
+             * Если мы сами в этот миг отправляем своё предложение, то
+             * уступает звонящий: иначе оба откатываются и соединение
+             * повисает.
+             */
+            if (makingOffer.current && !isCaller) {
+              console.log('Встречное предложение — уступаем своё');
+            }
+            if (makingOffer.current && isCaller) {
+              console.log('Встречное предложение — ждём своего ответа');
+            } else {
+              if (verifySdp(signalMessage.signal.sdp, signalMessage.signal.signature, signalMessage.signal.deviceId)) return;
+              await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: signalMessage.signal.sdp }));
+              const ответ = await pc.createAnswer();
+              await pc.setLocalDescription(ответ);
+              sendSignal({
+                from: currentUserId,
+                signal: { type: 'answer', sdp: ответ.sdp, signature: signSdp(ответ.sdp), deviceId: myDeviceId() },
+              });
+              console.log('Ответ на предложение посреди разговора отправлен');
+            }
+          } else if (pc && !isCaller) {
             console.log('Received offer SDP:', signalMessage.signal.sdp);
             if (verifySdp(signalMessage.signal.sdp, signalMessage.signal.signature, signalMessage.signal.deviceId)) return;
             await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signalMessage.signal));
@@ -827,7 +959,29 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
           </button>
         </span>
       </div>
-      <div className="voice-call-person">
+      {(isCameraOn || partnerCameraOn) && (
+        /* Кто-то включил камеру — показываем плитки прямо в этом окне,
+           вместо того чтобы уводить на отдельную страницу видеозвонка */
+        <div className="voice-call-tiles">
+          <div className="voice-call-tile">
+            <video ref={remoteVideoRef} autoPlay playsInline className="voice-call-video" />
+            {!partnerCameraOn && (
+              <div className="voice-call-tile-off">
+                {partner && partner.avatar
+                  ? <img src={`https://unlimitedpossibilities12.org${partner.avatar}`} alt="" />
+                  : <span>{letter}</span>}
+              </div>
+            )}
+            <span className="voice-call-tile-name">{partnerName}</span>
+          </div>
+          <div className="voice-call-tile is-self">
+            <video ref={localVideoRef} autoPlay playsInline muted className="voice-call-video" />
+            {!isCameraOn && <div className="voice-call-tile-off"><span>·</span></div>}
+            <span className="voice-call-tile-name">You</span>
+          </div>
+        </div>
+      )}
+      <div className="voice-call-person" hidden={isCameraOn || partnerCameraOn}>
         <div className="voice-call-avatar" style={{ background: partner && partner.avatar ? 'none' : letterColor }}>
           {partner && partner.avatar
             ? <img src={`https://unlimitedpossibilities12.org${partner.avatar}`} alt="" />
@@ -883,6 +1037,24 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
       </div>
 
       <div className="voice-call-controls">
+        {/* Камера в звонке вдвоём пока не показывается.
+            Соединение она добавляет на ходу, новым предложением связи, а
+            телефон такого предложения посреди разговора не переживает:
+            в опыте его соединение рвалось и звонок завершался. Откроем
+            кнопку, когда то же самое будет уметь приложение на телефоне. */}
+        <button
+          type="button"
+          hidden
+          className={`voice-call-round${isCameraOn ? ' is-on' : ''}`}
+          onClick={toggleCamera}
+          title={isCameraOn ? 'Turn the camera off' : 'Turn the camera on'}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h9a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
+            <path d="M15 11.5 21 8v8l-6-3.5Z" />
+          </svg>
+          <small>{isCameraOn ? 'Video off' : 'Video'}</small>
+        </button>
         <button
           type="button"
           className={`voice-call-round${muted ? ' is-on' : ''}`}
