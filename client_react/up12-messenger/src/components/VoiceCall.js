@@ -101,6 +101,15 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
   // Какой формы приходит картинка: плитка подстраивается под неё, иначе
   // вертикальный кадр с телефона ложится в коробку между чёрных полей
   const [remoteAspect, setRemoteAspect] = useState(null);
+  /**
+   * Размер картинки считаем сами.
+   *
+   * Форму даёт кадр, а пределы — экран: по высоте и по ширине, чтобы
+   * окно не накрыло список чатов. Одними правилами вида это не выходит:
+   * при упоре в ширину коробка перестаёт держать форму, и кадр снова
+   * ложится между полей.
+   */
+  const [stageSize, setStageSize] = useState(null);
   const [localAspect, setLocalAspect] = useState(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -185,6 +194,28 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
       makingOffer.current = false;
     }
   };
+
+  useEffect(() => {
+    if (!remoteAspect) { setStageSize(null); return undefined; }
+    const [ш, в] = remoteAspect.split('/').map((часть) => Number(часть.trim()));
+    const форма = ш / в;
+    const посчитать = () => {
+      const свободно = {
+        ширина: Math.min(720, Math.max(300, window.innerWidth - 420)),
+        высота: Math.min(620, Math.max(240, window.innerHeight - 230)),
+      };
+      let ширина = свободно.ширина;
+      let высота = ширина / форма;
+      if (высота > свободно.высота) {
+        высота = свободно.высота;
+        ширина = высота * форма;
+      }
+      setStageSize({ width: Math.round(ширина), height: Math.round(высота) });
+    };
+    посчитать();
+    window.addEventListener('resize', посчитать);
+    return () => window.removeEventListener('resize', посчитать);
+  }, [remoteAspect]);
 
   /** Выключить и включить свой микрофон. */
   const toggleMute = () => {
@@ -983,7 +1014,7 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
          * картинке: вертикальный кадр ложился между чёрных полей сверху и
          * снизу, а над плитками пустовала полоса.
          */
-        <div className="voice-call-stage">
+        <div className="voice-call-stage" style={stageSize || undefined}>
           <video
             ref={remoteVideoRef}
             autoPlay
