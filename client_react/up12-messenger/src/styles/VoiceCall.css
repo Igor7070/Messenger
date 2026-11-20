@@ -578,3 +578,71 @@ body.has-call-strip #root > .app > * { max-height: calc(100vh - 42px); }
    (ещё 56px под шапку). В разговоре с картинкой хватает одного. */
 .voice-call-window:has(.voice-call-tiles) { padding-top: 0; }
 .voice-call-tiles { padding-top: 52px; }
+
+
+/* ---------------------------------------------------------------------
+   Разговор с картинкой: собеседник занимает окно целиком, своя картинка
+   стоит уголком. Имя и время — в шапке, на картинку ничего не кладём.
+   --------------------------------------------------------------------- */
+.voice-call-stage {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  right: 0;
+  bottom: 104px;
+  background: #060b17;
+  overflow: hidden;
+}
+
+.voice-call-stage-video {
+  width: 100%;
+  height: 100%;
+  /* Заполняем окно: вписывание оставляло поля сверху и снизу */
+  object-fit: cover;
+}
+
+.voice-call-stage-off {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #0b1220;
+  color: #cbd5e1;
+  font-size: 40px;
+  font-weight: 600;
+}
+
+.voice-call-stage-off img {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.voice-call-stage-off small { font-size: 15px; color: #94a3b8; font-weight: 500; }
+
+.voice-call-self {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 112px;
+  aspect-ratio: 3 / 4;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #0b1220;
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.voice-call-self.is-off { display: none; }
+
+.voice-call-window:has(.voice-call-stage) .voice-call-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 22px;
+  justify-content: center;
+}

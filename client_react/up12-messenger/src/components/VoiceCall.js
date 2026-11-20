@@ -975,44 +975,40 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
         </span>
       </div>
       {(isCameraOn || partnerCameraOn) && (
-        /* Кто-то включил камеру — показываем плитки прямо в этом окне,
-           вместо того чтобы уводить на отдельную страницу видеозвонка */
-        <div className="voice-call-tiles">
-          <div className="voice-call-tile" style={remoteAspect ? { aspectRatio: remoteAspect } : undefined}>
-            <video
-              ref={remoteVideoRef}
-              autoPlay
-              playsInline
-              className="voice-call-video"
-              onLoadedMetadata={(e) => setRemoteAspect(`${e.target.videoWidth} / ${e.target.videoHeight}`)}
-              onResize={(e) => setRemoteAspect(`${e.target.videoWidth} / ${e.target.videoHeight}`)}
-            />
-            {!partnerCameraOn && (
-              <div className="voice-call-tile-off">
-                {partner && partner.avatar
-                  ? <img src={`https://unlimitedpossibilities12.org${partner.avatar}`} alt="" />
-                  : <span>{letter}</span>}
-              </div>
-            )}
-            <span className="voice-call-tile-name">{partnerName}</span>
-          </div>
-          <div className="voice-call-tile is-self" style={localAspect ? { aspectRatio: localAspect } : undefined}>
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="voice-call-video"
-              onLoadedMetadata={(e) => setLocalAspect(`${e.target.videoWidth} / ${e.target.videoHeight}`)}
-              onResize={(e) => setLocalAspect(`${e.target.videoWidth} / ${e.target.videoHeight}`)}
-            />
-            {!isCameraOn && (
-              <div className="voice-call-tile-off">
-                <small>Camera off</small>
-              </div>
-            )}
-            <span className="voice-call-tile-name">You</span>
-          </div>
+        /*
+         * Разговор с картинкой: собеседник во всё окно, своя картинка —
+         * уголком, имя и время остаются в шапке.
+         *
+         * Прежде здесь стояли две равные плитки с подписями прямо на
+         * картинке: вертикальный кадр ложился между чёрных полей сверху и
+         * снизу, а над плитками пустовала полоса.
+         */
+        <div className="voice-call-stage">
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            className="voice-call-stage-video"
+            onLoadedMetadata={(e) => setRemoteAspect(`${e.target.videoWidth} / ${e.target.videoHeight}`)}
+            onResize={(e) => setRemoteAspect(`${e.target.videoWidth} / ${e.target.videoHeight}`)}
+          />
+          {!partnerCameraOn && (
+            <div className="voice-call-stage-off">
+              {partner && partner.avatar
+                ? <img src={`https://unlimitedpossibilities12.org${partner.avatar}`} alt="" />
+                : <span>{letter}</span>}
+              <small>{partnerName}</small>
+            </div>
+          )}
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className={`voice-call-self${isCameraOn ? '' : ' is-off'}`}
+            onLoadedMetadata={(e) => setLocalAspect(`${e.target.videoWidth} / ${e.target.videoHeight}`)}
+            style={localAspect ? { aspectRatio: localAspect } : undefined}
+          />
         </div>
       )}
       <div className="voice-call-person" hidden={isCameraOn || partnerCameraOn}>
@@ -1071,17 +1067,8 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
       </div>
 
       <div className="voice-call-controls">
-        {/* Камера в звонке вдвоём снова закрыта.
-            Всё сделано и однажды сошлось целиком: телефон включает
-            камеру, картинка доходит до окна, разговор переживает новое
-            предложение связи. Но в следующих заходах экран звонка на
-            телефоне закрывался сам через полминуты после включения
-            камеры, а журнал устройство отдавать перестало. Пока причина
-            не найдена, кнопки нет: разговор вдвоём должен быть надёжным
-            прежде всего. */}
         <button
           type="button"
-          hidden
           className={`voice-call-round${isCameraOn ? ' is-on' : ''}`}
           onClick={toggleCamera}
           title={isCameraOn ? 'Turn the camera off' : 'Turn the camera on'}
