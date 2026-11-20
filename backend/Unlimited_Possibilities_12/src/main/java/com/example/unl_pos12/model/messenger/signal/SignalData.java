@@ -15,6 +15,13 @@ public class SignalData {
      * «verified». Поле проходит насквозь, сервер в него не смотрит.
      */
     private String deviceId;
+    /**
+     * Почему отказ. Сейчас одно значение — «noAnswer»: у того, кому
+     * звонили, звонок отзвенел своё и погас сам. Звонящему это надо
+     * показать иначе, чем нажатый отказ: его не отвергли, его не
+     * услышали. Поле проходит насквозь, сервер в него не смотрит.
+     */
+    private String reason;
 
     public String getType() {
         return type;
@@ -38,6 +45,14 @@ public class SignalData {
 
     public void setIceCandidate(IceCandidate iceCandidate) {
         this.iceCandidate = iceCandidate;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
     }
 
     public String getDeviceId() {

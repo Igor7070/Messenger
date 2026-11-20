@@ -651,8 +651,12 @@ public class VoiceCallActivity extends AppCompatActivity {
                             ringtonePlayer.pause();
                             ringtonePlayer.seekTo(0);
                         }
-                        Toast.makeText(this, recipientName + " rejected the call.", Toast.LENGTH_LONG).show();
-                        saveCall("rejected");
+                        // Не ответили — это не отказ: человека не было у окна
+                        boolean noAnswer = "noAnswer".equals(signal.optString("reason", null));
+                        Toast.makeText(this,
+                                recipientName + (noAnswer ? " did not answer." : " rejected the call."),
+                                Toast.LENGTH_LONG).show();
+                        saveCall(noAnswer ? "missed" : "rejected");
                         endCall();
                     }
                     break;

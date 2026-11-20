@@ -533,7 +533,12 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
               setIsWaiting(false);
               ringtoneRef.current.pause();
               ringtoneRef.current.currentTime = 0;
-              notify(`${recipientName} rejected the call.`, { toastId: `reject-call-${roomId}` });
+              notify(
+                signalMessage.signal.reason === 'noAnswer'
+                  ? `${recipientName} did not answer.`
+                  : `${recipientName} rejected the call.`,
+                { toastId: `reject-call-${roomId}` }
+              );
               terminationInitiator = true;
               endCall();
             }

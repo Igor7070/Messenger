@@ -1320,11 +1320,26 @@ const GroupCallActivity = () => {
                 peerConnection.close();
                 peerConnections.current.delete(currentFrom);
               }
-              if (Number(currentFrom) === initiator.id || callParticipants.length <= 1) {
+              /*
+               * Ушёл звонивший — разговору конец; ушёл последний
+               * собеседник — тоже.
+               *
+               * Прежде здесь сравнивали число со строкой: номер пришедшего
+               * сигнала приводили к числу, а у заводившего звонок он лежит
+               * строкой, и 1 никогда не равнялось «1». Поэтому звонящий
+               * клал трубку, а у принявшего экран разговора оставался
+               * висеть с живым списком участников, пока он не перезагрузит
+               * страницу. И счёт оставшихся брали до того, как ушедшего
+               * вычеркнули, — себя тоже считали собеседником.
+               */
+              const remaining = callParticipants.filter(
+                (u) => String(u.id) !== String(currentFrom) && String(u.id) !== String(currentUserId)
+              );
+              if (String(currentFrom) === String(initiator && initiator.id) || remaining.length === 0) {
                   console.log('Ending call: initiator left or no participants remain');
                   endCall();
               } else {
-                  console.log(`Keeping call active, remaining participants: ${callParticipants.length - 1}`);
+                  console.log(`Keeping call active, remaining participants: ${remaining.length}`);
               }
             }
             break;

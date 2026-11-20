@@ -78,6 +78,46 @@ export const CallWebSocketProvider = ({ children }) => {
     if (!incomingCall) return undefined;
     const stopper = setTimeout(() => {
       console.log('CallWebSocketContext: звонок звенел слишком долго — гасим');
+      // Звонящему говорим, что не ответили: иначе у него экран висит до
+      // тех пор, пока он сам не нажмёт отбой, и он не знает, слышат ли его
+      if (callRequestRef.current) {
+        sendSignal(
+          { from: currentUserId, signal: { type: 'rejectCall', reason: 'noAnswer' } },
+          callRequestRef.current.roomId
+        );
+      }
+      // И себе оставляем пропущенный: иначе звонок, на который не успели
+      // подойти, пропадал бесследно — ни следа в списке, ни имени
+      if (incomingCall) {
+        const when = new Date().toLocaleString('en-US', {
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          timeZone: 'Europe/Kiev', hour12: false,
+        }).replace(/(\d+)\/(\d+)\/(\d+), (\d+:\d+:\d+)/, '$3-$1-$2T$4');
+        const missed = {
+          caller: incomingCall.callerId || incomingCall.initiatorId,
+          direction: 'incoming',
+          status: 'missed',
+          callType: incomingCall.type === 'video' ? 'video'
+            : incomingCall.type === 'translate' ? 'voice_with_translate'
+            : incomingCall.type === 'group' ? 'group'
+            : 'voice',
+          timestamp: when,
+        };
+        if (incomingCall.type === 'group') {
+          missed.participants = [
+            incomingCall.initiatorId,
+            ...(incomingCall.recipientIds || []).map((id) => String(id)),
+          ];
+        } else {
+          missed.receiver = currentUserId;
+        }
+        fetch(`https://unlimitedpossibilities12.org/api/calls?userId=${currentUserId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(missed),
+        }).catch((error) => console.warn('Пропущенный звонок не сохранился:', error));
+      }
       setIncomingCallWithLog(null);
       callRequestRef.current = null;
       audioRef.current.pause();
