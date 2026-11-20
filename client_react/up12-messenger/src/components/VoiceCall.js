@@ -119,6 +119,19 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
    * подсказкой.
    */
   const [hasCamera, setHasCamera] = useState(true);
+  /**
+   * Позвать третьего в идущий разговор.
+   *
+   * Разговор вдвоём — это одно соединение, групповой — несколько, по
+   * одному на каждого. Позвать третьего значит перейти ко второму виду:
+   * собеседнику и новому человеку уходит приглашение, а разговор вдвоём
+   * закрывается. Голос прерывается на секунду — это честная плата за то,
+   * что у нас нет общего потока через сервер; зато у новичка появляется
+   * свой замок и свой код сверки, как у всех.
+   */
+  const [peopleOpen, setPeopleOpen] = useState(false);
+  const [people, setPeople] = useState([]);
+
 
   useEffect(() => {
     let жив = true;
@@ -261,6 +274,35 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
       localVideoRef.current.srcObject = null;
     }
   }, [isCameraOn, partnerCameraOn]);
+
+  useEffect(() => {
+    if (!peopleOpen || people.length) return;
+    (async () => {
+      try {
+        const ответ = await fetch('https://unlimitedpossibilities12.org/api/users');
+        if (!ответ.ok) return;
+        const все = await ответ.json();
+        setPeople(все.filter((ч) => String(ч.id) !== String(currentUserId) && String(ч.id) !== String(partnerId)));
+      } catch (ошибка) {
+        console.warn('Список людей не пришёл:', ошибка);
+      }
+    })();
+  }, [peopleOpen, people.length, currentUserId, partnerId]);
+
+  /** Позвать выбранного: начинаем разговор на троих. */
+  const позвать = (человек) => {
+    const собеседник = partner
+      ? { id: Number(partner.id), username: partner.username }
+      : { id: Number(partnerId), username: partnerName };
+    setPeopleOpen(false);
+    endCall();
+    navigate('/group-call', {
+      state: {
+        participants: [собеседник, { id: Number(человек.id), username: человек.username }],
+        initiator: { id: currentUserId, username: localStorage.getItem('username') },
+      },
+    });
+  };
 
   /** Выключить и включить свой микрофон. */
   const toggleMute = () => {
@@ -1167,6 +1209,33 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
         </div>
       )}
 
+      {peopleOpen && (
+        <div className="voice-call-people-backdrop" onClick={() => setPeopleOpen(false)} role="presentation">
+          <div className="voice-call-people" onClick={(event) => event.stopPropagation()}>
+            <h3>Add to the call</h3>
+            <p className="voice-call-people-note">
+              The three of you continue in a group call; this one closes.
+            </p>
+            <ul>
+              {people.map((человек) => (
+                <li key={человек.id}>
+                  <button type="button" onClick={() => позвать(человек)}>
+                    {человек.avatar
+                      ? <img src={`https://unlimitedpossibilities12.org${человек.avatar}`} alt="" />
+                      : <span className="voice-call-people-letter">{(человек.displayName || человек.username || '?').charAt(0).toUpperCase()}</span>}
+                    {человек.displayName || человек.username}
+                  </button>
+                </li>
+              ))}
+              {!people.length && <li className="voice-call-people-empty">Nobody to add yet</li>}
+            </ul>
+            <button type="button" className="voice-call-people-close" onClick={() => setPeopleOpen(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="audio-container">
         <audio ref={localAudioRef} autoPlay muted />
         <audio ref={remoteAudioRef} autoPlay />
@@ -1202,6 +1271,18 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
             {muted && <path d="M4 3 L20 21" fill="none" strokeWidth="2" strokeLinecap="round" />}
           </svg>
           <small>{muted ? 'Unmute' : 'Mute'}</small>
+        </button>
+        <button
+          type="button"
+          className="voice-call-round"
+          onClick={() => setPeopleOpen(true)}
+          title="Add someone to the call"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-3.3 0-6 1.8-6 4v2h12v-2c0-2.2-2.7-4-6-4Z" />
+            <path d="M18 8v8M14 12h8" fill="none" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <small>Add</small>
         </button>
         <button type="button" className="voice-call-round is-end" onClick={endCall} title="End the call">
           <svg viewBox="0 0 24 24" aria-hidden="true">

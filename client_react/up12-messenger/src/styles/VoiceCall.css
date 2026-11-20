@@ -738,3 +738,80 @@ body.has-call-strip #root > .app > * { max-height: calc(100vh - 42px); }
   background: rgba(148, 163, 184, 0.16);
   transform: none;
 }
+
+
+/* Окно «позвать третьего» */
+.voice-call-people-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1400;
+}
+
+.voice-call-people {
+  width: min(380px, 100%);
+  max-height: min(520px, calc(100vh - 80px));
+  overflow: auto;
+  background: #16213a;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 18px;
+  padding: 20px;
+  color: #e2e8f0;
+}
+
+.voice-call-people h3 { margin: 0 0 4px; font-size: 18px; }
+.voice-call-people-note { margin: 0 0 14px; font-size: 13px; color: #94a3b8; }
+.voice-call-people ul { list-style: none; margin: 0; padding: 0; }
+
+.voice-call-people li button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #e2e8f0;
+  font-size: 15px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.voice-call-people li button:hover { background: rgba(148, 163, 184, 0.14); }
+
+.voice-call-people img,
+.voice-call-people-letter {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #334155;
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2e8f0;
+  flex: none;
+}
+
+.voice-call-people-empty { color: #94a3b8; font-size: 14px; padding: 8px 10px; }
+
+.voice-call-people-close {
+  margin-top: 14px;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  color: #cbd5e1;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.voice-call-people-close:hover { background: rgba(148, 163, 184, 0.26); }
