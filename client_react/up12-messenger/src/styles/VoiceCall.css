@@ -550,3 +550,31 @@ body.has-call-strip #root > .app > * { max-height: calc(100vh - 42px); }
 }
 
 .voice-call-window:has(.voice-call-tiles) .voice-call-controls { margin-bottom: 14px; }
+
+
+/* Скрытое остаётся скрытым: у блока с лицом задан display: flex, и
+   пометка hidden сама по себе его не прятала — лицо висело под
+   плитками с картинкой */
+.voice-call-person[hidden] { display: none !important; }
+
+/* Плитки занимают окно целиком, кнопки остаются внизу */
+.voice-call-window:has(.voice-call-tiles) .voice-call-tiles { flex: 1; min-height: 0; }
+.voice-call-tiles .voice-call-tile { max-height: calc(100vh - 260px); }
+
+
+/* Плитки занимают середину окна, а не ютятся в его верхней трети */
+.voice-call-tiles { flex: 1; align-items: stretch; padding-bottom: 10px; }
+.voice-call-tiles .voice-call-tile { max-height: none; align-self: center; height: 100%; }
+.voice-call-tile-off small { font-size: 13px; color: #94a3b8; font-weight: 500; }
+
+
+/* Форму плитке задаёт сам кадр; коробка 3:4 оставалась бы с полями */
+.voice-call-tiles .voice-call-tile { aspect-ratio: auto; width: auto; max-width: 100%; }
+.voice-call-tiles .voice-call-tile:not([style]) { aspect-ratio: 3 / 4; }
+.voice-call-bar-time { color: #94a3b8; font-variant-numeric: tabular-nums; }
+
+
+/* Пустота сверху: окно отступало и своей рамкой (64px), и плитками
+   (ещё 56px под шапку). В разговоре с картинкой хватает одного. */
+.voice-call-window:has(.voice-call-tiles) { padding-top: 0; }
+.voice-call-tiles { padding-top: 52px; }

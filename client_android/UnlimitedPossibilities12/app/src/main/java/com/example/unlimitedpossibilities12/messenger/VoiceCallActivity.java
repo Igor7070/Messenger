@@ -72,6 +72,23 @@ public class VoiceCallActivity extends AppCompatActivity {
     private String recipientName;
     private PeerConnection peerConnection;
     private PeerConnectionFactory peerConnectionFactory;
+    /**
+     * Картинка в том же разговоре.
+     *
+     * Прежде видео жило отдельным экраном: начав голосом, включить камеру
+     * было нельзя — только положить трубку и позвонить заново. Теперь
+     * камера включается кнопкой, её дорожка добавляется к живому
+     * соединению, и собеседнику уходит новое предложение связи.
+     */
+    private org.webrtc.EglBase eglBase;
+    private org.webrtc.SurfaceViewRenderer remoteVideoView;
+    private org.webrtc.SurfaceViewRenderer localVideoView;
+    private org.webrtc.VideoCapturer videoCapturer;
+    private org.webrtc.VideoSource videoSource;
+    private org.webrtc.VideoTrack localVideoTrack;
+    private org.webrtc.RtpSender videoSender;
+    private boolean isCameraOn = false;
+    private boolean partnerCameraOn = false;
     private AudioSource audioSource;
     private AudioTrack localAudioTrack;
     private AudioManager audioManager;
@@ -198,6 +215,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 
         muteButton.setOnClickListener(v -> toggleMic());
         speakerButton.setOnClickListener(v -> toggleSpeaker());
+        findViewById(R.id.camera_button).setOnClickListener(v -> toggleCamera());
         minimizeButton.setOnClickListener(v -> minimizeCall());
 
         com.example.unlimitedpossibilities12.messenger.notife.OngoingCall
@@ -276,12 +294,177 @@ public class VoiceCallActivity extends AppCompatActivity {
         PeerConnectionFactory.InitializationOptions options = PeerConnectionFactory.InitializationOptions.builder(this)
                 .createInitializationOptions();
         PeerConnectionFactory.initialize(options);
-        peerConnectionFactory = PeerConnectionFactory.builder().createPeerConnectionFactory();
+        eglBase = org.webrtc.EglBase.create();
+        peerConnectionFactory = PeerConnectionFactory.builder()
+                // Без этих двух разговор остаётся без картинки: завод
+                // соединений просто не умеет её сжимать и разбирать
+                .setVideoEncoderFactory(new org.webrtc.DefaultVideoEncoderFactory(
+                        eglBase.getEglBaseContext(), true, true))
+                .setVideoDecoderFactory(new org.webrtc.DefaultVideoDecoderFactory(
+                        eglBase.getEglBaseContext()))
+                .createPeerConnectionFactory();
 
         if (currentUserId == null) {
             Log.e(TAG, "currentUserId is undefined. Check the Intent extras.");
             finish();
         }
+    }
+
+    /** Готовим поверхности для картинки — один раз за разговор. */
+    private void подготовитьЭкраны() {
+        if (remoteVideoView == null) {
+            remoteVideoView = findViewById(R.id.remote_video_view);
+            localVideoView = findViewById(R.id.local_video_view);
+            remoteVideoView.init(eglBase.getEglBaseContext(), null);
+            remoteVideoView.setEnableHardwareScaler(true);
+            localVideoView.init(eglBase.getEglBaseContext(), null);
+            localVideoView.setEnableHardwareScaler(true);
+            localVideoView.setZOrderMediaOverlay(true);
+            localVideoView.setMirror(true);
+        }
+    }
+
+    /** Показываем картинку, когда она есть, и прячем, когда её нет. */
+    private void обновитьВидКартинки() {
+        boolean есть = isCameraOn || partnerCameraOn;
+        View рамкаЛица = findViewById(R.id.avatar_card);
+        if (remoteVideoView != null) {
+            remoteVideoView.setVisibility(partnerCameraOn ? View.VISIBLE : View.GONE);
+            localVideoView.setVisibility(isCameraOn ? View.VISIBLE : View.GONE);
+        }
+        if (рамкаЛица != null) рамкаЛица.setVisibility(есть ? View.GONE : View.VISIBLE);
+    }
+
+    /**
+     * Включить и выключить свою камеру посреди разговора: дорожка
+     * добавляется к живому соединению, собеседнику уходит новое
+     * предложение связи, и разговор при этом не прерывается.
+     */
+    private void toggleCamera() {
+        if (peerConnection == null) return;
+        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            androidx.core.app.ActivityCompat.requestPermissions(
+                    this, new String[]{android.Manifest.permission.CAMERA}, 42);
+            return;
+        }
+        if (!isCameraOn) {
+            // Камеру заводим в своём потоке: её открытие занимает секунды,
+            // и в главном потоке экран звонка подвисал — система считала
+            // его зависшим и закрывала, а разговор обрывался
+            подготовитьЭкраны();
+            new Thread(this::включитьКамеру).start();
+            return;
+        }
+        try {
+            if (false) {
+                org.webrtc.CameraEnumerator перечень = org.webrtc.Camera2Enumerator.isSupported(this)
+                        ? new org.webrtc.Camera2Enumerator(this)
+                        : new org.webrtc.Camera1Enumerator(true);
+                String имя = null;
+                for (String устройство : перечень.getDeviceNames()) {
+                    if (перечень.isFrontFacing(устройство)) { имя = устройство; break; }
+                }
+                if (имя == null && перечень.getDeviceNames().length > 0) имя = перечень.getDeviceNames()[0];
+                if (имя == null) { Toast.makeText(this, "No camera found", Toast.LENGTH_SHORT).show(); return; }
+
+                videoCapturer = перечень.createCapturer(имя, null);
+                videoSource = peerConnectionFactory.createVideoSource(videoCapturer.isScreencast());
+                org.webrtc.SurfaceTextureHelper помощник = org.webrtc.SurfaceTextureHelper.create(
+                        "CaptureThread", eglBase.getEglBaseContext());
+                videoCapturer.initialize(помощник, this, videoSource.getCapturerObserver());
+                videoCapturer.startCapture(1280, 720, 30);
+                localVideoTrack = peerConnectionFactory.createVideoTrack("video0", videoSource);
+                localVideoTrack.setEnabled(true);
+                localVideoTrack.addSink(localVideoView);
+                videoSender = peerConnection.addTrack(localVideoTrack, Arrays.asList("stream0"));
+                isCameraOn = true;
+                sendSignal(createSignalJson("cameraOn", null));
+            } else {
+                if (videoSender != null) { peerConnection.removeTrack(videoSender); videoSender = null; }
+                if (videoCapturer != null) {
+                    try { videoCapturer.stopCapture(); } catch (InterruptedException ignored) { }
+                    videoCapturer.dispose(); videoCapturer = null;
+                }
+                if (localVideoTrack != null) { localVideoTrack.dispose(); localVideoTrack = null; }
+                if (videoSource != null) { videoSource.dispose(); videoSource = null; }
+                isCameraOn = false;
+                sendSignal(createSignalJson("cameraOff", null));
+            }
+            обновитьВидКартинки();
+            предложитьСвязьЗаново();
+        } catch (Exception e) {
+            Log.e(TAG, "Камеру включить не вышло: " + e.getMessage());
+            Toast.makeText(this, "Could not turn the camera on", Toast.LENGTH_SHORT).show();
+            isCameraOn = false;
+            обновитьВидКартинки();
+        }
+    }
+
+    /** Открыть камеру и добавить её дорожку к разговору. */
+    private void включитьКамеру() {
+        try {
+            org.webrtc.CameraEnumerator перечень = org.webrtc.Camera2Enumerator.isSupported(this)
+                    ? new org.webrtc.Camera2Enumerator(this)
+                    : new org.webrtc.Camera1Enumerator(true);
+            String имя = null;
+            for (String устройство : перечень.getDeviceNames()) {
+                if (перечень.isFrontFacing(устройство)) { имя = устройство; break; }
+            }
+            if (имя == null && перечень.getDeviceNames().length > 0) имя = перечень.getDeviceNames()[0];
+            if (имя == null) {
+                runOnUiThread(() -> Toast.makeText(this, "No camera found", Toast.LENGTH_SHORT).show());
+                return;
+            }
+            videoCapturer = перечень.createCapturer(имя, null);
+            videoSource = peerConnectionFactory.createVideoSource(videoCapturer.isScreencast());
+            org.webrtc.SurfaceTextureHelper помощник = org.webrtc.SurfaceTextureHelper.create(
+                    "CaptureThread", eglBase.getEglBaseContext());
+            videoCapturer.initialize(помощник, this, videoSource.getCapturerObserver());
+            videoCapturer.startCapture(1280, 720, 30);
+            localVideoTrack = peerConnectionFactory.createVideoTrack("video0", videoSource);
+            localVideoTrack.setEnabled(true);
+            videoSender = peerConnection.addTrack(localVideoTrack, Arrays.asList("stream0"));
+            isCameraOn = true;
+            sendSignal(createSignalJson("cameraOn", null));
+            runOnUiThread(() -> {
+                localVideoTrack.addSink(localVideoView);
+                обновитьВидКартинки();
+            });
+            предложитьСвязьЗаново();
+        } catch (Exception e) {
+            Log.e(TAG, "Камеру включить не вышло: " + e.getMessage());
+            isCameraOn = false;
+            runOnUiThread(() -> {
+                Toast.makeText(this, "Could not turn the camera on", Toast.LENGTH_SHORT).show();
+                обновитьВидКартинки();
+            });
+        }
+    }
+
+    /** Новое предложение связи — иначе дорожка никуда не пойдёт. */
+    private void предложитьСвязьЗаново() {
+        peerConnection.createOffer(new SdpObserver() {
+            @Override public void onCreateSuccess(SessionDescription предложение) {
+                peerConnection.setLocalDescription(new SdpObserver() {
+                    @Override public void onSetSuccess() {
+                        try {
+                            // Описание передаём целиком: по дороге его подпишут
+                            JSONObject сигнал = createSignalJson("offer", предложение);
+                            sendSignal(сигнал);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Предложение не ушло: " + e.getMessage());
+                        }
+                    }
+                    @Override public void onSetFailure(String s) { Log.e(TAG, "setLocalDescription: " + s); }
+                    @Override public void onCreateSuccess(SessionDescription s) { }
+                    @Override public void onCreateFailure(String s) { }
+                }, предложение);
+            }
+            @Override public void onCreateFailure(String s) { Log.e(TAG, "createOffer: " + s); }
+            @Override public void onSetSuccess() { }
+            @Override public void onSetFailure(String s) { }
+        }, new org.webrtc.MediaConstraints());
     }
 
     private void checkPermissionsAndStartCall() {
@@ -488,6 +671,17 @@ public class VoiceCallActivity extends AppCompatActivity {
                     remoteAudioTrack.setEnabled(true);
                     Log.d(TAG, "Remote audio track enabled: " + remoteAudioTrack.id());
                 }
+                org.webrtc.MediaStreamTrack track = receiver.track();
+                if (track instanceof org.webrtc.VideoTrack) {
+                    org.webrtc.VideoTrack входящая = (org.webrtc.VideoTrack) track;
+                    runOnUiThread(() -> {
+                        подготовитьЭкраны();
+                        входящая.setEnabled(true);
+                        входящая.addSink(remoteVideoView);
+                        partnerCameraOn = true;
+                        обновитьВидКартинки();
+                    });
+                }
             }
 
             @Override
@@ -520,8 +714,31 @@ public class VoiceCallActivity extends AppCompatActivity {
             Log.d(TAG, "Processing signal type: " + type);
 
             switch (type) {
+                case "cameraOn":
+                    partnerCameraOn = true;
+                    runOnUiThread(() -> { подготовитьЭкраны(); обновитьВидКартинки(); });
+                    break;
+
+                case "cameraOff":
+                    partnerCameraOn = false;
+                    runOnUiThread(this::обновитьВидКартинки);
+                    break;
+
                 case "offer":
-                    if (!isCaller) {
+                    /*
+                     * Предложение посреди разговора — собеседник включил или
+                     * выключил камеру.
+                     *
+                     * Прежде такие предложения принимал только тот, кому
+                     * звонили. Звонящий их не разбирал вовсе: собеседник
+                     * включал камеру, его предложение оставалось без ответа,
+                     * и соединение рвалось за несколько секунд — звонок
+                     * завершался сам.
+                     */
+                    boolean переговорыНаХоду = peerConnection != null
+                            && peerConnection.signalingState() == PeerConnection.SignalingState.STABLE
+                            && peerConnection.getRemoteDescription() != null;
+                    if (!isCaller || переговорыНаХоду) {
                         if (peerConnection == null || peerConnection.signalingState() == PeerConnection.SignalingState.CLOSED) {
                             Log.d(TAG, "PeerConnection is null or closed when handling offer, initializing...");
                             initializePeerConnection(false);

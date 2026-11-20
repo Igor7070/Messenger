@@ -76,6 +76,15 @@ export const CallWebSocketProvider = ({ children }) => {
    */
   useEffect(() => {
     if (!incomingCall) return undefined;
+    /*
+     * Пока разговор идёт, сторож молчит.
+     *
+     * Извещение о звонке приходит дважды — сокетом и push-ом, — и второе
+     * могло лечь уже после того, как человек ответил. Сторож честно
+     * отсчитывал минуту и слал «не ответили» прямо посреди разговора:
+     * собеседник на телефоне получал отказ и клал трубку.
+     */
+    if (activeCall) return undefined;
     const stopper = setTimeout(() => {
       console.log('CallWebSocketContext: звонок звенел слишком долго — гасим');
       // Звонящему говорим, что не ответили: иначе у него экран висит до
@@ -168,9 +177,15 @@ export const CallWebSocketProvider = ({ children }) => {
     if (incomingCall === lastCall.current) return;
     lastCall.current = incomingCall;
     setRingtoneSilenced(false);
-  }, [incomingCall]);
+  }, [incomingCall, activeCall]);
 
   useEffect(() => {
+    if (activeCall) {
+      // Разговор идёт — звонить в ухо тому, кто уже говорит, не нужно
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      return;
+    }
     if (incomingCall && ringtoneSilenced) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -187,7 +202,7 @@ export const CallWebSocketProvider = ({ children }) => {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-  }, [incomingCall, userInteracted, ringtoneSilenced]);
+  }, [incomingCall, userInteracted, ringtoneSilenced, activeCall]);
 
   useEffect(() => {
     if (!currentUserId) return;
