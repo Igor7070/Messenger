@@ -217,6 +217,24 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
     return () => window.removeEventListener('resize', посчитать);
   }, [remoteAspect]);
 
+  /*
+   * Свою картинку привязываем, когда её окошко уже на экране.
+   *
+   * Окошко появляется только вместе с видом «идёт картинка», то есть
+   * после того, как состояние изменилось, — а камеру мы включаем раньше.
+   * Поэтому привязка в самой кнопке попадала в пустоту: поток был, а
+   * показывать его было негде.
+   */
+  useEffect(() => {
+    if (!localVideoRef.current) return;
+    if (isCameraOn && cameraStreamRef.current) {
+      localVideoRef.current.srcObject = cameraStreamRef.current;
+      localVideoRef.current.play().catch(() => {});
+    } else {
+      localVideoRef.current.srcObject = null;
+    }
+  }, [isCameraOn, partnerCameraOn]);
+
   /** Выключить и включить свой микрофон. */
   const toggleMute = () => {
     const stream = localStreamRef.current;
@@ -580,6 +598,20 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
   const handleSignal = async (signalMessage) => {
     console.log('Received signal message:', JSON.stringify(signalMessage, null, 2));
 
+    /*
+     * Своё к себе не возвращаем.
+     *
+     * Комната рассылает сигнал всем, включая отправителя. Пока ответы и
+     * предложения посреди разговора разбирал только звонящий, эхо никому
+     * не мешало. Теперь их разбирают обе стороны — и первое же своё
+     * предложение возвращалось к себе же: подпись под ним своя, а
+     * проверяется она ключом собеседника, не сходится, и страж обрывал
+     * разговор. Телефон такие сообщения отбрасывал всегда.
+     */
+    if (signalMessage.from != null && String(signalMessage.from) === String(currentUserId)) {
+      return;
+    }
+
     if (signalMessage.signal) {
       console.log('Processing signal type:', signalMessage.signal.type);
 
@@ -640,8 +672,24 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
           }
         } else if (signalMessage.signal.type === 'answer') {
           console.log('Handling answer...');
-          if (isCaller && peerConnectionRef.current) {
-            if (peerConnectionRef.current.remoteDescription) {
+          const pcО = peerConnectionRef.current;
+          const ждёмОтвет = pcО && pcО.signalingState === 'have-local-offer';
+          if (ждёмОтвет && !isCaller) {
+            /*
+             * Ответ на наше предложение посреди разговора.
+             *
+             * Прежде ответы разбирал только звонящий: включив камеру,
+             * принявший звонок слал предложение, собеседник на него
+             * отвечал — а ответ выбрасывался. Соединение оставалось с
+             * нашим предложением на руках и через пару секунд рвалось,
+             * звонок завершался. Беда — зеркало той, что была на
+             * телефоне: там не принимали предложение, здесь — ответ.
+             */
+            if (verifySdp(signalMessage.signal.sdp, signalMessage.signal.signature, signalMessage.signal.deviceId)) return;
+            await pcО.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: signalMessage.signal.sdp }));
+            console.log('Ответ на предложение посреди разговора принят');
+          } else if (isCaller && peerConnectionRef.current) {
+            if (peerConnectionRef.current.remoteDescription && !ждёмОтвет) {
               console.log('Cannot set remote description: Already has a remote description.');
             } else {
               console.log('Setting remote answer SDP:', signalMessage.signal.sdp);
