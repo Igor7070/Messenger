@@ -110,6 +110,33 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
    * ложится между полей.
    */
   const [stageSize, setStageSize] = useState(null);
+  /**
+   * Есть ли вообще камера у этого устройства.
+   *
+   * Прежде о её отсутствии человек узнавал только после нажатия — из
+   * сообщения «камеру включить не вышло». Спрашиваем список устройств
+   * заранее и, если камер нет, кнопку показываем приглушённой с
+   * подсказкой.
+   */
+  const [hasCamera, setHasCamera] = useState(true);
+
+  useEffect(() => {
+    let жив = true;
+    const спросить = async () => {
+      try {
+        const устройства = await navigator.mediaDevices.enumerateDevices();
+        if (жив) setHasCamera(устройства.some((у) => у.kind === 'videoinput'));
+      } catch {
+        /* не ответили — считаем, что камера есть, и покажем ошибку по нажатию */
+      }
+    };
+    спросить();
+    navigator.mediaDevices.addEventListener?.('devicechange', спросить);
+    return () => {
+      жив = false;
+      navigator.mediaDevices.removeEventListener?.('devicechange', спросить);
+    };
+  }, []);
   const [localAspect, setLocalAspect] = useState(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -1148,9 +1175,14 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
       <div className="voice-call-controls">
         <button
           type="button"
-          className={`voice-call-round${isCameraOn ? ' is-on' : ''}`}
+          className={`voice-call-round${isCameraOn ? ' is-on' : ''}${hasCamera ? '' : ' is-away'}`}
           onClick={toggleCamera}
-          title={isCameraOn ? 'Turn the camera off' : 'Turn the camera on'}
+          disabled={!hasCamera}
+          title={
+            hasCamera
+              ? (isCameraOn ? 'Turn the camera off' : 'Turn the camera on')
+              : 'No camera on this computer'
+          }
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 7h9a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />

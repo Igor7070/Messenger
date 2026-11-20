@@ -725,3 +725,16 @@ body.has-call-strip #root > .app > * { max-height: calc(100vh - 42px); }
   min-height: 240px;
   min-width: 300px;
 }
+
+
+/* Камеры в этом устройстве нет — кнопка приглушена, а не ругается
+   после нажатия */
+.voice-call-round.is-away {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.voice-call-round.is-away:hover {
+  background: rgba(148, 163, 184, 0.16);
+  transform: none;
+}
