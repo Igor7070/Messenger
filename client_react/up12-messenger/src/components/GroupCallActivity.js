@@ -1619,19 +1619,14 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
                 playsInline
                 className="group-call-video"
               />
-              {user.id === Number(currentUserId) && (
-                <button
-                  className="group-call-camera-toggle"
-                  onClick={toggleCamera}
-                  style={{ background: isCameraOn ? '#4CAF50' : 'red' }} // [ИЗМЕНЕНО]: Зелёный если включено, красный если выключено
-                >
-                  <span role="img" aria-label={isCameraOn ? 'camera-on' : 'camera-off'}>
-                    {isCameraOn ? '📷' : '🚫📷'}
-                  </span>
-                </button>
-              )}
-              {user.id !== Number(currentUserId) && !videoRefs.current.get(String(user.id))?.srcObject && (
-                <div className="group-call-video-placeholder">No Video</div>
+              {!(user.id === Number(currentUserId) ? isCameraOn : videoRefs.current.get(String(user.id))?.srcObject) && (
+                /* Камера выключена — показываем лицо или букву, а не чёрный
+                   прямоугольник со словами «No Video» */
+                <div className="group-call-video-placeholder">
+                  {user.avatar
+                    ? <img src={`https://unlimitedpossibilities12.org${user.avatar}`} alt="" />
+                    : <span>{(user.username || '?').charAt(0).toUpperCase()}</span>}
+                </div>
               )}
             </div>
           </div>
@@ -1977,15 +1972,22 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
       <div className="voice-call-controls">
         <button
           type="button"
-          className={`voice-call-round${isVideoMode ? ' is-on' : ''}`}
-          onClick={toggleMode}
-          title={isVideoMode ? 'Turn the camera off' : 'Turn the camera on'}
+          className={`voice-call-round${isCameraOn ? ' is-on' : ''}`}
+          onClick={() => {
+            // Кнопка включает камеру, а вид переключается сам: прежде она
+            // лишь меняла список имён на плитки, и человек, нажав её,
+            // оставался без картинки, не понимая, что камера не включена
+            if (!isCameraOn) setIsVideoMode(true);
+            else if (cameraOnUsers.length === 0) setIsVideoMode(false);
+            toggleCamera();
+          }}
+          title={isCameraOn ? 'Turn the camera off' : 'Turn the camera on'}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 7h9a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
             <path d="M15 11.5 21 8v8l-6-3.5Z" />
           </svg>
-          <small>{isVideoMode ? 'Video off' : 'Video'}</small>
+          <small>{isCameraOn ? 'Video off' : 'Video'}</small>
         </button>
         <button
           type="button"

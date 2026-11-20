@@ -498,3 +498,101 @@
 /* Тот же порядок слоёв, что и у звонка вдвоём */
 .group-call-container { z-index: 1200; }
 .group-call-code-backdrop { z-index: 1350; }
+
+
+/* ---------------------------------------------------------------------
+   Плитки участников в окне.
+   Прежде это была страница во весь экран, и плитки занимали сколько
+   хотели: в окне высокая картинка с телефона вылезала за край, и внутри
+   окна появлялась своя полоса прокрутки.
+   --------------------------------------------------------------------- */
+.group-call-container.video-mode .group-call-participants { overflow: hidden; }
+
+.group-call-container.video-mode .group-call-video-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 10px;
+  align-items: stretch;
+  height: 52vh;
+  overflow: hidden;
+}
+
+.group-call-container.video-mode .group-call-video-container {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.group-call-container.video-mode .group-call-video-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0b1220;
+}
+
+.group-call-container.video-mode .group-call-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Камера выключена — лицо или буква посреди плитки, а не чёрный
+   прямоугольник со словами «No Video» */
+.group-call-video-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0b1220;
+  color: #94a3b8;
+  font-size: 34px;
+  font-weight: 600;
+}
+
+.group-call-video-placeholder img {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Выбор формы плиток — тихой строкой */
+.group-call-tile-mode-toggle {
+  background: rgba(148, 163, 184, 0.14);
+  border: none;
+  color: #cbd5e1;
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+
+/* Формат кадра плитке в окне не навязываем: он приходит строкой в самой
+   разметке (9/16 с телефона), и плитка распирала сетку изнутри. Высоту
+   делит поровну сетка, а картинка заполняет её по короткой стороне. */
+.group-call-container.video-mode .group-call-video-wrapper {
+  aspect-ratio: auto !important;
+}
+
+
+/* Плитки делят ширину поровну и целиком помещаются в высоту окна.
+   Сеткой из колонок строка подстраивалась под содержимое и вылезала
+   за край: высокая картинка с телефона тянула её вниз. */
+.group-call-container.video-mode .group-call-video-grid {
+  display: flex;
+  gap: 10px;
+  height: 52vh;
+  overflow: hidden;
+}
+
+.group-call-container.video-mode .group-call-video-container {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+}
