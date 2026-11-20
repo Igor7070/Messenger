@@ -646,3 +646,28 @@ body.has-call-strip #root > .app > * { max-height: calc(100vh - 42px); }
   bottom: 22px;
   justify-content: center;
 }
+
+
+/* Голосовой разговор: лицо начинается сразу под шапкой.
+   Окно отступало на 64px своей рамкой, затем ещё на 56px блоком с
+   лицом — между шапкой и снимком пустовало полторы сотни точек. */
+.voice-call-window { padding-top: 44px; }
+.voice-call-window .voice-call-person { margin-top: 10px; }
+.voice-call-levels { margin-top: 12px; }
+
+
+/* Окно по содержимому: в голосовом разговоре внутри лицо, имя, время и
+   три кнопки — тянуть окно на шестьсот точек незачем, под полоской
+   голоса оставалась пустая треть. С картинкой высота нужна прежняя. */
+.voice-call-window {
+  height: auto;
+  max-height: min(620px, calc(100vh - 48px));
+  padding-bottom: 26px;
+}
+
+.voice-call-window .voice-call-controls { margin-top: 20px; }
+
+.voice-call-window:has(.voice-call-stage) {
+  height: min(620px, calc(100vh - 48px));
+  padding-bottom: 0;
+}
