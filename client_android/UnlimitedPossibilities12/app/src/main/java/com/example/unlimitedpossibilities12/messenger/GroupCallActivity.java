@@ -1899,7 +1899,14 @@ public class GroupCallActivity extends AppCompatActivity {
         // Отправка сигнала завершения всем участникам
         if (stompClient != null && stompClient.isConnected()) {
             for (User user : participants) {
-                if (user.getId() != initiatorId) {
+                // Всем, кроме себя.
+                //
+                // Прежде здесь стояло «всем, кроме заводившего звонок», и это
+                // было верно только для него самого. Уходил кто-то другой —
+                // и сообщение уходило ему же в руки, а заводившему не
+                // доставалось вовсе: он так и сидел в разговоре с человеком,
+                // который уже положил трубку.
+                if (!String.valueOf(user.getId()).equals(currentUserId)) {
                     sendSignal(createSignalJson("endCall", null, String.valueOf(user.getId())));
                 }
             }

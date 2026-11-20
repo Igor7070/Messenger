@@ -1333,9 +1333,19 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
             break;
 
           case 'endCall':
-            if (!offerReceived.current.has(currentFrom)) {
-              console.log(`Ignoring endCall from ${currentFrom} as no offer has been received yet`);
-              continue; // Игнорируем endCall, если offer не получен
+            /*
+             * Пропускаем только того, с кем так и не связались.
+             *
+             * Прежде мерой знакомства было полученное от него предложение
+             * соединиться — но заводящий звонок предложения не получает, он
+             * их сам рассылает. Поэтому его собеседник клал трубку, а у
+             * него разговор продолжался с пустой комнатой, пока он не
+             * догадается нажать отбой. Считаем знакомым и того, с кем уже
+             * есть соединение.
+             */
+            if (!offerReceived.current.has(currentFrom) && !peerConnections.current.has(currentFrom)) {
+              console.log(`Ignoring endCall from ${currentFrom}: no connection with them`);
+              continue;
             }
             if (to && to !== String(currentUserId)) {
               console.log('Ignoring endCall signal not addressed to current user:', { from: currentFrom, to, currentUserId });
