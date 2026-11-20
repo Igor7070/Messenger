@@ -332,9 +332,8 @@ public class GroupCallActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     localVideoView.requestLayout();
                     localVideoView.invalidate();
-                    toggleCameraButton.setVisibility(View.VISIBLE);
-                    toggleCameraButton.bringToFront();
-                    Log.d(TAG, "localVideoView: Surface created, UI updated, toggleCameraButton visible");
+                    toggleCameraButton.setVisibility(View.GONE);
+                                        Log.d(TAG, "localVideoView: Surface created, UI updated, toggleCameraButton visible");
                 });
             }
 
@@ -342,9 +341,8 @@ public class GroupCallActivity extends AppCompatActivity {
             public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
                 Log.d(TAG, "localVideoView: Surface changed, format=" + format + ", width=" + width + ", height=" + height);
                 runOnUiThread(() -> {
-                    toggleCameraButton.setVisibility(View.VISIBLE);
-                    toggleCameraButton.bringToFront();
-                });
+                    toggleCameraButton.setVisibility(View.GONE);
+                                    });
             }
 
             @Override
@@ -352,9 +350,8 @@ public class GroupCallActivity extends AppCompatActivity {
                 Log.d(TAG, "localVideoView: Surface destroyed");
                 isSurfaceReady.set(false);
                 runOnUiThread(() -> {
-                    toggleCameraButton.setVisibility(View.VISIBLE);
-                    toggleCameraButton.bringToFront();
-                });
+                    toggleCameraButton.setVisibility(View.GONE);
+                                    });
             }
         });
 
@@ -365,23 +362,31 @@ public class GroupCallActivity extends AppCompatActivity {
         localVideoView.setZOrderMediaOverlay(true); // Оставляем только это
         localVideoView.setVisibility(View.VISIBLE);
         localNoVideoText.setVisibility(View.VISIBLE);
-        toggleCameraButton.setVisibility(View.VISIBLE);
-        toggleCameraButton.bringToFront();
-        Log.d(TAG, "Initialized localVideoView, surface valid=" + localVideoView.getHolder().getSurface().isValid());
+        toggleCameraButton.setVisibility(View.GONE);
+                Log.d(TAG, "Initialized localVideoView, surface valid=" + localVideoView.getHolder().getSurface().isValid());
 
         localVideoView.post(() -> {
             Log.d(TAG, "localVideoView size: width=" + localVideoView.getWidth() + ", height=" + localVideoView.getHeight());
             Log.d(TAG, "localVideoView surface state: isValid=" + localVideoView.getHolder().getSurface().isValid());
-            toggleCameraButton.setVisibility(View.VISIBLE);
-            toggleCameraButton.bringToFront();
-        });
+            toggleCameraButton.setVisibility(View.GONE);
+                    });
 
         toggleCameraButton.setOnClickListener(v -> toggleCamera());
+        // Прячем: камера включается снизу, рядом с микрофоном и трубкой
+        toggleCameraButton.setVisibility(View.GONE);
         Log.d(TAG, "Initialized toggleCameraButton");
 
-        // Обработчик кнопки переключения режима
+        /*
+         * Нижняя кнопка «Camera» включает камеру, а не просто меняет вид.
+         *
+         * Прежде она лишь переключала список имён на плитки, а камеру
+         * включала маленькая кнопка поверх собственной плитки — и увидеть
+         * её можно было только после переключения. Человек нажимал
+         * «Camera», видел свою плитку чёрной с надписью «Camera is off» и
+         * решал, что кнопка сломана.
+         */
         ImageView toggleModeButton = findViewById(R.id.toggle_mode_button);
-        toggleModeButton.setOnClickListener(v -> toggleMode());
+        toggleModeButton.setOnClickListener(v -> toggleCameraFromBar());
 
         // Форма плиток участников: восстанавливаем выбор с прошлого звонка
         // и вешаем переключение по кругу Auto → Wide → Tall.
@@ -2088,6 +2093,18 @@ public class GroupCallActivity extends AppCompatActivity {
     }
 
     // [ДОБАВЛЕНО]: Переключение между аудио- и видеовкладками
+    /** Камера с нижнего ряда: вид переключается сам. */
+    private void toggleCameraFromBar() {
+        if (!isCameraOn) {
+            if (!isVideoMode) toggleMode();      // показать плитки
+            toggleCamera();                      // и включить камеру
+        } else {
+            toggleCamera();                      // выключить камеру
+            // Никто больше не показывает картинку — возвращаемся к именам
+            if (isVideoMode && remoteVideoTracks.isEmpty()) toggleMode();
+        }
+    }
+
     private void toggleMode() {
         isVideoMode = !isVideoMode;
         updateTileModeButton();
@@ -2148,9 +2165,8 @@ public class GroupCallActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 localVideoView.setVisibility(View.VISIBLE);
                 localNoVideoText.setVisibility(View.VISIBLE);
-                toggleCameraButton.setVisibility(View.VISIBLE);
-                toggleCameraButton.bringToFront();
-                localVideoView.requestLayout();
+                toggleCameraButton.setVisibility(View.GONE);
+                                localVideoView.requestLayout();
                 localVideoView.invalidate();
                 Log.d(TAG, "toggleCamera: Set localVideoView and toggleCameraButton to VISIBLE before camera init");
             });
@@ -2186,9 +2202,8 @@ public class GroupCallActivity extends AppCompatActivity {
                             localVideoView.setVisibility(View.VISIBLE);
                             localVideoView.clearImage();
                             localNoVideoText.setVisibility(View.VISIBLE);
-                            toggleCameraButton.setVisibility(View.VISIBLE);
-                            toggleCameraButton.bringToFront();
-                        });
+                            toggleCameraButton.setVisibility(View.GONE);
+                                                    });
                         return;
                     }
 
@@ -2202,9 +2217,8 @@ public class GroupCallActivity extends AppCompatActivity {
                             localVideoView.setVisibility(View.VISIBLE);
                             localVideoView.clearImage();
                             localNoVideoText.setVisibility(View.VISIBLE);
-                            toggleCameraButton.setVisibility(View.VISIBLE);
-                            toggleCameraButton.bringToFront();
-                        });
+                            toggleCameraButton.setVisibility(View.GONE);
+                                                    });
                         return;
                     }
                     String cameraName = null;
@@ -2230,9 +2244,8 @@ public class GroupCallActivity extends AppCompatActivity {
                                 localNoVideoText.setVisibility(View.VISIBLE);
                                 toggleCameraButton.setImageResource(R.drawable.ic_video_call);
                                 toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
-                                toggleCameraButton.setVisibility(View.VISIBLE);
-                                toggleCameraButton.bringToFront();
-                            });
+                                toggleCameraButton.setVisibility(View.GONE);
+                                                            });
                         }
                         @Override
                         public void onCameraDisconnected() {
@@ -2243,9 +2256,8 @@ public class GroupCallActivity extends AppCompatActivity {
                                 localNoVideoText.setVisibility(View.VISIBLE);
                                 toggleCameraButton.setImageResource(R.drawable.ic_video_call);
                                 toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
-                                toggleCameraButton.setVisibility(View.VISIBLE);
-                                toggleCameraButton.bringToFront();
-                            });
+                                toggleCameraButton.setVisibility(View.GONE);
+                                                            });
                         }
                         @Override
                         public void onCameraFreezed(String errorDescription) {
@@ -2256,9 +2268,8 @@ public class GroupCallActivity extends AppCompatActivity {
                                 localNoVideoText.setVisibility(View.VISIBLE);
                                 toggleCameraButton.setImageResource(R.drawable.ic_video_call);
                                 toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
-                                toggleCameraButton.setVisibility(View.VISIBLE);
-                                toggleCameraButton.bringToFront();
-                            });
+                                toggleCameraButton.setVisibility(View.GONE);
+                                                            });
                         }
                         @Override
                         public void onCameraOpening(String cameraName) {
@@ -2274,9 +2285,8 @@ public class GroupCallActivity extends AppCompatActivity {
                                 localNoVideoText.setVisibility(View.GONE);
                                 localVideoView.requestLayout();
                                 localVideoView.invalidate();
-                                toggleCameraButton.setVisibility(View.VISIBLE);
-                                toggleCameraButton.bringToFront();
-                                // Минимальная корректировка позиции кнопки
+                                toggleCameraButton.setVisibility(View.GONE);
+                                                                // Минимальная корректировка позиции кнопки
                                 toggleCameraButton.post(() -> {
                                     FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) toggleCameraButton.getLayoutParams();
                                     params.gravity = android.view.Gravity.BOTTOM | android.view.Gravity.END;
@@ -2295,9 +2305,8 @@ public class GroupCallActivity extends AppCompatActivity {
                                 localNoVideoText.setVisibility(View.VISIBLE);
                                 toggleCameraButton.setImageResource(R.drawable.ic_video_call);
                                 toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
-                                toggleCameraButton.setVisibility(View.VISIBLE);
-                                toggleCameraButton.bringToFront();
-                            });
+                                toggleCameraButton.setVisibility(View.GONE);
+                                                            });
                         }
                     });
 
@@ -2309,9 +2318,8 @@ public class GroupCallActivity extends AppCompatActivity {
                             localVideoView.setVisibility(View.VISIBLE);
                             localVideoView.clearImage();
                             localNoVideoText.setVisibility(View.VISIBLE);
-                            toggleCameraButton.setVisibility(View.VISIBLE);
-                            toggleCameraButton.bringToFront();
-                        });
+                            toggleCameraButton.setVisibility(View.GONE);
+                                                    });
                         return;
                     }
                     surfaceTextureHelper.setTextureSize(1280, 720);
@@ -2326,9 +2334,8 @@ public class GroupCallActivity extends AppCompatActivity {
                             localVideoView.setVisibility(View.VISIBLE);
                             localVideoView.clearImage();
                             localNoVideoText.setVisibility(View.VISIBLE);
-                            toggleCameraButton.setVisibility(View.VISIBLE);
-                            toggleCameraButton.bringToFront();
-                        });
+                            toggleCameraButton.setVisibility(View.GONE);
+                                                    });
                         return;
                     }
                     Log.d(TAG, "Created VideoSource: not null");
@@ -2395,9 +2402,8 @@ public class GroupCallActivity extends AppCompatActivity {
                                         localVideoView.setVisibility(View.VISIBLE);
                                         localVideoView.clearImage();
                                         localNoVideoText.setVisibility(View.VISIBLE);
-                                        toggleCameraButton.setVisibility(View.VISIBLE);
-                                        toggleCameraButton.bringToFront();
-                                    });
+                                        toggleCameraButton.setVisibility(View.GONE);
+                                                                            });
                                 }
                                 return;
                             }
@@ -2415,9 +2421,8 @@ public class GroupCallActivity extends AppCompatActivity {
                                             runOnUiThread(() -> {
                                                 localVideoView.setVisibility(View.VISIBLE);
                                                 localNoVideoText.setVisibility(View.GONE);
-                                                toggleCameraButton.setVisibility(View.VISIBLE);
-                                                toggleCameraButton.bringToFront();
-                                            });
+                                                toggleCameraButton.setVisibility(View.GONE);
+                                                                                            });
                                         }
                                         @Override
                                         public void onFrameResolutionChanged(int videoWidth, int videoHeight, int rotation) {
@@ -2430,9 +2435,8 @@ public class GroupCallActivity extends AppCompatActivity {
                                     localVideoView.setZOrderMediaOverlay(true);
                                     localVideoView.setVisibility(View.VISIBLE);
                                     localNoVideoText.setVisibility(View.GONE);
-                                    toggleCameraButton.setVisibility(View.VISIBLE);
-                                    toggleCameraButton.bringToFront();
-                                    Log.d(TAG, "Reinitialized localVideoView on attempt " + attempt + ", surface valid=" + localVideoView.getHolder().getSurface().isValid());
+                                    toggleCameraButton.setVisibility(View.GONE);
+                                                                        Log.d(TAG, "Reinitialized localVideoView on attempt " + attempt + ", surface valid=" + localVideoView.getHolder().getSurface().isValid());
 
                                     // Привязываем localVideoTrack, если готов
                                     if (isVideoTrackReady.get() && localVideoView.getHolder().getSurface().isValid()) {
@@ -2477,9 +2481,8 @@ public class GroupCallActivity extends AppCompatActivity {
                         toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF4444));
                         localVideoView.setVisibility(View.VISIBLE);
                         localNoVideoText.setVisibility(View.GONE);
-                        toggleCameraButton.setVisibility(View.VISIBLE);
-                        toggleCameraButton.bringToFront();
-                        Log.d(TAG, "UI updated: localVideoView visible, localNoVideoText gone, toggleCameraButton visible");
+                        toggleCameraButton.setVisibility(View.GONE);
+                                                Log.d(TAG, "UI updated: localVideoView visible, localNoVideoText gone, toggleCameraButton visible");
                     });
 
                     // Настройка MediaConstraints для согласования параметров
@@ -2549,9 +2552,8 @@ public class GroupCallActivity extends AppCompatActivity {
                         localNoVideoText.setVisibility(View.VISIBLE);
                         toggleCameraButton.setImageResource(R.drawable.ic_video_call);
                         toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
-                        toggleCameraButton.setVisibility(View.VISIBLE);
-                        toggleCameraButton.bringToFront();
-                    });
+                        toggleCameraButton.setVisibility(View.GONE);
+                                            });
                 }
             });
         } else {
@@ -2569,9 +2571,8 @@ public class GroupCallActivity extends AppCompatActivity {
                     localNoVideoText.setVisibility(View.VISIBLE);
                     toggleCameraButton.setImageResource(R.drawable.ic_video_call);
                     toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
-                    toggleCameraButton.setVisibility(View.VISIBLE);
-                    toggleCameraButton.bringToFront();
-                    localVideoView.requestLayout();
+                    toggleCameraButton.setVisibility(View.GONE);
+                                        localVideoView.requestLayout();
                     localVideoView.invalidate();
                     Log.d(TAG, "UI updated: localVideoView visible (black), localNoVideoText visible, toggleCameraButton visible");
                 });
