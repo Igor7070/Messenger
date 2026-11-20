@@ -436,3 +436,60 @@
   color: #94a3b8;
   font-variant-numeric: tabular-nums;
 }
+
+
+/* ---------------------------------------------------------------------
+   Групповой разговор — тоже окно поверх переписки, как звонок вдвоём.
+   Прежде он занимал страницу целиком: уйти в чат значило оборвать его.
+   --------------------------------------------------------------------- */
+.group-call-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 32px 80px rgba(2, 6, 23, 0.6);
+  padding-top: 56px;
+  z-index: 55;
+}
+
+.group-call-container.video-mode {
+  width: min(1040px, calc(100vw - 32px));
+}
+
+.group-call-container .voice-call-bar { border-radius: 18px 18px 0 0; }
+
+
+/* Время разговора — одной строкой под шапкой */
+.group-call-container .group-call-info { margin: 0 0 6px; }
+.group-call-container .call-timer {
+  font-size: 20px;
+  color: #cbd5e1;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+
+/* Полоска голоса стоит посередине, как в звонке вдвоём */
+.group-call-container .voice-call-levels { justify-content: center; margin: 14px auto 4px; }
+.group-call-container .voice-call-controls { margin: 10px 0 18px; justify-content: center; }
+
+
+/* Окно по содержимому: прежние правила тянули его на 80vh — это было
+   верно для страницы во весь экран, а окну оставляло пустое поле под
+   кнопкой. В видео-режиме высота нужна: там плитки участников. */
+.group-call-container {
+  min-height: 0;
+  height: auto;
+}
+
+.group-call-container.video-mode {
+  height: min(80vh, calc(100vh - 48px));
+}
+
+
+.group-call-container.is-minimized { display: none; }

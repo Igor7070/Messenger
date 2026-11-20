@@ -780,8 +780,12 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
   // окна, и сверить разговор можно, ничего не открывая
   const shortCode = (fingerprintCode || '').split(' ').filter(Boolean).slice(0, 4).join(' ');
 
-  if (minimized) {
-    return (
+  /*
+   * Свёрнутый разговор — полоска сверху, а окно прячется, но остаётся:
+   * вместе с ним со страницы исчезали бы звуковые узлы, а с ними и голос
+   * собеседника.
+   */
+  const strip = minimized && (
       <div className="voice-call-strip" onClick={onMinimize} role="presentation">
         <span className="voice-call-strip-dot" />
         <strong>{partnerName}</strong>
@@ -798,11 +802,12 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
           End call
         </button>
       </div>
-    );
-  }
+  );
 
   return (
-    <div className="voice-call-window">
+    <>
+    {strip}
+    <div className={`voice-call-window${minimized ? ' is-minimized' : ''}`}>
       <div className="voice-call-bar">
         <button
           type="button"
@@ -897,6 +902,7 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
         </button>
       </div>
     </div>
+    </>
   );
 };
 

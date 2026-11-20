@@ -459,3 +459,8 @@
 /* Пока разговор свёрнут, приложение сдвинуто на высоту полоски */
 body.has-call-strip #root > .app { padding-top: 42px; }
 body.has-call-strip #root > .app > * { max-height: calc(100vh - 42px); }
+
+
+/* Свёрнутое окно остаётся в странице, но не показывается: внутри него
+   живут звуковые узлы разговора */
+.voice-call-window.is-minimized { display: none; }

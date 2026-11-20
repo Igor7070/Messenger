@@ -6,6 +6,7 @@ import Calls from './Calls';
 import UserProfile from './UserProfile';
 import IncomingCallNotification from './IncomingCallNotification';
 import VoiceCall from './VoiceCall';
+import GroupCallActivity from './GroupCallActivity';
 import { useCallWebSocket } from '../context/CallWebSocketContext';
 import '../styles/tokens.css';
 import '../styles/ChatShell.css';
@@ -103,6 +104,18 @@ const ChatShell = () => {
       {profileRoute && <UserProfile onClose={() => navigate('/', { replace: true })} />}
       {/* Разговор идёт поверх переписки и переживает переход в другой чат:
           прежде он был страницей, и уйти с неё значило оборвать звонок */}
+      {activeCall && activeCall.type === 'group' && (
+        <GroupCallActivity
+          key={activeCall.key}
+          call={activeCall}
+          minimized={callMinimized}
+          onMinimize={() => setCallMinimized(!callMinimized)}
+          onClose={() => {
+            closeCall();
+            if (location.pathname.startsWith('/group-call')) navigate('/', { replace: true });
+          }}
+        />
+      )}
       {activeCall && activeCall.type === 'voice' && (
         <VoiceCall
           key={activeCall.roomId}

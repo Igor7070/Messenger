@@ -14,12 +14,14 @@ import { useCallWebSocket } from '../context/CallWebSocketContext';
 const CallOpener = ({ type = 'voice' }) => {
   const { roomId } = useParams();
   const location = useLocation();
+  // У группового звонка номера комнаты в адресе нет: его заводит сам
+  // звонящий, а приглашённым он приходит сигналом
+  const key = roomId || (location.state && location.state.roomId) || type;
   const navigate = useNavigate();
   const { activeCall, openCall } = useCallWebSocket();
 
   useEffect(() => {
-    if (!roomId) return;
-    if (activeCall && activeCall.roomId === roomId) return;
+    if (activeCall && activeCall.key === key) return;
     // Без сведений о звонке заводить нечего: они передаются переходом и
     // перезагрузку не переживают. Прежде на этом месте открывалось окно
     // давно законченного разговора — и так при каждой перезагрузке, пока
@@ -28,9 +30,9 @@ const CallOpener = ({ type = 'voice' }) => {
       navigate('/', { replace: true });
       return;
     }
-    openCall({ type, roomId, ...location.state });
+    openCall({ type, key, roomId, ...location.state });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId]);
+  }, [key]);
 
   return null;
 };

@@ -34,10 +34,12 @@ const securityColor = (state) => {
 
 Chart.register(...registerables);
 
-const GroupCallActivity = () => {
+const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { state } = location;
+  // Разговор живёт в каркасе и получает своё свойствами; переход по
+  // адресу остался запасным путём
+  const state = Object.keys(call).length ? call : location.state;
   const { participants = [], initiator = {}, roomId: initialRoomId } = state || {};
   const isInitiator = Number(localStorage.getItem('userId')) === initiator.id;
   const currentUserId = localStorage.getItem('userId');
@@ -54,6 +56,12 @@ const GroupCallActivity = () => {
   const guards = useRef(new Map());
   // Чей код сверки сейчас открыт
   const [codeFor, setCodeFor] = useState(null);
+
+  /** Свёрнутый разговор занимает полоску — приложение двигается под неё. */
+  useEffect(() => {
+    document.body.classList.toggle('has-call-strip', Boolean(minimized));
+    return () => document.body.classList.remove('has-call-strip');
+  }, [minimized]);
   const [securityByUser, setSecurityByUser] = useState({});
   const localAudioRef = useRef(null);
   const remoteAudioRefs = useRef(new Map());
@@ -1499,7 +1507,7 @@ const GroupCallActivity = () => {
     // NEW: Вызываем saveCall перед навигацией
     saveCall();
 
-    navigate('/');
+    if (onClose) onClose(); else navigate('/');
   };
 
   // [ДОБАВЛЕНО]: Функция для переключения между аудио- и видео-режимами
@@ -1764,13 +1772,54 @@ const GroupCallActivity = () => {
     }
   };
 
+  // Пока разговор свёрнут, приложение сдвинуто на высоту полоски
+  // (эффект объявлен выше любых возвратов, иначе порядок хуков плывёт)
+
+  /*
+   * Свёрнутый разговор — полоска сверху, а окно прячется, но остаётся.
+   *
+   * Сначала я рисовал вместо окна одну полоску — и звуковые узлы
+   * разговора исчезали из страницы вместе с ним. Сторож, который ждёт
+   * появления своего звукового элемента и через пять секунд решает, что
+   * звонок не задался, находил пустоту и клал трубку: свернул разговор —
+   * он и оборвался. Поэтому окно остаётся на месте, просто невидимое.
+   */
+  const others = callParticipants.filter((u) => String(u.id) !== String(currentUserId));
+
   return (
-    <div className={`group-call-container${isVideoMode ? ' video-mode' : ''}`}>
-      <h1 className="group-call-title">Group Call with {initiator.username}</h1>
+    <>
+    {minimized && (
+      <div className="voice-call-strip" onClick={onMinimize} role="presentation">
+        <span className="voice-call-strip-dot" />
+        <strong>{others.map((u) => u.username).join(', ') || 'Group call'}</strong>
+        <span className="voice-call-strip-time">{callDuration}</span>
+        <button
+          type="button"
+          className="voice-call-strip-end"
+          onClick={(event) => { event.stopPropagation(); endCall(); }}
+        >
+          End call
+        </button>
+      </div>
+    )}
+    <div className={`group-call-container${isVideoMode ? ' video-mode' : ''}${minimized ? ' is-minimized' : ''}`}>
+      {/* Шапка окна: разговор идёт поверх переписки и сворачивается в
+          полоску — прежде он занимал страницу целиком, и пока говоришь,
+          приложение было недоступно */}
+      <div className="voice-call-bar">
+        <span className="voice-call-bar-title">Group call with {initiator.username}</span>
+        <button type="button" className="voice-call-bar-button" onClick={onMinimize} title="Minimise">
+          &#8211;
+        </button>
+        <button type="button" className="voice-call-bar-button is-close" onClick={endCall} title="End the call">
+          &#10005;
+        </button>
+      </div>
+      {/* Имя разговора стоит в шапке окна, а время — одной строкой.
+          Прежде заголовок был написан дважды, а под ним шли три строки:
+          сколько идёт, когда начался и который сейчас час */}
       <div className="group-call-info">
-        <p className="call-timer">Duration: {callDuration}</p>
-        <p className="call-start-time">Start: {startTime}</p>
-        <p className="call-current-time">Current: {currentTime}</p>
+        <p className="call-timer" title={`Started at ${startTime}`}>{callDuration}</p>
       </div>
       <div className="group-call-participants">
         <div className="group-call-participants-header">
@@ -1835,18 +1884,13 @@ const GroupCallActivity = () => {
                 </li>
               ))}
             </ul>
-            <div className="group-call-chart-container">
-              <Line
-                data={chartData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  scales: {
-                    x: { title: { display: true, text: 'Time' } },
-                    y: { title: { display: true, text: 'Activity Level' } },
-                  },
-                }}
-              />
+            {/* Голос — живой полоской: на экране разговора важно видеть,
+                что человек говорит, а не измерять это по осям от нуля до
+                ста с отметкой времени под каждой секундой */}
+            <div className="voice-call-levels" aria-hidden="true">
+              {(chartData.datasets[0]?.data || []).slice(-28).map((value, index) => (
+                <span key={index} style={{ height: `${Math.max(3, Math.min(100, value))}%` }} />
+              ))}
             </div>
           </>
         )}
@@ -1885,10 +1929,16 @@ const GroupCallActivity = () => {
         </div>
       )}
       <audio id="local-audio" ref={localAudioRef} autoPlay muted />
-      <button className="group-call-end-button" onClick={endCall}>
-        End Call
-      </button>
+      <div className="voice-call-controls">
+        <button type="button" className="voice-call-round is-end" onClick={endCall} title="End the call">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 9c-2.6 0-5.1.5-7.3 1.5-.8.4-1.3 1.2-1.2 2.1l.2 1.8c.1.9.9 1.5 1.8 1.4l2.6-.4c.8-.1 1.4-.8 1.5-1.6l.2-1.4c1.5-.4 3-.4 4.5 0l.2 1.4c.1.8.7 1.5 1.5 1.6l2.6.4c.9.1 1.7-.5 1.8-1.4l.2-1.8c.1-.9-.4-1.7-1.2-2.1C17.1 9.5 14.6 9 12 9Z" />
+          </svg>
+          <small>End</small>
+        </button>
+      </div>
     </div>
+    </>
   );
 };
 
