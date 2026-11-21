@@ -304,6 +304,7 @@ public class GroupCallActivity extends AppCompatActivity {
         muteButton.setOnClickListener(v -> toggleMic());
         speakerButton.setOnClickListener(v -> toggleSpeaker());
         findViewById(R.id.minimize_button).setOnClickListener(v -> onBackPressed());
+        findViewById(R.id.add_button).setOnClickListener(v -> позватьЕщёОдного());
         paintButton(speakerButton, true);
         updateHeader();
         participantsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -841,10 +842,16 @@ public class GroupCallActivity extends AppCompatActivity {
                     recipientIds.put(String.valueOf(user.getId()));
                 }
             }
+            java.util.ArrayList<String> ужеТам = getIntent().getStringArrayListExtra("alreadyIn");
             groupCallRequest.put("recipientIds", recipientIds);
             Log.d(TAG, "Sending group call invite with roomId: " + roomId + ", to users: " + recipientIds.toString());
 
             for (User user : participants) {
+                // Кого уже перевели из разговора вдвоём — тому звонить не надо
+                if (ужеТам != null && ужеТам.contains(String.valueOf(user.getId()))) {
+                    Log.d(TAG, "Не зовём " + user.getId() + ": он переведён из разговора вдвоём");
+                    continue;
+                }
                 if (user.getId() != initiatorId) {
                     stompClient.send("/app/groupCall/" + user.getId(), groupCallRequest.toString())
                             .subscribeOn(io.reactivex.schedulers.Schedulers.io())
@@ -858,6 +865,111 @@ public class GroupCallActivity extends AppCompatActivity {
         } catch (JSONException e) {
             Log.e(TAG, "Error creating group call invite JSON: " + e.getMessage());
             Toast.makeText(this, "Failed to create call invite", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * Позвать ещё одного в идущий общий разговор.
+     *
+     * Здесь проще, чем в разговоре вдвоём: комната уже есть и все в ней.
+     * Новому человеку уходит обычное приглашение, он отвечает, и с каждым
+     * из нас у него складывается своё соединение со своим замком.
+     */
+    private void позватьЕщёОдного() {
+        if (roomId == null) {
+            Toast.makeText(this, "Разговор ещё не начался", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        GroupCallUserSelectionDialogFragment выбор = GroupCallUserSelectionDialogFragment.forChoosing(
+                Integer.parseInt(currentUserId),
+                "Add to the call",
+                "They will join this conversation",
+                "Add",
+                1);
+        выбор.setOnUsersChosenListener(выбранные -> {
+            if (выбранные == null || выбранные.isEmpty()) return;
+            User человек = выбранные.get(0);
+            for (User свой : participants) {
+                if (свой.getId() == человек.getId()) {
+                    Toast.makeText(this, "Он уже в разговоре", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+            if (participants.size() >= 5) {
+                Toast.makeText(this, "В разговоре может быть пятеро", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            participants.add(человек);
+            participantsAdapter.notifyItemInserted(participants.size() - 1);
+            updateHeader();
+
+            JSONObject приглашение = new JSONObject();
+            try {
+                приглашение.put("type", "group");
+                приглашение.put("initiatorId", String.valueOf(initiatorId));
+                приглашение.put("initiatorName", initiatorName);
+                приглашение.put("roomId", roomId);
+                JSONArray кому = new JSONArray();
+                for (User свой : participants) {
+                    if (свой.getId() != initiatorId) кому.put(String.valueOf(свой.getId()));
+                }
+                приглашение.put("recipientIds", кому);
+            } catch (JSONException e) {
+                Log.e(TAG, "Не собралось приглашение: " + e.getMessage());
+                return;
+            }
+            if (stompClient == null || !stompClient.isConnected()) {
+                Toast.makeText(this, "Нет связи с сервером звонков", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            stompClient.send("/app/groupCall/" + человек.getId(), приглашение.toString())
+                    .subscribeOn(io.reactivex.schedulers.Schedulers.io())
+                    .observeOn(io.reactivex.android.schedulers.AndroidSchedulers.mainThread())
+                    .subscribe(
+                            () -> Log.d(TAG, "Позвали " + человек.getId() + " в комнату " + roomId),
+                            ошибка -> Log.e(TAG, "Не позвали " + человек.getId() + ": " + ошибка.getMessage())
+                    );
+            Toast.makeText(this, человек.getUsername() + " приглашён", Toast.LENGTH_SHORT).show();
+        });
+        выбор.show(getSupportFragmentManager(), "AddToGroupCall");
+    }
+
+    /**
+     * Прекратить гудок.
+     *
+     * Прежде он смолкал, только когда отзовутся все приглашённые. Если
+     * одного перевели в разговор молча — такого «все готовы» не наступает
+     * никогда, и заводящий слышал гудок поверх уже идущего разговора.
+     * Разговор начался, как только отозвался первый.
+     */
+    /**
+     * Сколько собеседников осталось, кроме меня.
+     *
+     * Прежде считали весь список и клали трубку, когда в нём остаётся
+     * один. Но в этом списке у одних есть ты сам, у других нет, — и
+     * разговор втроём обрывался у всех, стоило выйти одному. Пока хоть
+     * кто-то остаётся, разговор продолжается.
+     */
+    private int осталосьСобеседников(String ушедший) {
+        int счёт = 0;
+        for (User свой : participants) {
+            String номер = String.valueOf(свой.getId());
+            if (номер.equals(String.valueOf(currentUserId))) continue;
+            if (ушедший != null && номер.equals(ушедший)) continue;
+            счёт++;
+        }
+        return счёт;
+    }
+
+    private void смолкнуть() {
+        if (ringtonePlayer == null) return;
+        try {
+            if (ringtonePlayer.isPlaying()) {
+                ringtonePlayer.pause();
+                ringtonePlayer.seekTo(0);
+            }
+        } catch (IllegalStateException ошибка) {
+            Log.w(TAG, "Гудок уже остановлен: " + ошибка.getMessage());
         }
     }
 
@@ -1106,6 +1218,7 @@ public class GroupCallActivity extends AppCompatActivity {
                 } else if (newState == PeerConnection.IceConnectionState.CONNECTED) {
                     Log.d(TAG, "ICE connection established for user " + userId);
                     readyUsers.add(userId); // [ДОБАВЛЕНО]: Добавляем пользователя в readyUsers
+                    runOnUiThread(GroupCallActivity.this::смолкнуть);
                     refreshParticipants();
                     runOnUiThread(() -> Toast.makeText(GroupCallActivity.this, "Connected to user " + userId, Toast.LENGTH_SHORT).show());
                 }
@@ -1356,12 +1469,9 @@ public class GroupCallActivity extends AppCompatActivity {
                                 .map(User::getUsername)
                                 .orElse("User " + fromId);
                         Log.d(TAG, "User " + userName + " is ready, readyUsers size: " + readyUsers.size() + ", expected: " + (participants.size() - 1));
+                        смолкнуть();
                         if (readyUsers.size() == participants.size() - 1) {
                             isWaiting = false;
-                            if (ringtonePlayer != null && ringtonePlayer.isPlaying()) {
-                                ringtonePlayer.pause();
-                                ringtonePlayer.seekTo(0);
-                            }
                             Log.d(TAG, "All participants ready, starting call");
                             checkPermissionsAndStartCall();
                         } else {
@@ -1398,7 +1508,7 @@ public class GroupCallActivity extends AppCompatActivity {
                         participants.removeIf(u -> String.valueOf(u.getId()).equals(fromId));
                         refreshParticipants();
                         refreshParticipants();
-                        if (participants.size() <= 1) {
+                        if (осталосьСобеседников(fromId) == 0) {
                             saveCall("rejected");
                             endCall();
                         }
@@ -1613,8 +1723,11 @@ public class GroupCallActivity extends AppCompatActivity {
                         peerConnection.close();
                         peerConnection.dispose();
                     }
-                    if (participants.size() <= 1) {
+                    if (осталосьСобеседников(fromId) == 0) {
+                        Log.d(TAG, "Собеседников не осталось — кладём трубку");
                         endCall();
+                    } else {
+                        Log.d(TAG, "Разговор продолжается, осталось: " + осталосьСобеседников(fromId));
                     }
                     break;
 

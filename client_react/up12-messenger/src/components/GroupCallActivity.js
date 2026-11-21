@@ -89,7 +89,6 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
    * его не видели, пока он не выключит и не включит её снова.
    */
   const remoteStreams = useRef(new Map());
-
   /** Свёрнутый разговор занимает полоску — приложение двигается под неё. */
   useEffect(() => {
     document.body.classList.toggle('has-call-strip', Boolean(minimized));
@@ -100,6 +99,48 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
   const remoteAudioRefs = useRef(new Map());
   const pendingCandidates = useRef(new Map());
   const [callParticipants, setCallParticipants] = useState(participants);
+
+  /**
+   * Позвать ещё одного в идущий разговор.
+   *
+   * Здесь проще, чем в разговоре вдвоём: комната уже есть и все в ней, —
+   * новому человеку уходит обычное приглашение, он отвечает, и с каждым
+   * из нас у него складывается своё соединение со своим замком.
+   */
+  const [peopleOpen, setPeopleOpen] = useState(false);
+  const [people, setPeople] = useState([]);
+
+  useEffect(() => {
+    if (!peopleOpen || people.length) return;
+    (async () => {
+      try {
+        const ответ = await fetch('https://unlimitedpossibilities12.org/api/users');
+        if (!ответ.ok) return;
+        const все = await ответ.json();
+        const свои = new Set(callParticipants.map((у) => String(у.id)));
+        свои.add(String(currentUserId));
+        setPeople(все.filter((ч) => !свои.has(String(ч.id))));
+      } catch (ошибка) {
+        console.warn('Список людей не пришёл:', ошибка);
+      }
+    })();
+  }, [peopleOpen, people.length, callParticipants, currentUserId]);
+
+  const позвать = (человек) => {
+    setPeopleOpen(false);
+    setPeople([]);
+    const новый = { id: Number(человек.id), username: человек.displayName || человек.username, avatar: человек.avatar || null };
+    setCallParticipants((prev) => (prev.some((у) => Number(у.id) === новый.id) ? prev : [...prev, новый]));
+    const приглашение = {
+      type: 'group',
+      initiatorId: String(initiator.id),
+      initiatorName: initiator.username,
+      roomId: roomId.current,
+      recipientIds: [...callParticipants.filter((у) => у.id !== initiator.id).map((у) => String(у.id)), String(новый.id)],
+    };
+    sendSignal(приглашение, roomId.current, String(новый.id));
+    toast.info(`${новый.username} приглашён в разговор`);
+  };
   const [callDuration, setCallDuration] = useState('00:00');
   const [startTime, setStartTime] = useState('');
   const [currentTime, setCurrentTime] = useState('');
@@ -2008,6 +2049,31 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
           </div>
         </div>
       )}
+      {peopleOpen && (
+        <div className="voice-call-people-backdrop" onClick={() => setPeopleOpen(false)} role="presentation">
+          <div className="voice-call-people" onClick={(event) => event.stopPropagation()}>
+            <h3>Add to the call</h3>
+            <p className="voice-call-people-note">They will be called and join this conversation.</p>
+            <ul>
+              {people.map((человек) => (
+                <li key={человек.id}>
+                  <button type="button" onClick={() => позвать(человек)}>
+                    {человек.avatar
+                      ? <img src={`https://unlimitedpossibilities12.org${человек.avatar}`} alt="" />
+                      : <span className="voice-call-people-letter">{(человек.displayName || человек.username || '?').charAt(0).toUpperCase()}</span>}
+                    {человек.displayName || человек.username}
+                  </button>
+                </li>
+              ))}
+              {!people.length && <li className="voice-call-people-empty">Nobody to add yet</li>}
+            </ul>
+            <button type="button" className="voice-call-people-close" onClick={() => setPeopleOpen(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       <audio id="local-audio" ref={localAudioRef} autoPlay muted />
       <div className="voice-call-controls">
         <button
@@ -2041,6 +2107,18 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
             {muted && <path d="M4 3 L20 21" fill="none" strokeWidth="2" strokeLinecap="round" />}
           </svg>
           <small>{muted ? 'Unmute' : 'Mute'}</small>
+        </button>
+        <button
+          type="button"
+          className="voice-call-round"
+          onClick={() => setPeopleOpen(true)}
+          title="Add someone to the call"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-3.3 0-6 1.8-6 4v2h12v-2c0-2.2-2.7-4-6-4Z" />
+            <path d="M18 8v8M14 12h8" fill="none" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <small>Add</small>
         </button>
         <button type="button" className="voice-call-round is-end" onClick={endCall} title="End the call">
           <svg viewBox="0 0 24 24" aria-hidden="true">

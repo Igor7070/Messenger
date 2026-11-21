@@ -111,6 +111,7 @@
     <string name="call_end">End</string>
     <string name="call_minimize">Minimize</string>
     <!-- Экран видеозвонка -->
+    <string name="call_add">Add</string>
     <string name="call_camera">Camera</string>
     <string name="call_switch_camera">Flip</string>
     <string name="call_camera_off">Camera is off</string>

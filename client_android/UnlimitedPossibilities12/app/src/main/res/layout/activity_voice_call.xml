@@ -213,6 +213,36 @@
             android:gravity="center"
             android:orientation="vertical">
 
+            <!-- Позвать третьего: разговор продолжится втроём -->
+            <ImageView
+                android:id="@+id/add_button"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:background="@drawable/circle_background"
+                android:backgroundTint="#1E293B"
+                android:clickable="true"
+                android:contentDescription="@string/call_add"
+                android:focusable="true"
+                android:padding="18dp"
+                android:src="@drawable/ic_group_add"
+                app:tint="#E2E8F0" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/call_add"
+                android:textColor="#CBD5E1"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="14dp"
+            android:gravity="center"
+            android:orientation="vertical">
+
             <!-- Камера: включается прямо в разговоре, как в телеграме -->
             <ImageView
                 android:id="@+id/camera_button"

@@ -1,5 +1,6 @@
 package com.example.unlimitedpossibilities12.messenger;
 
+import com.example.unlimitedpossibilities12.api.User;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -227,6 +228,7 @@ public class VoiceCallActivity extends AppCompatActivity {
         muteButton.setOnClickListener(v -> toggleMic());
         speakerButton.setOnClickListener(v -> toggleSpeaker());
         findViewById(R.id.camera_button).setOnClickListener(v -> toggleCamera());
+        findViewById(R.id.add_button).setOnClickListener(v -> позватьТретьего());
         minimizeButton.setOnClickListener(v -> minimizeCall());
 
         com.example.unlimitedpossibilities12.messenger.notife.OngoingCall
@@ -1007,6 +1009,74 @@ public class VoiceCallActivity extends AppCompatActivity {
             Log.e(TAG, "Error creating signal JSON: " + e.getMessage());
         }
         return message;
+    }
+
+    /**
+     * Позвать третьего в разговор вдвоём.
+     *
+     * Так же, как это делает веб: заводим общую комнату, собеседника
+     * переводим туда молча (ему уже звонили — звонить ещё раз незачем),
+     * а приглашение уходит только новому человеку.
+     */
+    private void позватьТретьего() {
+        if (currentUserId == null || recipientId == null) {
+            Toast.makeText(this, "Не видно, с кем идёт разговор", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        GroupCallUserSelectionDialogFragment выбор = GroupCallUserSelectionDialogFragment.forChoosing(
+                Integer.parseInt(currentUserId),
+                "Add to the call",
+                "They will join this conversation",
+                "Add",
+                1);
+        выбор.setOnUsersChosenListener(выбранные -> {
+            if (выбранные == null || выбранные.isEmpty()) return;
+            User человек = выбранные.get(0);
+            if (String.valueOf(человек.getId()).equals(recipientId)) {
+                Toast.makeText(this, "Он уже в разговоре", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            String комната = java.util.UUID.randomUUID().toString();
+
+            JSONObject перевод = new JSONObject();
+            try {
+                JSONObject signal = new JSONObject();
+                signal.put("type", "moveToGroup");
+                signal.put("roomId", комната);
+                signal.put("peers", recipientId + "," + человек.getId());
+                перевод.put("from", currentUserId);
+                перевод.put("signal", signal);
+            } catch (JSONException e) {
+                Log.e(TAG, "Не собрался перевод в общий разговор: " + e.getMessage());
+                return;
+            }
+            sendSignal(перевод);
+
+            java.util.ArrayList<String> участники = new java.util.ArrayList<>();
+            участники.add(recipientId);
+            участники.add(String.valueOf(человек.getId()));
+            java.util.ArrayList<String> ужеТам = new java.util.ArrayList<>();
+            ужеТам.add(recipientId);
+
+            // Отмечаем комнату сразу, чтобы звонок в неё не прозвенел нам же
+            GroupCallActivity.currentRoomId = комната;
+            Intent общий = new Intent(this, GroupCallActivity.class);
+            общий.putExtra("initiatorId", Integer.parseInt(currentUserId));
+            общий.putExtra("initiatorName", getIntent().getStringExtra("currentUserName") != null
+                    ? getIntent().getStringExtra("currentUserName") : "");
+            общий.putStringArrayListExtra("selectedUsersIds", участники);
+            общий.putStringArrayListExtra("alreadyIn", ужеТам);
+            общий.putExtra("roomId", комната);
+            общий.putExtra("isInitiator", true);
+            общий.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            terminationInitiator = true;
+            endCall();
+            // Прежний разговор должен успеть отпустить микрофон
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(
+                    () -> getApplicationContext().startActivity(общий), 1500);
+        });
+        выбор.show(getSupportFragmentManager(), "AddToCall");
     }
 
     private void sendSignal(JSONObject signalMessage) {
