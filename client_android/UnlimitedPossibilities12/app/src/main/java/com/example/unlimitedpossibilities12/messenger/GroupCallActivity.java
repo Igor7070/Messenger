@@ -1855,6 +1855,18 @@ public class GroupCallActivity extends AppCompatActivity {
                         videoParticipantsAdapter.setCameraState(fromId, true);
                         SurfaceViewRenderer videoView = videoParticipantsAdapter.getVideoView(fromId);
                         if (videoView != null) {
+                            /*
+                             * Отвязываем окно от дорожки прежде, чем рушить.
+                             * Иначе дорожка продолжает слать кадры в снесённое
+                             * окно, а новое остаётся пустым — на экране висит
+                             * один кадр, пойманный в миг перестройки.
+                             */
+                            VideoTrack прежняя = remoteVideoTracks.get(fromId);
+                            if (прежняя != null) {
+                                try { прежняя.removeSink(videoView); } catch (Exception e) {
+                                    Log.w(TAG, "Окно уже отвязано от дорожки: " + e.getMessage());
+                                }
+                            }
                             videoView.release();
                             videoView.init(remoteEglBase.getEglBaseContext(), new RendererCommon.RendererEvents() {
                                 @Override
@@ -2439,9 +2451,14 @@ public class GroupCallActivity extends AppCompatActivity {
         RecyclerView videoGrid = findViewById(R.id.video_grid);
 
         if (isVideoMode) {
-            // Кнопка остаётся камерой — она переключает экран, а не микрофон:
-            // прежде она превращалась в микрофон и читалась как «выключить звук»
-            paintButton(toggleModeButton, true);
+            /*
+             * Кнопка показывает свою камеру, а не вид экрана. Прежде она
+             * белела от перехода к плиткам, и человек читал это как
+             * «камера включена», хотя камера молчала.
+             */
+            paintButton(toggleModeButton, isCameraOn);
+            toggleModeButton.setImageResource(
+                    isCameraOn ? R.drawable.ic_videocam_off : R.drawable.ic_video_call);
             participantsRecyclerView.setVisibility(View.GONE);
             videoGrid.setVisibility(View.VISIBLE);
             // Своё окошко — только при включённой камере: пустой чёрный
@@ -2469,7 +2486,9 @@ public class GroupCallActivity extends AppCompatActivity {
             }
             Log.d(TAG, "toggleMode: Switched to video mode, set icon to ic_microphone, videoGrid width=" + videoGrid.getWidth() + ", height=" + videoGrid.getHeight());
         } else {
-            paintButton(toggleModeButton, false);
+            paintButton(toggleModeButton, isCameraOn);
+            toggleModeButton.setImageResource(
+                    isCameraOn ? R.drawable.ic_videocam_off : R.drawable.ic_video_call);
             participantsRecyclerView.setVisibility(View.VISIBLE);
             videoGrid.setVisibility(View.GONE);
             localVideoCard.setVisibility(View.GONE);
@@ -2515,6 +2534,7 @@ public class GroupCallActivity extends AppCompatActivity {
                         localVideoTrack.addSink(localVideoView);
                         synchronized (замокКамеры) { isCameraOn = true; }
                         cameraStates.put(currentUserId, true);
+                        runOnUiThread(() -> paintButton(findViewById(R.id.toggle_mode_button), true));
                         runOnUiThread(() -> {
                             toggleCameraButton.setImageResource(R.drawable.ic_videocam_off);
                             toggleCameraButton.setBackgroundTintList(
@@ -2841,6 +2861,7 @@ public class GroupCallActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         isCameraOn = true;
                         cameraStates.put(currentUserId, true);
+                        paintButton(findViewById(R.id.toggle_mode_button), true);
                         localVideoCard.setVisibility(View.VISIBLE);
                         toggleCameraButton.setImageResource(R.drawable.ic_videocam_off);
                         toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF4444));
@@ -2958,6 +2979,7 @@ public class GroupCallActivity extends AppCompatActivity {
             }
         }
         runOnUiThread(() -> {
+            paintButton(findViewById(R.id.toggle_mode_button), false);
             localVideoCard.setVisibility(View.GONE);
             localVideoView.clearImage();
             localNoVideoText.setVisibility(View.VISIBLE);

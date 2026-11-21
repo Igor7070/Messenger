@@ -106,6 +106,16 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
    * некуда. Поэтому держим её здесь, а плитка забирает её, когда
    * появится.
    */
+  /**
+   * Своя камера — отметкой, а не только состоянием.
+   *
+   * Обработчик сигналов помнит состояние таким, каким оно было, когда
+   * его завели. Поэтому, когда собеседник выключал камеру, проверка
+   * «а моя-то включена?» отвечала «нет» — и плитки пропадали у того,
+   * кто сам показывал картинку.
+   */
+  const свояКамера = useRef(false);
+
   const свойПоказ = useRef(null);
 
   const местаПодКартинку = useRef(new Map());
@@ -1537,7 +1547,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
               const left = prev.filter((id) => id !== currentFrom);
               // Никто больше не показывает картинку и своя камера выключена —
               // возвращаемся к списку имён
-              if (left.length === 0 && !isCameraOn) setIsVideoMode(false);
+              if (left.length === 0 && !свояКамера.current) setIsVideoMode(false);
               return left;
             });
             const videoElement = videoRefs.current.get(currentFrom);
@@ -1841,6 +1851,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         }
       }
       setIsCameraOn(false);
+      свояКамера.current = false;
 
       // Уведомляем других об отключении камеры
       callParticipants
@@ -1917,6 +1928,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         }
 
         setIsCameraOn(true);
+        свояКамера.current = true;
 
         // Уведомляем других о включении камеры
         callParticipants
