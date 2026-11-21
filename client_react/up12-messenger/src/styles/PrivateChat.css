@@ -2426,3 +2426,23 @@
   word-break: normal;
   overflow-wrap: break-word;
 }
+
+
+/* Карточка звонка в ленте переписки */
+.private-call-card {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: rgba(148, 163, 184, 0.14);
+  color: #e2e8f0;
+  font-size: 13px;
+  max-width: 80%;
+}
+
+.private-call-card.is-missed { color: #fca5a5; background: rgba(248, 113, 113, 0.14); }
+.private-call-icon { font-size: 15px; opacity: 0.9; }
+.private-call-time { opacity: 0.65; font-size: 12px; }

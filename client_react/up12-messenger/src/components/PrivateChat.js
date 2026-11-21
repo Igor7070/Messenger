@@ -179,6 +179,68 @@ const PrivateChat = () => {
   const [partnerAvatar, setPartnerAvatar] = useState(null);
   const [partnerId, setPartnerId] = useState(null);
 
+  /**
+   * Звонки с этим собеседником — карточками в ленте.
+   *
+   * Сервер хранит их давно: кто кому, когда, сколько длился, чем
+   * кончился. Видны они были только в разделе Calls, хотя место им —
+   * в самой переписке.
+   */
+  const [звонки, setЗвонки] = useState([]);
+
+  useEffect(() => {
+    if (!userId || !partnerId) return undefined;
+    let живо = true;
+    (async () => {
+      try {
+        const ответ = await fetch(`https://unlimitedpossibilities12.org/api/calls?userId=${userId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
+        });
+        if (!ответ.ok) return;
+        const все = await ответ.json();
+        const наши = (Array.isArray(все) ? все : []).filter((з) => {
+          if (з.callType === 'group') return false;
+          const от = String(з.caller);
+          const кому = String(з.receiver || '');
+          return (от === String(userId) && кому === String(partnerId))
+              || (от === String(partnerId) && кому === String(userId));
+        });
+        if (живо) {
+          /* Ленте хватит недавних: за годы звонков накопятся сотни, и
+             все разом в переписке ни к чему. */
+          setЗвонки(наши.slice(-30).map((з) => ({
+            id: `call-${з.id}`,
+            звонок: з,
+            timestamp: з.timestamp,
+            sender: { id: String(з.caller) === String(userId) ? userId : Number(partnerId) },
+          })));
+        }
+      } catch (ошибка) {
+        console.warn('Список звонков не пришёл:', ошибка);
+      }
+    })();
+    return () => { живо = false; };
+    /* Список читаем один раз на собеседника: он не меняется от каждого
+       пришедшего сообщения, а перечитывать его на каждое — верный способ
+       подвесить страницу. */
+  }, [userId, partnerId]);
+
+  /** Сообщения и звонки вперемешку, по времени. */
+  const лента = useMemo(() => {
+    const всё = [...messages, ...звонки];
+    всё.sort((а, б) => new Date(а.timestamp || 0) - new Date(б.timestamp || 0));
+    return всё;
+  }, [messages, звонки]);
+
+  /** Короткая подпись под карточкой: «6 секунд», «1:05». */
+  const длительность = (секунд) => {
+    if (!секунд && секунд !== 0) return null;
+    if (секунд < 60) return `${секунд} s`;
+    const м = Math.floor(секунд / 60);
+    const с = секунд % 60;
+    return `${м}:${String(с).padStart(2, '0')}`;
+  };
+
   const [previewData, setPreviewData] = useState({}); // ДОБАВЛЕНО: кэш превью { msgId: { title, description, imageUrl, url } }
   const [fullScreenImage, setFullScreenImage] = useState(null);
 
@@ -2077,13 +2139,36 @@ const PrivateChat = () => {
         </div>
       )}*/}
       <div className="private-message-list" ref={messageListRef}>
-        {messages.map((msg, index) => (
+        {лента.map((msg, index) => (
           <React.Fragment key={msg.id}>
-          {startsNewDay(messages, index) && (
+          {startsNewDay(лента, index) && (
             <div className="private-day-separator">
               <span>{dayLabel(msg.timestamp)}</span>
             </div>
           )}
+          {msg.звонок ? (
+            /* Карточка звонка: кто кому, чем кончился, сколько длился */
+            (() => {
+              const з = msg.звонок;
+              const мой = String(з.caller) === String(userId);
+              const нетОтвета = з.status === 'missed' || з.status === 'rejected';
+              const длина = длительность(з.durationSeconds);
+              return (
+                <div className={`private-call-card${нетОтвета ? ' is-missed' : ''}`}>
+                  <span className="private-call-icon">{мой ? '↗' : '↙'}</span>
+                  <span className="private-call-text">
+                    {нетОтвета
+                      ? (мой ? 'No answer' : 'Missed call')
+                      : (мой ? 'Outgoing call' : 'Incoming call')}
+                    {длина && !нетОтвета ? ` · ${длина}` : ''}
+                  </span>
+                  <span className="private-call-time">
+                    {new Date(з.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              );
+            })()
+          ) : (
           <div
             className={`private-message ${
               msg.sender.id === userId ? 'private-current-user' : 'private-other-user'
@@ -2473,6 +2558,7 @@ const PrivateChat = () => {
               </div>
             </div>
           </div>
+          )}
           </React.Fragment>
         ))}
         <div ref={messagesEndRef} />
