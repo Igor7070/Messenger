@@ -815,3 +815,26 @@ body.has-call-strip #root > .app > * { max-height: calc(100vh - 42px); }
 }
 
 .voice-call-people-close:hover { background: rgba(148, 163, 184, 0.26); }
+
+
+/* Когда видна картинка, ряд кнопок ужимаем под её ширину.
+   Четыре кнопки по 74 точки с широкими промежутками делали окно шире
+   самой картинки, и по бокам от неё оставалось тёмное поле. */
+.voice-call-window:has(.voice-call-stage) .voice-call-controls { gap: 14px; }
+
+.voice-call-window:has(.voice-call-stage) .voice-call-round {
+  width: 62px;
+  height: 62px;
+}
+
+.voice-call-window:has(.voice-call-stage) .voice-call-round svg { width: 22px; height: 22px; }
+.voice-call-window:has(.voice-call-stage) .voice-call-round.is-end svg { width: 26px; height: 26px; }
+.voice-call-window:has(.voice-call-stage) .voice-call-round small { font-size: 10px; }
+
+/* И само окно не шире того, что в нём */
+.voice-call-window:has(.voice-call-stage) { min-width: 0; width: fit-content; }
+
+
+/* В разговоре с картинкой кадр идёт до самых краёв окна: боковые
+   отступы окна здесь ни к чему, от них оставалась тёмная рамка */
+.voice-call-window:has(.voice-call-stage) { padding-left: 0; padding-right: 0; }
