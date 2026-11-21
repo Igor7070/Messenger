@@ -80,6 +80,15 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
    * включается, её по-прежнему включают кнопкой.
    */
   const [cameraOnUsers, setCameraOnUsers] = useState([]);
+  /**
+   * Пришедшие картинки, по собеседнику.
+   *
+   * Поток приходит раньше, чем на экране появляется плитка для него:
+   * плитки рисуются только в видимом виде, а он включается следом. Класть
+   * картинку было некуда, и она пропадала — собеседник включал камеру, а
+   * его не видели, пока он не выключит и не включит её снова.
+   */
+  const remoteStreams = useRef(new Map());
 
   /** Свёрнутый разговор занимает полоску — приложение двигается под неё. */
   useEffect(() => {
@@ -700,6 +709,9 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
           // [ДОБАВЛЕНО]: Обработка видеотреков
           const videoTracks = stream.getVideoTracks();
           if (videoTracks.length > 0) {
+            remoteStreams.current.set(String(userId), stream);
+            setCameraOnUsers((prev) => (prev.includes(String(userId)) ? prev : [...prev, String(userId)]));
+            setIsVideoMode(true);
             const videoElement = videoRefs.current.get(userId);
             if (videoElement) {
               videoElement.srcObject = stream;
@@ -1627,6 +1639,12 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
                 ref={(el) => {
                   if (!el) return;
                   videoRefs.current.set(String(user.id), el);
+                  // Картинка могла прийти раньше плитки — заберём её
+                  const пришедший = remoteStreams.current.get(String(user.id));
+                  if (пришедший && el.srcObject !== пришедший) {
+                    el.srcObject = пришедший;
+                    el.play().catch(() => {});
+                  }
                   // Слушатели вешаем один раз на элемент: ref-колбэк
                   // вызывается на каждый ререндер.
                   if (!el.dataset.aspectBound) {

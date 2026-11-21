@@ -263,6 +263,8 @@ public class GroupCallActivity extends AppCompatActivity {
         // секунды, и прежде оно успевало поднять звонок до того, как
         // разговор заявит о себе
         currentRoomId = roomId;
+        досылкаРучка.removeCallbacks(досылкаКруг);
+        досылкаРучка.postDelayed(досылкаКруг, 3000);
         if (isInitiator && roomId == null) {
             roomId = UUID.randomUUID().toString();
         }
@@ -484,6 +486,7 @@ public class GroupCallActivity extends AppCompatActivity {
                     return;
                 }
                 Log.d(TAG, "Periodic connection check triggered, checkCount=" + checkCount[0]);
+                досылатьКартинку();
                 boolean hasFailedConnections = false;
                 Set<String> checkedUsers = new HashSet<>();
 
@@ -992,6 +995,61 @@ public class GroupCallActivity extends AppCompatActivity {
     }
 
     // [Изменено] Метод initializePeerConnection для добавления отслеживания SignalingState
+    /**
+     * Доложить свою картинку тем, кто её ещё не получил.
+     *
+     * Камеру включают один раз, и дорожка в тот миг расходится лишь по
+     * тем соединениям, что успели устояться. С остальными — а в разговоре
+     * на троих второй собеседник часто подключается позже — она так и не
+     * уходила: человек видел картинку у одного и не видел у другого, и
+     * помогало только выключить и включить камеру заново, да и то не
+     * всегда. Теперь при каждой проверке связи дорожка доходит до всех.
+     */
+    /** Свой повтор досылки: проверка связи, к которой я цеплялся прежде,
+     *  у принявшего разговор не запускается вовсе. */
+    private final android.os.Handler досылкаРучка = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable досылкаКруг = new Runnable() {
+        @Override public void run() {
+            if (isCallEnded) return;
+            досылатьКартинку();
+            досылкаРучка.postDelayed(this, 3000);
+        }
+    };
+
+    private void досылатьКартинку() {
+        if (!isCameraOn || localVideoTrack == null) return;
+        for (Map.Entry<String, PeerConnection> entry : peerConnections.entrySet()) {
+            String userId = entry.getKey();
+            PeerConnection pc = entry.getValue();
+            if (pc == null || videoTrackSenders.containsKey(userId)) continue;
+            if (pc.signalingState() != PeerConnection.SignalingState.STABLE) continue;
+            try {
+                RtpSender sender = pc.addTrack(localVideoTrack, Arrays.asList("stream0"));
+                videoTrackSenders.put(userId, sender);
+                Log.d(TAG, "Досылаем картинку собеседнику " + userId);
+                pc.createOffer(new SdpObserver() {
+                    @Override public void onCreateSuccess(SessionDescription sdp) {
+                        pc.setLocalDescription(new SdpObserver() {
+                            @Override public void onSetSuccess() {
+                                sendSignal(createSignalJson("offer", sdp, userId));
+                                sendSignal(createSignalJson("cameraOn", null, userId));
+                                Log.d(TAG, "Досланное предложение ушло к " + userId);
+                            }
+                            @Override public void onSetFailure(String s) { Log.e(TAG, "Досылка, setLocal: " + s); }
+                            @Override public void onCreateSuccess(SessionDescription s) { }
+                            @Override public void onCreateFailure(String s) { }
+                        }, sdp);
+                    }
+                    @Override public void onCreateFailure(String s) { Log.e(TAG, "Досылка, createOffer: " + s); }
+                    @Override public void onSetSuccess() { }
+                    @Override public void onSetFailure(String s) { }
+                }, new MediaConstraints());
+            } catch (Exception e) {
+                Log.e(TAG, "Картинку доложить не вышло для " + userId + ": " + e.getMessage());
+            }
+        }
+    }
+
     private void initializePeerConnection(String userId, boolean isOfferer) {
         if (localAudioTrack == null) {
             Log.e(TAG, "localAudioTrack is null, cannot initialize PeerConnection for user " + userId);
@@ -1159,7 +1217,7 @@ public class GroupCallActivity extends AppCompatActivity {
         // Добавляем видеотрек, если камера включена и видеотрек готов
         if (isCameraOn && localVideoTrack != null && isVideoTrackReady.get()) {
             try {
-                peerConnection.addTrack(localVideoTrack, Arrays.asList("stream0"));
+                videoTrackSenders.put(userId, peerConnection.addTrack(localVideoTrack, Arrays.asList("stream0")));
                 Log.d(TAG, "Added local video track to PeerConnection for user " + userId);
             } catch (Exception e) {
                 Log.e(TAG, "Failed to add video track for user " + userId + ": " + e.getMessage());
@@ -2073,6 +2131,7 @@ public class GroupCallActivity extends AppCompatActivity {
         }
 
         currentRoomId = null;
+        досылкаРучка.removeCallbacks(досылкаКруг);
         Log.d(TAG, "Call ended, resources released");
         isCallStarted = false; // Сбрасываем isCallStarted перед сохранением
         saveCall("completed");
@@ -2706,6 +2765,13 @@ public class GroupCallActivity extends AppCompatActivity {
                     }
                 }
             }
+            /*
+             * Начисто: отметки об отправителях должны уйти все до одной.
+             * Если хоть одна останется, досылка при следующем включении
+             * решит, что этому собеседнику картинку уже отправили, и
+             * обойдёт его — он увидит нас лишь со второго раза.
+             */
+            videoTrackSenders.clear();
             if (localVideoView != null) {
                 localVideoTrack.removeSink(localVideoView);
                 Log.d(TAG, "Removed video track sink from localVideoView for userId=" + currentUserId);
