@@ -842,15 +842,18 @@ body.has-call-strip #root > .app > * { max-height: calc(100vh - 42px); }
 
 /* Своё окошко в групповом разговоре — в углу, как на телефоне */
 .group-call-self-corner {
+  /* Правый нижний угол: слева стоит первый собеседник, и окошко
+     наезжало прямо на него */
   position: absolute;
-  left: 14px;
-  bottom: 96px;
-  width: 112px;
-  height: 150px;
-  border-radius: 12px;
+  right: 16px;
+  bottom: 104px;
+  width: 96px;
+  height: 128px;
+  border-radius: 14px;
   overflow: hidden;
   background: #0b1220;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(226, 232, 240, 0.35);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
   z-index: 5;
 }
 
