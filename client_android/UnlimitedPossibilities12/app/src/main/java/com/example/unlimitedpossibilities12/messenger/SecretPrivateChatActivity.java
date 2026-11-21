@@ -1504,7 +1504,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                         Log.d(TAG, "Processing message from API: id=" + msg.getId() + ", contentType=" + msg.getContentType() + ", messageType=" + msg.getMessageType());
                         messages.add(msg);
                     }
-                    messageAdapter.updateMessages(messages);
+                    подмешатьЗвонки(messages);
                     jumpToBottom();
                     markAllMessagesAsRead();
                     scheduleStatusCheck();
@@ -2131,6 +2131,101 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
      * Сразу в конец переписки — так открывается чат. Плавная прокрутка через
      * весь список выглядит рывком: лента успевает промелькнуть серединой.
      */
+    /** Последние звонки с этим собеседником — карточками в ленте. */
+    private final java.util.List<Message> карточкиЗвонков = new java.util.ArrayList<>();
+
+    /**
+     * Показать ленту вместе с карточками звонков.
+     *
+     * Звонки лежат на сервере с временем, длительностью и итогом, но
+     * видны были только в разделе Calls. Место им — в самой переписке,
+     * как в телеграме.
+     */
+    private final java.util.List<Message> лентаСообщений = new java.util.ArrayList<>();
+    private boolean звонкиЗапрошены = false;
+
+    private void подмешатьЗвонки(java.util.List<Message> сообщения) {
+        if (сообщения != лентаСообщений) {
+            лентаСообщений.clear();
+            лентаСообщений.addAll(сообщения);
+        }
+        загрузитьЗвонки();
+        java.util.List<Message> вместе = new java.util.ArrayList<>(лентаСообщений);
+        вместе.addAll(карточкиЗвонков);
+        java.util.Collections.sort(вместе, (а, б) -> {
+            String п = а.getTimestamp() == null ? "" : а.getTimestamp();
+            String в = б.getTimestamp() == null ? "" : б.getTimestamp();
+            return п.compareTo(в);
+        });
+        messageAdapter.updateMessages(вместе);
+    }
+
+    /** Прочитать звонки с собеседником и сложить из них карточки. */
+    private void загрузитьЗвонки() {
+        /* Отметку ставим, только когда вправду спрашиваем: прежде она
+           ставилась раньше проверки номеров, и если собеседник ещё не
+           был известен, список не запрашивался уже никогда. */
+        if (звонкиЗапрошены) return;
+        if (currentUserId <= 0 || partnerId <= 0) return;
+        звонкиЗапрошены = true;
+        Log.d(TAG, "Спрашиваю звонки: я=" + currentUserId + ", собеседник=" + partnerId);
+        ApiClient.getApiService().getCalls(currentUserId).enqueue(
+                new retrofit2.Callback<java.util.List<com.example.unlimitedpossibilities12.api.Call>>() {
+            @Override
+            public void onResponse(retrofit2.Call<java.util.List<com.example.unlimitedpossibilities12.api.Call>> вызов,
+                                   retrofit2.Response<java.util.List<com.example.unlimitedpossibilities12.api.Call>> ответ) {
+                if (!ответ.isSuccessful() || ответ.body() == null) return;
+                java.util.List<Message> собранные = new java.util.ArrayList<>();
+                java.util.List<com.example.unlimitedpossibilities12.api.Call> все = ответ.body();
+                int отсюда = Math.max(0, все.size() - 200);
+                for (int i = отсюда; i < все.size(); i++) {
+                    com.example.unlimitedpossibilities12.api.Call з = все.get(i);
+                    if (з.getCallType() != null && з.getCallType().equals("group")) continue;
+                    String от = String.valueOf(з.getCaller());
+                    String кому = з.getReceiver() == null ? "" : String.valueOf(з.getReceiver());
+                    boolean наш = (от.equals(String.valueOf(currentUserId)) && кому.equals(String.valueOf(partnerId)))
+                            || (от.equals(String.valueOf(partnerId)) && кому.equals(String.valueOf(currentUserId)));
+                    if (!наш) continue;
+                    boolean мой = от.equals(String.valueOf(currentUserId));
+                    boolean нетОтвета = "missed".equals(з.getStatus()) || "rejected".equals(з.getStatus());
+                    boolean видео = "video".equals(з.getCallType());
+                    String заголовок = нетОтвета
+                            ? (мой ? "Cancelled call" : "Missed call")
+                            : (мой ? "Outgoing call" : "Incoming call");
+                    if (видео) заголовок = "Video " + заголовок.substring(0, 1).toLowerCase() + заголовок.substring(1);
+                    String час = "";
+                    if (з.getTimestamp() != null && з.getTimestamp().length() >= 16) {
+                        час = з.getTimestamp().substring(11, 16);
+                    }
+                    Integer длит = з.getDurationSeconds();
+                    /* Стрелку рисуем значком слева от времени — эмодзи на
+                       телефоне выходит цветным квадратом и спорит с видом. */
+                    String подпись = час;
+                    if (!нетОтвета && длит != null) {
+                        подпись += ", " + (длит < 60 ? (длит + " s")
+                                : (длит / 60) + ":" + String.format(java.util.Locale.US, "%02d", длит % 60));
+                    }
+                    Message карточка = new Message();
+                    карточка.setId(-1000 - i);
+                    карточка.setMessageType(мой ? "call_out" : "call_in");
+                    карточка.setContent(заголовок + "\n" + подпись);
+                    карточка.setTimestamp(з.getTimestamp());
+                    собранные.add(карточка);
+                }
+                int свежих = Math.max(0, собранные.size() - 30);
+                карточкиЗвонков.clear();
+                карточкиЗвонков.addAll(собранные.subList(свежих, собранные.size()));
+                runOnUiThread(() -> подмешатьЗвонки(лентаСообщений));
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<java.util.List<com.example.unlimitedpossibilities12.api.Call>> вызов,
+                                  Throwable беда) {
+                Log.w(TAG, "Список звонков не пришёл: " + беда.getMessage());
+            }
+        });
+    }
+
     private void jumpToBottom() {
         if (messages.size() > 0) {
             messageList.scrollToPosition(messages.size() - 1);

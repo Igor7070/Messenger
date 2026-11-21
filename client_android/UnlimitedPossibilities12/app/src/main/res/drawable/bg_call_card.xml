@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Подложка карточки звонка: тихая, чтобы не спорить с сообщениями -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#26334155" />
+    <corners android:radius="14dp" />
+</shape>

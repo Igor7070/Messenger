@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Карточка звонка в ленте — пузырём на своей стороне, как в телеграме:
+    сверху «Исходящий звонок», снизу стрелка, время и длительность, справа
+    трубка.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="3dp">
+
+    <LinearLayout
+        android:id="@+id/call_card_bubble"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_call_card"
+        android:gravity="center_vertical"
+        android:minWidth="200dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="10dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/call_card_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#F1F5F9"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/call_card_sub"
+                android:drawablePadding="5dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="#94A3B8"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/call_card_icon"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_marginStart="14dp"
+            android:contentDescription="@string/call_add"
+            android:src="@drawable/ic_calls"
+            app:tint="#7DD3FC"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+    </LinearLayout>
+</FrameLayout>

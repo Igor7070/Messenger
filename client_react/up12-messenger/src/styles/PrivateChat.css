@@ -2428,21 +2428,25 @@
 }
 
 
-/* Карточка звонка в ленте переписки */
+/* Карточка звонка — пузырём на своей стороне, как в телеграме */
 .private-call-card {
-  align-self: center;
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 6px 0;
-  padding: 8px 14px;
+  gap: 14px;
+  align-self: flex-start;
+  margin: 3px 12px;
+  padding: 9px 14px;
+  min-width: 200px;
   border-radius: 14px;
-  background: rgba(148, 163, 184, 0.14);
-  color: #e2e8f0;
-  font-size: 13px;
-  max-width: 80%;
+  background: #1e293b;
+  color: #f1f5f9;
+  width: fit-content;
 }
 
-.private-call-card.is-missed { color: #fca5a5; background: rgba(248, 113, 113, 0.14); }
-.private-call-icon { font-size: 15px; opacity: 0.9; }
-.private-call-time { opacity: 0.65; font-size: 12px; }
+.private-call-card.is-mine { align-self: flex-end; background: #2f4c7a; }
+.private-call-title { font-size: 15px; font-weight: 600; }
+.private-call-card.is-missed .private-call-title { color: #fca5a5; }
+.private-call-sub { margin-top: 2px; font-size: 13px; color: #94a3b8; }
+.private-call-arrow { margin-right: 6px; color: #4ade80; }
+.private-call-card.is-missed .private-call-arrow { color: #f87171; }
+.private-call-phone { width: 22px; height: 22px; fill: #7dd3fc; flex: none; }
