@@ -295,17 +295,20 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
     private float getTileAspect(String userId) {
         if (MODE_LANDSCAPE.equals(tileMode)) return ASPECT_LANDSCAPE;
         if (MODE_PORTRAIT.equals(tileMode)) return ASPECT_PORTRAIT;
-        /*
-         * Больше двух плиток — держим их одной формы.
-         *
-         * Иначе вертикальная картинка с телефона растягивала свою плитку
-         * на пол-экрана, ряды выходили разной высоты, а подпись с именем
-         * уезжала за нижний край сетки и обрезалась в полоску.
-         */
-        if (participants.size() > 2) return ASPECT_LANDSCAPE;
         Float aspect = videoAspects.get(userId);
         // Пока разрешение потока неизвестно, показываем привычную горизонтальную плитку.
-        return (aspect != null && aspect > 0f) ? aspect : ASPECT_LANDSCAPE;
+        if (aspect == null || aspect <= 0f) return ASPECT_LANDSCAPE;
+        /*
+         * Форму берём от кадра, но в пределах.
+         *
+         * Вертикальная картинка с телефона иначе растягивала свою плитку
+         * на пол-экрана: ряды выходили разной высоты, а подпись уезжала за
+         * нижний край. А если всех ровнять по горизонтали, вертикальная
+         * картинка ложится боком — так у меня и вышло. Предел 3:4 вниз
+         * и 16:9 вверх: плитка остаётся вертикальной, но соразмерной.
+         */
+        if (participants.size() > 2) return Math.max(0.75f, Math.min(aspect, ASPECT_LANDSCAPE));
+        return aspect;
     }
 
     /**
