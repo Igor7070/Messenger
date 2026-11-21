@@ -151,6 +151,15 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
   const callStartTime = useRef(Date.now());
   const hasNotifiedEndCall = useRef(false);
+  /**
+   * Кого из собеседников уже проводили.
+   *
+   * Прежде на всех уходы была одна отметка: проводив первого, экран
+   * переставал замечать остальных. Втроём это видно так — вышел второй,
+   * а у последнего разговор всё идёт, с пустой комнатой и бегущим
+   * временем, пока он сам не нажмёт отбой.
+   */
+  const ушедшие = useRef(new Set());
   const hasSentInvite = useRef(false);
   const answerTimeouts = useRef(new Map()); // Таймауты для ожидания answer
   let isMounted = true;
@@ -1419,8 +1428,8 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
               console.log('Ignoring endCall signal not addressed to current user:', { from: currentFrom, to, currentUserId });
               continue;
             }
-            if (!hasNotifiedEndCall.current) {
-              hasNotifiedEndCall.current = true;
+            if (!ушедшие.current.has(String(currentFrom))) {
+              ушедшие.current.add(String(currentFrom));
               const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
               toast.info(`${userName} left the call`, { toastId: `left-${userName}` });
               setCallParticipants((prev) => {
@@ -1444,8 +1453,18 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
                * страницу. И счёт оставшихся брали до того, как ушедшего
                * вычеркнули, — себя тоже считали собеседником.
                */
+              /*
+               * Считаем по памяти об ушедших, а не по списку.
+               *
+               * Список здесь — тот, каким он был, когда заводили этот
+               * обработчик: ушедшего минуту назад он всё ещё числит
+               * среди живых. Поэтому последний оставшийся сидел в пустой
+               * комнате с бегущим временем, пока сам не нажмёт отбой.
+               */
               const remaining = callParticipants.filter(
-                (u) => String(u.id) !== String(currentFrom) && String(u.id) !== String(currentUserId)
+                (u) =>
+                  String(u.id) !== String(currentUserId) &&
+                  !ушедшие.current.has(String(u.id))
               );
               if (String(currentFrom) === String(initiator && initiator.id) || remaining.length === 0) {
                   console.log('Ending call: initiator left or no participants remain');
