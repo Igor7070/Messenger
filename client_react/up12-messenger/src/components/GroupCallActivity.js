@@ -139,7 +139,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
       recipientIds: [...callParticipants.filter((у) => у.id !== initiator.id).map((у) => String(у.id)), String(новый.id)],
     };
     sendSignal(приглашение, roomId.current, String(новый.id));
-    toast.info(`${новый.username} приглашён в разговор`);
+    toast.info(`${новый.username} was invited`, { toastId: 'invited' });
   };
   const [callDuration, setCallDuration] = useState('00:00');
   const [startTime, setStartTime] = useState('');
@@ -210,14 +210,14 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
 
     if (!currentUserId || !initiator.id) {
       console.error('User ID or initiator ID is missing');
-      toast.error('User ID or initiator ID is missing.');
+      toast.error('Could not open the call', { toastId: 'call-open' });
       navigate('/');
       return;
     }
 
     if (!roomId.current) {
       console.error('roomId is null, cannot proceed');
-      toast.error('Invalid room ID');
+      toast.error('Could not open the call', { toastId: 'call-open' });
       navigate('/');
       return;
     }
@@ -241,7 +241,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
           handleQueuedSignals();
         } else {
           console.error('localAudioRef is null during stream assignment');
-          toast.error('Audio element not ready');
+          console.warn('Звуковой узел ещё не готов');
           endCall();
           return;
         }
@@ -286,7 +286,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
             console.log('Updated callParticipants:', updatedParticipants);
           } catch (error) {
             console.error('Error fetching participants:', error);
-            toast.error('Failed to load participant details');
+            console.warn('Не удалось дочитать сведения об участниках');
           }
         };
         await fetchParticipants();
@@ -346,7 +346,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
                 console.error('Subscription error:', error);
                 if (!hasNotifiedError) {
                   hasNotifiedError = true;
-                  toast.error('Failed to connect to call server. Reconnecting...');
+                  toast.error('Lost the call server, reconnecting…', { toastId: 'call-server' });
                 }
                 const delay = Math.min(1000 * Math.pow(2, hasNotifiedError ? 1 : 0), 10000); // Экспоненциальная задержка
                 setTimeout(trySubscribe, delay);
@@ -367,7 +367,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         }
       } catch (error) {
         console.error('Error initializing call:', error);
-        toast.error('Failed to initialize group call');
+        toast.error('Could not start the call', { toastId: 'call-start' });
         endCall();
       }
     };
@@ -393,7 +393,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         setTimeout(() => {
           if (!localAudioRef.current) {
             console.error('Local audio element not found after timeout');
-            toast.error('Audio element not ready');
+            console.warn('Звуковой узел ещё не готов');
             endCall();
             observer.disconnect();
           }
@@ -444,7 +444,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         });
         if (!hasActiveConnections) {
           console.warn('No active connections within 30 seconds, ending call.');
-          toast.error('No participants responded to the call.');
+          toast.error('Nobody answered', { toastId: 'no-answer' });
           endCall();
         }
       }
@@ -461,7 +461,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         });
         if (!hasActiveConnections) {
           console.error('No offer received within 60 seconds and no active connections, aborting call');
-          toast.error('Could not set up the call: no offer received');
+          console.warn('Предложение соединиться не пришло');
           endCall();
         } else {
           console.log('Offer timeout skipped due to active connections');
@@ -705,7 +705,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
     setSecurityByUser((prev) => ({ ...prev, [String(userId)]: state }));
     if (state === CallSecurity.FAILED) {
       console.error(`Подпись участника ${userId} не сошлась — отключаем его`);
-      toast.error('Could not verify one of the participants — they were disconnected');
+      toast.error('Could not verify one of the participants — they were disconnected', { toastId: 'verify' });
       const pc = peerConnections.current.get(String(userId));
       if (pc) {
         pc.close();
@@ -720,7 +720,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
     try {
       if (!localAudioRef.current || !stream) {
         console.error(`Cannot initialize PeerConnection for user ${userId}: localAudioRef or stream is null`);
-        toast.error('Audio element or stream not ready');
+        console.warn('Звуковой узел или поток ещё не готовы');
         endCall();
         return null;
       }
@@ -760,7 +760,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
                 console.log(`Video playing for user ${userId}`);
               }).catch((error) => {
                 console.error(`Error playing video for ${userId}:`, error);
-                toast.error(`Failed to play video for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
+                console.warn('Картинка не пошла сразу у', userId);
               });
             } else {
               console.warn(`No video element found for user ${userId}`);
@@ -778,7 +778,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
                 console.log(`Audio playing for user ${userId}`);
               }).catch((error) => {
                 console.error(`Error playing audio for ${userId}:`, error);
-                toast.error(`Failed to play audio for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
+                console.warn('Звук не пошёл сразу у', userId);
               });
             };
             remoteAudioRefs.current.set(userId, audioElement);
@@ -787,7 +787,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
           }
         } else {
           console.error(`No stream received for user ${userId}`);
-          toast.error(`No audio stream received for ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
+          console.warn('Звукового потока пока нет от', userId);
         }
       };
 
@@ -820,11 +820,11 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
           });
         } else if (peerConnection.iceConnectionState === 'failed') {
           console.error(`WebRTC connection failed for user ${userId}`);
-          toast.error(`Connection failed for user ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`}`);
+          console.warn('Связь не сложилась с', userId);
           endCall();
         } else if (peerConnection.iceConnectionState === 'disconnected') {
           console.warn(`WebRTC connection disconnected for user ${userId}`);
-          toast.warn(`User ${callParticipants.find((u) => u.id === Number(userId))?.username || `User ${userId}`} disconnected`);
+          console.warn('Связь с', userId, 'прервалась — пробуем снова');
           disconnectTimeout = setTimeout(() => {
             if (peerConnection.iceConnectionState === 'disconnected') {
               console.log(`User ${userId} still disconnected after 10 seconds, removing from call`);
@@ -878,7 +878,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
       return peerConnection;
     } catch (error) {
       console.error(`Error initializing PeerConnection for user ${userId}:`, error);
-      toast.error('Failed to access microphone.');
+      toast.error('Could not reach the microphone', { toastId: 'mic' });
       endCall();
       return null;
     }
@@ -979,9 +979,12 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         }
       }
     } catch (error) {
-      console.error('Error starting group call:', error);
-      toast.error('Failed to start group call.');
-      //endCall();
+      /*
+       * Не беда: разговор продолжается с остальными, и ниже так и
+       * написано. Тревожить человека словами «не удалось начать
+       * разговор» посреди идущего разговора незачем — в журнал.
+       */
+      console.warn('Не со всеми получилось соединиться сразу:', error);
       // Продолжаем звонок с оставшимися участниками
     }
   };
@@ -1024,7 +1027,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
               const retries = retryCounts.get(user.id) || 0;
               if (retries >= 3) {
                 console.error(`Max retries reached for user ${user.id}`);
-                toast.error(`Connection failed with ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
+                console.warn('Связь не сложилась с', user.id);
                 peerConnections.current.delete(String(user.id));
                 setCallParticipants((prev) => prev.filter((u) => u.id !== Number(user.id)));
                 if (callParticipants.length < 2) {
@@ -1088,12 +1091,12 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
                         );
                     } catch (error) {
                         console.error(`Failed to send retry offer to user ${user.id}:`, error);
-                        toast.error(`Failed to send offer to ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
+                        console.warn('Предложение не ушло к', user.id);
                     }
                 }
               } else {
                 console.error(`Failed to initialize PeerConnection for user ${user.id} on retry ${retries + 1}`);
-                toast.error(`Failed to reconnect with ${callParticipants.find((u) => u.id === Number(user.id))?.username || `User ${user.id}`}`);
+                console.warn('Пересобрать связь с', user.id, 'не вышло');
               }
             } else {
               console.log(`Connection with user ${user.id} is already established, iceConnectionState: ${peerConnection.iceConnectionState}, connectionState: ${peerConnection.connectionState}`);
@@ -1103,7 +1106,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
       }
     } catch (error) {
       console.error('Error retrying failed connections:', error);
-      toast.error('Failed to retry connections.');
+      console.warn('Повторная сборка связей не удалась');
     }
   };
 
@@ -1188,7 +1191,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         const peerConnection = await initializePeerConnection(currentFrom, localAudioRef.current.srcObject);
         if (!peerConnection) {
           console.warn(`Failed to initialize PeerConnection for user ${currentFrom}`);
-          toast.error('Failed to initialize connection.');
+          console.warn('Соединение не завелось');
           continue;
         }
       }
@@ -1211,13 +1214,13 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
               console.log('Processing groupCallInvite:', currentSignal);
               if (!currentSignalData.roomId) {
                 console.error('groupCallInvite received with null roomId');
-                toast.error('Invalid call invite received.');
+                console.warn('Приглашение пришло неполным');
                 navigate('/');
                 return;
               }
               roomId.current = currentSignalData.roomId;
               console.log('Updated roomId to:', roomId.current);
-              toast.info(`${currentSignalData.initiatorName} invites you to a group call`);
+              console.log('Приглашение в общий разговор от', currentSignalData.initiatorName);
               callParticipants
                 .filter((p) => p.id !== Number(currentUserId))
                 .forEach((user) => {
@@ -1246,7 +1249,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
           case 'acceptCall':
             if (isInitiator) {
               const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
-              toast.success(`${userName} accepted the group call`);
+              console.log(userName, 'принял приглашение');
             }
             break;
 
@@ -1259,7 +1262,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
               const newSet = new Set([...prev, currentFrom]);
               console.log('Ready users updated:', Array.from(newSet));
               const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
-              toast.success(`${userName} is ready`);
+              console.log(userName, 'готов');
               console.log(`User ${userName} is ready`);
               return newSet;
             });
@@ -1387,7 +1390,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
           case 'rejectCall':
             if (isInitiator) {
               const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
-              toast.warn(`${userName} rejected the group call`);
+              toast.warn(`${userName} declined`, { toastId: `declined-${userName}` });
               setCallParticipants((prev) => prev.filter((u) => u.id !== Number(currentFrom)));
               peerConnections.current.delete(currentFrom);
               if (callParticipants.length <= 1) {
@@ -1419,7 +1422,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
             if (!hasNotifiedEndCall.current) {
               hasNotifiedEndCall.current = true;
               const userName = callParticipants.find((u) => u.id === Number(currentFrom))?.username || `User ${currentFrom}`;
-              toast.info(`${userName} left the group call`);
+              toast.info(`${userName} left the call`, { toastId: `left-${userName}` });
               setCallParticipants((prev) => {
                 const updatedParticipants = prev.filter((u) => u.id !== Number(currentFrom));
                 console.log('Updated participants after endCall:', updatedParticipants);
@@ -1520,7 +1523,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
           }
         });
       hasNotifiedEndCall.current = true;
-      toast.info('Group call ended');
+      console.log('Общий разговор окончен');
     }
 
     // NEW: Отписываемся от комнаты
@@ -1610,7 +1613,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         hasSavedCall.current = true;
       } catch (error) {
         console.error('Error saving group call:', error);
-        toast.error('Failed to save call', { toastId: 'save-call-error' });
+        console.warn('Запись о звонке не сохранилась');
       }
     };
 
@@ -1720,7 +1723,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
   const toggleCamera = async () => {
     if (!localAudioRef.current || !localAudioRef.current.srcObject) {
       console.warn('Cannot toggle camera: localAudioRef or srcObject not ready');
-      toast.error('Audio stream not ready, cannot toggle camera');
+      console.warn('Звуковой поток не готов — камеру пока не включить');
       return;
     }
 
@@ -1812,7 +1815,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
           videoElement.srcObject = localVideoOnlyStream;  // ← Только видео!
           videoElement.play().catch((error) => {
             console.error('Error playing local video:', error);
-            toast.error('Failed to display local video');
+            console.warn('Своя картинка не показалась');
           });
         }
 
@@ -1888,7 +1891,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
 
       } catch (error) {
         console.error('Error accessing camera:', error);
-        toast.error('Failed to access camera');
+        toast.error('Could not turn the camera on', { toastId: 'camera' });
       }
     }
   };

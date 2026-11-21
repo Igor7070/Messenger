@@ -448,7 +448,7 @@ export const CallWebSocketProvider = ({ children }) => {
         console.log('CallWebSocketContext: Successfully subscribed to /topic/room/' + callRequest.roomId);
       }, (error) => {
         console.error('CallWebSocketContext: Failed to subscribe to /topic/room/' + callRequest.roomId + ':', error);
-        toast.error('Failed to connect to group call server');
+        console.warn('Сервер общих разговоров не отвечает');
         setIncomingCallWithLog(null);
         callRequestRef.current = null;
         setIsCallEnded(true);
@@ -530,7 +530,7 @@ export const CallWebSocketProvider = ({ children }) => {
   const acceptCall = (navigate) => {
     if (!incomingCall || !callRequestRef.current) {
       console.error('CallWebSocketContext: No incoming call or callRequestRef to accept');
-      toast.error('No active call to accept');
+      console.warn('Принимать нечего: звонка нет');
       return;
     }
 
@@ -608,19 +608,14 @@ export const CallWebSocketProvider = ({ children }) => {
 
           console.log('CallWebSocketContext: Navigating to:', route, 'with state:', state);
           navigate(route, { state });
-          toast.success(
-            incomingCall.type === 'video' ? 'Video call accepted' :
-            incomingCall.type === 'translate' ? 'Translate call accepted' :
-            incomingCall.type === 'group' ? 'Group call accepted' :
-            'Voice call accepted'
-          );
+          // Разговор и так открывается на экране — объявлять об этом незачем
         } else {
           console.error('CallWebSocketContext: Ошибка при получении имен пользователей');
-          toast.error('Failed to fetch user data');
+          console.warn('Сведения о собеседнике не пришли');
         }
       } catch (error) {
         console.error('CallWebSocketContext: Ошибка при получении имен пользователей:', error);
-        toast.error('Error fetching user data');
+        console.warn('Сведения о собеседнике не читаются');
       }
     };
 
@@ -630,7 +625,7 @@ export const CallWebSocketProvider = ({ children }) => {
   const rejectCall = () => {
     if (!incomingCall || !callRequestRef.current) {
       console.error('CallWebSocketContext: No incoming call or callRequestRef to reject');
-      toast.error('No active call to reject');
+      console.warn('Отклонять нечего: звонка нет');
       return;
     }
 
@@ -680,7 +675,7 @@ export const CallWebSocketProvider = ({ children }) => {
         console.log('CallWebSocketContext: Rejected call saved to server with callType:', callData.callType);
       } catch (error) {
         console.error('CallWebSocketContext: Error saving rejected call:', error);
-        toast.error('Failed to save rejected call', { toastId: 'save-rejected-call-error' });
+        console.warn('Запись об отклонённом звонке не сохранилась');
       }
     };
 
@@ -699,12 +694,8 @@ export const CallWebSocketProvider = ({ children }) => {
       subscriptionRef.current = null;
     }
     setIsCallEnded(true); // Устанавливаем isCallEnded
-    toast.info(
-      incomingCall.type === 'video' ? 'Video call rejected' :
-      incomingCall.type === 'translate' ? 'Translate call rejected' :
-      incomingCall.type === 'group' ? 'Group call rejected' :
-      'Voice call rejected'
-    );
+    // Отклонил сам — всплывашка об этом ни к чему
+    console.log('Звонок отклонён:', incomingCall.type);
   };
 
   const setGroupSignalHandler = (handler) => {

@@ -1063,7 +1063,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
             });
             // NEW: Устанавливаем hasNotifiedAcceptCall при получении offer
             hasNotifiedAcceptCall.current = true;
-            notify(`${recipientName} accepted the call.`, { toastId: `accept-call-${roomId}` });
+            console.log('Собеседник принял звонок');
           }
         } else if (signalMessage.signal.type === 'answer') {
           if (isCaller && peerConnectionRef.current) {
@@ -1120,7 +1120,7 @@ const VoiceCallWithTranslate = ({ recipientId }) => {
             setIsWaiting(false);
             ringtoneRef.current.pause();
             ringtoneRef.current.currentTime = 0;
-            notify(`${recipientName} accepted the call.`, { toastId: `accept-call-${roomId}` });
+            console.log('Собеседник принял звонок');
           }
         }
       } catch (error) {

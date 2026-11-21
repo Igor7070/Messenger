@@ -413,7 +413,7 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
       },
       onStompError: (frame) => {
         console.error('STOMP error:', frame);
-        notify('STOMP protocol error.', { toastId: 'stomp-error' });
+        console.warn('Сбой разговора по пути сигналов');
       },
       onWebSocketError: (error) => {
         if (error.type === 'error') {
@@ -536,7 +536,7 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
           console.log('WebRTC connection established');
         } else if (peerConnectionRef.current.iceConnectionState === 'failed') {
           console.error('WebRTC connection failed');
-          notify('Failed to establish voice connection.', { toastId: 'voice-connection-failed' });
+          notify('Could not get the voices through', { toastId: 'voice-connection-failed' });
           endCall();
         }
       };
@@ -570,7 +570,7 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
       sendSignal({ from: currentUserId, signal: { type: 'ready', sdp: '' } });
     } catch (error) {
       console.error('Error accessing audio devices:', error);
-      notify('Failed to access microphone.', { toastId: 'media-access-failed' });
+      notify('Could not reach the microphone', { toastId: 'media-access-failed' });
       endCall();
     }
   };
@@ -638,7 +638,7 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
           console.log('WebRTC connection established');
         } else if (peerConnectionRef.current.iceConnectionState === 'failed') {
           console.error('WebRTC connection failed');
-          notify('Failed to establish voice connection.', { toastId: 'voice-connection-failed' });
+          notify('Could not get the voices through', { toastId: 'voice-connection-failed' });
           endCall();
         }
       };
@@ -684,7 +684,7 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
       };
     } catch (error) {
       console.error('Error starting voice call:', error);
-      notify('Failed to start voice call.', { toastId: 'start-call-failed' });
+      notify('Could not start the call', { toastId: 'start-call-failed' });
       endCall();
     }
   };
@@ -792,7 +792,7 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
             });
             // NEW: Устанавливаем hasNotifiedAcceptCall при получении offer
             hasNotifiedAcceptCall.current = true;
-            notify(`${recipientName} accepted the call.`, { toastId: `accept-call-${roomId}` });
+            console.log('Собеседник принял звонок');
           } else {
             console.log('peerConnectionRef.current is not initialized or signal received by caller.');
           }
@@ -860,7 +860,7 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
             if (userName) {
               notify(`${userName} interrupted the conversation.`, { toastId: `end-call-${roomId}` });
             } else {
-              notify(`User with ID ${signalMessage.from} interrupted the conversation.`, {
+              notify('The other side left the call.', {
                 toastId: `end-call-${roomId}`,
               });
             }
@@ -890,7 +890,7 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
               setIsWaiting(false);
               ringtoneRef.current.pause();
               ringtoneRef.current.currentTime = 0;
-              notify(`${recipientName} accepted the call.`, { toastId: `accept-call-${roomId}` });
+              console.log('Собеседник принял звонок');
             }
         }
       } catch (error) {
@@ -1005,7 +1005,7 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
         hasSavedCall.current = true;
       } catch (error) {
         console.error('Error saving voice call:', error);
-        notify('Failed to save call', { toastId: 'save-call-error' });
+        console.warn('Запись о звонке не сохранилась');
       }
     };
 
