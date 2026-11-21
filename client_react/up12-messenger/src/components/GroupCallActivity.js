@@ -1729,7 +1729,12 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
   const renderVideoScreens = () => {
     return (
       <div className="group-call-video-grid">
-        {callParticipants.map((user) => (
+        {callParticipants
+          /* Себя показываем, только когда своя камера включена — как в
+             телеграме и как теперь на телефоне. Прежде в вебе среди плиток
+             висел собственный пустой прямоугольник. */
+          .filter((user) => String(user.id) !== String(currentUserId) || isCameraOn)
+          .map((user) => (
           <div key={user.id} className="group-call-video-container">
             <div className="group-call-participant-name">
               {user.username}

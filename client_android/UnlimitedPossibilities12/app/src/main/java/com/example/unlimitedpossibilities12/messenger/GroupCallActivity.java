@@ -1116,6 +1116,7 @@ public class GroupCallActivity extends AppCompatActivity {
     private final Runnable досылкаКруг = new Runnable() {
         @Override public void run() {
             if (isCallEnded) return;
+            убратьНеотозвавшихся();
             подтолкнутьЗастрявших();
             досылатьКартинку();
             досылкаРучка.postDelayed(this, 3000);
@@ -1124,6 +1125,52 @@ public class GroupCallActivity extends AppCompatActivity {
 
     /** Сколько кругов собеседник молчит в ответ на наше предложение. */
     private final Map<String, Integer> молчат = new HashMap<>();
+
+    /** Когда позвали каждого: кто не отозвался за минуту, тот не придёт. */
+    private final Map<String, Long> позвалиВ = new HashMap<>();
+
+    /**
+     * Убрать из разговора тех, кто так и не ответил.
+     *
+     * Прежде приглашённый висел в списке с надписью «ringing…» до конца
+     * разговора, даже если он давно закрыл приложение. В вебе такой
+     * звонок сбрасывается через минуту — делаем так же.
+     */
+    private void убратьНеотозвавшихся() {
+        long сейчас = System.currentTimeMillis();
+        java.util.List<User> уходят = new java.util.ArrayList<>();
+        for (User свой : participants) {
+            String номер = String.valueOf(свой.getId());
+            if (номер.equals(String.valueOf(currentUserId))) continue;
+            if (readyUsers.contains(номер)) { позвалиВ.remove(номер); continue; }
+            Long позвали = позвалиВ.get(номер);
+            if (позвали == null) { позвалиВ.put(номер, сейчас); continue; }
+            if (сейчас - позвали > 60000) уходят.add(свой);
+        }
+        for (User ушедший : уходят) {
+            String номер = String.valueOf(ушедший.getId());
+            Log.d(TAG, "Собеседник " + номер + " не ответил за минуту — убираем из разговора");
+            позвалиВ.remove(номер);
+            int место = getParticipantPosition(номер);
+            participants.remove(ушедший);
+            PeerConnection pc = peerConnections.remove(номер);
+            if (pc != null) { pc.close(); pc.dispose(); }
+            runOnUiThread(() -> {
+                if (место >= 0) {
+                    participantsAdapter.notifyItemRemoved(место);
+                    videoParticipantsAdapter.notifyItemRemoved(место);
+                }
+                refreshParticipants();
+                updateHeader();
+                Toast.makeText(GroupCallActivity.this,
+                        ушедший.getUsername() + " did not answer", Toast.LENGTH_SHORT).show();
+            });
+            if (осталосьСобеседников(номер) == 0) {
+                Log.d(TAG, "Никто не ответил — кладём трубку");
+                runOnUiThread(this::endCall);
+            }
+        }
+    }
 
     /**
      * Повторить предложение тому, кто не ответил.
@@ -2397,7 +2444,9 @@ public class GroupCallActivity extends AppCompatActivity {
             paintButton(toggleModeButton, true);
             participantsRecyclerView.setVisibility(View.GONE);
             videoGrid.setVisibility(View.VISIBLE);
-            localVideoCard.setVisibility(View.VISIBLE);
+            // Своё окошко — только при включённой камере: пустой чёрный
+            // прямоугольник в углу не нужен никому
+            localVideoCard.setVisibility(isCameraOn ? View.VISIBLE : View.GONE);
             // Принудительное обновление UI
             videoGrid.requestLayout();
             videoGrid.invalidate();
@@ -2441,6 +2490,10 @@ public class GroupCallActivity extends AppCompatActivity {
 
             // Убедимся, что localVideoView и кнопка видимы
             runOnUiThread(() -> {
+                /* Окошко показываем до запуска камеры: камера ждёт его
+                   поверхность, а у спрятанного окошка её нет вовсе —
+                   спрятав окошко, я заодно не дал камере включиться. */
+                localVideoCard.setVisibility(View.VISIBLE);
                 localVideoView.setVisibility(View.VISIBLE);
                 localNoVideoText.setVisibility(View.VISIBLE);
                 toggleCameraButton.setVisibility(View.GONE);
@@ -2466,6 +2519,7 @@ public class GroupCallActivity extends AppCompatActivity {
                             toggleCameraButton.setImageResource(R.drawable.ic_videocam_off);
                             toggleCameraButton.setBackgroundTintList(
                                     android.content.res.ColorStateList.valueOf(0xFFFF4444));
+                            localVideoCard.setVisibility(View.VISIBLE);
                             localVideoView.setVisibility(View.VISIBLE);
                             localNoVideoText.setVisibility(View.GONE);
                             toggleCameraButton.setVisibility(View.GONE);
@@ -2787,6 +2841,7 @@ public class GroupCallActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         isCameraOn = true;
                         cameraStates.put(currentUserId, true);
+                        localVideoCard.setVisibility(View.VISIBLE);
                         toggleCameraButton.setImageResource(R.drawable.ic_videocam_off);
                         toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF4444));
                         localVideoView.setVisibility(View.VISIBLE);
@@ -2903,7 +2958,7 @@ public class GroupCallActivity extends AppCompatActivity {
             }
         }
         runOnUiThread(() -> {
-            localVideoView.setVisibility(View.VISIBLE);
+            localVideoCard.setVisibility(View.GONE);
             localVideoView.clearImage();
             localNoVideoText.setVisibility(View.VISIBLE);
             toggleCameraButton.setImageResource(R.drawable.ic_video_call);
