@@ -1750,9 +1750,9 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
     return (
       <div className="group-call-video-grid">
         {callParticipants
-          /* В сетке — только собеседники. Своя картинка висит отдельным
-             окошком в углу, как на телефоне. */
-          .filter((user) => String(user.id) !== String(currentUserId))
+          /* В группе все равны: своя картинка — такая же плитка, как
+             остальные. Уголок остаётся только для разговора вдвоём, где
+             картинка собеседника одна и занимает всё окно. */
           .map((user) => (
           <div key={user.id} className="group-call-video-container">
             <div className="group-call-participant-name">
@@ -2065,23 +2065,6 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
             </button>
           )}
         </div>
-        {isCameraOn && (
-          /* Своё окошко: висит поверх разговора, пока своя камера включена */
-          <div className="group-call-self-corner">
-            <video
-              autoPlay
-              playsInline
-              muted
-              ref={(el) => {
-                if (!el) return;
-                if (свойПоказ.current && el.srcObject !== свойПоказ.current) {
-                  el.srcObject = свойПоказ.current;
-                  el.play().catch(() => {});
-                }
-              }}
-            />
-          </div>
-        )}
         {isVideoMode ? (
           renderVideoScreens()
         ) : (

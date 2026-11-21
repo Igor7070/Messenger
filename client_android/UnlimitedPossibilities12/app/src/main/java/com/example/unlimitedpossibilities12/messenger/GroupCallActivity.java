@@ -2466,9 +2466,8 @@ public class GroupCallActivity extends AppCompatActivity {
                     isCameraOn ? R.drawable.ic_videocam_off : R.drawable.ic_video_call);
             participantsRecyclerView.setVisibility(View.GONE);
             videoGrid.setVisibility(View.VISIBLE);
-            // Своё окошко — только при включённой камере: пустой чёрный
-            // прямоугольник в углу не нужен никому
-            localVideoCard.setVisibility(isCameraOn ? View.VISIBLE : View.GONE);
+            // Уголка в группе нет: своя картинка идёт плиткой в сетке
+            localVideoCard.setVisibility(View.GONE);
             // Принудительное обновление UI
             videoGrid.requestLayout();
             videoGrid.invalidate();
@@ -2514,10 +2513,15 @@ public class GroupCallActivity extends AppCompatActivity {
 
             // Убедимся, что localVideoView и кнопка видимы
             runOnUiThread(() -> {
-                /* Окошко показываем до запуска камеры: камера ждёт его
-                   поверхность, а у спрятанного окошка её нет вовсе —
-                   спрятав окошко, я заодно не дал камере включиться. */
+                /* Окошко держим на месте, но прозрачным: камера ждёт его
+                   поверхность, а у спрятанного окошка её нет вовсе. Видно
+                   себя будет в своей плитке в сетке. */
+                /* Прозрачность такому окну не помогает: оно рисует своей
+                   поверхностью поверх всего, и его картинка ложилась на
+                   чужую плитку. Поэтому просто уводим его за край экрана —
+                   поверхность у него есть, а видно его не будет. */
                 localVideoCard.setVisibility(View.VISIBLE);
+                localVideoCard.setTranslationX(-3000f);
                 localVideoView.setVisibility(View.VISIBLE);
                 localNoVideoText.setVisibility(View.VISIBLE);
                 toggleCameraButton.setVisibility(View.GONE);
@@ -2539,7 +2543,12 @@ public class GroupCallActivity extends AppCompatActivity {
                         localVideoTrack.addSink(localVideoView);
                         synchronized (замокКамеры) { isCameraOn = true; }
                         cameraStates.put(currentUserId, true);
-                        runOnUiThread(() -> paintButton(findViewById(R.id.toggle_mode_button), true));
+                        runOnUiThread(() -> {
+                            paintButton(findViewById(R.id.toggle_mode_button), true);
+                            // Своя картинка идёт в сетку, как у остальных
+                            videoParticipantsAdapter.setCameraState(currentUserId, true);
+                            videoParticipantsAdapter.setVideoTrack(currentUserId, localVideoTrack);
+                        });
                         runOnUiThread(() -> {
                             toggleCameraButton.setImageResource(R.drawable.ic_videocam_off);
                             toggleCameraButton.setBackgroundTintList(
@@ -2867,7 +2876,8 @@ public class GroupCallActivity extends AppCompatActivity {
                         isCameraOn = true;
                         cameraStates.put(currentUserId, true);
                         paintButton(findViewById(R.id.toggle_mode_button), true);
-                        localVideoCard.setVisibility(View.VISIBLE);
+                        videoParticipantsAdapter.setCameraState(currentUserId, true);
+                        videoParticipantsAdapter.setVideoTrack(currentUserId, localVideoTrack);
                         toggleCameraButton.setImageResource(R.drawable.ic_videocam_off);
                         toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF4444));
                         localVideoView.setVisibility(View.VISIBLE);
@@ -2985,6 +2995,7 @@ public class GroupCallActivity extends AppCompatActivity {
         }
         runOnUiThread(() -> {
             paintButton(findViewById(R.id.toggle_mode_button), false);
+            videoParticipantsAdapter.setCameraState(currentUserId, false);
             localVideoCard.setVisibility(View.GONE);
             localVideoView.clearImage();
             localNoVideoText.setVisibility(View.VISIBLE);

@@ -122,10 +122,7 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
 
     public void setVideoTrack(String userId, VideoTrack videoTrack) {
         // [ДОБАВЛЕНО]: Игнорируем локального пользователя
-        if (userId.equals(currentUserId)) {
-            Log.d(TAG, "setVideoTrack: Ignoring for currentUserId=" + userId + " (handled by localVideoView)");
-            return;
-        }
+
         Log.d(TAG, "setVideoTrack: userId=" + userId + ", videoTrack=" + (videoTrack != null ? "not null" : "null"));
 
         // [КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ]: Сохраняем трек и сбрасываем флаг привязки
@@ -163,10 +160,7 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
 
     public void setCameraState(String userId, boolean isCameraOn) {
         // [ДОБАВЛЕНО]: Игнорируем локального пользователя
-        if (userId.equals(currentUserId)) {
-            Log.d(TAG, "setCameraState: Ignoring for currentUserId=" + userId + " (handled by localVideoView)");
-            return;
-        }
+
         Log.d(TAG, "setCameraState: userId=" + userId + ", isCameraOn=" + isCameraOn);
         cameraStates.put(userId, isCameraOn);
         runOnUiThread(() -> {
@@ -178,10 +172,12 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
     }
 
     private int getParticipantPosition(String userId) {
-        // [ИЗМЕНЕНО]: Учитываем только удалённых участников
+        /* Себя в сетке тоже показываем, поэтому места считаем подряд.
+           Пока себя пропускали, своя плитка не обновлялась вовсе: место
+           для неё не находилось, и на ней оставался последний кадр. */
         int position = 0;
         for (User user : participants) {
-            if (!String.valueOf(user.getId()).equals(currentUserId)) {
+            {
                 if (String.valueOf(user.getId()).equals(userId)) {
                     return position;
                 }
@@ -299,6 +295,14 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
     private float getTileAspect(String userId) {
         if (MODE_LANDSCAPE.equals(tileMode)) return ASPECT_LANDSCAPE;
         if (MODE_PORTRAIT.equals(tileMode)) return ASPECT_PORTRAIT;
+        /*
+         * Больше двух плиток — держим их одной формы.
+         *
+         * Иначе вертикальная картинка с телефона растягивала свою плитку
+         * на пол-экрана, ряды выходили разной высоты, а подпись с именем
+         * уезжала за нижний край сетки и обрезалась в полоску.
+         */
+        if (participants.size() > 2) return ASPECT_LANDSCAPE;
         Float aspect = videoAspects.get(userId);
         // Пока разрешение потока неизвестно, показываем привычную горизонтальную плитку.
         return (aspect != null && aspect > 0f) ? aspect : ASPECT_LANDSCAPE;
@@ -408,7 +412,10 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
         String userId = String.valueOf(user.getId());
         Log.d(TAG, "onBindViewHolder: position=" + position + ", userId=" + userId + ", width=" + holder.videoView.getWidth() + ", height=" + holder.videoView.getHeight());
 
-        holder.usernameTextView.setText(user.getUsername());
+        // Себя помечаем и на плитке — как в списке участников и как в вебе
+        holder.usernameTextView.setText(userId.equals(currentUserId)
+                ? user.getUsername() + " (you)"
+                : user.getUsername());
         bindTileAvatar(holder, user);
         videoViews.put(userId, holder.videoView);
         applyTileShape(holder, userId);
@@ -419,8 +426,8 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
         // Пояснение: без этого видео не появляется, если трек пришёл до создания ячейки
         VideoTrack savedTrack = boundVideoTracks.get(userId);
 
-        if (savedTrack != null) {
-            // Есть трек — показываем видео
+        if (savedTrack != null && isCameraOn) {
+            // Есть дорожка и камера включена — показываем картинку
             holder.videoView.setVisibility(View.VISIBLE);
             holder.noVideoText.setVisibility(View.GONE);
 
@@ -430,7 +437,9 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
                 attachSinkWithRetry(holder.videoView, userId, savedTrack, 0, 3);
             }
         } else {
-            // Нет трека — показываем placeholder
+            /* Камеры нет или она выключена — показываем лицо. Картинку
+               стираем: иначе на плитке застывает последний кадр. */
+            holder.videoView.clearImage();
             holder.videoView.setVisibility(View.GONE);
             holder.noVideoText.setVisibility(View.VISIBLE);
         }
@@ -445,17 +454,13 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
 
     // [ДОБАВЛЕНО]: Возвращает участника, пропуская текущего пользователя
     private User getFilteredParticipant(int position) {
-        int currentPosition = 0;
-        for (User user : participants) {
-            if (!String.valueOf(user.getId()).equals(currentUserId)) {
-                if (currentPosition == position) {
-                    return user;
-                }
-                currentPosition++;
-            }
+        /* Себя больше не пропускаем: в группе своя картинка — такая же
+           плитка, как у остальных, и места считаются подряд. */
+        if (position >= 0 && position < participants.size()) {
+            return participants.get(position);
         }
         Log.e(TAG, "getFilteredParticipant: No participant found for position=" + position);
-        return participants.get(0); // Fallback, если позиция некорректна
+        return participants.get(0);
     }
 
     @Override
@@ -491,12 +496,12 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
 
     @Override
     public int getItemCount() {
-        // [ИЗМЕНЕНО]: Уменьшаем счётчик, исключая локального участника
+        /* Себя тоже показываем плиткой — как в вебе и как в телеграме:
+           уголок остаётся только для разговора вдвоём. */
         int count = participants.size();
-        for (User user : participants) {
-            if (String.valueOf(user.getId()).equals(currentUserId)) {
+        if (false) {
+            if (false) {
                 count--;
-                break;
             }
         }
         Log.d(TAG, "getItemCount: total=" + participants.size() + ", excluding currentUserId=" + currentUserId + ", returning=" + count);
@@ -540,6 +545,8 @@ public class VideoParticipantsAdapter extends RecyclerView.Adapter<VideoParticip
     private void bindTileAvatar(VideoViewHolder holder, User user) {
         if (holder.tileAvatarText == null) return;
         String name = user.getUsername() != null ? user.getUsername() : "?";
+        // Себя помечаем и здесь: эта подпись перекрывает заданную при привязке
+        if (String.valueOf(user.getId()).equals(currentUserId)) name = name + " (you)";
         holder.tileAvatarText.setText(name.substring(0, 1).toUpperCase(java.util.Locale.getDefault()));
         holder.tileAvatarText.setBackgroundTintList(
                 android.content.res.ColorStateList.valueOf(colorForName(name)));
