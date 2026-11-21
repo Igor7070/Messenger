@@ -167,7 +167,7 @@
     <!-- Кнопки разговора -->
     <LinearLayout
         android:id="@+id/call_controls"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="56dp"
         android:gravity="center"
@@ -177,22 +177,22 @@
         app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="14dp"
+            android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical">
 
             <ImageView
                 android:id="@+id/mute_button"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="58dp"
+                android:layout_height="58dp"
                 android:background="@drawable/circle_background"
                 android:backgroundTint="#1E293B"
                 android:clickable="true"
                 android:contentDescription="@string/call_mute"
                 android:focusable="true"
-                android:padding="18dp"
+                android:padding="16dp"
                 android:src="@drawable/ic_mic_white"
                 app:tint="#E2E8F0" />
 
@@ -207,23 +207,23 @@
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="14dp"
+            android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical">
 
             <!-- Позвать третьего: разговор продолжится втроём -->
             <ImageView
                 android:id="@+id/add_button"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="58dp"
+                android:layout_height="58dp"
                 android:background="@drawable/circle_background"
                 android:backgroundTint="#1E293B"
                 android:clickable="true"
                 android:contentDescription="@string/call_add"
                 android:focusable="true"
-                android:padding="18dp"
+                android:padding="16dp"
                 android:src="@drawable/ic_group_add"
                 app:tint="#E2E8F0" />
 
@@ -237,23 +237,23 @@
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="14dp"
+            android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical">
 
             <!-- Камера: включается прямо в разговоре, как в телеграме -->
             <ImageView
                 android:id="@+id/camera_button"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="58dp"
+                android:layout_height="58dp"
                 android:background="@drawable/circle_background"
                 android:backgroundTint="#1E293B"
                 android:clickable="true"
                 android:contentDescription="@string/call_camera"
                 android:focusable="true"
-                android:padding="18dp"
+                android:padding="16dp"
                 android:src="@drawable/ic_video_call"
                 app:tint="#E2E8F0" />
 
@@ -268,22 +268,22 @@
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="14dp"
+            android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical">
 
             <ImageView
                 android:id="@+id/speaker_button"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="58dp"
+                android:layout_height="58dp"
                 android:background="@drawable/circle_background"
                 android:backgroundTint="#1E293B"
                 android:clickable="true"
                 android:contentDescription="@string/call_speaker"
                 android:focusable="true"
-                android:padding="18dp"
+                android:padding="16dp"
                 android:src="@drawable/ic_volume_up"
                 app:tint="#E2E8F0" />
 
@@ -298,16 +298,16 @@
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="14dp"
+            android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical">
 
             <ImageView
                 android:id="@+id/end_call_button"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="58dp"
+                android:layout_height="58dp"
                 android:background="@drawable/circle_background"
                 android:backgroundTint="#DC2626"
                 android:clickable="true"

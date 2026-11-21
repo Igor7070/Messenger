@@ -1220,7 +1220,9 @@ public class GroupCallActivity extends AppCompatActivity {
                     readyUsers.add(userId); // [ДОБАВЛЕНО]: Добавляем пользователя в readyUsers
                     runOnUiThread(GroupCallActivity.this::смолкнуть);
                     refreshParticipants();
-                    runOnUiThread(() -> Toast.makeText(GroupCallActivity.this, "Connected to user " + userId, Toast.LENGTH_SHORT).show());
+                    // Прежде здесь всплывало «Connected to user 2» прямо поверх
+                    // кнопок, да ещё и с голым номером. В строке участника и
+                    // так написано «in the call» — этого довольно.
                 }
             }
 
