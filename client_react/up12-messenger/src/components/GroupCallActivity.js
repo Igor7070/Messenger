@@ -1692,7 +1692,10 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
       <div className="group-call-video-grid">
         {callParticipants.map((user) => (
           <div key={user.id} className="group-call-video-container">
-            <div className="group-call-participant-name">{user.username}</div>
+            <div className="group-call-participant-name">
+              {user.username}
+              {String(user.id) === String(currentUserId) && ' (you)'}
+            </div>
             <div
               className="group-call-video-wrapper"
               style={{ aspectRatio: getTileAspect(user.id) }}
@@ -1998,7 +2001,12 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
                   ) : (
                     <div className="group-call-participant-avatar">{user.username.charAt(0).toUpperCase()}</div>
                   )}
-                  <span className="group-call-participant-name">{user.username}</span>
+                  <span className="group-call-participant-name">
+                    {/* Себя помечаем, как это сделано на телефоне: иначе
+                        в списке из трёх имён не сразу понятно, где ты */}
+                    {user.username}
+                    {String(user.id) === String(currentUserId) && ' (you)'}
+                  </span>
                   {/* Защита — своя у каждого: групповой звонок сложен из
                       парных соединений, и подпись проверяется с каждым
                       отдельно. Нажатие открывает код для сверки голосом. */}
