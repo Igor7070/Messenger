@@ -838,3 +838,25 @@ body.has-call-strip #root > .app > * { max-height: calc(100vh - 42px); }
 /* В разговоре с картинкой кадр идёт до самых краёв окна: боковые
    отступы окна здесь ни к чему, от них оставалась тёмная рамка */
 .voice-call-window:has(.voice-call-stage) { padding-left: 0; padding-right: 0; }
+
+
+/* Своё окошко в групповом разговоре — в углу, как на телефоне */
+.group-call-self-corner {
+  position: absolute;
+  left: 14px;
+  bottom: 96px;
+  width: 112px;
+  height: 150px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0b1220;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  z-index: 5;
+}
+
+.group-call-self-corner video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* себя привычнее видеть зеркально */
+}
