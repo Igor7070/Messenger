@@ -184,6 +184,16 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
    * Дорожку добавляем к живому соединению и шлём собеседнику новое
    * предложение связи — разговор при этом не прерывается.
    */
+  /**
+   * Включить или выключить свою камеру.
+   *
+   * Место для картинки в связи заводится один раз за разговор, и дальше
+   * в него просто кладут дорожку или вынимают её. Прежде каждое
+   * включение переписывало связь заново, и после нескольких раз стороны
+   * переставали договариваться: одна ждала ответа на своё предложение,
+   * другая на своё. Так это уже случилось на телефоне, чинить пришлось
+   * тем же способом.
+   */
   const toggleCamera = async () => {
     const pc = peerConnectionRef.current;
     if (!pc) return;
@@ -192,17 +202,25 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
         const поток = await navigator.mediaDevices.getUserMedia({ video: true });
         cameraStreamRef.current = поток;
         const дорожка = поток.getVideoTracks()[0];
-        videoSenderRef.current = pc.addTrack(дорожка, поток);
+        const местоЕсть = Boolean(videoSenderRef.current);
+        if (местоЕсть) {
+          // Место под картинку уже есть — просто кладём в него дорожку
+          await videoSenderRef.current.replaceTrack(дорожка);
+        } else {
+          videoSenderRef.current = pc.addTrack(дорожка, поток);
+        }
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = поток;
           localVideoRef.current.play().catch(() => {});
         }
         setIsCameraOn(true);
         sendSignal({ from: currentUserId, signal: { type: 'cameraOn' } });
+        // Договариваться нужно лишь когда место заводится впервые
+        if (!местоЕсть) await предложитьСвязьЗаново(pc);
       } else {
+        // Вынимаем дорожку, место под неё оставляем
         if (videoSenderRef.current) {
-          pc.removeTrack(videoSenderRef.current);
-          videoSenderRef.current = null;
+          await videoSenderRef.current.replaceTrack(null);
         }
         if (cameraStreamRef.current) {
           cameraStreamRef.current.getTracks().forEach((д) => д.stop());
@@ -212,8 +230,16 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
         setIsCameraOn(false);
         sendSignal({ from: currentUserId, signal: { type: 'cameraOff' } });
       }
+    } catch (ошибка) {
+      console.error('Камеру включить не вышло:', ошибка);
+      notify('Could not turn the camera on.', { toastId: `camera-${roomId}` });
+      setIsCameraOn(false);
+    }
+  };
 
-      // Новое предложение связи — иначе дорожка никуда не пойдёт
+  /** Предложить связь заново — нужно только при первом появлении картинки. */
+  const предложитьСвязьЗаново = async (pc) => {
+    try {
       makingOffer.current = true;
       const предложение = await pc.createOffer();
       await pc.setLocalDescription(предложение);
@@ -226,10 +252,6 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
           deviceId: myDeviceId(),
         },
       });
-    } catch (ошибка) {
-      console.error('Камеру включить не вышло:', ошибка);
-      notify('Could not turn the camera on.', { toastId: `camera-${roomId}` });
-      setIsCameraOn(false);
     } finally {
       makingOffer.current = false;
     }

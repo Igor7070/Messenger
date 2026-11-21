@@ -89,6 +89,18 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
    * его не видели, пока он не выключит и не включит её снова.
    */
   const remoteStreams = useRef(new Map());
+  /**
+   * Места под нашу картинку у каждого собеседника.
+   *
+   * Заводятся при первом включении камеры и живут до конца разговора:
+   * выключая камеру, мы вынимаем из места дорожку, а само место
+   * оставляем. Тогда договариваться о связи заново не нужно — а
+   * договариваться каждый раз мы как раз и не умеем: после нескольких
+   * кругов стороны застревают, ожидая ответа друг от друга.
+   */
+  const местаПодКартинку = useRef(new Map());
+  /** С кем нужно договориться заново: место под картинку только что заведено. */
+  const нужноДоговориться = useRef(new Set());
   /** Свёрнутый разговор занимает полоску — приложение двигается под неё. */
   useEffect(() => {
     document.body.classList.toggle('has-call-strip', Boolean(minimized));
@@ -1787,62 +1799,42 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         }
         console.log('Camera turned off');
       }
+      // Вынимаем дорожку из мест — сами места остаются
+      for (const [кому, место] of местаПодКартинку.current) {
+        try {
+          await место.replaceTrack(null);
+        } catch (ошибка) {
+          console.warn('Не вышло вынуть дорожку у', кому, ошибка);
+        }
+      }
       setIsCameraOn(false);
 
       // Уведомляем других об отключении камеры
       callParticipants
         .filter((u) => u.id !== Number(currentUserId))
         .forEach((user) => {
-          const signalKey = `${currentUserId}-${user.id}-cameraOff`;
-          if (!sentSignals.current.has(signalKey)) {
-            sentSignals.current.add(signalKey);
-            sendSignal(
-              {
-                from: currentUserId,
-                to: String(user.id),
-                signal: { type: 'cameraOff' },
-              },
-              roomId.current
-            );
-            console.log(`Sent cameraOff signal to user ${user.id}`);
-          }
+          /* Это слово должно уходить при каждом выключении: прежде
+             его придерживали как повтор, и со второго раза собеседник
+             не узнавал, что камеру выключили. */
+          sendSignal(
+            {
+              from: currentUserId,
+              to: String(user.id),
+              signal: { type: 'cameraOff' },
+            },
+            roomId.current
+          );
+          console.log(`Sent cameraOff signal to user ${user.id}`);
         });
 
-      // [НОВОЕ: Renegotiation при выключении камеры]
-      // Нужно отправить новый offer без видео m-line, чтобы другие участники убрали твой видеопоток
-      peerConnections.current.forEach((pc, userId) => {
-        if (
-          (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') &&
-          pc.signalingState === 'stable'
-        ) {
-          pc.createOffer()
-            .then((offer) => pc.setLocalDescription(offer))
-            .then(async () => {
-              const signalKey = `${currentUserId}-${userId}-renegotiated-offer-camera-off-${отпечатокСодержания(pc.localDescription.sdp)}`;
-              if (!sentSignals.current.has(signalKey)) {
-                sentSignals.current.add(signalKey);
-                sendSignal(
-                  {
-                    from: currentUserId,
-                    to: userId,
-                    // Перепредложение (камеру включили или выключили) тоже
-                    // подписываем: без подписи собеседник увидит «encrypted»
-                    signal: {
-                      type: pc.localDescription.type,
-                      sdp: pc.localDescription.sdp,
-                      ...(await signFor(userId, pc.localDescription.sdp)),
-                    },
-                  },
-                  roomId.current
-                );
-                console.log(`Sent RENEGOTIATED OFFER (camera off) to user ${userId}`);
-              }
-            })
-            .catch((err) => {
-              console.error(`Renegotiation failed (camera off) for user ${userId}:`, err);
-            });
-        }
-      });
+      /*
+       * Переписывать связь при выключении камеры больше не нужно:
+       * место под картинку остаётся, дорожку из него вынули, и по нему
+       * просто ничего не идёт. Собеседник узнаёт об этом из слова
+       * «камеру выключили», посланного выше. Прежде здесь шли
+       * переговоры заново — и после нескольких включений подряд
+       * стороны застревали, ожидая ответа друг от друга.
+       */
       // ============================================================
 
     } else {
@@ -1868,15 +1860,27 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
           });
         }
 
-        // Добавляем видеотрек в существующие peerConnections
-        peerConnections.current.forEach((pc, userId) => {
-          if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-            videoStream.getVideoTracks().forEach((track) => {
-              pc.addTrack(track, localVideoStreamRef.current);
-              console.log(`Added video track to peerConnection for user ${userId}`);
-            });
+        // Кладём дорожку в место у каждого собеседника; где места ещё
+        // нет — заводим, и только для таких придётся договориться заново
+        const дорожка = videoStream.getVideoTracks()[0];
+        нужноДоговориться.current = new Set();
+        for (const [userId, pc] of peerConnections.current) {
+          if (pc.iceConnectionState !== 'connected' && pc.iceConnectionState !== 'completed') continue;
+          const место = местаПодКартинку.current.get(userId);
+          if (место) {
+            try {
+              await место.replaceTrack(дорожка);
+              console.log(`Положили картинку в готовое место у ${userId}`);
+              continue;
+            } catch (ошибка) {
+              console.warn('Место у', userId, 'не приняло дорожку:', ошибка);
+              местаПодКартинку.current.delete(userId);
+            }
           }
-        });
+          местаПодКартинку.current.set(userId, pc.addTrack(дорожка, localVideoStreamRef.current));
+          нужноДоговориться.current.add(userId);
+          console.log(`Завели место под картинку у ${userId}`);
+        }
 
         setIsCameraOn(true);
 
@@ -1884,9 +1888,10 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         callParticipants
           .filter((u) => u.id !== Number(currentUserId))
           .forEach((user) => {
-            const signalKey = `${currentUserId}-${user.id}-cameraOn`;
-            if (!sentSignals.current.has(signalKey)) {
-              sentSignals.current.add(signalKey);
+            /* Это слово должно уходить при каждом включении: прежде его
+               придерживали как повтор, и со второго раза собеседник не
+               узнавал, что камеру включили. */
+            {
               sendSignal(
                 {
                   from: currentUserId,
@@ -1902,6 +1907,9 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         // [НОВОЕ: Renegotiation при включении камеры]
         // Обязательно: после addTrack отправляем renegotiated offer с видео m-line
         peerConnections.current.forEach((pc, userId) => {
+          // С остальными договариваться не о чем: место под картинку у них
+          // уже было, мы лишь положили в него дорожку
+          if (!нужноДоговориться.current.has(userId)) return;
           if (
             (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') &&
             pc.signalingState === 'stable'

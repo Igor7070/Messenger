@@ -1842,11 +1842,18 @@ public class GroupCallActivity extends AppCompatActivity {
                         } else {
                             Log.w(TAG, "No SurfaceViewRenderer available for user " + fromId);
                         }
-                        Toast.makeText(GroupCallActivity.this, participants.stream()
-                                .filter(u -> String.valueOf(u.getId()).equals(fromId))
-                                .findFirst()
-                                .map(User::getUsername)
-                                .orElse("User " + fromId) + " turned on their camera", Toast.LENGTH_SHORT).show();
+                        /*
+                         * Показываем плитки сами.
+                         *
+                         * Прежде экран переключался на них, только когда
+                         * включаешь свою камеру. Собеседник включал свою —
+                         * и телефон продолжал показывать список имён, а
+                         * картинку было не увидеть вовсе.
+                         */
+                        if (!isVideoMode) {
+                            Log.d(TAG, "Собеседник показал картинку — переходим к плиткам");
+                            toggleMode();
+                        }
                     });
                     break;
 
