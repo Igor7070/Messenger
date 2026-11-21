@@ -304,18 +304,9 @@ public class VoiceCallActivity extends AppCompatActivity {
     }
 
     private void initializeWebRTC() {
-        PeerConnectionFactory.InitializationOptions options = PeerConnectionFactory.InitializationOptions.builder(this)
-                .createInitializationOptions();
-        PeerConnectionFactory.initialize(options);
-        eglBase = org.webrtc.EglBase.create();
-        peerConnectionFactory = PeerConnectionFactory.builder()
-                // Без этих двух разговор остаётся без картинки: завод
-                // соединений просто не умеет её сжимать и разбирать
-                .setVideoEncoderFactory(new org.webrtc.DefaultVideoEncoderFactory(
-                        eglBase.getEglBaseContext(), true, true))
-                .setVideoDecoderFactory(new org.webrtc.DefaultVideoDecoderFactory(
-                        eglBase.getEglBaseContext()))
-                .createPeerConnectionFactory();
+        // Завод и рисовальный контекст — общие на всё приложение
+        eglBase = ЗаводСвязи.egl();
+        peerConnectionFactory = ЗаводСвязи.завод(this);
 
         if (currentUserId == null) {
             Log.e(TAG, "currentUserId is undefined. Check the Intent extras.");
@@ -595,16 +586,8 @@ public class VoiceCallActivity extends AppCompatActivity {
         }
 
         if (peerConnectionFactory == null) {
-            Log.d(TAG, "PeerConnectionFactory is null, initializing...");
-            PeerConnectionFactory.initialize(
-                    PeerConnectionFactory.InitializationOptions.builder(getApplicationContext())
-                            .setNativeLibraryName("jingle_peerconnection_so")
-                            .createInitializationOptions()
-            );
-            PeerConnectionFactory.Options options = new PeerConnectionFactory.Options();
-            peerConnectionFactory = PeerConnectionFactory.builder()
-                    .setOptions(options)
-                    .createPeerConnectionFactory();
+            peerConnectionFactory = ЗаводСвязи.завод(this);
+            Log.d(TAG, "Взят общий завод соединений");
         }
 
         MediaConstraints audioConstraints = new MediaConstraints();
@@ -1458,25 +1441,10 @@ public class VoiceCallActivity extends AppCompatActivity {
             Log.d(TAG, "Audio source disposed.");
         }
         if (peerConnectionFactory != null) {
-        /*
-         * Завод соединений отпускаем чуть погодя.
-         *
-         * Его звуковая часть держит свой поток, и если рушить
-         * завод сразу следом за дорожками, поток ещё жив и
-         * обращается к уже отпущенной памяти — приложение падало
-         * при выходе из разговора (SIGBUS в AudioTrackJavaT) и
-         * перезапускалось. Полсекунды ему хватает, чтобы
-         * договорить.
-         */
-        final org.webrtc.PeerConnectionFactory отпускаемый = peerConnectionFactory;
-        peerConnectionFactory = null;
-        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-            try {
-                отпускаемый.dispose();
-                } catch (Exception e) {
-                Log.w(TAG, "Завод соединений отпущен с заминкой: " + e.getMessage());
-            }
-        }, 500);
+            /*
+             * Завод не сносим: он общий и живёт, пока живёт приложение.
+             */
+            peerConnectionFactory = null;
             Log.d(TAG, "PeerConnectionFactory disposed.");
         }
 

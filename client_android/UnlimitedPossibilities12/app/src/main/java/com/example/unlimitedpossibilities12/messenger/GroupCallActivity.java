@@ -317,7 +317,7 @@ public class GroupCallActivity extends AppCompatActivity {
         participantsRecyclerView.setAdapter(participantsAdapter);
 
         // Инициализация видеоадаптера и GridLayoutManager
-        localEglBase = EglBase.create(); // Для localVideoView
+        localEglBase = ЗаводСвязи.egl(); // общий: его же знают кодировщик и декодировщик
         // remoteEglBase ОБЯЗАН разделять контекст с localEglBase.
         // Аппаратный видеодекодер отдаёт кадры как OES-текстуры, созданные в том
         // контексте, который передан в DefaultVideoDecoderFactory — а туда уходит
@@ -652,16 +652,9 @@ public class GroupCallActivity extends AppCompatActivity {
 
     private void initializeWebRTC() {
         try {
-            PeerConnectionFactory.InitializationOptions options = PeerConnectionFactory.InitializationOptions.builder(this)
-                    .createInitializationOptions();
-            PeerConnectionFactory.initialize(options);
-            PeerConnectionFactory.Options factoryOptions = new PeerConnectionFactory.Options();
-            peerConnectionFactory = PeerConnectionFactory.builder()
-                    .setOptions(factoryOptions)
-                    .setVideoEncoderFactory(new DefaultVideoEncoderFactory(localEglBase.getEglBaseContext(), true, true))
-                    .setVideoDecoderFactory(new DefaultVideoDecoderFactory(localEglBase.getEglBaseContext()))
-                    .createPeerConnectionFactory();
-            Log.d(TAG, "PeerConnectionFactory initialized successfully");
+            // Завод один на всё приложение: см. ЗаводСвязи
+            peerConnectionFactory = ЗаводСвязи.завод(this);
+            Log.d(TAG, "Взят общий завод соединений");
         } catch (Exception e) {
             Log.e(TAG, "Error initializing WebRTC: " + e.getMessage(), e);
             runOnUiThread(() -> Toast.makeText(this, "Failed to initialize WebRTC", Toast.LENGTH_LONG).show());
@@ -2246,7 +2239,8 @@ public class GroupCallActivity extends AppCompatActivity {
             remoteEglBase = null;
         }
         if (localEglBase != null) {
-            localEglBase.release();
+            // localEglBase.release() здесь не вызываем: контекст общий
+            // для всего приложения, его же держит завод соединений
             localEglBase = null;
         }
 
@@ -2285,25 +2279,12 @@ public class GroupCallActivity extends AppCompatActivity {
 
         if (peerConnectionFactory != null) {
             try {
-            /*
-             * Завод соединений отпускаем чуть погодя.
-             *
-             * Его звуковая часть держит свой поток, и если рушить
-             * завод сразу следом за дорожками, поток ещё жив и
-             * обращается к уже отпущенной памяти — приложение падало
-             * при выходе из разговора (SIGBUS в AudioTrackJavaT) и
-             * перезапускалось. Полсекунды ему хватает, чтобы
-             * договорить.
-             */
-            final org.webrtc.PeerConnectionFactory отпускаемый = peerConnectionFactory;
-            peerConnectionFactory = null;
-            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                try {
-                    отпускаемый.dispose();
-                    } catch (Exception e) {
-                    Log.w(TAG, "Завод соединений отпущен с заминкой: " + e.getMessage());
-                }
-            }, 500);
+                /*
+                 * Завод не сносим: он общий и живёт, пока живёт
+                 * приложение. Прежде его рушили в конце каждого
+                 * разговора, и звуковой поток внутри него падал следом.
+                 */
+                peerConnectionFactory = null;
             } catch (Exception e) {
                 Log.e(TAG, "Error disposing PeerConnectionFactory: " + e.getMessage(), e);
             }
