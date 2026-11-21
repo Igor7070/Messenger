@@ -1019,7 +1019,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
             }
         }
         messages.addAll(cached);
-        messageAdapter.updateMessages(messages);
+        подмешатьЗвонки(messages);
         jumpToBottom();
         Log.d(TAG, "Показали сохранённые сообщения: " + cached.size());
     }
@@ -1060,6 +1060,9 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                         public void onResponse(Call<User> call, Response<User> response) {
                             if (response.isSuccessful() && response.body() != null) {
                                 partnerId = response.body().getId();
+                                /* Собеседник стал известен — только теперь можно
+                                   спросить звонки: раньше их некому было отбирать. */
+                                загрузитьЗвонки();
                                 Log.d(TAG, "Partner fetched: id=" + partnerId + ", username=" + partnerName);
 
                                 // ────────────────────────────────────────────────
@@ -1182,7 +1185,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                             }
                         }
                     }
-                    messageAdapter.updateMessages(messages);
+                    подмешатьЗвонки(messages);
                     jumpToBottom();
                     MessageCache.save(getApplicationContext(), chatId, messages);
                     markAllMessagesAsRead();
@@ -1267,7 +1270,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
             if ("Message deleted".equals(newMessage.getContent())) {
                 boolean removed = messages.removeIf(msg -> msg.getId() == newMessage.getId());
                 Log.d(TAG, "Message with id=" + newMessage.getId() + " removed (Message deleted), success=" + removed);
-                messageAdapter.updateMessages(messages);
+                подмешатьЗвонки(messages);
             } else {
                 int existingIndex = -1;
                 for (int i = 0; i < messages.size(); i++) {
@@ -1359,7 +1362,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                         Log.d(TAG, "Started transcription for message id=" + newMessage.getId());
                     }
                 }
-                messageAdapter.updateMessages(messages);
+                подмешатьЗвонки(messages);
                 messageAdapter.notifyDataSetChanged();
                 if (isMessageJustSent || (isNewMessage && newMessage.getSender().getId() != currentUserId)) {
                     Log.d(TAG, "Scrolling to bottom: isMessageJustSent=" + isMessageJustSent +
@@ -1418,7 +1421,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                             () -> {
                                 Log.d(TAG, "Read message sent for id=" + message.getId());
                                 message.setRead(true);
-                                messageAdapter.updateMessages(messages);
+                                подмешатьЗвонки(messages);
                             },
                             throwable -> Log.e(TAG, "Error marking message as read: " + throwable.getMessage())
                     );
@@ -1566,6 +1569,95 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
      * Сразу в конец переписки — так открывается чат. Плавная прокрутка через
      * весь список выглядит рывком: лента успевает промелькнуть серединой.
      */
+    /** Последние звонки с этим собеседником — карточками в ленте. */
+    private final java.util.List<Message> карточкиЗвонков = new java.util.ArrayList<>();
+    private final java.util.List<Message> лентаСообщений = new java.util.ArrayList<>();
+    private boolean звонкиЗапрошены = false;
+
+    /**
+     * Показать ленту вместе с карточками звонков.
+     *
+     * Звонок попадает в ту переписку, откуда звонили: имя комнаты
+     * «secure-…» принадлежит тайной, всё прочее — этой.
+     */
+    private void подмешатьЗвонки(java.util.List<Message> сообщения) {
+        if (сообщения != лентаСообщений) {
+            лентаСообщений.clear();
+            лентаСообщений.addAll(сообщения);
+        }
+        загрузитьЗвонки();
+        java.util.List<Message> вместе = new java.util.ArrayList<>(лентаСообщений);
+        вместе.addAll(карточкиЗвонков);
+        java.util.Collections.sort(вместе, (а, б) -> {
+            String п = а.getTimestamp() == null ? "" : а.getTimestamp();
+            String в = б.getTimestamp() == null ? "" : б.getTimestamp();
+            return п.compareTo(в);
+        });
+        messageAdapter.updateMessages(вместе);
+    }
+
+    /** Прочитать звонки с собеседником и сложить из них карточки. */
+    private void загрузитьЗвонки() {
+        if (звонкиЗапрошены) return;
+        if (currentUserId <= 0 || partnerId <= 0) return;
+        звонкиЗапрошены = true;
+        ApiClient.getApiService().getCalls(currentUserId).enqueue(
+                new retrofit2.Callback<java.util.List<com.example.unlimitedpossibilities12.api.Call>>() {
+            @Override
+            public void onResponse(retrofit2.Call<java.util.List<com.example.unlimitedpossibilities12.api.Call>> вызов,
+                                   retrofit2.Response<java.util.List<com.example.unlimitedpossibilities12.api.Call>> ответ) {
+                if (!ответ.isSuccessful() || ответ.body() == null) return;
+                java.util.List<Message> собранные = new java.util.ArrayList<>();
+                java.util.List<com.example.unlimitedpossibilities12.api.Call> все = ответ.body();
+                int отсюда = Math.max(0, все.size() - 200);
+                for (int i = отсюда; i < все.size(); i++) {
+                    com.example.unlimitedpossibilities12.api.Call з = все.get(i);
+                    if ("group".equals(з.getCallType())) continue;
+                    String от = String.valueOf(з.getCaller());
+                    String кому = з.getReceiver() == null ? "" : String.valueOf(з.getReceiver());
+                    boolean наш = (от.equals(String.valueOf(currentUserId)) && кому.equals(String.valueOf(partnerId)))
+                            || (от.equals(String.valueOf(partnerId)) && кому.equals(String.valueOf(currentUserId)));
+                    if (!наш) continue;
+                    String комната = з.getRoomId() == null ? "" : з.getRoomId();
+                    if (комната.startsWith("secure")) continue; // это из тайной переписки
+                    boolean мой = от.equals(String.valueOf(currentUserId));
+                    boolean нетОтвета = "missed".equals(з.getStatus()) || "rejected".equals(з.getStatus());
+                    boolean видео = "video".equals(з.getCallType());
+                    String заголовок = нетОтвета
+                            ? (мой ? "Cancelled call" : "Missed call")
+                            : (мой ? "Outgoing call" : "Incoming call");
+                    if (видео) заголовок = "Video " + заголовок.substring(0, 1).toLowerCase() + заголовок.substring(1);
+                    String час = "";
+                    if (з.getTimestamp() != null && з.getTimestamp().length() >= 16) {
+                        час = з.getTimestamp().substring(11, 16);
+                    }
+                    Integer длит = з.getDurationSeconds();
+                    String подпись = час;
+                    if (!нетОтвета && длит != null) {
+                        подпись += ", " + (длит < 60 ? (длит + " s")
+                                : (длит / 60) + ":" + String.format(java.util.Locale.US, "%02d", длит % 60));
+                    }
+                    Message карточка = new Message();
+                    карточка.setId(-1000 - i);
+                    карточка.setMessageType(мой ? "call_out" : "call_in");
+                    карточка.setContent(заголовок + "\n" + подпись);
+                    карточка.setTimestamp(з.getTimestamp());
+                    собранные.add(карточка);
+                }
+                int свежих = Math.max(0, собранные.size() - 30);
+                карточкиЗвонков.clear();
+                карточкиЗвонков.addAll(собранные.subList(свежих, собранные.size()));
+                runOnUiThread(() -> подмешатьЗвонки(лентаСообщений));
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<java.util.List<com.example.unlimitedpossibilities12.api.Call>> вызов,
+                                  Throwable беда) {
+                Log.w(TAG, "Список звонков не пришёл: " + беда.getMessage());
+            }
+        });
+    }
+
     private void jumpToBottom() {
         if (messages.size() > 0) {
             messageList.scrollToPosition(messages.size() - 1);
@@ -1984,7 +2076,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                                 () -> {
                                     Log.d(TAG, "Delete message sent for id=" + message.getId());
                                     messages.removeIf(msg -> msg.getId() == message.getId());
-                                    messageAdapter.updateMessages(messages);
+                                    подмешатьЗвонки(messages);
                                     Toast.makeText(this, "Message deleted!", Toast.LENGTH_SHORT).show();
                                 },
                                 throwable -> {
@@ -2016,7 +2108,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                                     () -> {
                                         Log.d(TAG, "Read message sent for id=" + msg.getId());
                                         msg.setRead(true);
-                                        messageAdapter.updateMessages(messages);
+                                        подмешатьЗвонки(messages);
                                     },
                                     throwable -> Log.e(TAG, "Error marking message as read: " + throwable.getMessage())
                             );
@@ -2192,7 +2284,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         if (newChatId != -1 && newChatId != chatId) {
             chatId = newChatId;
             messages.clear();
-            messageAdapter.updateMessages(messages);
+            подмешатьЗвонки(messages);
             fetchChatData();
             Log.d(TAG, "Switched to new chatId=" + chatId);
         }

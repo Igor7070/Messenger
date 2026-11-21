@@ -202,8 +202,11 @@ const PrivateChat = () => {
           if (з.callType === 'group') return false;
           const от = String(з.caller);
           const кому = String(з.receiver || '');
-          return (от === String(userId) && кому === String(partnerId))
-              || (от === String(partnerId) && кому === String(userId));
+          const наш = (от === String(userId) && кому === String(partnerId))
+                   || (от === String(partnerId) && кому === String(userId));
+          if (!наш) return false;
+          // Обычная переписка: звонки из тайной сюда не кладём
+          return !String(з.roomId || '').startsWith('secure');
         });
         if (живо) {
           /* Ленте хватит недавних: за годы звонков накопятся сотни, и

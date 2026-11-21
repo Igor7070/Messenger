@@ -112,16 +112,67 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         this.isTranscriptionEnabled = isTranscriptionEnabled;
     }
 
+    /** Вид ячейки «звонок»: такие рисуем карточкой, как в телеграме. */
+    public static final int ТИП_ЗВОНОК = 77;
+
+    @Override
+    public int getItemViewType(int position) {
+        Message m = messages.get(position);
+        return (m != null && m.getMessageType() != null && m.getMessageType().startsWith("call"))
+                ? ТИП_ЗВОНОК : 0;
+    }
+
     @NonNull
     @Override
     public MessageViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_message, parent, false);
+        View view = LayoutInflater.from(context).inflate(
+                viewType == ТИП_ЗВОНОК ? R.layout.item_call_card : R.layout.item_message,
+                parent, false);
         return new MessageViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull MessageViewHolder holder, int position) {
         Message message = messages.get(position);
+        if (holder.callCardText != null && message != null) {
+            /* Карточка звонка: две строки собраны в содержимом, сторона —
+               в виде сообщения, как в телеграме. */
+            String всё = message.getContent() == null ? "" : message.getContent();
+            int разрыв = всё.indexOf('\n');
+            String заголовок = разрыв < 0 ? всё : всё.substring(0, разрыв);
+            String подпись = разрыв < 0 ? "" : всё.substring(разрыв + 1);
+            boolean моё = "call_out".equals(message.getMessageType());
+            boolean пропущен = заголовок.contains("Missed") || заголовок.contains("Cancelled");
+            holder.callCardText.setText(заголовок);
+            holder.callCardText.setTypeface(null, android.graphics.Typeface.BOLD);
+            holder.callCardText.setTextColor(пропущен ? 0xFFFCA5A5 : 0xFFF1F5F9);
+            if (holder.callCardSub != null) {
+                holder.callCardSub.setText(подпись);
+                android.graphics.drawable.Drawable стрелка =
+                        androidx.core.content.ContextCompat.getDrawable(context,
+                                моё ? R.drawable.ic_call_made : R.drawable.ic_call_received);
+                if (стрелка != null) {
+                    стрелка = стрелка.mutate();
+                    стрелка.setTint(пропущен ? 0xFFF87171 : 0xFF4ADE80);
+                    int размер = (int) (16 * context.getResources().getDisplayMetrics().density);
+                    стрелка.setBounds(0, 0, размер, размер);
+                }
+                holder.callCardSub.setCompoundDrawables(стрелка, null, null, null);
+            }
+            if (holder.callCardIcon != null) {
+                boolean видео = заголовок.startsWith("Video");
+                holder.callCardIcon.setImageResource(видео ? R.drawable.ic_video_call : R.drawable.ic_calls);
+            }
+            if (holder.callCardBubble != null) {
+                android.widget.FrameLayout.LayoutParams лп =
+                        (android.widget.FrameLayout.LayoutParams) holder.callCardBubble.getLayoutParams();
+                лп.gravity = моё ? android.view.Gravity.END : android.view.Gravity.START;
+                holder.callCardBubble.setLayoutParams(лп);
+                holder.callCardBubble.setBackgroundResource(
+                        моё ? R.drawable.bg_call_card_mine : R.drawable.bg_call_card);
+            }
+            return;
+        }
         if (message == null || message.getSender() == null) {
             Log.w(TAG, "Message or sender is null at position: " + position);
             return;
@@ -375,8 +426,21 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         TextView previewUrl;
         private long boundMessageId = -1;  // ID текущего привязанного сообщения
 
+        TextView callCardText, callCardSub;   // есть только у карточки звонка
+        View callCardBubble;
+        ImageView callCardIcon;
+
         public MessageViewHolder(@NonNull View itemView) {
             super(itemView);
+            callCardText = itemView.findViewById(R.id.call_card_text);
+            callCardSub = itemView.findViewById(R.id.call_card_sub);
+            callCardBubble = itemView.findViewById(R.id.call_card_bubble);
+            callCardIcon = itemView.findViewById(R.id.call_card_icon);
+            if (callCardText != null) {
+                /* Карточка звонка: ни пузыря, ни аватара, ни дорожки — дальше
+                   искать нечего, а трогать ненайденное нельзя. */
+                return;
+            }
             avatarImageView = itemView.findViewById(R.id.avatar_image_view);
             avatarPlaceholder = itemView.findViewById(R.id.avatar_placeholder);
             messageContainer = itemView.findViewById(R.id.message_container);

@@ -2186,6 +2186,9 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                     boolean наш = (от.equals(String.valueOf(currentUserId)) && кому.equals(String.valueOf(partnerId)))
                             || (от.equals(String.valueOf(partnerId)) && кому.equals(String.valueOf(currentUserId)));
                     if (!наш) continue;
+                    // Эта переписка тайная: сюда только звонки из неё
+                    String комната = з.getRoomId() == null ? "" : з.getRoomId();
+                    if (!комната.startsWith("secure")) continue;
                     boolean мой = от.equals(String.valueOf(currentUserId));
                     boolean нетОтвета = "missed".equals(з.getStatus()) || "rejected".equals(з.getStatus());
                     boolean видео = "video".equals(з.getCallType());
