@@ -31,38 +31,40 @@
             android:layout_height="match_parent"
             android:layout_gravity="center" />
 
-        <!-- Камеры нет — показываем человека, а не чёрный прямоугольник -->
-        <LinearLayout
-            android:id="@+id/no_video_text"
+
+    </FrameLayout>
+
+    <!-- Камеры нет — показываем человека, а не чёрный прямоугольник -->
+    <LinearLayout
+        android:id="@+id/no_video_text"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#0F172A"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <FrameLayout
+        android:layout_width="64dp"
+        android:layout_height="64dp">
+
+        <ImageView
+            android:id="@+id/tile_avatar_image"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#0F172A"
+            android:contentDescription="@string/call_participant_avatar"
+            android:scaleType="centerCrop" />
+
+        <TextView
+            android:id="@+id/tile_avatar_text"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/circle_background"
             android:gravity="center"
-            android:orientation="vertical">
+            android:textColor="#FFFFFF"
+            android:textSize="26sp" />
+        </FrameLayout>
 
-            <FrameLayout
-                android:layout_width="64dp"
-                android:layout_height="64dp">
-
-                <ImageView
-                    android:id="@+id/tile_avatar_image"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:contentDescription="@string/call_participant_avatar"
-                    android:scaleType="centerCrop" />
-
-                <TextView
-                    android:id="@+id/tile_avatar_text"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@drawable/circle_background"
-                    android:gravity="center"
-                    android:textColor="#FFFFFF"
-                    android:textSize="26sp" />
-            </FrameLayout>
-
-        </LinearLayout>
-    </FrameLayout>
+    </LinearLayout>
 
     <!-- Имя поверх плитки, по нижнему краю -->
     <TextView
