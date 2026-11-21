@@ -744,18 +744,39 @@ public class VoiceCallActivity extends AppCompatActivity {
             switch (type) {
                 case "moveToGroup": {
                     /*
-                     * Нас зовут в общий разговор.
+                     * Нас зовут в общий разговор из разговора вдвоём.
                      *
-                     * Молчаливый переход у телефона пока не выходит: общий
-                     * экран начинает разговор только по приглашению, а оно
-                     * уходит раньше, чем он успевает подписаться на комнату,
-                     * — звук не поднимается и экран закрывается сам. Поэтому
-                     * здесь мы просто кладём трубку: следом придёт обычное
-                     * приглашение, со звоном, и разговор соберётся. В вебе
-                     * переход уже молчаливый.
+                     * Звонить заново тому, с кем уже говоришь, незачем:
+                     * переходим молча. Список участников берём таким,
+                     * каким его видит звавший — экран общего разговора
+                     * ждёт именно его и закрывается, если состав не
+                     * сходится; прежде я слал свой, без себя, и телефон
+                     * выходил из разговора, ничего не объяснив.
                      */
+                    String комната = signal.optString("roomId", null);
+                    String кто = signal.optString("peers", "");
+                    if (комната == null) break;
+                    java.util.ArrayList<String> участники = new java.util.ArrayList<>();
+                    for (String номер : кто.split(",")) {
+                        String ч = номер.trim();
+                        if (!ч.isEmpty()) участники.add(ч);
+                    }
+                    if (участники.isEmpty()) break;
+                    // Отмечаем комнату сразу: приглашение в неё придёт
+                    // раньше, чем откроется экран, и звонить не нужно
+                    GroupCallActivity.currentRoomId = комната;
+                    Intent общий = new Intent(this, GroupCallActivity.class);
+                    общий.putExtra("initiatorId", Integer.parseInt(from));
+                    общий.putExtra("initiatorName", recipientName != null ? recipientName : "");
+                    общий.putStringArrayListExtra("selectedUsersIds", участники);
+                    общий.putExtra("roomId", комната);
+                    общий.putExtra("isInitiator", false);
+                    общий.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     terminationInitiator = true;
                     endCall();
+                    // Прежний разговор должен успеть отпустить микрофон
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(
+                            () -> getApplicationContext().startActivity(общий), 1500);
                     break;
                 }
 
