@@ -186,8 +186,8 @@ public class GroupCallActivity extends AppCompatActivity {
     // [ДОБАВЛЕНО]: Поля для управления видео
     private boolean isVideoMode = false; // Текущий режим (аудио/видео)
     private boolean isCameraOn = false; // Состояние камеры текущего пользователя
-    private VideoSource videoSource; // Источник видеопотока
-    private VideoTrack localVideoTrack; // Локальный видеотрек
+    private volatile VideoSource videoSource; // Источник видеопотока
+    private volatile VideoTrack localVideoTrack; // Локальный видеотрек
     private Map<String, VideoTrack> remoteVideoTracks; // Входящие видеотреки
     private VideoParticipantsAdapter videoParticipantsAdapter; // Адаптер для видеовкладки
     private EglBase localEglBase; // Для localVideoView
@@ -1123,12 +1123,75 @@ public class GroupCallActivity extends AppCompatActivity {
     private final Runnable досылкаКруг = new Runnable() {
         @Override public void run() {
             if (isCallEnded) return;
+            подтолкнутьЗастрявших();
             досылатьКартинку();
             досылкаРучка.postDelayed(this, 3000);
         }
     };
 
+    /** Сколько кругов собеседник молчит в ответ на наше предложение. */
+    private final Map<String, Integer> молчат = new HashMap<>();
+
+    /**
+     * Повторить предложение тому, кто не ответил.
+     *
+     * Соединение, пославшее предложение, ждёт ответа и до него ничего
+     * другого не принимает. Если ответ потерялся — а он теряется, —
+     * соединение остаётся в этом ожидании навсегда: камеру уже не
+     * включить, потому что новую дорожку добавляют только в спокойное
+     * соединение. Повтор того же предложения выводит из этого тупика.
+     */
+    private void подтолкнутьЗастрявших() {
+        for (Map.Entry<String, PeerConnection> запись : peerConnections.entrySet()) {
+            String userId = запись.getKey();
+            PeerConnection pc = запись.getValue();
+            if (pc == null) continue;
+            if (pc.signalingState() == PeerConnection.SignalingState.HAVE_LOCAL_OFFER) {
+                int кругов = молчат.containsKey(userId) ? молчат.get(userId) + 1 : 1;
+                молчат.put(userId, кругов);
+                if (кругов >= 2 && кругов % 2 == 0) {
+                    /*
+                     * Составляем предложение заново, а не шлём прежнее.
+                     * Слово в слово то же самое собеседник отбрасывает
+                     * как уже виденное — и помощи от повтора нет.
+                     */
+                    Log.d(TAG, "Собеседник " + userId + " молчит " + (кругов * 3) + " с — предлагаем заново");
+                    pc.createOffer(new SdpObserver() {
+                        @Override public void onCreateSuccess(SessionDescription sdp) {
+                            pc.setLocalDescription(new SdpObserver() {
+                                @Override public void onSetSuccess() {
+                                    sendSignal(createSignalJson("offer", sdp, userId));
+                                    Log.d(TAG, "Новое предложение ушло к " + userId);
+                                }
+                                @Override public void onSetFailure(String s) { Log.e(TAG, "Повтор, setLocal: " + s); }
+                                @Override public void onCreateSuccess(SessionDescription s) { }
+                                @Override public void onCreateFailure(String s) { }
+                            }, sdp);
+                        }
+                        @Override public void onCreateFailure(String s) { Log.e(TAG, "Повтор, createOffer: " + s); }
+                        @Override public void onSetSuccess() { }
+                        @Override public void onSetFailure(String s) { }
+                    }, new MediaConstraints());
+                }
+            } else {
+                молчат.remove(userId);
+            }
+        }
+    }
+
+    /**
+     * Замок на камеру.
+     *
+     * Досылка ходит по главному потоку, а включают и выключают камеру в
+     * стороне от него. Между «дорожка ещё не пуста» и «дорожку уже
+     * отпустили» помещается целый круг досылки — она хваталась за
+     * освобождённую память, и приложение падало. Под замком этой щели
+     * нет.
+     */
+    private final Object замокКамеры = new Object();
+
     private void досылатьКартинку() {
+        synchronized (замокКамеры) {
         if (!isCameraOn || localVideoTrack == null) return;
         for (Map.Entry<String, PeerConnection> entry : peerConnections.entrySet()) {
             String userId = entry.getKey();
@@ -1159,6 +1222,7 @@ public class GroupCallActivity extends AppCompatActivity {
             } catch (Exception e) {
                 Log.e(TAG, "Картинку доложить не вышло для " + userId + ": " + e.getMessage());
             }
+        }
         }
     }
 
@@ -2399,6 +2463,38 @@ public class GroupCallActivity extends AppCompatActivity {
 
             executor.execute(() -> {
                 Log.d(TAG, "toggleCamera: Starting camera initialization in executor thread");
+                /*
+                 * Если камера уже была построена в этом разговоре, её не
+                 * нужно собирать заново: дорожка на месте у всех, довольно
+                 * снова начать снимать.
+                 */
+                if (videoCapturer != null && localVideoTrack != null) {
+                    try {
+                        videoCapturer.startCapture(1280, 720, 30);
+                        localVideoTrack.addSink(localVideoView);
+                        synchronized (замокКамеры) { isCameraOn = true; }
+                        cameraStates.put(currentUserId, true);
+                        runOnUiThread(() -> {
+                            toggleCameraButton.setImageResource(R.drawable.ic_videocam_off);
+                            toggleCameraButton.setBackgroundTintList(
+                                    android.content.res.ColorStateList.valueOf(0xFFFF4444));
+                            localVideoView.setVisibility(View.VISIBLE);
+                            localNoVideoText.setVisibility(View.GONE);
+                            toggleCameraButton.setVisibility(View.GONE);
+                        });
+                        for (User user : participants) {
+                            String userId = String.valueOf(user.getId());
+                            if (!userId.equals(currentUserId)) {
+                                sendSignal(createSignalJson("cameraOn", null, userId));
+                            }
+                        }
+                        Log.d(TAG, "Съёмка возобновлена без переговоров");
+                        return;
+                    } catch (Exception e) {
+                        Log.e(TAG, "Возобновить съёмку не вышло, собираем заново: " + e.getMessage());
+                        cleanupCamera();
+                    }
+                }
                 try {
                     // Очистка предыдущих ресурсов
                     cleanupCamera();
@@ -2785,73 +2881,57 @@ public class GroupCallActivity extends AppCompatActivity {
         } else {
             executor.execute(() -> {
                 Log.d(TAG, "toggleCamera: Turning off camera");
-                cleanupCamera();
-                isCameraOn = false;
-                isVideoTrackReady.set(false);
-                cameraStates.put(currentUserId, false);
-
-                // Обновление UI
-                runOnUiThread(() -> {
-                    localVideoView.setVisibility(View.VISIBLE);
-                    localVideoView.clearImage();
-                    localNoVideoText.setVisibility(View.VISIBLE);
-                    toggleCameraButton.setImageResource(R.drawable.ic_video_call);
-                    toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
-                    toggleCameraButton.setVisibility(View.GONE);
-                                        localVideoView.requestLayout();
-                    localVideoView.invalidate();
-                    Log.d(TAG, "UI updated: localVideoView visible (black), localNoVideoText visible, toggleCameraButton visible");
-                });
-
-                // Ренеготиация после отключения камеры
-                MediaConstraints constraints = new MediaConstraints();
-                for (Map.Entry<String, PeerConnection> entry : peerConnections.entrySet()) {
-                    String userId = entry.getKey();
-                    PeerConnection pc = entry.getValue();
-                    if (pc != null && pc.signalingState() == PeerConnection.SignalingState.STABLE) {
-                        pc.createOffer(new SdpObserver() {
-                            @Override
-                            public void onCreateSuccess(SessionDescription sdp) {
-                                pc.setLocalDescription(new SdpObserver() {
-                                    @Override
-                                    public void onSetSuccess() {
-                                        Log.d(TAG, "Renegotiated offer set for userId=" + userId + " after camera off");
-                                        sendSignal(createSignalJson("offer", sdp, userId));
-                                        Log.d(TAG, "Sent renegotiated offer to userId=" + userId);
-                                    }
-                                    @Override
-                                    public void onSetFailure(String error) {
-                                        Log.e(TAG, "Failed to set renegotiated offer for userId=" + userId + ": " + error);
-                                    }
-                                    @Override
-                                    public void onCreateSuccess(SessionDescription sdp) {}
-                                    @Override
-                                    public void onCreateFailure(String error) {}
-                                }, sdp);
-                            }
-                            @Override
-                            public void onCreateFailure(String error) {
-                                Log.e(TAG, "Failed to create renegotiated offer for userId=" + userId + ": " + error);
-                            }
-                            @Override
-                            public void onSetSuccess() {}
-                            @Override
-                            public void onSetFailure(String error) {}
-                        }, constraints);
-                    }
-                }
-
-                // Отправка сигнала cameraOff
-                for (User user : participants) {
-                    String userId = String.valueOf(user.getId());
-                    if (!userId.equals(currentUserId)) {
-                        sendSignal(createSignalJson("cameraOff", null, userId));
-                        Log.d(TAG, "Sent cameraOff signal to userId=" + userId);
-                    }
-                }
-                Log.d(TAG, "Camera turned off, notified other participants for userId=" + currentUserId);
+                приостановитьКамеру();
             });
         }
+    }
+
+    /**
+     * Перестать снимать, не разбирая связь.
+     *
+     * Дорожка остаётся на своём месте у каждого соединения — просто по
+     * ней ничего не идёт. Собеседникам уходит слово «камеру выключили»,
+     * и этого довольно: переписывать связь не нужно, а значит, нечему и
+     * застревать при следующем включении.
+     */
+    private void приостановитьКамеру() {
+        synchronized (замокКамеры) {
+            isCameraOn = false;
+        }
+        cameraStates.put(currentUserId, false);
+        if (videoCapturer != null) {
+            try {
+                videoCapturer.stopCapture();
+                Log.d(TAG, "Съёмка остановлена, дорожка оставлена на месте");
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Не вышло остановить съёмку: " + e.getMessage());
+            }
+        }
+        if (localVideoTrack != null && localVideoView != null) {
+            try {
+                localVideoTrack.removeSink(localVideoView);
+            } catch (Exception e) {
+                Log.w(TAG, "Своё окно уже отвязано: " + e.getMessage());
+            }
+        }
+        runOnUiThread(() -> {
+            localVideoView.setVisibility(View.VISIBLE);
+            localVideoView.clearImage();
+            localNoVideoText.setVisibility(View.VISIBLE);
+            toggleCameraButton.setImageResource(R.drawable.ic_video_call);
+            toggleCameraButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80FFFFFF));
+            toggleCameraButton.setVisibility(View.GONE);
+            localVideoView.requestLayout();
+            localVideoView.invalidate();
+        });
+        for (User user : participants) {
+            String userId = String.valueOf(user.getId());
+            if (!userId.equals(currentUserId)) {
+                sendSignal(createSignalJson("cameraOff", null, userId));
+                Log.d(TAG, "Sent cameraOff signal to userId=" + userId);
+            }
+        }
+        Log.d(TAG, "Камера приостановлена для userId=" + currentUserId);
     }
 
     private int getParticipantPosition(String userId) {
@@ -2866,6 +2946,22 @@ public class GroupCallActivity extends AppCompatActivity {
     // Добавляем метод cleanupCamera
     private void cleanupCamera() {
         Log.d(TAG, "cleanupCamera: Starting cleanup for userId=" + currentUserId);
+        /*
+         * Сперва объявляем, что камеры нет, и лишь потом отпускаем её.
+         * Прежде порядок был обратный: дорожку освобождали, а поле ещё
+         * хранило на неё указатель и isCameraOn был true. Досылка
+         * успевала подхватить отпущенное — на пятом-шестом включении
+         * приложение падало, а собеседники переставали получать сигнал,
+         * потому что в списке отправителей оставались мёртвые записи.
+         */
+        VideoTrack отпускаемаяДорожка;
+        VideoSource отпускаемыйИсточник;
+        synchronized (замокКамеры) {
+            isCameraOn = false;
+            isVideoTrackReady.set(false);
+            отпускаемаяДорожка = localVideoTrack;
+            отпускаемыйИсточник = videoSource;
+        }
         if (videoCapturer != null) {
             try {
                 videoCapturer.stopCapture();
@@ -2883,7 +2979,7 @@ public class GroupCallActivity extends AppCompatActivity {
             Log.d(TAG, "SurfaceTextureHelper disposed");
             surfaceTextureHelper = null;
         }
-        if (localVideoTrack != null) {
+        if (отпускаемаяДорожка != null) {
             for (Map.Entry<String, PeerConnection> entry : peerConnections.entrySet()) {
                 String userId = entry.getKey();
                 PeerConnection pc = entry.getValue();
@@ -2906,7 +3002,7 @@ public class GroupCallActivity extends AppCompatActivity {
              */
             videoTrackSenders.clear();
             if (localVideoView != null) {
-                localVideoTrack.removeSink(localVideoView);
+                отпускаемаяДорожка.removeSink(localVideoView);
                 Log.d(TAG, "Removed video track sink from localVideoView for userId=" + currentUserId);
                 runOnUiThread(() -> {
                     localVideoView.clearImage();
@@ -2917,17 +3013,19 @@ public class GroupCallActivity extends AppCompatActivity {
                     Log.d(TAG, "UI updated in cleanupCamera: localVideoView gone, localNoVideoText visible");
                 });
             }
-            localVideoTrack.dispose();
+            synchronized (замокКамеры) {
+                if (localVideoTrack == отпускаемаяДорожка) localVideoTrack = null;
+            }
+            отпускаемаяДорожка.dispose();
             Log.d(TAG, "Local video track disposed");
-            localVideoTrack = null;
         }
-        if (videoSource != null) {
-            videoSource.dispose();
+        if (отпускаемыйИсточник != null) {
+            synchronized (замокКамеры) {
+                if (videoSource == отпускаемыйИсточник) videoSource = null;
+            }
+            отпускаемыйИсточник.dispose();
             Log.d(TAG, "Video source disposed");
-            videoSource = null;
         }
-        isCameraOn = false;
-        isVideoTrackReady.set(false);
         cameraStates.put(currentUserId, false);
         Log.d(TAG, "cleanupCamera: Completed cleanup for userId=" + currentUserId);
     }

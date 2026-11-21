@@ -150,6 +150,19 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
   const [isCallEnded, setIsCallEnded] = useState(false);
   const ringtoneRef = useRef(new Audio('https://igor7070.github.io/Messenger/incoming_dial_tone.mp3'));
   const callStartTime = useRef(Date.now());
+  /**
+   * Короткий отпечаток содержания.
+   *
+   * По нему отличают одно предложение от другого: начала у них
+   * одинаковые, а целиком сравнивать накладно.
+   */
+  const отпечатокСодержания = (строка) => {
+    let итог = 5381;
+    const с = String(строка || '');
+    for (let i = 0; i < с.length; i += 1) итог = ((итог * 33) ^ с.charCodeAt(i)) >>> 0;
+    return `${с.length}-${итог}`;
+  };
+
   const hasNotifiedEndCall = useRef(false);
   /**
    * Кого из собеседников уже проводили.
@@ -659,7 +672,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
                 return;
             }
             if (pc.localDescription && pc.localDescription.type === 'offer' && !pc.remoteDescription) {
-                const signalKey = `${currentUserId}-${userId}-offer-${pc.localDescription.sdp.slice(0, 50)}`;
+                const signalKey = `${currentUserId}-${userId}-offer-${отпечатокСодержания(pc.localDescription.sdp)}`;
                 console.log(`Resending offer to user ${userId}`);
                 sendSignal(
                     {
@@ -953,7 +966,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
                         sdp: modifiedSdp
                     };
                     await peerConnection.setLocalDescription(modifiedOffer);
-                    const signalKey = `${currentUserId}-${user.id}-offer-${modifiedOffer.sdp.slice(0, 50)}`;
+                    const signalKey = `${currentUserId}-${user.id}-offer-${отпечатокСодержания(modifiedOffer.sdp)}`;
                     if (!sentSignals.current.has(signalKey)) {
                         sentSignals.current.add(signalKey);
                         sendSignal(
@@ -1075,7 +1088,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
                     sdp: offer.sdp.replace(/a=setup:passive/, 'a=setup:actpass')
                 };
                 await peerConnection.setLocalDescription(modifiedOffer);
-                const signalKey = `${currentUserId}-${user.id}-offer-${modifiedOffer.sdp.slice(0, 50)}`;
+                const signalKey = `${currentUserId}-${user.id}-offer-${отпечатокСодержания(modifiedOffer.sdp)}`;
                 if (!sentSignals.current.has(signalKey)) {
                     sentSignals.current.add(signalKey);
                     try {
@@ -1328,7 +1341,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
               console.log(`Set remoteDescription for user ${currentFrom}`);
               const answer = await peerConnection.createAnswer();
               await peerConnection.setLocalDescription(answer); // Без модификации SDP
-              const signalKey = `${currentUserId}-${currentFrom}-answer-${answer.sdp.slice(0, 50)}`;
+              const signalKey = `${currentUserId}-${currentFrom}-answer-${отпечатокСодержания(answer.sdp)}`;
               if (!sentSignals.current.has(signalKey)) {
                 sentSignals.current.add(signalKey);
                 sendSignal(
@@ -1805,7 +1818,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
           pc.createOffer()
             .then((offer) => pc.setLocalDescription(offer))
             .then(async () => {
-              const signalKey = `${currentUserId}-${userId}-renegotiated-offer-camera-off-${pc.localDescription.sdp.slice(0, 50)}`;
+              const signalKey = `${currentUserId}-${userId}-renegotiated-offer-camera-off-${отпечатокСодержания(pc.localDescription.sdp)}`;
               if (!sentSignals.current.has(signalKey)) {
                 sentSignals.current.add(signalKey);
                 sendSignal(
@@ -1896,7 +1909,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
             pc.createOffer()
               .then((offer) => pc.setLocalDescription(offer))
               .then(async () => {
-                const signalKey = `${currentUserId}-${userId}-renegotiated-offer-camera-on-${pc.localDescription.sdp.slice(0, 50)}`;
+                const signalKey = `${currentUserId}-${userId}-renegotiated-offer-camera-on-${отпечатокСодержания(pc.localDescription.sdp)}`;
                 if (!sentSignals.current.has(signalKey)) {
                   sentSignals.current.add(signalKey);
                   sendSignal(
