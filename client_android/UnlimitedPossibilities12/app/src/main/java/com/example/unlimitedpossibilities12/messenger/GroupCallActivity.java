@@ -2099,7 +2099,25 @@ public class GroupCallActivity extends AppCompatActivity {
 
         if (peerConnectionFactory != null) {
             try {
-                peerConnectionFactory.dispose();
+            /*
+             * Завод соединений отпускаем чуть погодя.
+             *
+             * Его звуковая часть держит свой поток, и если рушить
+             * завод сразу следом за дорожками, поток ещё жив и
+             * обращается к уже отпущенной памяти — приложение падало
+             * при выходе из разговора (SIGBUS в AudioTrackJavaT) и
+             * перезапускалось. Полсекунды ему хватает, чтобы
+             * договорить.
+             */
+            final org.webrtc.PeerConnectionFactory отпускаемый = peerConnectionFactory;
+            peerConnectionFactory = null;
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                try {
+                    отпускаемый.dispose();
+                    } catch (Exception e) {
+                    Log.w(TAG, "Завод соединений отпущен с заминкой: " + e.getMessage());
+                }
+            }, 500);
             } catch (Exception e) {
                 Log.e(TAG, "Error disposing PeerConnectionFactory: " + e.getMessage(), e);
             }
