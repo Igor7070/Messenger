@@ -98,6 +98,16 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
    * договариваться каждый раз мы как раз и не умеем: после нескольких
    * кругов стороны застревают, ожидая ответа друг от друга.
    */
+  /**
+   * Своя картинка для своей же плитки.
+   *
+   * Плитка со своим именем появляется только с включённой камерой, то
+   * есть позже, чем картинка готова, — и класть её в тот миг просто
+   * некуда. Поэтому держим её здесь, а плитка забирает её, когда
+   * появится.
+   */
+  const свойПоказ = useRef(null);
+
   const местаПодКартинку = useRef(new Map());
   /** С кем нужно договориться заново: место под картинку только что заведено. */
   const нужноДоговориться = useRef(new Set());
@@ -1749,6 +1759,14 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
                 ref={(el) => {
                   if (!el) return;
                   videoRefs.current.set(String(user.id), el);
+                  // Своя плитка берёт свою картинку: она появляется позже,
+                  // чем камера включилась
+                  if (String(user.id) === String(currentUserId)) {
+                    if (свойПоказ.current && el.srcObject !== свойПоказ.current) {
+                      el.srcObject = свойПоказ.current;
+                      el.play().catch(() => {});
+                    }
+                  }
                   // Картинка могла прийти раньше плитки — заберём её
                   const пришедший = remoteStreams.current.get(String(user.id));
                   if (пришедший && el.srcObject !== пришедший) {
@@ -1769,7 +1787,16 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
                 playsInline
                 className="group-call-video"
               />
-              {!(user.id === Number(currentUserId) ? isCameraOn : videoRefs.current.get(String(user.id))?.srcObject) && (
+              {/*
+                  Показывать ли лицо вместо картинки, решаем по слову
+                  собеседника «камера включена», а не по тому, лежит ли в
+                  плитке поток: дорожка теперь остаётся на месте и при
+                  выключенной камере — по ней просто ничего не идёт, и
+                  плитка оставалась чёрной.
+               */}
+              {!(user.id === Number(currentUserId)
+                  ? isCameraOn
+                  : cameraOnUsers.includes(String(user.id))) && (
                 /* Камера выключена — показываем лицо или букву, а не чёрный
                    прямоугольник со словами «No Video» */
                 <div className="group-call-video-placeholder">
@@ -1804,6 +1831,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
         }
         console.log('Camera turned off');
       }
+      свойПоказ.current = null;
       // Вынимаем дорожку из мест — сами места остаются
       for (const [кому, место] of местаПодКартинку.current) {
         try {
@@ -1854,6 +1882,7 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
 
         // Создаём ОТДЕЛЬНЫЙ поток ТОЛЬКО с видео — для локального превью (без звука!)
         const localVideoOnlyStream = new MediaStream(videoStream.getVideoTracks());
+        свойПоказ.current = localVideoOnlyStream;
 
         // Показываем себя локально — ТОЛЬКО ВИДЕО, без аудио → нет эха
         const videoElement = videoRefs.current.get(String(currentUserId));
