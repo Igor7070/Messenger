@@ -1914,7 +1914,12 @@ public class GroupCallActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         cameraStates.put(fromId, false);
                         videoParticipantsAdapter.setCameraState(fromId, false);
-                        VideoTrack videoTrack = remoteVideoTracks.remove(fromId);
+                        /*
+                         * Дорожку оставляем в памяти: собеседник включит
+                         * камеру снова, ничего не предлагая заново, — и
+                         * привязывать будет нечего, если мы её забудем.
+                         */
+                        VideoTrack videoTrack = remoteVideoTracks.get(fromId);
                         if (videoTrack != null) {
                             // dispose() здесь вызывать НЕЛЬЗЯ: удалённая дорожка
                             // принадлежит PeerConnection, а не нам. Освобождение
