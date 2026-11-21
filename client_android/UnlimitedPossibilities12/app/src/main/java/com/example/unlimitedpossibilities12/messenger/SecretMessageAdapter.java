@@ -200,6 +200,13 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
     }
 
 
+    /** Нет ли у соседней ячейки отправителя — это карточка звонка. */
+    private static boolean безОтправителя(SecretMessageAdapter adapter, int место) {
+        return место < 0 || место >= adapter.messages.size()
+                || adapter.messages.get(место) == null
+                || adapter.messages.get(место).getSender() == null;
+    }
+
     /** Первая буква имени для кружка-заглушки. */
     private static String initialOf(String name) {
         return (name == null || name.trim().isEmpty())
@@ -409,7 +416,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 int maxWidthPx = screenWidth - 2 * marginHorizontal - 2 * padding - marginHorizontal - visualMargin;
                 params.matchConstraintMaxWidth = maxWidthPx;
                 messageContainer.setCardBackgroundColor(ContextCompat.getColor(adapter.context, R.color.sent_message_background));
-                boolean showSquareCorner = position == 0 || adapter.messages.get(position - 1).getSender().getId() != sender.getId();
+                boolean showSquareCorner = position == 0 || безОтправителя(adapter, position - 1) || adapter.messages.get(position - 1).getSender().getId() != sender.getId();
                 if (showSquareCorner) {
                     ShapeAppearanceModel shapeModel = new ShapeAppearanceModel()
                             .toBuilder()
@@ -1657,6 +1664,11 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             Message newMessage = newList.get(newItemPosition);
             if (oldMessage == null || newMessage == null) {
                 return false;
+            }
+            /* У карточки звонка нет отправителя — сравниваем её по содержанию. */
+            if (oldMessage.getSender() == null || newMessage.getSender() == null) {
+                return TextUtils.equals(oldMessage.getContent(), newMessage.getContent())
+                        && TextUtils.equals(oldMessage.getTimestamp(), newMessage.getTimestamp());
             }
             return TextUtils.equals(oldMessage.getContent(), newMessage.getContent()) &&
                     oldMessage.isDelivered() == newMessage.isDelivered() &&

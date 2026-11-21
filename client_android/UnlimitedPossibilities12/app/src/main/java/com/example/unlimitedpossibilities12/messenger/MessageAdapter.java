@@ -1907,6 +1907,13 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
             if (oldMessage == null || newMessage == null) {
                 return false;
             }
+            /* У карточки звонка нет отправителя: она не приходит ни от кого,
+               её складывают из записи о звонке. Сравнивать её по отправителю
+               нельзя — на этом приложение падало при каждом обновлении ленты. */
+            if (oldMessage.getSender() == null || newMessage.getSender() == null) {
+                return TextUtils.equals(oldMessage.getContent(), newMessage.getContent())
+                        && TextUtils.equals(oldMessage.getTimestamp(), newMessage.getTimestamp());
+            }
             return TextUtils.equals(oldMessage.getContent(), newMessage.getContent()) &&
                     oldMessage.isDelivered() == newMessage.isDelivered() &&
                     oldMessage.isRead() == newMessage.isRead() &&
