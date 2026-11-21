@@ -1152,8 +1152,22 @@ const GroupCallActivity = ({ call = {}, minimized = false, onMinimize, onClose }
       console.log(`Signal about camera from ${from}: ${signal.type}`);
     } else {
 
-    // Фильтрация дублирующихся сигналов
-    const signalKey = `${from}-${to || 'null'}-${signal.type}-${signal.sdp?.slice(0, 50) || signal.iceCandidate?.candidate || 'no-sdp'}`;
+    /*
+     * Фильтрация повторов — по всему содержанию, а не по его началу.
+     *
+     * Прежде в ключ брались первые полсотни букв SDP. У предложения,
+     * посланного второй раз за разговор, начало то же самое: имя
+     * разговора и его номер стоят в самом начале и не меняются.
+     * Поэтому собеседник включал камеру, его перепредложение считалось
+     * повтором и отбрасывалось, — и картинка до него не доходила. Тот,
+     * с кем связались первым, её видел, а позже вошедший — нет.
+     */
+    const содержание = signal.sdp || signal.iceCandidate?.candidate || '';
+    let отпечаток = 5381;
+    for (let i = 0; i < содержание.length; i += 1) {
+      отпечаток = ((отпечаток * 33) ^ содержание.charCodeAt(i)) >>> 0;
+    }
+    const signalKey = `${from}-${to || 'null'}-${signal.type}-${содержание.length}-${отпечаток}`;
     if (receivedSignals.current.has(signalKey)) {
       console.log(`Ignoring duplicate signal: ${signalKey}`);
       return;
