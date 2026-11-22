@@ -1305,8 +1305,22 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         return когдаВернулись > 0 && System.currentTimeMillis() - когдаВернулись < 3000;
     }
 
+    /**
+     * Спрятать ленту, пока не вернулись на место.
+     *
+     * Иначе в первое мгновение мелькает самый низ, и только потом
+     * переписка встаёт туда, где её оставили. Больше трёх секунд не
+     * прячем: той строки может уже не быть, а смотреть в пустоту незачем.
+     */
+    private void придержатьПоказ() {
+        if (messageList == null || !ждёмВозврата()) return;
+        messageList.setVisibility(View.INVISIBLE);
+        messageList.postDelayed(() -> messageList.setVisibility(View.VISIBLE), 3000);
+    }
+
     /** Завести кружок «к последнему сообщению» и слежение за прокруткой. */
     private void завестиКружокВниз() {
+        придержатьПоказ();
         кружокВниз = findViewById(R.id.scroll_down_box);
         счётНовых = findViewById(R.id.scroll_down_count);
         View стрелка = findViewById(R.id.scroll_down_button);
@@ -1389,7 +1403,8 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
     private void вернутьсяНаМесто() {
         if (местоВозвращено || messageList == null || messageAdapter == null) return;
         long чьё = getSharedPreferences("prefs", MODE_PRIVATE).getLong("place_msg_" + chatId, 0);
-        if (чьё == 0) { местоВозвращено = true; return; }
+        if (чьё == 0) {
+            if (messageList != null) messageList.setVisibility(View.VISIBLE); местоВозвращено = true; return; }
         int строка = -1;
         for (int i = 0; i < messages.size(); i++) {
             if (messages.get(i).getId() == чьё) { строка = i; break; }
@@ -1400,6 +1415,7 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                 (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
         if (хозяин == null) return;
         хозяин.scrollToPositionWithOffset(строка, сдвиг);
+        messageList.setVisibility(View.VISIBLE);   // встали — можно смотреть
         final int кудаСтрока = строка, кудаСдвиг = сдвиг;
         messageList.postDelayed(() -> {
             androidx.recyclerview.widget.LinearLayoutManager х =

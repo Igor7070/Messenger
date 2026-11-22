@@ -1656,8 +1656,22 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         return messageList == null || !messageList.canScrollVertically(1);
     }
 
+    /**
+     * Спрятать ленту, пока не вернулись на место.
+     *
+     * Иначе в первое мгновение мелькает самый низ, и только потом
+     * переписка встаёт туда, где её оставили. Больше трёх секунд не
+     * прячем: той строки может уже не быть, а смотреть в пустоту незачем.
+     */
+    private void придержатьПоказ() {
+        if (messageList == null || !ждёмВозврата()) return;
+        messageList.setVisibility(View.INVISIBLE);
+        messageList.postDelayed(() -> messageList.setVisibility(View.VISIBLE), 3000);
+    }
+
     /** Завести кружок «к последнему сообщению» и слежение за прокруткой. */
     private void завестиКружокВниз() {
+        придержатьПоказ();
         View коробка = findViewById(R.id.scroll_down_box);
         кружокВниз = коробка;
         счётНовых = findViewById(R.id.scroll_down_count);
@@ -1766,7 +1780,8 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     private void вернутьсяНаМесто() {
         if (местоВозвращено || messageList == null || messageAdapter == null) return;
         long чьё = getSharedPreferences("prefs", MODE_PRIVATE).getLong("place_msg_" + chatId, 0);
-        if (чьё == 0) {             // в прошлый раз стояли внизу — туда и вернёмся обычным путём
+        if (чьё == 0) {
+            if (messageList != null) messageList.setVisibility(View.VISIBLE);             // в прошлый раз стояли внизу — туда и вернёмся обычным путём
             местоВозвращено = true;
             return;
         }
@@ -1780,6 +1795,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                 (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
         if (хозяин == null) return;
         хозяин.scrollToPositionWithOffset(строка, сдвиг);
+        messageList.setVisibility(View.VISIBLE);   // встали — можно смотреть
         /* Ещё раз, когда лента уляжется: картинки подрастают и сдвигают её. */
         final int кудаСтрока = строка, кудаСдвиг = сдвиг;
         messageList.postDelayed(() -> {

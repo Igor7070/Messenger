@@ -361,6 +361,10 @@ const Messenger = () => {
        он сам решает, где быть, и мы больше не держим место. */
     const человекРешил = useRef(false);
 
+    /* Пока возвращаемся на место, ленту не показываем: иначе в первое
+       мгновение мелькает самый низ. */
+    const [скрытаЛента, setСкрытаЛента] = useState(ждёмВозврата.current);
+
     const запомнитьМесто = (список) => {
       if (ждёмВозврата.current) return;
       try {
@@ -397,6 +401,7 @@ const Messenger = () => {
         if (!узел) return;
         список.scrollTop = Math.max(0, узел.offsetTop - (куда.зазор || 0));
         поставлено += 1;
+        setСкрытаЛента(false);   // встали — можно смотреть
         /* Ещё несколько раз: картинки подрастают и сдвигают ленту. */
         if (поставлено >= 6) отпустить();
       };
@@ -404,9 +409,11 @@ const Messenger = () => {
       const отпустить = () => {
         clearInterval(часы);
         clearTimeout(срок);
+        clearTimeout(показать);
         ждёмВозврата.current = false;
       };
       const срок = setTimeout(отпустить, 12000);
+      const показать = setTimeout(() => setСкрытаЛента(false), 3000);
       const сам = () => { человекРешил.current = true; отпустить(); };
       const список = messageListRef.current;
       if (список) {
@@ -416,6 +423,7 @@ const Messenger = () => {
       return () => {
         clearInterval(часы);
         clearTimeout(срок);
+        clearTimeout(показать);
         if (список) {
           список.removeEventListener('wheel', сам);
           список.removeEventListener('touchstart', сам);
@@ -2143,7 +2151,11 @@ const Messenger = () => {
           {новых > 0 && <span className="chat-scroll-down-count">{новых > 99 ? '99+' : новых}</span>}
         </button>
       )}
-      <div className="message-list" ref={messageListRef}>
+      <div
+        className="message-list"
+        ref={messageListRef}
+        style={скрытаЛента ? { visibility: 'hidden' } : undefined}
+      >
         {messages.map((msg, index) => (
           msg.sender ? (
             <React.Fragment key={msg.id}>
