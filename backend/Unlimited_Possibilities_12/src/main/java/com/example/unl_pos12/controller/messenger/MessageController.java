@@ -103,7 +103,11 @@ public class MessageController {
     @DeleteMapping("/{id}")
     public void deleteMessage(@PathVariable Long id,
                               jakarta.servlet.http.HttpServletRequest request) {
-        authz.requireMessageAuthor(request, id); // и удалять тоже
+        // Удалять можно и чужое, но лишь в переписке вдвоём — как в телеграме
+        if (!authz.mayDeleteMessage(authz.currentUserId(request), id) && authz.isEnforcing()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Not allowed to delete this message");
+        }
         messageService.deleteMessage(id);
     }
 

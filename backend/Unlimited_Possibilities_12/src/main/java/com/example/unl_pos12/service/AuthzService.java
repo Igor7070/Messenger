@@ -121,6 +121,23 @@ public class AuthzService {
         return authorId != null && authorId.equals(userId);
     }
 
+    /**
+     * Кому позволено снести сообщение у обоих.
+     *
+     * Своё — всегда. Чужое — только в переписке вдвоём и только её
+     * участнику: так делает телеграм. В группе чужое неприкосновенно —
+     * там участников много, и убрать чужое значило бы решить за всех.
+     * Убрать чужое у себя одного можно везде, но это другая дорога: там
+     * запись не сносят, а помечают скрытой.
+     */
+    public boolean mayDeleteMessage(Long userId, Long messageId) {
+        if (isMessageAuthor(userId, messageId)) return true;
+        if (userId == null || messageId == null) return false;
+        Message message = messageRepository.findById(messageId).orElse(null);
+        if (message == null || message.getChat() == null) return false;
+        return message.getChat().isPrivate() && isChatMember(userId, message.getChat().getId());
+    }
+
     /** Включены ли отказы (иначе нарушения только пишутся в лог). */
     public boolean isEnforcing() {
         return enforce;

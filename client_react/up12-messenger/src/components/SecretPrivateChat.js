@@ -2304,8 +2304,6 @@ const SecretPrivateChat = () => {
   const handleRightClick = (e, message) => {
     e.preventDefault();
 
-    if (message.sender.id !== userId) return;
-
     const messageEl = e.currentTarget;
     const rect = messageEl.getBoundingClientRect();
 
@@ -2315,9 +2313,13 @@ const SecretPrivateChat = () => {
     setContextMenu({ visible: true, x, y, message });
   };
 
+  /** Своё ли это сообщение: чужое можно убрать, но не править. */
+  const моёСообщение = (м) => !!(м && м.sender) && м.sender.id === userId;
+
   const handleMenuAction = (action) => {
     const msg = contextMenu.message;
-    if (!msg || msg.sender.id !== userId) return;
+    if (!msg) return;
+    if (action === 'edit' && !моёСообщение(msg)) return; // править можно только своё
 
     if (action === 'edit' && msg.messageType === 'text') {
       setContent(msg.content);
@@ -3816,7 +3818,7 @@ const SecretPrivateChat = () => {
             zIndex: 10000,
           }}
         >
-          {contextMenu.message.messageType === 'text' && (
+          {contextMenu.message.messageType === 'text' && моёСообщение(contextMenu.message) && (
             <button onClick={() => handleMenuAction('edit')}>Edit</button>
           )}
           <button onClick={() => handleMenuAction('delete')}>Delete</button>

@@ -541,8 +541,9 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                         menuItems.add(new PopupMenuItem("Copy", null, Color.parseColor("#E2E8F0")));
                         if (mine) {
                             menuItems.add(new PopupMenuItem("Edit", null, Color.parseColor("#E2E8F0")));
-                            menuItems.add(new PopupMenuItem("Delete", null, Color.parseColor("#FF6B6B")));
                         }
+                        // Убрать можно и чужое: у себя всегда, у собеседника — вдвоём
+                        menuItems.add(new PopupMenuItem("Delete", null, Color.parseColor("#FF6B6B")));
 
                         PopupMenuAdapter adapter = new PopupMenuAdapter(context, menuItems);
                         listPopupWindow.setAdapter(adapter);

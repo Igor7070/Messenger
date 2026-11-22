@@ -1100,9 +1100,12 @@ const PrivateChat = () => {
     });
   };
 
+  /** Своё ли это сообщение: чужое можно убрать, но не править. */
+  const моёСообщение = (м) => !!(м && м.sender) && м.sender.id === userId;
+
   const handleMenuAction = (action) => {
-    if (contextMenu.message.sender.id !== userId) {
-      toast.error('You can only edit or delete your own messages.');
+    if (action === 'edit' && !моёСообщение(contextMenu.message)) {
+      toast.error('You can only edit your own messages.');
       return;
     }
 
@@ -2762,7 +2765,9 @@ const PrivateChat = () => {
           }}
           onMouseLeave={() => setContextMenu({ visible: false })}
         >
-          <button onClick={() => handleMenuAction('edit')}>Edit</button>
+          {моёСообщение(contextMenu.message) && (
+            <button onClick={() => handleMenuAction('edit')}>Edit</button>
+          )}
           <button onClick={() => handleMenuAction('delete')}>Delete</button>
         </div>
       )}

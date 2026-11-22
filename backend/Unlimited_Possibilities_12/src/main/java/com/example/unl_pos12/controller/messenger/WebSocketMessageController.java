@@ -235,11 +235,25 @@ public class WebSocketMessageController {
         return !authz.isEnforcing(); // в режиме наблюдения только пишем в лог
     }
 
+    /** Удаление: своё везде, чужое — в переписке вдвоём (как в телеграме). */
+    private boolean mayDeleteMessage(org.springframework.messaging.simp.SimpMessageHeaderAccessor headers,
+                                     Long messageId) {
+        Long me = null;
+        if (headers != null && headers.getSessionAttributes() != null) {
+            Object v = headers.getSessionAttributes()
+                    .get(com.example.unl_pos12.config.messenger.StompAuthInterceptor.ATTR_USER_ID);
+            if (v instanceof Long) me = (Long) v;
+        }
+        if (authz.mayDeleteMessage(me, messageId)) return true;
+        System.out.println("WS-AUTHZ-DENY deleteMessage user=" + me + " message=" + messageId);
+        return !authz.isEnforcing();
+    }
+
     @MessageMapping("/deleteMessage/{chatId}")
     @SendTo("/topic/chat/{chatId}/messages") // Замените на правильную тему
     public Message deleteMessage(@DestinationVariable String chatId, Long id,
                                  org.springframework.messaging.simp.SimpMessageHeaderAccessor headers) {
-        if (!mayChangeMessage(headers, id, "deleteMessage")) return null;
+        if (!mayDeleteMessage(headers, id)) return null;
         messageService.deleteMessage(id);
         Message deletedMessage = new Message();
         deletedMessage.setId(id);
