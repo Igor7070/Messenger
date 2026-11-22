@@ -135,7 +135,8 @@ public class AuthzService {
         if (userId == null || messageId == null) return false;
         Message message = messageRepository.findById(messageId).orElse(null);
         if (message == null || message.getChat() == null) return false;
-        return message.getChat().isPrivate() && isChatMember(userId, message.getChat().getId());
+        // Чат на двоих — и обычный, и тайный: у тайного свой признак
+        return isOneToOne(message.getChat()) && isChatMember(userId, message.getChat().getId());
     }
 
     /** Включены ли отказы (иначе нарушения только пишутся в лог). */
