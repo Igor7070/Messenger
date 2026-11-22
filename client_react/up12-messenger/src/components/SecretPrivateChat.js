@@ -1270,7 +1270,9 @@ const SecretPrivateChat = () => {
         const список = messageListRef.current;
         const внизу = !список
           || список.scrollHeight - список.scrollTop - список.clientHeight < 120;
-        if (!didInitialScroll.current || внизу) scrollToBottom(didInitialScroll.current);
+        /* В конец на первой загрузке — только если возвращаться некуда. */
+        const естьКуда = !!оставленноеМесто.current && ждёмВозврата.current;
+        if ((!didInitialScroll.current && !естьКуда) || внизу) scrollToBottom(didInitialScroll.current);
         didInitialScroll.current = true;
       }, 0);
     }
@@ -1378,7 +1380,7 @@ const SecretPrivateChat = () => {
     try {
       const место = JSON.parse(localStorage.getItem(
         `up12-place-${(window.location.hash.match(/chat\/(\d+)/) || [])[1] || ''}`) || 'null');
-      return место && !место.внизу && место.сверху ? место.сверху : null;
+      return место && !место.внизу && место.строка ? место : null;
     } catch (ошибка) {
       return null;
     }
@@ -1387,12 +1389,29 @@ const SecretPrivateChat = () => {
   /** Пока не вернулись на место, вниз не уезжаем и место не переписываем. */
   const ждёмВозврата = useRef(оставленноеМесто.current != null);
 
+  /* Человек тронул ленту, нажал кружок или отправил сообщение — дальше
+     он сам решает, где быть, и мы больше не держим место. */
+  const человекРешил = useRef(false);
+
   /** Запомнить, докуда долистали. */
   const запомнитьМесто = (список) => {
     if (ждёмВозврата.current) return;
     try {
       const внизу = список.scrollHeight - список.scrollTop - список.clientHeight < 40;
-      localStorage.setItem(ключМеста(), JSON.stringify({ сверху: список.scrollTop, внизу }));
+      /* Запоминаем строку, а не пиксели: при следующем заходе высота ленты
+         другая — картинки и превью грузятся заново, и отложенные пиксели
+         означают уже не то место, а то и вовсе лежат за концом. */
+      let верхняя = null;
+      if (!внизу) {
+        for (const узел of список.querySelectorAll('[data-row]')) {
+          if (узел.offsetTop + узел.offsetHeight > список.scrollTop) { верхняя = узел; break; }
+        }
+      }
+      localStorage.setItem(ключМеста(), JSON.stringify({
+        внизу,
+        строка: верхняя ? верхняя.getAttribute('data-row') : null,
+        зазор: верхняя ? Math.round(верхняя.offsetTop - список.scrollTop) : 0,
+      }));
     } catch (ошибка) {
       /* память браузера недоступна — не беда */
     }
@@ -1407,17 +1426,17 @@ const SecretPrivateChat = () => {
    */
   useEffect(() => {
     if (!ждёмВозврата.current) return undefined;
-    const докуда = оставленноеМесто.current;
+    const куда = оставленноеМесто.current;
     let поставлено = 0;
     const вернуть = () => {
       const список = messageListRef.current;
       if (!список) return;
-      /* Пока переписка не доросла до нужного места, возвращать некуда —
-         ждём: тайная расшифровывается не вдруг. */
-      if (список.scrollHeight - список.clientHeight < докуда) return;
-      список.scrollTop = докуда;
+      /* Ищем ту самую строку: пока её нет, переписка ещё не вся. */
+      const узел = список.querySelector(`[data-row="${куда.строка}"]`);
+      if (!узел) return;
+      список.scrollTop = Math.max(0, узел.offsetTop - (куда.зазор || 0));
       поставлено += 1;
-      /* Пару раз после того, как встало: картинки подрастают и сдвигают. */
+      /* Ещё несколько раз: картинки подрастают и сдвигают ленту. */
       if (поставлено >= 6) отпустить();
     };
     const часы = setInterval(вернуть, 200);
@@ -1428,7 +1447,7 @@ const SecretPrivateChat = () => {
     };
     const срок = setTimeout(отпустить, 12000);
     /* Тронул ленту сам — дальше он хозяин. */
-    const сам = () => { ждёмВозврата.current = false; отпустить(); };
+    const сам = () => { человекРешил.current = true; отпустить(); };
     const список = messageListRef.current;
     if (список) {
       список.addEventListener('wheel', сам, { passive: true });
@@ -1463,12 +1482,19 @@ const SecretPrivateChat = () => {
   /** К последнему сообщению — по кружку. */
   const кПоследнему = () => {
     ждёмВозврата.current = false;
+    человекРешил.current = true;
     setНовых(0);
     scrollToBottom(true);
   };
 
   const scrollToBottom = (smooth = true) => {
     if (ждёмВозврата.current) return;   // сперва вернёмся туда, где вышли
+    /* Вернули человека наверх — вниз не утаскиваем, пока он сам не решит. */
+    if (оставленноеМесто.current && !человекРешил.current) {
+      const лист = messageListRef.current;
+      const внизу = !лист || лист.scrollHeight - лист.scrollTop - лист.clientHeight < 60;
+      if (!внизу) return;
+    }
     if (messagesEndRef.current && messageListRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
     }
@@ -1944,6 +1970,7 @@ const SecretPrivateChat = () => {
   }, [keyPair, partnerId, publicKeys, userId]);
 
   const sendMessage = async () => {
+    человекРешил.current = true;   // своё сообщение уводит в конец
     if ((content || selectedFile || audioBlob) && userId && keyPair) {
       try {
         // [ADD] Получаем ID получателя
@@ -3628,6 +3655,7 @@ const SecretPrivateChat = () => {
               const длина = длительность(з.durationSeconds);
               return (
                 <div
+                  data-row={msg.id}
                   className={`private-call-card${мой ? ' is-mine' : ''}${нетОтвета ? ' is-missed' : ''}`}
                   onContextMenu={(e) => { e.preventDefault(); setУбратьУОбоих(false); setУбрать({ вид: 'звонок', id: з.id }); }}
                   title="Right-click to delete"
@@ -3655,6 +3683,7 @@ const SecretPrivateChat = () => {
             })()
           ) : (
           <div
+            data-row={msg.id}
             className={`secret-message ${
               msg.sender.id === userId ? 'secret-current-user' : 'secret-other-user'
             } ${isFirstMessage(msg, index) ? 'first-message' : ''} ${

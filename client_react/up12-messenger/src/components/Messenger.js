@@ -349,7 +349,7 @@ const Messenger = () => {
       try {
         const место = JSON.parse(localStorage.getItem(
           `up12-place-${(window.location.hash.match(/chat\/(\d+)/) || [])[1] || ''}`) || 'null');
-        return место && !место.внизу && место.сверху ? место.сверху : null;
+        return место && !место.внизу && место.строка ? место : null;
       } catch (ошибка) {
         return null;
       }
@@ -357,11 +357,28 @@ const Messenger = () => {
 
     const ждёмВозврата = useRef(оставленноеМесто.current != null);
 
+    /* Человек тронул ленту, нажал кружок или отправил сообщение — дальше
+       он сам решает, где быть, и мы больше не держим место. */
+    const человекРешил = useRef(false);
+
     const запомнитьМесто = (список) => {
       if (ждёмВозврата.current) return;
       try {
         const внизу = список.scrollHeight - список.scrollTop - список.clientHeight < 40;
-        localStorage.setItem(ключМеста(), JSON.stringify({ сверху: список.scrollTop, внизу }));
+        /* Запоминаем строку, а не пиксели: при следующем заходе высота ленты
+           другая — картинки и превью грузятся заново, и отложенные пиксели
+           означают уже не то место, а то и вовсе лежат за концом. */
+        let верхняя = null;
+        if (!внизу) {
+          for (const узел of список.querySelectorAll('[data-row]')) {
+            if (узел.offsetTop + узел.offsetHeight > список.scrollTop) { верхняя = узел; break; }
+          }
+        }
+        localStorage.setItem(ключМеста(), JSON.stringify({
+          внизу,
+          строка: верхняя ? верхняя.getAttribute('data-row') : null,
+          зазор: верхняя ? Math.round(верхняя.offsetTop - список.scrollTop) : 0,
+        }));
       } catch (ошибка) {
         /* память браузера недоступна */
       }
@@ -370,14 +387,17 @@ const Messenger = () => {
     /** Вернуть ленту туда, где её оставили. */
     useEffect(() => {
       if (!ждёмВозврата.current) return undefined;
-      const докуда = оставленноеМесто.current;
+      const куда = оставленноеМесто.current;
       let поставлено = 0;
       const вернуть = () => {
         const список = messageListRef.current;
         if (!список) return;
-        if (список.scrollHeight - список.clientHeight < докуда) return;
-        список.scrollTop = докуда;
+        /* Ищем ту самую строку: пока её нет, переписка ещё не вся. */
+        const узел = список.querySelector(`[data-row="${куда.строка}"]`);
+        if (!узел) return;
+        список.scrollTop = Math.max(0, узел.offsetTop - (куда.зазор || 0));
         поставлено += 1;
+        /* Ещё несколько раз: картинки подрастают и сдвигают ленту. */
         if (поставлено >= 6) отпустить();
       };
       const часы = setInterval(вернуть, 200);
@@ -387,7 +407,7 @@ const Messenger = () => {
         ждёмВозврата.current = false;
       };
       const срок = setTimeout(отпустить, 12000);
-      const сам = () => отпустить();
+      const сам = () => { человекРешил.current = true; отпустить(); };
       const список = messageListRef.current;
       if (список) {
         список.addEventListener('wheel', сам, { passive: true });
@@ -417,6 +437,7 @@ const Messenger = () => {
     /** К последнему сообщению — по кружку. */
     const кПоследнему = () => {
       ждёмВозврата.current = false;
+      человекРешил.current = true;
       setНовых(0);
       if (messageListRef.current) {
         messageListRef.current.scrollTo({ top: messageListRef.current.scrollHeight, behavior: 'smooth' });
@@ -425,6 +446,12 @@ const Messenger = () => {
 
     const scrollToBottom = () => {
         if (ждёмВозврата.current) return;   // сперва вернёмся туда, где вышли
+        /* Вернули человека наверх — вниз не утаскиваем, пока он сам не решит. */
+        if (оставленноеМесто.current && !человекРешил.current) {
+          const лист = messageListRef.current;
+          const внизу = !лист || лист.scrollHeight - лист.scrollTop - лист.clientHeight < 60;
+          if (!внизу) return;
+        }
         if (messageListRef.current) {
             messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
         }
@@ -774,7 +801,9 @@ const Messenger = () => {
                 const список = messageListRef.current;
                 const внизу = !список
                   || список.scrollHeight - список.scrollTop - список.clientHeight < 120;
-                if (!первыйПоказ.current || внизу) scrollToBottom();
+                /* В конец на первой загрузке — только если возвращаться некуда. */
+                const естьКуда = !!оставленноеМесто.current && ждёмВозврата.current;
+                if ((!первыйПоказ.current && !естьКуда) || внизу) scrollToBottom();
             }, 0);
         }
     }, [messages.length]);
@@ -979,6 +1008,7 @@ const Messenger = () => {
     };
 
     const sendMessage = async () => {
+      человекРешил.current = true;   // своё сообщение уводит в конец
         if ((content.trim() || selectedFile || audioBlob) && userId) {
             const currentUsername = username;
             const chatName = await getChatName(chatId);
@@ -2123,6 +2153,7 @@ const Messenger = () => {
               </div>
             )}
             <div
+              data-row={msg.id}
               className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'} ${
                 msg.messageType === 'audio' ? 'audio-message' : ''
               }`}
