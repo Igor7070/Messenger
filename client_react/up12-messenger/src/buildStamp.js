@@ -2,6 +2,6 @@
 // отличить свежую страницу от той, что браузер взял из своего кэша.
 //
 // Пишется сама при сборке — scripts/stamp-build.js. Руками не правим.
-const BUILD_STAMP = '2026-11-22 17:11';
+const BUILD_STAMP = '2026-11-22 17:23';
 
 export default BUILD_STAMP;

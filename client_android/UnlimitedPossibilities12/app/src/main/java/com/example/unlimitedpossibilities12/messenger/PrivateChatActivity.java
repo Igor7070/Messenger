@@ -1649,6 +1649,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     private android.widget.TextView счётНовых;
     private int новыхСообщений = 0;
     private boolean местоВозвращено = false;
+    private boolean человекЛистал = false;
 
     /** Лента у самого конца? */
     private boolean лентаВнизу() {
@@ -1674,7 +1675,16 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
             public void onScrolled(androidx.recyclerview.widget.RecyclerView список, int dx, int dy) {
                 обновитьКружок();
                 if (лентаВнизу()) обнулитьСчёт();
-                if (dy != 0) местоВозвращено = true;   // листают — возвращать больше некуда
+            }
+
+            @Override
+            public void onScrollStateChanged(androidx.recyclerview.widget.RecyclerView список, int состояние) {
+                /* Палец на ленте — человек сам выбрал, где быть; возвращать
+                   его куда-то ещё уже не нужно. */
+                if (состояние == androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_DRAGGING) {
+                    местоВозвращено = true;
+                    человекЛистал = true;
+                }
             }
         });
 
@@ -1770,7 +1780,16 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                 (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
         if (хозяин == null) return;
         хозяин.scrollToPositionWithOffset(строка, сдвиг);
+        /* Ещё раз, когда лента уляжется: картинки подрастают и сдвигают её. */
+        final int кудаСтрока = строка, кудаСдвиг = сдвиг;
+        messageList.postDelayed(() -> {
+            androidx.recyclerview.widget.LinearLayoutManager х =
+                    (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
+            if (х != null && !человекЛистал) х.scrollToPositionWithOffset(кудаСтрока, кудаСдвиг);
+            обновитьКружок();
+        }, 700);
         местоВозвращено = true;
+        когдаВернулись = System.currentTimeMillis();
         обновитьКружок();
     }
 
@@ -1983,7 +2002,25 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         }
     }
 
+    private long когдаВернулись = 0;
+
+    /**
+     * Ждём ли ещё возврата на оставленное место.
+     *
+     * После самого возврата запрет держим ещё пару секунд: лента уезжает
+     * в конец из нескольких мест, и поздняя поездка перебивала возврат.
+     * Тронул ленту сам — запрет снимается сразу.
+     */
+    private boolean ждёмВозврата() {
+        if (человекЛистал) return false;
+        if (!местоВозвращено) {
+            return getSharedPreferences("prefs", MODE_PRIVATE).getLong("place_msg_" + chatId, 0) != 0;
+        }
+        return когдаВернулись > 0 && System.currentTimeMillis() - когдаВернулись < 3000;
+    }
+
     private void jumpToBottom() {
+        if (ждёмВозврата()) return;   // сперва вернёмся туда, где вышли
         if (messages.size() > 0) {
             // Последняя строка — не обязательно сообщение: ниже могут быть звонки
             messageList.scrollToPosition(messageAdapter.getItemCount() - 1);
@@ -1991,6 +2028,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     }
 
     private void scrollToBottom() {
+        if (ждёмВозврата()) return;   // сперва вернёмся туда, где вышли
         if (messages.size() > 0) {
             messageList.smoothScrollToPosition(messageAdapter.getItemCount() - 1);
         }

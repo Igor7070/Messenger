@@ -256,6 +256,7 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         }
         messageAdapter = new GroupMessageAdapter(this, messages, currentUserId, this, isTranslationEnabled, isTTSEnabled, isTranscriptionEnabled);
         messageList.setAdapter(messageAdapter);
+        завестиКружокВниз();
 
         // Инициализация AI-иконки и обновление
         aiSparkleDrawable = ContextCompat.getDrawable(this, R.drawable.ic_ai_sparkle);
@@ -820,6 +821,7 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
 
     @Override
     protected void onStop() {
+        запомнитьМесто();   // вернёмся сюда при следующем заходе
         super.onStop();
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(callReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(messageReceiver);
@@ -941,6 +943,8 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         }
         messages.addAll(cached);
         messageAdapter.updateMessages(messages);
+                    messageList.post(GroupChatsActivity.this::вернутьсяНаМесто);
+                    messageList.postDelayed(GroupChatsActivity.this::обновитьКружок, 600);
         jumpToBottom();
         Log.d(TAG, "Показали сохранённые сообщения: " + cached.size());
     }
@@ -1044,6 +1048,8 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                     }
 
                     messageAdapter.updateMessages(messages);
+                    messageList.post(GroupChatsActivity.this::вернутьсяНаМесто);
+                    messageList.postDelayed(GroupChatsActivity.this::обновитьКружок, 600);
                     markGroupMessagesAsRead(messages);
                     jumpToBottom();
                     MessageCache.save(getApplicationContext(), chatId, messages);
@@ -1157,6 +1163,8 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
             if ("Message deleted".equals(newMessage.getContent())) {
                 messages.removeIf(msg -> msg.getId() == newMessage.getId());
                 messageAdapter.updateMessages(messages);
+                    messageList.post(GroupChatsActivity.this::вернутьсяНаМесто);
+                    messageList.postDelayed(GroupChatsActivity.this::обновитьКружок, 600);
                 Toast.makeText(this, "Message deleted!", Toast.LENGTH_SHORT).show();
             } else {
                 int existingIndex = -1;
@@ -1213,6 +1221,8 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                     }
                 }
                 messageAdapter.updateMessages(messages);
+                    messageList.post(GroupChatsActivity.this::вернутьсяНаМесто);
+                    messageList.postDelayed(GroupChatsActivity.this::обновитьКружок, 600);
                 if (isMessageJustSent || (isNewMessage && newMessage.getSender().getId() != currentUserId)) {
                     scrollToBottom();
                 }
@@ -1265,17 +1275,156 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         });
     }
 
+
+    /* ───── Возврат на оставленное место и кружок «вниз» ───── */
+
+    private View кружокВниз;
+    private android.widget.TextView счётНовых;
+    private int новыхСообщений = 0;
+    private boolean местоВозвращено = false;
+    private boolean человекЛистал = false;
+
+    private boolean лентаВнизу() {
+        return messageList == null || !messageList.canScrollVertically(1);
+    }
+
+    private long когдаВернулись = 0;
+
+    /**
+     * Ждём ли ещё возврата на оставленное место.
+     *
+     * После самого возврата запрет держим ещё пару секунд: лента уезжает
+     * в конец из нескольких мест, и поздняя поездка перебивала возврат.
+     * Тронул ленту сам — запрет снимается сразу.
+     */
+    private boolean ждёмВозврата() {
+        if (человекЛистал) return false;
+        if (!местоВозвращено) {
+            return getSharedPreferences("prefs", MODE_PRIVATE).getLong("place_msg_" + chatId, 0) != 0;
+        }
+        return когдаВернулись > 0 && System.currentTimeMillis() - когдаВернулись < 3000;
+    }
+
+    /** Завести кружок «к последнему сообщению» и слежение за прокруткой. */
+    private void завестиКружокВниз() {
+        кружокВниз = findViewById(R.id.scroll_down_box);
+        счётНовых = findViewById(R.id.scroll_down_count);
+        View стрелка = findViewById(R.id.scroll_down_button);
+        if (кружокВниз == null || стрелка == null) return;
+
+        стрелка.setOnClickListener(в -> {
+            местоВозвращено = true;
+            человекЛистал = true;
+            новыхСообщений = 0;
+            if (messageAdapter != null && messageAdapter.getItemCount() > 0) {
+                messageList.smoothScrollToPosition(messageAdapter.getItemCount() - 1);
+            }
+            обновитьКружок();
+        });
+
+        messageList.addOnScrollListener(new androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(androidx.recyclerview.widget.RecyclerView список, int dx, int dy) {
+                обновитьКружок();
+                if (лентаВнизу()) { новыхСообщений = 0; обновитьКружок(); }
+            }
+
+            @Override
+            public void onScrollStateChanged(androidx.recyclerview.widget.RecyclerView список, int состояние) {
+                if (состояние == androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_DRAGGING) {
+                    местоВозвращено = true;
+                    человекЛистал = true;
+                }
+            }
+        });
+
+        messageAdapter.registerAdapterDataObserver(
+                new androidx.recyclerview.widget.RecyclerView.AdapterDataObserver() {
+            @Override
+            public void onItemRangeInserted(int откуда, int сколько) {
+                if (!местоВозвращено || лентаВнизу()) return;
+                новыхСообщений += сколько;
+                обновитьКружок();
+            }
+        });
+        обновитьКружок();
+    }
+
+    /** Показать или спрятать кружок и число на нём. */
+    private void обновитьКружок() {
+        if (кружокВниз == null) return;
+        boolean внизу = лентаВнизу();
+        кружокВниз.setVisibility(внизу ? View.GONE : View.VISIBLE);
+        if (счётНовых != null) {
+            if (новыхСообщений > 0 && !внизу) {
+                счётНовых.setText(новыхСообщений > 99 ? "99+" : String.valueOf(новыхСообщений));
+                счётНовых.setVisibility(View.VISIBLE);
+            } else {
+                счётНовых.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    /** Запомнить, докуда долистали эту переписку. */
+    private void запомнитьМесто() {
+        if (messageList == null || messageAdapter == null) return;
+        androidx.recyclerview.widget.LinearLayoutManager хозяин =
+                (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
+        if (хозяин == null) return;
+        int строка = хозяин.findFirstVisibleItemPosition();
+        long чьё = 0;
+        int сдвиг = 0;
+        if (!лентаВнизу() && строка >= 0 && строка < messages.size()) {
+            чьё = messages.get(строка).getId();
+            View первая = хозяин.findViewByPosition(строка);
+            сдвиг = первая == null ? 0 : первая.getTop();
+        }
+        getSharedPreferences("prefs", MODE_PRIVATE).edit()
+                .putLong("place_msg_" + chatId, чьё)
+                .putInt("place_off_" + chatId, сдвиг)
+                .apply();
+    }
+
+    /** Вернуть ленту туда, где её оставили. */
+    private void вернутьсяНаМесто() {
+        if (местоВозвращено || messageList == null || messageAdapter == null) return;
+        long чьё = getSharedPreferences("prefs", MODE_PRIVATE).getLong("place_msg_" + chatId, 0);
+        if (чьё == 0) { местоВозвращено = true; return; }
+        int строка = -1;
+        for (int i = 0; i < messages.size(); i++) {
+            if (messages.get(i).getId() == чьё) { строка = i; break; }
+        }
+        if (строка < 0) return;    // этого сообщения ещё нет — подождём следующей сборки
+        int сдвиг = getSharedPreferences("prefs", MODE_PRIVATE).getInt("place_off_" + chatId, 0);
+        androidx.recyclerview.widget.LinearLayoutManager хозяин =
+                (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
+        if (хозяин == null) return;
+        хозяин.scrollToPositionWithOffset(строка, сдвиг);
+        final int кудаСтрока = строка, кудаСдвиг = сдвиг;
+        messageList.postDelayed(() -> {
+            androidx.recyclerview.widget.LinearLayoutManager х =
+                    (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
+            if (х != null && !человекЛистал) х.scrollToPositionWithOffset(кудаСтрока, кудаСдвиг);
+            обновитьКружок();
+        }, 700);
+        местоВозвращено = true;
+        когдаВернулись = System.currentTimeMillis();
+        обновитьКружок();
+    }
+
     /**
      * Сразу в конец переписки — так открывается чат. Плавная прокрутка через
      * весь список выглядит рывком: лента успевает промелькнуть серединой.
      */
     private void jumpToBottom() {
+        if (ждёмВозврата()) return;   // сперва вернёмся туда, где вышли
         if (messages.size() > 0) {
             messageList.scrollToPosition(messages.size() - 1);
         }
     }
 
     private void scrollToBottom() {
+        if (ждёмВозврата()) return;   // сперва вернёмся туда, где вышли
         if (messages.size() > 0) {
             messageList.smoothScrollToPosition(messages.size() - 1);
         }
@@ -1590,6 +1739,8 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                                     Log.d(TAG, "Delete message sent for id=" + message.getId());
                                     messages.removeIf(msg -> msg.getId() == message.getId());
                                     messageAdapter.updateMessages(messages);
+                    messageList.post(GroupChatsActivity.this::вернутьсяНаМесто);
+                    messageList.postDelayed(GroupChatsActivity.this::обновитьКружок, 600);
                                     Toast.makeText(this, "Message deleted!", Toast.LENGTH_SHORT).show();
                                 },
                                 throwable -> {

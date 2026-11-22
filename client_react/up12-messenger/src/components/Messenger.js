@@ -309,7 +309,12 @@ const Messenger = () => {
 
     let pinned = true;
     const nearBottom = () => list.scrollHeight - list.scrollTop - list.clientHeight < 40;
-    const remember = () => { pinned = nearBottom(); };
+    const remember = () => {
+      pinned = nearBottom();
+      setДалекоОтНиза(list.scrollHeight - list.scrollTop - list.clientHeight > 300);
+      if (pinned) setНовых(0);
+      запомнитьМесто(list);
+    };
     const keepDown = () => { if (pinned) list.scrollTop = list.scrollHeight; };
 
     list.addEventListener('scroll', remember, { passive: true });
@@ -325,7 +330,101 @@ const Messenger = () => {
     };
   }, []);
 
+
+    /** Виден ли кружок «вниз»: только когда лента поднята от конца. */
+    const [далекоОтНиза, setДалекоОтНиза] = useState(false);
+
+    /** Сколько пришло, пока мы читали выше. */
+    const [новых, setНовых] = useState(0);
+    const былоСообщений = useRef(0);
+    const первыйПоказ = useRef(false);
+
+    const ключМеста = () => {
+      const изАдреса = (window.location.hash.match(/chat\/(\d+)/) || [])[1];
+      return `up12-place-${chatId || изАдреса || ''}`;
+    };
+
+    /* Место читаем один раз при открытии: дальше лента сама уедет в конец. */
+    const оставленноеМесто = useRef((() => {
+      try {
+        const место = JSON.parse(localStorage.getItem(
+          `up12-place-${(window.location.hash.match(/chat\/(\d+)/) || [])[1] || ''}`) || 'null');
+        return место && !место.внизу && место.сверху ? место.сверху : null;
+      } catch (ошибка) {
+        return null;
+      }
+    })());
+
+    const ждёмВозврата = useRef(оставленноеМесто.current != null);
+
+    const запомнитьМесто = (список) => {
+      if (ждёмВозврата.current) return;
+      try {
+        const внизу = список.scrollHeight - список.scrollTop - список.clientHeight < 40;
+        localStorage.setItem(ключМеста(), JSON.stringify({ сверху: список.scrollTop, внизу }));
+      } catch (ошибка) {
+        /* память браузера недоступна */
+      }
+    };
+
+    /** Вернуть ленту туда, где её оставили. */
+    useEffect(() => {
+      if (!ждёмВозврата.current) return undefined;
+      const докуда = оставленноеМесто.current;
+      let поставлено = 0;
+      const вернуть = () => {
+        const список = messageListRef.current;
+        if (!список) return;
+        if (список.scrollHeight - список.clientHeight < докуда) return;
+        список.scrollTop = докуда;
+        поставлено += 1;
+        if (поставлено >= 6) отпустить();
+      };
+      const часы = setInterval(вернуть, 200);
+      const отпустить = () => {
+        clearInterval(часы);
+        clearTimeout(срок);
+        ждёмВозврата.current = false;
+      };
+      const срок = setTimeout(отпустить, 12000);
+      const сам = () => отпустить();
+      const список = messageListRef.current;
+      if (список) {
+        список.addEventListener('wheel', сам, { passive: true });
+        список.addEventListener('touchstart', сам, { passive: true });
+      }
+      return () => {
+        clearInterval(часы);
+        clearTimeout(срок);
+        if (список) {
+          список.removeEventListener('wheel', сам);
+          список.removeEventListener('touchstart', сам);
+        }
+      };
+    }, []);
+
+    /** Считаем, что пришло, пока мы не у конца. */
+    useEffect(() => {
+      const список = messageListRef.current;
+      const внизу = !список || список.scrollHeight - список.scrollTop - список.clientHeight < 60;
+      const прибыло = messages.length - былоСообщений.current;
+      былоСообщений.current = messages.length;
+      if (!первыйПоказ.current) { первыйПоказ.current = messages.length > 0; return; }
+      if (прибыло > 0 && !внизу) setНовых((было) => было + прибыло);
+      if (внизу) setНовых(0);
+    }, [messages.length]);
+
+    /** К последнему сообщению — по кружку. */
+    const кПоследнему = () => {
+      ждёмВозврата.current = false;
+      setНовых(0);
+      if (messageListRef.current) {
+        messageListRef.current.scrollTo({ top: messageListRef.current.scrollHeight, behavior: 'smooth' });
+      }
+    };
+
     const scrollToBottom = () => {
+        if (ждёмВозврата.current) return;   // сперва вернёмся туда, где вышли
         if (messageListRef.current) {
             messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
         }
@@ -670,7 +769,12 @@ const Messenger = () => {
     useEffect(() => {
         if (messages.length > 0) {
             setTimeout(() => {
-                scrollToBottom();
+                /* Пока читаешь выше, новое сообщение ленту не утаскивает —
+                   только зажигает число на кружке. */
+                const список = messageListRef.current;
+                const внизу = !список
+                  || список.scrollHeight - список.scrollTop - список.clientHeight < 120;
+                if (!первыйПоказ.current || внизу) scrollToBottom();
             }, 0);
         }
     }, [messages.length]);
@@ -1994,6 +2098,21 @@ const Messenger = () => {
       {/* Вход и выход убраны из окна группового чата: попасть сюда без
           аккаунта нельзя, а выход лежит в меню профиля */}
       {errorMessage && <div className="error-message">{errorMessage}</div>}
+      {далекоОтНиза && (
+        <button
+          type="button"
+          className="chat-scroll-down"
+          onClick={кПоследнему}
+          aria-label="To the latest message"
+          title="To the latest message"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+          {новых > 0 && <span className="chat-scroll-down-count">{новых > 99 ? '99+' : новых}</span>}
+        </button>
+      )}
       <div className="message-list" ref={messageListRef}>
         {messages.map((msg, index) => (
           msg.sender ? (

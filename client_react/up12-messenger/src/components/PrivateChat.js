@@ -464,17 +464,40 @@ const PrivateChat = () => {
   useEffect(() => {
     if (!ждёмВозврата.current) return undefined;
     const докуда = оставленноеМесто.current;
+    let поставлено = 0;
     const вернуть = () => {
       const список = messageListRef.current;
-      if (список && список.scrollHeight > докуда) список.scrollTop = докуда;
+      if (!список) return;
+      /* Пока переписка не доросла до нужного места, возвращать некуда —
+         ждём: тайная расшифровывается не вдруг. */
+      if (список.scrollHeight - список.clientHeight < докуда) return;
+      список.scrollTop = докуда;
+      поставлено += 1;
+      /* Пару раз после того, как встало: картинки подрастают и сдвигают. */
+      if (поставлено >= 6) отпустить();
     };
-    const часы = setInterval(вернуть, 150);
-    const отпустить = setTimeout(() => {
+    const часы = setInterval(вернуть, 200);
+    const отпустить = () => {
       clearInterval(часы);
-      вернуть();
+      clearTimeout(срок);
       ждёмВозврата.current = false;
-    }, 1600);
-    return () => { clearInterval(часы); clearTimeout(отпустить); };
+    };
+    const срок = setTimeout(отпустить, 12000);
+    /* Тронул ленту сам — дальше он хозяин. */
+    const сам = () => { ждёмВозврата.current = false; отпустить(); };
+    const список = messageListRef.current;
+    if (список) {
+      список.addEventListener('wheel', сам, { passive: true });
+      список.addEventListener('touchstart', сам, { passive: true });
+    }
+    return () => {
+      clearInterval(часы);
+      clearTimeout(срок);
+      if (список) {
+        список.removeEventListener('wheel', сам);
+        список.removeEventListener('touchstart', сам);
+      }
+    };
   }, []);
 
 
