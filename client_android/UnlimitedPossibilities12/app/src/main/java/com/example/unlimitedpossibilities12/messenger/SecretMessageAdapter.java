@@ -675,12 +675,35 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                         // Показываем ТОЛЬКО расшифрованный локальный файл. По fileUrl на
                         // сервере лежат зашифрованные байты — Glide их не декодирует,
                         // из-за этого раньше и висел серый placeholder.
+                        /* Занимаем высоту снимка заранее: иначе строка
+                           подрастёт в миг загрузки и лента дёрнется. */
+                        final String ключСнимка = imageFile.getAbsolutePath();
+                        ВысотыСнимков.занятьМесто(context, imagePreview, ключСнимка);
                         Glide.with(context)
                                 .load(imageFile)
                                 .signature(new com.bumptech.glide.signature.ObjectKey(imageFile.lastModified()))
                                 .override(900)
                                 .fitCenter()
                                 .dontAnimate()
+                                .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                                    @Override
+                                    public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException беда,
+                                                                Object откуда,
+                                                                com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> куда,
+                                                                boolean первый) {
+                                        return false;
+                                    }
+
+                                    @Override
+                                    public boolean onResourceReady(android.graphics.drawable.Drawable снимок,
+                                                                   Object откуда,
+                                                                   com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> куда,
+                                                                   com.bumptech.glide.load.DataSource источник,
+                                                                   boolean первый) {
+                                        ВысотыСнимков.запомнить(context, imagePreview, ключСнимка, снимок);
+                                        return false;
+                                    }
+                                })
                                 .into(imagePreview);
                         imagePreview.setOnClickListener(v -> {
                             Intent intent = new Intent(context, FullScreenMessageImageActivity.class);

@@ -1255,6 +1255,10 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     attachmentUnavailable.setVisibility(knownMissing ? View.VISIBLE : View.GONE);
 
                     if (!knownMissing) {
+                        /* Занимаем под снимок его настоящую высоту заранее:
+                           иначе строка подрастает в миг загрузки и лента
+                           дёргается под пальцем. */
+                        ВысотыСнимков.занятьМесто(context, imagePreview, fileUrl);
                         Glide.with(context)
                                 .load(fileUrl)
                                 .placeholder(R.drawable.bg_message_image_placeholder)
@@ -1280,6 +1284,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                                                                    com.bumptech.glide.load.DataSource dataSource,
                                                                    boolean isFirstResource) {
                                         MissingAttachments.forget(context, fileUrl);
+                                        ВысотыСнимков.запомнить(context, imagePreview, fileUrl, resource);
                                         attachmentUnavailable.setVisibility(View.GONE);
                                         applyFooterLayout();
                                         return false;
