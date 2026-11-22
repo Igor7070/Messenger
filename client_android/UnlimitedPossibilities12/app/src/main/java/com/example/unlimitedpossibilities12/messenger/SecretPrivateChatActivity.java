@@ -264,6 +264,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         messageAdapter = new SecretMessageAdapter(this, messages, currentUserId, this, apiService);
         messageList.setAdapter(messageAdapter);
         messageAdapter.setСлушательЗвонков(this::спроситьПроЗвонок);
+        завестиКружокВниз();
 
         chatId = getIntent().getLongExtra("chatId", -1);
         /* Собеседника этой переписки мы уже знали в прошлый раз — берём
@@ -1298,6 +1299,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
 
     @Override
     protected void onStop() {
+        запомнитьМесто();   // вернёмся сюда при следующем заходе
         super.onStop();
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(callReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(messageReceiver);
@@ -1745,7 +1747,10 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
             }
 
             // Скролл и отметка о прочтении
-            if (isMessageJustSent || (newMessage.getSender().getId() != currentUserId)) {
+            /* За чужим сообщением уезжаем вниз, только если и так стоим у
+               конца: иначе выдёргивает из того места, где читаешь. */
+            if (isMessageJustSent
+                    || (newMessage.getSender().getId() != currentUserId && лентаВнизу())) {
                 scrollToBottom();
             }
             if (newMessage.getSender().getId() != currentUserId && !newMessage.isRead()) {
@@ -2203,6 +2208,138 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         });
     }
 
+
+    /* ───── Возврат на оставленное место и кружок «вниз» ───── */
+
+    private View кружокВниз;
+    private android.widget.TextView счётНовых;
+    private int новыхСообщений = 0;
+    private boolean местоВозвращено = false;
+
+    /** Лента у самого конца? */
+    private boolean лентаВнизу() {
+        return messageList == null || !messageList.canScrollVertically(1);
+    }
+
+    /** Завести кружок «к последнему сообщению» и слежение за прокруткой. */
+    private void завестиКружокВниз() {
+        View коробка = findViewById(R.id.scroll_down_box);
+        кружокВниз = коробка;
+        счётНовых = findViewById(R.id.scroll_down_count);
+        View стрелка = findViewById(R.id.scroll_down_button);
+        if (коробка == null || стрелка == null) return;
+
+        стрелка.setOnClickListener(в -> {
+            местоВозвращено = true;          // человек сам решил уйти вниз
+            обнулитьСчёт();
+            кВоследнему();
+        });
+
+        messageList.addOnScrollListener(new androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(androidx.recyclerview.widget.RecyclerView список, int dx, int dy) {
+                обновитьКружок();
+                if (лентаВнизу()) обнулитьСчёт();
+                if (dy != 0) местоВозвращено = true;   // листают — возвращать больше некуда
+            }
+        });
+
+        /* Пришло новое, пока мы выше конца, — считаем. */
+        messageAdapter.registerAdapterDataObserver(
+                new androidx.recyclerview.widget.RecyclerView.AdapterDataObserver() {
+            @Override
+            public void onItemRangeInserted(int откуда, int сколько) {
+                if (!местоВозвращено) return;          // это ещё первая загрузка
+                if (лентаВнизу()) return;
+                новыхСообщений += сколько;
+                обновитьКружок();
+            }
+
+            @Override
+            public void onChanged() {
+                обновитьКружок();
+            }
+        });
+        обновитьКружок();
+    }
+
+    private void обнулитьСчёт() {
+        новыхСообщений = 0;
+        обновитьКружок();
+    }
+
+    /** Показать или спрятать кружок и число на нём. */
+    private void обновитьКружок() {
+        if (кружокВниз == null) return;
+        boolean внизу = лентаВнизу();
+        кружокВниз.setVisibility(внизу ? View.GONE : View.VISIBLE);
+        if (счётНовых != null) {
+            if (новыхСообщений > 0 && !внизу) {
+                счётНовых.setText(новыхСообщений > 99 ? "99+" : String.valueOf(новыхСообщений));
+                счётНовых.setVisibility(View.VISIBLE);
+            } else {
+                счётНовых.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    /** К последнему, чем бы оно ни было — сообщением или карточкой звонка. */
+    private void кВоследнему() {
+        if (messageAdapter != null && messageAdapter.getItemCount() > 0) {
+            messageList.smoothScrollToPosition(messageAdapter.getItemCount() - 1);
+        }
+    }
+
+    /** Запомнить, докуда долистали эту переписку. */
+    /** Что сейчас отдано экрану — по ней и ищем место возврата. */
+    private java.util.List<Message> лентаНаЭкране = new java.util.ArrayList<>();
+
+    private void запомнитьМесто() {
+        if (messageList == null || messageAdapter == null) return;
+        androidx.recyclerview.widget.LinearLayoutManager хозяин =
+                (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
+        if (хозяин == null) return;
+        int строка = хозяин.findFirstVisibleItemPosition();
+        long чьё = 0;
+        int сдвиг = 0;
+        if (!лентаВнизу() && строка >= 0 && строка < лентаНаЭкране.size()) {
+            чьё = лентаНаЭкране.get(строка).getId();
+            View первая = хозяин.findViewByPosition(строка);
+            сдвиг = первая == null ? 0 : первая.getTop();
+        }
+        getSharedPreferences("prefs", MODE_PRIVATE).edit()
+                .putLong("place_msg_" + chatId, чьё)
+                .putInt("place_off_" + chatId, сдвиг)
+                .apply();
+    }
+
+    /**
+     * Вернуть ленту туда, где её оставили.
+     *
+     * Зовут при каждой пересборке ленты, пока не вышло: первые сборки
+     * приходят неполными, да и картинки подрастают уже после.
+     */
+    private void вернутьсяНаМесто() {
+        if (местоВозвращено || messageList == null || messageAdapter == null) return;
+        long чьё = getSharedPreferences("prefs", MODE_PRIVATE).getLong("place_msg_" + chatId, 0);
+        if (чьё == 0) {             // в прошлый раз стояли внизу — туда и вернёмся обычным путём
+            местоВозвращено = true;
+            return;
+        }
+        int строка = -1;
+        for (int i = 0; i < лентаНаЭкране.size(); i++) {
+            if (лентаНаЭкране.get(i).getId() == чьё) { строка = i; break; }
+        }
+        if (строка < 0) return;     // этого сообщения в ленте ещё нет — подождём следующей сборки
+        int сдвиг = getSharedPreferences("prefs", MODE_PRIVATE).getInt("place_off_" + chatId, 0);
+        androidx.recyclerview.widget.LinearLayoutManager хозяин =
+                (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
+        if (хозяин == null) return;
+        хозяин.scrollToPositionWithOffset(строка, сдвиг);
+        местоВозвращено = true;
+        обновитьКружок();
+    }
+
     /** Спросить и убрать карточку звонка — как в телеграме. */
     private void спроситьПроЗвонок(Message карточка) {
         long номер = -карточка.getId();   // в карточке номер записи лежит со знаком минус
@@ -2265,7 +2402,14 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
             String в = б.getTimestamp() == null ? "" : б.getTimestamp();
             return п.compareTo(в);
         });
+        лентаНаЭкране = вместе;   // по ней ищем, куда возвращаться
         messageAdapter.updateMessages(вместе);
+        messageList.post(this::вернутьсяНаМесто);
+        messageList.post(this::обновитьКружок);
+        /* Лента ещё доезжает вниз и дорастает картинками — проверим
+           ещё раз, когда уляжется, иначе кружок висит над самым низом. */
+        messageList.postDelayed(this::обновитьКружок, 600);
+        messageList.postDelayed(this::обновитьКружок, 1500);
     }
 
     /** Прочитать звонки с собеседником и сложить из них карточки. */
@@ -2416,13 +2560,14 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
 
     private void jumpToBottom() {
         if (messages.size() > 0) {
-            messageList.scrollToPosition(messages.size() - 1);
+            // Последняя строка — не обязательно сообщение: ниже могут быть звонки
+            messageList.scrollToPosition(messageAdapter.getItemCount() - 1);
         }
     }
 
     private void scrollToBottom() {
         if (messages.size() > 0) {
-            messageList.smoothScrollToPosition(messages.size() - 1);
+            messageList.smoothScrollToPosition(messageAdapter.getItemCount() - 1);
         }
     }
 

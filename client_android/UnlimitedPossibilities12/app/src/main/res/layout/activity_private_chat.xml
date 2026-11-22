@@ -431,4 +431,46 @@
                 android:background="?android:attr/selectableItemBackgroundBorderless" />
         </RelativeLayout>
     </LinearLayout>
+
+    <!-- Кружок «к последнему сообщению»: виден, когда лента поднята от конца -->
+    <FrameLayout
+        android:id="@+id/scroll_down_box"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="14dp"
+        android:layout_marginBottom="14dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@id/message_list"
+        app:layout_constraintBottom_toBottomOf="@id/message_list">
+
+        <ImageView
+            android:id="@+id/scroll_down_button"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:layout_gravity="center"
+            android:layout_margin="6dp"
+            android:background="@drawable/bg_scroll_down"
+            android:src="@drawable/ic_chevron_down"
+            android:scaleType="centerInside"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="To the latest message"
+            app:tint="#CBD5E1" />
+
+        <TextView
+            android:id="@+id/scroll_down_count"
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:minWidth="20dp"
+            android:layout_gravity="top|end"
+            android:gravity="center"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:background="@drawable/bg_scroll_down_count"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </FrameLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

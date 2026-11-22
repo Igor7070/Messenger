@@ -1265,7 +1265,12 @@ const SecretPrivateChat = () => {
   useEffect(() => {
     if (messages.length > 0) {
       setTimeout(() => {
-        scrollToBottom(didInitialScroll.current);
+        /* Пока читаешь выше, новое сообщение ленту не утаскивает — только
+           зажигает число на кружке. Первый раз уезжаем всегда. */
+        const список = messageListRef.current;
+        const внизу = !список
+          || список.scrollHeight - список.scrollTop - список.clientHeight < 120;
+        if (!didInitialScroll.current || внизу) scrollToBottom(didInitialScroll.current);
         didInitialScroll.current = true;
       }, 0);
     }
@@ -1334,7 +1339,14 @@ const SecretPrivateChat = () => {
 
     let pinned = true;
     const nearBottom = () => list.scrollHeight - list.scrollTop - list.clientHeight < 40;
-    const remember = () => { pinned = nearBottom(); };
+    const remember = () => {
+      pinned = nearBottom();
+      /* Кружок «вниз» показываем, отойдя от конца на пол-экрана, и
+         запоминаем место, чтобы вернуться сюда при следующем заходе. */
+      setДалекоОтНиза(list.scrollHeight - list.scrollTop - list.clientHeight > 300);
+      if (pinned) setНовых(0);   // дошли до конца — считать нечего
+      запомнитьМесто(list);
+    };
     const keepDown = () => { if (pinned) list.scrollTop = list.scrollHeight; };
 
     list.addEventListener('scroll', remember, { passive: true });
@@ -1350,7 +1362,90 @@ const SecretPrivateChat = () => {
     };
   }, []);
 
+
+  /** Виден ли кружок «вниз»: только когда лента поднята от конца. */
+  const [далекоОтНиза, setДалекоОтНиза] = useState(false);
+
+  /** Где эту переписку оставили в прошлый раз. */
+  const ключМеста = () => {
+    const изАдреса = (window.location.hash.match(/chat\/(\d+)/) || [])[1];
+    return `up12-place-${chatId || изАдреса || ''}`;
+  };
+
+  /* Место читаем один раз при открытии: дальше лента сама его затрёт,
+     уехав в конец, — а нам надо вернуть человека туда, где он вышел. */
+  const оставленноеМесто = useRef((() => {
+    try {
+      const место = JSON.parse(localStorage.getItem(
+        `up12-place-${(window.location.hash.match(/chat\/(\d+)/) || [])[1] || ''}`) || 'null');
+      return место && !место.внизу && место.сверху ? место.сверху : null;
+    } catch (ошибка) {
+      return null;
+    }
+  })());
+
+  /** Пока не вернулись на место, вниз не уезжаем и место не переписываем. */
+  const ждёмВозврата = useRef(оставленноеМесто.current != null);
+
+  /** Запомнить, докуда долистали. */
+  const запомнитьМесто = (список) => {
+    if (ждёмВозврата.current) return;
+    try {
+      const внизу = список.scrollHeight - список.scrollTop - список.clientHeight < 40;
+      localStorage.setItem(ключМеста(), JSON.stringify({ сверху: список.scrollTop, внизу }));
+    } catch (ошибка) {
+      /* память браузера недоступна — не беда */
+    }
+  };
+
+  /**
+   * Вернуть ленту туда, где её оставили.
+   *
+   * Повторяем полторы секунды: картинки и превью подрастают уже после
+   * первой отрисовки и сдвигают ленту. Потом отпускаем — дальше человек
+   * листает сам, и место снова запоминается.
+   */
+  useEffect(() => {
+    if (!ждёмВозврата.current) return undefined;
+    const докуда = оставленноеМесто.current;
+    const вернуть = () => {
+      const список = messageListRef.current;
+      if (список && список.scrollHeight > докуда) список.scrollTop = докуда;
+    };
+    const часы = setInterval(вернуть, 150);
+    const отпустить = setTimeout(() => {
+      clearInterval(часы);
+      вернуть();
+      ждёмВозврата.current = false;
+    }, 1600);
+    return () => { clearInterval(часы); clearTimeout(отпустить); };
+  }, []);
+
+
+  /** Сколько сообщений пришло, пока мы не у конца ленты. */
+  const [новых, setНовых] = useState(0);
+  const былоСообщений = useRef(0);
+
+  useEffect(() => {
+    const список = messageListRef.current;
+    const внизу = !список || список.scrollHeight - список.scrollTop - список.clientHeight < 60;
+    const прибыло = messages.length - былоСообщений.current;
+    былоСообщений.current = messages.length;
+    /* Первую загрузку не считаем: это не «новые», это вся переписка. */
+    if (!didInitialScroll.current) return;
+    if (прибыло > 0 && !внизу) setНовых((было) => было + прибыло);
+    if (внизу) setНовых(0);
+  }, [messages.length]);
+
+  /** К последнему сообщению — по кружку. */
+  const кПоследнему = () => {
+    ждёмВозврата.current = false;
+    setНовых(0);
+    scrollToBottom(true);
+  };
+
   const scrollToBottom = (smooth = true) => {
+    if (ждёмВозврата.current) return;   // сперва вернёмся туда, где вышли
     if (messagesEndRef.current && messageListRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
     }
@@ -3478,6 +3573,22 @@ const SecretPrivateChat = () => {
           )}
         </div>
       </div>
+
+      {далекоОтНиза && (
+        <button
+          type="button"
+          className="chat-scroll-down"
+          onClick={кПоследнему}
+          aria-label="To the latest message"
+          title="To the latest message"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+          {новых > 0 && <span className="chat-scroll-down-count">{новых > 99 ? '99+' : новых}</span>}
+        </button>
+      )}
       <div className="secret-message-list" ref={messageListRef}>
         {лента.map((msg, index) => (
           <React.Fragment key={msg.id}>

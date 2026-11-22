@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 .private-chat {
+    position: relative;   /* чтобы кружку «вниз» было от чего отсчитываться */
     display: flex;
     flex-direction: column;
     padding: 20px;
@@ -2487,3 +2488,46 @@
 }
 .private-call-ask-buttons button.is-danger { color: #fca5a5; }
 .private-call-card { cursor: context-menu; }
+
+
+/* Кружок «к последнему сообщению» — как в телеграме, справа внизу */
+.chat-scroll-down {
+  position: absolute;
+  right: 28px;
+  bottom: 110px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: #1e293b;
+  color: #cbd5e1;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  z-index: 20;
+}
+
+.chat-scroll-down:hover {
+  background: #273449;
+  color: #e2e8f0;
+}
+
+.chat-scroll-down-count {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
