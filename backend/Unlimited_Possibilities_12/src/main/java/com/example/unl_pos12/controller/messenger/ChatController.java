@@ -220,7 +220,10 @@ public class ChatController {
             }
         }
 
-        return withTranslations(chatService.getMessagesByChatId(id), language);
+        // Что человек убрал у себя одного, ему больше не показываем
+        List<Message> история = com.example.unl_pos12.service.MessageService.безСкрытых(
+                chatService.getMessagesByChatId(id), authz.currentUserId(request));
+        return withTranslations(история, language);
     }
 
     /**

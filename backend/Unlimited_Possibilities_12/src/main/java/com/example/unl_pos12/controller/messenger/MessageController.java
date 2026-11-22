@@ -82,6 +82,24 @@ public class MessageController {
         return messageService.updateMessage(message);
     }
 
+    /**
+     * Убрать сообщение у себя одного.
+     *
+     * Удаление сносит запись у обоих, а это — только помечает её скрытой
+     * для того, кто попросил; у собеседника сообщение остаётся. Поэтому и
+     * позволено не только автору: прятать у себя можно любое.
+     */
+    @PostMapping("/{id}/hide")
+    public ResponseEntity<java.util.Map<String, String>> hideMessage(
+            @PathVariable Long id,
+            jakarta.servlet.http.HttpServletRequest request) {
+        Message message = messageService.getMessageById(id);
+        if (message == null) return ResponseEntity.notFound().build();
+        if (message.getChat() != null) authz.requireChatAccess(request, message.getChat().getId());
+        messageService.hideMessage(id, authz.currentUserId(request));
+        return ResponseEntity.ok(java.util.Map.of("message", "Message hidden"));
+    }
+
     @DeleteMapping("/{id}")
     public void deleteMessage(@PathVariable Long id,
                               jakarta.servlet.http.HttpServletRequest request) {
@@ -118,7 +136,7 @@ public class MessageController {
     public ResponseEntity<List<Message>> getMessagesByChatId(@PathVariable Long chatId, jakarta.servlet.http.HttpServletRequest request) {
         authz.requireChatAccess(request, chatId);
         List<Message> messages = messageService.findByChatId(chatId);
-        return ResponseEntity.ok(messages);
+        return ResponseEntity.ok(MessageService.безСкрытых(messages, authz.currentUserId(request)));
     }
 
     // [ADD] Новый endpoint для загрузки зашифрованных файлов

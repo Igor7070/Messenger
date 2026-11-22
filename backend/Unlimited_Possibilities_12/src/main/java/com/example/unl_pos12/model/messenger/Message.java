@@ -47,6 +47,24 @@ public class Message {
     @Column(name = "public_key_id") // [ADD]
     private Long publicKeyId;
 
+    /**
+     * Кому это сообщение больше не показывать: номера через запятую.
+     *
+     * Удаление «только у себя» не сносит запись — собеседник её видит, —
+     * а помечает её скрытой для того, кто убрал.
+     */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "hidden_for", length = 1024)
+    private String hiddenFor;
+
+    public String getHiddenFor() {
+        return hiddenFor;
+    }
+
+    public void setHiddenFor(String hiddenFor) {
+        this.hiddenFor = hiddenFor;
+    }
+
     public Long getId() {
         return id;
     }

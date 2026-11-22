@@ -229,27 +229,50 @@ const PrivateChat = () => {
   }, [userId, partnerId]);
 
 
-  /** Какую карточку звонка собираемся убрать и уберём ли у собеседника. */
-  const [убратьЗвонок, setУбратьЗвонок] = useState(null);
+  /**
+   * Что собираемся убрать и уберём ли у собеседника.
+   *
+   * Окно одно на сообщения и на звонки — как в телеграме, где надпись не
+   * меняется, что бы ни убирали. В `убрать` лежит либо
+   * `{ вид: 'звонок', id }`, либо `{ вид: 'сообщение', id }`.
+   */
+  const [убрать, setУбрать] = useState(null);
   const [убратьУОбоих, setУбратьУОбоих] = useState(false);
 
-  /** Убрать карточку звонка: свою запись всегда, парную — по желанию. */
-  const удалитьЗвонок = async () => {
-    const з = убратьЗвонок;
-    if (!з) return;
-    setУбратьЗвонок(null);
+  /** Убрать звонок или сообщение: у себя всегда, у собеседника — по желанию. */
+  const убратьВыбранное = async () => {
+    const что = убрать;
+    if (!что) return;
+    const иУСобеседника = убратьУОбоих;
+    setУбрать(null);
+    setУбратьУОбоих(false);
+    const токен = localStorage.getItem('authToken');
     try {
+      if (что.вид === 'звонок') {
+        const ответ = await fetch(
+          `https://unlimitedpossibilities12.org/api/calls/${что.id}?userId=${userId}&forBoth=${иУСобеседника}`,
+          { method: 'DELETE', headers: { Authorization: `Bearer ${токен}` } }
+        );
+        if (!ответ.ok) throw new Error('сервер отказал: ' + ответ.status);
+        setЗвонки((прежние) => прежние.filter((к) => к.звонок.id !== что.id));
+        return;
+      }
+      if (иУСобеседника) {
+        // у обоих — прежней дорогой, она же известит собеседника
+        deleteMessage(что.id);
+        return;
+      }
+      // только у себя — запись остаётся жить, но нам её больше не показывают
       const ответ = await fetch(
-        `https://unlimitedpossibilities12.org/api/calls/${з.id}?userId=${userId}&forBoth=${убратьУОбоих}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` } }
+        `https://unlimitedpossibilities12.org/api/messages/${что.id}/hide`,
+        { method: 'POST', headers: { Authorization: `Bearer ${токен}` } }
       );
       if (!ответ.ok) throw new Error('сервер отказал: ' + ответ.status);
-      setЗвонки((прежние) => прежние.filter((к) => к.звонок.id !== з.id));
+      setMessages((прежние) => прежние.filter((м) => м.id !== что.id));
     } catch (ошибка) {
-      console.warn('Звонок не убрался:', ошибка);
-      console.warn('Карточку звонка убрать не удалось');
+      console.warn('Убрать не удалось:', ошибка);
+      toast.error('Could not delete');
     }
-    setУбратьУОбоих(false);
   };
 
   /** Сообщения и звонки вперемешку, по времени. */
@@ -1087,7 +1110,9 @@ const PrivateChat = () => {
       setContent(contextMenu.message.content);
       setEditingMessageId(contextMenu.message.id);
     } else if (action === 'delete') {
-      deleteMessage(contextMenu.message.id);
+      // Спрашиваем, как в телеграме: у себя или и у собеседника тоже
+      setУбратьУОбоих(false);
+      setУбрать({ вид: 'сообщение', id: contextMenu.message.id });
     }
     setContextMenu({ visible: false });
   };
@@ -2183,7 +2208,7 @@ const PrivateChat = () => {
               return (
                 <div
                   className={`private-call-card${мой ? ' is-mine' : ''}${нетОтвета ? ' is-missed' : ''}`}
-                  onContextMenu={(e) => { e.preventDefault(); setУбратьУОбоих(false); setУбратьЗвонок(з); }}
+                  onContextMenu={(e) => { e.preventDefault(); setУбратьУОбоих(false); setУбрать({ вид: 'звонок', id: з.id }); }}
                   title="Right-click to delete"
                 >
                   <div className="private-call-body">
@@ -2602,11 +2627,11 @@ const PrivateChat = () => {
         ))}
         <div ref={messagesEndRef} />
 
-      {убратьЗвонок && (
-        <div className="private-call-ask-backdrop" onClick={() => setУбратьЗвонок(null)} role="presentation">
+      {убрать && (
+        <div className="private-call-ask-backdrop" onClick={() => setУбрать(null)} role="presentation">
           <div className="private-call-ask" onClick={(e) => e.stopPropagation()}>
-            <h3>Delete call</h3>
-            <p>Remove this call from the conversation?</p>
+            <h3>Delete message</h3>
+            <p>Are you sure you want to delete this message?</p>
             <label>
               <input
                 type="checkbox"
@@ -2616,8 +2641,8 @@ const PrivateChat = () => {
               Also delete for the other side
             </label>
             <div className="private-call-ask-buttons">
-              <button type="button" onClick={() => setУбратьЗвонок(null)}>Cancel</button>
-              <button type="button" className="is-danger" onClick={удалитьЗвонок}>Delete</button>
+              <button type="button" onClick={() => setУбрать(null)}>Cancel</button>
+              <button type="button" className="is-danger" onClick={убратьВыбранное}>Delete</button>
             </div>
           </div>
         </div>

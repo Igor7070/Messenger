@@ -1571,23 +1571,64 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
      * весь список выглядит рывком: лента успевает промелькнуть серединой.
      */
 
-    /** Спросить и убрать карточку звонка — как в телеграме. */
-    private void спроситьПроЗвонок(Message карточка) {
-        long номер = -карточка.getId();   // в карточке номер записи лежит со знаком минус
-        if (номер <= 0) return;
+
+    /** Что делать после окна удаления. */
+    private interface ПослеВопроса { void готово(boolean уОбоих); }
+
+    /**
+     * Окно удаления — одно на сообщения и на карточки звонков.
+     *
+     * Надпись не меняется, что бы ни убирали: в телеграме она тоже одна на
+     * всё. Отметку «и у собеседника» показываем лишь там, где это возможно:
+     * чужое сообщение убирают только у себя.
+     */
+    private void спроситьПроУдаление(boolean можноУОбоих, ПослеВопроса дальше) {
         android.widget.CheckBox уОбоих = new android.widget.CheckBox(this);
         уОбоих.setText("Also delete for the other side");
+        уОбоих.setTextColor(0xFFE2E8F0);   // на тёмном окне чёрная надпись не читалась
+        уОбоих.setVisibility(можноУОбоих ? View.VISIBLE : View.GONE);
         int отступ = (int) (20 * getResources().getDisplayMetrics().density);
         android.widget.FrameLayout обёртка = new android.widget.FrameLayout(this);
         обёртка.setPadding(отступ, отступ / 2, отступ, 0);
         обёртка.addView(уОбоих);
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.AlertDialog_UP12)
-                .setTitle("Delete call")
-                .setMessage("Remove this call from the conversation?")
+                .setTitle("Delete message")
+                .setMessage("Are you sure you want to delete this message?")
                 .setView(обёртка)
                 .setNegativeButton("Cancel", null)
-                .setPositiveButton("Delete", (окно, что) -> убратьЗвонок(номер, уОбоих.isChecked()))
+                .setPositiveButton("Delete", (окно, что) -> дальше.готово(уОбоих.isChecked()))
                 .show();
+    }
+
+    /** Спрятать сообщение у себя одного: запись живёт, собеседник её видит. */
+    private void спрятатьУСебя(Message сообщение) {
+        long номер = сообщение.getId();
+        ApiClient.getApiService().hideMessage(номер).enqueue(new retrofit2.Callback<okhttp3.ResponseBody>() {
+            @Override
+            public void onResponse(retrofit2.Call<okhttp3.ResponseBody> вызов,
+                                   retrofit2.Response<okhttp3.ResponseBody> ответ) {
+                if (!ответ.isSuccessful()) {
+                    Log.w(TAG, "Сообщение не спряталось: " + ответ.code());
+                    return;
+                }
+                runOnUiThread(() -> {
+                    messages.removeIf(м -> м.getId() == номер);
+                    подмешатьЗвонки(messages);
+                });
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<okhttp3.ResponseBody> вызов, Throwable беда) {
+                Log.w(TAG, "Сообщение не спряталось: " + беда.getMessage());
+            }
+        });
+    }
+
+    /** Спросить и убрать карточку звонка — как в телеграме. */
+    private void спроситьПроЗвонок(Message карточка) {
+        long номер = -карточка.getId();   // в карточке номер записи лежит со знаком минус
+        if (номер <= 0) return;
+        спроситьПроУдаление(true, уОбоих -> убратьЗвонок(номер, уОбоих));
     }
 
     /** Убрать запись о звонке на сервере и карточку с экрана. */
@@ -2115,6 +2156,15 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
 
     @Override
     public void onDelete(Message message) {
+        boolean моё = message.getSender() != null && message.getSender().getId() == currentUserId;
+        спроситьПроУдаление(моё, уОбоих -> {
+            if (уОбоих) убратьСообщениеУОбоих(message);
+            else спрятатьУСебя(message);
+        });
+    }
+
+    /** Снести сообщение у обоих — прежней дорогой, она же известит собеседника. */
+    private void убратьСообщениеУОбоих(Message message) {
         if (message.getSender().getId() == currentUserId) {
             if (stompClient != null && stompClient.isConnected()) {
                 stompClient.send("/app/deleteMessage/" + chatId, String.valueOf(message.getId()))

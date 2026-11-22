@@ -55,6 +55,43 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
+    /** Убрать сообщение только у одного — у остальных оно остаётся. */
+    public void hideMessage(Long id, Long userId) {
+        if (userId == null) return;
+        Message message = messageRepository.findById(id).orElse(null);
+        if (message == null) return;
+        java.util.Set<String> кому = новыйНабор(message.getHiddenFor());
+        кому.add(String.valueOf(userId));
+        message.setHiddenFor(String.join(",", кому));
+        messageRepository.save(message);
+    }
+
+    /** Скрыто ли сообщение от этого человека. */
+    public static boolean скрытоОт(Message message, Long userId) {
+        if (message == null || userId == null) return false;
+        return новыйНабор(message.getHiddenFor()).contains(String.valueOf(userId));
+    }
+
+    /** История без того, что этот человек у себя убрал. */
+    public static List<Message> безСкрытых(List<Message> история, Long userId) {
+        if (история == null || userId == null) return история;
+        List<Message> видимые = new java.util.ArrayList<>(история.size());
+        for (Message m : история) {
+            if (!скрытоОт(m, userId)) видимые.add(m);
+        }
+        return видимые;
+    }
+
+    private static java.util.Set<String> новыйНабор(String перечень) {
+        java.util.Set<String> набор = new java.util.LinkedHashSet<>();
+        if (перечень != null && !перечень.isBlank()) {
+            for (String кусок : перечень.split(",")) {
+                if (!кусок.isBlank()) набор.add(кусок.trim());
+            }
+        }
+        return набор;
+    }
+
     public void deleteMessage(Long id) {
         translationRepository.deleteByMessageId(id); // переводы живут отдельно — убираем вместе с сообщением
         messageRepository.deleteById(id);
