@@ -263,6 +263,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
         messageAdapter = new SecretMessageAdapter(this, messages, currentUserId, this, apiService);
         messageList.setAdapter(messageAdapter);
+        messageAdapter.setСлушательЗвонков(this::спроситьПроЗвонок);
 
         chatId = getIntent().getLongExtra("chatId", -1);
         updateSecretStatusLine(); // только теперь известен chatId — настройки перевода читаются по нему
@@ -2131,6 +2132,53 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
      * Сразу в конец переписки — так открывается чат. Плавная прокрутка через
      * весь список выглядит рывком: лента успевает промелькнуть серединой.
      */
+
+    /** Спросить и убрать карточку звонка — как в телеграме. */
+    private void спроситьПроЗвонок(Message карточка) {
+        long номер = -карточка.getId();   // в карточке номер записи лежит со знаком минус
+        if (номер <= 0) return;
+        android.widget.CheckBox уОбоих = new android.widget.CheckBox(this);
+        уОбоих.setText("Also delete for the other side");
+        int отступ = (int) (20 * getResources().getDisplayMetrics().density);
+        android.widget.FrameLayout обёртка = new android.widget.FrameLayout(this);
+        обёртка.setPadding(отступ, отступ / 2, отступ, 0);
+        обёртка.addView(уОбоих);
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.AlertDialog_UP12)
+                .setTitle("Delete call")
+                .setMessage("Remove this call from the conversation?")
+                .setView(обёртка)
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Delete", (окно, что) -> убратьЗвонок(номер, уОбоих.isChecked()))
+                .show();
+    }
+
+    /** Убрать запись о звонке на сервере и карточку с экрана. */
+    private void убратьЗвонок(long номер, boolean уОбоих) {
+        ApiClient.getApiService().deleteCall(номер, currentUserId, уОбоих).enqueue(
+                new retrofit2.Callback<okhttp3.ResponseBody>() {
+            @Override
+            public void onResponse(retrofit2.Call<okhttp3.ResponseBody> вызов,
+                                   retrofit2.Response<okhttp3.ResponseBody> ответ) {
+                if (!ответ.isSuccessful()) {
+                    Log.w(TAG, "Звонок не убрался: " + ответ.code());
+                    return;
+                }
+                runOnUiThread(() -> {
+                    java.util.Iterator<Message> и = карточкиЗвонков.iterator();
+                    while (и.hasNext()) {
+                        if (-и.next().getId() == номер) и.remove();
+                    }
+                    подмешатьЗвонки(лентаСообщений);
+                });
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<okhttp3.ResponseBody> вызов, Throwable беда) {
+                Log.w(TAG, "Звонок не убрался: " + беда.getMessage());
+            }
+        });
+    }
+
     /** Последние звонки с этим собеседником — карточками в ленте. */
     private final java.util.List<Message> карточкиЗвонков = new java.util.ArrayList<>();
 
@@ -2209,7 +2257,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                                 : (длит / 60) + ":" + String.format(java.util.Locale.US, "%02d", длит % 60));
                     }
                     Message карточка = new Message();
-                    карточка.setId(-1000 - i);
+                    карточка.setId(-з.getId());   // номер записи, со знаком минус
                     карточка.setMessageType(мой ? "call_out" : "call_in");
                     карточка.setContent(заголовок + "\n" + подпись);
                     карточка.setTimestamp(з.getTimestamp());

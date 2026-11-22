@@ -27,6 +27,12 @@ public interface ApiService {
     Call<Chat> createChat(@Body Chat chat);
 
     /** Удалить чат целиком (у всех). Групповой сервер отдаёт только создателю. */
+    /** Убрать звонок: свою запись, а по желанию и парную у собеседника. */
+    @DELETE("calls/{id}")
+    retrofit2.Call<okhttp3.ResponseBody> deleteCall(@Path("id") long id,
+                                                   @Query("userId") int userId,
+                                                   @Query("forBoth") boolean forBoth);
+
     @DELETE("chats/{chatId}")
     Call<Void> deleteChat(@Path("chatId") long chatId);
 

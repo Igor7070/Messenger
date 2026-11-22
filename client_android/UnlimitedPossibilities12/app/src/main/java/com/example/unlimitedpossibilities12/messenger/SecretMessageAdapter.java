@@ -79,6 +79,16 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdapter.MessageViewHolder> {
+
+    /** Кому сказать, что карточку звонка просят убрать. */
+    public interface СлушательЗвонков { void убрать(Message карточка); }
+
+    private СлушательЗвонков слушательЗвонков;
+
+    public void setСлушательЗвонков(СлушательЗвонков слушатель) {
+        this.слушательЗвонков = слушатель;
+    }
+
     private static final String TAG = "SecretMessageAdapter";
     private final Context context;
     private final List<Message> messages;
@@ -159,6 +169,11 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             }
             holder.callCardText.setTextColor(пропущен ? 0xFFFCA5A5 : 0xFFF1F5F9);
             if (holder.callCardBubble != null) {
+                /* Долгое нажатие — убрать карточку, как делают с сообщением */
+                holder.callCardBubble.setOnLongClickListener(в -> {
+                    if (слушательЗвонков != null) слушательЗвонков.убрать(message);
+                    return true;
+                });
                 android.widget.FrameLayout.LayoutParams лп =
                         (android.widget.FrameLayout.LayoutParams) holder.callCardBubble.getLayoutParams();
                 лп.gravity = моё ? android.view.Gravity.END : android.view.Gravity.START;

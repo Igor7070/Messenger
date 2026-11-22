@@ -59,11 +59,30 @@ public class CallService {
 
     // Удалить звонок
     public void deleteCall(Long id, Long userId) {
+        deleteCall(id, userId, false);
+    }
+
+    /**
+     * Удалить звонок.
+     *
+     * Своя запись убирается всегда. Если попросили убрать и у собеседника,
+     * находим парную запись по общей комнате: у каждой стороны она своя, а
+     * комната одна на обе.
+     */
+    public void deleteCall(Long id, Long userId, boolean forBoth) {
         Call call = getCallById(id);
         if (!call.getUser().getId().equals(userId)) {
             throw new IllegalStateException("User is not authorized to delete this call");
         }
+        String roomId = call.getRoomId();
         callRepository.delete(call);
+        if (forBoth && roomId != null && !roomId.isEmpty()) {
+            for (Call парная : callRepository.findByRoomId(roomId)) {
+                if (!парная.getId().equals(id)) {
+                    callRepository.delete(парная);
+                }
+            }
+        }
     }
 
     @Transactional

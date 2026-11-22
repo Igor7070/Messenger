@@ -78,6 +78,16 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageViewHolder> {
+
+    /** Кому сказать, что карточку звонка просят убрать. */
+    public interface СлушательЗвонков { void убрать(Message карточка); }
+
+    private СлушательЗвонков слушательЗвонков;
+
+    public void setСлушательЗвонков(СлушательЗвонков слушатель) {
+        this.слушательЗвонков = слушатель;
+    }
+
     private static final String TAG = "MessageAdapter";
     private final Context context;
     private final List<Message> messages;
@@ -164,6 +174,11 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 holder.callCardIcon.setImageResource(видео ? R.drawable.ic_video_call : R.drawable.ic_calls);
             }
             if (holder.callCardBubble != null) {
+                /* Долгое нажатие — убрать карточку, как делают с сообщением */
+                holder.callCardBubble.setOnLongClickListener(в -> {
+                    if (слушательЗвонков != null) слушательЗвонков.убрать(message);
+                    return true;
+                });
                 android.widget.FrameLayout.LayoutParams лп =
                         (android.widget.FrameLayout.LayoutParams) holder.callCardBubble.getLayoutParams();
                 лп.gravity = моё ? android.view.Gravity.END : android.view.Gravity.START;

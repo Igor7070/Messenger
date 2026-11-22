@@ -2450,3 +2450,40 @@
 .private-call-arrow { margin-right: 6px; color: #4ade80; }
 .private-call-card.is-missed .private-call-arrow { color: #f87171; }
 .private-call-phone { width: 22px; height: 22px; fill: #7dd3fc; flex: none; }
+
+
+/* Окно «убрать звонок из переписки» */
+.private-call-ask-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+
+.private-call-ask {
+  width: min(360px, calc(100vw - 48px));
+  padding: 20px;
+  border-radius: 16px;
+  background: #0f172a;
+  color: #e2e8f0;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+.private-call-ask h3 { margin: 0 0 8px; font-size: 17px; }
+.private-call-ask p { margin: 0 0 14px; color: #94a3b8; font-size: 14px; }
+.private-call-ask label { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.private-call-ask-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.private-call-ask-buttons button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #93c5fd;
+  font-size: 14px;
+  cursor: pointer;
+}
+.private-call-ask-buttons button.is-danger { color: #fca5a5; }
+.private-call-card { cursor: context-menu; }

@@ -43,8 +43,11 @@ public class CallController {
 
     // Удалить звонок
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> deleteCall(@PathVariable Long id, @RequestParam Long userId) {
-        callService.deleteCall(id, userId);
+    public ResponseEntity<Map<String, String>> deleteCall(
+            @PathVariable Long id,
+            @RequestParam Long userId,
+            @RequestParam(required = false, defaultValue = "false") boolean forBoth) {
+        callService.deleteCall(id, userId, forBoth);
         return ResponseEntity.ok(Map.of("message", "Call deleted"));
     }
 }

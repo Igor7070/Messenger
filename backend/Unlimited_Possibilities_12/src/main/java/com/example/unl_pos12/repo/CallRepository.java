@@ -13,6 +13,9 @@ import java.util.List;
 public interface CallRepository extends JpaRepository<Call, Long> {
     List<Call> findByUserId(Long userId); // Поиск звонков по ID пользователя
 
+    /** Все записи об одном звонке: у каждой стороны своя, но комната общая. */
+    List<Call> findByRoomId(String roomId);
+
     // Проверка существования звонка по userId, roomId и временному диапазону
     @Query("SELECT COUNT(c) > 0 FROM Call c WHERE c.user.id = :userId AND c.roomId = :roomId AND c.timestamp BETWEEN :start AND :end")
     boolean existsByUserIdAndRoomIdAndTimestampBetween(Long userId, String roomId, LocalDateTime start, LocalDateTime end);

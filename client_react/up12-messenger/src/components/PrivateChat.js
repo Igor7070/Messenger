@@ -228,6 +228,30 @@ const PrivateChat = () => {
        подвесить страницу. */
   }, [userId, partnerId]);
 
+
+  /** Какую карточку звонка собираемся убрать и уберём ли у собеседника. */
+  const [убратьЗвонок, setУбратьЗвонок] = useState(null);
+  const [убратьУОбоих, setУбратьУОбоих] = useState(false);
+
+  /** Убрать карточку звонка: свою запись всегда, парную — по желанию. */
+  const удалитьЗвонок = async () => {
+    const з = убратьЗвонок;
+    if (!з) return;
+    setУбратьЗвонок(null);
+    try {
+      const ответ = await fetch(
+        `https://unlimitedpossibilities12.org/api/calls/${з.id}?userId=${userId}&forBoth=${убратьУОбоих}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` } }
+      );
+      if (!ответ.ok) throw new Error('сервер отказал: ' + ответ.status);
+      setЗвонки((прежние) => прежние.filter((к) => к.звонок.id !== з.id));
+    } catch (ошибка) {
+      console.warn('Звонок не убрался:', ошибка);
+      console.warn('Карточку звонка убрать не удалось');
+    }
+    setУбратьУОбоих(false);
+  };
+
   /** Сообщения и звонки вперемешку, по времени. */
   const лента = useMemo(() => {
     const всё = [...messages, ...звонки];
@@ -2157,7 +2181,11 @@ const PrivateChat = () => {
               const нетОтвета = з.status === 'missed' || з.status === 'rejected';
               const длина = длительность(з.durationSeconds);
               return (
-                <div className={`private-call-card${мой ? ' is-mine' : ''}${нетОтвета ? ' is-missed' : ''}`}>
+                <div
+                  className={`private-call-card${мой ? ' is-mine' : ''}${нетОтвета ? ' is-missed' : ''}`}
+                  onContextMenu={(e) => { e.preventDefault(); setУбратьУОбоих(false); setУбратьЗвонок(з); }}
+                  title="Right-click to delete"
+                >
                   <div className="private-call-body">
                     <div className="private-call-title">
                       {(з.callType === 'video' ? 'Video ' : '')}
@@ -2573,6 +2601,28 @@ const PrivateChat = () => {
           </React.Fragment>
         ))}
         <div ref={messagesEndRef} />
+
+      {убратьЗвонок && (
+        <div className="private-call-ask-backdrop" onClick={() => setУбратьЗвонок(null)} role="presentation">
+          <div className="private-call-ask" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete call</h3>
+            <p>Remove this call from the conversation?</p>
+            <label>
+              <input
+                type="checkbox"
+                checked={убратьУОбоих}
+                onChange={(e) => setУбратьУОбоих(e.target.checked)}
+              />
+              Also delete for the other side
+            </label>
+            <div className="private-call-ask-buttons">
+              <button type="button" onClick={() => setУбратьЗвонок(null)}>Cancel</button>
+              <button type="button" className="is-danger" onClick={удалитьЗвонок}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       </div>
       <div className="private-input-container">
         <div className="private-textarea-wrapper">
