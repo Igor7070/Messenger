@@ -225,6 +225,15 @@ const SecretPrivateChat = () => {
   useEffect(() => {
     if (!userId || !partnerId) return undefined;
     let живо = true;
+    /* Карточки прошлого захода показываем тотчас, не дожидаясь ответа
+       сервера: иначе переписка рисуется, а звонки приезжают следом. */
+    const ключЗвонков = `up12-calls-${chatId}`;
+    try {
+      const сохранённое = JSON.parse(localStorage.getItem(ключЗвонков) || '[]');
+      if (Array.isArray(сохранённое) && сохранённое.length) setЗвонки(сохранённое);
+    } catch (ошибка) {
+      /* ничего не сохранено или память недоступна */
+    }
     (async () => {
       try {
         const ответ = await fetch(`https://unlimitedpossibilities12.org/api/calls?userId=${userId}`, {
@@ -245,12 +254,25 @@ const SecretPrivateChat = () => {
         if (живо) {
           /* Ленте хватит недавних: за годы звонков накопятся сотни, и
              все разом в переписке ни к чему. */
-          setЗвонки(наши.slice(-30).map((з) => ({
+          const свежие = наши.slice(-30).map((з) => ({
             id: `call-${з.id}`,
             звонок: з,
             timestamp: з.timestamp,
             sender: { id: String(з.caller) === String(userId) ? userId : Number(partnerId) },
-          })));
+          }));
+          /* Если ничего не поменялось, ленту не трогаем вовсе: лишняя
+             перерисовка видна глазу как мигание. */
+          setЗвонки((прежние) => {
+            const тоЖе = прежние.length === свежие.length
+              && прежние.every((к, i) => к.id === свежие[i].id);
+            if (тоЖе) return прежние;
+            try {
+              localStorage.setItem(ключЗвонков, JSON.stringify(свежие));
+            } catch (ошибка) {
+              /* память браузера может быть переполнена — не беда */
+            }
+            return свежие;
+          });
         }
       } catch (ошибка) {
         console.warn('Список звонков не пришёл:', ошибка);
@@ -310,7 +332,9 @@ const SecretPrivateChat = () => {
   };
 
   const лента = useMemo(() => {
-    const всё = [...messages, ...звонки];
+    /* Пока переписка не пришла, карточки придерживаем: иначе в тайной
+       сперва мелькают одни звонки, а сообщения выходят следом. */
+    const всё = messages.length ? [...messages, ...звонки] : [...messages];
     всё.sort((а, б) => new Date(а.timestamp || 0) - new Date(б.timestamp || 0));
     return всё;
   }, [messages, звонки]);
