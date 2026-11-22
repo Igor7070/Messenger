@@ -222,6 +222,14 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         chatNameTextView = findViewById(R.id.chat_name_text_view);
         inputMessage = findViewById(R.id.input_message);
         messageList = findViewById(R.id.message_list);
+        /* Прячем тут же, прежде чем нарисуется первый кадр: иначе он
+           успевает показать конец переписки. Номер чата берём прямо из
+           намерения — поле заполняется позже. */
+        if (getSharedPreferences("prefs", MODE_PRIVATE)
+                .getLong("place_msg_" + getIntent().getLongExtra("chatId", -1), 0) != 0) {
+            messageList.setVisibility(View.INVISIBLE);
+            messageList.postDelayed(() -> messageList.setVisibility(View.VISIBLE), 3000);
+        }
         attachedFileTextView = findViewById(R.id.attached_file_text_view);
         tvTyping = findViewById(R.id.tv_typing);
 
@@ -2361,13 +2369,20 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                 (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
         if (хозяин == null) return;
         хозяин.scrollToPositionWithOffset(строка, сдвиг);
-        messageList.setVisibility(View.VISIBLE);   // встали — можно смотреть
         /* Ещё раз, когда лента уляжется: картинки подрастают и сдвигают её. */
         final int кудаСтрока = строка, кудаСдвиг = сдвиг;
+        /* Доправляем дважды, пока лента скрыта: картинки подрастают и
+           сдвигают её на пару пикселей — дёрганья видеть незачем. */
         messageList.postDelayed(() -> {
             androidx.recyclerview.widget.LinearLayoutManager х =
                     (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
             if (х != null && !человекЛистал) х.scrollToPositionWithOffset(кудаСтрока, кудаСдвиг);
+        }, 300);
+        messageList.postDelayed(() -> {
+            androidx.recyclerview.widget.LinearLayoutManager х =
+                    (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
+            if (х != null && !человекЛистал) х.scrollToPositionWithOffset(кудаСтрока, кудаСдвиг);
+            messageList.setVisibility(View.VISIBLE);   // встали ровно — можно смотреть
             обновитьКружок();
         }, 700);
         местоВозвращено = true;
