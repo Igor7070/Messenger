@@ -1265,11 +1265,13 @@ const PrivateChat = () => {
     return null;
   };
 
-  const shouldShowAvatar = (msg, index) => {
-    if (!msg.sender || msg.sender.id === userId) return false;
-    const предыдущее = предыдущееСообщение(index);
-    return !предыдущее || предыдущее.sender.id !== msg.sender.id;
-  };
+  /**
+   * Аватарки рядом с сообщением в переписке вдвоём нет.
+   *
+   * Собеседник один и он же в шапке — кружок у каждой его реплики
+   * ничего не сообщает, а ширину отнимает. В группах он остаётся.
+   */
+  const shouldShowAvatar = () => false;
 
   const isFirstMessage = (msg, index) => {
     if (!msg.sender || msg.sender.id !== userId) return false;

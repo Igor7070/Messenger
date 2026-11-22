@@ -462,12 +462,21 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 params.constrainedWidth = true;
                 int maxWidthPx = screenWidth - marginHorizontal - avatarWidth - marginStart - visualMargin - 2 * padding;
                 params.matchConstraintMaxWidth = maxWidthPx;
-                boolean showAvatar = position == 0 || безОтправителя(adapter, position - 1)
+                /* Аватарку в переписке вдвоём не показываем: собеседник один и
+                   он же в шапке. Срезанный верхний угол по-прежнему
+                   отмечает начало череды его реплик. */
+                boolean первыйВЧереде = position == 0 || безОтправителя(adapter, position - 1)
                         || adapter.messages.get(position - 1).getSender().getId() != sender.getId();
-                if (showAvatar) {
-                    params.startToEnd = R.id.avatar_image_view;
-                    avatarImageView.setVisibility(View.VISIBLE);
-                    avatarPlaceholder.setVisibility(View.GONE);
+                params.startToEnd = R.id.avatar_placeholder;
+                avatarImageView.setVisibility(View.GONE);
+                    /* Кружка нет — и места под него не держим: строка шире. */
+                    android.view.ViewGroup.LayoutParams мера = avatarPlaceholder.getLayoutParams();
+                    if (мера != null && мера.width != 0) {
+                        мера.width = 0;
+                        avatarPlaceholder.setLayoutParams(мера);
+                    }
+                avatarPlaceholder.setVisibility(View.VISIBLE);   // пустышка нулевой ширины держит край
+                if (первыйВЧереде) {
                     ShapeAppearanceModel shapeModel = new ShapeAppearanceModel()
                             .toBuilder()
                             .setTopLeftCorner(CornerFamily.ROUNDED, 0f)

@@ -745,15 +745,24 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 params.setMarginStart(marginStart); // Явно задаем marginStart = 12dp
                 params.constrainedWidth = true;
                 // Ограничиваем максимальную ширину, учитывая marginStart
-                int maxWidthPx = screenWidth - marginHorizontal - avatarWidth - marginStart - visualMargin - 2 * padding;
+                // Места под кружок больше нет — строке достаётся его ширина
+                int maxWidthPx = screenWidth - marginHorizontal - marginStart - visualMargin - 2 * padding;
                 params.matchConstraintMaxWidth = maxWidthPx;
 
-                // Показ аватара только для первого сообщения в серии
-                boolean showAvatar = ктоВыше(position) != sender.getId();
-                if (showAvatar) {
-                    params.startToEnd = R.id.avatar_image_view;
-                    avatarImageView.setVisibility(View.VISIBLE);
-                    avatarPlaceholder.setVisibility(View.GONE);
+                /* Аватарку в переписке вдвоём не показываем вовсе: собеседник
+                   один и он же в шапке. По первому в череде по-прежнему
+                   срезаем верхний угол — он и указывает на начало реплики. */
+                boolean первыйВЧереде = ктоВыше(position) != sender.getId();
+                params.startToEnd = R.id.avatar_placeholder;
+                avatarImageView.setVisibility(View.GONE);
+                avatarPlaceholder.setVisibility(View.VISIBLE);
+                    /* Кружка нет — и места под него не держим: строка шире. */
+                    android.view.ViewGroup.LayoutParams мера = avatarPlaceholder.getLayoutParams();
+                    if (мера != null && мера.width != 0) {
+                        мера.width = 0;
+                        avatarPlaceholder.setLayoutParams(мера);
+                    }
+                if (первыйВЧереде) {
                     // Квадратный верхний левый угол
                     ShapeAppearanceModel shapeModel = new ShapeAppearanceModel()
                             .toBuilder()
@@ -766,9 +775,6 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_TOP_LEFT);
                     Log.d(TAG, "Received message with avatar at position " + position + ": set top-left=0dp, others=16dp, marginStart=" + marginStart);
                 } else {
-                    params.startToEnd = R.id.avatar_placeholder;
-                    avatarImageView.setVisibility(View.GONE);
-                    avatarPlaceholder.setVisibility(View.VISIBLE);
                     // Скругленные углы
                     ShapeAppearanceModel shapeModel = new ShapeAppearanceModel()
                             .toBuilder()
