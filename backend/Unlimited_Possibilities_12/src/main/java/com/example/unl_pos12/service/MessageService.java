@@ -55,6 +55,24 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
+    /**
+     * Подставить к сообщениям сведения об их вложениях.
+     *
+     * Иначе клиент спрашивает их по одному, перед каждой загрузкой файла,
+     * и открытие тайной переписки растягивается на секунды.
+     */
+    public List<Message> сВложениями(List<Message> история) {
+        if (история == null || история.isEmpty()) return история;
+        for (Message сообщение : история) {
+            if (сообщение == null || сообщение.getFileUrl() == null) continue;
+            FileMetadata сведения = fileMetadataRepository.findByMessageId(сообщение.getId());
+            if (сведения == null) continue;
+            сообщение.setFileNonce(сведения.getNonce());
+            сообщение.setFilePublicKeyId(сведения.getPublicKeyId());
+        }
+        return история;
+    }
+
     /** Убрать сообщение только у одного — у остальных оно остаётся. */
     public void hideMessage(Long id, Long userId) {
         if (userId == null) return;

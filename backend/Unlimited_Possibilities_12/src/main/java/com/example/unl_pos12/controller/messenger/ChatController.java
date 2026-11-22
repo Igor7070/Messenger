@@ -223,7 +223,8 @@ public class ChatController {
         // Что человек убрал у себя одного, ему больше не показываем
         List<Message> история = com.example.unl_pos12.service.MessageService.безСкрытых(
                 chatService.getMessagesByChatId(id), authz.currentUserId(request));
-        return withTranslations(история, language);
+        // Сведения о вложениях — тут же, чтобы клиент не спрашивал их по одному
+        return withTranslations(messageService.сВложениями(история), language);
     }
 
     /**

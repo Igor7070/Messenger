@@ -140,7 +140,8 @@ public class MessageController {
     public ResponseEntity<List<Message>> getMessagesByChatId(@PathVariable Long chatId, jakarta.servlet.http.HttpServletRequest request) {
         authz.requireChatAccess(request, chatId);
         List<Message> messages = messageService.findByChatId(chatId);
-        return ResponseEntity.ok(MessageService.безСкрытых(messages, authz.currentUserId(request)));
+        return ResponseEntity.ok(messageService.сВложениями(
+                MessageService.безСкрытых(messages, authz.currentUserId(request))));
     }
 
     // [ADD] Новый endpoint для загрузки зашифрованных файлов

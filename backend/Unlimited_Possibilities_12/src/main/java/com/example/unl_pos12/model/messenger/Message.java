@@ -48,6 +48,36 @@ public class Message {
     private Long publicKeyId;
 
     /**
+     * Сведения о вложении, которые прежде спрашивали отдельно.
+     *
+     * У зашифрованного файла свой nonce и свой ключ; они лежат в отдельной
+     * записи, и клиент ходил за ними на каждое вложение — лишний круг
+     * перед самой загрузкой файла. В базе их не держим, подставляем на
+     * выдаче истории.
+     */
+    @jakarta.persistence.Transient
+    private String fileNonce;
+
+    @jakarta.persistence.Transient
+    private Long filePublicKeyId;
+
+    public String getFileNonce() {
+        return fileNonce;
+    }
+
+    public void setFileNonce(String fileNonce) {
+        this.fileNonce = fileNonce;
+    }
+
+    public Long getFilePublicKeyId() {
+        return filePublicKeyId;
+    }
+
+    public void setFilePublicKeyId(Long filePublicKeyId) {
+        this.filePublicKeyId = filePublicKeyId;
+    }
+
+    /**
      * Кому это сообщение больше не показывать: номера через запятую.
      *
      * Удаление «только у себя» не сносит запись — собеседник её видит, —

@@ -92,8 +92,31 @@ const fetchPublicKeyWithRetry = async (recipientId, retries = 3, delay = 2000) =
   }
 };
 
+/**
+ * Нынешние ключи, за которыми только что ходили.
+ *
+ * При открытии переписки за ключом собеседника ходят по разу на каждое
+ * сообщение и каждое вложение — выходило по пять-семь походов подряд, и
+ * каждый по четверти секунды. Держим ответ недолго: ключ может
+ * смениться, и тогда через полминуты за ним сходят заново.
+ */
+const нынешниеКлючи = new Map();
+const СРОК_КЛЮЧА = 30000;
+
 const getPublicKey = async (userId, publicKeyId = null) => {
   console.log(`Fetching public key for userId: ${userId}, publicKeyId: ${publicKeyId}`);
+  if (!publicKeyId) {
+    const свежий = нынешниеКлючи.get(String(userId));
+    if (свежий && Date.now() - свежий.когда < СРОК_КЛЮЧА) return свежий.обещание;
+    const обещание = (async () => {
+      const ответ = await fetch(`https://unlimitedpossibilities12.org/api/public_keys/${userId}`);
+      if (!ответ.ok) throw new Error(`Failed to fetch public key: ${ответ.status}`);
+      return (await ответ.json()).publicKey;
+    })();
+    нынешниеКлючи.set(String(userId), { когда: Date.now(), обещание });
+    обещание.catch(() => нынешниеКлючи.delete(String(userId)));   // неудачу не храним
+    return обещание;
+  }
   if (publicKeyId) {
     // Исторические ключи не меняются — если уже забирали, второй раз не ходим
     try {
@@ -220,6 +243,9 @@ const SecretPrivateChat = () => {
   const [partnerId, setPartnerId] = useState(null);
 
   /** Звонки с этим собеседником — карточками в ленте, как в обычной переписке. */
+  /** Сведения о вложениях, пришедшие вместе с историей. */
+  const сведенияОВложениях = useRef(new Map());
+
   const [звонки, setЗвонки] = useState([]);
 
   /**
@@ -850,6 +876,15 @@ const SecretPrivateChat = () => {
             return { ...msg, delivered: msg.delivered_status, read: msg.read_status };
         };
 
+        // Что сервер прислал о вложениях — запоминаем, чтобы не спрашивать
+        for (const м of initialMessages) {
+          if (м && м.fileNonce && м.fileUrl) {
+            сведенияОВложениях.current.set(String(м.id), {
+              fileUrl: м.fileUrl, nonce: м.fileNonce, publicKeyId: м.filePublicKeyId || null,
+            });
+          }
+        }
+
         // Разбираем всю переписку, прежде чем показать хоть что-то: по
         // одному сообщения появлялись рывками и расползались
         const decryptedMessages = await Promise.all(initialMessages.map(async (msg) => {
@@ -1446,6 +1481,10 @@ const SecretPrivateChat = () => {
   };*/
 
   const fetchFileMetadata = async (messageId, retries = 5, delay = 2000) => {
+    /* Сервер отдаёт сведения о вложении вместе с историей — если они уже
+       есть, лишний круг перед загрузкой файла не нужен. */
+    const готовое = сведенияОВложениях.current.get(String(messageId));
+    if (готовое) return готовое;
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         console.log(`[METADATA] Fetching for messageId=${messageId}, attempt=${attempt}`);
