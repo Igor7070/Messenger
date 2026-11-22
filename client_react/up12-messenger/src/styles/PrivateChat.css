@@ -154,7 +154,7 @@
 }
 
 .private-message-content-container.no-avatar {
-    margin-left: 0 !important;   /* кружка нет — и отступа под него тоже */
+    margin-left: 8px !important;   /* кружка нет; отступ — вровень с правым краем своих */
 }
 
 /* Основной текст сообщений */
@@ -1023,7 +1023,7 @@
 }
 
 .private-message-content-container.no-avatar {
-    margin-left: 0 !important;   /* кружка нет — и отступа под него тоже */
+    margin-left: 8px !important;   /* кружка нет; отступ — вровень с правым краем своих */
 }
 
 .private-message-content {
@@ -1676,7 +1676,7 @@
     }
 
     .private-message-content-container.no-avatar {
-        margin-left: 0 !important;   /* кружка нет — и отступа под него тоже */
+        margin-left: 8px !important;   /* кружка нет; отступ — вровень с правым краем своих */
     }
 
     .private-message.private-other-user .private-message-content-container {
@@ -1922,7 +1922,7 @@
     }
 
     .private-message-content-container.no-avatar {
-        margin-left: 0 !important;   /* кружка нет — и отступа под него тоже */
+        margin-left: 8px !important;   /* кружка нет; отступ — вровень с правым краем своих */
     }
 
     .private-message-content {
@@ -2435,7 +2435,7 @@
   align-items: center;
   gap: 14px;
   align-self: flex-start;
-  margin: 3px 12px;
+  margin: 3px 0 3px 8px;   /* вровень с сообщениями */
   padding: 9px 14px;
   min-width: 200px;
   border-radius: 14px;
@@ -2444,7 +2444,9 @@
   width: fit-content;
 }
 
-.private-call-card.is-mine { align-self: flex-end; background: #2f4c7a; }
+/* Справа у сообщений свой отступ в десять пикселей — держим тот же,
+   иначе карточка звонка выпирает за их край. */
+.private-call-card.is-mine { align-self: flex-end; margin-right: 10px; background: #2f4c7a; }
 .private-call-title { font-size: 15px; font-weight: 600; }
 .private-call-card.is-missed .private-call-title { color: #fca5a5; }
 .private-call-sub { margin-top: 2px; font-size: 13px; color: #94a3b8; }
