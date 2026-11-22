@@ -428,8 +428,9 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         long запомненный = getSharedPreferences("prefs", MODE_PRIVATE).getLong("partner_" + chatId, -1);
         if (запомненный > 0) partnerId = запомненный;
 
-        /* Звонки спрашиваем сразу, вместе с историей: прежде ждали, пока
-           выяснится собеседник, и карточки появлялись заметно позже. */
+        /* Прошлые карточки показываем тотчас, вместе с перепиской, а
+           свежие спрашиваем у сервера и молча заменяем ими. */
+        взятьЗапомненныеКарточки();
         загрузитьЗвонки();
         username = getSharedPreferences("prefs", MODE_PRIVATE).getString("username", "");
         currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
@@ -1687,7 +1688,9 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         }
         загрузитьЗвонки();
         java.util.List<Message> вместе = new java.util.ArrayList<>(лентаСообщений);
-        вместе.addAll(карточкиЗвонков);
+        /* Пока переписка не пришла, карточки придерживаем: иначе сперва
+           мелькают одни звонки, а сообщения приезжают следом. */
+        if (!лентаСообщений.isEmpty()) вместе.addAll(карточкиЗвонков);
         java.util.Collections.sort(вместе, (а, б) -> {
             String п = а.getTimestamp() == null ? "" : а.getTimestamp();
             String в = б.getTimestamp() == null ? "" : б.getTimestamp();
@@ -1717,6 +1720,62 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                 Log.w(TAG, "Список звонков не пришёл: " + беда.getMessage());
             }
         });
+    }
+
+
+    /* Карточки звонков храним у себя: иначе переписка рисуется, а они
+       доезжают через секунду. Поля разделены , записи — . */
+
+    /** Совпадают ли свежие карточки с теми, что уже показаны. */
+    private boolean темЖеСамым(java.util.List<Message> свежие) {
+        if (свежие.size() != карточкиЗвонков.size()) return false;
+        for (int i = 0; i < свежие.size(); i++) {
+            Message а = свежие.get(i), б = карточкиЗвонков.get(i);
+            if (а.getId() != б.getId()) return false;
+            String содержаниеА = а.getContent() == null ? "" : а.getContent();
+            String содержаниеБ = б.getContent() == null ? "" : б.getContent();
+            if (!содержаниеА.equals(содержаниеБ)) return false;
+        }
+        return true;
+    }
+
+    /** Запомнить карточки этой переписки. */
+    private void запомнитьКарточки() {
+        StringBuilder сб = new StringBuilder();
+        for (Message к : карточкиЗвонков) {
+            if (сб.length() > 0) сб.append('');
+            сб.append(к.getId()).append('')
+              .append(к.getMessageType() == null ? "" : к.getMessageType()).append('')
+              .append(к.getTimestamp() == null ? "" : к.getTimestamp()).append('')
+              .append(к.getContent() == null ? "" : к.getContent());
+        }
+        getSharedPreferences("prefs", MODE_PRIVATE).edit()
+                .putString("calls_" + chatId, сб.toString()).apply();
+        Log.d(TAG, "Карточки запомнены: " + карточкиЗвонков.size());
+    }
+
+    /** Показать запомненные карточки, не дожидаясь ответа сервера. */
+    private void взятьЗапомненныеКарточки() {
+        String сохранённое = getSharedPreferences("prefs", MODE_PRIVATE)
+                .getString("calls_" + chatId, "");
+        Log.d(TAG, "Карточки из памяти, длина записи: "
+                + (сохранённое == null ? -1 : сохранённое.length()));
+        if (сохранённое == null || сохранённое.isEmpty()) return;
+        карточкиЗвонков.clear();
+        for (String кусок : сохранённое.split("")) {
+            String[] поля = кусок.split("", -1);
+            if (поля.length < 4) continue;
+            Message к = new Message();
+            try {
+                к.setId(Long.parseLong(поля[0]));
+            } catch (NumberFormatException не) {
+                continue;
+            }
+            к.setMessageType(поля[1]);
+            к.setTimestamp(поля[2].isEmpty() ? null : поля[2]);
+            к.setContent(поля[3]);
+            карточкиЗвонков.add(к);
+        }
     }
 
     /** Что пришло с сервера, пока собеседник не был известен. */
@@ -1769,8 +1828,12 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                     собранные.add(карточка);
                 }
                 int свежих = Math.max(0, собранные.size() - 30);
+                java.util.List<Message> свежиеКарточки =
+                        new java.util.ArrayList<>(собранные.subList(свежих, собранные.size()));
+                if (темЖеСамым(свежиеКарточки)) return;   // ничего не изменилось — не трогаем ленту
                 карточкиЗвонков.clear();
-                карточкиЗвонков.addAll(собранные.subList(свежих, собранные.size()));
+                карточкиЗвонков.addAll(свежиеКарточки);
+                запомнитьКарточки();
                 runOnUiThread(() -> подмешатьЗвонки(лентаСообщений));
         }
     }
