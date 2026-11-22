@@ -125,6 +125,22 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
     /** Вид ячейки «звонок»: такие рисуем карточкой, как в телеграме. */
     public static final int ТИП_ЗВОНОК = 77;
 
+
+    /**
+     * Чьё сообщение стоит выше этой строки.
+     *
+     * Карточки звонков перешагиваем: у них нет отправителя, а по нему
+     * решают, скруглять ли угол пузыря и ставить ли аватарку.
+     * Возвращает -1, если выше сообщений нет.
+     */
+    private long ктоВыше(int место) {
+        for (int i = место - 1; i >= 0; i -= 1) {
+            Message строка = messages.get(i);
+            if (строка != null && строка.getSender() != null) return строка.getSender().getId();
+        }
+        return -1;
+    }
+
     @Override
     public int getItemViewType(int position) {
         Message m = messages.get(position);
@@ -694,7 +710,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 params.matchConstraintMaxWidth = maxWidthPx;
                 messageContainer.setCardBackgroundColor(ContextCompat.getColor(context, R.color.sent_message_background));
                 // Проверяем, является ли сообщение первым в серии своих сообщений
-                boolean showSquareCorner = position == 0 || messages.get(position - 1).getSender().getId() != sender.getId();
+                boolean showSquareCorner = ктоВыше(position) != sender.getId();
                 if (showSquareCorner) {
                     // Квадратный верхний правый угол для первого сообщения в серии
                     ShapeAppearanceModel shapeModel = new ShapeAppearanceModel()
@@ -733,7 +749,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 params.matchConstraintMaxWidth = maxWidthPx;
 
                 // Показ аватара только для первого сообщения в серии
-                boolean showAvatar = position == 0 || messages.get(position - 1).getSender().getId() != sender.getId();
+                boolean showAvatar = ктоВыше(position) != sender.getId();
                 if (showAvatar) {
                     params.startToEnd = R.id.avatar_image_view;
                     avatarImageView.setVisibility(View.VISIBLE);

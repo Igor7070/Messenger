@@ -462,7 +462,8 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 params.constrainedWidth = true;
                 int maxWidthPx = screenWidth - marginHorizontal - avatarWidth - marginStart - visualMargin - 2 * padding;
                 params.matchConstraintMaxWidth = maxWidthPx;
-                boolean showAvatar = position == 0 || adapter.messages.get(position - 1).getSender().getId() != sender.getId();
+                boolean showAvatar = position == 0 || безОтправителя(adapter, position - 1)
+                        || adapter.messages.get(position - 1).getSender().getId() != sender.getId();
                 if (showAvatar) {
                     params.startToEnd = R.id.avatar_image_view;
                     avatarImageView.setVisibility(View.VISIBLE);

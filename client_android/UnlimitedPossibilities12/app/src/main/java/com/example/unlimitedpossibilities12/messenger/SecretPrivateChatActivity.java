@@ -266,6 +266,14 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         messageAdapter.setСлушательЗвонков(this::спроситьПроЗвонок);
 
         chatId = getIntent().getLongExtra("chatId", -1);
+        /* Собеседника этой переписки мы уже знали в прошлый раз — берём
+           запомненного, чтобы карточки звонков не ждали нового ответа. */
+        long запомненный = getSharedPreferences("prefs", MODE_PRIVATE).getLong("partner_" + chatId, -1);
+        if (запомненный > 0) partnerId = запомненный;
+
+        /* Звонки спрашиваем сразу, вместе с историей: прежде ждали, пока
+           выяснится собеседник, и карточки появлялись заметно позже. */
+        загрузитьЗвонки();
         updateSecretStatusLine(); // только теперь известен chatId — настройки перевода читаются по нему
         username = getSharedPreferences("prefs", MODE_PRIVATE).getString("username", "");
         currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
@@ -1344,6 +1352,14 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                         public void onResponse(Call<User> call, Response<User> response) {
                             if (response.isSuccessful() && response.body() != null) {
                                 partnerId = response.body().getId();
+                                /* Собеседник стал известен — спрашиваем звонки
+                                   сразу, иначе карточки появлялись лишь при
+                                   следующей пересборке ленты, заметно позже
+                                   остальной переписки. */
+                                getSharedPreferences("prefs", MODE_PRIVATE).edit()
+                                        .putLong("partner_" + chatId, partnerId).apply();
+                                загрузитьЗвонки();
+                                разобратьЗвонки();   // список мог прийти раньше
 
                                 // НАЧАЛО ВСТАВКИ — Аватар и клик по нему в тулбаре (как в обычном чате)
                                 String avatarUrl = response.body().getAvatar();
@@ -1630,7 +1646,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
             if ("Message deleted".equals(newMessage.getContent())) {
                 messages.removeIf(msg -> msg.getId() == newMessage.getId());
                 clearLocalDataForMessage(newMessage.getId());
-                messageAdapter.updateMessages(new ArrayList<>(messages)); // Полный апдейт
+                подмешатьЗвонки(new ArrayList<>(messages)); // Полный апдейт
                 return;
             }
 
@@ -1721,7 +1737,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
             }
 
             // ВАЖНО: всегда обновляем через DiffUtil — это гарантирует отображение
-            messageAdapter.updateMessages(new ArrayList<>(messages));
+            подмешатьЗвонки(new ArrayList<>(messages));
             if (changedInPlaceIndex >= 0 && changedInPlaceIndex < messages.size()) {
                 // Объект изменён на месте — DiffUtil этого не заметит, перерисовываем явно
                 messageAdapter.notifyItemChanged(changedInPlaceIndex);
@@ -1935,7 +1951,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                     .subscribe(
                             () -> {
                                 message.setRead(true);
-                                messageAdapter.updateMessages(messages);
+                                подмешатьЗвонки(messages);
                             },
                             throwable -> Log.e(TAG, "Error marking message as read: " + throwable.getMessage())
                     );
@@ -2255,7 +2271,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
            ставилась раньше проверки номеров, и если собеседник ещё не
            был известен, список не запрашивался уже никогда. */
         if (звонкиЗапрошены) return;
-        if (currentUserId <= 0 || partnerId <= 0) return;
+        if (currentUserId <= 0) return;   // собеседника дождёмся при разборе
         звонкиЗапрошены = true;
         Log.d(TAG, "Спрашиваю звонки: я=" + currentUserId + ", собеседник=" + partnerId);
         ApiClient.getApiService().getCalls(currentUserId).enqueue(
@@ -2264,8 +2280,32 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
             public void onResponse(retrofit2.Call<java.util.List<com.example.unlimitedpossibilities12.api.Call>> вызов,
                                    retrofit2.Response<java.util.List<com.example.unlimitedpossibilities12.api.Call>> ответ) {
                 if (!ответ.isSuccessful() || ответ.body() == null) return;
+                сырыеЗвонки = ответ.body();
+                разобратьЗвонки();
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<java.util.List<com.example.unlimitedpossibilities12.api.Call>> вызов,
+                                  Throwable беда) {
+                Log.w(TAG, "Список звонков не пришёл: " + беда.getMessage());
+            }
+        });
+    }
+
+    /** Что пришло с сервера, пока собеседник не был известен. */
+    private java.util.List<com.example.unlimitedpossibilities12.api.Call> сырыеЗвонки;
+
+    /**
+     * Сложить карточки из полученных звонков.
+     *
+     * Зовут дважды — когда пришёл список и когда стал известен
+     * собеседник; работает та, что оказалась второй.
+     */
+    private void разобратьЗвонки() {
+        if (сырыеЗвонки == null || partnerId <= 0) return;
+        {
                 java.util.List<Message> собранные = new java.util.ArrayList<>();
-                java.util.List<com.example.unlimitedpossibilities12.api.Call> все = ответ.body();
+                java.util.List<com.example.unlimitedpossibilities12.api.Call> все = сырыеЗвонки;
                 int отсюда = Math.max(0, все.size() - 200);
                 for (int i = отсюда; i < все.size(); i++) {
                     com.example.unlimitedpossibilities12.api.Call з = все.get(i);
@@ -2308,14 +2348,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                 карточкиЗвонков.clear();
                 карточкиЗвонков.addAll(собранные.subList(свежих, собранные.size()));
                 runOnUiThread(() -> подмешатьЗвонки(лентаСообщений));
-            }
-
-            @Override
-            public void onFailure(retrofit2.Call<java.util.List<com.example.unlimitedpossibilities12.api.Call>> вызов,
-                                  Throwable беда) {
-                Log.w(TAG, "Список звонков не пришёл: " + беда.getMessage());
-            }
-        });
+        }
     }
 
     private void jumpToBottom() {
@@ -3192,7 +3225,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                         .subscribe(
                                 () -> {
                                     messages.removeIf(msg -> msg.getId() == message.getId());
-                                    messageAdapter.updateMessages(messages);
+                                    подмешатьЗвонки(messages);
                                     Toast.makeText(this, "Message deleted!", Toast.LENGTH_SHORT).show();
                                 },
                                 throwable -> {
@@ -3342,7 +3375,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         if (newChatId != -1 && newChatId != chatId) {
             chatId = newChatId;
             messages.clear();
-            messageAdapter.updateMessages(messages);
+            подмешатьЗвонки(messages);
             fetchChatData();
         }
         if (isBound && callService != null) {

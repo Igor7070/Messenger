@@ -423,6 +423,14 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         }
 
         chatId = getIntent().getLongExtra("chatId", -1);
+        /* Собеседника этой переписки мы уже знали в прошлый раз — берём
+           запомненного, чтобы карточки звонков не ждали нового ответа. */
+        long запомненный = getSharedPreferences("prefs", MODE_PRIVATE).getLong("partner_" + chatId, -1);
+        if (запомненный > 0) partnerId = запомненный;
+
+        /* Звонки спрашиваем сразу, вместе с историей: прежде ждали, пока
+           выяснится собеседник, и карточки появлялись заметно позже. */
+        загрузитьЗвонки();
         username = getSharedPreferences("prefs", MODE_PRIVATE).getString("username", "");
         currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
 
@@ -1063,7 +1071,10 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                                 partnerId = response.body().getId();
                                 /* Собеседник стал известен — только теперь можно
                                    спросить звонки: раньше их некому было отбирать. */
+                                getSharedPreferences("prefs", MODE_PRIVATE).edit()
+                                        .putLong("partner_" + chatId, partnerId).apply();
                                 загрузитьЗвонки();
+                                разобратьЗвонки();   // список мог прийти раньше
                                 Log.d(TAG, "Partner fetched: id=" + partnerId + ", username=" + partnerName);
 
                                 // ────────────────────────────────────────────────
@@ -1688,7 +1699,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     /** Прочитать звонки с собеседником и сложить из них карточки. */
     private void загрузитьЗвонки() {
         if (звонкиЗапрошены) return;
-        if (currentUserId <= 0 || partnerId <= 0) return;
+        if (currentUserId <= 0) return;   // собеседника дождёмся при разборе
         звонкиЗапрошены = true;
         ApiClient.getApiService().getCalls(currentUserId).enqueue(
                 new retrofit2.Callback<java.util.List<com.example.unlimitedpossibilities12.api.Call>>() {
@@ -1696,8 +1707,32 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
             public void onResponse(retrofit2.Call<java.util.List<com.example.unlimitedpossibilities12.api.Call>> вызов,
                                    retrofit2.Response<java.util.List<com.example.unlimitedpossibilities12.api.Call>> ответ) {
                 if (!ответ.isSuccessful() || ответ.body() == null) return;
+                сырыеЗвонки = ответ.body();
+                разобратьЗвонки();
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<java.util.List<com.example.unlimitedpossibilities12.api.Call>> вызов,
+                                  Throwable беда) {
+                Log.w(TAG, "Список звонков не пришёл: " + беда.getMessage());
+            }
+        });
+    }
+
+    /** Что пришло с сервера, пока собеседник не был известен. */
+    private java.util.List<com.example.unlimitedpossibilities12.api.Call> сырыеЗвонки;
+
+    /**
+     * Сложить карточки из полученных звонков.
+     *
+     * Зовут дважды — когда пришёл список и когда стал известен
+     * собеседник; работает та, что оказалась второй.
+     */
+    private void разобратьЗвонки() {
+        if (сырыеЗвонки == null || partnerId <= 0) return;
+        {
                 java.util.List<Message> собранные = new java.util.ArrayList<>();
-                java.util.List<com.example.unlimitedpossibilities12.api.Call> все = ответ.body();
+                java.util.List<com.example.unlimitedpossibilities12.api.Call> все = сырыеЗвонки;
                 int отсюда = Math.max(0, все.size() - 200);
                 for (int i = отсюда; i < все.size(); i++) {
                     com.example.unlimitedpossibilities12.api.Call з = все.get(i);
@@ -1737,14 +1772,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                 карточкиЗвонков.clear();
                 карточкиЗвонков.addAll(собранные.subList(свежих, собранные.size()));
                 runOnUiThread(() -> подмешатьЗвонки(лентаСообщений));
-            }
-
-            @Override
-            public void onFailure(retrofit2.Call<java.util.List<com.example.unlimitedpossibilities12.api.Call>> вызов,
-                                  Throwable беда) {
-                Log.w(TAG, "Список звонков не пришёл: " + беда.getMessage());
-            }
-        });
+        }
     }
 
     private void jumpToBottom() {
