@@ -63,12 +63,27 @@ public class MessageService {
      */
     public List<Message> сВложениями(List<Message> история) {
         if (история == null || история.isEmpty()) return история;
+        java.util.List<Long> номера = new java.util.ArrayList<>();
         for (Message сообщение : история) {
-            if (сообщение == null || сообщение.getFileUrl() == null) continue;
-            FileMetadata сведения = fileMetadataRepository.findByMessageId(сообщение.getId());
+            if (сообщение != null && сообщение.getId() != null) номера.add(сообщение.getId());
+        }
+        if (номера.isEmpty()) return история;
+        /* Одним запросом на всю историю: по одному на вложение — это снова
+           вереница походов в базу. */
+        java.util.Map<Long, FileMetadata> поНомеру = new java.util.HashMap<>();
+        for (FileMetadata сведения : fileMetadataRepository.findByMessageIdIn(номера)) {
+            if (сведения != null && сведения.getMessage() != null) {
+                поНомеру.put(сведения.getMessage().getId(), сведения);
+            }
+        }
+        for (Message сообщение : история) {
+            if (сообщение == null) continue;
+            FileMetadata сведения = поНомеру.get(сообщение.getId());
             if (сведения == null) continue;
             сообщение.setFileNonce(сведения.getNonce());
             сообщение.setFilePublicKeyId(сведения.getPublicKeyId());
+            /* У части вложений ссылки в самом сообщении нет — она только тут. */
+            сообщение.setFileMetaUrl(сведения.getFileUrl());
         }
         return история;
     }

@@ -878,9 +878,12 @@ const SecretPrivateChat = () => {
 
         // Что сервер прислал о вложениях — запоминаем, чтобы не спрашивать
         for (const м of initialMessages) {
-          if (м && м.fileNonce && м.fileUrl) {
+          /* Ссылку берём из сведений: у части вложений в самом сообщении
+             её нет, она только там. */
+          const ссылка = м && (м.fileMetaUrl || м.fileUrl);
+          if (м && м.fileNonce && ссылка) {
             сведенияОВложениях.current.set(String(м.id), {
-              fileUrl: м.fileUrl, nonce: м.fileNonce, publicKeyId: м.filePublicKeyId || null,
+              fileUrl: ссылка, nonce: м.fileNonce, publicKeyId: м.filePublicKeyId || null,
             });
           }
         }

@@ -61,6 +61,18 @@ public class Message {
     @jakarta.persistence.Transient
     private Long filePublicKeyId;
 
+    /** Ссылка на зашифрованный файл: у части вложений она только тут. */
+    @jakarta.persistence.Transient
+    private String fileMetaUrl;
+
+    public String getFileMetaUrl() {
+        return fileMetaUrl;
+    }
+
+    public void setFileMetaUrl(String fileMetaUrl) {
+        this.fileMetaUrl = fileMetaUrl;
+    }
+
     public String getFileNonce() {
         return fileNonce;
     }
