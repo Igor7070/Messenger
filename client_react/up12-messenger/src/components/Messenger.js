@@ -361,6 +361,9 @@ const Messenger = () => {
        он сам решает, где быть, и мы больше не держим место. */
     const человекРешил = useRef(false);
 
+    /** Своё отправленное сообщение уводит ленту в конец — и только оно. */
+    const своёОтправлено = useRef(false);
+
     /* Пока возвращаемся на место, ленту не показываем: иначе в первое
        мгновение мелькает самый низ. */
     const [скрытаЛента, setСкрытаЛента] = useState(ждёмВозврата.current);
@@ -454,10 +457,11 @@ const Messenger = () => {
       }
     };
 
-    const scrollToBottom = () => {
+    const scrollToBottom = (поПросьбе = false) => {
         if (ждёмВозврата.current) return;   // сперва вернёмся туда, где вышли
-        /* Вернули человека наверх — вниз не утаскиваем, пока он сам не решит. */
-        if (оставленноеМесто.current && !человекРешил.current) {
+        /* Человек читает выше — ленту вниз не утаскиваем. Уедем, только
+           если он сам попросил: кружком или своим сообщением. */
+        if (!поПросьбе) {
           const лист = messageListRef.current;
           const внизу = !лист || лист.scrollHeight - лист.scrollTop - лист.clientHeight < 60;
           if (!внизу) return;
@@ -813,7 +817,9 @@ const Messenger = () => {
                   || список.scrollHeight - список.scrollTop - список.clientHeight < 120;
                 /* В конец на первой загрузке — только если возвращаться некуда. */
                 const естьКуда = !!оставленноеМесто.current && ждёмВозврата.current;
-                if ((!первыйПоказ.current && !естьКуда) || внизу) scrollToBottom();
+                const попросили = своёОтправлено.current;
+                своёОтправлено.current = false;
+                if ((!первыйПоказ.current && !естьКуда) || внизу || попросили) scrollToBottom(попросили);
             }, 0);
         }
     }, [messages.length]);
@@ -1018,7 +1024,7 @@ const Messenger = () => {
     };
 
     const sendMessage = async () => {
-      человекРешил.current = true;   // своё сообщение уводит в конец
+      своёОтправлено.current = true;   // своё сообщение уводит в конец
         if ((content.trim() || selectedFile || audioBlob) && userId) {
             const currentUsername = username;
             const chatName = await getChatName(chatId);

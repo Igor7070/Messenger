@@ -1272,7 +1272,11 @@ const SecretPrivateChat = () => {
           || список.scrollHeight - список.scrollTop - список.clientHeight < 120;
         /* В конец на первой загрузке — только если возвращаться некуда. */
         const естьКуда = !!оставленноеМесто.current && ждёмВозврата.current;
-        if ((!didInitialScroll.current && !естьКуда) || внизу) scrollToBottom(didInitialScroll.current);
+        const попросили = своёОтправлено.current;
+        своёОтправлено.current = false;
+        if ((!didInitialScroll.current && !естьКуда) || внизу || попросили) {
+          scrollToBottom(didInitialScroll.current, попросили);
+        }
         didInitialScroll.current = true;
       }, 0);
     }
@@ -1393,6 +1397,9 @@ const SecretPrivateChat = () => {
      он сам решает, где быть, и мы больше не держим место. */
   const человекРешил = useRef(false);
 
+  /** Своё отправленное сообщение уводит ленту в конец — и только оно. */
+  const своёОтправлено = useRef(false);
+
   /* Пока возвращаемся на место, ленту не показываем: иначе в первое
      мгновение мелькает самый низ. */
   const [скрытаЛента, setСкрытаЛента] = useState(ждёмВозврата.current);
@@ -1494,13 +1501,14 @@ const SecretPrivateChat = () => {
     ждёмВозврата.current = false;
     человекРешил.current = true;
     setНовых(0);
-    scrollToBottom(true);
+    scrollToBottom(true, true);
   };
 
-  const scrollToBottom = (smooth = true) => {
+  const scrollToBottom = (smooth = true, поПросьбе = false) => {
     if (ждёмВозврата.current) return;   // сперва вернёмся туда, где вышли
-    /* Вернули человека наверх — вниз не утаскиваем, пока он сам не решит. */
-    if (оставленноеМесто.current && !человекРешил.current) {
+    /* Человек читает выше — ленту вниз не утаскиваем. Уедем, только если
+       он сам попросил: нажал кружок или отправил своё сообщение. */
+    if (!поПросьбе) {
       const лист = messageListRef.current;
       const внизу = !лист || лист.scrollHeight - лист.scrollTop - лист.clientHeight < 60;
       if (!внизу) return;
@@ -1980,7 +1988,7 @@ const SecretPrivateChat = () => {
   }, [keyPair, partnerId, publicKeys, userId]);
 
   const sendMessage = async () => {
-    человекРешил.current = true;   // своё сообщение уводит в конец
+    своёОтправлено.current = true;   // своё сообщение уводит в конец
     if ((content || selectedFile || audioBlob) && userId && keyPair) {
       try {
         // [ADD] Получаем ID получателя
