@@ -2371,18 +2371,30 @@ const SecretPrivateChat = () => {
     }
   };
 
+  /**
+   * Предыдущая строка ленты, которая и впрямь сообщение.
+   *
+   * Карточки звонков пропускаем: у них нет отправителя, а решаем мы по
+   * нему — ставить ли аватарку и начинать ли череду своих сообщений.
+   */
+  const предыдущееСообщение = (index) => {
+    for (let i = index - 1; i >= 0; i -= 1) {
+      const строка = лента[i];
+      if (строка && строка.sender) return строка;
+    }
+    return null;
+  };
+
   const shouldShowAvatar = (msg, index) => {
-    if (msg.sender.id === userId) return false;
-    if (index === 0) return true;
-    const prevMessage = messages[index - 1];
-    return prevMessage.sender.id !== msg.sender.id;
+    if (!msg.sender || msg.sender.id === userId) return false;
+    const предыдущее = предыдущееСообщение(index);
+    return !предыдущее || предыдущее.sender.id !== msg.sender.id;
   };
 
   const isFirstMessage = (msg, index) => {
-    if (msg.sender.id !== userId) return false;
-    if (index === 0) return true;
-    const prevMessage = messages[index - 1];
-    return prevMessage.sender.id !== msg.sender.id;
+    if (!msg.sender || msg.sender.id !== userId) return false;
+    const предыдущее = предыдущееСообщение(index);
+    return !предыдущее || предыдущее.sender.id !== msg.sender.id;
   };
 
   const startRecording = async () => {
