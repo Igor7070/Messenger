@@ -201,6 +201,15 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 holder.callCardBubble.setOnClickListener(в -> {
                     if (выбор != null && выбор.идёт()) выбор.переключить(message);
                 });
+                /* И по всей ширине строки, а не только по самой карточке —
+                   как у сообщений и как в телеграме. */
+                holder.itemView.setOnLongClickListener(в -> {
+                    if (выбор != null) { выбор.начать(message); return true; }
+                    return false;
+                });
+                holder.itemView.setOnClickListener(в -> {
+                    if (выбор != null && выбор.идёт()) выбор.переключить(message);
+                });
                 holder.itemView.setBackgroundColor(выбор != null && выбор.выбрано(message)
                         ? 0xFF1D2D4A : android.graphics.Color.TRANSPARENT);
                 android.widget.FrameLayout.LayoutParams лп =
@@ -444,6 +453,13 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             binding = true;
             try {
                 bindContents(message, position);
+                /* Пузырь полученного темнее полосы выделения и смотрелся в
+                   ней дырой — пока выбран, поднимаем и его тон. */
+                if (messageContainer != null && adapter.выбор != null && adapter.выбор.выбрано(message)
+                        && message.getSender() != null
+                        && message.getSender().getId() != adapter.currentUserId) {
+                    messageContainer.setCardBackgroundColor(0xFF24344F);
+                }
             } finally {
                 // Подвал считаем один раз, когда все строки уже на местах
                 binding = false;

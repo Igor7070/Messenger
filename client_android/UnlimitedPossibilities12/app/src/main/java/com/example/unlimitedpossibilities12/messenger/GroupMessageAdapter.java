@@ -612,6 +612,13 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             binding = true;
             try {
                 bindContents(message, position);
+                /* Пузырь полученного темнее полосы выделения и смотрелся в
+                   ней дырой — пока выбран, поднимаем и его тон. */
+                if (messageContainer != null && выбор != null && выбор.выбрано(message)
+                        && message.getSender() != null
+                        && message.getSender().getId() != currentUserId) {
+                    messageContainer.setCardBackgroundColor(0xFF24344F);
+                }
             } finally {
                 // Подвал считаем один раз, когда все строки уже на местах
                 binding = false;
