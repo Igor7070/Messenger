@@ -274,6 +274,36 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
      * пополняют. Пока выбор идёт, нажатие не переключает перевод и не
      * открывает меню.
      */
+
+    /**
+     * Чья это строка: номер отправителя, а для карточки звонка — своя
+     * сторона (исходящий или входящий).
+     */
+    private long чьяСтрока(Message строка) {
+        if (строка == null) return 0;
+        if (строка.getMessageType() != null && строка.getMessageType().startsWith("call")) {
+            return "call_out".equals(строка.getMessageType()) ? -1 : -2;
+        }
+        return строка.getSender() == null ? 0 : строка.getSender().getId();
+    }
+
+    /**
+     * Насколько отодвинуть строку от предыдущей.
+     *
+     * Подряд идущие от одного — почти вплотную, при смене отправителя
+     * просвет больше: так в телеграме видно, где сменилась реплика.
+     */
+    private void развестиСтроки(View строка, int место) {
+        if (строка == null || место < 0 || место >= messages.size()) return;
+        boolean тотЖе = место > 0 && чьяСтрока(messages.get(место)) == чьяСтрока(messages.get(место - 1));
+        float плотность = строка.getResources().getDisplayMetrics().density;
+        int сверху = Math.round((тотЖе ? 1 : 9) * плотность);
+        int снизу = Math.round(1 * плотность);
+        if (строка.getPaddingTop() != сверху || строка.getPaddingBottom() != снизу) {
+            строка.setPadding(строка.getPaddingLeft(), сверху, строка.getPaddingRight(), снизу);
+        }
+    }
+
     public interface ВыборСообщений {
         void начать(Message сообщение);
         void переключить(Message сообщение);
@@ -627,6 +657,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         }
 
         private void bindContents(Message message, int position) {
+            развестиСтроки(itemView, position);
             /* Нажатие ловим всей строкой, а не только пузырём: в телеграме
                выделяют касанием где угодно по ширине экрана. */
             itemView.setOnLongClickListener(в -> {
