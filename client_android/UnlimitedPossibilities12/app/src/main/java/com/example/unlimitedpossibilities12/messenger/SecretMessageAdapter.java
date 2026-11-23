@@ -80,6 +80,27 @@ import retrofit2.Response;
 
 public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdapter.MessageViewHolder> {
 
+
+    /**
+     * Кто ведает выбором нескольких сообщений.
+     *
+     * Долгое нажатие начинает выбор, дальше обычные нажатия его
+     * пополняют. Пока выбор идёт, нажатие не переключает перевод и не
+     * открывает меню.
+     */
+    public interface ВыборСообщений {
+        void начать(Message сообщение);
+        void переключить(Message сообщение);
+        boolean идёт();
+        boolean выбрано(Message сообщение);
+    }
+
+    private ВыборСообщений выбор;
+
+    public void setВыбор(ВыборСообщений выбор) {
+        this.выбор = выбор;
+    }
+
     /** Кому сказать, что карточку звонка просят убрать. */
     public interface СлушательЗвонков { void убрать(Message карточка); }
 
@@ -331,11 +352,24 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             imageCard = itemView.findViewById(R.id.image_card);
 
             // Обработчик долгого клика
+            /* Долгое нажатие начинает выбор — как в телеграме. */
             messageContainer.setOnLongClickListener(v -> {
                 int position = getAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
-                    Message message = adapter.messages.get(position);
-                    boolean mine = message.getSender().getId() == adapter.currentUserId;
+                if (position != RecyclerView.NO_POSITION && adapter.выбор != null) {
+                    adapter.выбор.начать(adapter.messages.get(position));
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        /** Прежнее меню над сообщением: копировать, править, убрать. */
+        private void показатьМеню(View v, Message message) {
+            
+                
+                
+                    
+                    boolean mine = message.getSender() != null && message.getSender().getId() == adapter.currentUserId;
                     {
 
                         ListPopupWindow listPopupWindow = new ListPopupWindow(context);
@@ -372,12 +406,10 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                         });
 
                         listPopupWindow.show();
-                        return true;
+                        
                     }
-                }
-                return false;
-            });
         }
+
 
         /** Пока привязка не закончилась, подвал считать рано: строки ещё
 
@@ -706,6 +738,9 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                                 })
                                 .into(imagePreview);
                         imagePreview.setOnClickListener(v -> {
+                        /* Идёт выбор — снимок не открываем, а выделяем. */
+                        if (adapter.выбор != null && adapter.выбор.идёт()) { adapter.выбор.переключить(message); return; }
+
                             Intent intent = new Intent(context, FullScreenMessageImageActivity.class);
                             intent.putExtra("local_file_path", imageFile.getAbsolutePath());
                             context.startActivity(intent);

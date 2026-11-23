@@ -79,6 +79,26 @@ import retrofit2.Response;
 
 public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageViewHolder> {
 
+    /**
+     * Кто ведает выбором нескольких сообщений.
+     *
+     * Долгое нажатие начинает выбор, дальше обычные нажатия его
+     * пополняют. Пока выбор идёт, нажатие не переключает перевод и не
+     * открывает меню.
+     */
+    public interface ВыборСообщений {
+        void начать(Message сообщение);
+        void переключить(Message сообщение);
+        boolean идёт();
+        boolean выбрано(Message сообщение);
+    }
+
+    private ВыборСообщений выбор;
+
+    public void setВыбор(ВыборСообщений выбор) {
+        this.выбор = выбор;
+    }
+
     /** Кому сказать, что карточку звонка просят убрать. */
     public interface СлушательЗвонков { void убрать(Message карточка); }
 
@@ -515,6 +535,19 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
                     Message message = messages.get(position);
+                    /* Идёт выбор — нажатие добавляет и снимает выделение. */
+                    if (выбор != null && выбор.идёт()) {
+                        выбор.переключить(message);
+                        return;
+                    }
+                    /* Переключать нечего — показываем меню: иначе нажатие
+                       пропадает впустую. */
+                    boolean естьЧтоПереключить = message.getTranslatedContent() != null
+                            && !message.getTranslatedContent().isEmpty();
+                    if (!естьЧтоПереключить) {
+                        показатьМеню(v, message);
+                        return;
+                    }
                     if (message.getTranslatedContent() != null && !message.getTranslatedContent().isEmpty()) {
                         message.setShowOriginal(!message.isShowOriginal());
                         if ("audio".equalsIgnoreCase(message.getMessageType()) && isTranscriptionEnabled && message.getTranscribedContent() != null && !message.getTranscribedContent().isEmpty()) {
@@ -536,13 +569,21 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 }
             });
 
-            // Обработчик долгого клика
+            /* Долгое нажатие начинает выбор — как в телеграме. */
             messageContainer.setOnLongClickListener(v -> {
                 int position = getAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
-                    Message message = messages.get(position);
-                    boolean mine = message.getSender().getId() == currentUserId;
-                    {
+                if (position != RecyclerView.NO_POSITION && выбор != null) {
+                    выбор.начать(messages.get(position));
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        /** Прежнее меню над сообщением: копировать, править, убрать. */
+        private void показатьМеню(View v, Message message) {
+            boolean mine = message.getSender() != null && message.getSender().getId() == currentUserId;
+            {
 
                         ListPopupWindow listPopupWindow = new ListPopupWindow(context);
                         listPopupWindow.setAnchorView(v);
@@ -577,11 +618,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                         });
 
                         listPopupWindow.show();
-                        return true;
-                    }
-                }
-                return false;
-            });
+            }
         }
 
         // Добавлено: Публичные методы для обновления UI
@@ -650,6 +687,9 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         }
 
         private void bindContents(Message message, int position) {
+            /* Выбранное подсвечиваем — видно, что попало в выбор. */
+            itemView.setBackgroundColor(выбор != null && выбор.выбрано(message)
+                    ? 0x3348A0FF : android.graphics.Color.TRANSPARENT);
             bindDaySeparator(position); // дата дня над первым сообщением дня
             User sender = message.getSender();
             boolean isSentByCurrentUser = sender.getId() == currentUserId;
@@ -1294,6 +1334,9 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     }
 
                     imagePreview.setOnClickListener(v -> {
+                        /* Идёт выбор — снимок не открываем, а выделяем. */
+                        if (выбор != null && выбор.идёт()) { выбор.переключить(message); return; }
+
                         Intent intent = new Intent(context, FullScreenMessageImageActivity.class);
                         intent.putExtra("message_image_url", fileUrl);
                         context.startActivity(intent);

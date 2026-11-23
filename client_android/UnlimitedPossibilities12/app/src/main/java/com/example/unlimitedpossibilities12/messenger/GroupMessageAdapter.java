@@ -266,6 +266,27 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 ? "?" : name.trim().substring(0, 1).toUpperCase();
     }
 
+
+    /**
+     * Кто ведает выбором нескольких сообщений.
+     *
+     * Долгое нажатие начинает выбор, дальше обычные нажатия его
+     * пополняют. Пока выбор идёт, нажатие не переключает перевод и не
+     * открывает меню.
+     */
+    public interface ВыборСообщений {
+        void начать(Message сообщение);
+        void переключить(Message сообщение);
+        boolean идёт();
+        boolean выбрано(Message сообщение);
+    }
+
+    private ВыборСообщений выбор;
+
+    public void setВыбор(ВыборСообщений выбор) {
+        this.выбор = выбор;
+    }
+
     @Override
     public int getItemCount() {
         return messages.size();
@@ -453,48 +474,12 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             });
 
             // Долгое нажатие для меню
+            /* Долгое нажатие начинает выбор — как в телеграме. */
             messageContainer.setOnLongClickListener(v -> {
                 int position = getAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
-                    Message message = messages.get(position);
-                    boolean mine = message.getSender().getId() == currentUserId;
-                    {
-
-                        ListPopupWindow listPopupWindow = new ListPopupWindow(context);
-                        listPopupWindow.setAnchorView(v);
-                        listPopupWindow.setModal(true);
-                        listPopupWindow.setDropDownGravity(Gravity.END);
-                        listPopupWindow.setWidth(520); // примерно 200-220 dp
-                        listPopupWindow.setVerticalOffset(8);
-
-                        // Фон меню
-                        listPopupWindow.setBackgroundDrawable(ContextCompat.getDrawable(context, R.drawable.popup_menu_background));
-
-                        List<PopupMenuItem> menuItems = new ArrayList<>();
-                        menuItems.add(new PopupMenuItem("Copy", null, Color.parseColor("#E2E8F0")));
-                        if (mine) {
-                            menuItems.add(new PopupMenuItem("Edit", null, Color.parseColor("#E2E8F0")));
-                            menuItems.add(new PopupMenuItem("Delete", null, Color.parseColor("#FF6B6B")));
-                        }
-
-                        PopupMenuAdapter adapter = new PopupMenuAdapter(context, menuItems);
-                        listPopupWindow.setAdapter(adapter);
-
-                        listPopupWindow.setOnItemClickListener((parent, view, pos, id) -> {
-                            String title = menuItems.get(pos).title;
-                            if ("Copy".equals(title)) {
-                                copyMessageText(context, contentTextView.getText().toString());
-                            } else if ("Edit".equals(title)) {
-                                actionListener.onEdit(message);
-                            } else if ("Delete".equals(title)) {
-                                actionListener.onDelete(message);
-                            }
-                            listPopupWindow.dismiss();
-                        });
-
-                        listPopupWindow.show();
-                        return true;
-                    }
+                if (position != RecyclerView.NO_POSITION && выбор != null) {
+                    выбор.начать(messages.get(position));
+                    return true;
                 }
                 return false;
             });
@@ -530,6 +515,52 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 }
             });
         }
+
+        /** Прежнее меню над сообщением: копировать, править, убрать. */
+        private void показатьМеню(View v, Message message) {
+            
+                
+                
+                    boolean mine = message.getSender() != null && message.getSender().getId() == currentUserId;
+                    {
+
+                        ListPopupWindow listPopupWindow = new ListPopupWindow(context);
+                        listPopupWindow.setAnchorView(v);
+                        listPopupWindow.setModal(true);
+                        listPopupWindow.setDropDownGravity(Gravity.END);
+                        listPopupWindow.setWidth(520); // примерно 200-220 dp
+                        listPopupWindow.setVerticalOffset(8);
+
+                        // Фон меню
+                        listPopupWindow.setBackgroundDrawable(ContextCompat.getDrawable(context, R.drawable.popup_menu_background));
+
+                        List<PopupMenuItem> menuItems = new ArrayList<>();
+                        menuItems.add(new PopupMenuItem("Copy", null, Color.parseColor("#E2E8F0")));
+                        if (mine) {
+                            menuItems.add(new PopupMenuItem("Edit", null, Color.parseColor("#E2E8F0")));
+                            menuItems.add(new PopupMenuItem("Delete", null, Color.parseColor("#FF6B6B")));
+                        }
+
+                        PopupMenuAdapter adapter = new PopupMenuAdapter(context, menuItems);
+                        listPopupWindow.setAdapter(adapter);
+
+                        listPopupWindow.setOnItemClickListener((parent, view, pos, id) -> {
+                            String title = menuItems.get(pos).title;
+                            if ("Copy".equals(title)) {
+                                copyMessageText(context, contentTextView.getText().toString());
+                            } else if ("Edit".equals(title)) {
+                                actionListener.onEdit(message);
+                            } else if ("Delete".equals(title)) {
+                                actionListener.onDelete(message);
+                            }
+                            listPopupWindow.dismiss();
+                        });
+
+                        listPopupWindow.show();
+                        
+                    }
+        }
+
 
         /** Привязан ли холдер именно к этому сообщению. */
         public boolean isBoundTo(long messageId) {
@@ -1206,6 +1237,9 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                     }
 
                     imagePreview.setOnClickListener(v -> {
+                        /* Идёт выбор — снимок не открываем, а выделяем. */
+                        if (выбор != null && выбор.идёт()) { выбор.переключить(message); return; }
+
                         Intent intent = new Intent(context, FullScreenMessageImageActivity.class);
                         intent.putExtra("message_image_url", fileUrl);
                         context.startActivity(intent);

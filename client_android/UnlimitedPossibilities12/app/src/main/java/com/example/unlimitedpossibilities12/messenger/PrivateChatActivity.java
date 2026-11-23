@@ -289,6 +289,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         messageList.setAdapter(messageAdapter);
         messageAdapter.setСлушательЗвонков(this::спроситьПроЗвонок);
         завестиКружокВниз();
+        завестиВыбор();
 
         // Иконка ассистента — по центру панели иконок
         ImageView assistantIcon = findViewById(R.id.assistant_icon);
@@ -851,6 +852,16 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         if (partnerId != -1) {
             requestPartnerStatus();
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        /* Идёт выбор — кнопка «назад» сперва снимает его, как в телеграме. */
+        if (!выбранные.isEmpty()) {
+            закончитьВыбор();
+            return;
+        }
+        super.onBackPressed();
     }
 
     @Override
@@ -1650,6 +1661,127 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         });
     }
 
+
+
+    /* ───── Выбор нескольких сообщений ───── */
+
+    private final java.util.LinkedHashSet<Long> выбранные = new java.util.LinkedHashSet<>();
+    private View полосаВыбора;
+    private android.widget.TextView счётВыбранных;
+
+    /** Завести полосу выбора и связать её с лентой. */
+    private void завестиВыбор() {
+        полосаВыбора = findViewById(R.id.selection_bar);
+        счётВыбранных = findViewById(R.id.selection_count);
+        if (полосаВыбора == null) return;
+
+        findViewById(R.id.selection_close).setOnClickListener(в -> закончитьВыбор());
+        findViewById(R.id.selection_copy).setOnClickListener(в -> скопироватьВыбранные());
+        findViewById(R.id.selection_edit).setOnClickListener(в -> правитьВыбранное());
+        findViewById(R.id.selection_delete).setOnClickListener(в -> убратьВыбранные());
+
+        messageAdapter.setВыбор(new MessageAdapter.ВыборСообщений() {
+            @Override
+            public void начать(Message сообщение) {
+                выбранные.clear();
+                выбранные.add(сообщение.getId());
+                показатьПолосу();
+            }
+
+            @Override
+            public void переключить(Message сообщение) {
+                if (!выбранные.remove(сообщение.getId())) выбранные.add(сообщение.getId());
+                if (выбранные.isEmpty()) закончитьВыбор(); else показатьПолосу();
+            }
+
+            @Override
+            public boolean идёт() {
+                return !выбранные.isEmpty();
+            }
+
+            @Override
+            public boolean выбрано(Message сообщение) {
+                return выбранные.contains(сообщение.getId());
+            }
+        });
+    }
+
+    /** Показать полосу и обновить на ней счёт и доступные действия. */
+    private void показатьПолосу() {
+        if (полосаВыбора == null) return;
+        полосаВыбора.setVisibility(View.VISIBLE);
+        счётВыбранных.setText("Selected " + выбранные.size());
+        /* Править можно только одно своё текстовое сообщение. */
+        Message одно = выбранные.size() == 1 ? найтиВыбранное(выбранные.iterator().next()) : null;
+        boolean можноПравить = одно != null
+                && одно.getSender() != null && одно.getSender().getId() == currentUserId
+                && одно.getId() > 0;
+        findViewById(R.id.selection_edit).setVisibility(можноПравить ? View.VISIBLE : View.GONE);
+        messageAdapter.notifyDataSetChanged();
+    }
+
+    /** Снять выделение и убрать полосу. */
+    private void закончитьВыбор() {
+        if (выбранные.isEmpty() && (полосаВыбора == null || полосаВыбора.getVisibility() != View.VISIBLE)) return;
+        выбранные.clear();
+        if (полосаВыбора != null) полосаВыбора.setVisibility(View.GONE);
+        if (messageAdapter != null) messageAdapter.notifyDataSetChanged();
+    }
+
+    private Message найтиВыбранное(long номер) {
+        for (Message м : messages) {
+            if (м.getId() == номер) return м;
+        }
+        return null;
+    }
+
+    /** Скопировать выбранное — по строке на сообщение, по порядку. */
+    private void скопироватьВыбранные() {
+        StringBuilder сб = new StringBuilder();
+        for (Message м : messages) {
+            if (!выбранные.contains(м.getId())) continue;
+            String текст = м.getContent() == null ? "" : м.getContent();
+            if (текст.isEmpty()) continue;
+            if (сб.length() > 0) сб.append('\n');
+            сб.append(текст);
+        }
+        if (сб.length() == 0) {
+            Toast.makeText(this, "Nothing to copy", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        android.content.ClipboardManager буфер =
+                (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        буфер.setPrimaryClip(android.content.ClipData.newPlainText("messages", сб.toString()));
+        Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show();
+        закончитьВыбор();
+    }
+
+    /** Править — только когда выбрано ровно одно своё. */
+    private void правитьВыбранное() {
+        if (выбранные.size() != 1) return;
+        Message одно = найтиВыбранное(выбранные.iterator().next());
+        закончитьВыбор();
+        if (одно != null) onEdit(одно);
+    }
+
+    /** Убрать все выбранные, спросив как обычно. */
+    private void убратьВыбранные() {
+        java.util.List<Message> что = new java.util.ArrayList<>();
+        for (Message м : messages) {
+            if (выбранные.contains(м.getId())) что.add(м);
+        }
+        if (что.isEmpty()) return;
+        boolean всёСвоё = true;
+        for (Message м : что) {
+            if (м.getSender() == null || м.getSender().getId() != currentUserId) всёСвоё = false;
+        }
+        спроситьПроУдаление(всёСвоё, уОбоих -> {
+            for (Message м : что) {
+                if (уОбоих) убратьСообщениеУОбоих(м); else спрятатьУСебя(м);
+            }
+            закончитьВыбор();
+        });
+    }
 
     /* ───── Возврат на оставленное место и кружок «вниз» ───── */
 
