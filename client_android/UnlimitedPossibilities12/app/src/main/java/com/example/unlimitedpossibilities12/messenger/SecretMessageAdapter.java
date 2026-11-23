@@ -190,11 +190,19 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             }
             holder.callCardText.setTextColor(пропущен ? 0xFFFCA5A5 : 0xFFF1F5F9);
             if (holder.callCardBubble != null) {
-                /* Долгое нажатие — убрать карточку, как делают с сообщением */
+                /* Карточка звонка живёт в ленте наравне с сообщениями:
+                   долгое нажатие выделяет её, нажатие в режиме выбора
+                   добавляет и снимает. */
                 holder.callCardBubble.setOnLongClickListener(в -> {
+                    if (выбор != null) { выбор.начать(message); return true; }
                     if (слушательЗвонков != null) слушательЗвонков.убрать(message);
                     return true;
                 });
+                holder.callCardBubble.setOnClickListener(в -> {
+                    if (выбор != null && выбор.идёт()) выбор.переключить(message);
+                });
+                holder.itemView.setBackgroundColor(выбор != null && выбор.выбрано(message)
+                        ? 0x3348A0FF : android.graphics.Color.TRANSPARENT);
                 android.widget.FrameLayout.LayoutParams лп =
                         (android.widget.FrameLayout.LayoutParams) holder.callCardBubble.getLayoutParams();
                 лп.gravity = моё ? android.view.Gravity.END : android.view.Gravity.START;
@@ -352,6 +360,20 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             imageCard = itemView.findViewById(R.id.image_card);
 
             // Обработчик долгого клика
+            /* Быстрое нажатие: идёт выбор — пополняем его; переключать
+               нечего — показываем меню. В тайной переписке перевод живёт
+               на устройстве, у самого сообщения его нет. */
+            messageContainer.setOnClickListener(v -> {
+                int место = getAdapterPosition();
+                if (место == RecyclerView.NO_POSITION) return;
+                Message тронутое = adapter.messages.get(место);
+                if (adapter.выбор != null && adapter.выбор.идёт()) {
+                    adapter.выбор.переключить(тронутое);
+                    return;
+                }
+                показатьМеню(v, тронутое);
+            });
+
             /* Долгое нажатие начинает выбор — как в телеграме. */
             messageContainer.setOnLongClickListener(v -> {
                 int position = getAdapterPosition();

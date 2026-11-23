@@ -1716,6 +1716,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         boolean можноПравить = одно != null
                 && одно.getSender() != null && одно.getSender().getId() == currentUserId
                 && одно.getId() > 0;
+        /* Карточку звонка править нечего. */
         findViewById(R.id.selection_edit).setVisibility(можноПравить ? View.VISIBLE : View.GONE);
         messageAdapter.notifyDataSetChanged();
     }
@@ -1729,7 +1730,9 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     }
 
     private Message найтиВыбранное(long номер) {
-        for (Message м : messages) {
+        /* Ищем по всей ленте: в ней не только сообщения, но и карточки
+           звонков — они живут с отрицательным номером. */
+        for (Message м : лентаНаЭкране) {
             if (м.getId() == номер) return м;
         }
         return null;
@@ -1738,7 +1741,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     /** Скопировать выбранное — по строке на сообщение, по порядку. */
     private void скопироватьВыбранные() {
         StringBuilder сб = new StringBuilder();
-        for (Message м : messages) {
+        for (Message м : лентаНаЭкране) {
             if (!выбранные.contains(м.getId())) continue;
             String текст = м.getContent() == null ? "" : м.getContent();
             if (текст.isEmpty()) continue;
@@ -1767,17 +1770,26 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     /** Убрать все выбранные, спросив как обычно. */
     private void убратьВыбранные() {
         java.util.List<Message> что = new java.util.ArrayList<>();
-        for (Message м : messages) {
+        for (Message м : лентаНаЭкране) {
             if (выбранные.contains(м.getId())) что.add(м);
         }
         if (что.isEmpty()) return;
+        /* «И у собеседника» предлагаем, когда всё выбранное — своё;
+           карточки звонков свои всегда: у каждой стороны своя запись. */
         boolean всёСвоё = true;
         for (Message м : что) {
-            if (м.getSender() == null || м.getSender().getId() != currentUserId) всёСвоё = false;
+            boolean звонок = м.getId() < 0;
+            if (!звонок && (м.getSender() == null || м.getSender().getId() != currentUserId)) всёСвоё = false;
         }
         спроситьПроУдаление(всёСвоё, уОбоих -> {
             for (Message м : что) {
-                if (уОбоих) убратьСообщениеУОбоих(м); else спрятатьУСебя(м);
+                if (м.getId() < 0) {
+                    убратьЗвонок(-м.getId(), уОбоих);
+                } else if (уОбоих) {
+                    убратьСообщениеУОбоих(м);
+                } else {
+                    спрятатьУСебя(м);
+                }
             }
             закончитьВыбор();
         });

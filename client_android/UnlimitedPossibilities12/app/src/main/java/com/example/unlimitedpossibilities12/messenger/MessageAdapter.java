@@ -210,11 +210,19 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 holder.callCardIcon.setImageResource(видео ? R.drawable.ic_video_call : R.drawable.ic_calls);
             }
             if (holder.callCardBubble != null) {
-                /* Долгое нажатие — убрать карточку, как делают с сообщением */
+                /* Карточка звонка живёт в ленте наравне с сообщениями:
+                   долгое нажатие выделяет её, нажатие в режиме выбора
+                   добавляет и снимает. */
                 holder.callCardBubble.setOnLongClickListener(в -> {
+                    if (выбор != null) { выбор.начать(message); return true; }
                     if (слушательЗвонков != null) слушательЗвонков.убрать(message);
                     return true;
                 });
+                holder.callCardBubble.setOnClickListener(в -> {
+                    if (выбор != null && выбор.идёт()) выбор.переключить(message);
+                });
+                holder.itemView.setBackgroundColor(выбор != null && выбор.выбрано(message)
+                        ? 0x3348A0FF : android.graphics.Color.TRANSPARENT);
                 android.widget.FrameLayout.LayoutParams лп =
                         (android.widget.FrameLayout.LayoutParams) holder.callCardBubble.getLayoutParams();
                 лп.gravity = моё ? android.view.Gravity.END : android.view.Gravity.START;
@@ -542,8 +550,15 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     }
                     /* Переключать нечего — показываем меню: иначе нажатие
                        пропадает впустую. */
-                    boolean естьЧтоПереключить = message.getTranslatedContent() != null
+                    /* Переключать есть что, только когда перевод включён и
+                       вправду пришёл; иначе касание было бы впустую. */
+                    boolean естьПеревод = isTranslationEnabled
+                            && message.getTranslatedContent() != null
                             && !message.getTranslatedContent().isEmpty();
+                    boolean естьРасшифровка = isTranscriptionEnabled
+                            && message.getTranscribedContent() != null
+                            && !message.getTranscribedContent().isEmpty();
+                    boolean естьЧтоПереключить = естьПеревод || естьРасшифровка;
                     if (!естьЧтоПереключить) {
                         показатьМеню(v, message);
                         return;

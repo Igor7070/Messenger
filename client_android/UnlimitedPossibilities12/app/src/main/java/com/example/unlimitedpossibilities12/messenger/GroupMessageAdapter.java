@@ -450,6 +450,21 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             messageContainer.setOnClickListener(v -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
+                    Message тронутое = messages.get(position);
+                    /* Идёт выбор — нажатие пополняет его. */
+                    if (выбор != null && выбор.идёт()) {
+                        выбор.переключить(тронутое);
+                        return;
+                    }
+                    /* Переключать есть что, только когда перевод включён и
+                       вправду пришёл; иначе показываем меню. */
+                    boolean естьЧтоПереключить = isTranslationEnabled
+                            && тронутое.getTranslatedContent() != null
+                            && !тронутое.getTranslatedContent().isEmpty();
+                    if (!естьЧтоПереключить) {
+                        показатьМеню(v, тронутое);
+                        return;
+                    }
                     Message message = messages.get(position);
                     if ("audio".equalsIgnoreCase(message.getMessageType())) {
                         if (isTranscriptionEnabled && message.getTranscribedContent() != null && !message.getTranscribedContent().isEmpty() &&
