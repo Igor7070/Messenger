@@ -222,7 +222,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     if (выбор != null && выбор.идёт()) выбор.переключить(message);
                 });
                 holder.itemView.setBackgroundColor(выбор != null && выбор.выбрано(message)
-                        ? 0x3348A0FF : android.graphics.Color.TRANSPARENT);
+                        ? 0xFF1D2D4A : android.graphics.Color.TRANSPARENT);
                 android.widget.FrameLayout.LayoutParams лп =
                         (android.widget.FrameLayout.LayoutParams) holder.callCardBubble.getLayoutParams();
                 лп.gravity = моё ? android.view.Gravity.END : android.view.Gravity.START;
@@ -702,9 +702,24 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         }
 
         private void bindContents(Message message, int position) {
+            /* Нажатие ловим всей строкой, а не только пузырём: в телеграме
+               выделяют касанием где угодно по ширине экрана. */
+            itemView.setOnLongClickListener(в -> {
+                if (выбор != null) { выбор.начать(message); return true; }
+                return false;
+            });
+            itemView.setOnClickListener(в -> {
+                if (выбор != null && выбор.идёт()) выбор.переключить(message);
+            });
+
             /* Выбранное подсвечиваем — видно, что попало в выбор. */
-            itemView.setBackgroundColor(выбор != null && выбор.выбрано(message)
-                    ? 0x3348A0FF : android.graphics.Color.TRANSPARENT);
+            /* Красим полосу под датой, а не всю строку: дата остаётся на
+               своём фоне, как в телеграме. */
+            View полосаВыделения = itemView.findViewById(R.id.select_band);
+            if (полосаВыделения != null) {
+                полосаВыделения.setBackgroundColor(выбор != null && выбор.выбрано(message)
+                        ? 0xFF1D2D4A : android.graphics.Color.TRANSPARENT);
+            }
             bindDaySeparator(position); // дата дня над первым сообщением дня
             User sender = message.getSender();
             boolean isSentByCurrentUser = sender.getId() == currentUserId;

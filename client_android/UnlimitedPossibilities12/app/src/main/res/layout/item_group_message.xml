@@ -4,8 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="8dp"
-    android:layout_marginVertical="4dp">
+    android:paddingHorizontal="8dp"
+    android:paddingVertical="4dp">
 
     <!-- Разделитель дня: дата стоит один раз над первым сообщением дня -->
     <TextView
@@ -22,6 +22,17 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+
+    <!-- Полоса выделения: закрывает строку, но не дату над ней -->
+    <View
+        android:id="@+id/select_band"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/day_separator"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
     <!-- Аватар (только для полученных сообщений) -->
     <ImageView

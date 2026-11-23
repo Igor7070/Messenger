@@ -620,6 +620,23 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         }
 
         private void bindContents(Message message, int position) {
+            /* Нажатие ловим всей строкой, а не только пузырём: в телеграме
+               выделяют касанием где угодно по ширине экрана. */
+            itemView.setOnLongClickListener(в -> {
+                if (выбор != null) { выбор.начать(message); return true; }
+                return false;
+            });
+            itemView.setOnClickListener(в -> {
+                if (выбор != null && выбор.идёт()) выбор.переключить(message);
+            });
+            /* Красим полосу под датой, а не всю строку: дата остаётся на
+               своём фоне, как в телеграме. */
+            View полосаВыделения = itemView.findViewById(R.id.select_band);
+            if (полосаВыделения != null) {
+                полосаВыделения.setBackgroundColor(выбор != null && выбор.выбрано(message)
+                        ? 0xFF1D2D4A : android.graphics.Color.TRANSPARENT);
+            }
+
             bindDaySeparator(position); // дата дня над первым сообщением дня
             // Реализация метода bind остаётся без изменений, как в предоставленном коде
             User sender = message.getSender();
