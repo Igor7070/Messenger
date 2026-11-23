@@ -116,6 +116,28 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         }
     }
 
+
+    /**
+     * Полоса выделения вокруг строки.
+     *
+     * Она обнимает пузырь с небольшим просветом сверху и снизу — как в
+     * телеграме, — а не заливает весь промежуток между репликами. Просвет
+     * один и тот же, своё это сообщение или чужое.
+     */
+    private void полосаВыделения(View строка, boolean выбрано) {
+        if (строка == null) return;
+        if (!выбрано) {
+            строка.setBackground(null);
+            return;
+        }
+        float плотность = строка.getResources().getDisplayMetrics().density;
+        int просвет = Math.round(2 * плотность);
+        int сверху = Math.max(0, строка.getPaddingTop() - просвет);
+        int снизу = Math.max(0, строка.getPaddingBottom() - просвет);
+        строка.setBackground(new android.graphics.drawable.InsetDrawable(
+                new android.graphics.drawable.ColorDrawable(0xFF1D2D4A), 0, сверху, 0, снизу));
+    }
+
     public interface ВыборСообщений {
         void начать(Message сообщение);
         void переключить(Message сообщение);
@@ -262,8 +284,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 holder.itemView.setOnClickListener(в -> {
                     if (выбор != null && выбор.идёт()) выбор.переключить(message);
                 });
-                holder.itemView.setBackgroundColor(выбор != null && выбор.выбрано(message)
-                        ? 0xFF1D2D4A : android.graphics.Color.TRANSPARENT);
+                полосаВыделения(holder.itemView, выбор != null && выбор.выбрано(message));
                 android.widget.FrameLayout.LayoutParams лп =
                         (android.widget.FrameLayout.LayoutParams) holder.callCardBubble.getLayoutParams();
                 лп.gravity = моё ? android.view.Gravity.END : android.view.Gravity.START;
@@ -762,13 +783,8 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
             });
 
             /* Выбранное подсвечиваем — видно, что попало в выбор. */
-            /* Красим полосу под датой, а не всю строку: дата остаётся на
-               своём фоне, как в телеграме. */
-            View полосаВыделения = itemView.findViewById(R.id.select_band);
-            if (полосаВыделения != null) {
-                полосаВыделения.setBackgroundColor(выбор != null && выбор.выбрано(message)
-                        ? 0xFF1D2D4A : android.graphics.Color.TRANSPARENT);
-            }
+            /* Полоса обнимает пузырь, а не весь промежуток между строками. */
+            полосаВыделения(itemView, выбор != null && выбор.выбрано(message));
             bindDaySeparator(position); // дата дня над первым сообщением дня
             User sender = message.getSender();
             boolean isSentByCurrentUser = sender.getId() == currentUserId;
