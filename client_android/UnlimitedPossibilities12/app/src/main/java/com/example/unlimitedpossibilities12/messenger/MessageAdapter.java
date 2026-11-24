@@ -244,6 +244,23 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         });
     }
 
+
+    /**
+     * Перерисовать строку с этим номером.
+     *
+     * Ищем по своему списку: в нём, кроме сообщений, есть и карточки
+     * звонков — в чате их тоже выбирают, а в списке переписки у хозяина
+     * экрана их может не быть.
+     */
+    public void обновитьСтроку(long номер) {
+        for (int i = 0; i < messages.size(); i++) {
+            if (messages.get(i).getId() == номер) {
+                notifyItemChanged(i);
+                return;
+            }
+        }
+    }
+
     public interface ВыборСообщений {
         void начать(Message сообщение);
         void переключить(Message сообщение);

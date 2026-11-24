@@ -1734,12 +1734,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     private void обновитьСтроки(java.util.Collection<Long> какие) {
         if (messageAdapter == null || какие == null) return;
         for (Long номер : какие) {
-            for (int i = 0; i < messages.size(); i++) {
-                if (messages.get(i).getId() == номер) {
-                    messageAdapter.notifyItemChanged(i);
-                    break;
-                }
-            }
+            messageAdapter.обновитьСтроку(номер);
         }
     }
 
