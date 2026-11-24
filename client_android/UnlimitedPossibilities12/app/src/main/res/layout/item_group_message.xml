@@ -37,6 +37,7 @@
     <!-- Аватар (только для полученных сообщений) -->
     <ImageView
         android:id="@+id/avatar_image_view"
+        android:layout_marginStart="13dp"
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:scaleType="centerCrop"
@@ -60,6 +61,7 @@
     <!-- Placeholder для выравнивания -->
     <View
         android:id="@+id/avatar_placeholder"
+        android:layout_marginStart="13dp"
         android:layout_width="32dp"
         android:layout_height="0dp"
         app:layout_constraintStart_toStartOf="parent"

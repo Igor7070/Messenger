@@ -838,7 +838,11 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             int marginHorizontal = (int) (16 * density);
             int padding = (int) (12 * density);
             int avatarWidth = (int) (32 * density);
-            int marginStart = (int) (17 * density);
+            /* В группе это просвет от аватара до пузыря: аватар уже
+               отодвинут от края, и широкий зазор здесь ни к чему. */
+            /* В группе это просвет от аватара до пузыря: аватар отодвинут
+               от края наравне со своими сообщениями, широкий зазор ни к чему. */
+            int marginStart = (int) (8 * density);
             int visualMargin = (int) (64 * density);
 
             if (isSentByCurrentUser) {
