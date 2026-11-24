@@ -1312,6 +1312,12 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         счётВыбранных = findViewById(R.id.selection_count);
         if (полосаВыбора == null || messageAdapter == null) return;
 
+        if (messageList != null && messageList.getItemAnimator()
+                instanceof androidx.recyclerview.widget.SimpleItemAnimator) {
+            /* Строка меняет лишь подсветку — мигать ей незачем. */
+            ((androidx.recyclerview.widget.SimpleItemAnimator) messageList.getItemAnimator())
+                    .setSupportsChangeAnimations(false);
+        }
         findViewById(R.id.selection_close).setOnClickListener(в -> закончитьВыбор());
         findViewById(R.id.selection_copy).setOnClickListener(в -> скопироватьВыбранные());
         findViewById(R.id.selection_edit).setOnClickListener(в -> правитьВыбранное());
@@ -1320,15 +1326,23 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         messageAdapter.setВыбор(new GroupMessageAdapter.ВыборСообщений() {
             @Override
             public void начать(Message сообщение) {
+                java.util.List<Long> было = new java.util.ArrayList<>(выбранные);
                 выбранные.clear();
                 выбранные.add(сообщение.getId());
                 показатьПолосу();
+                было.add(сообщение.getId());
+                обновитьСтроки(было);
             }
 
             @Override
             public void переключить(Message сообщение) {
                 if (!выбранные.remove(сообщение.getId())) выбранные.add(сообщение.getId());
-                if (выбранные.isEmpty()) закончитьВыбор(); else показатьПолосу();
+                if (выбранные.isEmpty()) {
+                    закончитьВыбор();
+                } else {
+                    показатьПолосу();
+                    обновитьСтроки(java.util.Collections.singletonList(сообщение.getId()));
+                }
             }
 
             @Override
@@ -1343,6 +1357,26 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         });
     }
 
+
+    /**
+     * Перерисовать только те строки, что сменили вид.
+     *
+     * Перерисовывать всю ленту на каждый выбор нельзя: снимки меряются
+     * заново, высоты на миг меняются, и лента дёргается — то вверх, то в
+     * самый низ. Трогаем ровно те строки, которых касается выбор.
+     */
+    private void обновитьСтроки(java.util.Collection<Long> какие) {
+        if (messageAdapter == null || какие == null) return;
+        for (Long номер : какие) {
+            for (int i = 0; i < messages.size(); i++) {
+                if (messages.get(i).getId() == номер) {
+                    messageAdapter.notifyItemChanged(i);
+                    break;
+                }
+            }
+        }
+    }
+
     /** Показать полосу и обновить на ней счёт и доступные действия. */
     private void показатьПолосу() {
         if (полосаВыбора == null) return;
@@ -1353,15 +1387,15 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                 && одно.getSender() != null && одно.getSender().getId() == currentUserId
                 && одно.getId() > 0;
         findViewById(R.id.selection_edit).setVisibility(можноПравить ? View.VISIBLE : View.GONE);
-        messageAdapter.notifyDataSetChanged();
     }
 
     /** Снять выделение и убрать полосу. */
     private void закончитьВыбор() {
         if (выбранные.isEmpty() && (полосаВыбора == null || полосаВыбора.getVisibility() != View.VISIBLE)) return;
+        java.util.List<Long> было = new java.util.ArrayList<>(выбранные);
         выбранные.clear();
         if (полосаВыбора != null) полосаВыбора.setVisibility(View.GONE);
-        if (messageAdapter != null) messageAdapter.notifyDataSetChanged();
+        обновитьСтроки(было);
     }
 
     private Message найтиВыбранное(long номер) {
@@ -1578,6 +1612,9 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
      */
     private void jumpToBottom() {
         if (ждёмВозврата()) return;   // сперва вернёмся туда, где вышли
+        /* Человек ушёл вверх читать — обновление переписки не должно
+           швырять его в конец. Прыгаем, только если он и так внизу. */
+        if (человекЛистал && !лентаВнизу()) return;
         if (messages.size() > 0) {
             messageList.scrollToPosition(messages.size() - 1);
         }
