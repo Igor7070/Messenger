@@ -13,8 +13,8 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:background="#1E2937"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
+        android:paddingStart="0dp"
+        android:paddingEnd="0dp"
         android:contentInsetStart="0dp"
         android:contentInsetEnd="0dp"
         app:layout_constraintTop_toTopOf="parent"
@@ -26,8 +26,8 @@
             android:layout_height="match_parent"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingStart="12dp"
-            android:paddingEnd="4dp">
+            android:paddingStart="6dp"
+            android:paddingEnd="2dp">
 
             <!-- Аватар с зелёной точкой: такая же, как у аватаров в ленте,
                  только раньше в шапке её не было вовсе -->
