@@ -26,15 +26,15 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
 
-    <!-- Полоса выделения: закрывает строку, но не дату над ней -->
+    <!-- Полоса выделения: ровно по высоте пузыря — дату над ним не трогает -->
     <View
         android:id="@+id/select_band"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/day_separator"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        app:layout_constraintTop_toTopOf="@id/message_container"
+        app:layout_constraintBottom_toBottomOf="@id/message_container" />
 
     <!-- Аватар (только для полученных сообщений) -->
     <ImageView

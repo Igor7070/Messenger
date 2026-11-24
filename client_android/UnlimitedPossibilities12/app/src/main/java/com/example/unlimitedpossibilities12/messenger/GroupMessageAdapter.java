@@ -314,6 +314,14 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
      */
     private void полосаВыделения(View строка, boolean выбрано) {
         if (строка == null) return;
+        /* Для сообщения полоса — отдельная подложка ровно по высоте пузыря:
+           она не накрывает дату над ним и не зависит от просветов между
+           строками. Для карточки звонка красим саму строку, убрав просветы. */
+        View подложка = строка.findViewById(R.id.select_band);
+        if (подложка != null) {
+            подложка.setBackgroundColor(выбрано ? 0xFF1D2D4A : android.graphics.Color.TRANSPARENT);
+            return;
+        }
         if (!выбрано) {
             строка.setBackground(null);
             return;
@@ -690,9 +698,9 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 if (выбор != null && выбор.идёт()) выбор.переключить(message);
             });
             /* Полоса обнимает пузырь, а не весь промежуток между строками. */
-            полосаВыделения(itemView, выбор != null && выбор.выбрано(message));
 
             bindDaySeparator(position); // дата дня над первым сообщением дня
+            полосаВыделения(itemView, выбор != null && выбор.выбрано(message));
             // Реализация метода bind остаётся без изменений, как в предоставленном коде
             User sender = message.getSender();
             boolean isSentByCurrentUser = sender.getId() == currentUserId;
