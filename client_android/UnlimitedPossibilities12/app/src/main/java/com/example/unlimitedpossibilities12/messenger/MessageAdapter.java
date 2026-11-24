@@ -933,10 +933,10 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
             // Вычисляем ширину экрана и отступы
             int screenWidth = context.getResources().getDisplayMetrics().widthPixels;
             float density = context.getResources().getDisplayMetrics().density;
-            int marginHorizontal = (int) (16 * density); // layout_marginHorizontal="8dp"
+            int marginHorizontal = (int) (5 * density);   // от края экрана до пузыря
             int padding = (int) (12 * density); // padding="12dp" в LinearLayout
             int avatarWidth = (int) (32 * density); // Ширина аватара
-            int marginStart = (int) (17 * density); // Увеличиваем до 12dp
+            int marginStart = (int) (5 * density);    // столько же слева
             int visualMargin = (int) (64 * density); // Отступ 56dp для визуального различия
 
             if (isSentByCurrentUser) {

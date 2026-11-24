@@ -660,10 +660,10 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) messageContainer.getLayoutParams();
             int screenWidth = adapter.context.getResources().getDisplayMetrics().widthPixels;
             float density = adapter.context.getResources().getDisplayMetrics().density;
-            int marginHorizontal = (int) (16 * density);
+            int marginHorizontal = (int) (5 * density);   // от края экрана до пузыря
             int padding = (int) (12 * density);
             int avatarWidth = (int) (32 * density);
-            int marginStart = (int) (17 * density);
+            int marginStart = (int) (5 * density);    // столько же слева
             int visualMargin = (int) (64 * density);
             if (isSentByCurrentUser) {
                 params.startToStart = ConstraintLayout.LayoutParams.UNSET;

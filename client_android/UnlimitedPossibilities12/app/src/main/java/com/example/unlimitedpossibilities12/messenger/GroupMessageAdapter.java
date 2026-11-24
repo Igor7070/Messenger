@@ -835,7 +835,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) messageContainer.getLayoutParams();
             int screenWidth = context.getResources().getDisplayMetrics().widthPixels;
             float density = context.getResources().getDisplayMetrics().density;
-            int marginHorizontal = (int) (16 * density);
+            int marginHorizontal = (int) (5 * density);   // от края экрана до пузыря
             int padding = (int) (12 * density);
             int avatarWidth = (int) (32 * density);
             /* В группе это просвет от аватара до пузыря: аватар уже
