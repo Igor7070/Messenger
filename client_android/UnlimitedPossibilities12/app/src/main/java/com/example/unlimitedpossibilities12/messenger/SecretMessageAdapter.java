@@ -692,17 +692,21 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 int maxWidthPx = screenWidth - 2 * marginHorizontal - 2 * padding - marginHorizontal - visualMargin;
                 params.matchConstraintMaxWidth = maxWidthPx;
                 messageContainer.setCardBackgroundColor(ContextCompat.getColor(adapter.context, R.color.sent_message_background));
-                boolean showSquareCorner = position == 0 || безОтправителя(adapter, position - 1) || adapter.messages.get(position - 1).getSender().getId() != sender.getId();
+                /* Прямой угол — у последнего сообщения череды и снизу,
+                   как в телеграме. */
+                boolean showSquareCorner = position >= adapter.messages.size() - 1
+                        || безОтправителя(adapter, position + 1)
+                        || adapter.messages.get(position + 1).getSender().getId() != sender.getId();
                 if (showSquareCorner) {
                     ShapeAppearanceModel shapeModel = new ShapeAppearanceModel()
                             .toBuilder()
-                            .setTopRightCorner(CornerFamily.ROUNDED, 0f)
+                            .setBottomRightCorner(CornerFamily.ROUNDED, 0f)
                             .setTopLeftCorner(CornerFamily.ROUNDED, 12f * density)
+                            .setTopRightCorner(CornerFamily.ROUNDED, 12f * density)
                             .setBottomLeftCorner(CornerFamily.ROUNDED, 12f * density)
-                            .setBottomRightCorner(CornerFamily.ROUNDED, 12f * density)
                             .build();
                     messageContainer.setShapeAppearanceModel(shapeModel);
-                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_TOP_RIGHT);
+                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_BOTTOM_RIGHT);
                 } else {
                     ShapeAppearanceModel shapeModel = new ShapeAppearanceModel()
                             .toBuilder()
@@ -725,8 +729,9 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 /* Аватарку в переписке вдвоём не показываем: собеседник один и
                    он же в шапке. Срезанный верхний угол по-прежнему
                    отмечает начало череды его реплик. */
-                boolean первыйВЧереде = position == 0 || безОтправителя(adapter, position - 1)
-                        || adapter.messages.get(position - 1).getSender().getId() != sender.getId();
+                boolean первыйВЧереде = position >= adapter.messages.size() - 1
+                        || безОтправителя(adapter, position + 1)
+                        || adapter.messages.get(position + 1).getSender().getId() != sender.getId();
                 params.startToEnd = R.id.avatar_placeholder;
                 avatarImageView.setVisibility(View.GONE);
                     /* Кружка нет — и места под него не держим: строка шире. */
@@ -739,13 +744,13 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 if (первыйВЧереде) {
                     ShapeAppearanceModel shapeModel = new ShapeAppearanceModel()
                             .toBuilder()
-                            .setTopLeftCorner(CornerFamily.ROUNDED, 0f)
+                            .setBottomLeftCorner(CornerFamily.ROUNDED, 0f)
+                            .setTopLeftCorner(CornerFamily.ROUNDED, 12f * density)
                             .setTopRightCorner(CornerFamily.ROUNDED, 12f * density)
-                            .setBottomLeftCorner(CornerFamily.ROUNDED, 12f * density)
                             .setBottomRightCorner(CornerFamily.ROUNDED, 12f * density)
                             .build();
                     messageContainer.setShapeAppearanceModel(shapeModel);
-                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_TOP_LEFT);
+                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_BOTTOM_LEFT);
                 } else {
                     params.startToEnd = R.id.avatar_placeholder;
                     avatarImageView.setVisibility(View.GONE);

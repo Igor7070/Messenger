@@ -26,10 +26,12 @@ final class PhotoBubble {
     private static final int MIN_WIDTH_DP = 150;
     private static final int CORNER_DP = 12;
 
-    /** Какой верхний угол снимка оставить прямым — под стать пузырю. */
+    /** Какой угол снимка оставить прямым — под стать пузырю. */
     static final int SQUARE_NONE = 0;
     static final int SQUARE_TOP_LEFT = 1;
     static final int SQUARE_TOP_RIGHT = 2;
+    static final int SQUARE_BOTTOM_LEFT = 3;
+    static final int SQUARE_BOTTOM_RIGHT = 4;
 
     private PhotoBubble() {
     }
@@ -122,8 +124,10 @@ final class PhotoBubble {
                                 square == SQUARE_TOP_LEFT ? 0f : radius)
                         .setTopRightCorner(com.google.android.material.shape.CornerFamily.ROUNDED,
                                 square == SQUARE_TOP_RIGHT ? 0f : radius)
-                        .setBottomLeftCorner(com.google.android.material.shape.CornerFamily.ROUNDED, radius)
-                        .setBottomRightCorner(com.google.android.material.shape.CornerFamily.ROUNDED, radius)
+                        .setBottomLeftCorner(com.google.android.material.shape.CornerFamily.ROUNDED,
+                                square == SQUARE_BOTTOM_LEFT ? 0f : radius)
+                        .setBottomRightCorner(com.google.android.material.shape.CornerFamily.ROUNDED,
+                                square == SQUARE_BOTTOM_RIGHT ? 0f : radius)
                         .build();
         ((com.google.android.material.imageview.ShapeableImageView) view).setShapeAppearanceModel(shape);
     }

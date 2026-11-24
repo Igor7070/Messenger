@@ -328,6 +328,15 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
      * решают, скруглять ли угол пузыря и ставить ли аватарку.
      * Возвращает -1, если выше сообщений нет.
      */
+    /** Кто написал следующую строку: по ней видно, последняя ли эта в череде. */
+    private long ктоНиже(int место) {
+        for (int i = место + 1; i < messages.size(); i += 1) {
+            Message строка = messages.get(i);
+            if (строка != null && строка.getSender() != null) return строка.getSender().getId();
+        }
+        return -1;
+    }
+
     private long ктоВыше(int место) {
         for (int i = место - 1; i >= 0; i -= 1) {
             Message строка = messages.get(i);
@@ -969,18 +978,20 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 params.matchConstraintMaxWidth = maxWidthPx;
                 messageContainer.setCardBackgroundColor(ContextCompat.getColor(context, R.color.sent_message_background));
                 // Проверяем, является ли сообщение первым в серии своих сообщений
-                boolean showSquareCorner = ктоВыше(position) != sender.getId();
+                /* Прямой угол — у последнего сообщения череды и снизу: так
+                   в телеграме, уголок будто указывает на говорящего. */
+                boolean showSquareCorner = ктоНиже(position) != sender.getId();
                 if (showSquareCorner) {
                     // Квадратный верхний правый угол для первого сообщения в серии
                     ShapeAppearanceModel shapeModel = new ShapeAppearanceModel()
                             .toBuilder()
-                            .setTopRightCorner(CornerFamily.ROUNDED, 0f)
+                            .setBottomRightCorner(CornerFamily.ROUNDED, 0f)
                             .setTopLeftCorner(CornerFamily.ROUNDED, 12f * density)
+                            .setTopRightCorner(CornerFamily.ROUNDED, 12f * density)
                             .setBottomLeftCorner(CornerFamily.ROUNDED, 12f * density)
-                            .setBottomRightCorner(CornerFamily.ROUNDED, 12f * density)
                             .build();
                     messageContainer.setShapeAppearanceModel(shapeModel);
-                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_TOP_RIGHT);
+                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_BOTTOM_RIGHT);
                     Log.d(TAG, "Sent message with square top-right corner at position " + position + ": set top-right=0dp, others=16dp");
                 } else {
                     // Скругленные углы для последующих сообщений в серии
@@ -1011,7 +1022,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 /* Аватарку в переписке вдвоём не показываем вовсе: собеседник
                    один и он же в шапке. По первому в череде по-прежнему
                    срезаем верхний угол — он и указывает на начало реплики. */
-                boolean первыйВЧереде = ктоВыше(position) != sender.getId();
+                boolean первыйВЧереде = ктоНиже(position) != sender.getId();
                 params.startToEnd = R.id.avatar_placeholder;
                 avatarImageView.setVisibility(View.GONE);
                 avatarPlaceholder.setVisibility(View.VISIBLE);
@@ -1025,13 +1036,13 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     // Квадратный верхний левый угол
                     ShapeAppearanceModel shapeModel = new ShapeAppearanceModel()
                             .toBuilder()
-                            .setTopLeftCorner(CornerFamily.ROUNDED, 0f)
+                            .setBottomLeftCorner(CornerFamily.ROUNDED, 0f)
+                            .setTopLeftCorner(CornerFamily.ROUNDED, 12f * density)
                             .setTopRightCorner(CornerFamily.ROUNDED, 12f * density)
-                            .setBottomLeftCorner(CornerFamily.ROUNDED, 12f * density)
                             .setBottomRightCorner(CornerFamily.ROUNDED, 12f * density)
                             .build();
                     messageContainer.setShapeAppearanceModel(shapeModel);
-                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_TOP_LEFT);
+                    PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_BOTTOM_LEFT);
                     Log.d(TAG, "Received message with avatar at position " + position + ": set top-left=0dp, others=16dp, marginStart=" + marginStart);
                 } else {
                     // Скругленные углы

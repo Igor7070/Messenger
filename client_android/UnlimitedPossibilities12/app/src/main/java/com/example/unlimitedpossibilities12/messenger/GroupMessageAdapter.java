@@ -872,16 +872,20 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 int maxWidthPx = screenWidth - 2 * marginHorizontal - 2 * padding - visualMargin;
                 params.matchConstraintMaxWidth = maxWidthPx;
                 messageContainer.setCardBackgroundColor(ContextCompat.getColor(context, R.color.sent_message_background));
+                /* Прямой угол — только у последнего сообщения череды и
+                   снизу: так в телеграме, уголок указывает на говорящего. */
+                boolean уголСвоего = lastInSeries(position);
                 messageContainer.setShapeAppearanceModel(
                         new ShapeAppearanceModel()
                                 .toBuilder()
-                                .setTopRightCorner(CornerFamily.ROUNDED, 0f)
+                                .setBottomRightCorner(CornerFamily.ROUNDED, уголСвоего ? 0f : 16f * density)
                                 .setTopLeftCorner(CornerFamily.ROUNDED, 16f * density)
+                                .setTopRightCorner(CornerFamily.ROUNDED, 16f * density)
                                 .setBottomLeftCorner(CornerFamily.ROUNDED, 16f * density)
-                                .setBottomRightCorner(CornerFamily.ROUNDED, 16f * density)
                                 .build()
                 );
-                PhotoBubble.matchBubbleCorner(imagePreview, PhotoBubble.SQUARE_TOP_RIGHT);
+                PhotoBubble.matchBubbleCorner(imagePreview,
+                        уголСвоего ? PhotoBubble.SQUARE_BOTTOM_RIGHT : PhotoBubble.SQUARE_NONE);
                 avatarImageView.setVisibility(View.GONE);
                 avatarPlaceholder.setVisibility(View.GONE);
                 senderNameTextView.setVisibility(View.GONE);
@@ -896,19 +900,20 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 params.matchConstraintMaxWidth = maxWidthPx;
                 params.startToEnd = R.id.avatar_image_view;
                 messageContainer.setCardBackgroundColor(ContextCompat.getColor(context, R.color.received_message_background));
+                boolean уголЧужого = lastInSeries(position);
                 messageContainer.setShapeAppearanceModel(
                         new ShapeAppearanceModel()
                                 .toBuilder()
-                                .setTopLeftCorner(CornerFamily.ROUNDED, 0f)
+                                .setBottomLeftCorner(CornerFamily.ROUNDED, уголЧужого ? 0f : 16f * density)
+                                .setTopLeftCorner(CornerFamily.ROUNDED, 16f * density)
                                 .setTopRightCorner(CornerFamily.ROUNDED, 16f * density)
-                                .setBottomLeftCorner(CornerFamily.ROUNDED, 16f * density)
                                 .setBottomRightCorner(CornerFamily.ROUNDED, 16f * density)
                                 .build()
                 );
                 // У чужого сообщения сверху стоит имя — тогда углу снимка
                 // скругление не мешает; без имени снимок сам упирается в угол.
                 PhotoBubble.matchBubbleCorner(imagePreview,
-                        firstInSeries(position) ? PhotoBubble.SQUARE_NONE : PhotoBubble.SQUARE_TOP_LEFT);
+                        уголЧужого ? PhotoBubble.SQUARE_BOTTOM_LEFT : PhotoBubble.SQUARE_NONE);
                 /* Имя — над первым сообщением серии, аватар — у последнего:
                    так в телеграме, кружок стоит у подошвы всей череды. */
                 avatarImageView.setVisibility(lastInSeries(position) ? View.VISIBLE : View.INVISIBLE);
