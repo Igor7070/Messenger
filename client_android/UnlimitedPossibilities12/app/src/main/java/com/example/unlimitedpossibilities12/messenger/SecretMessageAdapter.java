@@ -109,10 +109,17 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
      */
     private void развестиСтроки(View строка, int место) {
         if (строка == null || место < 0 || место >= messages.size()) return;
-        boolean тотЖе = место > 0 && чьяСтрока(messages.get(место)) == чьяСтрока(messages.get(место - 1));
+        boolean тотЖеСверху = место > 0
+                && чьяСтрока(messages.get(место)) == чьяСтрока(messages.get(место - 1));
+        boolean тотЖеСнизу = место + 1 < messages.size()
+                && чьяСтрока(messages.get(место)) == чьяСтрока(messages.get(место + 1));
         float плотность = строка.getResources().getDisplayMetrics().density;
-        int сверху = Math.round((тотЖе ? 1 : 9) * плотность);
-        int снизу = Math.round(1 * плотность);
+        /* Просвет делим поровну между соседями: половина сверху, половина
+           снизу. Между репликами одного выходит те же 2dp, между разными
+           10dp, зато полоса выделения каждого доходит до середины просвета
+           и у подряд выбранных кромки сходятся вплотную. */
+        int сверху = Math.round((тотЖеСверху ? 1 : 5) * плотность);
+        int снизу = Math.round((тотЖеСнизу ? 1 : 5) * плотность);
         if (строка.getPaddingTop() != сверху || строка.getPaddingBottom() != снизу) {
             строка.setPadding(строка.getPaddingLeft(), сверху, строка.getPaddingRight(), снизу);
         }
@@ -136,9 +143,8 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
            краям ровно столько, чтобы полоса заходила за пузырь на половину
            просвета: у подряд выбранных кромки сходятся вплотную, а сам
            просвет между сообщениями остаётся прежним. */
-        int половина = Math.round(3 * строка.getResources().getDisplayMetrics().density) / 2;
-        int сверху = Math.max(0, строка.getPaddingTop() - половина);
-        int снизу = Math.max(0, строка.getPaddingBottom() - половина);
+        int сверху = 0;
+        int снизу = 0;
         /* Над первой строкой дня стоит плашка с датой — она к сообщению не
            относится. Её высоту считаем сами: ждать разметки нельзя, на этот
            миг она ещё нулевая, и полоса накрывала дату. */
@@ -151,7 +157,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 ViewGroup.MarginLayoutParams мера = (ViewGroup.MarginLayoutParams) дата.getLayoutParams();
                 подДатой += мера.topMargin + мера.bottomMargin;
             }
-            сверху = строка.getPaddingTop() + подДатой - половина;
+            сверху = строка.getPaddingTop() + подДатой;
         }
         /* Отступы у такого фона Android считает отступами строки и
            переписывает ими наши — потому здесь он о них молчит. */
