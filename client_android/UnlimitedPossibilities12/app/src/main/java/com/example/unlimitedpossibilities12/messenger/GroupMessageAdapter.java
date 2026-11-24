@@ -346,25 +346,38 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             строка.setBackground(null);
             return;
         }
-        /* Полоса — фон всей строки, а он кроет и её отступы. Оставляем по
-           краям ровно столько, чтобы полоса заходила за пузырь на половину
-           просвета: у подряд выбранных кромки сходятся вплотную, а сам
-           просвет между сообщениями остаётся прежним. */
+        покраситьПолосу(строка);
+        /* Перед самой отрисовкой пересчитываем: на привязке высота плашки с
+           датой ещё нулевая, а к этому мигу она уже настоящая. Трогаем
+           только фон, поэтому лента никуда не едет. */
+        строка.getViewTreeObserver().addOnPreDrawListener(
+                new android.view.ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                строка.getViewTreeObserver().removeOnPreDrawListener(this);
+                if (строка.getBackground() != null) покраситьПолосу(строка);
+                return true;
+            }
+        });
+    }
+
+    /** Закрасить строку, оставив дату над сообщением нетронутой. */
+    private void покраситьПолосу(View строка) {
         int сверху = 0;
         int снизу = 0;
-        /* Над первой строкой дня стоит плашка с датой — она к сообщению не
-           относится. Её высоту считаем сами: ждать разметки нельзя, на этот
-           миг она ещё нулевая, и полоса накрывала дату. */
         View дата = строка.findViewById(R.id.day_separator);
         if (дата != null && дата.getVisibility() == View.VISIBLE) {
-            дата.measure(View.MeasureSpec.makeMeasureSpec(строка.getWidth(), View.MeasureSpec.AT_MOST),
-                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-            int подДатой = дата.getMeasuredHeight();
-            if (дата.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
-                ViewGroup.MarginLayoutParams мера = (ViewGroup.MarginLayoutParams) дата.getLayoutParams();
-                подДатой += мера.topMargin + мера.bottomMargin;
+            int высота = дата.getHeight();
+            if (высота <= 0) {
+                дата.measure(View.MeasureSpec.makeMeasureSpec(
+                                Math.max(строка.getWidth(), строка.getResources()
+                                        .getDisplayMetrics().widthPixels), View.MeasureSpec.AT_MOST),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                высота = дата.getMeasuredHeight();
             }
-            сверху = строка.getPaddingTop() + подДатой
+            /* Полоса начинается на середине просвета под датой: за верх
+               сообщения она заходит ровно настолько же, насколько за низ. */
+            сверху = строка.getPaddingTop() + высота
                     + Math.round(5 * строка.getResources().getDisplayMetrics().density);
         }
         /* Отступы у такого фона Android считает отступами строки и
