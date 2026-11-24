@@ -293,6 +293,27 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
      * Подряд идущие от одного — почти вплотную, при смене отправителя
      * просвет больше: так в телеграме видно, где сменилась реплика.
      */
+
+    /** Отодвинуть сообщение от плашки с датой — зовём, когда дата уже выставлена. */
+    private void отступПодДатой(View строка) {
+        if (строка == null) return;
+        float плотность = строка.getResources().getDisplayMetrics().density;
+        /* Под плашкой с датой отступ задаём самому сообщению: нижнее поле
+           плашки тут никто не слушает — в этой разметке важно поле того,
+           кто к ней привязан. Сверху и снизу от даты выходит поровну. */
+        View плашка = строка.findViewById(R.id.day_separator);
+        View пузырь = строка.findViewById(R.id.message_container);
+        if (пузырь != null && пузырь.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+            int подДатой = (плашка != null && плашка.getVisibility() == View.VISIBLE)
+                    ? Math.round(10 * плотность) : 0;
+            ViewGroup.MarginLayoutParams мера = (ViewGroup.MarginLayoutParams) пузырь.getLayoutParams();
+            if (мера.topMargin != подДатой) {
+                мера.topMargin = подДатой;
+                пузырь.setLayoutParams(мера);
+            }
+        }
+    }
+
     private void развестиСтроки(View строка, int место) {
         if (строка == null || место < 0 || место >= messages.size()) return;
         boolean тотЖеСверху = место > 0
@@ -343,7 +364,8 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 ViewGroup.MarginLayoutParams мера = (ViewGroup.MarginLayoutParams) дата.getLayoutParams();
                 подДатой += мера.topMargin + мера.bottomMargin;
             }
-            сверху = строка.getPaddingTop() + подДатой;
+            сверху = строка.getPaddingTop() + подДатой
+                    + Math.round(5 * строка.getResources().getDisplayMetrics().density);
         }
         /* Отступы у такого фона Android считает отступами строки и
            переписывает ими наши — потому здесь он о них молчит. */
@@ -723,6 +745,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             /* Полоса обнимает пузырь, а не весь промежуток между строками. */
 
             bindDaySeparator(position); // дата дня над первым сообщением дня
+            отступПодДатой(itemView);
             полосаВыделения(itemView, выбор != null && выбор.выбрано(message));
             // Реализация метода bind остаётся без изменений, как в предоставленном коде
             User sender = message.getSender();
