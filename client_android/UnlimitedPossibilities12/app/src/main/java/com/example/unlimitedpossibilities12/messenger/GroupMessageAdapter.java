@@ -909,7 +909,9 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 // скругление не мешает; без имени снимок сам упирается в угол.
                 PhotoBubble.matchBubbleCorner(imagePreview,
                         firstInSeries(position) ? PhotoBubble.SQUARE_NONE : PhotoBubble.SQUARE_TOP_LEFT);
-                avatarImageView.setVisibility(firstInSeries(position) ? View.VISIBLE : View.INVISIBLE);
+                /* Имя — над первым сообщением серии, аватар — у последнего:
+                   так в телеграме, кружок стоит у подошвы всей череды. */
+                avatarImageView.setVisibility(lastInSeries(position) ? View.VISIBLE : View.INVISIBLE);
                 avatarPlaceholder.setVisibility(View.GONE);
                 senderNameTextView.setVisibility(firstInSeries(position) ? View.VISIBLE : View.GONE);
             }
@@ -1689,6 +1691,18 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
          * Прежде они повторялись у каждого сообщения подряд, как будто люди
          * говорят по одному слову. В личном чате так было и раньше.
          */
+        /**
+         * Последнее ли это сообщение череды одного человека: у него и стоит
+         * аватар. В телеграме кружок один на всю череду и стоит внизу.
+         */
+        private boolean lastInSeries(int position) {
+            if (position >= messages.size() - 1) return true;
+            Message mine = messages.get(position);
+            Message next = messages.get(position + 1);
+            if (mine.getSender() == null || next.getSender() == null) return true;
+            return mine.getSender().getId() != next.getSender().getId();
+        }
+
         private boolean firstInSeries(int position) {
             if (position == 0) return true;
             Message mine = messages.get(position);
