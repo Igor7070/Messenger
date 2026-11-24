@@ -314,6 +314,46 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         }
     }
 
+
+    /* ───── Время строки считаем один раз ───── */
+
+    /** Киевская зона и образцы времени: искать и собирать их заново на
+        каждую строку дорого — при прокрутке это заметный рывок. */
+    private static final java.time.ZoneId КИЕВ = java.time.ZoneId.of("Europe/Kiev");
+    private static final DateTimeFormatter ЧАСЫ =
+            DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault());
+    private static final DateTimeFormatter ДЕНЬ_ЭТОГО_ГОДА =
+            DateTimeFormatter.ofPattern("d MMMM", Locale.ENGLISH);
+    private static final DateTimeFormatter ДЕНЬ_С_ГОДОМ =
+            DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.ENGLISH);
+
+    /** Разобранные метки времени: одна и та же строка разбирается раз. */
+    private final java.util.HashMap<String, ZonedDateTime> разобранное = new java.util.HashMap<>();
+
+    /** Загрузчик картинок: искать его заново на каждую строку дорого. */
+    private com.bumptech.glide.RequestManager стекло;
+
+    private com.bumptech.glide.RequestManager стекло(Context где) {
+        if (стекло == null) стекло = Glide.with(где.getApplicationContext());
+        return стекло;
+    }
+
+    /** Метка времени строки — из запаса, а если её там нет, разбираем. */
+    private ZonedDateTime поКиеву(String метка) {
+        if (метка == null || метка.isEmpty()) return null;
+        ZonedDateTime готовое = разобранное.get(метка);
+        if (готовое != null) return готовое;
+        try {
+            ZonedDateTime своё = ZonedDateTime.parse(метка, DateTimeFormatter.ISO_ZONED_DATE_TIME)
+                    .withZoneSameInstant(КИЕВ);
+            if (разобранное.size() > 2000) разобранное.clear();
+            разобранное.put(метка, своё);
+            return своё;
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
     private void развестиСтроки(View строка, int место) {
         if (строка == null || место < 0 || место >= messages.size()) return;
         boolean тотЖеСверху = место > 0
@@ -789,7 +829,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
 
             // Отменяем загрузку от прошлого сообщения, иначе чужая картинка
             // успевает мелькнуть в переиспользованной вьюхе
-            Glide.with(context).clear(imagePreview);
+            стекло(context).clear(imagePreview);
 
             // Установка выравнивания и фона
             ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) messageContainer.getLayoutParams();
@@ -858,7 +898,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             senderNameTextView.setText(sender.getVisibleName());
             String avatarUrl = sender.getAvatar();
             if (!isSentByCurrentUser && !TextUtils.isEmpty(avatarUrl)) {
-                Glide.with(context)
+                стекло(context)
                         .load("https://unlimitedpossibilities12.org" + avatarUrl)
                         .apply(new RequestOptions()
                                 .circleCrop()
@@ -1362,7 +1402,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                            иначе строка подрастает в миг загрузки и лента
                            дёргается под пальцем. */
                         ВысотыСнимков.занятьМесто(context, imagePreview, fileUrl);
-                        Glide.with(context)
+                        стекло(context)
                                 .load(fileUrl)
                                 .placeholder(R.drawable.bg_message_image_placeholder)
                                 .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
@@ -1426,14 +1466,13 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             String timestampStr = message.getTimestamp();
             if (!TextUtils.isEmpty(timestampStr)) {
                 try {
-                    ZonedDateTime utcTime = ZonedDateTime.parse(timestampStr, DateTimeFormatter.ISO_ZONED_DATE_TIME);
-                    ZonedDateTime kievTime = utcTime.withZoneSameInstant(ZoneId.of("Europe/Kiev"));
-                    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Europe/Kiev"));
+                    ZonedDateTime kievTime = поКиеву(timestampStr);
+                    if (kievTime == null) throw new DateTimeParseException("нет метки", timestampStr, 0);
                     String formattedTime;
 
                     // Только часы и минуты: дата стоит разделителем над первым
                     // сообщением дня, повторять её в каждом пузыре незачем
-                    formattedTime = kievTime.format(DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault()));
+                    formattedTime = kievTime.format(ЧАСЫ);
 
                     timestampTextView.setText(formattedTime);
                     timestampTextView.setVisibility(View.VISIBLE);
@@ -1473,7 +1512,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                             previewUrl.setText(android.net.Uri.parse(data.url).getHost());
 
                             if (!data.imageUrl.isEmpty()) {
-                                Glide.with(context)
+                                стекло(context)
                                         .load(data.imageUrl)
                                         .apply(new RequestOptions().centerCrop().placeholder(android.R.color.darker_gray))
                                         .into(previewImage);
@@ -1533,7 +1572,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                                         previewUrl.setText(android.net.Uri.parse(url).getHost());
 
                                         if (!fImageUrl.isEmpty()) {
-                                            Glide.with(context)
+                                            стекло(context)
                                                     .load(fImageUrl)
                                                     .apply(new RequestOptions().centerCrop().placeholder(android.R.color.darker_gray))
                                                     .into(previewImage);
@@ -1592,21 +1631,15 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         private String dayLabel(ZonedDateTime time, ZonedDateTime now) {
             if (isSameDay(time, now)) return "Today";
             if (isYesterday(time, now)) return "Yesterday";
-            String pattern = time.getYear() == now.getYear() ? "d MMMM" : "d MMMM yyyy";
             // Язык системы здесь не годится: «Today» и «Yesterday» рядом
             // по-английски, и дата должна быть на том же языке
-            return time.format(DateTimeFormatter.ofPattern(pattern, Locale.ENGLISH));
+            return time.format(time.getYear() == now.getYear() ? ДЕНЬ_ЭТОГО_ГОДА : ДЕНЬ_С_ГОДОМ);
         }
 
         /** Время сообщения в киевской зоне или null, если метки нет. */
         private ZonedDateTime kievTimeOf(String timestamp) {
             if (TextUtils.isEmpty(timestamp)) return null;
-            try {
-                return ZonedDateTime.parse(timestamp, DateTimeFormatter.ISO_ZONED_DATE_TIME)
-                        .withZoneSameInstant(ZoneId.of("Europe/Kiev"));
-            } catch (DateTimeParseException e) {
-                return null;
-            }
+            return поКиеву(timestamp);
         }
 
         /**
@@ -1625,7 +1658,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 daySeparator.setVisibility(View.GONE);
                 return;
             }
-            daySeparator.setText(dayLabel(mine, ZonedDateTime.now(ZoneId.of("Europe/Kiev"))));
+            daySeparator.setText(dayLabel(mine, ZonedDateTime.now(КИЕВ)));
             daySeparator.setVisibility(View.VISIBLE);
         }
 

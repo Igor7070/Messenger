@@ -260,6 +260,9 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setStackFromEnd(true);
+        /* Держим под рукой больше готовых строк: при прокрутке туда-сюда
+           их не приходится собирать заново, и лента идёт ровнее. */
+        messageList.setItemViewCacheSize(12);
         messageList.setLayoutManager(layoutManager);
         // Без cross-fade при notifyItemChanged: иначе каждое обновление статуса
         // (доставлено/прочитано) «моргает» уже показанной картинкой.

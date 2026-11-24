@@ -275,6 +275,9 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setStackFromEnd(true);
+        /* Держим под рукой больше готовых строк: при прокрутке туда-сюда
+           их не приходится собирать заново, и лента идёт ровнее. */
+        messageList.setItemViewCacheSize(12);
         messageList.setLayoutManager(layoutManager);
         // Свой номер известен из настроек — иначе первые мгновения все сообщения
         // выглядят чужими и переписка потом перестраивается на глазах

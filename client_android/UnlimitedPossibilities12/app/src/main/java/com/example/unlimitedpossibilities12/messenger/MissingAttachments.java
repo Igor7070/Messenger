@@ -21,6 +21,9 @@ public final class MissingAttachments {
     private static final long RECHECK_MS = 24L * 60 * 60 * 1000;
 
     private static final Map<String, Long> MEMORY = new ConcurrentHashMap<>();
+    /** Адреса, про которые уже знаем: файл на месте. */
+    private static final java.util.Set<String> НА_МЕСТЕ =
+            java.util.Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private MissingAttachments() {
     }
@@ -31,8 +34,14 @@ public final class MissingAttachments {
 
         Long remembered = MEMORY.get(url);
         if (remembered == null) {
+            if (НА_МЕСТЕ.contains(url)) return false;   // уже спрашивали — файл есть
             long saved = store(context).getLong(url, 0);
-            if (saved == 0) return false;
+            if (saved == 0) {
+                /* Спрашивать хранилище о целом вложении на каждую строку
+                   дорого: при прокрутке это лишняя работа в такте кадра. */
+                НА_МЕСТЕ.add(url);
+                return false;
+            }
             remembered = saved;
             MEMORY.put(url, saved);
         }
@@ -49,6 +58,7 @@ public final class MissingAttachments {
         if (url == null || url.isEmpty()) return;
         long now = System.currentTimeMillis();
         MEMORY.put(url, now);
+        НА_МЕСТЕ.remove(url);
         store(context).edit().putLong(url, now).apply();
     }
 
