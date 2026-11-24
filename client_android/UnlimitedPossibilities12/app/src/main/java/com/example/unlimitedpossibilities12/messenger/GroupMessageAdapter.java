@@ -314,24 +314,41 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
      */
     private void полосаВыделения(View строка, boolean выбрано) {
         if (строка == null) return;
-        /* Для сообщения полоса — отдельная подложка ровно по высоте пузыря:
-           она не накрывает дату над ним и не зависит от просветов между
-           строками. Для карточки звонка красим саму строку, убрав просветы. */
-        View подложка = строка.findViewById(R.id.select_band);
-        if (подложка != null) {
-            подложка.setBackgroundColor(выбрано ? 0xFF1D2D4A : android.graphics.Color.TRANSPARENT);
-            return;
-        }
         if (!выбрано) {
             строка.setBackground(null);
             return;
         }
-        float плотность = строка.getResources().getDisplayMetrics().density;
-        int просвет = Math.round(2 * плотность);
-        int сверху = Math.max(0, строка.getPaddingTop() - просвет);
-        int снизу = Math.max(0, строка.getPaddingBottom() - просвет);
+        /* Полоса — фон всей строки, а он кроет и её отступы. Оставляем по
+           краям ровно столько, чтобы полоса заходила за пузырь на половину
+           просвета: у подряд выбранных кромки сходятся вплотную, а сам
+           просвет между сообщениями остаётся прежним. */
+        int половина = Math.round(3 * строка.getResources().getDisplayMetrics().density) / 2;
+        int сверху = Math.max(0, строка.getPaddingTop() - половина);
+        int снизу = Math.max(0, строка.getPaddingBottom() - половина);
+        /* Над первой строкой дня стоит плашка с датой — она к сообщению не
+           относится. Её высоту считаем сами: ждать разметки нельзя, на этот
+           миг она ещё нулевая, и полоса накрывала дату. */
+        View дата = строка.findViewById(R.id.day_separator);
+        if (дата != null && дата.getVisibility() == View.VISIBLE) {
+            дата.measure(View.MeasureSpec.makeMeasureSpec(строка.getWidth(), View.MeasureSpec.AT_MOST),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            int подДатой = дата.getMeasuredHeight();
+            if (дата.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                ViewGroup.MarginLayoutParams мера = (ViewGroup.MarginLayoutParams) дата.getLayoutParams();
+                подДатой += мера.topMargin + мера.bottomMargin;
+            }
+            сверху = строка.getPaddingTop() + подДатой - половина;
+        }
+        /* Отступы у такого фона Android считает отступами строки и
+           переписывает ими наши — потому здесь он о них молчит. */
         строка.setBackground(new android.graphics.drawable.InsetDrawable(
-                new android.graphics.drawable.ColorDrawable(0xFF1D2D4A), 0, сверху, 0, снизу));
+                new android.graphics.drawable.ColorDrawable(0xFF1D2D4A), 0, сверху, 0, снизу) {
+            @Override
+            public boolean getPadding(android.graphics.Rect отступы) {
+                отступы.set(0, 0, 0, 0);
+                return false;
+            }
+        });
     }
 
     public interface ВыборСообщений {
@@ -736,11 +753,11 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) messageContainer.getLayoutParams();
             int screenWidth = context.getResources().getDisplayMetrics().widthPixels;
             float density = context.getResources().getDisplayMetrics().density;
-            int marginHorizontal = (int) (8 * density);
+            int marginHorizontal = (int) (16 * density);
             int padding = (int) (12 * density);
             int avatarWidth = (int) (32 * density);
-            int marginStart = (int) (9 * density);
-            int visualMargin = (int) (56 * density);
+            int marginStart = (int) (17 * density);
+            int visualMargin = (int) (64 * density);
 
             if (isSentByCurrentUser) {
                 params.startToStart = ConstraintLayout.LayoutParams.UNSET;
