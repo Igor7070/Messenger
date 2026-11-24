@@ -43,7 +43,7 @@
         android:scaleType="centerCrop"
         android:contentDescription="User avatar"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/day_separator"
+        app:layout_constraintBottom_toBottomOf="@id/message_container"
         android:visibility="gone" />
 
     <!-- Индикатор статуса -->
