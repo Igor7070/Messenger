@@ -1382,8 +1382,14 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         androidx.recyclerview.widget.LinearLayoutManager хозяин =
                 (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
         if (хозяин == null) return;
-        int от = хозяин.findFirstVisibleItemPosition();
-        int до = хозяин.findLastVisibleItemPosition();
+        /* Строки, ушедшие за край, лежат в запасе списка и возвращаются
+           как есть, без новой сборки: кружок на них так и остался бы.
+           Опустошаем запас и освежаем с запасом по краям экрана. */
+        messageList.setItemViewCacheSize(0);
+        messageList.setItemViewCacheSize(12);
+        int от = Math.max(0, хозяин.findFirstVisibleItemPosition() - 12);
+        int до = Math.min(messageAdapter.getItemCount() - 1,
+                хозяин.findLastVisibleItemPosition() + 12);
         if (от < 0 || до < от) return;
         messageAdapter.notifyItemRangeChanged(от, до - от + 1);
     }
