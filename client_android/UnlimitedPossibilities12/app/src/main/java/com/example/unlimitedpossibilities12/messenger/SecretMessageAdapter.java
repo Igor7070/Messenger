@@ -1227,6 +1227,9 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             }
 
             playPauseButton.setOnClickListener(v -> {
+                    /* Идёт выбор — дорожка и кнопка не играют, а выделяют:
+                       иначе по голосовому нельзя попасть пальцем. */
+                    if (adapter.выбор != null && adapter.выбор.идёт()) { adapter.выбор.переключить(message); return; }
                 if (adapter.mediaPlayer != null && adapter.mediaPlayer.isPlaying()) {
                     adapter.currentPosition = adapter.mediaPlayer.getCurrentPosition();
                     adapter.mediaPlayer.pause();
@@ -1305,7 +1308,16 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 }
             });
 
-            audioSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            audioSeekBar.setOnTouchListener((в, событие) -> {
+                    if (adapter.выбор != null && adapter.выбор.идёт()) {
+                        if (событие.getAction() == android.view.MotionEvent.ACTION_UP) {
+                            adapter.выбор.переключить(message);
+                        }
+                        return true;   // пока идёт выбор, дорожку не трогаем
+                    }
+                    return false;
+                });
+                audioSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     if (fromUser && adapter.mediaPlayer != null && adapter.mediaPlayer.isPlaying()) {

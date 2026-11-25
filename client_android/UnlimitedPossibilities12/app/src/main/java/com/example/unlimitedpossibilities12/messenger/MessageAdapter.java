@@ -1260,6 +1260,9 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 // Обработчик кнопки Play/Pause
                 playPauseButton.setColorFilter(ContextCompat.getColor(context, R.color.sent_message_accent));
                 playPauseButton.setOnClickListener(v -> {
+                    /* Идёт выбор — дорожка и кнопка не играют, а выделяют:
+                       иначе по голосовому нельзя попасть пальцем. */
+                    if (выбор != null && выбор.идёт()) { выбор.переключить(message); return; }
                     if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                         // Сохраняем текущую позицию при паузе
                         currentPosition = mediaPlayer.getCurrentPosition();
@@ -1347,6 +1350,15 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 });
 
                 // Обработчик SeekBar для перемотки
+                audioSeekBar.setOnTouchListener((в, событие) -> {
+                    if (выбор != null && выбор.идёт()) {
+                        if (событие.getAction() == android.view.MotionEvent.ACTION_UP) {
+                            выбор.переключить(message);
+                        }
+                        return true;   // пока идёт выбор, дорожку не трогаем
+                    }
+                    return false;
+                });
                 audioSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                     @Override
                     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {

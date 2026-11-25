@@ -1411,6 +1411,18 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                 && одно.getSender() != null && одно.getSender().getId() == currentUserId
                 && одно.getId() > 0;
         findViewById(R.id.selection_edit).setVisibility(можноПравить ? View.VISIBLE : View.GONE);
+        /* В группе чужое сообщение убрать нельзя — ни у себя, ни у всех.
+           Пока в выборе есть хоть одно чужое, корзину не показываем: так
+           в телеграме, и не придётся отказывать уже после нажатия. */
+        boolean всёСвоё = true;
+        for (Long номер : выбранные) {
+            Message м = найтиВыбранное(номер);
+            if (м == null || м.getSender() == null || м.getSender().getId() != currentUserId) {
+                всёСвоё = false;
+                break;
+            }
+        }
+        findViewById(R.id.selection_delete).setVisibility(всёСвоё ? View.VISIBLE : View.GONE);
     }
 
     /** Снять выделение и убрать полосу. */

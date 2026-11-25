@@ -1334,6 +1334,9 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
 
                 // Обработчик кнопки Play/Pause
                 playPauseButton.setOnClickListener(v -> {
+                    /* Идёт выбор — дорожка и кнопка не играют, а выделяют:
+                       иначе по голосовому нельзя попасть пальцем. */
+                    if (выбор != null && выбор.идёт()) { выбор.переключить(message); return; }
                     if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                         currentPosition = mediaPlayer.getCurrentPosition();
                         mediaPlayer.pause();
@@ -1416,6 +1419,15 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 });
 
                 // Обработчик SeekBar для перемотки
+                audioSeekBar.setOnTouchListener((в, событие) -> {
+                    if (выбор != null && выбор.идёт()) {
+                        if (событие.getAction() == android.view.MotionEvent.ACTION_UP) {
+                            выбор.переключить(message);
+                        }
+                        return true;   // пока идёт выбор, дорожку не трогаем
+                    }
+                    return false;
+                });
                 audioSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                     @Override
                     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
