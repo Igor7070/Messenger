@@ -449,6 +449,44 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
         }
     }
 
+
+    /* ───── Кружок выбора, как в телеграме ───── */
+
+    /** Поставить кружок слева от строки: пустой или с галочкой. */
+    private void кружокВыбора(View строка, Message сообщение) {
+        if (строка == null) return;
+        android.widget.ImageView кружок = строка.findViewById(R.id.select_mark);
+        if (кружок == null) return;
+        boolean идёт = выбор != null && выбор.идёт();
+        кружок.setVisibility(идёт ? View.VISIBLE : View.GONE);
+        if (идёт) {
+            кружок.setImageResource(выбор.выбрано(сообщение)
+                    ? R.drawable.ic_select_circle_checked : R.drawable.ic_select_circle);
+        }
+    }
+
+    /**
+     * Сколько места освободить слева под кружок.
+     *
+     * Двигаются только полученные: свои прижаты к правому краю, и кружку
+     * слева они не мешают — так же сделано в телеграме.
+     */
+    private int местоПодКружок(float плотность) {
+        return (выбор != null && выбор.идёт()) ? Math.round(40 * плотность) : 0;
+    }
+
+    /** Отодвинуть вьюху от левого края на столько, сколько просит кружок. */
+    private void подвинутьПодКружок(View что, int обычный) {
+        if (что == null || !(что.getLayoutParams() instanceof ViewGroup.MarginLayoutParams)) return;
+        float плотность = что.getResources().getDisplayMetrics().density;
+        int нужно = обычный + местоПодКружок(плотность);
+        ViewGroup.MarginLayoutParams мера = (ViewGroup.MarginLayoutParams) что.getLayoutParams();
+        if (мера.getMarginStart() != нужно) {
+            мера.setMarginStart(нужно);
+            что.setLayoutParams(мера);
+        }
+    }
+
     public interface ВыборСообщений {
         void начать(Message сообщение);
         void переключить(Message сообщение);
@@ -817,6 +855,7 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
             bindDaySeparator(position); // дата дня над первым сообщением дня
             отступПодДатой(itemView);
             полосаВыделения(itemView, выбор != null && выбор.выбрано(message));
+            кружокВыбора(itemView, message);
             // Реализация метода bind остаётся без изменений, как в предоставленном коде
             User sender = message.getSender();
             boolean isSentByCurrentUser = sender.getId() == currentUserId;
@@ -917,6 +956,9 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
                 /* Имя — над первым сообщением серии, аватар — у последнего:
                    так в телеграме, кружок стоит у подошвы всей череды. */
                 avatarImageView.setVisibility(lastInSeries(position) ? View.VISIBLE : View.INVISIBLE);
+                /* Аватар отодвигаем под кружок, пузырь привязан к нему и
+                   едет следом — в телеграме так же. */
+                подвинутьПодКружок(avatarImageView, Math.round(5 * density));
                 avatarPlaceholder.setVisibility(View.GONE);
                 senderNameTextView.setVisibility(firstInSeries(position) ? View.VISIBLE : View.GONE);
             }

@@ -263,6 +263,44 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
         }
     }
 
+
+    /* ───── Кружок выбора, как в телеграме ───── */
+
+    /** Поставить кружок слева от строки: пустой или с галочкой. */
+    private void кружокВыбора(View строка, Message сообщение) {
+        if (строка == null) return;
+        android.widget.ImageView кружок = строка.findViewById(R.id.select_mark);
+        if (кружок == null) return;
+        boolean идёт = выбор != null && выбор.идёт();
+        кружок.setVisibility(идёт ? View.VISIBLE : View.GONE);
+        if (идёт) {
+            кружок.setImageResource(выбор.выбрано(сообщение)
+                    ? R.drawable.ic_select_circle_checked : R.drawable.ic_select_circle);
+        }
+    }
+
+    /**
+     * Сколько места освободить слева под кружок.
+     *
+     * Двигаются только полученные: свои прижаты к правому краю, и кружку
+     * слева они не мешают — так же сделано в телеграме.
+     */
+    private int местоПодКружок(float плотность) {
+        return (выбор != null && выбор.идёт()) ? Math.round(40 * плотность) : 0;
+    }
+
+    /** Отодвинуть вьюху от левого края на столько, сколько просит кружок. */
+    private void подвинутьПодКружок(View что, int обычный) {
+        if (что == null || !(что.getLayoutParams() instanceof ViewGroup.MarginLayoutParams)) return;
+        float плотность = что.getResources().getDisplayMetrics().density;
+        int нужно = обычный + местоПодКружок(плотность);
+        ViewGroup.MarginLayoutParams мера = (ViewGroup.MarginLayoutParams) что.getLayoutParams();
+        if (мера.getMarginStart() != нужно) {
+            мера.setMarginStart(нужно);
+            что.setLayoutParams(мера);
+        }
+    }
+
     public interface ВыборСообщений {
         void начать(Message сообщение);
         void переключить(Message сообщение);
@@ -388,9 +426,14 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                     if (выбор != null && выбор.идёт()) выбор.переключить(message);
                 });
                 полосаВыделения(holder.itemView, выбор != null && выбор.выбрано(message));
+                кружокВыбора(holder.itemView, message);
                 android.widget.FrameLayout.LayoutParams лп =
                         (android.widget.FrameLayout.LayoutParams) holder.callCardBubble.getLayoutParams();
                 лп.gravity = моё ? android.view.Gravity.END : android.view.Gravity.START;
+                /* Входящая карточка стоит слева — отодвигаем её под кружок,
+                   исходящая прижата к правому краю и остаётся на месте. */
+                лп.setMarginStart(моё ? 0 : местоПодКружок(
+                        holder.itemView.getResources().getDisplayMetrics().density));
                 holder.callCardBubble.setLayoutParams(лп);
                 holder.callCardBubble.setBackgroundResource(
                         моё ? R.drawable.bg_call_card_mine : R.drawable.bg_call_card);
@@ -659,6 +702,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
             bindDaySeparator(position); // дата дня над первым сообщением дня
             отступПодДатой(itemView);
             полосаВыделения(itemView, adapter.выбор != null && adapter.выбор.выбрано(message));
+            adapter.кружокВыбора(itemView, message);
             User sender = message.getSender();
             boolean isSentByCurrentUser = sender.getId() == adapter.currentUserId;
             Log.d(TAG, "Binding message id=" + message.getId() + ", fileUrl=" + message.getFileUrl() +
@@ -722,7 +766,7 @@ public class SecretMessageAdapter extends RecyclerView.Adapter<SecretMessageAdap
                 params.endToEnd = ConstraintLayout.LayoutParams.UNSET;
                 params.rightMargin = marginHorizontal;
                 params.leftMargin = 0;
-                params.setMarginStart(marginStart);
+                params.setMarginStart(marginStart + adapter.местоПодКружок(density));   // место под кружок выбора
                 params.constrainedWidth = true;
                 int maxWidthPx = screenWidth - marginHorizontal - avatarWidth - marginStart - visualMargin - 2 * padding;
                 params.matchConstraintMaxWidth = maxWidthPx;

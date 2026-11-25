@@ -2264,6 +2264,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
                 показатьПолосу();
                 было.add(сообщение.getId());
                 обновитьСтроки(было);
+                освежитьВидимые();   // слева у всех появился кружок
             }
 
             @Override
@@ -2297,6 +2298,25 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
      * заново, высоты на миг меняются, и лента дёргается — то вверх, то в
      * самый низ. Трогаем ровно те строки, которых касается выбор.
      */
+
+    /**
+     * Освежить то, что сейчас на виду.
+     *
+     * Когда выбор начинается и когда кончается, меняются все строки разом:
+     * слева появляется и исчезает кружок. Перебирать всю переписку незачем
+     * — остальные строки соберутся заново, когда до них дойдут.
+     */
+    private void освежитьВидимые() {
+        if (messageAdapter == null || messageList == null) return;
+        androidx.recyclerview.widget.LinearLayoutManager хозяин =
+                (androidx.recyclerview.widget.LinearLayoutManager) messageList.getLayoutManager();
+        if (хозяин == null) return;
+        int от = хозяин.findFirstVisibleItemPosition();
+        int до = хозяин.findLastVisibleItemPosition();
+        if (от < 0 || до < от) return;
+        messageAdapter.notifyItemRangeChanged(от, до - от + 1);
+    }
+
     private void обновитьСтроки(java.util.Collection<Long> какие) {
         if (messageAdapter == null || какие == null) return;
         for (Long номер : какие) {
@@ -2324,6 +2344,7 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         выбранные.clear();
         if (полосаВыбора != null) полосаВыбора.setVisibility(View.GONE);
         обновитьСтроки(было);
+        освежитьВидимые();   // кружки слева убрались
     }
 
     private Message найтиВыбранное(long номер) {

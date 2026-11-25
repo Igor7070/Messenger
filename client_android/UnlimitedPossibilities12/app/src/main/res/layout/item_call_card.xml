@@ -10,6 +10,17 @@
     android:paddingHorizontal="13dp"
     android:paddingVertical="3dp">
 
+    <!-- Кружок выбора: на время выбора стоит слева, по середине карточки -->
+    <ImageView
+        android:id="@+id/select_mark"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginStart="10dp"
+        android:src="@drawable/ic_select_circle"
+        android:contentDescription="Выбрать звонок"
+        android:visibility="gone" />
+
     <LinearLayout
         android:id="@+id/call_card_bubble"
         android:layout_width="wrap_content"

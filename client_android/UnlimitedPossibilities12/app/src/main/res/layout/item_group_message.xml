@@ -24,6 +24,19 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
 
+    <!-- Кружок выбора: появляется на время выбора, стоит по середине строки -->
+    <ImageView
+        android:id="@+id/select_mark"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginStart="10dp"
+        android:src="@drawable/ic_select_circle"
+        android:contentDescription="Выбрать сообщение"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/message_container"
+        app:layout_constraintBottom_toBottomOf="@id/message_container" />
+
     <!-- Полоса выделения: ровно по высоте пузыря — дату над ним не трогает -->
     <View
         android:id="@+id/select_band"
