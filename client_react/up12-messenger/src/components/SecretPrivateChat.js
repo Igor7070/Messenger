@@ -191,6 +191,26 @@ const startsNewDay = (messages, index) => {
   return current !== dayKey(messages[index - 1]?.timestamp);
 };
 
+/**
+ * Подряд ли эта строка за строкой того же человека.
+ *
+ * В телеграме реплики одного стоят почти вплотную, а при смене
+ * отправителя просвет шире — так видно, где кончилась одна речь.
+ * Карточка звонка считается своей стороной: исходящие подряд тоже
+ * сходятся. Над первой строкой дня просвет всегда широкий.
+ */
+const чьяСтрока = (строка, userId) => {
+  if (!строка) return null;
+  if (строка.звонок) return String(строка.звонок.caller) === String(userId) ? 'звонок-свой' : 'звонок-чужой';
+  return строка.sender ? `кто-${строка.sender.id}` : null;
+};
+
+const тотЖеПодряд = (лента, index, userId) => {
+  if (index === 0 || startsNewDay(лента, index)) return false;
+  const чья = чьяСтрока(лента[index], userId);
+  return чья !== null && чья === чьяСтрока(лента[index - 1], userId);
+};
+
 const SecretPrivateChat = () => {
   const [messages, setMessages] = useState([]);
   const [content, setContent] = useState('');
@@ -3678,7 +3698,8 @@ const SecretPrivateChat = () => {
               return (
                 <div
                   data-row={msg.id}
-                  className={`private-call-card${мой ? ' is-mine' : ''}${нетОтвета ? ' is-missed' : ''}`}
+                  className={`private-call-card${мой ? ' is-mine' : ''}${нетОтвета ? ' is-missed' : ''}${
+                    тотЖеПодряд(лента, index, userId) ? ' подряд' : ''}`}
                   onContextMenu={(e) => { e.preventDefault(); setУбратьУОбоих(false); setУбрать({ вид: 'звонок', id: з.id }); }}
                   title="Right-click to delete"
                 >
@@ -3710,7 +3731,7 @@ const SecretPrivateChat = () => {
               msg.sender.id === userId ? 'secret-current-user' : 'secret-other-user'
             } ${isFirstMessage(msg, index) ? 'first-message' : ''} ${
               msg.messageType === 'audio' ? 'secret-audio-message' : ''
-            }`}
+            } ${тотЖеПодряд(лента, index, userId) ? 'подряд' : ''}`}
             onContextMenu={(e) => handleRightClick(e, msg)}
           >
             <div className="secret-message-wrapper">

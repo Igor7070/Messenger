@@ -137,6 +137,18 @@ const startsNewDay = (messages, index) => {
   return current !== dayKey(messages[index - 1]?.timestamp);
 };
 
+/**
+ * Подряд ли эта реплика за репликой того же человека.
+ *
+ * В телеграме реплики одного стоят почти вплотную, а при смене
+ * отправителя просвет шире. Над первой строкой дня он всегда широкий.
+ */
+const тотЖеПодряд = (messages, index) => {
+  if (index === 0 || startsNewDay(messages, index)) return false;
+  const эта = messages[index], пред = messages[index - 1];
+  return !!(эта && пред && эта.sender && пред.sender && эта.sender.id === пред.sender.id);
+};
+
 const Messenger = () => {
     const [messages, setMessages] = useState([]);
     const [content, setContent] = useState('');
@@ -2176,7 +2188,7 @@ const Messenger = () => {
               data-row={msg.id}
               className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'} ${
                 msg.messageType === 'audio' ? 'audio-message' : ''
-              }`}
+              } ${тотЖеПодряд(messages, index) ? 'подряд' : ''}`}
               onContextMenu={(e) => handleRightClick(e, msg)}
             >
               <div className="message-wrapper">

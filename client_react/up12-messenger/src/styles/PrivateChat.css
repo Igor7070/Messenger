@@ -46,7 +46,7 @@
     border-radius: 5px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;   /* просвет держит сама строка: он разный у череды и у смены */
 }
 
 .private-message-list::-webkit-scrollbar {
@@ -64,7 +64,10 @@
 
 .private-message {
     max-width: 80%;
-    margin-bottom: 5px;
+    margin-bottom: 0;
+    /* Как в телеграме: подряд идущие реплики одного почти вплотную,
+       при смене отправителя просвет вчетверо шире. */
+    margin-top: 10px;
     display: flex;
     flex-direction: column;
     background: transparent !important;
@@ -2435,7 +2438,7 @@
   align-items: center;
   gap: 14px;
   align-self: flex-start;
-  margin: 3px 0 3px 8px;   /* вровень с сообщениями */
+  margin: 0 0 0 8px;   /* просвет сверху задаёт правило череды */
   padding: 9px 14px;
   min-width: 200px;
   border-radius: 14px;
@@ -2532,4 +2535,18 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 1;
+}
+
+/* Реплика того же человека, что и предыдущая: прижимаем к ней. */
+.private-message.подряд {
+    margin-top: 2px;
+}
+
+/* Карточка звонка живёт в ленте наравне с сообщениями: тот же просвет. */
+.private-call-card {
+    margin-top: 10px;
+}
+
+.private-call-card.подряд {
+    margin-top: 2px;
 }

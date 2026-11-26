@@ -207,7 +207,9 @@ body.up-no-scroll {
 .private-day-separator {
   display: flex;
   justify-content: center;
-  margin: 10px 0 2px;
+  /* Воздух над датой шире, чем под ней: так в телеграме — день
+     отделён от прошлого разговора, а своя первая реплика рядом. */
+  margin: 25px 0 0;
 }
 
 .private-day-separator span {
