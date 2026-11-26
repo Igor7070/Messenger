@@ -1242,6 +1242,19 @@ const SecretPrivateChat = () => {
         });
 
         // ← НОВОЕ: Подписка на typing
+        /* Убранный звонок: сервер говорит каждой стороне о её записи, и
+           карточка уходит из переписки сразу, без перезахода. */
+        stompClientInstance.subscribe(`/topic/calls/${userId}`, (весть) => {
+          try {
+            const данные = JSON.parse(весть.body);
+            const номер = данные && данные.removedCallId;
+            if (!номер) return;
+            setЗвонки((прежние) => прежние.filter((к) => к.звонок.id !== номер));
+          } catch (ошибка) {
+            console.warn('Весть об убранном звонке не разобрана:', ошибка);
+          }
+        });
+
         stompClientInstance.subscribe(`/topic/chat/${chatId}/typing`, (message) => {
           try {
             const data = JSON.parse(message.body);

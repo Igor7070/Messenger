@@ -14,10 +14,13 @@ import java.util.Map;
 @RequestMapping("/api/calls")
 public class CallController {
     private final CallService callService;
+    private final org.springframework.messaging.simp.SimpMessagingTemplate вестник;
 
     @Autowired
-    public CallController(CallService callService) {
+    public CallController(CallService callService,
+                          org.springframework.messaging.simp.SimpMessagingTemplate вестник) {
         this.callService = callService;
+        this.вестник = вестник;
     }
 
     // Создать звонок
@@ -47,7 +50,11 @@ public class CallController {
             @PathVariable Long id,
             @RequestParam Long userId,
             @RequestParam(required = false, defaultValue = "false") boolean forBoth) {
-        callService.deleteCall(id, userId, forBoth);
+        java.util.Map<Long, Long> убрано = callService.deleteCall(id, userId, forBoth);
+        /* Извещаем каждую сторону о её записи: открытая переписка уберёт
+           карточку сама, без перезахода. */
+        убрано.forEach((хозяин, номер) ->
+                вестник.convertAndSend("/topic/calls/" + хозяин, Map.of("removedCallId", номер)));
         return ResponseEntity.ok(Map.of("message", "Call deleted"));
     }
 }

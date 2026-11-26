@@ -58,8 +58,8 @@ public class CallService {
     }
 
     // Удалить звонок
-    public void deleteCall(Long id, Long userId) {
-        deleteCall(id, userId, false);
+    public java.util.Map<Long, Long> deleteCall(Long id, Long userId) {
+        return deleteCall(id, userId, false);
     }
 
     /**
@@ -74,13 +74,17 @@ public class CallService {
      * сносили собеседнику всю переписку звонками. Потому и время: у двух
      * сторон оно расходится на доли секунды, но не на минуты.
      */
-    public void deleteCall(Long id, Long userId, boolean forBoth) {
+    public java.util.Map<Long, Long> deleteCall(Long id, Long userId, boolean forBoth) {
         Call call = getCallById(id);
         if (!call.getUser().getId().equals(userId)) {
             throw new IllegalStateException("User is not authorized to delete this call");
         }
         String roomId = call.getRoomId();
         java.time.LocalDateTime когда = call.getTimestamp();
+        /* Кому о чём сказать: хозяин записи — номер записи. По этому списку
+           обе стороны уберут карточку у себя, не дожидаясь перезахода. */
+        java.util.Map<Long, Long> убрано = new java.util.LinkedHashMap<>();
+        убрано.put(userId, id);
         callRepository.delete(call);
         if (forBoth && roomId != null && !roomId.isEmpty() && когда != null) {
             for (Call парная : callRepository.findByRoomId(roomId)) {
@@ -89,11 +93,13 @@ public class CallService {
                 if (парная.getTimestamp() == null) continue;
                 long секунд = Math.abs(java.time.Duration.between(когда, парная.getTimestamp()).getSeconds());
                 if (секунд <= 5) {
+                    убрано.put(парная.getUser().getId(), парная.getId());
                     callRepository.delete(парная);
                     break;   // запись у собеседника одна
                 }
             }
         }
+        return убрано;
     }
 
     @Transactional
