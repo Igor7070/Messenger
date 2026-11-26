@@ -573,6 +573,11 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         messages.clear();
         messages.addAll(newMessages);
         diffResult.dispatchUpdatesTo(this);
+        /* Строка над последней могла перестать быть последней: её нижний
+           просвет зависит от того, кто стоит под ней, а сама она не
+           изменилась и заново не собиралась. Отсюда и широкий зазор перед
+           только что добавленной карточкой звонка. */
+        if (messages.size() > 1) notifyItemChanged(messages.size() - 2);
         Log.d(TAG, "Messages updated with DiffUtil, dispatched changes");
     }
 
