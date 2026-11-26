@@ -1213,7 +1213,34 @@ const Messenger = () => {
         });
     };
 
+    /**
+     * Выбор нескольких сообщений, как в телеграме: начинается пунктом
+     * «Select», дальше обычное нажатие добавляет и снимает. Чужое выбрать
+     * можно, а убрать — нет, потому корзину в полосе прячем.
+     */
+    const [выбранные, setВыбранные] = useState(() => new Set());
+    const выборИдёт = выбранные.size > 0;
+    const выбрано = (msg) => выбранные.has(msg.id);
+    const переключитьВыбор = (msg) => {
+        setВыбранные((прежние) => {
+            const новые = new Set(прежние);
+            if (новые.has(msg.id)) новые.delete(msg.id); else новые.add(msg.id);
+            return новые;
+        });
+    };
+    const закончитьВыбор = () => setВыбранные(new Set());
+    const всёСвоё = [...выбранные].every((id) => {
+        const м = messages.find((x) => x.id === id);
+        return !!(м && м.sender && м.sender.id === userId);
+    });
+
     const handleMenuAction = (action) => {
+        if (action === 'select') {
+            /* Выделять можно любое — и своё, и чужое. */
+            setВыбранные(new Set([contextMenu.message.id]));
+            setContextMenu({ visible: false });
+            return;
+        }
         if (contextMenu.message.sender.id !== userId) {
             toast.error('You can only edit or delete your own messages.');
             return;
@@ -1222,9 +1249,7 @@ const Messenger = () => {
         if (action === 'edit') {
             setContent(contextMenu.message.content);
             setEditingMessageId(contextMenu.message.id);
-        } else if (action === 'select') {
-        /* Выделение нескольких строк — следующим шагом. */
-    } else if (action === 'delete') {
+        } else if (action === 'delete') {
             deleteMessage(contextMenu.message.id);
         }
         setContextMenu({ visible: false });
@@ -2051,6 +2076,23 @@ const Messenger = () => {
 
     return (
     <div className="messenger">
+            {выборИдёт && (
+                <div className="полоса-выбора">
+                    {всёСвоё ? (
+                        <button
+                            type="button"
+                            className="полоса-выбора-убрать"
+                            onClick={() => { [...выбранные].forEach((id) => deleteMessage(id)); закончитьВыбор(); }}
+                        >
+                            Delete {выбранные.size}
+                        </button>
+                    ) : (
+                        /* Чужое в группе убрать нельзя — и корзину не показываем. */
+                        <span className="полоса-выбора-счёт">Selected {выбранные.size}</span>
+                    )}
+                    <button type="button" className="полоса-выбора-отмена" onClick={закончитьВыбор}>Cancel</button>
+                </div>
+            )}
       {/* Большая фиксированная иконка ассистента — только в Messenger на ПК */}
       <AssistantIcon size="large" className="fixed-app-bottom-right" />
       {/*
@@ -2226,7 +2268,7 @@ const Messenger = () => {
         </button>
       )}
       <div
-        className="message-list"
+        className={`message-list${выборИдёт ? ' идёт-выбор' : ''}`}
         ref={messageListRef}
         style={скрытаЛента ? { visibility: 'hidden' } : undefined}
       >
@@ -2238,12 +2280,20 @@ const Messenger = () => {
                 <span>{dayLabel(msg.timestamp)}</span>
               </div>
             )}
+            <div className={`строка-ленты${msg.sender.id === userId ? ' своя' : ''}`}>
             <div
               data-row={msg.id}
               className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'} ${
                 msg.messageType === 'audio' ? 'audio-message' : ''
               } ${тотЖеПодряд(messages, index) ? 'подряд' : ''}`}
               onContextMenu={(e) => handleRightClick(e, msg)}
+              onClickCapture={(e) => {
+                /* Пока идёт выбор, нажатие внутри строки её выделяет. */
+                if (!выборИдёт) return;
+                e.preventDefault();
+                e.stopPropagation();
+                переключитьВыбор(msg);
+              }}
             >
               <div className="message-wrapper">
                 {shouldShowAvatar(msg) && (
@@ -2624,6 +2674,12 @@ const Messenger = () => {
                   </div>
                 </div>
               </div>
+            </div>
+            {выборИдёт && (
+              <span className={`кружок-выбора${выбрано(msg) ? ' выбран' : ''}`} aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M7 12.5l3.2 3.2L17 9" /></svg>
+              </span>
+            )}
             </div>
             </React.Fragment>
           ) : null

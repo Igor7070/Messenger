@@ -396,6 +396,27 @@ const SecretPrivateChat = () => {
   const [убрать, setУбрать] = useState(null);
   const [убратьУОбоих, setУбратьУОбоих] = useState(false);
 
+  /**
+   * Выбор нескольких строк, как в телеграме. В наборе лежат ключи:
+   * у сообщения «м-номер», у звонка «з-номер».
+   */
+  const [выбранные, setВыбранные] = useState(() => new Set());
+  const выборИдёт = выбранные.size > 0;
+  const ключСтроки = (строка) => (строка && строка.звонок ? `з-${строка.звонок.id}` : `м-${строка && строка.id}`);
+  const выбрана = (строка) => выбранные.has(ключСтроки(строка));
+
+  const переключитьВыбор = (строка) => {
+    setВыбранные((прежние) => {
+      const новые = new Set(прежние);
+      const ключ = ключСтроки(строка);
+      if (новые.has(ключ)) новые.delete(ключ); else новые.add(ключ);
+      return новые;
+    });
+  };
+
+  const закончитьВыбор = () => setВыбранные(new Set());
+
+
   /** Убрать звонок или сообщение: у себя всегда, у собеседника — по желанию. */
   const убратьВыбранное = async () => {
     const что = убрать;
@@ -403,6 +424,21 @@ const SecretPrivateChat = () => {
     const иУСобеседника = убратьУОбоих;
     setУбрать(null);
     setУбратьУОбоих(false);
+    if (что.вид === 'набор') {
+      const ключи = что.ключи || [];
+      закончитьВыбор();
+      for (const ключ of ключи) {
+        const звонок = ключ.startsWith('з-');
+        const номер = Number(ключ.slice(2));
+        await убратьОдно(звонок ? { вид: 'звонок', id: номер } : { вид: 'сообщение', id: номер }, иУСобеседника);
+      }
+      return;
+    }
+    await убратьОдно(что, иУСобеседника);
+  };
+
+  /** Одна строка: звонок или сообщение, у себя или у обоих. */
+  const убратьОдно = async (что, иУСобеседника) => {
     const токен = localStorage.getItem('authToken');
     try {
       if (что.вид === 'звонок') {
@@ -2642,7 +2678,7 @@ const SecretPrivateChat = () => {
       setEditingMessageId(msg.id);
       textAreaRef.current?.focus();
     } else if (action === 'select') {
-        /* Выделение нескольких строк — следующим шагом. */
+      setВыбранные(new Set([ключСтроки(msg)]));
     } else if (action === 'delete') {
       // Спрашиваем, как в телеграме: у себя или и у собеседника тоже
       setУбратьУОбоих(false);
@@ -3554,6 +3590,18 @@ const SecretPrivateChat = () => {
 
   return (
     <div className="secret-chat">
+      {выборИдёт && (
+        <div className="полоса-выбора">
+          <button
+            type="button"
+            className="полоса-выбора-убрать"
+            onClick={() => { setУбратьУОбоих(false); setУбрать({ вид: 'набор', ключи: [...выбранные] }); }}
+          >
+            Delete {выбранные.size}
+          </button>
+          <button type="button" className="полоса-выбора-отмена" onClick={закончитьВыбор}>Cancel</button>
+        </div>
+      )}
       {/* Большая фиксированная иконка ассистента — только на ПК */}
       <AssistantIcon size="large" className="fixed-app-bottom-right" />
       <div className="secret-chat-name">
@@ -3733,7 +3781,7 @@ const SecretPrivateChat = () => {
         </button>
       )}
       <div
-        className="secret-message-list"
+        className={`secret-message-list${выборИдёт ? ' идёт-выбор' : ''}`}
         ref={messageListRef}
         style={скрытаЛента ? { visibility: 'hidden' } : undefined}
       >
@@ -3751,11 +3799,18 @@ const SecretPrivateChat = () => {
               const нетОтвета = з.status === 'missed' || з.status === 'rejected';
               const длина = длительность(з.durationSeconds);
               return (
+                <div className={`строка-звонка${мой ? ' своя' : ''}${
+                  тотЖеПодряд(лента, index, userId) ? ' подряд' : ''}`}>
                 <div
                   data-row={msg.id}
-                  className={`private-call-card${мой ? ' is-mine' : ''}${нетОтвета ? ' is-missed' : ''}${
-                    тотЖеПодряд(лента, index, userId) ? ' подряд' : ''}`}
+                  className={`private-call-card${мой ? ' is-mine' : ''}${нетОтвета ? ' is-missed' : ''}`}
                   onContextMenu={(e) => handleRightClick(e, msg)}
+                  onClickCapture={(e) => {
+                    if (!выборИдёт) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    переключитьВыбор(msg);
+                  }}
                   title="Right-click to delete"
                 >
                   <div className="private-call-body">
@@ -3777,9 +3832,16 @@ const SecretPrivateChat = () => {
                     <path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1l-2.3 2.2Z" />
                   </svg>
                 </div>
+                {выборИдёт && (
+                  <span className={`кружок-выбора${выбрана(msg) ? ' выбран' : ''}`} aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M7 12.5l3.2 3.2L17 9" /></svg>
+                  </span>
+                )}
+                </div>
               );
             })()
           ) : (
+          <div className={`строка-ленты${msg.sender.id === userId ? ' своя' : ''}`}>
           <div
             data-row={msg.id}
             className={`secret-message ${
@@ -3788,6 +3850,13 @@ const SecretPrivateChat = () => {
               msg.messageType === 'audio' ? 'secret-audio-message' : ''
             } ${тотЖеПодряд(лента, index, userId) ? 'подряд' : ''}`}
             onContextMenu={(e) => handleRightClick(e, msg)}
+            onClickCapture={(e) => {
+              /* Пока идёт выбор, нажатие внутри строки её выделяет. */
+              if (!выборИдёт) return;
+              e.preventDefault();
+              e.stopPropagation();
+              переключитьВыбор(msg);
+            }}
           >
             <div className="secret-message-wrapper">
               {shouldShowAvatar(msg, index) && (
@@ -4044,6 +4113,12 @@ const SecretPrivateChat = () => {
                 </div>
               </div>
             </div>
+          </div>
+          {выборИдёт && (
+            <span className={`кружок-выбора${выбрана(msg) ? ' выбран' : ''}`} aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M7 12.5l3.2 3.2L17 9" /></svg>
+            </span>
+          )}
           </div>
           )}
           </React.Fragment>
