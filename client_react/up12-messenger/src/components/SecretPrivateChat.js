@@ -427,18 +427,24 @@ const SecretPrivateChat = () => {
     if (что.вид === 'набор') {
       const ключи = что.ключи || [];
       закончитьВыбор();
-      for (const ключ of ключи) {
+      /* Разом, а не вереницей: два десятка строк по очереди убирались
+         на глазах и долго. Об отказах говорим один раз в конце, а не
+         всплывашкой на каждую. */
+      const итоги = await Promise.allSettled(ключи.map((ключ) => {
         const звонок = ключ.startsWith('з-');
         const номер = Number(ключ.slice(2));
-        await убратьОдно(звонок ? { вид: 'звонок', id: номер } : { вид: 'сообщение', id: номер }, иУСобеседника);
-      }
+        return убратьОдно(звонок ? { вид: 'звонок', id: номер } : { вид: 'сообщение', id: номер },
+                          иУСобеседника, true);
+      }));
+      const неудач = итоги.filter((и) => и.status === 'rejected').length;
+      if (неудач) toast.error(`Could not delete ${неудач} of ${ключи.length}`);
       return;
     }
     await убратьОдно(что, иУСобеседника);
   };
 
   /** Одна строка: звонок или сообщение, у себя или у обоих. */
-  const убратьОдно = async (что, иУСобеседника) => {
+  const убратьОдно = async (что, иУСобеседника, молча = false) => {
     const токен = localStorage.getItem('authToken');
     try {
       if (что.вид === 'звонок') {
@@ -464,7 +470,8 @@ const SecretPrivateChat = () => {
       setMessages((прежние) => прежние.filter((м) => м.id !== что.id));
     } catch (ошибка) {
       console.warn('Убрать не удалось:', ошибка);
-      toast.error('Could not delete');
+      if (!молча) toast.error('Could not delete');
+      throw ошибка;   // набор сосчитает неудачи сам
     }
   };
 

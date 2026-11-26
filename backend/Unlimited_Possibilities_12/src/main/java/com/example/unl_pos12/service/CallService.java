@@ -66,8 +66,13 @@ public class CallService {
      * Удалить звонок.
      *
      * Своя запись убирается всегда. Если попросили убрать и у собеседника,
-     * находим парную запись по общей комнате: у каждой стороны она своя, а
-     * комната одна на обе.
+     * находим его запись об этом же звонке: комната та же, время то же,
+     * хозяин — другой.
+     *
+     * Прежде парную искали по одной только комнате, а комната у всех
+     * звонков с одним человеком одна: убирая один звонок «у обоих», мы
+     * сносили собеседнику всю переписку звонками. Потому и время: у двух
+     * сторон оно расходится на доли секунды, но не на минуты.
      */
     public void deleteCall(Long id, Long userId, boolean forBoth) {
         Call call = getCallById(id);
@@ -75,11 +80,17 @@ public class CallService {
             throw new IllegalStateException("User is not authorized to delete this call");
         }
         String roomId = call.getRoomId();
+        java.time.LocalDateTime когда = call.getTimestamp();
         callRepository.delete(call);
-        if (forBoth && roomId != null && !roomId.isEmpty()) {
+        if (forBoth && roomId != null && !roomId.isEmpty() && когда != null) {
             for (Call парная : callRepository.findByRoomId(roomId)) {
-                if (!парная.getId().equals(id)) {
+                if (парная.getId().equals(id)) continue;
+                if (парная.getUser() == null || парная.getUser().getId().equals(userId)) continue;
+                if (парная.getTimestamp() == null) continue;
+                long секунд = Math.abs(java.time.Duration.between(когда, парная.getTimestamp()).getSeconds());
+                if (секунд <= 5) {
                     callRepository.delete(парная);
+                    break;   // запись у собеседника одна
                 }
             }
         }
