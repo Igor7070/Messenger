@@ -193,6 +193,30 @@ const dayLabel = (timestamp) => {
  * ниже прокручено. У нижнего края экрана ему не хватает места под
  * курсором: тогда показываем над ним.
  */
+
+/* Значки для меню — по образцу телеграма: тонкий контур, без заливки. */
+const ЗначокПравки = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4 20h4L19 9l-4-4L4 16v4z" />
+    <path d="M14 6l4 4" />
+  </svg>
+);
+
+const ЗначокКорзины = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M5 7h14" />
+    <path d="M9 7V5h6v2" />
+    <path d="M7 7l1 12h8l1-12" />
+  </svg>
+);
+
+const ЗначокВыбора = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M8.5 12.3l2.4 2.4 4.6-4.9" />
+  </svg>
+);
+
 const местоМеню = (событие) => {
   const ширина = 150, высота = 92, поле = 8;
   const x = Math.max(поле, Math.min(событие.clientX, window.innerWidth - ширина - поле));
@@ -4150,12 +4174,12 @@ const SecretPrivateChat = () => {
           }}
         >
           {contextMenu.message.messageType === 'text' && моёСообщение(contextMenu.message) && (
-            <button onClick={() => handleMenuAction('edit')}>Edit</button>
+            <button onClick={() => handleMenuAction('edit')}><ЗначокПравки /><span>Edit</span></button>
           )}
-          <button onClick={() => handleMenuAction('delete')}>Delete</button>
+          <button onClick={() => handleMenuAction('delete')}><ЗначокКорзины /><span>Delete</span></button>
           {/* «Выделить» — как в телеграме, последним пунктом. Само
               выделение сделаем следующим шагом. */}
-          <button onClick={() => handleMenuAction('select')}>Select</button>
+          <button onClick={() => handleMenuAction('select')}><ЗначокВыбора /><span>Select</span></button>
         </div>
       )}
       {/* Полноэкранное фото */}

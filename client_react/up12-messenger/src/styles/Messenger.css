@@ -2445,3 +2445,35 @@
 .context-menu.у-курсора {
     position: fixed;
 }
+
+/* ───── Меню как в телеграме: значок, за ним подпись ───── */
+
+.context-menu {
+    padding: 4px;
+    border-radius: 10px;
+    min-width: 148px;
+}
+
+.context-menu button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    white-space: nowrap;
+}
+
+.context-menu button svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    fill: none;
+    stroke: #aab4c0;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.context-menu button:hover svg {
+    stroke: #e2e8f0;
+}
