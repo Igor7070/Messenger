@@ -2554,6 +2554,7 @@
    выбора встал у края переписки, а не у края самой карточки. */
 .строка-звонка {
     display: flex;
+    align-items: center;   /* кружок выбора — по середине карточки */
     position: relative;
     align-self: stretch;
     margin-top: 10px;
