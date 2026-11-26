@@ -2280,7 +2280,14 @@ const Messenger = () => {
                 <span>{dayLabel(msg.timestamp)}</span>
               </div>
             )}
-            <div className={`строка-ленты${msg.sender.id === userId ? ' своя' : ''}`}>
+            <div className={`строка-ленты${msg.sender.id === userId ? ' своя' : ''}`} onClickCapture={(e) => {
+            /* Пока идёт выбор, нажатие в любом месте строки — и по
+               пустому полю рядом с пузырём, и по кружку — выделяет её. */
+            if (!выборИдёт) return;
+            e.preventDefault();
+            e.stopPropagation();
+            переключитьВыбор(msg);
+          }}>
             <div
               data-row={msg.id}
               className={`message ${msg.sender.id === userId ? 'current-user' : 'other-user'} ${

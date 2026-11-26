@@ -2578,7 +2578,14 @@ const PrivateChat = () => {
               const длина = длительность(з.durationSeconds);
               return (
                 <div className={`строка-звонка${мой ? ' своя' : ''}${
-                  тотЖеПодряд(лента, index, userId) ? ' подряд' : ''}`}>
+                  тотЖеПодряд(лента, index, userId) ? ' подряд' : ''}`} onClickCapture={(e) => {
+            /* Пока идёт выбор, нажатие в любом месте строки — и по
+               пустому полю рядом с пузырём, и по кружку — выделяет её. */
+            if (!выборИдёт) return;
+            e.preventDefault();
+            e.stopPropagation();
+            переключитьВыбор(msg);
+          }}>
                 <div
                   data-row={msg.id}
                   className={`private-call-card${мой ? ' is-mine' : ''}${нетОтвета ? ' is-missed' : ''}`}
@@ -2619,7 +2626,14 @@ const PrivateChat = () => {
               );
             })()
           ) : (
-          <div className={`строка-ленты${msg.sender.id === userId ? ' своя' : ''}`}>
+          <div className={`строка-ленты${msg.sender.id === userId ? ' своя' : ''}`} onClickCapture={(e) => {
+            /* Пока идёт выбор, нажатие в любом месте строки — и по
+               пустому полю рядом с пузырём, и по кружку — выделяет её. */
+            if (!выборИдёт) return;
+            e.preventDefault();
+            e.stopPropagation();
+            переключитьВыбор(msg);
+          }}>
           <div
             data-row={msg.id}
             className={`private-message ${
