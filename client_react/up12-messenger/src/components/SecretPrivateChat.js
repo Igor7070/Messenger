@@ -2577,7 +2577,8 @@ const SecretPrivateChat = () => {
   };
 
   /** Своё ли это сообщение: чужое можно убрать, но не править. */
-  const моёСообщение = (м) => !!(м && м.sender) && м.sender.id === userId;
+  /** У карточки звонка нет ни текста, ни отправителя — править нечего. */
+  const моёСообщение = (м) => !!(м && м.sender && !м.звонок) && м.sender.id === userId;
 
   const handleMenuAction = (action) => {
     const msg = contextMenu.message;
@@ -2591,7 +2592,7 @@ const SecretPrivateChat = () => {
     } else if (action === 'delete') {
       // Спрашиваем, как в телеграме: у себя или и у собеседника тоже
       setУбратьУОбоих(false);
-      setУбрать({ вид: 'сообщение', id: msg.id });
+      setУбрать(msg.звонок ? { вид: 'звонок', id: msg.звонок.id } : { вид: 'сообщение', id: msg.id });
     }
 
     setContextMenu({ visible: false });
@@ -3700,7 +3701,7 @@ const SecretPrivateChat = () => {
                   data-row={msg.id}
                   className={`private-call-card${мой ? ' is-mine' : ''}${нетОтвета ? ' is-missed' : ''}${
                     тотЖеПодряд(лента, index, userId) ? ' подряд' : ''}`}
-                  onContextMenu={(e) => { e.preventDefault(); setУбратьУОбоих(false); setУбрать({ вид: 'звонок', id: з.id }); }}
+                  onContextMenu={(e) => handleRightClick(e, msg)}
                   title="Right-click to delete"
                 >
                   <div className="private-call-body">
