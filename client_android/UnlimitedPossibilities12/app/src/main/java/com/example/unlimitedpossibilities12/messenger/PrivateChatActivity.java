@@ -2110,6 +2110,18 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     }
 
     /** Прочитать звонки с собеседником и сложить из них карточки. */
+    /**
+     * Перечитать звонки заново.
+     *
+     * У загрузки стоит замок «уже читали» — он бережёт от лишних походов
+     * на сервер при сборке чата. Но после звонка список другой, и замок
+     * надо снять, иначе карточка появляется лишь при следующем входе.
+     */
+    private void перечитатьЗвонки() {
+        звонкиЗапрошены = false;
+        загрузитьЗвонки();
+    }
+
     private void загрузитьЗвонки() {
         if (звонкиЗапрошены) return;
         if (currentUserId <= 0) return;   // собеседника дождёмся при разборе
@@ -2927,6 +2939,13 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         if (chatDataRequested) {
             fetchChatData(); // при возвращении в чат обновляем переписку
         }
+        /* Вернулись со звонка — перечитываем их список: карточка нового
+           звонка иначе появлялась лишь при следующем входе в чат. */
+        перечитатьЗвонки();
+        /* И ещё раз спустя полторы секунды: сервер дописывает запись о
+           звонке не мгновенно, а мы возвращаемся сразу. */
+        new android.os.Handler(android.os.Looper.getMainLooper())
+                .postDelayed(this::перечитатьЗвонки, 1500);
         // ← Перерегистрируем typing-ресивер КАЖДЫЙ раз при показе активности
         registerTypingReceiver();
         Log.d(TAG, "Typing receiver перерегистрирован в onResume для chatId=" + chatId);

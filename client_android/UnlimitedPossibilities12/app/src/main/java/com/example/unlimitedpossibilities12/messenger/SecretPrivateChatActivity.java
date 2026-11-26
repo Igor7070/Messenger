@@ -2677,6 +2677,18 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
     }
 
     /** Прочитать звонки с собеседником и сложить из них карточки. */
+    /**
+     * Перечитать звонки заново.
+     *
+     * У загрузки стоит замок «уже читали» — он бережёт от лишних походов
+     * на сервер при сборке чата. Но после звонка список другой, и замок
+     * надо снять, иначе карточка появляется лишь при следующем входе.
+     */
+    private void перечитатьЗвонки() {
+        звонкиЗапрошены = false;
+        загрузитьЗвонки();
+    }
+
     private void загрузитьЗвонки() {
         /* Отметку ставим, только когда вправду спрашиваем: прежде она
            ставилась раньше проверки номеров, и если собеседник ещё не
@@ -3880,6 +3892,13 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
     @Override
     protected void onResume() {
         super.onResume();
+        /* Вернулись со звонка — перечитываем их список: карточка
+           нового звонка иначе появлялась лишь при следующем входе. */
+        перечитатьЗвонки();
+        /* И ещё раз спустя полторы секунды: сервер дописывает запись о
+           звонке не мгновенно, а мы возвращаемся сразу. */
+        new android.os.Handler(android.os.Looper.getMainLooper())
+                .postDelayed(this::перечитатьЗвонки, 1500);
         Intent serviceIntent = new Intent(this, CallService.class);
         serviceIntent.putExtra("action", "SUBSCRIBE_CHAT");
         serviceIntent.putExtra("chatId", chatId);
