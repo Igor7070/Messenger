@@ -2577,7 +2577,7 @@ const PrivateChat = () => {
               const нетОтвета = з.status === 'missed' || з.status === 'rejected';
               const длина = длительность(з.durationSeconds);
               return (
-                <div className={`строка-звонка${мой ? ' своя' : ''}${
+                <div className={`строка-звонка${мой ? ' своя' : ''}${выбрана(msg) ? ' выбрана' : ''}${
                   тотЖеПодряд(лента, index, userId) ? ' подряд' : ''}`} onClickCapture={(e) => {
             /* Пока идёт выбор, нажатие в любом месте строки — и по
                пустому полю рядом с пузырём, и по кружку — выделяет её. */
@@ -2626,7 +2626,7 @@ const PrivateChat = () => {
               );
             })()
           ) : (
-          <div className={`строка-ленты${msg.sender.id === userId ? ' своя' : ''}`} onClickCapture={(e) => {
+          <div className={`строка-ленты${msg.sender.id === userId ? ' своя' : ''}${выбрана(msg) ? ' выбрана' : ''}`} onClickCapture={(e) => {
             /* Пока идёт выбор, нажатие в любом месте строки — и по
                пустому полю рядом с пузырём, и по кружку — выделяет её. */
             if (!выборИдёт) return;

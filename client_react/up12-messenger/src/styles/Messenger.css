@@ -2614,3 +2614,8 @@
     color: #cbd5e1;
     padding: 8px 10px;
 }
+
+/* Выбранный пузырь синеет — как в телеграме. */
+.строка-ленты.выбрана .message-content-container {
+    background: #2e70a5 !important;
+}
