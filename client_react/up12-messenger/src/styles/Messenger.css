@@ -114,8 +114,12 @@
 }
 
 .message-list {
+        /* Полоса прокрутки съедала место справа: свои сообщения стояли
+       от края дальше, чем чужие от своего. Запас держим с обеих
+       сторон — края сходятся. */
+    scrollbar-gutter: stable both-edges;
     border: 1px solid rgba(148, 163, 184, 0.15);
-    padding: 10px;
+    padding: 10px 0;   /* по бокам место держит запас под полосу прокрутки */
     height: 480px;
     overflow-y: scroll;
     margin-bottom: 15px;
@@ -207,7 +211,7 @@
     background-color: #2A5F9E !important; /* как sent_message_background в Android */
     color: #f1f5f9 !important;
     border-radius: 12px 0 12px 12px;
-    margin-right: 10px;
+    margin-right: 8px;   /* вровень с левым полем чужих */
     max-width: calc(80% - 10px);
     width: 100%;
     box-sizing: border-box;
@@ -1571,7 +1575,7 @@
 
     .message.current-user .message-content-container {
         border-radius: 10px 0 10px 10px;
-        margin-right: 10px;
+        margin-right: 8px;   /* вровень с левым полем чужих */
         max-width: calc(80% - 10px);
         width: 100%;
         box-sizing: border-box;
@@ -2619,3 +2623,4 @@
 .строка-ленты.выбрана .message-content-container {
     background: #2e70a5 !important;
 }
+
