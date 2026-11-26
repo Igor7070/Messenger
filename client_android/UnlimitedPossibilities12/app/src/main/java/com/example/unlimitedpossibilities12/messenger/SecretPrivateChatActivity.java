@@ -2651,6 +2651,34 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
     private final java.util.List<Message> лентаСообщений = new java.util.ArrayList<>();
     private boolean звонкиЗапрошены = false;
 
+
+    /**
+     * Метка времени в миллисекундах — чтобы сравнивать разнородное.
+     *
+     * У сообщений метка со знаком пояса («…T21:26:00Z»), у звонков —
+     * местное время без него («…T23:26:00»). Как строки они сравнивались
+     * неверно: сообщение, отправленное позже, вставало выше звонков,
+     * случившихся раньше.
+     */
+    private static long мигМетки(String метка) {
+        if (метка == null || метка.isEmpty()) return 0L;
+        try {
+            return java.time.ZonedDateTime
+                    .parse(метка, java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME)
+                    .toInstant().toEpochMilli();
+        } catch (Exception ignore) {
+            // метка без пояса — читаем как киевское время
+        }
+        try {
+            return java.time.LocalDateTime
+                    .parse(метка, java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                    .atZone(java.time.ZoneId.of("Europe/Kiev"))
+                    .toInstant().toEpochMilli();
+        } catch (Exception ignore) {
+            return 0L;
+        }
+    }
+
     private void подмешатьЗвонки(java.util.List<Message> сообщения) {
         if (сообщения != лентаСообщений) {
             лентаСообщений.clear();
@@ -2661,11 +2689,8 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         /* Пока переписка не пришла, карточки придерживаем: иначе сперва
            мелькают одни звонки, а сообщения приезжают следом. */
         if (!лентаСообщений.isEmpty()) вместе.addAll(карточкиЗвонков);
-        java.util.Collections.sort(вместе, (а, б) -> {
-            String п = а.getTimestamp() == null ? "" : а.getTimestamp();
-            String в = б.getTimestamp() == null ? "" : б.getTimestamp();
-            return п.compareTo(в);
-        });
+        java.util.Collections.sort(вместе, (а, б) ->
+                Long.compare(мигМетки(а.getTimestamp()), мигМетки(б.getTimestamp())));
         лентаНаЭкране = вместе;   // по ней ищем, куда возвращаться
         messageAdapter.updateMessages(вместе);
         messageList.post(this::вернутьсяНаМесто);
