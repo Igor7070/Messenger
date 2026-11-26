@@ -313,7 +313,11 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
     }
 
     /** Кому сказать, что карточку звонка просят убрать. */
-    public interface СлушательЗвонков { void убрать(Message карточка); }
+    public interface СлушательЗвонков {
+        void убрать(Message карточка);
+        /** Трубка на карточке: звоним снова тем же видом связи. */
+        void позвонить(Message карточка);
+    }
 
     private СлушательЗвонков слушательЗвонков;
 
@@ -428,6 +432,12 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 holder.callCardSub.setCompoundDrawables(стрелка, null, null, null);
             }
             if (holder.callCardIcon != null) {
+                /* Трубка — кнопка: звоним снова тем же видом связи. Пока
+                   идёт выбор, нажатие на неё выделяет строку, как и везде. */
+                holder.callCardIcon.setOnClickListener(в -> {
+                    if (выбор != null && выбор.идёт()) { выбор.переключить(message); return; }
+                    if (слушательЗвонков != null) слушательЗвонков.позвонить(message);
+                });
                 boolean видео = заголовок.startsWith("Video");
                 holder.callCardIcon.setImageResource(видео ? R.drawable.ic_video_call : R.drawable.ic_calls);
             }

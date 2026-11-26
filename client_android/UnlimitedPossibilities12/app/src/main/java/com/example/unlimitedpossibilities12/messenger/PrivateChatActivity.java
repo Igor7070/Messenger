@@ -290,7 +290,19 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         }
         messageAdapter = new MessageAdapter(this, messages, currentUserId, this, isTranslationEnabled, isTranscriptionEnabled);
         messageList.setAdapter(messageAdapter);
-        messageAdapter.setСлушательЗвонков(this::спроситьПроЗвонок);
+        messageAdapter.setСлушательЗвонков(new MessageAdapter.СлушательЗвонков() {
+            @Override
+            public void убрать(Message карточка) {
+                спроситьПроЗвонок(карточка);
+            }
+
+            @Override
+            public void позвонить(Message карточка) {
+                /* Трубка на карточке: звоним снова тем же видом связи. */
+                String о = карточка.getContent() == null ? "" : карточка.getContent();
+                startCallFromHeader(о.toLowerCase().contains("video") ? "video" : "voice");
+            }
+        });
         завестиКружокВниз();
         завестиВыбор();
 

@@ -274,7 +274,19 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         currentUserId = getSharedPreferences("prefs", MODE_PRIVATE).getInt("userId", -1);
         messageAdapter = new SecretMessageAdapter(this, messages, currentUserId, this, apiService);
         messageList.setAdapter(messageAdapter);
-        messageAdapter.setСлушательЗвонков(this::спроситьПроЗвонок);
+        messageAdapter.setСлушательЗвонков(new SecretMessageAdapter.СлушательЗвонков() {
+            @Override
+            public void убрать(Message карточка) {
+                спроситьПроЗвонок(карточка);
+            }
+
+            @Override
+            public void позвонить(Message карточка) {
+                /* Трубка на карточке: звоним снова тем же видом связи. */
+                String о = карточка.getContent() == null ? "" : карточка.getContent();
+                startCallFromHeader(о.toLowerCase().contains("video") ? "video" : "voice");
+            }
+        });
         завестиКружокВниз();
         завестиВыбор();
 
