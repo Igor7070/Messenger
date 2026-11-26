@@ -130,6 +130,23 @@ const dayLabel = (timestamp) => {
     : { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
+
+/**
+ * Где показать меню: у самого курсора, как в телеграме.
+ *
+ * Меню стоит «намертво» в окне (position: fixed), и прибавлять к его
+ * месту прокрутку страницы нельзя — оно улетает вниз тем дальше, чем
+ * ниже прокручено. У нижнего края экрана ему не хватает места под
+ * курсором: тогда показываем над ним.
+ */
+const местоМеню = (событие) => {
+  const ширина = 150, высота = 92, поле = 8;
+  const x = Math.max(поле, Math.min(событие.clientX, window.innerWidth - ширина - поле));
+  let y = событие.clientY + 4;
+  if (y + высота > window.innerHeight - поле) y = Math.max(поле, событие.clientY - высота - 4);
+  return { x, y };
+};
+
 const startsNewDay = (messages, index) => {
   const current = dayKey(messages[index]?.timestamp);
   if (!current) return false;
@@ -903,10 +920,22 @@ const Messenger = () => {
             document.addEventListener('mousedown', handleClickOutside);
             document.addEventListener('touchstart', handleClickOutside); // ← для мобильных
         }
+        const лента = messageListRef.current;
+        const стоп = (с) => с.preventDefault();
+        if (contextMenu.visible && лента) {
+            /* Пока меню открыто, лента не едет: иначе строка уходит
+               из-под меню, а оно стоит намертво в окне. */
+            лента.addEventListener('wheel', стоп, { passive: false });
+            лента.addEventListener('touchmove', стоп, { passive: false });
+        }
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
             document.removeEventListener('touchstart', handleClickOutside);
+        if (лента) {
+                лента.removeEventListener('wheel', стоп);
+                лента.removeEventListener('touchmove', стоп);
+            }
         };
     }, [contextMenu.visible]);
 
@@ -1150,8 +1179,7 @@ const Messenger = () => {
         const rect = messageElement.getBoundingClientRect();
 
         // ЛЕВЫЙ НИЖНИЙ УГОЛ — ТОЧНО
-        const x = rect.left + window.scrollX;
-        const y = rect.bottom + window.scrollY - 20; // ← ВПЛОТНУЮ К НИЗУ СООБЩЕНИЯ
+        const { x, y } = местоМеню(e);
 
         setContextMenu({
             visible: true,
@@ -2681,7 +2709,7 @@ const Messenger = () => {
       {contextMenu.visible && (
           <div
               ref={contextMenuRef}
-              className="context-menu"
+              className="context-menu у-курсора"
               style={{
                   top: contextMenu.y + 'px',   // ← верх меню = низ сообщения
                   left: contextMenu.x + 'px',  // ← левый край = левый край сообщения
