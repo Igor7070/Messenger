@@ -2617,6 +2617,8 @@ const SecretPrivateChat = () => {
       setContent(msg.content);
       setEditingMessageId(msg.id);
       textAreaRef.current?.focus();
+    } else if (action === 'select') {
+        /* Выделение нескольких строк — следующим шагом. */
     } else if (action === 'delete') {
       // Спрашиваем, как в телеграме: у себя или и у собеседника тоже
       setУбратьУОбоих(false);
@@ -4151,6 +4153,9 @@ const SecretPrivateChat = () => {
             <button onClick={() => handleMenuAction('edit')}>Edit</button>
           )}
           <button onClick={() => handleMenuAction('delete')}>Delete</button>
+          {/* «Выделить» — как в телеграме, последним пунктом. Само
+              выделение сделаем следующим шагом. */}
+          <button onClick={() => handleMenuAction('select')}>Select</button>
         </div>
       )}
       {/* Полноэкранное фото */}

@@ -1198,7 +1198,9 @@ const Messenger = () => {
         if (action === 'edit') {
             setContent(contextMenu.message.content);
             setEditingMessageId(contextMenu.message.id);
-        } else if (action === 'delete') {
+        } else if (action === 'select') {
+        /* Выделение нескольких строк — следующим шагом. */
+    } else if (action === 'delete') {
             deleteMessage(contextMenu.message.id);
         }
         setContextMenu({ visible: false });
@@ -2718,6 +2720,9 @@ const Messenger = () => {
           >
               <button onClick={() => handleMenuAction('edit')}>Edit</button>
               <button onClick={() => handleMenuAction('delete')}>Delete</button>
+              {/* «Выделить» — как в телеграме, последним пунктом. Само
+                  выделение сделаем следующим шагом. */}
+              <button onClick={() => handleMenuAction('select')}>Select</button>
           </div>
       )}
       {/* ─── НАЧАЛО ВСТАВКИ: Полноэкранное фото ─── */}
