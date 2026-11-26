@@ -2734,7 +2734,10 @@
     border: none;
     background: none;
     padding: 4px;
-    margin: -4px;
+    /* Слева «auto»: карточка шире своего содержимого — у неё есть
+       наименьшая ширина, — и трубку надо прижимать к правому краю,
+       иначе она встаёт посередине. */
+    margin: -4px -4px -4px auto;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
