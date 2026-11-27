@@ -2631,3 +2631,10 @@
 .message-content-container {
     width: fit-content;
 }
+
+/* Пузырь со ссылкой — по ширине её карточки: длинный адрес одной
+   строкой распирал пузырь, хотя под ним стоит узкая картинка. Теперь
+   адрес переносится, как в телеграме. */
+.message-content-container:has(.link-preview-card) {
+    max-width: 340px;
+}
