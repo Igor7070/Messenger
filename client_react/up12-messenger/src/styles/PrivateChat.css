@@ -1252,7 +1252,7 @@
 }
 
 .private-message-content-container:has(.private-message-transcription-container) .private-audio-player-wrapper {
-  padding-left: 24px;
+  padding-left: 0;   /* кнопка и подписи — по левому краю пузыря, без лишней пустоты */
 }
 
 .private-transcribed-content {
@@ -1265,7 +1265,7 @@
   width: 100%;
   max-width: 300px;
   box-sizing: border-box;
-  padding-left: 24px;
+  padding-left: 0;   /* кнопка и подписи — по левому краю пузыря, без лишней пустоты */
 }
 
 .private-message.private-audio-message .private-translated-content {
@@ -1278,7 +1278,7 @@
   width: 100%;
   max-width: 300px;
   box-sizing: border-box;
-  padding-left: 24px;
+  padding-left: 0;   /* кнопка и подписи — по левому краю пузыря, без лишней пустоты */
 }
 
 .private-message.private-audio-message .private-message-content-container:has(.private-message-tts-translated-container),

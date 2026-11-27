@@ -255,7 +255,7 @@
 }
 
 .message.audio-message .sender-name {
-    padding-left: 24px;
+    padding-left: 0;   /* кнопка и подписи — по левому краю пузыря, без лишней пустоты */
 }
 
 /*
@@ -1243,7 +1243,7 @@
     width: 100%;
     max-width: 300px;
     box-sizing: border-box;
-    padding-left: 24px;
+    padding-left: 0;   /* кнопка и подписи — по левому краю пузыря, без лишней пустоты */
 }
 
 .message.audio-message .translated-content {
@@ -1256,11 +1256,11 @@
     width: 100%;
     max-width: 300px;
     box-sizing: border-box;
-    padding-left: 24px;
+    padding-left: 0;   /* кнопка и подписи — по левому краю пузыря, без лишней пустоты */
 }
 
 .message-content-container:has(.message-transcription-container) .audio-player-wrapper {
-    padding-left: 24px;
+    padding-left: 0;   /* кнопка и подписи — по левому краю пузыря, без лишней пустоты */
 }
 
 .message.audio-message .message-content-container:has(.message-tts-translated-container),
