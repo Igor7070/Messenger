@@ -303,23 +303,24 @@
                     <!-- Звуковая волна: тот же SeekBar, только нарисован столбиками -->
                     <com.example.unlimitedpossibilities12.messenger.WaveformSeekBar
                         android:id="@+id/audio_seek_bar"
-                        android:layout_width="120dp"
+                        android:layout_width="150dp"
                         android:layout_height="26dp"
                         android:progress="0" />
 
 
-                    <TextView
-                        android:id="@+id/audio_duration_text_view"
-                        android:maxLines="1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:minWidth="46dp"
-                        android:gravity="end"
-                        android:layout_marginStart="8dp"
-                        android:text="0:00"
-                        android:textColor="#94A3B8"
-                        android:textSize="14sp" />
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/audio_duration_text_view"
+                    android:maxLines="1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="start"
+                    android:layout_marginStart="50dp"
+                    android:text="0:00"
+                    android:textColor="#94A3B8"
+                    android:textSize="14sp" />
+
 
                 <TextView
                     android:id="@+id/transcribed_content_text_view"
