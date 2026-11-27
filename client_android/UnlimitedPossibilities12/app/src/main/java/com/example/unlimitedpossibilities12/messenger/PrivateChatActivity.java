@@ -2272,8 +2272,11 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         {
                 java.util.List<Message> собранные = new java.util.ArrayList<>();
                 java.util.List<com.example.unlimitedpossibilities12.api.Call> все = сырыеЗвонки;
-                int отсюда = Math.max(0, все.size() - 200);
-                for (int i = отсюда; i < все.size(); i++) {
+                /* Берём все звонки: предел в двести считался по всему
+                   списку, вместе с чужими переписками, и убранные
+                   карточки сменялись отрезанными прежде — казалось,
+                   что удаление не удержалось. */
+                for (int i = 0; i < все.size(); i++) {
                     com.example.unlimitedpossibilities12.api.Call з = все.get(i);
                     if ("group".equals(з.getCallType())) continue;
                     String от = String.valueOf(з.getCaller());
