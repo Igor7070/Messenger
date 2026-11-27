@@ -136,10 +136,9 @@ public class ChatGPTController {
             translationRepository.save(translation);
         }
 
-        // Старое поле пока заполняем тоже — его читают прежние версии клиентов
-        message.setTranslatedContent(request.getTranslatedContent());
-        message.setTranslationLanguage(language);
-        messageRepository.save(message);
+        // Старое поле пока заполняем тоже — его читают прежние версии
+        // клиентов. Одной колонкой, чтобы не затереть отметки о прочтении.
+        messageRepository.вписатьПеревод(messageId, request.getTranslatedContent(), language);
         return ResponseEntity.ok().build();
     }
 
@@ -288,10 +287,11 @@ public class ChatGPTController {
                 System.out.println("Transcription is invalid or empty: " + transcription);
                 return ResponseEntity.ok("");
             }
-            // Сохраняем транскрипцию в базе
-            Message message = optionalMessage.get();
-            message.setTranscribedContent(transcription);
-            messageRepository.save(message);
+            /* Пишем только расшифровку: сообщение мы читали до разбора
+               речи, и сохранение его целиком затирало то, что за эти
+               секунды успело поменяться, — прежде всего отметку
+               «прочитано». */
+            messageRepository.вписатьРасшифровку(messageId, transcription);
             System.out.println("Transcription saved for messageId=" + messageId);
             return ResponseEntity.ok(transcription);
         } catch (Exception e) {

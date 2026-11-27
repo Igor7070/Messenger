@@ -25,4 +25,22 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     @Query("SELECT m FROM Message m WHERE m.fileUrl = :fileUrl")
     Message findByFileUrl(String fileUrl);
+
+    /*
+     * Расшифровку и перевод вписываем одной колонкой.
+     *
+     * Прежде сообщение читали в начале запроса, а сохраняли целиком после
+     * разбора речи — а он длится секунды. За это время собеседник успевал
+     * прочитать запись, и сохранение возвращало «не прочитано»: вторая
+     * галочка гасла сама собой, стоило выйти из переписки и вернуться.
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE Message m SET m.transcribedContent = :текст WHERE m.id = :id")
+    void вписатьРасшифровку(@Param("id") Long id, @Param("текст") String текст);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Message m SET m.translatedContent = :текст, m.translationLanguage = :язык WHERE m.id = :id")
+    void вписатьПеревод(@Param("id") Long id, @Param("текст") String текст, @Param("язык") String язык);
 }
