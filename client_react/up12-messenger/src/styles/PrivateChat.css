@@ -135,7 +135,7 @@
     color: #f1f5f9 !important;                /* комфортный мягкий белый */
     border-radius: 12px;
     margin-right: 8px;   /* вровень с левым полем чужих */
-    max-width: calc(80% - 10px);
+    max-width: min(460px, calc(80% - 10px));   /* строка тянется во всю ширину — доля от неё вышла бы вдвое шире прежнего */
     width: 100%;
     box-sizing: border-box;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
@@ -144,7 +144,7 @@
 .private-message.private-current-user.first-message .private-message-content-container {
     border-radius: 12px 0 12px 12px;
     margin-right: 8px;   /* вровень с левым полем чужих */
-    max-width: calc(80% - 10px);
+    max-width: min(460px, calc(80% - 10px));   /* строка тянется во всю ширину — доля от неё вышла бы вдвое шире прежнего */
     width: 100%;
     box-sizing: border-box;
 }
@@ -1020,7 +1020,7 @@
 .private-message.private-current-user.first-message .private-message-content-container {
   border-radius: 12px 0 12px 12px;
   margin-right: 8px;   /* вровень с левым полем чужих */
-  max-width: calc(80% - 10px);
+  max-width: min(460px, calc(80% - 10px));   /* строка тянется во всю ширину — доля от неё вышла бы вдвое шире прежнего */
   width: 100%;
   box-sizing: border-box;
   padding: 4px;
@@ -1700,7 +1700,7 @@
     .private-message.private-current-user .private-message-content-container {
         border-radius: 10px;
         margin-right: 8px;   /* вровень с левым полем чужих */
-        max-width: calc(80% - 10px);
+        max-width: min(460px, calc(80% - 10px));   /* строка тянется во всю ширину — доля от неё вышла бы вдвое шире прежнего */
         width: 100%;
         box-sizing: border-box;
     }
@@ -1708,7 +1708,7 @@
     .private-message.private-current-user.first-message .private-message-content-container {
         border-radius: 10px 0 10px 10px;
         margin-right: 8px;   /* вровень с левым полем чужих */
-        max-width: calc(80% - 10px);
+        max-width: min(460px, calc(80% - 10px));   /* строка тянется во всю ширину — доля от неё вышла бы вдвое шире прежнего */
         width: 100%;
         box-sizing: border-box;
     }

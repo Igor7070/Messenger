@@ -212,7 +212,7 @@
     color: #f1f5f9 !important;
     border-radius: 12px 0 12px 12px;
     margin-right: 8px;   /* вровень с левым полем чужих */
-    max-width: calc(80% - 10px);
+    max-width: min(460px, calc(80% - 10px));   /* строка тянется во всю ширину — доля от неё вышла бы вдвое шире прежнего */
     width: 100%;
     box-sizing: border-box;
     padding: 4px;
@@ -1576,7 +1576,7 @@
     .message.current-user .message-content-container {
         border-radius: 10px 0 10px 10px;
         margin-right: 8px;   /* вровень с левым полем чужих */
-        max-width: calc(80% - 10px);
+        max-width: min(460px, calc(80% - 10px));   /* строка тянется во всю ширину — доля от неё вышла бы вдвое шире прежнего */
         width: 100%;
         box-sizing: border-box;
     }
