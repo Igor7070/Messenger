@@ -395,20 +395,41 @@ public class PrivateChatTranslationAndSpellCheckHelper {
         }
     }
 
+    /**
+     * Новее ли сообщение того мига, когда расшифровку включили.
+     *
+     * Метка сообщения приходит то с зоной («…Z»), то без неё — без зоны
+     * читаем как киевскую. И даём запас в две минуты: часы телефона и
+     * сервера расходятся, а из-за этого свежая запись считалась старой и
+     * молча оставалась без расшифровки.
+     */
     public static boolean isMessageNewerThanTimestamp(Message message, String timestamp) {
         if (timestamp == null || message.getTimestamp() == null) {
             Log.w(TAG, "Timestamp is null for message id=" + message.getId() + " or transcription enabled timestamp is null");
             return false;
         }
-        try {
-            ZonedDateTime messageTime = ZonedDateTime.parse(message.getTimestamp(), DateTimeFormatter.ISO_ZONED_DATE_TIME);
-            ZonedDateTime enableTime = ZonedDateTime.parse(timestamp, DateTimeFormatter.ISO_ZONED_DATE_TIME);
-            boolean isNewer = messageTime.isAfter(enableTime);
-            Log.d(TAG, "Message id=" + message.getId() + " isNewer=" + isNewer);
-            return isNewer;
-        } catch (DateTimeParseException e) {
-            Log.e(TAG, "Error parsing timestamp for message id=" + message.getId() + ": " + e.getMessage());
+        ZonedDateTime messageTime = мигМетки(message.getTimestamp());
+        ZonedDateTime enableTime = мигМетки(timestamp);
+        if (messageTime == null || enableTime == null) {
+            Log.e(TAG, "Error parsing timestamp for message id=" + message.getId());
             return false;
+        }
+        boolean isNewer = messageTime.isAfter(enableTime.minusMinutes(2));
+        Log.d(TAG, "Message id=" + message.getId() + " isNewer=" + isNewer);
+        return isNewer;
+    }
+
+    /** Разобрать метку: сперва с зоной, затем без неё — как киевскую. */
+    private static ZonedDateTime мигМетки(String метка) {
+        try {
+            return ZonedDateTime.parse(метка, DateTimeFormatter.ISO_ZONED_DATE_TIME);
+        } catch (DateTimeParseException e) {
+            try {
+                return java.time.LocalDateTime.parse(метка, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                        .atZone(java.time.ZoneId.of("Europe/Kiev"));
+            } catch (DateTimeParseException e2) {
+                return null;
+            }
         }
     }
 

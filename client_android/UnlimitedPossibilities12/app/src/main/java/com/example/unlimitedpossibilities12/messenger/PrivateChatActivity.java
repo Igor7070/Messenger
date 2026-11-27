@@ -1400,7 +1400,11 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                 if (isTranscriptionEnabled && "audio".equals(newMessage.getMessageType()) &&
                         newMessage.getTranscribedContent() == null &&
                         transcriptionMode != TranscriptionSettingsFragment.TranscriptionMode.SELECTIVELY &&
-                        PrivateChatTranslationAndSpellCheckHelper.isMessageNewerThanTimestamp(newMessage, prefs.getString("transcription_enabled_timestamp_" + chatId, null))) {
+                        /* Метку «когда включили» спрашиваем только в режиме «только новые».
+                           В режиме «все» она лишь мешала: свежезаписанное голосовое
+                           молчало, и выключить-включить не помогало. */
+                        (transcriptionMode != TranscriptionSettingsFragment.TranscriptionMode.NEW_ONLY ||
+                         PrivateChatTranslationAndSpellCheckHelper.isMessageNewerThanTimestamp(newMessage, prefs.getString("transcription_enabled_timestamp_" + chatId, null)))) {
                     if (isTranscribing) {
                         transcriptionQueue.add(newMessage);
                         Log.d(TAG, "Added message id=" + newMessage.getId() + " to transcription queue");
