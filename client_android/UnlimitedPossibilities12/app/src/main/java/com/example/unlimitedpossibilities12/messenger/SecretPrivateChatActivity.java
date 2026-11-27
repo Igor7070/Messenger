@@ -3687,6 +3687,34 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
         sendMessageToServer(message, fileUrl, messageType, tempId, null);
     }
 
+
+    /** Сколько раз ждём соединение, прежде чем сдаться. */
+    private static final int ПОПЫТОК_ЖДАТЬ_СОКЕТ = 8;
+
+    /**
+     * Сделать дело, когда поднимется соединение.
+     *
+     * Служба иногда пересобирает сокет — на это уходит секунда-другая, и
+     * нажатие, попавшее в это окно, упиралось в «WebSocket not connected».
+     */
+    private void когдаСокетГотов(Runnable дело, int попытка) {
+        if (isFinishing() || isDestroyed()) return;
+        if (попытка >= ПОПЫТОК_ЖДАТЬ_СОКЕТ) {
+            Log.e(TAG, "Соединение так и не поднялось");
+            Toast.makeText(this, R.string.chat_no_connection, Toast.LENGTH_LONG).show();
+            isMessageJustSent = false;
+            return;
+        }
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (callService != null) stompClient = callService.getStompClient();
+            if (stompClient != null && stompClient.isConnected()) {
+                дело.run();
+            } else {
+                когдаСокетГотов(дело, попытка + 1);
+            }
+        }, 600);
+    }
+
     private Message parseMessageFromJson(JSONObject msgJson) throws Exception {
         Log.d(TAG, "Received JSON for parsing: " + msgJson.toString());
         Message newMessage = new Message();
@@ -3774,8 +3802,9 @@ public class SecretPrivateChatActivity extends AppCompatActivity implements Secr
      */
     private void убратьСообщениеУОбоих(Message message) {
         if (stompClient == null || !stompClient.isConnected()) {
-            Log.w(TAG, "StompClient not connected for delete");
-            Toast.makeText(this, "WebSocket not connected", Toast.LENGTH_LONG).show();
+            // Ждём соединения, а не отказываем: оно поднимается за миг
+            Log.w(TAG, "Сокет не готов — ждём, чтобы удалить");
+            когдаСокетГотов(() -> убратьСообщениеУОбоих(message), 0);
             return;
         }
         stompClient.send("/app/deleteMessage/" + chatId, String.valueOf(message.getId()))

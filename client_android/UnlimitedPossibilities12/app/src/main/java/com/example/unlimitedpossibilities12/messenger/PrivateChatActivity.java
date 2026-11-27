@@ -2703,10 +2703,39 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                 isMessageJustSent = false;
             }
         } else {
-            Log.w(TAG, "StompClient not connected");
-            Toast.makeText(this, "WebSocket not connected", Toast.LENGTH_SHORT).show();
-            isMessageJustSent = false;
+            // Тот же спящий сокет: подождём, а не потеряем отправку
+            Log.w(TAG, "Сокет не готов — ждём, чтобы отправить");
+            когдаСокетГотов(() -> sendMessageWithFile(content, fileUrl, messageType), 0);
         }
+    }
+
+    /** Сколько раз ждём соединение, прежде чем сдаться. */
+    private static final int ПОПЫТОК_ЖДАТЬ_СОКЕТ = 8;
+
+    /**
+     * Сделать дело, когда поднимется соединение.
+     *
+     * Служба иногда пересобирает сокет — на это уходит секунда-другая.
+     * Нажатие, попавшее в это окно, упиралось в «WebSocket not connected»
+     * и пропадало: человек удалял два голосовых, получал отказ и повторял.
+     * В групповом чате так уже сделано, здесь не было.
+     */
+    private void когдаСокетГотов(Runnable дело, int попытка) {
+        if (isFinishing() || isDestroyed()) return;
+        if (попытка >= ПОПЫТОК_ЖДАТЬ_СОКЕТ) {
+            Log.e(TAG, "Соединение так и не поднялось");
+            Toast.makeText(this, R.string.chat_no_connection, Toast.LENGTH_LONG).show();
+            isMessageJustSent = false;
+            return;
+        }
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (callService != null) stompClient = callService.getStompClient();
+            if (stompClient != null && stompClient.isConnected()) {
+                дело.run();
+            } else {
+                когдаСокетГотов(дело, попытка + 1);
+            }
+        }, 600);
     }
 
     private Message parseMessageFromJson(JSONObject msgJson) throws Exception {
@@ -2778,8 +2807,9 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
      */
     private void убратьСообщениеУОбоих(Message message) {
         if (stompClient == null || !stompClient.isConnected()) {
-            Log.w(TAG, "StompClient not connected for delete");
-            Toast.makeText(this, "WebSocket not connected", Toast.LENGTH_LONG).show();
+            // Ждём соединения, а не отказываем: оно поднимается за миг
+            Log.w(TAG, "Сокет не готов — ждём, чтобы удалить");
+            когдаСокетГотов(() -> убратьСообщениеУОбоих(message), 0);
             return;
         }
         stompClient.send("/app/deleteMessage/" + chatId, String.valueOf(message.getId()))
