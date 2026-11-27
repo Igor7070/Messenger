@@ -167,6 +167,10 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     private TranscriptionSettingsFragment.TranscriptionMode transcriptionMode = TranscriptionSettingsFragment.TranscriptionMode.ALL;
     private List<Message> transcriptionQueue = new ArrayList<>();
     private boolean isTranscribing = false;
+    /** Записи, по которым запрос на расшифровку уже в пути: весточка о
+        доставке приносит сообщение заново, ещё без текста, и прежде
+        та же запись уходила на разбор второй раз. */
+    private final java.util.Set<Long> ужеРазбираем = new java.util.HashSet<>();
     // Для индикатора "печатает…"
     private long lastTypingSentTime = 0L;
     private final long TYPING_DEBOUNCE_MS = 2400L;          // отправляем не чаще раза в ~2.4 сек
@@ -1410,6 +1414,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                 // Транскрипция нового или обновлённого аудиосообщения
                 if (isTranscriptionEnabled && "audio".equals(newMessage.getMessageType()) &&
                         newMessage.getTranscribedContent() == null &&
+                        !ужеРазбираем.contains(newMessage.getId()) &&
                         transcriptionMode != TranscriptionSettingsFragment.TranscriptionMode.SELECTIVELY &&
                         /* Метку «когда включили» спрашиваем только в режиме «только новые».
                            В режиме «все» она лишь мешала: свежезаписанное голосовое
@@ -1417,12 +1422,15 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                         (transcriptionMode != TranscriptionSettingsFragment.TranscriptionMode.NEW_ONLY ||
                          PrivateChatTranslationAndSpellCheckHelper.isMessageNewerThanTimestamp(newMessage, prefs.getString("transcription_enabled_timestamp_" + chatId, null)))) {
                     if (isTranscribing) {
+                        ужеРазбираем.add(newMessage.getId());
                         transcriptionQueue.add(newMessage);
                         Log.d(TAG, "Added message id=" + newMessage.getId() + " to transcription queue");
                     } else {
                         isTranscribing = true;
+                        ужеРазбираем.add(newMessage.getId());
                         PrivateChatTranslationAndSpellCheckHelper.transcribeMessage(
                                 this, newMessage, chatId, messageAdapter, messages, apiService, () -> {
+                                    ужеРазбираем.remove(newMessage.getId());
                                     isTranscribing = false;
                                     transcribeNextMessage();
                                 }
@@ -3186,6 +3194,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                         Message message = transcriptionQueue.remove(0);
                         PrivateChatTranslationAndSpellCheckHelper.transcribeMessage(
                                 this, message, chatId, messageAdapter, messages, apiService, () -> {
+                                    ужеРазбираем.remove(message.getId());
                                     isTranscribing = false;
                                     transcribeNextMessage();
                                 }

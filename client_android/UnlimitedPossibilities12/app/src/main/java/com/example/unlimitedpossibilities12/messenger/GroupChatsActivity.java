@@ -157,6 +157,10 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
     private TranscriptionSettingsFragment.TranscriptionMode transcriptionMode = TranscriptionSettingsFragment.TranscriptionMode.ALL;
     private List<Message> transcriptionQueue = new ArrayList<>();
     private boolean isTranscribing = false;
+    /** Записи, по которым запрос на расшифровку уже в пути: весточка о
+        доставке приносит сообщение заново, ещё без текста, и прежде
+        та же запись уходила на разбор второй раз. */
+    private final java.util.Set<Long> ужеРазбираем = new java.util.HashSet<>();
     private Drawable aiSparkleDrawable; // Для AI-ассистента генерации сообщений
     // Для иконок ввода (AI, mic, send)
     private ImageView aiAssistIcon;
@@ -1231,6 +1235,7 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                 // ДОБАВЛЕНО: Автоматическая транскрипция новых аудиосообщений
                 if (isTranscriptionEnabled && "audio".equals(newMessage.getMessageType()) &&
                         newMessage.getTranscribedContent() == null &&
+                        !ужеРазбираем.contains(newMessage.getId()) &&
                         transcriptionMode != TranscriptionSettingsFragment.TranscriptionMode.SELECTIVELY &&
                         /* Метку «когда включили» спрашиваем только в режиме «только новые».
                            В режиме «все» она лишь мешала: свежезаписанное голосовое
@@ -1238,12 +1243,15 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                         (transcriptionMode != TranscriptionSettingsFragment.TranscriptionMode.NEW_ONLY ||
                          GroupChatTranslationAndSpellCheckHelper.isMessageNewerThanTimestamp(newMessage, prefs.getString("transcription_enabled_timestamp_" + chatId, null)))) {
                     if (isTranscribing) {
+                        ужеРазбираем.add(newMessage.getId());
                         transcriptionQueue.add(newMessage);
                         Log.d(TAG, "Added message id=" + newMessage.getId() + " to transcription queue");
                     } else {
                         isTranscribing = true;
+                        ужеРазбираем.add(newMessage.getId());
                         GroupChatTranslationAndSpellCheckHelper.transcribeMessage(this, newMessage, chatId, apiService, messageAdapter,
                                 isTranslationEnabled, translationLanguage, transcriptionMode, () -> {
+                                    ужеРазбираем.remove(newMessage.getId());
                                     isTranscribing = false;
                                     transcribeNextMessage();
                                 });
@@ -2375,6 +2383,7 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
                 Message message = transcriptionQueue.remove(0);
                 GroupChatTranslationAndSpellCheckHelper.transcribeMessage(this, message, chatId, apiService, messageAdapter,
                         isTranslationEnabled, translationLanguage, transcriptionMode, () -> {
+                            ужеРазбираем.remove(message.getId());
                             isTranscribing = false;
                             transcribeNextMessage();
                         });
