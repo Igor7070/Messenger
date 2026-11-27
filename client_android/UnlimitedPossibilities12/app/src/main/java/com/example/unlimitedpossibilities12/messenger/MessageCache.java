@@ -77,7 +77,13 @@ public final class MessageCache {
 
     /** Запомнить последние сообщения чата. Пишем в фоне — на экране это не ждут. */
     public static void save(Context context, long chatId, List<Message> messages) {
-        if (messages == null || messages.isEmpty()) return;
+        if (messages == null) return;
+        if (messages.isEmpty()) {
+            // Переписку вычистили до конца — забываем и запомненное,
+            // иначе при следующем заходе оно мелькнёт снова
+            clear(context, chatId);
+            return;
+        }
 
         final Context appContext = context.getApplicationContext();
         final List<Message> tail = new ArrayList<>(messages.size() > MAX_MESSAGES

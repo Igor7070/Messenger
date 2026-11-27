@@ -890,6 +890,11 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     @Override
     protected void onStop() {
         запомнитьМесто();   // вернёмся сюда при следующем заходе
+        /* Запоминаем ленту такой, какой человек её оставил: прежде
+           сохраняли только после чтения с сервера, и удалённое
+           сообщение мелькало при следующем заходе, а добавленное
+           на миг пропадало. */
+        MessageCache.save(getApplicationContext(), chatId, messages);
         super.onStop();
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(callReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(messageReceiver);
