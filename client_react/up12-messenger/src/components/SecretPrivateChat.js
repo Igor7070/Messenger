@@ -1071,6 +1071,7 @@ const SecretPrivateChat = () => {
     // навсегда. Такие «зомби» копились с каждым заходом в секретный чат и
     // занимали соединения, нужные обычным запросам.
     let closedForGood = false;
+    let жалобаНаСвязь = null;   // отложенная жалоба: вдруг связь вернётся сама
     const stompClientInstance = new Client({
       connectHeaders: stompAuthHeaders(),
       webSocketFactory: () => new SockJS('https://unlimitedpossibilities12.org/ws'),
@@ -1321,11 +1322,21 @@ const SecretPrivateChat = () => {
 
       onWebSocketError: (error) => {
         console.error('WebSocket error in SecretPrivateChat at:', new Date().toISOString(), error);
-        toast.error('WebSocket connection error');
+        /* Молчим о мимолётном обрыве: уход в другую переписку закрывает
+           сокет, и человек видел «WebSocket error» просто от перехода.
+           Связь поднимается сама; жалуемся, только если и через
+           пятнадцать секунд её нет. В обычном чате так и было. */
+        if (closedForGood) return;
+        clearTimeout(жалобаНаСвязь);
+        жалобаНаСвязь = setTimeout(() => {
+          if (!closedForGood && !stompClientInstance.connected) {
+            toast.error('No connection to the server');
+          }
+        }, 15000);
       },
       onStompError: (frame) => {
         console.error('STOMP error in SecretPrivateChat:', frame);
-        toast.error('STOMP protocol error');
+        if (!closedForGood) toast.error('STOMP protocol error');
       },
       onDisconnect: () => {
         console.log('WebSocket disconnected in SecretPrivateChat');
@@ -1344,6 +1355,7 @@ const SecretPrivateChat = () => {
     return () => {
       console.log('Deactivating WebSocket in SecretPrivateChat');
       closedForGood = true;
+      clearTimeout(жалобаНаСвязь);
       if (stompClientInstance.active) {
         stompClientInstance.deactivate();
       }
