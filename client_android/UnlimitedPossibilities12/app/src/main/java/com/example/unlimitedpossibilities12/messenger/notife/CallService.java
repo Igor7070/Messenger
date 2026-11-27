@@ -145,6 +145,8 @@ public class CallService extends Service {
     }
     private static final String ACTION_SHOW_CALL_DIALOG = "com.example.unlimitedpossibilities12.SHOW_CALL_DIALOG";
     private static final String ACTION_NEW_MESSAGE = "com.example.unlimitedpossibilities12.NEW_MESSAGE";
+    /** Звонок убрали из переписки — и у нас, и у собеседника. */
+    public static final String ACTION_CALL_REMOVED = "com.example.unlimitedpossibilities12.CALL_REMOVED";
     private static final String ACTION_NEW_NOTIFICATION = "com.example.unlimitedpossibilities12.NEW_NOTIFICATION";
     private static final int MAX_RECONNECT_DELAY_MS = 30000;
     private StompClient stompClient;
@@ -735,6 +737,7 @@ public class CallService extends Service {
                             subscribedChatIds.clear();
 
                             subscribeToCalls();
+                            subscribeToRemovedCalls();
                             subscribeToGroupCalls();
                             subscribeToNotifications();
                             for (Long chatId : toRestore) {
@@ -769,6 +772,36 @@ public class CallService extends Service {
 
         stompClient.connect(headers);
         Log.d(TAG, "Initiated WebSocket connection");
+    }
+
+    /**
+     * Убранные звонки: сервер шлёт сюда номер записи, которой больше нет.
+     *
+     * Тема отдельная от вызовов: по «/topic/calls/{id}» приходят входящие
+     * звонки, и весть об удалении там разбиралась бы как вызов.
+     */
+    private void subscribeToRemovedCalls() {
+        String topic = "/topic/calls/" + currentUserId + "/removed";
+        Log.d(TAG, "Subscribing to topic: " + topic);
+        Disposable subscription = stompClient.topic(topic)
+                .subscribeOn(Schedulers.io())
+                .observeOn(io.reactivex.android.schedulers.AndroidSchedulers.mainThread())
+                .subscribe(
+                        message -> {
+                            try {
+                                JSONObject json = new JSONObject(message.getPayload());
+                                long номер = json.optLong("removedCallId", 0);
+                                if (номер <= 0) return;
+                                Intent intent = new Intent(ACTION_CALL_REMOVED);
+                                intent.putExtra("callId", номер);
+                                LocalBroadcastManager.getInstance(CallService.this).sendBroadcast(intent);
+                            } catch (Exception e) {
+                                Log.w(TAG, "Весть об убранном звонке не разобрана: " + e.getMessage());
+                            }
+                        },
+                        throwable -> Log.e(TAG, "Removed-calls subscription error: " + throwable.getMessage())
+                );
+        messageSubscriptions.add(subscription);
     }
 
     private void subscribeToCalls() {

@@ -53,8 +53,11 @@ public class CallController {
         java.util.Map<Long, Long> убрано = callService.deleteCall(id, userId, forBoth);
         /* Извещаем каждую сторону о её записи: открытая переписка уберёт
            карточку сама, без перезахода. */
+        /* Своя тема, не общая с вызовами: по «/topic/calls/{id}» телефон
+           слушает входящие звонки, и чужая весть разбиралась бы как вызов. */
         убрано.forEach((хозяин, номер) ->
-                вестник.convertAndSend("/topic/calls/" + хозяин, Map.of("removedCallId", номер)));
+                вестник.convertAndSend("/topic/calls/" + хозяин + "/removed",
+                        Map.of("type", "callRemoved", "removedCallId", номер)));
         return ResponseEntity.ok(Map.of("message", "Call deleted"));
     }
 }

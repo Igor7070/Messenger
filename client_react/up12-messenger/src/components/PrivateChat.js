@@ -918,7 +918,7 @@ const PrivateChat = () => {
 
         /* Убранный звонок: сервер говорит каждой стороне о её записи, и
            карточка уходит из переписки сразу, без перезахода. */
-        stompClientInstance.subscribe(`/topic/calls/${userId}`, (весть) => {
+        stompClientInstance.subscribe(`/topic/calls/${userId}/removed`, (весть) => {
           try {
             const данные = JSON.parse(весть.body);
             const номер = данные && данные.removedCallId;

@@ -218,6 +218,10 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
             }
         };
         androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(this).registerReceiver(
+                приёмникУбранныхЗвонков,
+                new android.content.IntentFilter(
+                        com.example.unlimitedpossibilities12.messenger.notife.CallService.ACTION_CALL_REMOVED));
+        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(this).registerReceiver(
                 socketReadyReceiver,
                 new android.content.IntentFilter(com.example.unlimitedpossibilities12.messenger.notife.CallService.ACTION_SOCKET_READY));
         super.onCreate(savedInstanceState);
@@ -2075,6 +2079,23 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
 
     /** Последние звонки с этим собеседником — карточками в ленте. */
     private final java.util.List<Message> карточкиЗвонков = new java.util.ArrayList<>();
+
+    /** Звонок убрали где-то ещё — снимаем карточку и здесь, не дожидаясь входа. */
+    private final android.content.BroadcastReceiver приёмникУбранныхЗвонков =
+            new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context где, android.content.Intent весть) {
+            long номер = весть.getLongExtra("callId", 0);
+            if (номер <= 0) return;
+            java.util.Iterator<Message> и = карточкиЗвонков.iterator();
+            boolean убрали = false;
+            while (и.hasNext()) {
+                if (-и.next().getId() == номер) { и.remove(); убрали = true; }
+            }
+            if (убрали) подмешатьЗвонки(лентаСообщений);
+        }
+    };
+
     private final java.util.List<Message> лентаСообщений = new java.util.ArrayList<>();
     private boolean звонкиЗапрошены = false;
 
