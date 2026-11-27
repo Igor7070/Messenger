@@ -2057,7 +2057,7 @@
   }
 
   .private-message-audio-message .private-audio-player-wrapper {
-    padding-left: 20px; 
+    padding-left: 0;   /* без пустоты слева и на узком экране */
   }
 
   .private-message.private-audio-message .private-message-content-container:has(.private-message-tts-translated-container),
@@ -2776,4 +2776,36 @@
    адрес переносится, как в телеграме. */
 .private-message-content-container:has(.link-preview-card) {
     max-width: 340px;
+}
+
+/* Длительность — под дорожкой, как в телеграме: сбоку она съедала у
+   дорожки семьдесят восемь пикселей, и та не доходила до края пузыря. */
+.private-audio-controls {
+    flex-wrap: wrap;
+}
+
+.private-audio-controls .audio-waveform {
+    flex: 1 1 calc(100% - 42px);
+}
+
+.private-audio-controls .private-audio-time {
+    flex: 0 0 auto;
+    margin-left: 42px;   /* вровень с началом дорожки */
+}
+
+/* Дорожка во всю ширину пузыря, поля слева и справа поровну — как в
+   телеграме. Прежде обёртка держала ровно триста пикселей, а справа
+   копилось двадцать восемь пустых против двенадцати слева. */
+.private-audio-player-wrapper,
+.private-message.private-current-user .private-audio-player-wrapper,
+.private-message.private-other-user .private-audio-player-wrapper {
+    width: 100%;
+    max-width: 100%;
+}
+
+.private-message.private-audio-message .private-message-content-container:has(.audio-waveform),
+.private-message.private-current-user .private-message-content-container:has(.audio-waveform),
+.private-message.private-other-user .private-message-content-container:has(.audio-waveform) {
+    padding-left: 4px;
+    padding-right: 4px;
 }

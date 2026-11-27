@@ -2638,3 +2638,35 @@
 .message-content-container:has(.link-preview-card) {
     max-width: 340px;
 }
+
+/* Длительность — под дорожкой, как в телеграме: сбоку она съедала у
+   дорожки семьдесят восемь пикселей, и та не доходила до края пузыря. */
+.audio-controls {
+    flex-wrap: wrap;
+}
+
+.audio-controls .audio-waveform {
+    flex: 1 1 calc(100% - 42px);
+}
+
+.audio-controls .audio-time {
+    flex: 0 0 auto;
+    margin-left: 42px;   /* вровень с началом дорожки */
+}
+
+/* Дорожка во всю ширину пузыря, поля слева и справа поровну — как в
+   телеграме. Прежде обёртка держала ровно триста пикселей, а справа
+   копилось двадцать восемь пустых против двенадцати слева. */
+.audio-player-wrapper,
+.message.current-user .audio-player-wrapper,
+.message.other-user .audio-player-wrapper {
+    width: 100%;
+    max-width: 100%;
+}
+
+.message.audio-message .message-content-container:has(.audio-waveform),
+.message.current-user .message-content-container:has(.audio-waveform),
+.message.other-user .message-content-container:has(.audio-waveform) {
+    padding-left: 4px;
+    padding-right: 4px;
+}
