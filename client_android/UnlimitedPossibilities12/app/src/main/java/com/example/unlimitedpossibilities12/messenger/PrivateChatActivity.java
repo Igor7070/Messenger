@@ -1334,6 +1334,17 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
                 }
                 boolean isNewMessage = existingIndex == -1;
                 if (existingIndex != -1) {
+                    /* Весточка о доставке или прочтении приносит сообщение заново,
+                       уже без расшифровки — сохраняем ту, что успели получить,
+                       иначе текст под голосовым пропадал сам собой. */
+                    if (newMessage.getTranscribedContent() == null) {
+                        String прежняя = messages.get(existingIndex).getTranscribedContent();
+                        if (прежняя == null) {
+                            прежняя = getSharedPreferences("chat_prefs", MODE_PRIVATE)
+                                    .getString("transcription_" + chatId + "_" + newMessage.getId(), null);
+                        }
+                        if (прежняя != null) newMessage.setTranscribedContent(прежняя);
+                    }
                     messages.set(existingIndex, newMessage);
                     Log.d(TAG, "Updated message with id=" + newMessage.getId());
                 } else {

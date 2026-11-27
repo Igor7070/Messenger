@@ -483,11 +483,16 @@ public class PrivateChatTranslationAndSpellCheckHelper {
                         int index = messages.indexOf(message);
                         if (index != -1) {
                             messages.set(index, message);
-                            ((android.app.Activity) context).runOnUiThread(() -> {
-                                messageAdapter.notifyItemChanged(index);
-                                Log.d(TAG, "Notified adapter for message id=" + message.getId());
-                            });
                         }
+                        /* Обновляем строку по номеру сообщения: на экране, кроме
+                           переписки, стоят карточки звонков, и место сообщения в
+                           ленте не совпадает с его местом в списке. Прежде звали
+                           строку по месту в списке — свежая запись оставалась без
+                           расшифровки, пока не перезайдёшь в чат. */
+                        ((android.app.Activity) context).runOnUiThread(() -> {
+                            messageAdapter.обновитьСтроку(message.getId());
+                            Log.d(TAG, "Notified adapter for message id=" + message.getId());
+                        });
 
                         // Автоматический перевод транскрипции, если включён перевод
                         SharedPreferences prefsTranslate = context.getSharedPreferences("chat_prefs", Context.MODE_PRIVATE);
