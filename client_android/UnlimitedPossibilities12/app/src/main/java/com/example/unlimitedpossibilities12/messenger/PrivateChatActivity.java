@@ -1849,14 +1849,11 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
             if (выбранные.contains(м.getId())) что.add(м);
         }
         if (что.isEmpty()) return;
-        /* «И у собеседника» предлагаем, когда всё выбранное — своё;
-           карточки звонков свои всегда: у каждой стороны своя запись. */
-        boolean всёСвоё = true;
-        for (Message м : что) {
-            boolean звонок = м.getId() < 0;
-            if (!звонок && (м.getSender() == null || м.getSender().getId() != currentUserId)) всёСвоё = false;
-        }
-        спроситьПроУдаление(всёСвоё, уОбоих -> {
+        /* «И у собеседника» предлагаем всегда: в чате на двоих убрать
+           у обоих можно и чужое — так в телеграме, так и в вебе, и
+           сервер это разрешает. Прежде на телефоне такой выбор давался
+           только для своих, и для чужих голосовых галочки не было. */
+        спроситьПроУдаление(true, уОбоих -> {
             for (Message м : что) {
                 if (м.getId() < 0) {
                     убратьЗвонок(-м.getId(), уОбоих);
@@ -2738,8 +2735,8 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
 
     @Override
     public void onDelete(Message message) {
-        boolean моё = message.getSender() != null && message.getSender().getId() == currentUserId;
-        спроситьПроУдаление(моё, уОбоих -> {
+        /* Чужое в чате на двоих тоже можно убрать у обоих — как в телеграме. */
+        спроситьПроУдаление(true, уОбоих -> {
             if (уОбоих) убратьСообщениеУОбоих(message);
             else спрятатьУСебя(message);
         });
