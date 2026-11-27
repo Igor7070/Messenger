@@ -2743,31 +2743,33 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     }
 
     /** Снести сообщение у обоих — прежней дорогой, она же известит собеседника. */
+    /**
+     * Убрать сообщение у обоих.
+     *
+     * Чужое в чате на двоих убрать можно — так в телеграме, и сервер это
+     * разрешает. Прежде клиент сам отказывал: выбрав чужое голосовое «у
+     * обоих», человек видел, что пропало только своё.
+     */
     private void убратьСообщениеУОбоих(Message message) {
-        if (message.getSender().getId() == currentUserId) {
-            if (stompClient != null && stompClient.isConnected()) {
-                stompClient.send("/app/deleteMessage/" + chatId, String.valueOf(message.getId()))
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(
-                                () -> {
-                                    Log.d(TAG, "Delete message sent for id=" + message.getId());
-                                    messages.removeIf(msg -> msg.getId() == message.getId());
-                                    подмешатьЗвонки(messages);
-                                    Toast.makeText(this, "Message deleted!", Toast.LENGTH_SHORT).show();
-                                },
-                                throwable -> {
-                                    Log.e(TAG, "Error deleting message: " + throwable.getMessage());
-                                    Toast.makeText(this, "Failed to delete message", Toast.LENGTH_SHORT).show();
-                                }
-                        );
-            } else {
-                Log.w(TAG, "StompClient not connected for delete");
-                Toast.makeText(this, "WebSocket not connected", Toast.LENGTH_LONG).show();
-            }
-        } else {
-            Toast.makeText(this, "You can only delete your own messages", Toast.LENGTH_SHORT).show();
+        if (stompClient == null || !stompClient.isConnected()) {
+            Log.w(TAG, "StompClient not connected for delete");
+            Toast.makeText(this, "WebSocket not connected", Toast.LENGTH_LONG).show();
+            return;
         }
+        stompClient.send("/app/deleteMessage/" + chatId, String.valueOf(message.getId()))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        () -> {
+                            Log.d(TAG, "Delete message sent for id=" + message.getId());
+                            messages.removeIf(msg -> msg.getId() == message.getId());
+                            подмешатьЗвонки(messages);
+                        },
+                        throwable -> {
+                            Log.e(TAG, "Error deleting message: " + throwable.getMessage());
+                            Toast.makeText(this, "Failed to delete message", Toast.LENGTH_SHORT).show();
+                        }
+                );
     }
 
     private void markAllMessagesAsRead() {
