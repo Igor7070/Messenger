@@ -986,19 +986,34 @@ const PrivateChat = () => {
     };
   }, [chatId]);
 
+  /* Отметка «прочитано».
+   *
+   * Прежде проверка снимала саму себя первым же разом (clearInterval), и
+   * заново её заводила только смена messages или client. Если вкладка
+   * уходила в глубину и браузер её замораживал, а соединение после
+   * пробуждения поднималось тем же объектом, отметка не уходила вовсе:
+   * у собеседника так и висела одна галочка, пока страницу не обновят.
+   * Теперь проверка живёт, пока есть непрочитанное, и сама умолкает,
+   * когда непрочитанного не осталось. Заодно отмечаем сразу, как только
+   * вкладку снова открыли. */
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (client && client.connected && messages.length > 0) {
-        const unreadMessages = messages.some((msg) => !isReadFlag(msg));
-        if (unreadMessages) {
-          markAllMessagesAsRead(messages);
-          clearInterval(interval);
-        }
+    const отметить = () => {
+      if (client && client.connected && messages.length > 0 &&
+          messages.some((msg) => !isReadFlag(msg) && msg.sender && msg.sender.id !== userId)) {
+        markAllMessagesAsRead(messages);
       }
-    }, 1000);
+    };
+    const interval = setInterval(отметить, 1000);
+    const приОткрытии = () => { if (document.visibilityState === 'visible') отметить(); };
+    document.addEventListener('visibilitychange', приОткрытии);
+    window.addEventListener('focus', приОткрытии);
 
-    return () => clearInterval(interval);
-  }, [messages, client]);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', приОткрытии);
+      window.removeEventListener('focus', приОткрытии);
+    };
+  }, [messages, client, userId]);
 
   useEffect(() => {
     const handleClick = () => {
