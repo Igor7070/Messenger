@@ -1068,6 +1068,10 @@ const VoiceCall = ({ recipientId, call = {}, minimized = false, onMinimize, onCl
     if (guard.state() === CallSecurity.CHANGED) guard.acceptChangedKey();
     guard.confirmByCode();
     setCallSecurity(guard.state());
+    /* Окошко с кодом закрываем: иначе нажатие выглядит так, будто
+       ничего не случилось — щит меняется под ним, а его не видно.
+       В групповом звонке так и было сделано. */
+    setShowFingerprint(false);
   };
 
   useEffect(() => {
