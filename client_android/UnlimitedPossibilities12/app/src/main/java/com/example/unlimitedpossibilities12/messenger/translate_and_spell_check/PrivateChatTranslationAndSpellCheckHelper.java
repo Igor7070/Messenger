@@ -480,9 +480,21 @@ public class PrivateChatTranslationAndSpellCheckHelper {
                         Log.d(TAG, "Transcription saved for message id=" + message.getId() + ": " + transcribedContent + ", delivered=" + message.isDelivered() + ", read=" + message.isRead());
 
                         // Обновление сообщения в списке
-                        int index = messages.indexOf(message);
-                        if (index != -1) {
-                            messages.set(index, message);
+                        /* Пока мы ждали ответ, весточка о прочтении могла
+                           подменить сообщение в ленте другим объектом: текст,
+                           записанный в наш, никуда бы не попал, и под
+                           голосовым было пусто. Поэтому кладём текст в то
+                           сообщение, что сейчас в ленте, по его номеру. */
+                        boolean нашлось = false;
+                        for (Message вЛенте : messages) {
+                            if (вЛенте.getId() == message.getId()) {
+                                вЛенте.setTranscribedContent(transcribedContent);
+                                нашлось = true;
+                            }
+                        }
+                        if (!нашлось) {
+                            int index = messages.indexOf(message);
+                            if (index != -1) messages.set(index, message);
                         }
                         /* Обновляем строку по номеру сообщения: на экране, кроме
                            переписки, стоят карточки звонков, и место сообщения в

@@ -512,6 +512,23 @@ public class GroupMessageAdapter extends RecyclerView.Adapter<GroupMessageAdapte
      * перерисовывался целиком — при включённых режимах лента тряслась на
      * каждый ответ. Трогаем только тот пузырь, который изменился.
      */
+    /**
+     * Положить расшифровку в то сообщение, что сейчас в ленте.
+     *
+     * Пока ждём ответ, весточка о прочтении подменяет сообщение другим
+     * объектом; текст, записанный в прежний, на экран бы не попал.
+     */
+    public void положитьРасшифровку(long номер, String текст) {
+        for (int i = 0; i < messages.size(); i++) {
+            Message м = messages.get(i);
+            if (м != null && м.getId() == номер) {
+                м.setTranscribedContent(текст);
+                notifyItemChanged(i);
+                return;
+            }
+        }
+    }
+
     public void refreshMessage(Message message) {
         if (message == null) return;
         for (int i = 0; i < messages.size(); i++) {

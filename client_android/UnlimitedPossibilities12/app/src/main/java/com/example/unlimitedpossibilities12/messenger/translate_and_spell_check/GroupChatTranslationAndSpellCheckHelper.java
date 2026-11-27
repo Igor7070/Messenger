@@ -384,6 +384,9 @@ public class GroupChatTranslationAndSpellCheckHelper {
                         editor.putBoolean("delivered_" + chatId + "_" + message.getId(), wasDelivered);
                         editor.apply();
                         Log.d(TAG, "Transcription saved for message id=" + message.getId() + ": " + transcribedContent);
+                        // текст — в сообщение из ленты, наш объект мог устареть
+                        ((android.app.Activity) context).runOnUiThread(() ->
+                                messageAdapter.положитьРасшифровку(message.getId(), transcribedContent));
                         // Автоматический перевод транскрипции, если перевод включён
                         if (isTranslationEnabled) {
                             translateMessage(context, message, translationLanguage, chatId, messageAdapter, () -> {
