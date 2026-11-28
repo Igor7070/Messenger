@@ -147,6 +147,7 @@
         android:layout_marginHorizontal="16dp"
         android:orientation="vertical"
         app:layout_constraintTop_toBottomOf="@id/call_security"
+        android:layout_marginBottom="20dp"
         app:layout_constraintBottom_toTopOf="@id/call_controls"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
