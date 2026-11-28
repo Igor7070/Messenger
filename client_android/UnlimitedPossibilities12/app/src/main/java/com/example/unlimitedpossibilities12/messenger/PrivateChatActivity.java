@@ -276,9 +276,12 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
         // страницы человека, в самом чате кнопок не было вовсе
         ImageView voiceCallButton = findViewById(R.id.toolbar_voice_call);
         ImageView videoCallButton = findViewById(R.id.toolbar_video_call);
+        ImageView translateCallButton = findViewById(R.id.toolbar_translate_call);
         ImageView overflowButton = findViewById(R.id.toolbar_overflow);
         if (voiceCallButton != null) voiceCallButton.setOnClickListener(v -> startCallFromHeader("voice"));
         if (videoCallButton != null) videoCallButton.setOnClickListener(v -> startCallFromHeader("video"));
+        // Звонок с переводом: в вебе он в шапке, здесь прятался в трёх точках
+        if (translateCallButton != null) translateCallButton.setOnClickListener(v -> startCallFromHeader("translate"));
         if (overflowButton != null) overflowButton.setOnClickListener(this::showChatMenu);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
@@ -1000,7 +1003,7 @@ public class PrivateChatActivity extends AppCompatActivity implements MessageAda
     private void showChatMenu(View anchor) {
         PopupMenu menu = new PopupMenu(
                 new android.view.ContextThemeWrapper(this, R.style.CustomPopupTheme), anchor);
-        menu.getMenu().add(0, 1, 0, "Call with translation");
+        // «Звонок с переводом» переехал в шапку, отдельной иконкой
         menu.getMenu().add(0, 2, 1, "Translation…");
         menu.getMenu().add(0, 3, 2, "Transcription…");
         menu.getMenu().add(0, 4, 3, isTTSEnabled ? "Read aloud: on" : "Read aloud: off");

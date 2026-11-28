@@ -134,6 +134,19 @@
                 android:focusable="true"
                 android:background="?attr/selectableItemBackgroundBorderless" />
 
+            <!-- Звонок с переводом: в вебе он в шапке, а на телефоне
+                 прятался в трёх точках и его не находили -->
+            <ImageView
+                android:id="@+id/toolbar_translate_call"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="9dp"
+                android:src="@drawable/ic_call_translate_header"
+                android:contentDescription="Call with translation"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackgroundBorderless" />
+
             <ImageView
                 android:id="@+id/toolbar_overflow"
                 android:layout_width="40dp"
