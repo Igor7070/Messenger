@@ -212,8 +212,12 @@ public class GroupChatsActivity extends AppCompatActivity implements GroupMessag
         // групповой звонок живёт отдельным экраном и собирается из списка людей
         ImageView voiceCallButton = findViewById(R.id.toolbar_voice_call);
         ImageView videoCallButton = findViewById(R.id.toolbar_video_call);
+        ImageView translateCallButton = findViewById(R.id.toolbar_translate_call);
         if (voiceCallButton != null) voiceCallButton.setVisibility(View.GONE);
         if (videoCallButton != null) videoCallButton.setVisibility(View.GONE);
+        // Звонок с переводом — тоже для разговора вдвоём; в группе эта
+        // трубка только мешала бы: нажимать её тут не на что
+        if (translateCallButton != null) translateCallButton.setVisibility(View.GONE);
         ImageView overflowButton = findViewById(R.id.toolbar_overflow);
         if (overflowButton != null) overflowButton.setOnClickListener(this::showChatMenu);
 
